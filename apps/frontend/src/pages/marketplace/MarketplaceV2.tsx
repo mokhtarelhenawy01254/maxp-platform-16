@@ -7,7 +7,7 @@ import {
   Search, Package, Loader2, Crown,
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3,
+  DollarSign, Grid3X3, Star,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -35,6 +35,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { getMarketplaceFeatureItems } from "./featureCatalog";
 
 interface MarketplaceApp {
   id: string;
@@ -651,6 +657,8 @@ export default function MarketplaceV2() {
 /* ─── Standard App Card ─── */
 function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall, onShowPricing }: {
   app: MarketplaceApp;
+  installingApp: string | null;
+  uninstallingApp: string | null;
   onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
   onUninstall: (app: MarketplaceApp) => void;
   onShowPricing: (app: MarketplaceApp | null) => void;
@@ -660,6 +668,21 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
   const gradient = categoryGradients[app.category] || "from-primary/10 to-primary/5";
 
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const features = useMemo(() => getMarketplaceFeatureItems(app), [app]);
+  const requiredApps = useMemo(() => normalizeRequiredApps(app.requiredApps), [app.requiredApps]);
+
+  const showPreview = () => {
+    clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setPreviewOpen(true), 350);
+  };
+  const hidePreview = () => {
+    clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setPreviewOpen(false), 150);
+  };
+
   const getPrice = (a: MarketplaceApp) => {
     if (a.pricingModel === "FREE") return t('marketplace.freePrice');
     if (a.pricingModel === "PAY_PER_USE") return a.unitPrice ? `${a.unitPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perUnit')}` : t('marketplace.payPerUse');
@@ -668,76 +691,168 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
   };
 
   return (
-    <Link
-      to={`/marketplace/${app.slug}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-    >
-      {/* Cover */}
-      <div
-        className={cn("relative aspect-[2.8/1] overflow-hidden bg-gradient-to-br", !app.coverImage && gradient)}
-        style={app.coverImage ? { backgroundImage: `url(${app.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
-      >
-        {app.isInstalled && (
-          <div className="absolute left-2.5 top-2.5 z-10">
-            <span className="flex size-2.5 rounded-full bg-success ring-2 ring-background" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent" />
-        {app.coverImage ? (
-          <div className="absolute bottom-2.5 right-3 flex size-9 items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm shadow-sm text-primary">
-            {textIcon || <Icon size={17} />}
-          </div>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex size-[44px] items-center justify-center rounded-2xl bg-background/20 text-primary/70">
-              {textIcon ? <span className="text-2xl">{textIcon}</span> : <Icon size={24} />}
+    <Popover open={previewOpen}>
+      <div onMouseEnter={showPreview} onMouseLeave={hidePreview}>
+        <PopoverTrigger asChild>
+          <Link
+            to={`/marketplace/${app.slug}`}
+            className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+          >
+            <div
+              className={cn("relative aspect-[2.8/1] overflow-hidden bg-gradient-to-br", !app.coverImage && gradient)}
+              style={app.coverImage ? { backgroundImage: `url(${app.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+            >
+              {app.isInstalled && (
+                <div className="absolute left-2.5 top-2.5 z-10">
+                  <span className="flex size-2.5 rounded-full bg-success ring-2 ring-background" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent" />
+              {app.coverImage ? (
+                <div className="absolute bottom-2.5 right-3 flex size-9 items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm shadow-sm text-primary">
+                  {textIcon || <Icon size={17} />}
+                </div>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex size-[44px] items-center justify-center rounded-2xl bg-background/20 text-primary/70">
+                    {textIcon ? <span className="text-2xl">{textIcon}</span> : <Icon size={24} />}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col p-3 pb-2.5">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xs font-bold text-foreground leading-tight truncate group-hover:text-primary transition-colors">
+                  {app.name}
+                </h3>
+                <p className="mt-0.5 text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
+                  {app.description}
+                </p>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-primary">
+                  {getPrice(app)}
+                </span>
+
+                {app.isInstalled ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 h-7 w-7 rounded-lg p-0 text-destructive hover:bg-destructive/10"
+                    onClick={(e) => { e.preventDefault(); onUninstall(app); }}
+                    disabled={uninstallingApp === app.slug}
+                  >
+                    {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="shrink-0 gap-1 rounded-lg px-2.5 text-[11px] font-bold h-7"
+                    onClick={(e) => onQuickInstall(e, app)}
+                    disabled={installingApp === app.slug}
+                  >
+                    {installingApp === app.slug ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      <Zap size={11} />
+                    )}
+                    {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Link>
+        </PopoverTrigger>
+
+        <PopoverContent
+          side="right"
+          align="start"
+          sideOffset={12}
+          className="w-80 p-0 overflow-hidden rounded-xl"
+          onMouseEnter={showPreview}
+          onMouseLeave={hidePreview}
+        >
+          <div className="p-4 border-b border-border/40">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                {textIcon || <Icon size={20} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-sm">{app.name}</h4>
+                  {app.rating ? (
+                    <span className="flex items-center gap-0.5 text-xs text-amber-500">
+                      <Star size={11} className="fill-current" />{app.rating}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{app.description}</p>
+              </div>
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="flex flex-col p-3 pb-2.5">
-        <div className="min-w-0 flex-1">
-          <h3 className="text-xs font-bold text-foreground leading-tight truncate group-hover:text-primary transition-colors">
-            {app.name}
-          </h3>
-          <p className="mt-0.5 text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
-            {app.description}
-          </p>
-        </div>
-
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="text-[11px] font-bold text-primary">
-            {getPrice(app)}
-          </span>
-
-          {app.isInstalled ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 h-7 w-7 rounded-lg p-0 text-destructive hover:bg-destructive/10"
-              onClick={(e) => { e.preventDefault(); onUninstall(app); }}
-              disabled={uninstallingApp === app.slug}
-            >
-              {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              className="shrink-0 gap-1 rounded-lg px-2.5 text-[11px] font-bold h-7"
-              onClick={(e) => onQuickInstall(e, app)}
-              disabled={installingApp === app.slug}
-            >
-              {installingApp === app.slug ? (
-                <Loader2 size={11} className="animate-spin" />
-              ) : (
-                <Zap size={11} />
-              )}
-              {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-            </Button>
+          {features.length > 0 && (
+            <div className="px-4 py-3 border-b border-border/40">
+              <h5 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">الميزات</h5>
+              <div className="space-y-1.5">
+                {features.slice(0, 6).map(f => (
+                  <div key={f.key} className="flex items-start gap-2 text-xs">
+                    <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-primary" />
+                    <span>{f.name}</span>
+                  </div>
+                ))}
+                {features.length > 6 && (
+                  <p className="text-[11px] text-muted-foreground pt-1">+{features.length - 6} ميزات أخرى</p>
+                )}
+              </div>
+            </div>
           )}
-        </div>
+
+          {requiredApps.length > 0 && (
+            <div className="px-4 py-2.5 border-b border-border/40">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground">يتطلب:</span>
+                {requiredApps.map(slug => (
+                  <Badge key={slug} variant="outline" className="text-[10px] px-1.5 py-0.5">
+                    {slug}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between p-4 pt-3">
+            <div>
+              <span className="text-sm font-bold text-primary">{getPrice(app)}</span>
+              {app.trialDays > 0 && (
+                <span className="mr-2 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">تجربة {app.trialDays} يوم</span>
+              )}
+            </div>
+            {app.isInstalled ? (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <CheckCircle2 size={10} />
+                مفعل
+              </Badge>
+            ) : (
+              <Button
+                size="sm"
+                className="h-8 rounded-lg text-xs gap-1 font-bold"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickInstall(e, app); }}
+                disabled={installingApp === app.slug}
+              >
+                {installingApp === app.slug ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <Zap size={11} />
+                )}
+                {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
+              </Button>
+            )}
+          </div>
+        </PopoverContent>
       </div>
-    </Link>
+    </Popover>
   );
 }
