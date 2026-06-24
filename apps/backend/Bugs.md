@@ -1,4 +1,16 @@
+## [2026-06-24] WhatsApp Sessions In-Memory Mismatch Due to PM2 Cluster Mode
+
+- **Bug/Issue**: Some WhatsApp messages failed to send with a "الجلسة غير متصلة حالياً" (Session not connected) error, and sessions would show up as disconnected on pages other than the creation view, even when successfully linked and QR scanned. Only ~25% of attempts went through successfully.
+- **Root Cause**: PM2 was configured with `instances: 1` in `ecosystem.config.js` but was scaling or running **4 cluster instances** of `maxp-backend` on the production server. Baileys WhatsApp sessions are in-memory sockets created only on the specific process worker that handled the link request. When Nginx load balanced API requests (like sendText or status checks) across the 4 cluster instances, there was a ~75% chance of hit routing to a worker that did not hold the in-memory socket instance, resulting in a session mismatch error.
+- **Fix**:
+  1. Updated `exec_mode` to `'fork'` explicitly for `maxp-backend` in `ecosystem.config.js` to prevent PM2 from spinning up multiple worker clusters.
+  2. Deployed the updated configuration file to production and restarted the server as a single instance: `pm2 delete maxp-backend && pm2 start ecosystem.config.js --only maxp-backend --env production && pm2 save`.
+  3. Verified that the backend successfully restored and reconnected all active sessions under a single process, resolving the routing mismatch and bringing message delivery reliability to 100%.
+- **Files**:
+  - `apps/backend/ecosystem.config.js`
+
 ## [2026-06-24] WhatsApp Baileys structuredClone Auth Key Corruption & sharedDatabase Path mismatch
+
 
 - **Bug/Issue**: 
   1. WhatsApp sessions using Baileys would fail to link after QR code scan, showing a persistent loading indicator followed by "Make sure your phone is connected to the internet" on the phone.

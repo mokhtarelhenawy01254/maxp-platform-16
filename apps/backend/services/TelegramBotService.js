@@ -47,6 +47,26 @@ class TelegramBotService {
         }
     }
 
+    async _setWebhookWithRetry(bot, webhookUrl, maxRetries = 5) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                await bot.telegram.setWebhook(webhookUrl, {
+                    allowed_updates: ['message', 'callback_query']
+                });
+                return;
+            } catch (err) {
+                if (err?.response?.error_code === 429 && attempt < maxRetries - 1) {
+                    const retryAfter = (err.response?.parameters?.retry_after || 2) + 1;
+                    const delay = Math.min(retryAfter * 1000, 30000);
+                    console.warn(`⚠️ [Telegram] 429 rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+                    await new Promise(r => setTimeout(r, delay));
+                } else {
+                    throw err;
+                }
+            }
+        }
+    }
+
     async startBot(configId, companyId, token) {
         if (this.bots.has(configId)) {
             console.log(`⚠️ [Telegram] Bot ${configId} already running. Restarting...`);
@@ -75,9 +95,7 @@ class TelegramBotService {
             if (webhookBaseUrl) {
                 const secret = buildWebhookSecret(configId, token);
                 const webhookUrl = `${webhookBaseUrl}/api/v1/telegram/webhook/${configId}/${secret}`;
-                await bot.telegram.setWebhook(webhookUrl, {
-                    allowed_updates: ['message', 'callback_query']
-                });
+                await this._setWebhookWithRetry(bot, webhookUrl);
                 console.log(`✅ [Telegram] Bot ${configId} webhook configured`);
             } else if (process.env.TELEGRAM_ENABLE_LONG_POLLING === 'true') {
                 bot.launch().then(() => {

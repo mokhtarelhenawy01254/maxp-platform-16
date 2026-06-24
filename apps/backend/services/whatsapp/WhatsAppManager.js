@@ -3180,6 +3180,15 @@ async function restoreAllSessions() {
                         status: {
                             in: ['CONNECTED', 'DISCONNECTED', 'CONNECTING', 'QR_PENDING']
                         }
+                    },
+                    select: {
+                        id: true,
+                        companyId: true,
+                        status: true,
+                        metadata: true,
+                        isDefault: true,
+                        phoneNumber: true,
+                        authState: true
                     }
                 });
             } catch (error) {
@@ -3194,7 +3203,8 @@ async function restoreAllSessions() {
                         ${quoteSqlIdentifier('status')},
                         ${quoteSqlIdentifier('metadata')},
                         ${quoteSqlIdentifier('isDefault')},
-                        ${quoteSqlIdentifier('phoneNumber')}
+                        ${quoteSqlIdentifier('phoneNumber')},
+                        ${quoteSqlIdentifier('authState')}
                     FROM ${quoteSqlIdentifier('whatsapp_sessions')}
                     WHERE ${quoteSqlIdentifier('status')} IN ('CONNECTED', 'DISCONNECTED', 'CONNECTING', 'QR_PENDING')
                 `;
@@ -3210,16 +3220,41 @@ async function restoreAllSessions() {
 
         WA_LOG.restore(`Found ${sessions.length} session(s) to restore`);
 
+        // Separate sessions: restore connected/connecting first, skip useless QR_PENDING without auth
+        const prioritySessions = sessions.filter(s => s.status === 'CONNECTED' || s.status === 'CONNECTING');
+        const qrPendingSessions = sessions.filter(s => s.status === 'QR_PENDING');
+        const disconnectedSessions = sessions.filter(s => s.status === 'DISCONNECTED');
+
+        // For QR_PENDING: only restore if they have valid auth state (someone scanned but not yet connected)
+        const validQrPending = [];
+        for (const s of qrPendingSessions) {
+            const authState = parseJsonSafely(s.authState, null);
+            if (authState?.creds?.registered || authState?.creds?.me) {
+                validQrPending.push(s);
+                WA_LOG.restore(`Keeping QR_PENDING session ${s.id}: has valid auth state`);
+            } else {
+                WA_LOG.restore(`Skipping QR_PENDING session ${s.id}: no auth state (stale/fresh QR never scanned)`);
+            }
+        }
+
+        const toRestore = [...prioritySessions, ...validQrPending, ...disconnectedSessions];
+        const skipped = qrPendingSessions.length - validQrPending.length;
+        if (skipped > 0) {
+            WA_LOG.restore(`Skipped ${skipped} QR_PENDING session(s) without auth state`);
+        }
+        WA_LOG.restore(`Will restore ${toRestore.length} session(s)`);
+
         let restored = 0;
         let failed = 0;
 
-        for (const session of sessions) {
+        // Stagger restore: longer gap for more sessions to avoid WhatsApp flood rejection
+        const staggerDelay = toRestore.length > 15 ? 3000 : toRestore.length > 5 ? 2000 : 1500;
+
+        for (const session of toRestore) {
             try {
-                // Determine initial weight (Default/Primary numbers get 3 units, others 1)
                 const weight = session.isDefault ? 3 : 1;
                 const metadata = parseJsonSafely(session.metadata, {});
 
-                // Only enable full history sync for QR_PENDING sessions with importHistoryOnLink
                 const enableHistorySync = session.status === 'QR_PENDING' && metadata.importHistoryOnLink === true;
 
                 WA_LOG.restore(`Restoring session ${session.id} (status=${session.status}, phone=${session.phoneNumber || '?'})`);
@@ -3233,9 +3268,8 @@ async function restoreAllSessions() {
 
                 restored++;
 
-                // Small delay between session creations to avoid overwhelming Baileys
-                if (sessions.length > 1) {
-                    await new Promise(resolve => setTimeout(resolve, 1500));
+                if (toRestore.length > 1) {
+                    await new Promise(resolve => setTimeout(resolve, staggerDelay));
                 }
             } catch (error) {
                 failed++;

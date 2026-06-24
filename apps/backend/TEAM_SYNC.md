@@ -2,7 +2,15 @@
 
 ## [2026-03-09]
 
+### WhatsApp Session Connection Resolution & PM2 Fork Configuration
+- **Accomplishment**: Fixed a critical routing issue on production where WhatsApp messages failed to send with a "Session not connected" (الجلسة غير متصلة حالياً) error by configuring PM2 to run in fork mode instead of cluster mode.
+- **Details**:
+  - Identified that PM2 was running 4 cluster instances of the backend, which split in-memory Baileys sockets across different worker processes. This caused Nginx to route ~75% of WhatsApp API requests to processes that didn't hold the active connection.
+  - Added `exec_mode: 'fork'` explicitly for `maxp-backend` in `ecosystem.config.js`.
+  - Deployed the configuration to the production server and restarted the application as a single backend instance. Verified all active sessions restored and connected successfully under one unified process, restoring sending reliability to 100%.
+
 ### WhatsApp Baileys Auth State Correction & Database Schema Alignment
+
 - **Accomplishment**: Fixed a critical crypto key serialization corruption that broke WhatsApp Baileys session linking, corrected a controller import path, and resolved database constraint errors.
 - **Details**:
   - Restored `JSON.parse(JSON.stringify(..., BufferJSON.replacer), BufferJSON.reviver)` inside `DatabaseAuthState.js` after identifying that the previous implementation of `structuredCloneSafe` converted Node `Buffer` objects into `Uint8Array`, which corrupted Baileys' auth state keys and caused linking failures ("make sure your phone is connected to the internet").
