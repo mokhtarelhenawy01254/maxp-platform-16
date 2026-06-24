@@ -2284,8 +2284,8 @@ const UnifiedInbox: React.FC = () => {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* COLUMN 3 — Customer Profile Panel */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* COLUMN 3 ΓÇö Customer Profile Panel */}
+        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
         {showProfilePanel && selectedConversation && (
           <div className="business-inbox-column business-inbox-column--profile overflow-y-auto">
             {/* Profile Header */}
@@ -2347,6 +2347,83 @@ const UnifiedInbox: React.FC = () => {
                   </span>
                 )}
               </div>
+              {getPlatformBadge(selectedConversation.platform)}
+            </div>
+
+            {/* Status & Assignment & Actions */}
+            <div className="px-4 pb-4 border-b" style={{ borderColor: "var(--business-muted-line)" }}>
+              <div className="mt-2 grid gap-1.5" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
+                <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
+                  <StatusDropdown
+                    currentStatus={selectedConversation.status}
+                    onStatusChange={handleStatusChange}
+                    disabled={loadingProfile}
+                  />
+                </div>
+                <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
+                  <AssignmentDropdown
+                    currentAssignee={selectedConversation.assignedTo?.id || null}
+                    currentAssigneeName={selectedConversation.assignedTo?.name || null}
+                    onAssign={handleAssign}
+                    disabled={loadingProfile}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-center gap-3">
+                <button
+                  onClick={handleMarkUnread}
+                  className="business-icon-button rounded-full p-2.5 transition-colors border shadow-sm"
+                  style={{
+                    color: "var(--color-primary)",
+                    background: "color-mix(in srgb, var(--color-primary) 10%, var(--color-background))",
+                    borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                  }}
+                  title={t("unifiedInbox.markUnread", { defaultValue: "╪¬╪¡╪»┘è╪» ┘â╪║┘è╪▒ ┘à┘é╪▒┘ê╪í" })}
+                >
+                  <EnvelopeIcon className="w-5 h-5 shrink-0" />
+                </button>
+                <button
+                  onClick={handleArchiveConversation}
+                  className="business-icon-button rounded-full p-2.5 transition-colors border shadow-sm"
+                  style={{
+                    color: "var(--business-warning)",
+                    background: "color-mix(in srgb, var(--business-warning) 10%, var(--color-background))",
+                    borderColor: "color-mix(in srgb, var(--business-warning) 20%, transparent)",
+                  }}
+                  title={t("unifiedInbox.archive", { defaultValue: "╪ú╪▒╪┤┘ü╪⌐" })}
+                >
+                  <ArchiveBoxIcon className="w-5 h-5 shrink-0" />
+                </button>
+                <button
+                  onClick={handleBlockCustomer}
+                  className="business-icon-button rounded-full p-2.5 transition-colors border shadow-sm"
+                  style={{
+                    color: "var(--business-danger)",
+                    background: "color-mix(in srgb, var(--business-danger) 10%, var(--color-background))",
+                    borderColor: "color-mix(in srgb, var(--business-danger) 20%, transparent)",
+                  }}
+                  title={t("unifiedInbox.block", { defaultValue: "╪¡╪╕╪▒" })}
+                >
+                  <NoSymbolIcon className="w-5 h-5 shrink-0" />
+                </button>
+              </div>
+            </div>
+
+            {loadingProfile ? (
+              <div className="business-inbox-empty py-10">
+                <div
+                  className="animate-spin rounded-full h-6 w-6 border-2 border-t-transparent"
+                  style={{
+                    borderColor:
+                      "color-mix(in srgb, var(--color-primary) 24%, transparent)",
+                    borderTopColor: "transparent",
+                  }}
+                />
+              </div>
+            ) : customerProfile ? (
+              <>
+                {/* Stats */}
                 <div className="mt-4 px-4">
                   <div
                     className="grid grid-cols-2 overflow-hidden rounded-[20px] border bg-transparent text-center w-full"
@@ -2410,366 +2487,325 @@ const UnifiedInbox: React.FC = () => {
                     data-active={profileActiveTab === "info"}
                   >
                     <span className="flex items-center justify-center gap-1">
-                      <User size={16} /> {t("unifiedInbox.info", { defaultValue: "معلومات" })}
+                      <UserLucide size={16} /> {t("unifiedInbox.info", { defaultValue: "معلومات" })}
                     </span>
                   </button>
                 </div>
-              </div>
 
-              <div className="flex-1 overflow-y-auto px-4 pb-4">
-                {profileActiveTab === "info" && (
-                  <div className="space-y-4 pt-4">
-                    {/* Contact Info */}
-                    <div
-                      className="p-4 border rounded-[20px] bg-transparent"
-                      style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
-                    >
-                      <h4
-                        className="mb-3 text-sm font-bold text-end"
-                        style={{ color: "var(--color-muted-foreground)" }}
-                      >
-                        {t("unifiedInbox.customer.contactInfo")}
-                      </h4>
-                      <div className="space-y-3">
-                        {customerProfile?.phone && (
-                          <div className="flex items-center justify-end gap-2 text-sm">
-                            <span className="font-medium" style={{ color: "var(--color-foreground)" }} dir="ltr">
-                              {customerProfile.phone}
-                            </span>
-                            <PhoneIcon
-                              className="w-4 h-4"
-                              style={{ color: "var(--color-muted-foreground)" }}
-                            />
-                          </div>
-                        )}
-                        {customerProfile?.email && !customerProfile.email.endsWith("@example.com") && (
-                          <div className="flex items-center justify-end gap-2 text-sm">
-                            <span
-                              className="truncate font-medium"
-                              style={{ color: "var(--color-foreground)" }}
-                            >
-                              {customerProfile.email}
-                            </span>
-                            <EnvelopeIcon
-                              className="w-4 h-4"
-                              style={{ color: "var(--color-muted-foreground)" }}
-                            />
-                          </div>
-                        )}
-                        <div className="flex items-center justify-end gap-2 text-sm">
-                          <span className="font-medium" style={{ color: "var(--color-foreground)" }}>
-                            {t("unifiedInbox.customer.customerSince", {
-                              date: new Date(
-                                customerProfile?.createdAt || new Date(),
-                              ).toLocaleDateString(
-                                i18n.language === "ar" ? "ar-EG" : "en-US",
-                                {
-                                  year: "numeric",
-                                  month: "long",
-                                },
-                              ),
-                            })}
-                          </span>
-                          <ClockIcon
-                            className="w-4 h-4"
-                            style={{ color: "var(--color-muted-foreground)" }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4
-                          className={`text-xs font-semibold uppercase tracking-wider ${isRtl ? "text-right" : "text-left"}`}
-                          style={{ color: "var(--color-muted-foreground)" }}
-                        >
-                          {t("unifiedInbox.notes")}
-                        </h4>
-                        <button
-                          onClick={() => {
-                            setNoteText(customerProfile?.notes || "");
-                            setEditNote(!editNote);
-                          }}
-                          className="business-chip-button"
-                          aria-label={t("unifiedInbox.customer.notes")}
-                        >
-                          <PencilSquareIcon className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
-                      </div>
-                      {editNote ? (
-                        <div className="space-y-2">
-                          <textarea
-                            value={noteText}
-                            onChange={(e) => setNoteText(e.target.value)}
-                            placeholder={t("unifiedInbox.notePlaceholder")}
-                            className="business-chat-input w-full p-2 text-xs min-h-[80px] resize-none"
-                            style={{ color: "var(--color-foreground)" }}
-                          />
-                          <div className="flex gap-2">
-                            <button onClick={handleSaveNote} className="inbox-filter-chip text-xs" data-active="true">
-                              {t("unifiedInbox.save")}
-                            </button>
-                            <button onClick={() => setEditNote(false)} className="inbox-filter-chip text-xs">
-                              {t("unifiedInbox.cancel")}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p
-                          className="text-xs leading-relaxed whitespace-pre-wrap"
-                          style={{ color: customerProfile?.notes ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
-                        >
-                          {customerProfile?.notes || t("unifiedInbox.noNotes")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {profileActiveTab === "orders" && (
-                  <div className="space-y-4 pt-4">
-                    {/* Recent Orders */}
-                    {customerProfile?.recentOrders?.length > 0 && (
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                  {profileActiveTab === "info" && (
+                    <div className="space-y-4 pt-4">
+                      {/* Contact Info */}
                       <div
-                        className="p-4 border rounded-lg"
-                        style={{ borderColor: "var(--business-muted-line)", background: "var(--business-surface-panel)" }}
+                        className="p-4 border rounded-[20px] bg-transparent"
+                        style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
                       >
                         <h4
-                          className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isRtl ? "text-right" : "text-left"}`}
+                          className="mb-3 text-sm font-bold text-end"
                           style={{ color: "var(--color-muted-foreground)" }}
                         >
-                          {t("unifiedInbox.customer.recentOrders")}
-                          <span className="opacity-60 ml-1">
-                            ({customerProfile.totalOrders})
-                          </span>
+                          {t("unifiedInbox.customer.contactInfo")}
                         </h4>
-                        <div className="space-y-2">
-                          {customerProfile.recentOrders.map((order) => (
+                        <div className="space-y-3">
+                          {customerProfile?.phone && (
+                            <div className="flex items-center justify-end gap-2 text-sm">
+                              <span className="font-medium" style={{ color: "var(--color-foreground)" }} dir="ltr">
+                                {customerProfile.phone}
+                              </span>
+                              <PhoneIcon
+                                className="w-4 h-4"
+                                style={{ color: "var(--color-muted-foreground)" }}
+                              />
+                            </div>
+                          )}
+                          {customerProfile?.email && !customerProfile.email.endsWith("@example.com") && (
+                            <div className="flex items-center justify-end gap-2 text-sm">
+                              <span
+                                className="truncate font-medium"
+                                style={{ color: "var(--color-foreground)" }}
+                              >
+                                {customerProfile.email}
+                              </span>
+                              <EnvelopeIcon
+                                className="w-4 h-4"
+                                style={{ color: "var(--color-muted-foreground)" }}
+                              />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-end gap-2 text-sm">
+                            <span className="font-medium" style={{ color: "var(--color-foreground)" }}>
+                              {t("unifiedInbox.customer.customerSince", {
+                                date: new Date(
+                                  customerProfile?.createdAt || new Date(),
+                                ).toLocaleDateString(
+                                  i18n.language === "ar" ? "ar-EG" : "en-US",
+                                  {
+                                    year: "numeric",
+                                    month: "long",
+                                  },
+                                ),
+                              })}
+                            </span>
+                            <ClockIcon
+                              className="w-4 h-4"
+                              style={{ color: "var(--color-muted-foreground)" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      {customerProfile.tags?.length > 0 && (
+                        <div
+                          className="p-4 border rounded-[20px] bg-transparent"
+                          style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                        >
+                          <h4
+                            className="mb-3 text-sm font-bold text-end"
+                            style={{ color: "var(--color-muted-foreground)" }}
+                          >
+                            {t("unifiedInbox.customer.tags")}
+                          </h4>
+                          <div className="flex flex-wrap justify-end gap-1.5">
+                            {customerProfile.tags.map((tag, i) => (
+                              <span
+                                key={i}
+                                className="text-xs px-2 py-0.5 rounded-full"
+                                style={{
+                                  background:
+                                    "color-mix(in srgb, var(--color-primary) 10%, white)",
+                                  color: "var(--color-primary)",
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      <div 
+                        className="p-4 border rounded-[20px] bg-transparent"
+                        style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <button
+                            onClick={() => {
+                              setNoteText(customerProfile?.notes || "");
+                              setEditNote(!editNote);
+                            }}
+                            className="business-chip-button"
+                            aria-label={t("unifiedInbox.customer.notes")}
+                          >
+                            <PencilSquareIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                          <h4
+                            className="text-sm font-bold text-end"
+                            style={{ color: "var(--color-muted-foreground)" }}
+                          >
+                            {t("unifiedInbox.notes")}
+                          </h4>
+                        </div>
+                        {editNote ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={noteText}
+                              onChange={(e) => setNoteText(e.target.value)}
+                              placeholder={t("unifiedInbox.notePlaceholder")}
+                              className="business-chat-input w-full p-2 text-xs min-h-[80px] resize-none"
+                              style={{ color: "var(--color-foreground)" }}
+                            />
+                            <div className="flex gap-2">
+                              <button onClick={handleSaveNote} className="inbox-filter-chip text-xs" data-active="true">
+                                {t("unifiedInbox.save")}
+                              </button>
+                              <button onClick={() => setEditNote(false)} className="inbox-filter-chip text-xs">
+                                {t("unifiedInbox.cancel")}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p
+                            className="text-xs leading-relaxed whitespace-pre-wrap"
+                            style={{ color: customerProfile?.notes ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
+                          >
+                            {customerProfile?.notes || t("unifiedInbox.noNotes")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {profileActiveTab === "orders" && (
+                    <div className="space-y-4 pt-4">
+                      {/* Recent Orders */}
+                      {customerProfile?.recentOrders?.length > 0 && (
+                        <div
+                          className="p-4 border rounded-[20px] bg-transparent"
+                          style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                        >
+                          <h4
+                            className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isRtl ? "text-right" : "text-left"}`}
+                            style={{ color: "var(--color-muted-foreground)" }}
+                          >
+                            {t("unifiedInbox.customer.recentOrders")}
+                            <span className="opacity-60 ml-1">
+                              ({customerProfile.totalOrders})
+                            </span>
+                          </h4>
+                          <div className="space-y-2">
+                            {customerProfile.recentOrders.map((order) => (
+                              <button
+                                key={order.id}
+                                onClick={() =>
+                                  window.open(
+                                    `/orders/${encodeURIComponent(String(order.id))}`,
+                                    "_blank",
+                                  )
+                                }
+                                className="w-full flex items-center justify-between rounded-lg p-2.5 hover:opacity-80 transition-opacity cursor-pointer text-left"
+                                style={{
+                                  background:
+                                    "color-mix(in srgb, white 72%, var(--color-background) 28%)",
+                                }}
+                                title={t("unifiedInbox.viewOrder")}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div
+                                    className="text-xs font-medium"
+                                    style={{ color: "var(--color-foreground)" }}
+                                  >
+                                    #{order.orderNumber}
+                                  </div>
+                                  <div
+                                    className="text-[10px]"
+                                    style={{ color: "var(--color-muted-foreground)" }}
+                                  >
+                                    {new Date(order.createdAt).toLocaleDateString(
+                                      i18n.language === "ar" ? "ar-EG" : "en-US",
+                                    )}
+                                    {order._count?.items > 0 && (
+                                      <span className="mx-1">·</span>
+                                    )}
+                                    {order._count?.items > 0 && (
+                                      <span>
+                                        {order._count.items}{" "}
+                                        {t("unifiedInbox.products")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className={`${isRtl ? "text-right" : "text-right"} ml-3 flex-shrink-0`}>
+                                  <div
+                                    className="text-xs font-semibold"
+                                    style={{ color: "var(--business-success)" }}
+                                  >
+                                    {order.total}{" "}
+                                    {i18n.language === "ar" ? "ج.م" : "EGP"}
+                                  </div>
+                                  <div
+                                    className="text-[10px]"
+                                    style={{
+                                      color:
+                                        order.status === "completed" || order.status === "DELIVERED" || order.status === "SHIPPED"
+                                          ? "var(--business-success)"
+                                          : order.status === "CANCELLED" || order.status === "REFUNDED"
+                                            ? "var(--business-danger, #ef4444)"
+                                            : "var(--business-warning)",
+                                    }}
+                                  >
+                                    {order.status === "completed" || order.status === "DELIVERED"
+                                      ? t(
+                                          "unifiedInbox.customer.orderStatus.completed",
+                                        )
+                                      : order.status === "pending"
+                                        ? t(
+                                            "unifiedInbox.customer.orderStatus.pending",
+                                          )
+                                        : order.status === "CANCELLED"
+                                          ? t(
+                                              "unifiedInbox.customer.orderStatus.cancelled",
+                                            )
+                                          : order.status}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                          {customerProfile.totalOrders > customerProfile.recentOrders.length && (
                             <button
-                              key={order.id}
                               onClick={() =>
                                 window.open(
-                                  `/orders/${encodeURIComponent(String(order.id))}`,
+                                  `/orders?customerId=${encodeURIComponent(selectedConversation.contactId || "")}`,
                                   "_blank",
                                 )
                               }
-                              className="w-full flex items-center justify-between rounded-lg p-2.5 hover:opacity-80 transition-opacity cursor-pointer text-left"
+                              className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg hover:opacity-80 transition-opacity"
                               style={{
+                                color: "var(--color-primary)",
                                 background:
-                                  "color-mix(in srgb, white 72%, var(--color-background) 28%)",
+                                  "color-mix(in srgb, var(--color-primary) 10%, transparent)",
                               }}
-                              title={t("unifiedInbox.viewOrder")}
                             >
-                              <div className="min-w-0 flex-1">
-                                <div
-                                  className="text-xs font-medium"
-                                  style={{ color: "var(--color-foreground)" }}
-                                >
-                                  #{order.orderNumber}
-                                </div>
-                                <div
-                                  className="text-[10px]"
-                                  style={{ color: "var(--color-muted-foreground)" }}
-                                >
-                                  {new Date(order.createdAt).toLocaleDateString(
-                                    i18n.language === "ar" ? "ar-EG" : "en-US",
-                                  )}
-                                  {order._count?.items > 0 && (
-                                    <span className="mx-1">·</span>
-                                  )}
-                                  {order._count?.items > 0 && (
-                                    <span>
-                                      {order._count.items}{" "}
-                                      {t("unifiedInbox.products")}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className={`${isRtl ? "text-right" : "text-right"} ml-3 flex-shrink-0`}>
-                                <div
-                                  className="text-xs font-semibold"
-                                  style={{ color: "var(--business-success)" }}
-                                >
-                                  {order.total}{" "}
-                                  {i18n.language === "ar" ? "ج.م" : "EGP"}
-                                </div>
-                                <div
-                                  className="text-[10px]"
-                                  style={{
-                                    color:
-                                      order.status === "completed" || order.status === "DELIVERED" || order.status === "SHIPPED"
-                                        ? "var(--business-success)"
-                                        : order.status === "CANCELLED" || order.status === "REFUNDED"
-                                          ? "var(--business-danger, #ef4444)"
-                                          : "var(--business-warning)",
-                                  }}
-                                >
-                                  {order.status === "completed" || order.status === "DELIVERED"
-                                    ? t(
-                                        "unifiedInbox.customer.orderStatus.completed",
-                                      )
-                                    : order.status === "pending"
-                                      ? t(
-                                          "unifiedInbox.customer.orderStatus.pending",
-                                        )
-                                      : order.status === "CANCELLED"
-                                        ? t(
-                                            "unifiedInbox.customer.orderStatus.cancelled",
-                                          )
-                                        : order.status}
-                                </div>
-                              </div>
+                              {t("unifiedInbox.viewAllOrders")}
                             </button>
-                      ))}
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {customerProfile.totalOrders > customerProfile.recentOrders.length && (
-                      <button
-                        onClick={() =>
-                          window.open(
-                            `/orders?customerId=${encodeURIComponent(selectedConversation.contactId || "")}`,
-                            "_blank",
-                          )
-                        }
-                        className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg hover:opacity-80 transition-opacity"
-                        style={{
-                          color: "var(--color-primary)",
-                          background:
-                            "color-mix(in srgb, var(--color-primary) 10%, transparent)",
-                        }}
-                      >
-                        {t("unifiedInbox.viewAllOrders")}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Tags */}
-                {customerProfile.tags?.length > 0 && (
-                  <div
-                    className="p-4 border rounded-[20px] bg-transparent"
-                    style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
-                  >
-                    <h4
-                      className="mb-3 text-sm font-bold text-end"
-                      style={{ color: "var(--color-muted-foreground)" }}
-                    >
-                      {t("unifiedInbox.customer.tags")}
-                    </h4>
-                    <div className="flex flex-wrap justify-end gap-1.5">
-                      {customerProfile.tags.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="text-xs px-2 py-0.5 rounded-full"
-                          style={{
-                            background:
-                              "color-mix(in srgb, var(--color-primary) 10%, white)",
-                            color: "var(--color-primary)",
-                          }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                <div 
-                  className="p-4 border rounded-[20px] bg-transparent"
-                  style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <button
-                      onClick={() => {
-                        setNoteText(customerProfile?.notes || "");
-                        setEditNote(!editNote);
-                      }}
-                      className="business-chip-button"
-                      aria-label={t("unifiedInbox.customer.notes")}
-                    >
-                      <PencilSquareIcon className="w-3.5 h-3.5" aria-hidden="true" />
-                    </button>
-                    <h4
-                      className="text-sm font-bold text-end"
-                      style={{ color: "var(--color-muted-foreground)" }}
-                    >
-                      {t("unifiedInbox.notes")}
-                    </h4>
-                  </div>
-                  {editNote ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        placeholder={t("unifiedInbox.notePlaceholder")}
-                        className="business-chat-input w-full p-2 text-xs min-h-[80px] resize-none"
-                        style={{ color: "var(--color-foreground)" }}
-                      />
-                      <div className="flex gap-2">
-                        <button onClick={handleSaveNote} className="inbox-filter-chip text-xs" data-active="true">
-                          {t("unifiedInbox.save")}
-                        </button>
-                        <button onClick={() => setEditNote(false)} className="inbox-filter-chip text-xs">
-                          {t("unifiedInbox.cancel")}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p
-                      className="text-xs leading-relaxed whitespace-pre-wrap"
-                      style={{ color: customerProfile?.notes ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
-                    >
-                      {customerProfile?.notes || t("unifiedInbox.noNotes")}
-                    </p>
                   )}
-                </div>
 
-                {/* Conversation History */}
-                {customerProfile.recentConversations?.length > 0 && (
-                  <div 
-                    className="p-4 border rounded-[20px] bg-transparent"
-                    style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
-                  >
-                    <h4
-                      className="mb-3 text-sm font-bold text-end"
-                      style={{ color: "var(--color-muted-foreground)" }}
-                    >
-                      {t("unifiedInbox.customer.history")}
-                    </h4>
-                    <div className="space-y-2">
-                      {customerProfile.recentConversations.map((c) => (
-                        <div
-                          key={c.id}
-                          className="rounded-lg p-2.5"
-                          style={{
-                            background:
-                              "color-mix(in srgb, white 72%, var(--color-background) 28%)",
-                          }}
+                  {profileActiveTab === "timeline" && (
+                    <div className="space-y-4 pt-4">
+                      {/* Conversation History */}
+                      {customerProfile.recentConversations?.length > 0 && (
+                        <div 
+                          className="p-4 border rounded-[20px] bg-transparent"
+                          style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            {getPlatformBadge(c.platform)}
-                            <span
-                              className="text-[10px]"
-                              style={{ color: "var(--color-muted-foreground)" }}
-                            >
-                              {formatTime(c.lastMessageAt)}
-                            </span>
-                          </div>
-                          <p
-                            className="text-xs truncate"
+                          <h4
+                            className="mb-3 text-sm font-bold text-end"
                             style={{ color: "var(--color-muted-foreground)" }}
                           >
-                            {c.lastMessagePreview}
-                          </p>
+                            {t("unifiedInbox.customer.history")}
+                          </h4>
+                          <div className="space-y-2">
+                            {customerProfile.recentConversations.map((c) => (
+                              <div
+                                key={c.id}
+                                className="rounded-lg p-2.5"
+                                style={{
+                                  background:
+                                    "color-mix(in srgb, white 72%, var(--color-background) 28%)",
+                                }}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  {getPlatformBadge(c.platform)}
+                                  <span
+                                    className="text-[10px]"
+                                    style={{ color: "var(--color-muted-foreground)" }}
+                                  >
+                                    {formatTime(c.lastMessageAt)}
+                                  </span>
+                                </div>
+                                <p
+                                  className="text-xs truncate"
+                                  style={{ color: "var(--color-muted-foreground)" }}
+                                >
+                                  {c.lastMessagePreview}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             ) : (
+
               <div className="business-inbox-empty py-10">
                 <UserCircleIcon
                   className="w-12 h-12 mb-2"
