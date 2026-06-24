@@ -232,7 +232,8 @@ exports.messagingCheckout = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'تم تفعيل الباقة بنجاح'
+      message: 'تم تفعيل الباقة بنجاح',
+      data: { skipPayment: true, trialDays: 7 }
     });
   } catch (error) {
     console.error("[MESSAGING-CHECKOUT] Error:", error);

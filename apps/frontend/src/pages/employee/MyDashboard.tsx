@@ -137,6 +137,8 @@ const MyDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const activeApps: string[] = (user as any)?.company?.activeApps ?? [];
+  const hasHrBasic = activeApps.some((a) => a.toLowerCase() === "hr-basic");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -229,27 +231,42 @@ const MyDashboard: React.FC = () => {
     return () => controller.abort();
   }, [cacheKey, fetchDashboardData, applyDashboardPayload]);
 
+  if (!hasHrBasic) {
+    return (
+      <div className="p-4 md:p-8 min-h-screen flex items-center justify-center" dir="rtl">
+        <div className="text-center max-w-md">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
+            <Briefcase className="h-8 w-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">لم يتم تفعيل نظام HR</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">هذه الصفحة خاصة بموظفي الشركة. يرجى تثبيت تطبيق HR Basic من متجر التطبيقات للوصول إلى لوحة تحكم الموظف.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-4 bg-gray-50/50 dark:bg-gray-900/50">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
-          <div className="absolute top-0 left-0 animate-pulse rounded-full h-16 w-16 bg-primary/10"></div>
+      <div className="p-4 md:p-8 min-h-screen flex items-center justify-center bg-[#f8faff] dark:bg-gray-950" dir="rtl">
+        <div className="text-center">
+          <div className="relative mx-auto mb-6 w-16 h-16">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
+          </div>
+          <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse">جاري تحميل بياناتك...</p>
         </div>
-        <p className="text-lg font-medium text-gray-600 dark:text-gray-300 animate-pulse">جاري تحميل بياناتك...</p>
       </div>
     );
   }
 
   if (!employee) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-6">
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-2xl text-center">
+      <div className="p-4 md:p-8 min-h-screen flex items-center justify-center bg-[#f8faff] dark:bg-gray-950" dir="rtl">
+        <div className="bg-red-50 dark:bg-red-900/20 p-8 rounded-2xl text-center max-w-md">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">عذراً، لم يتم العثور على بيانات الموظف</h2>
-          <p className="text-gray-500 dark:text-gray-400">يرجى الاتصال بإدارة الموارد البشرية للتأكد من ربط حسابك.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">يرجى الاتصال بإدارة الموارد البشرية للتأكد من ربط حسابك.</p>
+          <Button onClick={() => window.location.reload()} variant="outline">إعادة المحاولة</Button>
         </div>
-        <Button onClick={() => window.location.reload()} variant="outline">إعادة المحاولة</Button>
       </div>
     );
   }
@@ -283,7 +300,7 @@ const MyDashboard: React.FC = () => {
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                 مرحباً، {employee.firstName}
               </h1>
-              <span className="text-3xl animate-bounce">👋</span>
+              
             </div>
             <p className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2">
               <span className="bg-primary/10 text-primary px-3 py-0.5 rounded-full text-sm">
@@ -366,7 +383,7 @@ const MyDashboard: React.FC = () => {
               <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-2xl text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300">
                 <CreditCard className="h-6 w-6" />
               </div>
-              <Badge variant="outline" className="rounded-lg text-[10px] font-bold text-gray-400 border-gray-100">{lastPayroll ? months[lastPayroll.month - 1] : "--"}</Badge>
+              <Badge variant="outline" className="rounded-lg text-[10px] font-bold text-gray-400 border-gray-100">{lastPayroll ? format(new Date(lastPayroll.year, lastPayroll.month - 1), "MMMM", { locale: ar }) : "--"}</Badge>
             </div>
             <p className="text-sm text-gray-500 font-medium mb-1">آخر مرتب صافي</p>
             <div className="flex items-baseline gap-1">
@@ -564,10 +581,10 @@ const MyDashboard: React.FC = () => {
                     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                       .slice(0, 5)
                       .map((item, idx) => (
-                        <div key={idx} className="flex gap-4 relative">
+                        <div key={`${item.category}-${item.date}-${idx}`} className="flex gap-4 relative">
                           {idx !== 4 && <div className="absolute top-10 bottom-0 right-[22px] w-[2px] bg-gray-100 dark:bg-gray-800"></div>}
-                          <div className={`h-11 w-11 rounded-full bg-${item.color}-50 dark:bg-${item.color}-900/20 flex items-center justify-center shrink-0 border border-${item.color}-100 dark:border-${item.color}-800`}>
-                            <item.icon className={`h-5 w-5 text-${item.color}-600 dark:text-${item.color}-400`} />
+                          <div className={["h-11 w-11 rounded-full flex items-center justify-center shrink-0", item.color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800' : item.color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-800' : item.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800' : 'bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800'].join(' ')}>
+                            <item.icon className={["h-5 w-5", item.color === 'green' ? 'text-green-600 dark:text-green-400' : item.color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' : item.color === 'blue' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'].join(' ')} />
                           </div>
                           <div className="flex-1 pb-6">
                             <div className="flex justify-between items-start mb-1">
