@@ -403,7 +403,15 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         },
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error("Error fetching company users:", {
+          status: response.status,
+          code: errData?.code,
+          message: errData?.message || response.statusText,
+        });
+        return;
+      }
 
       const data = await response.json();
       if (data.success) {

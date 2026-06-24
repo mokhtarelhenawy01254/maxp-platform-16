@@ -229,6 +229,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     if (user.isActive === false) {
+      console.error(`🚫 [VERIFY-TOKEN] 403 USER_INACTIVE | userId=${userId} | email=${user.email} | path=${req.path}`);
       return res.status(403).json({
         success: false,
         message: 'الحساب غير نشط',
@@ -265,6 +266,7 @@ const authenticateToken = async (req, res, next) => {
         );
 
         if (!allowLegacyPrimary) {
+          console.error(`🚫 [VERIFY-TOKEN] 403 ACCESS_REVOKED | userId=${userId} | email=${user.email} | effectiveCompanyId=${effectiveCompanyId} | primaryCompany=${user.companyId} | membershipActive=${!!(membership && membership.isActive)} | path=${req.path}`);
           return res.status(403).json({
             success: false,
             message: 'User no longer has access to this company',

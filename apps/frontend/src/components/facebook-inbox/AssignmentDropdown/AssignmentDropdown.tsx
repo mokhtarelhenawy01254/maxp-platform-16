@@ -44,8 +44,13 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
           }));
           setTeamMembers(users);
         }
-      } catch (error) {
-        console.error("Error fetching team members:", error);
+      } catch (error: any) {
+        const serverError = error?.response?.data;
+        console.error("Error fetching team members:", {
+          status: error?.response?.status,
+          code: serverError?.code,
+          message: serverError?.message || error?.message,
+        });
       }
     };
     fetchTeamMembers();

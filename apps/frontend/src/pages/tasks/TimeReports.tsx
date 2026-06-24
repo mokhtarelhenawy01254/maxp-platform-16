@@ -97,6 +97,15 @@ const TimeReports: React.FC = () => {
       const response = await fetch(buildApiUrl("tasks/company-users"), {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error("Error fetching users:", {
+          status: response.status,
+          code: errData?.code,
+          message: errData?.message || response.statusText,
+        });
+        return;
+      }
       const data = await response.json();
       if (data.success) {
         setUsers(data.data || []);
