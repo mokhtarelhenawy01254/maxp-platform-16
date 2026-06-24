@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -138,6 +140,7 @@ class ProviderAdapter:
         output_schema: Any = None,
         tool_choice: Any = None,
     ) -> Any:
+        _t0 = time.monotonic()
         try:
             response = await self._provider.generate_response(
                 messages=messages,
@@ -148,27 +151,87 @@ class ProviderAdapter:
                 output_schema=output_schema,
                 tool_choice=tool_choice,
             )
-            await self._record_success(self._provider, response.usage)
+            _latency_ms = int((time.monotonic() - _t0) * 1000)
+            await self._record_success(self._provider, response.usage, latency_ms=_latency_ms, model=response.model)
             return response
         except Exception as exc:
-            await self._record_failure(self._provider, exc)
+            _latency_ms = int((time.monotonic() - _t0) * 1000)
+            await self._record_failure(self._provider, exc, latency_ms=_latency_ms)
             raise
 
-    async def _record_success(self, provider: BaseProvider, usage: dict[str, Any] | None) -> None:
-        key_id = _provider_config(provider, "key_id")
-        if not key_id:
-            return
-        await model_manager.record_success(key_id, usage or {})
-
-    async def _record_failure(self, provider: BaseProvider, exc: Exception) -> None:
-        key_id = _provider_config(provider, "key_id")
-        if not key_id:
-            return
-        await model_manager.record_failure(
-            key_id,
-            _failure_type(exc),
-            retry_after_ms=_retry_after_ms(exc),
+    async def _record_success(self, provider: BaseProvider, usage: dict[str, Any] | None, *, latency_ms: int | None = None, model: str | None = None) -> None:
+        key_id = _provider_config(provider, "key_id") or self._key_id
+        if key_id:
+            await model_manager.record_success(key_id, usage or {})
+        await self._write_provider_log(
+            action="generation_success",
+            status="success",
+            model=model or getattr(provider, "model", None),
+            latency_ms=latency_ms,
+            metadata={"tokens": usage} if usage else None,
         )
+
+    async def _record_failure(self, provider: BaseProvider, exc: Exception, *, latency_ms: int | None = None) -> None:
+        key_id = _provider_config(provider, "key_id") or self._key_id
+        if key_id:
+            await model_manager.record_failure(key_id, _failure_type(exc), retry_after_ms=_retry_after_ms(exc))
+        await self._write_provider_log(
+            action="generation_failed",
+            status="failed",
+            model=getattr(provider, "model", None),
+            latency_ms=latency_ms,
+            metadata={"error": str(exc)[:300]},
+        )
+
+    async def _write_provider_log(
+        self,
+        *,
+        action: str,
+        status: str,
+        model: str | None,
+        latency_ms: int | None,
+        metadata: dict | None,
+    ) -> None:
+        try:
+            from src.db.session import async_session
+            from sqlalchemy import text
+            import json
+
+            provider_name = (
+                self._provider_type
+                or _provider_config(self._provider, "provider_type")
+                or _provider_config(self._provider, "provider_name")
+                or ""
+            ).upper()
+            if not provider_name:
+                return
+
+            key_id = self._key_id or _provider_config(self._provider, "key_id")
+            log_id = "apl_" + uuid.uuid4().hex[:22]
+
+            async with async_session() as db:
+                await db.execute(
+                    text("""
+                        INSERT INTO public.ai_provider_logs
+                            (id, provider, "keyId", "companyId", action, status, "latencyMs", model, metadata, "createdAt")
+                        VALUES
+                            (:id, :provider, :key_id, :company_id, :action, :status, :latency_ms, :model, CAST(:metadata AS jsonb), NOW())
+                    """),
+                    {
+                        "id": log_id,
+                        "provider": provider_name,
+                        "key_id": key_id,
+                        "company_id": self._company_id,
+                        "action": action,
+                        "status": status,
+                        "latency_ms": latency_ms,
+                        "model": model,
+                        "metadata": json.dumps(metadata) if metadata else "{}",
+                    },
+                )
+                await db.commit()
+        except Exception as _log_exc:
+            logger.warning("provider_log_write_failed", error=str(_log_exc))
 
     def _to_provider_tool(self, tool: Any) -> dict[str, Any] | None:
         """Convert SDK FunctionTool/dict descriptors to provider-safe schema.
