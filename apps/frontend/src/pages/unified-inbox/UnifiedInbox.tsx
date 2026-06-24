@@ -45,6 +45,8 @@ import ForwardModal from "../../components/facebook-inbox/Modals/ForwardModal";
 import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
 import type { ConversationStatus } from "../../types/inbox.types";
 import PostsManagement from "../comments/PostsManagement";
+import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
+import AssignmentDropdown from "../../components/facebook-inbox/AssignmentDropdown/AssignmentDropdown";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 Types
