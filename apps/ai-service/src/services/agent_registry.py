@@ -26,6 +26,18 @@ def _generate_agent_id(company_id: str) -> str:
     return f"agent_{prefix}_{uuid.uuid4().hex[:12]}"
 
 
+async def _resolve_agent_model(db_agent: Agent, session: AsyncSession) -> str | None:
+    if db_agent.template_slug:
+        from src.agents.loader import get_template
+        try:
+            template = await get_template(db_agent.template_slug, session)
+            if template and template.model_policy:
+                return template.model_policy.get("default") or db_agent.model
+        except Exception:
+            logger.warning("template_resolve_failed", template_slug=db_agent.template_slug)
+    return db_agent.model
+
+
 class AgentRegistry:
     """In-memory registry for spawned agents, mirrored to DB.
 
@@ -229,8 +241,6 @@ def get_agent_registry() -> AgentRegistry:
 async def init_registry_from_db(session_factory) -> None:
     """Recover active agents (مع tools بتاعتهم) من DB إلى in-memory registry عند بدء التشغيل."""
     registry = get_agent_registry()
-    settings = get_settings()
-
     async with session_factory() as session:
         repo = AgentRepository(session)
         stmt = select(Agent.company_id).distinct()
@@ -274,7 +284,7 @@ async def init_registry_from_db(session_factory) -> None:
                         company_id=company_id,
                         allowed_tools=tool_names,
                         allowed_channels=channels,
-                        model=db_agent.model or settings.default_model,
+                        model=await _resolve_agent_model(db_agent, session),
                         allowed_skills=list(db_agent.allowed_skills or []),
                         persona=db_agent.persona or {},
                         policies={

@@ -26,7 +26,7 @@ from src.pipeline.stages.validate_reply import validate_reply
 from src.services.a2a_bridge import AGENT_CARD_META
 from src.services.agent_feedback import AgentFeedbackTracker
 from src.services.agent_manager_service import get_agent_manager_service
-from src.services.agent_registry import get_agent_registry
+from src.services.agent_registry import _resolve_agent_model, get_agent_registry
 from src.services.memory_router import get_ceo_lessons
 from src.services.run_state_manager import RunStateManager
 from src.tools.registry import get_tool_names_for_role
@@ -42,13 +42,17 @@ def _agent_channels(channels: object) -> list[str]:
     return []
 
 
-def _sync_agent_config_from_db(agent: Any, db_agent: AgentModel) -> None:
+async def _sync_agent_config_from_db(agent: Any, db_agent: AgentModel, session: AsyncSession | None = None) -> None:
     config = getattr(agent, "config", None)
     if not config:
         return
 
     config.allowed_channels = list(db_agent.channels or [])
-    if db_agent.model:
+    if session:
+        resolved = await _resolve_agent_model(db_agent, session)
+        if resolved:
+            config.model = resolved
+    elif db_agent.model:
         config.model = db_agent.model
 
     db_config = db_agent.config or {}
@@ -60,7 +64,7 @@ def _sync_agent_config_from_db(agent: Any, db_agent: AgentModel) -> None:
         config.key_id = key_id
 
 
-def _build_runtime_agent_from_db(db_agent: AgentModel) -> tuple[BaseAgent, list[str]]:
+def _build_runtime_agent_from_db(db_agent: AgentModel, *, model: str | None = None) -> tuple[BaseAgent, list[str]]:
     tool_names: list[str] = []
     if db_agent.skills:
         if isinstance(db_agent.skills, list):
@@ -82,7 +86,7 @@ def _build_runtime_agent_from_db(db_agent: AgentModel) -> tuple[BaseAgent, list[
         company_id=db_agent.company_id,
         allowed_tools=tool_names,
         allowed_channels=list(db_agent.channels or []),
-        model=db_agent.model or get_settings().default_model,
+        model=model or db_agent.model,
         allowed_skills=list(db_agent.allowed_skills or []),
         persona=db_agent.persona or {},
         provider=db_config.get("provider") or None,
@@ -125,11 +129,12 @@ async def _resolve_channel_agent(
                 )
             if matches:
                 db_agent = matches[0]
+                resolved_model = await _resolve_agent_model(db_agent, session)
                 runtime_agent = registry.get(company_id, db_agent.id)
                 if runtime_agent:
-                    _sync_agent_config_from_db(runtime_agent, db_agent)
+                    await _sync_agent_config_from_db(runtime_agent, db_agent, session)
                     return db_agent.id, runtime_agent, "db"
-                runtime_agent, tool_names = _build_runtime_agent_from_db(db_agent)
+                runtime_agent, tool_names = _build_runtime_agent_from_db(db_agent, model=resolved_model)
                 registry.register(company_id, db_agent.id, runtime_agent, tool_names=tool_names)
                 logger.info(
                     "orchestration_db_channel_agent_loaded_into_registry",
