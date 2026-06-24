@@ -397,6 +397,16 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
     if (!companyId) {
+      // 👑 SUPER_ADMIN without a specific company: return default sidebar settings
+      if (req.user?.role === 'SUPER_ADMIN') {
+        return res.json({
+          success: true,
+          data: {
+            layout: 'three-tier',
+            settings: {}
+          }
+        });
+      }
       return res.status(403).json({
         success: false,
         message: 'معرف الشركة مطلوب',

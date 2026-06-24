@@ -20,6 +20,11 @@ const checkAppAccess = (appSlug) => {
     try {
       const { companyId } = req.user;
 
+      // 👑 SUPER_ADMIN bypasses all app access checks (no companyId required)
+      if (req.user?.role === 'SUPER_ADMIN') {
+        return next();
+      }
+
       if (!companyId) {
         return res.status(401).json({
           success: false,
