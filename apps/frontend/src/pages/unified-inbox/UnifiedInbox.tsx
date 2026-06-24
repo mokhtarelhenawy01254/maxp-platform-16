@@ -2348,7 +2348,6 @@ const UnifiedInbox: React.FC = () => {
                 )}
               </div>
                 <div className="mt-4 px-4">
-                <div className="mt-4 px-4">
                   <div
                     className="grid grid-cols-2 overflow-hidden rounded-[20px] border bg-transparent text-center w-full"
                     style={{
