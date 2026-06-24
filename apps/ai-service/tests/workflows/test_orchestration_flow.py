@@ -28,10 +28,6 @@ async def test_customer_chat_skips_raw_magentic_path(monkeypatch):
         lambda llm_client: pytest.fail("customer chat must not use raw Magentic path"),
     )
     monkeypatch.setattr(
-        "src.workflows.orchestration_flow._ensure_default_agents",
-        AsyncMock(),
-    )
-    monkeypatch.setattr(
         "src.workflows.orchestration_flow.execute_pipeline",
         AsyncMock(return_value=final_ctx),
     )
@@ -82,7 +78,6 @@ async def test_orchestration_passes_sdk_checkpoint_storage(monkeypatch):
 
     monkeypatch.setattr("src.workflows.orchestration_flow.get_settings", lambda: settings)
     monkeypatch.setattr("src.workflows.orchestration_flow.LLMFallbackProvider", lambda: fallback)
-    monkeypatch.setattr("src.workflows.orchestration_flow._ensure_default_agents", AsyncMock())
     monkeypatch.setattr("src.workflows.orchestration_flow.execute_pipeline", pipeline_mock)
     monkeypatch.setattr("src.workflows.orchestration_flow.RunStateManager", lambda session: _StateManager())
     monkeypatch.setattr("src.workflows.orchestration_flow.PipelineCheckpointer", lambda session: _Checkpointer())
@@ -177,7 +172,6 @@ async def test_orchestration_prefers_db_channel_assignment_over_stale_registry(m
     channel_agent_factory = AsyncMock(return_value=MagicMock(name="channel-agent"))
 
     monkeypatch.setattr("src.workflows.orchestration_flow.get_settings", lambda: settings)
-    monkeypatch.setattr("src.workflows.orchestration_flow._ensure_default_agents", AsyncMock())
     monkeypatch.setattr("src.workflows.orchestration_flow.execute_pipeline", pipeline_mock)
     monkeypatch.setattr("src.workflows.orchestration_flow.RunStateManager", lambda session: None)
     monkeypatch.setattr("src.workflows.orchestration_flow.PipelineCheckpointer", lambda session: None)
@@ -256,7 +250,6 @@ async def test_orchestration_loads_db_channel_assignment_when_registry_is_missin
     channel_agent_factory = AsyncMock(return_value=MagicMock(name="channel-agent"))
 
     monkeypatch.setattr("src.workflows.orchestration_flow.get_settings", lambda: settings)
-    monkeypatch.setattr("src.workflows.orchestration_flow._ensure_default_agents", AsyncMock())
     monkeypatch.setattr("src.workflows.orchestration_flow.execute_pipeline", pipeline_mock)
     monkeypatch.setattr("src.workflows.orchestration_flow.RunStateManager", lambda session: None)
     monkeypatch.setattr("src.workflows.orchestration_flow.PipelineCheckpointer", lambda session: None)

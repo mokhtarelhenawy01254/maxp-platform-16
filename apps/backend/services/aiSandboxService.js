@@ -17,18 +17,6 @@ async function listSessions(companyId, userId, includeDeleted = false) {
       _count: { select: { messages: true } },
     },
   });
-  if (userSessions.length === 0) {
-    return prisma.aiSandboxSession.findMany({
-      where: {
-        companyId,
-        ...(includeDeleted ? {} : { isDeleted: false }),
-      },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        _count: { select: { messages: true } },
-      },
-    });
-  }
   return userSessions;
 }
 

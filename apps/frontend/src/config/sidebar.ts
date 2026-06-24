@@ -64,6 +64,7 @@ import {
     NoSymbolIcon,
     PaintBrushIcon,
     GlobeAltIcon,
+    GiftIcon,
 } from '@heroicons/react/24/outline';
 
 import i18n from '../i18n';
@@ -384,7 +385,7 @@ export const getSidebarConfig = (
                 icon: CubeIcon,
                 items: [
                     { to: '/marketplace', icon: CubeIcon, label: t('sidebar.browseApps') },
-
+                    { to: '/marketplace/bundles', icon: GiftIcon, label: t('sidebar.browseBundles') },
                     { to: '/payments', icon: WalletIcon, label: t('sidebar.myPayments') },
 
                     { to: '/subscription/pricing', icon: ClipboardDocumentListIcon, label: t('sidebar.appPricingSheet') },
@@ -915,6 +916,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/marketplace', icon: CubeIcon, label: t('sidebar.browseApps') },
                 { to: '/marketplace/themes', icon: SwatchIcon, label: t('sidebar.storeThemes') },
+                { to: '/marketplace/bundles', icon: GiftIcon, label: t('sidebar.browseBundles') },
                 { to: '/payments', icon: WalletIcon, label: t('sidebar.myPayments') },
             ],
             // 🔒 إخفاء القسم للمسوقين

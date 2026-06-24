@@ -206,7 +206,6 @@
     "sidebar": "Performance Evaluation",
     "aiModels": "AI Models",
     "aiProviders": "AI Providers & Keys",
-    "ceoAgentSettings": "CEO Agent Settings",
     "providerLogs": "Provider Logs"
   },
   "globalSearchPlaceholder": "Search the entire system...",

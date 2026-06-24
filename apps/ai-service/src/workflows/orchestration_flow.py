@@ -182,8 +182,6 @@ async def run_orchestration(
     checkpointer = PipelineCheckpointer(session) if session else None
     checkpoint_storage = PostgresCheckpointStorage(session) if session else None
 
-    await _ensure_default_agents(company_id, manager, registry, session)
-
     _channel_normalized = effective_channel.lower()
 
     # Find the agent assigned to this channel — that agent IS the responder, not CEO.
@@ -399,28 +397,3 @@ async def run_orchestration(
         raise
 
 
-async def _ensure_default_agents(
-    company_id: str,
-    manager,
-    registry,
-    session: AsyncSession | None = None,
-) -> None:
-    existing = registry.list_agents(company_id)
-    existing_roles = {getattr(agent, "role", "").upper() for _, agent, _ in existing}
-
-    defaults = [
-        ("SUPPORT", "Support Agent", get_tool_names_for_role("SUPPORT")),
-        ("ORDER", "Order Agent", get_tool_names_for_role("ORDER")),
-    ]
-
-    for role, name, tool_names in defaults:
-        if role not in existing_roles:
-            await manager.hire_agent(
-                company_id=company_id,
-                role=role,
-                name=name,
-                allowed_tools=tool_names,
-                company_name="MaxP",
-                session=session,
-            )
-            logger.info("default agent created", role=role, tools=tool_names)

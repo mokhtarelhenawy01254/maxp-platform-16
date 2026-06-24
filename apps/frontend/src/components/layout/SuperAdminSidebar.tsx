@@ -50,7 +50,6 @@ export const menuGroups = [
     { text: i18n.t("superAdmin.evaluation.aiProviders"), icon: <Brain className="size-5" />, path: "/super-admin/ai-providers" },
     { text: "AI Playground", icon: <Play className="size-4" />, path: "/super-admin/ai-playground" },
     { text: i18n.t("superAdmin.evaluation.aiTemplates"), icon: <Layers className="size-4" />, path: "/super-admin/ai-templates" },
-    { text: i18n.t("superAdmin.evaluation.ceoAgentSettings"), icon: <Sliders className="size-5" />, path: "/super-admin/agent-config" },
     { text: i18n.t("superAdmin.evaluation.providerLogs"), icon: <History className="size-5" />, path: "/super-admin/ai-providers/logs" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },
     { text: "AI Hub (اختبار)", icon: <Activity className="size-4" />, path: "/super-admin/ai-hub-test" },

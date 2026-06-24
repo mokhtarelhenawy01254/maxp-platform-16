@@ -5009,6 +5009,8 @@
     "whatsapp": "WhatsApp",
     "whatsappInboxSettings": "Inbox Settings",
     "whatsappAnalytics": "WhatsApp Analytics",
+    "whatsappMetaTemplates": "Meta Templates",
+    "whatsappTemplateBroadcast": "Template Broadcast",
     "whatsappJourney": "Post-Delivery Follow-up",
     "whatsappNotifications": "WhatsApp Notifications",
     "whatsappRouting": "WhatsApp Routing",
@@ -5367,7 +5369,6 @@
       "sidebar": "Performance Evaluation",
       "aiModels": "AI Models",
       "aiProviders": "AI Providers & Keys",
-      "ceoAgentSettings": "CEO Agent Settings",
       "providerLogs": "Provider Logs"
     },
     "globalSearchPlaceholder": "Search the entire system...",
@@ -5735,6 +5736,7 @@
       "instagram": "Instagram",
       "whatsapp": "WhatsApp",
       "telegram": "Telegram",
+      "telegramUserbot": "Telegram Userbot",
       "website": "Website",
       "test": "Test Platform"
     },

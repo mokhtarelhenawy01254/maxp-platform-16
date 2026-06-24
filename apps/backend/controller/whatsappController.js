@@ -212,7 +212,11 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
             if (!s.metadata) return true;
             try {
                 const meta = JSON.parse(s.metadata);
-                return !meta.isDeleted;
+                if (meta.isDeleted) {
+                    // Keep sessions soft-deleted from cleanup that still have active sockets
+                    return !!WhatsAppManager.getSession(s.id);
+                }
+                return true;
             } catch (e) {
                 return true;
             }
@@ -233,7 +237,10 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
             if (!s.metadata) return true;
             try {
                 const meta = typeof s.metadata === 'string' ? JSON.parse(s.metadata) : s.metadata;
-                return !meta.isDeleted;
+                if (meta.isDeleted) {
+                    return !!WhatsAppManager.getSession(s.id);
+                }
+                return true;
             } catch (e) {
                 return true;
             }

@@ -755,10 +755,6 @@ const SuperAdminAIKeyDetails = React.lazy(
 const SuperAdminAIPlayground = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIPlayground"),
 );
-// Super Admin AI Agent Config
-const SuperAdminAgentConfig = React.lazy(
-  () => import("./pages/super-admin/SuperAdminAgentConfig"),
-);
 const SuperAdminAIChatPage = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIChatPage"),
 );
@@ -1776,14 +1772,6 @@ const AppContent = () => {
             <Route
               path="/preview/theme/:id"
               element={<Navigate to="/settings/store" replace />}
-            />
-            <Route
-              path="/super-admin/agent-config"
-              element={
-                <Layout fullWidth>
-                  <SuperAdminAgentConfig />
-                </Layout>
-              }
             />
             <Route
               path="/super-admin/product-embeddings"

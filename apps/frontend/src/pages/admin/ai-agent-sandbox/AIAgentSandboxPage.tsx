@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import AgentProfilePanel from "./components/AgentProfilePanel";
 import type { SandboxTraceSummary } from "./types/sandbox.types";
 import { useAuth } from "@/hooks/useAuthSimple";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const AIAgentSandboxPage: React.FC = () => {
   const {
@@ -147,6 +148,7 @@ const AIAgentSandboxPage: React.FC = () => {
   };
 
   return (
+    <ErrorBoundary>
     <div className="flex-1 flex flex-col bg-background overflow-hidden relative">
 
       {/* Top Header Controls */}
@@ -318,6 +320,7 @@ const AIAgentSandboxPage: React.FC = () => {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 };
 

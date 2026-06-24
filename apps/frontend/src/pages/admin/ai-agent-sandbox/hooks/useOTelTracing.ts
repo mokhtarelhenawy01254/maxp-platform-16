@@ -1,4 +1,5 @@
-import type { TraceSpan, ActivityLogEntry, ToolCall } from "../types/sandbox.types";
+import { useRef } from "react";
+import type { TraceSpan } from "../types/sandbox.types";
 
 let traceCounter = 0;
 
@@ -10,19 +11,11 @@ function generateSpanId(): string {
   return `sp_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export interface TraceSession {
-  traceId: string;
-  spans: TraceSpan[];
-  startTime: string;
-  totalDurationMs: number;
-  totalTokens: number;
-  totalCost: number;
-  toolCallCount: number;
-}
-
 export function useOTelTracing() {
-  const activeSpans = new Map<string, TraceSpan>();
-  const completedSpans: TraceSpan[] = [];
+  const activeSpansRef = useRef(new Map<string, TraceSpan>());
+  const completedSpansRef = useRef<TraceSpan[]>([]);
+  const activeSpans = activeSpansRef.current;
+  const completedSpans = completedSpansRef.current;
 
   function startSpan(
     name: string,
@@ -97,132 +90,6 @@ export function useOTelTracing() {
     });
   }
 
-  function getTraceSession(): TraceSession {
-    const allSpans = [...completedSpans, ...activeSpans.values()];
-    const llmSpans = allSpans.filter((s) => s.type === "llm_call");
-    const toolSpans = allSpans.filter((s) => s.type === "tool_call");
-
-    const totalTokens = llmSpans.reduce(
-      (sum, s) => sum + ((s.attributes.tokens as number) || 0),
-      0
-    );
-
-    const totalCost = llmSpans.reduce(
-      (sum, s) => sum + ((s.attributes.cost as number) || 0),
-      0
-    );
-
-    const totalDurationMs = allSpans.reduce(
-      (sum, s) => sum + (s.durationMs || 0),
-      0
-    );
-
-    return {
-      traceId: allSpans[0]?.traceId || generateTraceId(),
-      spans: allSpans,
-      startTime: allSpans[0]?.startTime || new Date().toISOString(),
-      totalDurationMs,
-      totalTokens,
-      totalCost,
-      toolCallCount: toolSpans.length,
-    };
-  }
-
-  function toActivityLog(toolCalls?: ToolCall[]): ActivityLogEntry[] {
-    const entries: ActivityLogEntry[] = [];
-
-    for (const span of completedSpans) {
-      const time = new Date(span.startTime).toLocaleTimeString("ar-EG", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-
-      switch (span.type) {
-        case "user_input":
-          entries.push({
-            id: span.spanId,
-            timestamp: span.startTime,
-            type: "input",
-            icon: "🔵",
-            title: "User Message",
-            details: String(span.attributes.messagePreview || ""),
-            latencyMs: span.durationMs,
-          });
-          break;
-
-        case "llm_call":
-          entries.push({
-            id: span.spanId,
-            timestamp: span.startTime,
-            type: span.name.includes("plan") ? "plan" : "reply",
-            icon: span.status === "error" ? "🔴" : "🟢",
-            title: span.status === "error" ? "LLM Error" : "Agent Reply",
-            details: `${span.attributes.model} | ${span.durationMs || 0}ms | ${span.attributes.tokens || 0} tokens`,
-            metadata: span.attributes,
-            latencyMs: span.durationMs,
-          });
-          break;
-
-        case "tool_call":
-          entries.push({
-            id: span.spanId,
-            timestamp: span.startTime,
-            type: "tool_call",
-            icon: "⚙️",
-            title: `Tool: ${span.attributes.toolName}`,
-            details: span.status === "error" ? `Error: ${span.attributes.error}` : "Called",
-            metadata: span.attributes,
-            latencyMs: span.durationMs,
-          });
-          break;
-
-        case "tool_call_result":
-          entries.push({
-            id: span.spanId,
-            timestamp: span.startTime,
-            type: "tool_result",
-            icon: span.status === "error" ? "🔴" : "✅",
-            title: `Result: ${span.attributes.toolName}`,
-            details: span.status === "error" ? String(span.attributes.error) : "Success",
-            metadata: span.attributes,
-            latencyMs: span.durationMs,
-          });
-          break;
-
-        case "decision":
-          entries.push({
-            id: span.spanId,
-            timestamp: span.startTime,
-            type: "plan",
-            icon: "🟡",
-            title: `Decision: ${span.name}`,
-            details: String(span.attributes.reason || ""),
-            metadata: span.attributes,
-            latencyMs: span.durationMs,
-          });
-          break;
-
-        case "agent_reply":
-          entries.push({
-            id: span.spanId,
-            timestamp: span.startTime,
-            type: "reply",
-            icon: "🟢",
-            title: "Agent Reply Sent",
-            details: `${span.attributes.replyLength} chars | ${span.attributes.tokens} tokens`,
-            metadata: span.attributes,
-            latencyMs: span.durationMs,
-          });
-          break;
-      }
-    }
-
-    return entries.sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-  }
-
   function clear() {
     activeSpans.clear();
     completedSpans.length = 0;
@@ -236,8 +103,6 @@ export function useOTelTracing() {
     traceDecision,
     traceUserInput,
     traceAgentReply,
-    getTraceSession,
-    toActivityLog,
     clear,
   };
 }

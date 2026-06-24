@@ -810,28 +810,6 @@ async function getPreferredAiKeyIdForProvider(provider) {
   }
 }
 
-function sanitizeAgentForSandbox(agent, orgMetaById) {
-  const orgMeta = orgMetaById.get(agent.id) || {};
-  return {
-    id: agentData.id,
-    name: agentData.name,
-    role: agentData.role,
-    icon: agentData.icon || '🤖',
-    description: agentData.description || '',
-    skills: parseJsonArray(agent.skills || agent.allowedSkills, []),
-    allowedTools: Array.isArray(agent.allowedTools) ? agent.allowedTools : [],
-    model: agentData.model || null,
-    status: agent.status || 'ACTIVE',
-    parentId: agent.parentId || null,
-    templateSlug: agentData.templateSlug || agentData.template_slug || null,
-    departmentId: agent.departmentId || orgMeta.departmentId || null,
-    departmentKey: agent.departmentKey || orgMeta.departmentKey || null,
-    departmentName: agent.departmentName || orgMeta.departmentName || null,
-    departmentIcon: agent.departmentIcon || orgMeta.departmentIcon || null,
-    managerType: agent.managerType || orgMeta.managerType || (agent.role === 'CEO' ? 'CEO' : 'AGENT'),
-  };
-}
-
 async function loadAgentOrgMetadata(companyId) {
   try {
     const prisma = getSharedPrismaClient();
@@ -1068,6 +1046,7 @@ async function getAgentProfile(req, res) {
       return null;
     };
 
+    const prisma = getSharedPrismaClient();
     let skillDetails = [];
     if (skillIds.length) {
       let dbSkillsByName = new Map();
@@ -1463,6 +1442,7 @@ async function sendChatMessage(req, res) {
 }
 
 async function streamChatMessage(req, res) {
+  let sseTimer;
   try {
     const { sessionId, message, agentId, model, provider, keyId, attachments } = req.body;
     const companyId = req.user?.companyId || req.companyId;
@@ -1479,6 +1459,20 @@ async function streamChatMessage(req, res) {
     if (safeSessionId && !existingSession) {
       return sendCodeError(res, 404, 'SESSION_NOT_FOUND');
     }
+
+    const SSE_TIMEOUT_MS = parseInt(process.env.AI_SANDBOX_SSE_TIMEOUT || '180000', 10);
+    sseTimer = setTimeout(() => {
+      if (!res.headersSent) {
+        return sendCodeError(res, 504, 'AI_SANDBOX_SSE_TIMEOUT');
+      }
+      res.write(`data: ${JSON.stringify({
+        type: 'run_error',
+        error: 'AI_SANDBOX_SSE_TIMEOUT',
+        reason: 'Response timed out',
+        done: true,
+      })}\n\n`);
+      res.end();
+    }, SSE_TIMEOUT_MS);
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -1528,10 +1522,12 @@ async function streamChatMessage(req, res) {
     const finalReply = extractSandboxReply(taskResult);
     const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
     const responseAttachments = extractResponseAttachments(taskResult);
-  const pipelineTrace = taskResult?.result?.pipelineTrace || null;
-  const compiledSystemPrompt = taskResult?.result?.compiledSystemPrompt || null;
+    const pipelineTrace = taskResult?.result?.pipelineTrace || null;
+    const compiledSystemPrompt = taskResult?.result?.compiledSystemPrompt || null;
 
     const latencyMs = Date.now() - turnStartTime;
+    const sessionTokens = normalizeSandboxUsage(taskResult);
+    const sessionCost = calculateCost(modelSelection.model, sessionTokens.input, sessionTokens.output);
 
     if (!finalReply) {
       const errorCode = taskResult?.errorCode || taskResult?.result?.errorCode || 'AI_SANDBOX_EMPTY_REPLY';
@@ -1598,10 +1594,10 @@ async function streamChatMessage(req, res) {
       provider: modelSelection.provider,
       keyId: modelSelection.key.id,
       keyName: modelSelection.key.name,
-      tokensInput: 0,
-      tokensOutput: 0,
+      tokensInput: sessionTokens.input,
+      tokensOutput: sessionTokens.output,
       latencyMs,
-      cost: 0,
+      cost: sessionCost,
       toolCalls,
       toolCallCount: toolCalls.length,
       metadata: {
@@ -1613,13 +1609,13 @@ async function streamChatMessage(req, res) {
 
     res.write(`data: ${JSON.stringify({
       done: true,
-      tokens: { input: 0, output: 0, total: 0 },
+      tokens: sessionTokens,
       latencyMs,
       model: modelSelection.model,
       provider: modelSelection.provider,
       keyId: modelSelection.key.id,
       keyName: modelSelection.key.name,
-      cost: 0,
+      cost: sessionCost,
       sessionId: resolvedSessionId,
       runtime: streamRuntime,
       responseAttachments,
@@ -1639,6 +1635,8 @@ async function streamChatMessage(req, res) {
       done: true,
     })}\n\n`);
     res.end();
+  } finally {
+    if (sseTimer) clearTimeout(sseTimer);
   }
 }
 

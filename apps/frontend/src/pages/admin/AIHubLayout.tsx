@@ -47,7 +47,7 @@ function AgentTestTab({ companyId }: { companyId: string }) {
         headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: selectedAgent, message: message.trim(),
-          sessionId: `super-admin-test-${companyId}`,
+          sessionId: `super-admin-test-${companyId}-${Date.now()}`,
           companyId,
         }),
       });

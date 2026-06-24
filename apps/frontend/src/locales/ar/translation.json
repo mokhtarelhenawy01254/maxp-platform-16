@@ -5070,6 +5070,8 @@
     "whatsapp": "واتساب",
     "whatsappInboxSettings": "إعدادات صندوق الوارد",
     "whatsappAnalytics": "تحليلات واتساب",
+    "whatsappMetaTemplates": "قوالب Meta API",
+    "whatsappTemplateBroadcast": "بث قالب واتساب",
     "whatsappJourney": "سلاسل رسايل ما بعد الاستلام",
     "whatsappNotifications": "إشعارات واتساب",
     "whatsappRouting": "توزيع الواتساب",
@@ -5430,7 +5432,6 @@
       "sidebar": "تقييم الأداء",
       "aiModels": "الذكاء الصناعي",
       "aiProviders": "مفاتيح ومزودي النماذج",
-      "ceoAgentSettings": "إعدادات CEO Agent",
       "providerLogs": "لوج المزودين"
     },
     "globalSearchPlaceholder": "ابحث في النظام بالكامل...",
@@ -5798,6 +5799,7 @@
       "instagram": "انستجرام",
       "whatsapp": "واتساب",
       "telegram": "تيليجرام",
+      "telegramUserbot": "تيليجرام يوزربوت",
       "website": "الموقع",
       "test": "تجربة"
     },

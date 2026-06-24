@@ -4,10 +4,10 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
-  Search, Package, ChevronLeft, Loader2, Crown,
-  Layers3, Sparkles, CheckCircle2, X, Zap, ArrowLeft,
+  Search, Package, Loader2, Crown,
+  Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Star, Grid3X3, ChevronDown,
+  DollarSign, Grid3X3,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -79,18 +79,6 @@ interface MarketplaceSpecialty {
   nameAr: string;
   nameEn: string;
   icon?: string | null;
-}
-
-interface Bundle {
-  id: string;
-  slug: string;
-  name: string;
-  nameEn?: string;
-  description: string;
-  monthlyPrice: number;
-  yearlyPrice?: number;
-  discount: number;
-  isFeatured: boolean;
 }
 
 interface ApiEnvelope<T> {
@@ -208,7 +196,7 @@ export default function MarketplaceV2() {
   const navigate = useNavigate();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [bundles, setBundles] = useState<Bundle[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -250,7 +238,7 @@ export default function MarketplaceV2() {
   const filteredApps = showInstalled ? collectionFiltered.filter(a => a.isInstalled) : collectionFiltered;
   const displayedApps = filteredApps.slice(0, displayCount);
   const installedCount = apps.filter(a => a.isInstalled).length;
-  const featuredApps = displayedApps.filter(a => a.isFeatured);
+
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -288,15 +276,13 @@ export default function MarketplaceV2() {
       params.page = 1;
       params.limit = MARKETPLACE_APPS_FETCH_LIMIT;
 
-      const [appsRes, categoriesRes, bundlesRes] = await Promise.all([
+      const [appsRes, categoriesRes] = await Promise.all([
         apiClient.get<ApiEnvelope<MarketplaceApp[]>>("/marketplace/apps", { params }),
         apiClient.get<ApiEnvelope<Category[]>>("/marketplace/categories"),
-        apiClient.get<ApiEnvelope<Bundle[]>>("/marketplace/bundles"),
       ]);
 
       setApps(appsRes.data.data);
       setCategories(categoriesRes.data.data);
-      setBundles(bundlesRes.data.data || []);
       setActiveSpecialty(appsRes.data.specialty || categoriesRes.data.specialty || null);
     } catch {
       toast.error(t('marketplace.fetchError'));
@@ -555,68 +541,6 @@ export default function MarketplaceV2() {
           </div>
         ) : (
           <>
-            {/* Featured Section - Bento Grid */}
-            {featuredApps.length > 0 && !selectedCategory && (
-              <div className="mb-10">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
-                    <Sparkles size={14} className="text-primary" />
-                  </div>
-                  <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-                    {t('marketplace.featured')}
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {featuredApps.slice(0, 4).map((app, i) => (
-                    <div key={app.id} className={i === 0 ? "sm:col-span-2 lg:col-span-2 sm:row-span-1" : ""}>
-                        <FeaturedAppCard
-                        app={app}
-                        index={i}
-                        installingApp={installingApp}
-                        onQuickInstall={handleQuickInstall}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Bundles Section */}
-            {bundles.length > 0 && !selectedCategory && (
-              <div className="mb-8">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/10">
-                      <svg className="size-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    </div>
-                    <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-                      {t('marketplace.savingsBundles')}
-                    </h2>
-                  </div>
-                  <Link to="/marketplace/bundles" className="text-xs font-bold text-primary hover:underline">
-                    {t('marketplace.viewAll')}
-                  </Link>
-                </div>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none" style={{ scrollbarWidth: "none" }}>
-                  {bundles.slice(0, 6).map(bundle => (
-                    <Link key={bundle.id} to={`/marketplace/bundle/${bundle.slug}`} className="group shrink-0 w-[240px] rounded-2xl border border-border/40 bg-card p-3.5 shadow-sm hover:-translate-y-0.5 transition-all duration-200 hover:shadow-md">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-xs font-bold text-foreground truncate max-w-[140px] group-hover:text-primary transition-colors">{bundle.name}</h3>
-                        <Badge variant="secondary" className="shrink-0 border text-[10px] font-bold px-2 py-0.5">
-                          {t('marketplace.savePercent', { percent: bundle.discount })}
-                        </Badge>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed mb-2.5">{bundle.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground">{t('marketplace.bundlePrice', { price: bundle.monthlyPrice })} <span className="text-muted-foreground font-normal">{t('marketplace.perMonth')}</span></span>
-                        <ChevronLeft size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* All Apps Grid */}
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
@@ -721,96 +645,6 @@ export default function MarketplaceV2() {
         )}
       </AlertDialog>
     </div>
-  );
-}
-
-/* ─── Featured App Card (Bento style) ─── */
-function FeaturedAppCard({ app, index, installingApp, onQuickInstall }: {
-  app: MarketplaceApp; index: number;
-  installingApp: string | null; onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
-}) {
-  const { t } = useTranslation();
-  const Icon = categoryIcons[app.category] || Package;
-  const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
-  const gradient = categoryGradients[app.category] || "from-primary/10 to-primary/5";
-
-  return (
-    <Link
-      to={`/marketplace/${app.slug}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-      style={{ animationDelay: `${index * 80}ms` }}
-    >
-      {/* Cover Image or Gradient */}
-      <div
-        className={cn("relative aspect-[2.4/1] overflow-hidden bg-gradient-to-br", !app.coverImage && gradient)}
-        style={app.coverImage ? { backgroundImage: `url(${app.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
-        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 z-10">
-          {app.isInstalled && (
-            <Badge variant="secondary" className="gap-1 border-0 bg-background/80 backdrop-blur-sm text-[10px] font-bold px-2 py-0.5 shadow-sm">
-              <CheckCircle2 size={10} className="text-success" />
-              {t('marketplace.installed')}
-            </Badge>
-          )}
-          {app.trialDays > 0 && (
-            <Badge variant="secondary" className="border-0 bg-background/80 backdrop-blur-sm text-[10px] font-bold px-2 py-0.5 shadow-sm">
-              {t('marketplace.trialDays', { days: app.trialDays })}
-            </Badge>
-          )}
-        </div>
-        {app.coverImage ? (
-          <div className="absolute bottom-2.5 right-2.5 flex size-9 items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm shadow-sm text-primary">
-            {textIcon || <Icon size={18} />}
-          </div>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex size-[52px] items-center justify-center rounded-2xl bg-background/20 text-primary/70">
-              {textIcon ? <span className="text-3xl">{textIcon}</span> : <Icon size={28} />}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-1 flex-col p-3.5 pt-2.5">
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors truncate">
-            {app.name}
-          </h3>
-          <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1 leading-relaxed">
-            {app.description}
-          </p>
-        </div>
-
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2.5">
-          <span className="text-[11px] font-bold text-primary">
-            {app.pricingModel === "FREE"
-              ? t('marketplace.freePrice')
-              : app.monthlyPrice
-                ? `${app.monthlyPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perMonth')}`
-                : t('marketplace.contactUs')}
-          </span>
-          <Button
-            size="sm"
-            className={cn(
-              "shrink-0 gap-1 rounded-lg px-3 text-xs font-bold h-8 transition-all",
-              app.isInstalled ? "bg-success/10 text-success hover:bg-success/20" : ""
-            )}
-            onClick={(e) => { if (!app.isInstalled) onQuickInstall(e, app); }}
-            disabled={installingApp === app.slug}
-          >
-            {installingApp === app.slug ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : app.isInstalled ? (
-              <CheckCircle2 size={12} />
-            ) : (
-              <Zap size={12} />
-            )}
-            {installingApp === app.slug ? t('marketplace.activatingNow') : app.isInstalled ? t('marketplace.installed') : t('marketplace.activate')}
-          </Button>
-        </div>
-      </div>
-    </Link>
   );
 }
 
