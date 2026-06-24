@@ -343,6 +343,7 @@ router.get('/userbots', verifyToken.authenticateToken, verifyToken.requireCompan
                 sessionString: true,
                 clientPhone: true,
                 isActive: true,
+                inboxEnabled: true,
                 createdAt: true,
                 updatedAt: true
             },
@@ -413,6 +414,33 @@ router.post('/userbots', verifyToken.authenticateToken, verifyToken.requireCompa
             success: false,
             error: error.message
         });
+    }
+});
+
+// Toggle inbox integration for userbot
+router.put('/userbots/:id/inbox', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        const { id } = req.params;
+        const { enabled } = req.body;
+
+        if (!companyId) {
+            return res.status(403).json({ success: false, error: 'Company ID required' });
+        }
+
+        // Verify ownership
+        const userbot = await getSharedPrismaClient().telegramConfig.findFirst({
+            where: { id, companyId, type: 'USERBOT' }
+        });
+        if (!userbot) {
+            return res.status(404).json({ success: false, error: 'Userbot not found' });
+        }
+
+        const result = await telegramUserbotService.enableInbox(id, companyId, enabled);
+        res.json(result);
+    } catch (error) {
+        console.error('❌ Error toggling inbox:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

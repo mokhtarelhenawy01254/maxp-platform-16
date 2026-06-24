@@ -1,3 +1,21 @@
+## [2026-06-24] WhatsApp Baileys structuredClone Auth Key Corruption & sharedDatabase Path mismatch
+
+- **Bug/Issue**: 
+  1. WhatsApp sessions using Baileys would fail to link after QR code scan, showing a persistent loading indicator followed by "Make sure your phone is connected to the internet" on the phone.
+  2. Backend server crashed on startup with `Error: Cannot find module '../sharedDatabase'` inside `whatsappMetaTemplateController.js`.
+  3. Local database schema was out of sync with Prisma schema due to orphaned relation records violating foreign key constraints on `companyId`, `orderId`, and `goalId` during migration.
+- **Root Cause**:
+  1. A previous commit replaced `JSON.parse(JSON.stringify(...))` with `structuredCloneSafe` to clone `creds` and `keysData` in `DatabaseAuthState.js`. The native `structuredClone` algorithm converts Node.js `Buffer` objects into `Uint8Array`. Baileys' native serialization relies on `BufferJSON.replacer` which checks for `Buffer.isBuffer(value)`. Since it doesn't recognize `Uint8Array` as a Buffer, the cryptographic keys in the auth state were saved in a corrupted format, causing post-scan handshake failure.
+  2. `whatsappMetaTemplateController.js` is in `apps/backend/controller/` and incorrectly imported `sharedDatabase` from `../sharedDatabase` instead of `../services/sharedDatabase`.
+  3. Orphaned data existed in development database tables (`roles`, `product_visits`, `order_workflow_audit_logs`, `order_items`, `dev_goal_key_results`, and `products`) referencing parent records that had been deleted, violating the new foreign key constraints Prisma tried to establish during `db push`.
+- **Fix**:
+  1. Reverted `structuredCloneSafe` back to `JSON.parse(JSON.stringify(..., BufferJSON.replacer), BufferJSON.reviver)` in `DatabaseAuthState.js` to correctly preserve Node `Buffer` objects.
+  2. Fixed the import path in `whatsappMetaTemplateController.js` to point to `../services/sharedDatabase`.
+  3. Wrote and ran cleanup scripts to sweep all tables in the database, setting orphaned nullable foreign keys (like `products.categoryId`) to `NULL` and deleting orphaned non-nullable rows (like `order_items`, `dev_goal_key_results`, and `roles`) to allow successful execution of `npx prisma db push --accept-data-loss`.
+- **Files**:
+  - `apps/backend/services/whatsapp/DatabaseAuthState.js`
+  - `apps/backend/controller/whatsappMetaTemplateController.js`
+
 ## [2026-03-09] Fragmented Model Selection and provider factory NameError in Python AI Service
 
 - **Bug/Issue**: Model selection was fragmented across 3 separate paths, losing template fallback policies at runtime. Also, a NameError (`resolved_model` is undefined) in `factory.py:get_active_provider` caused database-configured provider routing to crash and fail.

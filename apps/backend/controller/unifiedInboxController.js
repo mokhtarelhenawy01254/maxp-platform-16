@@ -783,16 +783,24 @@ const sendUnifiedMessage = async (req, res) => {
             }
         } else if (conversation.channel === 'TELEGRAM') {
             try {
-                const telegramBotService = require('../services/TelegramBotService');
-                const options = {};
-                if (isMedia) {
-                    options.type = type.toLowerCase() === 'image' ? 'photo' : type.toLowerCase();
-                    options.fileUrl = mediaUrl;
-                    if (type.toLowerCase() === 'image') {
-                        options.imageUrls = [mediaUrl];
+                let meta = {};
+                try { meta = conversation.metadata ? JSON.parse(conversation.metadata) : {}; } catch (e) {}
+                // Route to userbot if conversation belongs to one
+                if (meta.isUserbot && meta.userbotConfigId) {
+                    const telegramUserbotService = require('../services/TelegramUserbotService');
+                    await telegramUserbotService.sendUserbotReply(id, content || '');
+                } else {
+                    const telegramBotService = require('../services/TelegramBotService');
+                    const options = {};
+                    if (isMedia) {
+                        options.type = type.toLowerCase() === 'image' ? 'photo' : type.toLowerCase();
+                        options.fileUrl = mediaUrl;
+                        if (type.toLowerCase() === 'image') {
+                            options.imageUrls = [mediaUrl];
+                        }
                     }
+                    await telegramBotService.sendReply(id, content || '', options);
                 }
-                await telegramBotService.sendReply(id, content || '', options);
             } catch (tgErr) {
                 console.error('⚠️ [UNIFIED] Telegram send error:', tgErr.message);
             }
@@ -1176,7 +1184,7 @@ const getSettings = async (req, res) => {
             }),
             prisma.telegramConfig.findMany({
                 where: { companyId },
-                select: { id: true, botName: true, botUsername: true, isActive: true, type: true, label: true, createdAt: true }
+                select: { id: true, botName: true, botUsername: true, isActive: true, type: true, label: true, inboxEnabled: true, createdAt: true }
             }),
             prisma.facebookPage.findMany({
                 where: { companyId },
@@ -1221,6 +1229,17 @@ const getSettings = async (req, res) => {
                         connected: tgConfigs.some(c => c.isActive),
                         count: tgConfigs.length,
                         configs: tgConfigs
+                    },
+                    telegramUserbot: {
+                        connected: tgConfigs.some(c => c.type === 'USERBOT' && c.inboxEnabled && c.isActive),
+                        count: tgConfigs.filter(c => c.type === 'USERBOT').length,
+                        configs: tgConfigs.filter(c => c.type === 'USERBOT').map(c => ({
+                            id: c.id,
+                            label: c.label,
+                            isActive: c.isActive,
+                            inboxEnabled: c.inboxEnabled,
+                            type: c.type
+                        }))
                     }
                 }
             }

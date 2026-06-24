@@ -982,6 +982,12 @@ const WhatsAppCustomerJourney = React.lazy(
 const WhatsAppAnalytics = React.lazy(
   () => import("./pages/whatsapp/WhatsAppAnalytics"),
 );
+const WhatsAppMetaTemplates = React.lazy(
+  () => import("./pages/whatsapp/WhatsAppMetaTemplates"),
+);
+const WhatsAppTemplateBroadcast = React.lazy(
+  () => import("./pages/whatsapp/WhatsAppTemplateBroadcast"),
+);
 
 // HR Module
 const HRDashboard = React.lazy(() =>
@@ -5122,6 +5128,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/meta-templates"
+                  element={
+                    <Layout>
+                      <WhatsAppMetaTemplates />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/template-broadcast"
+                  element={
+                    <Layout>
+                      <WhatsAppTemplateBroadcast />
                     </Layout>
                   }
                 />

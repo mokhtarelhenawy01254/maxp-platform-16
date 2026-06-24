@@ -606,25 +606,50 @@ const TelegramSettings = () => {
                           Not Connected
                         </span>
                       )}
+                      {userbot.inboxEnabled && userbot.sessionString && (
+                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
+                          Inbox
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDeleteUserbot(userbot.id)}
-                  disabled={isLoading}
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors border border-gray-200 hover:border-red-100 text-sm"
-                >
-                  Delete
-                </button>
-                {!userbot.sessionString && (
+                <div className="flex items-center gap-2">
+                  {userbot.sessionString && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await apiClient.put(`/telegram/userbots/${userbot.id}/inbox`, { enabled: !userbot.inboxEnabled });
+                          loadUserbots();
+                          toast.success(userbot.inboxEnabled ? "Inbox integration disabled" : "Inbox integration enabled");
+                        } catch { toast.error("Failed to toggle inbox"); }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                        userbot.inboxEnabled
+                          ? "bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-200"
+                      }`}
+                    >
+                      {userbot.inboxEnabled ? "Inbox ON" : "Inbox OFF"}
+                    </button>
+                  )}
                   <button
-                    onClick={() => handleAskReconnect(userbot)}
+                    onClick={() => handleDeleteUserbot(userbot.id)}
                     disabled={isLoading}
-                    className="ml-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors border border-gray-200 hover:border-blue-100 text-sm"
+                    className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors border border-gray-200 hover:border-red-100 text-sm"
                   >
-                    Connect
+                    Delete
                   </button>
-                )}
+                  {!userbot.sessionString && (
+                    <button
+                      onClick={() => handleAskReconnect(userbot)}
+                      disabled={isLoading}
+                      className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors border border-gray-200 hover:border-blue-100 text-sm"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

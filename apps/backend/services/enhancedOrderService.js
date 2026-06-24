@@ -5,6 +5,7 @@ const internalSyncService = require('./internalSyncService');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const customerBlocklistService = require('./customerBlocklistService');
 const { resolveVariantAttributes } = require('../utils/productNormalizationUtils');
+const { normalizeOrderPaymentMethod } = require('../utils/paymentMethodNormalization');
 
 class EnhancedOrderService {
   constructor() {
@@ -128,7 +129,7 @@ class EnhancedOrderService {
 
       // توحيد الحالات
       data.status = (data.status || 'PENDING').toUpperCase();
-      data.paymentMethod = (data.paymentMethod || 'CASH').toUpperCase();
+      data.paymentMethod = normalizeOrderPaymentMethod(data.paymentMethod, 'CASH');
       data.paymentStatus = (data.paymentStatus || 'PENDING').toUpperCase();
 
       // حساب التكاليف (أو استخدام التكاليف المرسلة يدوياً)

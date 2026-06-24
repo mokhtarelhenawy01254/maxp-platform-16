@@ -14,7 +14,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
-type PlatformId = "facebook" | "instagram" | "whatsapp" | "telegram";
+type PlatformId = "facebook" | "instagram" | "whatsapp" | "telegram" | "telegramUserbot";
 
 interface PlatformItem {
   id: string;
@@ -29,6 +29,7 @@ interface PlatformItem {
   botUsername?: string;
   type?: string;
   isActive?: boolean;
+  inboxEnabled?: boolean;
   createdAt?: string;
   connectedAt?: string;
   provider?: string;
@@ -49,6 +50,7 @@ interface ConnectionsStatus {
   instagram: PlatformStatus;
   whatsapp: PlatformStatus;
   telegram: PlatformStatus;
+  telegramUserbot: PlatformStatus;
 }
 
 const cfg: Record<PlatformId, {
@@ -70,6 +72,10 @@ const cfg: Record<PlatformId, {
   telegram: {
     labelKey: "unifiedInbox.platforms.telegram", color: "#0088cc", settingsPath: "/settings/telegram",
     icon: (cn) => <svg className={cn} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-1-.65-.35 1 .22 1.59.15.15 2.71 2.48 2.76 2.69.01.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.35-.49.97-.74 3.79-1.65 6.32-2.74 7.59-3.27 3.61-1.5 4.35-1.76 4.84-1.77.11 0 .35.03.5.16.13.12.17.28.19.39.02.1.02.2.01.3z"/></svg>,
+  },
+  telegramUserbot: {
+    labelKey: "unifiedInbox.platforms.telegramUserbot", color: "#26A5E4", settingsPath: "/settings/telegram",
+    icon: (cn) => <svg className={cn} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>,
   },
 };
 
@@ -105,6 +111,9 @@ const PlatformConnections: React.FC = () => {
   const [tgErr, setTgErr] = useState<string | null>(null);
   const [tgDone, setTgDone] = useState(false);
 
+  // Userbot inbox toggle
+  const [ubLoading, setUbLoading] = useState<string | null>(null);
+
   // ── API ──
 
   const load = useCallback(async () => {
@@ -119,6 +128,7 @@ const PlatformConnections: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const connectedCount = statuses ? Object.values(statuses).filter((s) => s.connected).length : 0;
+  const totalPlatforms = 5;
 
   // ── Facebook OAuth ──
   const fbOAuth = useCallback(async () => {
@@ -222,12 +232,23 @@ const PlatformConnections: React.FC = () => {
     } finally { setDeleting(null); }
   }, [user, load]);
 
+  // ── Userbot inbox toggle ──
+  const toggleUserbotInbox = useCallback(async (id: string, enabled: boolean) => {
+    setUbLoading(id);
+    try {
+      await apiClient.put(`/telegram/userbots/${id}/inbox`, { enabled });
+      load();
+    } catch { /* ignore */ }
+    finally { setUbLoading(null); }
+  }, [load]);
+
   const fmtCode = (c: string) => c.length === 9 ? `${c.slice(0, 4)}-${c.slice(4)}` : c;
 
   // ── Render card ──
   const card = (pid: PlatformId) => {
     const c = cfg[pid];
     const st = statuses?.[pid] || { connected: false };
+    const isUb = pid === "telegramUserbot";
     const items: PlatformItem[] = st.pages || st.sessions || st.configs || [];
     const connected = st.connected;
 
@@ -251,7 +272,7 @@ const PlatformConnections: React.FC = () => {
               </div>
               {st.count !== undefined && (
                 <p className="text-xs mt-0.5" style={{ color: "var(--color-muted-foreground)" }}>
-                  {st.count} {pid === "facebook" ? "صفحة" : pid === "instagram" ? "حساب" : pid === "whatsapp" ? "جلسة" : "بوت"}
+                  {st.count} {pid === "facebook" ? "صفحة" : pid === "instagram" ? "حساب" : pid === "whatsapp" ? "جلسة" : pid === "telegramUserbot" ? "حساب" : "بوت"}
                 </p>
               )}
             </div>
@@ -266,6 +287,21 @@ const PlatformConnections: React.FC = () => {
                   <span className="flex-1 truncate font-medium" style={{ color: "var(--color-foreground)" }}>
                     {item.pageName || item.name || item.botName || item.label || item.botUsername || item.id?.slice(0, 8)}
                   </span>
+                  {isUb && item.isActive && (
+                    <button
+                      type="button"
+                      onClick={() => toggleUserbotInbox(item.id, !item.inboxEnabled)}
+                      disabled={ubLoading === item.id}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                        item.inboxEnabled
+                          ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                      title={item.inboxEnabled ? "الانبوكس الموحد مفعل" : "تفعيل الانبوكس الموحد"}
+                    >
+                      {ubLoading === item.id ? "..." : item.inboxEnabled ? "Inbox ON" : "Inbox OFF"}
+                    </button>
+                  )}
                   <span className="text-[10px]" style={{ color: "var(--color-muted-foreground)" }}>
                     {item.phoneNumber || ""}
                   </span>
@@ -316,6 +352,13 @@ const PlatformConnections: React.FC = () => {
                 {connected ? "إضافة بوت" : t("unifiedInbox.connections.connect")}
               </button>
             )}
+            {isUb && (
+              <a href={c.settingsPath}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all text-center active:scale-[0.98]"
+                style={{ background: c.color, color: "#fff" }}>
+                {connected ? "إدارة الحسابات" : "ربط حساب"}
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -337,10 +380,10 @@ const PlatformConnections: React.FC = () => {
             <div className="flex items-center gap-3 flex-1">
               <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--business-muted-line)" }}>
                 <div className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${(connectedCount/4)*100}%`, background: "linear-gradient(90deg, var(--color-primary), #25D366)" }} />
+                  style={{ width: `${(connectedCount/totalPlatforms)*100}%`, background: "linear-gradient(90deg, var(--color-primary), #25D366)" }} />
               </div>
               <span className="text-xs font-semibold whitespace-nowrap" style={{ color: "var(--color-muted-foreground)" }}>
-                {connectedCount}/{4} {t("unifiedInbox.connections.connected")}
+                {connectedCount}/{totalPlatforms} {t("unifiedInbox.connections.connected")}
               </span>
             </div>
             <button type="button" onClick={load} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-black/5"
@@ -367,7 +410,7 @@ const PlatformConnections: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(["facebook", "instagram", "whatsapp", "telegram"] as PlatformId[]).map(card)}
+              {(["facebook", "instagram", "whatsapp", "telegram", "telegramUserbot"] as PlatformId[]).map(card)}
             </div>
           )}
         </div>

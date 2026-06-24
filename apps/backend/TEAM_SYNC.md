@@ -2,6 +2,13 @@
 
 ## [2026-03-09]
 
+### WhatsApp Baileys Auth State Correction & Database Schema Alignment
+- **Accomplishment**: Fixed a critical crypto key serialization corruption that broke WhatsApp Baileys session linking, corrected a controller import path, and resolved database constraint errors.
+- **Details**:
+  - Restored `JSON.parse(JSON.stringify(..., BufferJSON.replacer), BufferJSON.reviver)` inside `DatabaseAuthState.js` after identifying that the previous implementation of `structuredCloneSafe` converted Node `Buffer` objects into `Uint8Array`, which corrupted Baileys' auth state keys and caused linking failures ("make sure your phone is connected to the internet").
+  - Fixed a `MODULE_NOT_FOUND` crash on startup by correcting the relative import path for `sharedDatabase` inside `whatsappMetaTemplateController.js` to point to `../services/sharedDatabase`.
+  - Wrote and executed automated schema-relation parsing scripts to clean up orphaned database rows violating constraints on `companyId`, `orderId`, and `goalId`, successfully aligning the local PostgreSQL database with the latest Prisma schema.
+
 ### Python AI Service Unified Model Selection & Fallback Logic
 - **Accomplishment**: Implemented a unified model resolution mechanism and client fallback chain in the Python AI Service.
 - **Details**:

@@ -16,6 +16,7 @@ model TelegramConfig {
   tempAuthSession   String?  @map("temp_auth_session")
   tempPhoneCodeHash String?  @map("temp_phone_code_hash")
   type              String   @default("BOT")
+  inboxEnabled      Boolean  @default(false)
   company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   autoReplyRules      TelegramAutoReplyRule[]
   bulkMessages        TelegramBulkMessage[]

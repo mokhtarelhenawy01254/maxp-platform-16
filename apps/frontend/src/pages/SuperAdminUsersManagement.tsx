@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity,
   AlertTriangle,
-  BadgeCheck,
   Eye,
   Loader2,
   MoreHorizontal,
@@ -10,10 +8,10 @@ import {
   Plus,
   RefreshCw,
   Search,
-  ShieldCheck,
   Trash2,
   UserRound,
   Users,
+  X,
 } from "lucide-react";
 
 import {
@@ -78,13 +76,12 @@ import {
   BusinessFilterSheet,
   BusinessMobileSearchPanel,
 } from "../components/business/BusinessFilters";
-import { BusinessMetricsStrip } from "../components/business/BusinessMetrics";
+
 import {
   BusinessPageHero,
   BusinessPageShell,
   BusinessSectionPanel,
 } from "../components/business/BusinessSurface";
-import { useAuth } from "../hooks/useAuthSimple";
 import { cn } from "../lib/utils";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
@@ -314,14 +311,11 @@ const FormField: React.FC<FormFieldProps> = ({
 );
 
 const SuperAdminUsersManagement: React.FC = () => {
-  const { user } = useAuth();
-
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>(FALLBACK_ROLES);
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(0);
@@ -470,20 +464,6 @@ const SuperAdminUsersManagement: React.FC = () => {
   useEffect(() => {
     void fetchRoles();
   }, [fetchRoles]);
-
-  useEffect(() => {
-    if (!success) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      setSuccess(null);
-    }, 4500);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
-  }, [success]);
 
   const resetForm = () => {
     setFormData(createInitialForm());
@@ -656,10 +636,6 @@ const SuperAdminUsersManagement: React.FC = () => {
 
       if (result.success) {
         closeEditor();
-        setSuccess(
-          result.message ||
-            (isEditing ? "تم تحديث المستخدم بنجاح" : "تم إنشاء المستخدم بنجاح"),
-        );
         void fetchUsers();
       } else {
         setError(result.message || "فشل في حفظ المستخدم");
@@ -707,7 +683,6 @@ const SuperAdminUsersManagement: React.FC = () => {
 
       if (result.success) {
         setPendingDeleteUser(null);
-        setSuccess(result.message || "تم حذف المستخدم بنجاح");
 
         if (users.length === 1 && page > 1) {
           setPage((current) => current - 1);
@@ -725,48 +700,6 @@ const SuperAdminUsersManagement: React.FC = () => {
       }
     }
   };
-
-  const activeUsersCount = users.filter((userItem) => userItem.isActive).length;
-  const verifiedUsersCount = users.filter(
-    (userItem) => userItem.isEmailVerified,
-  ).length;
-  const superAdminCount = users.filter(
-    (userItem) => userItem.role === "SUPER_ADMIN",
-  ).length;
-
-  const metrics = useMemo(
-    () => [
-      {
-        title: "إجمالي المستخدمين",
-        value: totalCount,
-        subtitle: totalCount > 0 ? `صفحة ${page} من ${Math.max(totalPages, 1)}` : "لا توجد نتائج بعد",
-        tone: "primary" as const,
-        icon: Users,
-      },
-      {
-        title: "الحسابات النشطة",
-        value: activeUsersCount,
-        subtitle: "ضمن النتائج الحالية",
-        tone: "success" as const,
-        icon: Activity,
-      },
-      {
-        title: "البريد المؤكد",
-        value: verifiedUsersCount,
-        subtitle: "حسابات جاهزة للعمل فورًا",
-        tone: "secondary" as const,
-        icon: BadgeCheck,
-      },
-      {
-        title: "سوبر أدمن",
-        value: superAdminCount,
-        subtitle: "ضمن الصفحة الحالية",
-        tone: "warning" as const,
-        icon: ShieldCheck,
-      },
-    ],
-    [activeUsersCount, page, superAdminCount, totalCount, totalPages, verifiedUsersCount],
-  );
 
   const filterCount = Number(Boolean(filters.search)) + Number(Boolean(filters.isActive));
 
@@ -790,28 +723,21 @@ const SuperAdminUsersManagement: React.FC = () => {
   return (
     <BusinessPageShell className="space-y-4" dir="rtl">
       <BusinessPageHero
-        eyebrow="SUPER ADMIN • USERS"
-        title="إدارة مستخدمي السوبر أدمن"
-        description={
-          user?.email
-            ? `لوحة مركزية لإدارة الحسابات الإدارية العليا مع بحث أسرع وتجربة موبايل أوضح. الجلسة الحالية: ${user.email}`
-            : "لوحة مركزية لإدارة الحسابات الإدارية العليا مع بحث أسرع وتجربة موبايل أوضح."
-        }
+        title="إدارة المستخدمين"
         actions={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-2xl"
+              size="icon"
               onClick={() => void fetchUsers()}
               disabled={loading}
+              title="تحديث"
             >
               <RefreshCw className={cn("size-4", loading && "animate-spin")} />
-              تحديث البيانات
             </Button>
             <Button
               type="button"
-              className="h-11 rounded-2xl"
               onClick={openCreateDialog}
             >
               <Plus className="size-4" />
@@ -820,8 +746,6 @@ const SuperAdminUsersManagement: React.FC = () => {
           </div>
         }
       />
-
-      <BusinessMetricsStrip items={metrics} />
 
       {error ? (
         <Alert variant="destructive" className="business-page-panel border-0 shadow-none">
@@ -833,14 +757,6 @@ const SuperAdminUsersManagement: React.FC = () => {
               إعادة المحاولة
             </Button>
           </AlertAction>
-        </Alert>
-      ) : null}
-
-      {success ? (
-        <Alert className="business-page-panel border-0 shadow-none">
-          <BadgeCheck className="size-4 text-emerald-600" />
-          <AlertTitle>تم تنفيذ العملية بنجاح</AlertTitle>
-          <AlertDescription>{success}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -939,50 +855,35 @@ const SuperAdminUsersManagement: React.FC = () => {
       </BusinessFilterSheet>
       
       <BusinessSectionPanel
-        title="قائمة المستخدمين"
-        description="نسخة أخف للموبايل مع نفس عمليات الإنشاء والتعديل والحذف."
-        headerAside={
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="rounded-full px-3 py-1">
-              {totalCount > 0
-                ? `عرض ${visibleFrom}-${visibleTo} من ${totalCount}`
-                : "لا توجد نتائج"}
-            </Badge>
-            <Badge variant="outline" className="rounded-full px-3 py-1">
-              {rolesLoading ? "تحميل الأدوار..." : `${availableRoles.length} أدوار متاحة`}
-            </Badge>
-          </div>
-        }
+        title="المستخدمون"
         contentClassName="space-y-4 p-4 md:p-6"
       >
-        <div className="hidden gap-3 md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,0.85fr)_minmax(0,0.7fr)_auto_auto]">
-          <FormField label="بحث سريع" htmlFor="super-admin-users-search-desktop">
-            <div className="flex gap-2">
-              <Input
-                id="super-admin-users-search-desktop"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    applySearch();
-                  }
-                }}
-                placeholder="ابحث بالاسم أو البريد الإلكتروني"
-                className="h-11 rounded-2xl"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-2xl px-4"
-                onClick={applySearch}
-              >
-                <Search className="size-4" />
-                بحث
-              </Button>
-            </div>
-          </FormField>
+        <div className="hidden gap-3 md:grid md:grid-cols-[1fr_auto]">
+          <div className="flex gap-2">
+            <Input
+              id="super-admin-users-search-desktop"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  applySearch();
+                }
+              }}
+              placeholder="ابحث بالاسم أو البريد الإلكتروني"
+              className="h-11 rounded-2xl"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-2xl px-4"
+              onClick={applySearch}
+            >
+              <Search className="size-4" />
+              بحث
+            </Button>
+          </div>
 
-          <FormField label="حالة الحساب">
+          <div className="flex items-center gap-2">
             <Select
               name="super-admin-users-status-filter-desktop"
               value={filters.isActive || null}
@@ -995,7 +896,7 @@ const SuperAdminUsersManagement: React.FC = () => {
               }}
             >
               <SelectLabel className="sr-only">حالة الحساب</SelectLabel>
-              <SelectTrigger aria-label="حالة الحساب" className="h-11 rounded-2xl">
+              <SelectTrigger aria-label="حالة الحساب" className="h-11 rounded-2xl min-w-[140px]">
                 <SelectValue placeholder="كل الحالات" />
               </SelectTrigger>
               <SelectContent align="end">
@@ -1004,53 +905,17 @@ const SuperAdminUsersManagement: React.FC = () => {
                 <SelectItem value="false">الحسابات غير النشطة</SelectItem>
               </SelectContent>
             </Select>
-          </FormField>
-
-          <FormField label="عدد الصفوف">
-            <Select
-              name="super-admin-users-page-size-desktop"
-              value={String(limit)}
-              onValueChange={(value) => {
-                setLimit(Number(value || "25"));
-                setPage(1);
-              }}
-            >
-              <SelectLabel className="sr-only">عدد الصفوف</SelectLabel>
-              <SelectTrigger aria-label="عدد الصفوف" className="h-11 rounded-2xl">
-                <SelectValue placeholder="العدد" />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {PAGE_SIZE_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
-
-          <div className="flex items-end">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 rounded-2xl"
-              onClick={clearFilters}
-            >
-              مسح الفلاتر
-            </Button>
-          </div>
-
-          <div className="flex items-end">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 rounded-2xl"
-              onClick={() => void fetchUsers()}
-              disabled={loading}
-            >
-              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
-              تحديث
-            </Button>
+            {filterCount > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={clearFilters}
+                title="مسح الفلاتر"
+              >
+                <X className="size-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1142,25 +1007,10 @@ const SuperAdminUsersManagement: React.FC = () => {
                     </Badge>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-2xl border border-border/60 bg-muted/40 px-3 py-2">
-                      <p className="text-xs text-muted-foreground">القسم</p>
-                      <p className="mt-1 font-medium text-foreground">
-                        {userItem.department || "-"}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-border/60 bg-muted/40 px-3 py-2">
-                      <p className="text-xs text-muted-foreground">الهاتف</p>
-                      <p className="mt-1 font-medium text-foreground">
-                        {userItem.phone || "-"}
-                      </p>
-                    </div>
-                    <div className="col-span-2 rounded-2xl border border-border/60 bg-muted/40 px-3 py-2">
-                      <p className="text-xs text-muted-foreground">آخر تسجيل دخول</p>
-                      <p className="mt-1 font-medium text-foreground">
-                        {formatDateTime(userItem.lastLoginAt)}
-                      </p>
-                    </div>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    {userItem.department && <span>{userItem.department}</span>}
+                    {userItem.department && userItem.phone && <span>·</span>}
+                    {userItem.phone && <span dir="ltr">{userItem.phone}</span>}
                   </div>
                 </div>
               ))}
@@ -1172,10 +1022,7 @@ const SuperAdminUsersManagement: React.FC = () => {
                   <TableRow>
                     <TableHead className="text-right">المستخدم</TableHead>
                     <TableHead className="text-right">الدور</TableHead>
-                    <TableHead className="text-right">القسم</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">التواجد</TableHead>
-                    <TableHead className="text-right">آخر تسجيل دخول</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1205,23 +1052,21 @@ const SuperAdminUsersManagement: React.FC = () => {
                           {getRoleLabel(userItem.role)}
                         </Badge>
                       </TableCell>
-                      <TableCell>{userItem.department || "-"}</TableCell>
                       <TableCell>
-                        <Badge className={cn("rounded-full border px-3 py-1", getStatusClassName(userItem.isActive))}>
-                          {userItem.isActive ? "نشط" : "غير نشط"}
-                        </Badge>
+                        <div className="flex gap-1.5">
+                          <Badge className={cn("rounded-full border px-2.5 py-0.5 text-xs", getStatusClassName(userItem.isActive))}>
+                            {userItem.isActive ? "نشط" : "غير نشط"}
+                          </Badge>
+                          <Badge
+                            className={cn(
+                              "rounded-full border px-2.5 py-0.5 text-xs",
+                              getAvailabilityClassName(userItem.availability),
+                            )}
+                          >
+                            {getAvailabilityLabel(userItem.availability)}
+                          </Badge>
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={cn(
-                            "rounded-full border px-3 py-1",
-                            getAvailabilityClassName(userItem.availability),
-                          )}
-                        >
-                          {getAvailabilityLabel(userItem.availability)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDateTime(userItem.lastLoginAt)}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger

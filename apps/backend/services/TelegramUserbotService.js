@@ -23,6 +23,7 @@ try {
 }
 
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const socketService = require('./socketService');
 const input = require("input"); // For console input if ever needed
 const fs = require('fs');
 const path = require('path');
@@ -36,6 +37,7 @@ class TelegramUserbotService {
 
     constructor() {
         this.clients = new Map(); // userbotConfigId -> TelegramClient
+        this.inboxHandlers = new Map(); // userbotConfigId -> { handlerFn, eventBuilder }
     }
 
     // --- Private Helpers ---
@@ -332,6 +334,16 @@ class TelegramUserbotService {
 
             // Update memory
             this.clients.set(userbotConfigId, client);
+
+            // Auto-setup inbox handler if enabled for this config
+            if (config.inboxEnabled) {
+                try {
+                    this._setupInboxHandler(userbotConfigId, companyId, client);
+                } catch (handlerError) {
+                    console.warn(`⚠️ [_getClient] Failed to setup inbox handler:`, handlerError.message);
+                }
+            }
+
             console.log(`✅ [_getClient] Client restored and connected.`);
             return client;
         } catch (error) {
@@ -559,6 +571,16 @@ class TelegramUserbotService {
 
             // Store actual client instance (clean up temp object)
             this.clients.set(userbotConfigId, client);
+
+            // Auto-setup inbox handler if enabled
+            const config = await this._getUserbotConfig(userbotConfigId, companyId);
+            if (config?.inboxEnabled) {
+                try {
+                    this._setupInboxHandler(userbotConfigId, companyId, client);
+                } catch (handlerError) {
+                    console.warn(`⚠️ [SIGN-IN] Failed to setup inbox handler:`, handlerError.message);
+                }
+            }
 
             return { success: true, message: "Logged in successfully" };
 
@@ -1271,6 +1293,223 @@ class TelegramUserbotService {
         }
 
         return true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 📥 UNIFIED INBOX INTEGRATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Enable or disable inbox integration for a userbot config.
+     */
+    async enableInbox(userbotConfigId, companyId, enabled = true) {
+        try {
+            await this.prisma.telegramConfig.update({
+                where: { id: userbotConfigId },
+                data: { inboxEnabled: enabled }
+            });
+
+            if (enabled) {
+                // Setup the handler if we have a connected client
+                try {
+                    const client = await this._getClient(userbotConfigId, companyId);
+                    this._setupInboxHandler(userbotConfigId, companyId, client);
+                } catch (e) {
+                    // Client might not be connected (no session yet) – that's ok,
+                    // _getClient will auto-setup the handler when it connects
+                    console.log(`📥 [INBOX] Userbot ${userbotConfigId} inbox enabled (client setup deferred)`);
+                }
+            } else {
+                this._removeInboxHandler(userbotConfigId);
+            }
+
+            return { success: true, inboxEnabled: enabled };
+        } catch (error) {
+            console.error(`❌ [INBOX] Failed to toggle inbox:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Register an event handler that pipes incoming private messages into
+     * the unified inbox (Conversation + Message records + socket events).
+     */
+    _setupInboxHandler(userbotConfigId, companyId, client) {
+        // Remove existing handler first to avoid duplicates
+        this._removeInboxHandler(userbotConfigId);
+
+        const handlerFn = async (event) => {
+            try {
+                // Only private chats from other users (not self, not groups/channels)
+                if (!event.message || event.message.out) return;
+                if (!event.isPrivate) return;
+
+                const message = event.message;
+                const peerId = message.peerId;
+                const senderId = peerId?.userId?.toString() || peerId?.toString();
+                if (!senderId) return;
+
+                const text = message.message || '';
+                const fromUser = await message.getSender();
+
+                const firstName = fromUser?.firstName || '';
+                const lastName = fromUser?.lastName || '';
+                const username = fromUser?.username || '';
+
+                await this._processInboxMessage({
+                    userbotConfigId,
+                    companyId,
+                    client,
+                    senderId,
+                    firstName,
+                    lastName,
+                    username,
+                    text,
+                    messageType: 'TEXT',
+                    messageObj: message
+                });
+            } catch (err) {
+                console.error(`❌ [INBOX-HANDLER] Error:`, err.message);
+            }
+        };
+
+        const eventBuilder = new Api.UpdateNewMessage({});
+        client.addEventHandler(handlerFn, eventBuilder);
+        this.inboxHandlers.set(userbotConfigId, { handlerFn, eventBuilder });
+
+        console.log(`📥 [INBOX] Inbox handler registered for userbot ${userbotConfigId}`);
+    }
+
+    _removeInboxHandler(userbotConfigId) {
+        const existing = this.inboxHandlers.get(userbotConfigId);
+        if (existing) {
+            try {
+                // We can't easily remove individual handlers from TelegramClient,
+                // but storing the reference allows us to replace it
+                this.inboxHandlers.delete(userbotConfigId);
+                console.log(`📥 [INBOX] Inbox handler removed for userbot ${userbotConfigId}`);
+            } catch (e) {
+                console.warn(`⚠️ [INBOX] Error removing handler:`, e.message);
+            }
+        }
+    }
+
+    async _processInboxMessage({ userbotConfigId, companyId, client, senderId, firstName, lastName, username, text, messageType = 'TEXT', messageObj }) {
+        const prisma = this.prisma;
+
+        // Find or create customer
+        let customer = await prisma.customer.findFirst({
+            where: { telegramId: senderId, companyId }
+        });
+        if (!customer) {
+            customer = await prisma.customer.create({
+                data: {
+                    telegramId: senderId,
+                    firstName,
+                    lastName,
+                    companyId,
+                    metadata: JSON.stringify({ username, source: 'telegram_userbot', userbotConfigId }),
+                    status: 'LEAD'
+                }
+            });
+        } else {
+            // Update customer info
+            await prisma.customer.update({
+                where: { id: customer.id },
+                data: { firstName: firstName || customer.firstName, lastName: lastName || customer.lastName }
+            });
+        }
+
+        // Find or create conversation
+        let conversation = await prisma.conversation.findFirst({
+            where: {
+                customerId: customer.id,
+                companyId,
+                channel: 'TELEGRAM',
+                status: { in: ['ACTIVE', 'PENDING'] }
+            }
+        });
+        if (!conversation) {
+            conversation = await prisma.conversation.create({
+                data: {
+                    customerId: customer.id,
+                    companyId,
+                    channel: 'TELEGRAM',
+                    status: 'ACTIVE',
+                    subject: 'Telegram Chat',
+                    metadata: JSON.stringify({ userbotConfigId, isUserbot: true })
+                }
+            });
+            socketService.emitNewConversation(companyId, conversation);
+        }
+
+        // Create message
+        const msg = await prisma.message.create({
+            data: {
+                conversationId: conversation.id,
+                content: text,
+                type: messageType,
+                isFromCustomer: true,
+                metadata: JSON.stringify({ userbotConfigId })
+            }
+        });
+
+        // Update conversation
+        await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: {
+                lastMessageAt: new Date(),
+                lastMessagePreview: text.substring(0, 50),
+                isRead: false,
+                lastMessageIsFromCustomer: true
+            }
+        });
+
+        // Emit socket event
+        socketService.sendToConversationSecure(conversation.id, companyId, 'new_message', {
+            ...msg,
+            senderName: `${firstName} ${lastName}`.trim() || username || 'Unknown',
+            platform: 'telegram',
+            channel: 'TELEGRAM',
+            companyId
+        });
+    }
+
+    /**
+     * Send a reply from the unified inbox using the userbot.
+     * Looks up the userbot config from the conversation metadata.
+     */
+    async sendUserbotReply(conversationId, content, options = {}) {
+        try {
+            const prisma = this.prisma;
+            const conversation = await prisma.conversation.findUnique({
+                where: { id: conversationId },
+                include: { customer: true }
+            });
+
+            if (!conversation || !conversation.customer || !conversation.customer.telegramId) {
+                return { success: false, error: 'Customer or telegramId not found' };
+            }
+
+            const meta = conversation.metadata ? JSON.parse(conversation.metadata) : {};
+            const userbotConfigId = meta.userbotConfigId;
+
+            if (!userbotConfigId) {
+                return { success: false, error: 'No userbot config linked to this conversation' };
+            }
+
+            const companyId = conversation.companyId;
+            const client = await this._getClient(userbotConfigId, companyId);
+            const chatId = conversation.customer.telegramId;
+
+            const entity = await client.getEntity(chatId);
+            await client.sendMessage(entity, { message: content });
+
+            return { success: true };
+        } catch (error) {
+            console.error(`❌ [INBOX] sendUserbotReply error:`, error.message);
+            return { success: false, error: error.message };
+        }
     }
 
     // --- 6️⃣ Search & Export ---

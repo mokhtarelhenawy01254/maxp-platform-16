@@ -171,7 +171,8 @@ async function useDatabaseAuthState(sessionId) {
     };
 
     // تخزين بيانات المفاتيح في متغير منفصل
-    let keysData = authData.keys ? hardening.structuredCloneSafe(authData.keys) : {};
+    // ⚠️ MUST use JSON clone with BufferJSON — structuredClone converts Buffer→Uint8Array which breaks Baileys crypto
+    let keysData = authData.keys ? JSON.parse(JSON.stringify(authData.keys, BufferJSON.replacer), BufferJSON.reviver) : {};
 
     if (hasValidAuth) {
         AUTH_LOG.ok(sessionId, `Auth state loaded with valid credentials`, {
@@ -237,8 +238,9 @@ async function useDatabaseAuthState(sessionId) {
         const saveFunction = async () => {
             try {
                 // أخذ snapshot متسق من creds و keys
-                const currentCreds = hardening.structuredCloneSafe(state.creds);
-                const currentKeys = hardening.structuredCloneSafe(keysData);
+                // ⚠️ MUST use JSON clone with BufferJSON — structuredClone converts Buffer→Uint8Array which breaks Baileys crypto
+                const currentCreds = JSON.parse(JSON.stringify(state.creds, BufferJSON.replacer), BufferJSON.reviver);
+                const currentKeys = JSON.parse(JSON.stringify(keysData, BufferJSON.replacer), BufferJSON.reviver);
                 hardening.pruneAuthKeys(currentKeys);
 
                 const dataToSave = {

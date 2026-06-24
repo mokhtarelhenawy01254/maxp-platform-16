@@ -306,6 +306,86 @@ async function checkContact(sessionId, phoneNumbers) {
   }
 }
 
+async function createTemplate(sessionId, templateData) {
+  const session = await getSession(sessionId);
+  if (!session) throw new Error('Session not found');
+
+  const { apiVersion, accessToken } = resolveBaseConfig(session);
+  const wabaId = session?.metaWabaId;
+  if (!wabaId) throw new Error('Missing Meta WABA ID for session');
+
+  const { name, language, category, components, allowCategoryChange } = templateData;
+  if (!name || !language || !category) {
+    throw new Error('Missing required fields: name, language, category');
+  }
+
+  const payload = {
+    name,
+    language,
+    category,
+    components
+  };
+
+  if (allowCategoryChange) {
+    payload.allow_category_change = true;
+  }
+
+  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`;
+  const response = await axios.post(url, payload, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 30000
+  });
+
+  return response.data;
+}
+
+async function updateTemplate(sessionId, templateName, templateData) {
+  const session = await getSession(sessionId);
+  if (!session) throw new Error('Session not found');
+
+  const { apiVersion, accessToken } = resolveBaseConfig(session);
+  const wabaId = session?.metaWabaId;
+  if (!wabaId) throw new Error('Missing Meta WABA ID for session');
+
+  const payload = {};
+  if (templateData.components) payload.components = templateData.components;
+  if (templateData.language) payload.language = templateData.language;
+  if (templateData.category) payload.category = templateData.category;
+
+  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
+  const response = await axios.post(url, payload, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 30000
+  });
+
+  return response.data;
+}
+
+async function deleteTemplate(sessionId, templateName) {
+  const session = await getSession(sessionId);
+  if (!session) throw new Error('Session not found');
+
+  const { apiVersion, accessToken } = resolveBaseConfig(session);
+  const wabaId = session?.metaWabaId;
+  if (!wabaId) throw new Error('Missing Meta WABA ID for session');
+
+  const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
+  const response = await axios.delete(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    timeout: 30000
+  });
+
+  return response.data;
+}
+
 module.exports = {
   resolveConfig,
   resolveBaseConfig,
@@ -318,5 +398,8 @@ module.exports = {
   sendInteractive,
   sendRaw,
   listTemplates,
-  checkContact
+  checkContact,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate
 };
