@@ -2532,7 +2532,7 @@ const UnifiedInbox: React.FC = () => {
                 {profileActiveTab === "orders" && (
                   <div className="space-y-4 pt-4">
                     {/* Recent Orders */}
-                    {customerProfile?.recentOrders?.length > 0 ? (
+                    {customerProfile?.recentOrders?.length > 0 && (
                       <div
                         className="p-4 border rounded-lg"
                         style={{ borderColor: "var(--business-muted-line)", background: "var(--business-surface-panel)" }}
