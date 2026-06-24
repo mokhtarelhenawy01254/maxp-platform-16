@@ -88,6 +88,10 @@ def _build_runtime_agent_from_db(db_agent: AgentModel) -> tuple[BaseAgent, list[
         provider=db_config.get("provider") or None,
         key_id=db_config.get("keyId") or db_config.get("key_id") or None,
         template_slug=db_agent.template_slug or None,
+        policies={
+            "model_policy": db_agent.model_policy or {},
+            "guardrails": db_agent.guardrails or {},
+        },
     )
     agent = BaseAgent(config)
     agent._db_rules = db_agent.rules or ""

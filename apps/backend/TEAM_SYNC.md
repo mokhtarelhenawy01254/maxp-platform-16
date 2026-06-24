@@ -9,6 +9,7 @@
   - Added a `model_policy` (JSONB) column to the `ai.agents` table via Alembic migration `0019_agent_model_policy.py` to persist model fallback rules at runtime.
   - Updated `Agent` SQLAlchemy model, `AgentRegistry.spawn()`, and `init_registry_from_db()` to store and recover model policies.
   - Re-implemented `ensure_client()` in `base.py` to sequentially try fallback models on primary LLM connection failure, preventing service outages when APIs are throttled.
+  - Updated `_build_runtime_agent_from_db` in `orchestration_flow.py` to correctly map the `policies` dict (containing `model_policy` and `guardrails`), fixing a gap where agents dynamically loaded for channel-routed messaging (like WhatsApp) lacked fallback model definitions.
   - Created new unit tests in `tests/unit/test_model_resolution.py` verifying model fallbacks work correctly.
 
 ### WhatsApp Chat Page Arabic Text Restoration & Subscription Center Duplicate Key Fix

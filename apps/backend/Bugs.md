@@ -5,16 +5,19 @@
   1. The variable `resolved_model` was used in `factory.py` instead of the parameter name `model`.
   2. The database model `ai.agents` lacked a `model_policy` column to store and persist the fallback model hierarchy from templates.
   3. `ensure_client` in `base.py` did not implement any backup/fallback mechanism when the primary model failed.
+  4. When agents were loaded dynamically from the database in `_resolve_channel_agent` (used in WhatsApp and other channels), `_build_runtime_agent_from_db` did not map the `policies` dict (containing `model_policy` and `guardrails`), causing channel-routed agents to lose fallback model policies.
 - **Fix**:
   1. Corrected `resolved_model` to `model` in `factory.py:get_active_provider`.
   2. Created Alembic migration `0019_agent_model_policy.py` to add `model_policy` (JSONB) column to `ai.agents` and backfilled from `ai.agent_templates`.
   3. Updated `Agent` SQLAlchemy model, `AgentRegistry.spawn()`, and `init_registry_from_db()` to store and recover `model_policy`.
   4. Rewrote `ensure_client()` in `base.py` to attempt the primary model, and sequentially try fallbacks in `model_policy` before failing.
+  5. Updated `_build_runtime_agent_from_db` in `orchestration_flow.py` to correctly map the `policies` dict with `model_policy` and `guardrails` from `db_agent`.
 - **Files**:
   - `apps/ai-service/src/llm/providers/factory.py`
   - `apps/ai-service/src/db/models/agent.py`
   - `apps/ai-service/src/services/agent_registry.py`
   - `apps/ai-service/src/agents/base.py`
+  - `apps/ai-service/src/workflows/orchestration_flow.py`
   - `apps/ai-service/migrations/versions/0019_agent_model_policy.py`
 
 ## [2026-06-23] WhatsAppChat.tsx Corrupted Arabic Text After Encoding Recovery Scripts
