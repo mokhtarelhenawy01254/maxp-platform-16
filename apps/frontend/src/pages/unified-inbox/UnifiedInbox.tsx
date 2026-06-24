@@ -28,6 +28,8 @@ import {
   ArrowTopRightOnSquareIcon,
   TrashIcon,
   StarIcon as StarOutlineIcon,
+  ArchiveBoxIcon,
+  NoSymbolIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { Activity, ShoppingBag as ShoppingBagLucide, User as UserLucide } from "lucide-react";
@@ -808,6 +810,68 @@ const UnifiedInbox: React.FC = () => {
       setSelectedConversation(prev => prev ? { ...prev, status } : null);
     } catch (err) {
       console.error("Error updating status:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleAssign = useCallback(async (userId: string | null) => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
+        assignedTo: userId,
+      });
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === selectedConversation.id
+            ? { ...c, assignedTo: userId ? { id: userId, name: "", avatar: null } : null }
+            : c
+        )
+      );
+      setSelectedConversation(prev =>
+        prev ? { ...prev, assignedTo: userId ? { id: userId, name: "", avatar: null } : null } : null
+      );
+    } catch (err) {
+      console.error("Error assigning conversation:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleMarkUnread = useCallback(async () => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
+        unreadCount: 1,
+      });
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === selectedConversation.id ? { ...c, unreadCount: 1 } : c
+        )
+      );
+    } catch (err) {
+      console.error("Error marking unread:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleArchiveConversation = useCallback(async () => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
+        archived: true,
+      });
+      setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+      setSelectedConversation(null);
+    } catch (err) {
+      console.error("Error archiving conversation:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleBlockCustomer = useCallback(async () => {
+    if (!selectedConversation) return;
+    if (!window.confirm(t("unifiedInbox.blockConfirm", { defaultValue: "Are you sure you want to block this customer?" }))) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/customer/${selectedConversation.contactId}/block`);
+      setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+      setSelectedConversation(null);
+    } catch (err) {
+      console.error("Error blocking customer:", err);
     }
   }, [selectedConversation]);
 
