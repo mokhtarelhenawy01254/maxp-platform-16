@@ -106,28 +106,6 @@ async function seedMarketplace() {
 
     const bundles = [
       {
-        slug: 'starter-bundle',
-        name: 'باقة البداية',
-        description: 'باقة مثالية للشركات الناشئة: المتجر الأساسي + CRM + إدارة الموظفين',
-        appIds: JSON.stringify(['ecommerce-basic', 'crm-basic', 'hr-basic']),
-        monthlyPrice: 399,
-        yearlyPrice: 3990,
-        discount: 30,
-        isActive: true,
-        isFeatured: true
-      },
-      {
-        slug: 'business-bundle',
-        name: 'باقة الأعمال',
-        description: 'باقة شاملة للشركات المتوسطة: جميع الأدوات الأساسية',
-        appIds: JSON.stringify(['ecommerce-basic', 'crm-basic', 'hr-basic', 'ai-chat-basic', 'whatsapp-business']),
-        monthlyPrice: 899,
-        yearlyPrice: 8990,
-        discount: 40,
-        isActive: true,
-        isFeatured: true
-      },
-      {
         slug: 'messaging-bundle',
         name: 'باقة المراسلة',
         description: 'كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent',
@@ -135,6 +113,17 @@ async function seedMarketplace() {
         monthlyPrice: 999,
         yearlyPrice: 9990,
         discount: 69,
+        isActive: true,
+        isFeatured: true
+      },
+      {
+        slug: 'ai-inbox-bundle',
+        name: 'AI + Inbox Bundle',
+        description: 'باقة متكاملة تجمع الذكاء الاصطناعي للمحادثات مع صندوق وارد موحد لكل المنصات — AI Agent يرد على العملاء وينشئ طلبات وحجوزات بشكل تلقائي.',
+        appIds: JSON.stringify(['unified-inbox', 'ai-chat-basic']),
+        monthlyPrice: 999,
+        yearlyPrice: null,
+        discount: 0,
         isActive: true,
         isFeatured: true
       }

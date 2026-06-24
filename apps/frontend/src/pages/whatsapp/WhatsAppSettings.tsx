@@ -107,11 +107,7 @@ type TabId =
   | "quick-replies"
   | "business"
   | "privacy"
-  | "labels"
-  | "stats"
-  | "status"
-  | "hours"
-  | "notifications";
+  | "labels";
 
 type WhatsAppProvider = "BAILEYS" | "META_CLOUD";
 
@@ -315,10 +311,6 @@ const tabsRequiringScopedSession = new Set<TabId>([
   "business",
   "privacy",
   "labels",
-  "stats",
-  "status",
-  "hours",
-  "templates",
 ]);
 
 function getApiErrorMessage(error: unknown, fallback: string) {
@@ -585,30 +577,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         icon: Tag,
         description: t("whatsappSettings.manageLabels"),
       },
-      {
-        id: "stats",
-        label: t("whatsappSettings.stats"),
-        icon: BarChart3,
-        description: t("whatsappSettings.stats"),
-      },
-      {
-        id: "status",
-        label: t("whatsappSettings.status"),
-        icon: Clock,
-        description: t("whatsappSettings.status"),
-      },
-      {
-        id: "hours",
-        label: t("whatsappSettings.businessHours"),
-        icon: Clock3,
-        description: t("whatsappSettings.businessHours"),
-      },
-      {
-        id: "notifications",
-        label: t("whatsappSettings.notifications"),
-        icon: Bell,
-        description: t("whatsappSettings.autoNotificationsDesc"),
-      },
+
     ],
     [t],
   );
@@ -870,18 +839,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         case "labels":
           await loadLabels(sessionId);
           break;
-        case "stats":
-          await loadStats(sessionId);
-          break;
-        case "status":
-          await loadStatus(sessionId);
-          break;
-        case "hours":
-          await loadBusinessHours(sessionId);
-          break;
-        case "templates":
-          await loadTemplates(sessionId);
-          break;
+
         default:
           break;
       }
@@ -891,9 +849,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       loadBusinessProfile,
       loadLabels,
       loadPrivacySettings,
-      loadStats,
-      loadStatus,
-      loadTemplates,
     ],
   );
 
@@ -1854,227 +1809,58 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
     return (
       <div className="space-y-4">
-        <div className="grid gap-4 xl:grid-cols-2">
-          <WhatsAppSurfaceCard
-            title={t("whatsappSettings.generalSettings")}
-            description={t("whatsappSettings.description")}
-          >
-            <div className="space-y-4">
-              <SettingsToggle
-                label={t("whatsappSettings.enableWhatsApp")}
-                checked={settings.isEnabled}
-                onCheckedChange={(checked) =>
-                  setSettings((previous) =>
-                    previous ? { ...previous, isEnabled: checked } : previous,
-                  )
-                }
-              />
+        <WhatsAppSurfaceCard
+          title={t("whatsappSettings.notifications")}
+          description={t("whatsappSettings.autoNotificationsDesc")}
+        >
+          <div className="space-y-4">
+            <SettingsToggle
+              label={t("whatsappSettings.notificationSound")}
+              checked={settings.notificationSound}
+              onCheckedChange={(checked) =>
+                setSettings((previous) =>
+                  previous
+                    ? { ...previous, notificationSound: checked }
+                    : previous,
+                )
+              }
+            />
+            <SettingsToggle
+              label={t("whatsappSettings.browserNotifications")}
+              checked={settings.browserNotifications}
+              onCheckedChange={(checked) =>
+                setSettings((previous) =>
+                  previous
+                    ? { ...previous, browserNotifications: checked }
+                    : previous,
+                )
+              }
+            />
 
-              <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-[color:var(--color-foreground)]">
-                      {t("whatsappSettings.maxSessions")}
-                    </p>
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                      {settings.maxSessions}
-                    </p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]"
-                  >
-                    {settings.maxSessions}
-                  </Badge>
+            <div className="rounded-3xl border border-emerald-300/70 bg-emerald-500/10 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white">
+                  <Bell className="size-5" />
                 </div>
-                <Slider
-                  className="mt-4"
-                  min={1}
-                  max={10}
-                  step={1}
-                  value={[settings.maxSessions]}
-                  onValueChange={([value]) =>
-                    setSettings((previous) =>
-                      previous ? { ...previous, maxSessions: value } : previous,
-                    )
-                  }
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="size-4 text-[color:var(--color-primary)]" />
-                    <p className="text-sm font-medium text-[color:var(--color-foreground)]">
-                      {t("whatsappSettings.imageSizeLimit")}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
-                    {settings.maxImageSize} MB
+                <div className="space-y-2">
+                  <p className="text-base font-semibold text-emerald-900">
+                    {t("whatsappSettings.autoNotifications")}
                   </p>
-                  <Slider
-                    className="mt-4"
-                    min={1}
-                    max={50}
-                    step={1}
-                    value={[settings.maxImageSize]}
-                    onValueChange={([value]) =>
-                      setSettings((previous) =>
-                        previous ? { ...previous, maxImageSize: value } : previous,
-                      )
-                    }
-                  />
-                </div>
-
-                <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <Video className="size-4 text-[color:var(--color-secondary)]" />
-                    <p className="text-sm font-medium text-[color:var(--color-foreground)]">
-                      {t("whatsappSettings.videoSizeLimit")}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
-                    {settings.maxVideoSize} MB
+                  <p className="text-sm leading-6 text-emerald-800">
+                    {t("whatsappSettings.autoNotificationsDesc")}
                   </p>
-                  <Slider
-                    className="mt-4"
-                    min={1}
-                    max={100}
-                    step={1}
-                    value={[settings.maxVideoSize]}
-                    onValueChange={([value]) =>
-                      setSettings((previous) =>
-                        previous ? { ...previous, maxVideoSize: value } : previous,
-                      )
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-[color:var(--color-foreground)]">
-                      Document Limit
-                    </p>
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                      {settings.maxDocumentSize} MB
-                    </p>
-                  </div>
-                  <Badge
+                  <Button
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]"
+                    className="rounded-full border-emerald-300/70 bg-[color:var(--color-card)] text-emerald-900 hover:bg-[color:var(--color-card)]"
+                    onClick={() => navigate(notificationsHref)}
                   >
-                    {settings.maxDocumentSize} MB
-                  </Badge>
-                </div>
-                <Slider
-                  className="mt-4"
-                  min={1}
-                  max={100}
-                  step={1}
-                  value={[settings.maxDocumentSize]}
-                  onValueChange={([value]) =>
-                    setSettings((previous) =>
-                      previous ? { ...previous, maxDocumentSize: value } : previous,
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-4">
-                <SettingsToggle
-                  label={t("whatsappSettings.autoCompressImages")}
-                  checked={settings.autoCompressImages}
-                  onCheckedChange={(checked) =>
-                    setSettings((previous) =>
-                      previous
-                        ? { ...previous, autoCompressImages: checked }
-                        : previous,
-                    )
-                  }
-                />
-
-                <div className="space-y-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
-                  <Label htmlFor="archive-days">Auto archive days</Label>
-                  <Input
-                    id="archive-days"
-                    type="number"
-                    min={0}
-                    value={settings.autoArchiveDays ?? 0}
-                    onChange={(event) =>
-                      setSettings((previous) =>
-                        previous
-                          ? {
-                              ...previous,
-                              autoArchiveDays: Number.parseInt(
-                                event.target.value || "0",
-                                10,
-                              ),
-                            }
-                          : previous,
-                      )
-                    }
-                    className="h-11 bg-[color:var(--color-card)]"
-                  />
+                    {t("whatsappSettings.openNotificationSettings")}
+                  </Button>
                 </div>
               </div>
             </div>
-          </WhatsAppSurfaceCard>
-
-          <WhatsAppSurfaceCard
-            title={t("whatsappSettings.notifications")}
-            description={t("whatsappSettings.autoNotificationsDesc")}
-          >
-            <div className="space-y-4">
-              <SettingsToggle
-                label={t("whatsappSettings.notificationSound")}
-                checked={settings.notificationSound}
-                onCheckedChange={(checked) =>
-                  setSettings((previous) =>
-                    previous
-                      ? { ...previous, notificationSound: checked }
-                      : previous,
-                  )
-                }
-              />
-              <SettingsToggle
-                label={t("whatsappSettings.browserNotifications")}
-                checked={settings.browserNotifications}
-                onCheckedChange={(checked) =>
-                  setSettings((previous) =>
-                    previous
-                      ? { ...previous, browserNotifications: checked }
-                      : previous,
-                  )
-                }
-              />
-
-              <div className="rounded-3xl border border-emerald-300/70 bg-emerald-500/10 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white">
-                    <Bell className="size-5" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-base font-semibold text-emerald-900">
-                      {t("whatsappSettings.autoNotifications")}
-                    </p>
-                    <p className="text-sm leading-6 text-emerald-800">
-                      {t("whatsappSettings.autoNotificationsDesc")}
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="rounded-full border-emerald-300/70 bg-[color:var(--color-card)] text-emerald-900 hover:bg-[color:var(--color-card)]"
-                      onClick={() => navigate(notificationsHref)}
-                    >
-                      {t("whatsappSettings.openNotificationSettings")}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </WhatsAppSurfaceCard>
-        </div>
+          </div>
+        </WhatsAppSurfaceCard>
 
         <Button
           className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
@@ -3029,14 +2815,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         return renderPrivacyTab();
       case "labels":
         return renderLabelsTab();
-      case "stats":
-        return renderStatsTab();
-      case "status":
-        return renderStatusTab();
-      case "hours":
-        return renderHoursTab();
-      case "notifications":
-        return renderNotificationsTab();
       default:
         return null;
     }

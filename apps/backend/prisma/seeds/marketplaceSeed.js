@@ -1091,87 +1091,26 @@ async function seedMarketplace() {
     ];
     const bundles = [
       {
-        "slug": "enterprise-bundle",
-        "name": "باقة المؤسسات",
-        "nameEn": null,
-        "description": "باقة المؤسسات الكبيرة: كل التطبيقات مع خصم 40%",
-        "appIds": [
-          "store-pro",
-          "inventory-pro",
-          "hr-core",
-          "hr-payroll",
-          "hr-assets",
-          "ai-chat-pro",
-          "ai-image-studio",
-          "whatsapp-business",
-          "telegram-business",
-          "crm-loyalty",
-          "opportunities-pipeline",
-          "turbo-analytics",
-          "facebook-ads-pro"
-        ],
-        "monthlyPrice": 2499,
-        "yearlyPrice": 24990,
-        "discount": 40,
-        "isActive": true,
-        "isFeatured": true
-      },
-      {
-        "slug": "ecommerce-pro-bundle",
-        "name": "باقة التجارة الإلكترونية الاحترافية",
-        "nameEn": null,
-        "description": "كل ما تحتاجه للتجارة الإلكترونية: متجر + مخزون + تسويق + صور AI",
-        "appIds": [
-          "store-pro",
-          "inventory-pro",
-          "ai-image-studio",
-          "facebook-ads-pro",
-          "facebook-catalog-shop",
-          "woocommerce-sync"
-        ],
+        "slug": "messaging-bundle",
+        "name": "باقة المراسلة",
+        "nameEn": "Messaging Bundle",
+        "description": "كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent",
+        "appIds": ["crm-basic", "whatsapp-business", "telegram-business"],
         "monthlyPrice": 999,
         "yearlyPrice": 9990,
-        "discount": 30,
+        "discount": 69,
         "isActive": true,
         "isFeatured": true
       },
       {
-        "slug": "ai-power-bundle",
-        "name": "باقة القوى AI",
-        "nameEn": null,
-        "description": "أدوات AI المتقدمة: محادثات + صور + قاعدة معرفة",
-        "appIds": [
-          "ai-chat-pro",
-          "ai-image-studio",
-          "ai-rag-knowledge"
-        ],
-        "monthlyPrice": 799,
-        "yearlyPrice": 7990,
-        "discount": 25,
-        "isActive": true,
-        "isFeatured": false
-      },
-      {
-        "slug": "starter-bundle",
-        "name": "باقة البداية",
-        "nameEn": "Starter Bundle",
-        "description": "باقة مثالية للشركات الناشئة: المتجر الأساسي + CRM + إدارة الموظفين",
-        "appIds": "[\"ecommerce-basic\",\"crm-basic\",\"hr-basic\"]",
-        "monthlyPrice": 399,
-        "yearlyPrice": 3990,
-        "discount": 30,
-        "isActive": true,
-        "isFeatured": true
-      },
-      {
-        "slug": "business-bundle",
-        "name": "باقة الأعمال",
-        "nameEn": "Business Bundle",
-        "description": "باقة شاملة للشركات المتوسطة: المتجر المتقدم + CRM + HR كامل + AI + WhatsApp",
-        "appIds": "[\"ecommerce-pro\",\"crm-basic\",\"hr-basic\",\"hr-attendance\",\"hr-payroll\",\"ai-chat-basic\",\"whatsapp-business\"]",
-        "monthlyPrice": 1299,
-        "yearlyPrice": 12990,
-        "discount": 40,
+        "slug": "ai-inbox-bundle",
+        "name": "AI + Inbox Bundle",
+        "nameEn": "AI + Inbox Bundle",
+        "description": "باقة متكاملة تجمع الذكاء الاصطناعي للمحادثات مع صندوق وارد موحد لكل المنصات — AI Agent يرد على العملاء وينشئ طلبات وحجوزات بشكل تلقائي.",
+        "appIds": ["unified-inbox", "ai-chat-basic"],
+        "monthlyPrice": 999,
+        "yearlyPrice": null,
+        "discount": 0,
         "isActive": true,
         "isFeatured": true
       }

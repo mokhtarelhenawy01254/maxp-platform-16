@@ -959,59 +959,26 @@ async function seedMarketplace() {
 
   const bundles = [
     {
-      slug: 'starter-bundle',
-      name: 'باقة البداية',
-      description: 'باقة مثالية للشركات الناشئة: المتجر الأساسي + CRM + HR الأساسي',
-      apps: ['store-basic', 'crm-basic', 'hr-core'],
-      monthlyPrice: 449,
-      yearlyPrice: 4490,
-      discount: 25,
-      isActive: true,
-      isFeatured: true
-    },
-    {
-      slug: 'business-bundle',
-      name: 'باقة الأعمال',
-      description: 'باقة شاملة للشركات المتوسطة: المتجر الاحترافي + CRM + HR + AI + واتساب',
-      apps: ['store-pro', 'crm-loyalty', 'hr-core', 'hr-attendance-pro', 'ai-chat-basic', 'whatsapp-business', 'analytics-basic'],
-      monthlyPrice: 1299,
-      yearlyPrice: 12990,
-      discount: 35,
-      isActive: true,
-      isFeatured: true
-    },
-    {
-      slug: 'enterprise-bundle',
-      name: 'باقة المؤسسات',
-      description: 'باقة المؤسسات الكبيرة: كل التطبيقات مع خصم 40%',
-      apps: ['store-pro', 'inventory-pro', 'hr-core', 'hr-payroll', 'hr-assets', 'ai-chat-pro', 'ai-image-studio', 'whatsapp-business', 'telegram-business', 'crm-loyalty', 'opportunities-pipeline', 'turbo-analytics', 'facebook-ads-pro'],
-      monthlyPrice: 2499,
-      yearlyPrice: 24990,
-      discount: 40,
-      isActive: true,
-      isFeatured: true
-    },
-    {
-      slug: 'ecommerce-pro-bundle',
-      name: 'باقة التجارة الإلكترونية الاحترافية',
-      description: 'كل ما تحتاجه للتجارة الإلكترونية: متجر + مخزون + تسويق + صور AI',
-      apps: ['store-pro', 'inventory-pro', 'ai-image-studio', 'facebook-ads-pro', 'facebook-catalog-shop', 'woocommerce-sync'],
+      slug: 'messaging-bundle',
+      name: 'باقة المراسلة',
+      description: 'كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent',
+      apps: ['crm-basic', 'whatsapp-business', 'telegram-business'],
       monthlyPrice: 999,
       yearlyPrice: 9990,
-      discount: 30,
+      discount: 69,
       isActive: true,
       isFeatured: true
     },
     {
-      slug: 'ai-power-bundle',
-      name: 'باقة القوى AI',
-      description: 'أدوات AI المتقدمة: محادثات + صور + قاعدة معرفة',
-      apps: ['ai-chat-pro', 'ai-image-studio', 'ai-rag-knowledge'],
-      monthlyPrice: 799,
-      yearlyPrice: 7990,
-      discount: 25,
+      slug: 'ai-inbox-bundle',
+      name: 'AI + Inbox Bundle',
+      description: 'باقة متكاملة تجمع الذكاء الاصطناعي للمحادثات مع صندوق وارد موحد لكل المنصات — AI Agent يرد على العملاء وينشئ طلبات وحجوزات بشكل تلقائي.',
+      apps: ['unified-inbox', 'ai-chat-basic'],
+      monthlyPrice: 999,
+      yearlyPrice: null,
+      discount: 0,
       isActive: true,
-      isFeatured: false
+      isFeatured: true
     }
   ];
 

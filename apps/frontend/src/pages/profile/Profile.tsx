@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import {
   CameraIcon,
@@ -33,7 +33,6 @@ import {
   BanknotesIcon,
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
-import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useTheme } from "../../hooks/useTheme";
 import api from "../../services/api";
@@ -184,14 +183,14 @@ const InfoField = ({
   </div>
 );
 
-const TABS = [
+const ALL_TABS = [
   { value: "overview", label: "نظرة عامة", icon: ChartBarIcon },
   { value: "personal", label: "البيانات الشخصية", icon: IdentificationIcon },
-  { value: "job", label: "الوظيفة والراتب", icon: WalletIcon },
-  { value: "custody", label: "عهدتي", icon: ComputerDesktopIcon },
-  { value: "documents", label: "المستندات", icon: DocumentTextIcon },
-  { value: "warnings", label: "الإنذارات", icon: BellAlertIcon },
-  { value: "events", label: "المناسبات", icon: CakeIcon },
+  { value: "job", label: "الوظيفة والراتب", icon: WalletIcon, requiresHr: true },
+  { value: "custody", label: "عهدتي", icon: ComputerDesktopIcon, requiresHr: true },
+  { value: "documents", label: "المستندات", icon: DocumentTextIcon, requiresHr: true },
+  { value: "warnings", label: "الإنذارات", icon: BellAlertIcon, requiresHr: true },
+  { value: "events", label: "المناسبات", icon: CakeIcon, requiresHr: true },
 ];
 
 const SectionCard = ({
@@ -238,6 +237,9 @@ const Profile: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isMerchantUser = user?.role === "MERCHANT";
   const isAffiliateUser = user?.role === "AFFILIATE";
+  const activeApps: string[] = (user as any)?.company?.activeApps ?? [];
+  const hasAffiliatePro = activeApps.some((a) => a.toLowerCase() === "affiliate-pro");
+  const hasHrBasic = activeApps.some((a) => a.toLowerCase() === "hr-basic");
   const [loading, setLoading] = useState(true);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -247,6 +249,8 @@ const Profile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [myCustody, setMyCustody] = useState<CustodyAsset[]>([]);
   const [warnings, setWarnings] = useState<WarningRecord[]>([]);
+
+  const TABS = useMemo(() => ALL_TABS.filter(t => !t.requiresHr || hasHrBasic), [hasHrBasic]);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -269,6 +273,12 @@ const Profile: React.FC = () => {
     const tab = searchParams.get("tab");
     if (tab) setActiveTab(tab);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!TABS.some(t => t.value === activeTab)) {
+      setActiveTab("overview");
+    }
+  }, [TABS]);
 
   const fetchMyCustody = useCallback(async (employeeId: string) => {
     try {
@@ -341,7 +351,7 @@ const Profile: React.FC = () => {
   }, [fetchMyCustody, fetchMyWarnings, user]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 5000);
+    const timer = setTimeout(() => setLoading(false), 3000);
     fetchProfileData();
     return () => clearTimeout(timer);
   }, [fetchProfileData]);
@@ -422,12 +432,11 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${derivedTheme === 'dark' ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`}>
+      <div className={`flex items-center justify-center py-32 ${derivedTheme === 'dark' ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`}>
         <div className="text-center">
-          <div className="relative mx-auto mb-8 w-20 h-20">
+          <div className="relative mx-auto mb-6 w-16 h-16">
             <div className={`absolute inset-0 rounded-full border-2 ${derivedTheme === 'dark' ? 'border-violet-500/20' : 'border-violet-200'}`} />
             <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-violet-500 animate-spin" />
-            <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-indigo-400 animate-spin" style={{ animationDirection: "reverse", animationDuration: "0.8s" }} />
           </div>
           <p className={`text-sm ${derivedTheme === 'dark' ? 'text-slate-400' : 'text-slate-600'} font-medium`}>جاري تحميل ملفك الشخصي...</p>
         </div>
@@ -558,33 +567,47 @@ const Profile: React.FC = () => {
             ))}
           </div>
 
-          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/[0.06] dark:bg-slate-900/80">
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-bold text-amber-600 dark:text-amber-300">{toolsHeading}</p>
-                <h2 className="text-xl font-black text-slate-950 dark:text-white">صلاحيات محدودة ومباشرة</h2>
+          {hasAffiliatePro ? (
+            <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/[0.06] dark:bg-slate-900/80">
+              <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-amber-600 dark:text-amber-300">{toolsHeading}</p>
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">صلاحيات محدودة ومباشرة</h2>
+                </div>
+                <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
+                  لا تظهر هنا بيانات الموظفين أو الرواتب أو العهد أو ملفات الشركة الداخلية؛ أي إدارة للشركة تظل مع مقدم الخدمة.
+                </p>
               </div>
-              <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-                لا تظهر هنا بيانات الموظفين أو الرواتب أو العهد أو ملفات الشركة الداخلية؛ أي إدارة للشركة تظل مع مقدم الخدمة.
-              </p>
-            </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              {tools.map((tool) => (
-                <Link
-                  key={tool.to}
-                  to={tool.to}
-                  className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50 dark:border-white/[0.06] dark:bg-slate-950/60 dark:hover:border-amber-400/40 dark:hover:bg-amber-400/10"
-                >
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white transition group-hover:bg-amber-500 dark:bg-amber-400 dark:text-slate-950">
-                    <tool.icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-black text-slate-950 dark:text-white">{tool.label}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{tool.description}</p>
-                </Link>
-              ))}
-            </div>
-          </section>
+              <div className="grid gap-4 md:grid-cols-3">
+                {tools.map((tool) => (
+                  <Link
+                    key={tool.to}
+                    to={tool.to}
+                    className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50 dark:border-white/[0.06] dark:bg-slate-950/60 dark:hover:border-amber-400/40 dark:hover:bg-amber-400/10"
+                  >
+                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white transition group-hover:bg-amber-500 dark:bg-amber-400 dark:text-slate-950">
+                      <tool.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-black text-slate-950 dark:text-white">{tool.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{tool.description}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <section className="mt-6 rounded-3xl border border-amber-200/50 dark:border-amber-400/10 bg-amber-50/50 dark:bg-amber-500/5 p-6 shadow-sm">
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                  <ShoppingBagIcon className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 dark:text-white mb-1">لم يتم تفعيل {isMerchantUser ? "بورتال التاجر" : "لوحة المسوق"}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  للوصول إلى أدوات {isMerchantUser ? "التاجر" : "المسوق"}، يرجى تثبيت تطبيق Affiliate Pro من متجر التطبيقات.
+                </p>
+              </div>
+            </section>
+          )}
         </div>
       </motion.div>
     );
@@ -829,47 +852,30 @@ const Profile: React.FC = () => {
 
               {/* ── Overview ── */}
               <TabsContent value="overview" className="mt-0 space-y-6 focus-visible:outline-none">
-                {/* Stats */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {statsData.map((stat, i) => (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.08 }}
-                      className="relative overflow-hidden p-5 rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all group cursor-default"
-                    >
-                      <div className={`absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r ${stat.gradient} opacity-50 group-hover:opacity-100 transition-opacity`} />
-                      <div className={`w-10 h-10 mb-4 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg ${stat.glow} group-hover:scale-110 transition-transform`}>
-                        <stat.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">{stat.label}</p>
-                      <p className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{stat.value}</p>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Performance + Contact */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Performance */}
-                  <div className="p-5 rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">تقييم الأداء</p>
-                    <div className="flex items-center gap-1 mb-3">
-                      {[1, 2, 3, 4, 5].map((s) =>
-                        s <= 4
-                          ? <StarSolid key={s} className="w-5 h-5 text-amber-500" />
-                          : <StarSolid key={s} className="w-5 h-5 text-slate-300 dark:text-slate-700" />
-                      )}
-                      <span className="text-sm font-bold text-slate-900 dark:text-white ms-2">4.0</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                      <div className="h-full w-4/5 bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full" />
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">ممتاز — آخر تقييم ربع سنوي</p>
+                {hasHrBasic && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    {statsData.map((stat, i) => (
+                      <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.08 }}
+                        className="relative overflow-hidden p-5 rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all group cursor-default"
+                      >
+                        <div className={`absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r ${stat.gradient} opacity-50 group-hover:opacity-100 transition-opacity`} />
+                        <div className={`w-10 h-10 mb-4 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg ${stat.glow} group-hover:scale-110 transition-transform`}>
+                          <stat.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">{stat.label}</p>
+                        <p className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{stat.value}</p>
+                      </motion.div>
+                    ))}
                   </div>
+                )}
 
-                  {/* Quick Contact */}
-                  <div className="md:col-span-2 p-5 rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all">
+                {/* Quick Contact */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-5 rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">معلومات الاتصال السريعة</p>
                     <div className="space-y-3">
                       {[
@@ -1049,20 +1055,20 @@ const Profile: React.FC = () => {
                         <motion.div
                           key={asset.id}
                           whileHover={{ y: -2 }}
-                          className="p-4 rounded-xl border border-white/[0.06] bg-slate-800/50 hover:bg-slate-800 transition-all group"
+                          className="p-4 rounded-xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group"
                         >
                           <div className="flex items-start justify-between mb-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600/30 to-indigo-600/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                              <ComputerDesktopIcon className="w-5 h-5 text-violet-400" />
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600/10 dark:from-violet-600/30 to-indigo-600/10 dark:to-indigo-600/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <ComputerDesktopIcon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${asset.status === "ASSIGNED" ? "bg-emerald-500/15 text-emerald-400" : "bg-slate-500/15 text-slate-400"}`}>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${asset.status === "ASSIGNED" ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-slate-100 dark:bg-slate-500/15 text-slate-600 dark:text-slate-400"}`}>
                               {asset.status === "ASSIGNED" ? "مُسلّم" : asset.status}
                             </span>
                           </div>
-                          <h4 className="font-semibold text-white mb-2">{asset.name}</h4>
+                          <h4 className="font-semibold text-slate-900 dark:text-white mb-2">{asset.name}</h4>
                           <div className="space-y-1 text-xs text-slate-500">
-                            {asset.code && <div className="flex justify-between"><span>الكود</span><span className="font-mono text-slate-400">{asset.code}</span></div>}
-                            {asset.serialNumber && <div className="flex justify-between"><span>الرقم التسلسلي</span><span className="font-mono text-slate-400">{asset.serialNumber}</span></div>}
+                            {asset.code && <div className="flex justify-between"><span>الكود</span><span className="font-mono text-slate-600 dark:text-slate-400">{asset.code}</span></div>}
+                            {asset.serialNumber && <div className="flex justify-between"><span>الرقم التسلسلي</span><span className="font-mono text-slate-600 dark:text-slate-400">{asset.serialNumber}</span></div>}
                             {asset.assignedDate && <div className="flex justify-between"><span>تاريخ الاستلام</span><span>{formatDate(asset.assignedDate)}</span></div>}
                           </div>
                         </motion.div>
@@ -1086,7 +1092,7 @@ const Profile: React.FC = () => {
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {employee.documents_rel.map((doc, idx) => (
                         <motion.div
-                          key={idx}
+                          key={`${doc.type}-${idx}`}
                           whileHover={{ y: -2 }}
                           className="p-4 rounded-xl border border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer group"
                         >
@@ -1183,7 +1189,7 @@ const Profile: React.FC = () => {
                       <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
                         <CakeIcon className="w-8 h-8 text-white" />
                       </div>
-                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-pink-900'} mb-2`}>عيد ميلادك القادم 🎂</h3>
+                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-pink-900'} mb-2`}>عيد ميلادك القادم</h3>
                       {employee?.dateOfBirth ? (
                         <>
                           <p className={`text-sm ${derivedTheme === 'dark' ? 'text-pink-300/70' : 'text-pink-600/70'} mb-6`}>{formatDate(getNextOccasion(employee.dateOfBirth)?.date.toISOString() || "")}</p>
@@ -1215,7 +1221,7 @@ const Profile: React.FC = () => {
                       <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
                         <GiftIcon className="w-8 h-8 text-white" />
                       </div>
-                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-violet-900'} mb-2`}>ذكرى انضمامك 🎉</h3>
+                      <h3 className={`text-lg font-bold ${derivedTheme === 'dark' ? 'text-white' : 'text-violet-900'} mb-2`}>ذكرى انضمامك</h3>
                       {employee?.hireDate ? (
                         <>
                           <p className="text-sm text-violet-600 dark:text-violet-300/70 mb-6">{formatDate(getNextOccasion(employee.hireDate)?.date.toISOString() || "")}</p>
