@@ -11,9 +11,9 @@
     "isActive": true,
     "isFeatured": true,
     "appSlugs": [
-      "crm-basic",
-      "whatsapp-business",
-      "telegram-business"
+      "crm-lite",
+      "unified-inbox",
+      "ai-chat-basic"
     ],
     "createdAt": "2026-03-06T00:00:00.000Z",
     "updatedAt": "2026-03-06T00:00:00.000Z"
