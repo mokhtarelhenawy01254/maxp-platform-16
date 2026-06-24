@@ -139,21 +139,27 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
           </span>
         </div>
 
-        <div className="mt-4 flex justify-center gap-4 text-sm">
-          <div className="text-center">
-            <p className="text-xs" style={mutedStyle}>
+        <div 
+          className="mx-6 mt-5 flex overflow-hidden rounded-[20px] border bg-transparent"
+          style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+        >
+          <div className="flex-1 py-3 text-center">
+            <p className="mb-1 text-xs font-bold" style={mutedStyle}>
               {t("unifiedInbox.orders")}
             </p>
-            <p className="font-semibold" style={headingStyle}>
+            <p className="text-lg font-bold" style={headingStyle}>
               {orders.length}
             </p>
           </div>
-          <div className="text-center">
-            <p className="text-xs" style={mutedStyle}>
+          <div 
+            className="flex-1 py-3 text-center"
+            style={{ borderInlineStart: "1px solid var(--business-muted-line, #b6c6e3)" }}
+          >
+            <p className="mb-1 text-xs font-bold" style={mutedStyle}>
               {t("unifiedInbox.orderValue")}
             </p>
-            <p className="font-semibold" style={successStyle}>
-              {ltv.toLocaleString()} {t("unifiedInbox.egp")}
+            <p className="flex items-baseline justify-center gap-1 text-lg font-bold" style={successStyle}>
+              {ltv.toLocaleString()} <span className="text-xs font-medium">{t("unifiedInbox.egp")}</span>
             </p>
           </div>
         </div>
@@ -224,50 +230,83 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
         ) : (
           <>
             {activeTab === "info" && (
-              <div className="space-y-6">
-                <div className="business-page-panel p-4">
+              <div className="space-y-4">
+                <div 
+                  className="rounded-[20px] border bg-transparent p-4"
+                  style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                >
                   <h4
-                    className="mb-3 text-xs font-semibold uppercase"
+                    className="mb-3 text-sm font-bold text-end"
                     style={mutedStyle}
                   >
                     {t("unifiedInbox.contact")}
                   </h4>
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm">
-                      <Phone size={16} style={mutedStyle} />
+                    <div className="flex items-center justify-end gap-2 text-sm">
                       <span
-                        className="font-mono font-medium"
+                        className="font-medium"
                         style={headingStyle}
                         dir="ltr"
                       >
                         {customer?.phone || t("unifiedInbox.notAvailable")}
                       </span>
+                      <Phone size={16} style={mutedStyle} />
                     </div>
                     {customer?.email &&
                       !customer.email.endsWith("@example.com") && (
-                        <div className="flex items-center gap-3 text-sm">
-                          <Mail size={16} style={mutedStyle} />
-                          <span className="truncate" style={headingStyle}>
+                        <div className="flex items-center justify-end gap-2 text-sm">
+                          <span className="truncate font-medium" style={headingStyle}>
                             {customer.email}
                           </span>
+                          <Mail size={16} style={mutedStyle} />
                         </div>
                       )}
                   </div>
                 </div>
 
-                <div className="business-page-panel p-4">
+                <div 
+                  className="rounded-[20px] border bg-transparent p-4"
+                  style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                >
                   <h4
-                    className="mb-3 text-xs font-semibold uppercase"
+                    className="mb-3 text-sm font-bold text-end"
                     style={mutedStyle}
                   >
                     {t("unifiedInbox.categories")}
                   </h4>
-                  <TagInput
-                    conversationId={conversation.id}
-                    currentTags={conversation.tags}
-                    onTagsChange={onTagsChange}
-                    disabled={updatingTags}
-                  />
+                  <div className="flex justify-end">
+                    <TagInput
+                      conversationId={conversation.id}
+                      currentTags={conversation.tags}
+                      onTagsChange={onTagsChange}
+                      disabled={updatingTags}
+                    />
+                  </div>
+                </div>
+
+                <div 
+                  className="rounded-[20px] border bg-transparent p-4"
+                  style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                >
+                  <h4
+                    className="mb-3 text-sm font-bold text-end"
+                    style={mutedStyle}
+                  >
+                    {t("unifiedInbox.otherData", "بيانات أخرى")}
+                  </h4>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium" style={headingStyle} dir="ltr">
+                       {customer?.lastSeen ? format(new Date(customer.lastSeen), "MMM dd, HH:mm", {
+                          locale: i18n.language === "ar" ? arSA : enUS,
+                        }) : format(new Date(conversation.updatedAt || new Date()), "MMM dd, HH:mm", {
+                          locale: i18n.language === "ar" ? arSA : enUS,
+                        })}
+                    </span>
+                    <span className="text-xs font-semibold" style={mutedStyle}>
+                       {t("unifiedInbox.lastSeen", "آخر ظهور:")}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
