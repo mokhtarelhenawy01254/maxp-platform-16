@@ -41,6 +41,7 @@ import TextGalleryModal from "../../components/facebook-inbox/TextGallery/TextGa
 import ImageGalleryModal from "../../components/facebook-inbox/ImageGallery/ImageGalleryModal";
 import ForwardModal from "../../components/facebook-inbox/Modals/ForwardModal";
 import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
+import type { ConversationStatus } from "../../types/inbox.types";
 import PostsManagement from "../comments/PostsManagement";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -794,6 +795,19 @@ const UnifiedInbox: React.FC = () => {
       setSelectedConversation(null);
     } catch (err) {
       console.error("Error marking resolved:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleStatusChange = useCallback(async (status: ConversationStatus) => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, { status });
+      setConversations(prev =>
+        prev.map(c => c.id === selectedConversation.id ? { ...c, status } : c)
+      );
+      setSelectedConversation(prev => prev ? { ...prev, status } : null);
+    } catch (err) {
+      console.error("Error updating status:", err);
     }
   }, [selectedConversation]);
 
