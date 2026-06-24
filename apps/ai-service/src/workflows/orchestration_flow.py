@@ -348,6 +348,7 @@ async def run_orchestration(
             channel=effective_channel,
             conversation_id=conversation_id,
             external_memory_context=external_context,
+            llm_client=client,
         )
 
         pipeline_stages = [

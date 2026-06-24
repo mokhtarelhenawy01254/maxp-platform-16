@@ -141,7 +141,7 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
         available_tools=available_tools,
         context=intent_context,
         company_id=ctx.company_id,
-        client=None,
+        client=ctx.llm_client,
     )
 
     # 3. Build tool plan
