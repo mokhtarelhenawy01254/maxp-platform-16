@@ -6,6 +6,7 @@ const WhatsAppNotificationService = require("../services/whatsapp/WhatsAppNotifi
 const KashierService = require("../services/kashierService");
 const { marketplaceCatalogService } = require("../services/catalog/marketplaceCatalogService");
 const aiServiceAdminClient = require("../services/aiServiceAdminClient");
+const { getDefaultAgentTemplateSlug } = require("../utils/getDefaultAgentTemplate");
 
 const getNextBillingDate = () => {
   const nextBillingDate = new Date();
@@ -233,13 +234,10 @@ exports.messagingCheckout = async (req, res) => {
     });
 
     try {
+      const defaultTemplateSlug = await getDefaultAgentTemplateSlug();
       await aiServiceAdminClient.spawnAgent({
         companyId,
-        name: `وكيل خدمة العملاء`,
-        role: 'SUPPORT',
-        templateSlug: 'support-agent',
-        icon: '🎧',
-        description: 'وكيل ذكي للرد على استفسارات العملاء وإنشاء الطلبات',
+        templateSlug: defaultTemplateSlug,
       });
     } catch (e) {
       console.warn('[MESSAGING-CHECKOUT] Auto-create agent skipped (non-blocking):', e.message);
@@ -353,13 +351,10 @@ exports.lpActivate = async (req, res) => {
     });
 
     try {
+      const defaultTemplateSlug = await getDefaultAgentTemplateSlug();
       await aiServiceAdminClient.spawnAgent({
         companyId,
-        name: `وكيل خدمة العملاء`,
-        role: 'SUPPORT',
-        templateSlug: 'support-agent',
-        icon: '🎧',
-        description: 'وكيل ذكي للرد على استفسارات العملاء وإنشاء الطلبات',
+        templateSlug: defaultTemplateSlug,
       });
     } catch (e) {
       console.warn('[LP-ACTIVATE] Auto-create agent skipped (non-blocking):', e.message);

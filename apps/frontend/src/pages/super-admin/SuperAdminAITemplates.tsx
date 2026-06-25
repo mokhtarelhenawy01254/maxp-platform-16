@@ -27,6 +27,8 @@ const SuperAdminAITemplates: React.FC = () => {
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [defaultSlug, setDefaultSlug] = useState<string | null>(null);
+  const [defaultUpdating, setDefaultUpdating] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<TemplateItem | null>(null);
@@ -41,7 +43,12 @@ const SuperAdminAITemplates: React.FC = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchTemplates(); }, []);
+  const fetchDefaultTemplate = async () => {
+    try { const { data } = await apiClient.get("/super-admin/agents/default-template"); if (data.success) setDefaultSlug(data.templateSlug); }
+    catch { /* ignore */ }
+  };
+
+  useEffect(() => { fetchTemplates(); fetchDefaultTemplate(); }, []);
 
   const allRoles = [...new Set(templates.map(t => t.role))].sort();
   const allIndustries = [...new Set(templates.flatMap(t => t.industries))].sort();
@@ -90,6 +97,15 @@ const SuperAdminAITemplates: React.FC = () => {
       setSelectedSlugs(new Set());
     } catch { /* toast handled by interceptor */ }
     finally { setBulkUpdating(false); }
+  };
+
+  const handleSetDefault = async (slug: string) => {
+    setDefaultUpdating(true);
+    try {
+      await apiClient.put("/super-admin/agents/default-template", { templateSlug: slug });
+      setDefaultSlug(slug);
+    } catch { /* toast handled by interceptor */ }
+    finally { setDefaultUpdating(false); }
   };
 
   if (loading) return <div className="flex justify-center items-center h-[60vh]"><LoadingSpinner size="lg" /></div>;
@@ -199,6 +215,9 @@ const SuperAdminAITemplates: React.FC = () => {
                               {t.name} <ExternalLink className="size-3 opacity-50" />
                             </button>
                             <p className="text-[0.7rem] text-muted-foreground font-mono">{t.slug}</p>
+                            {t.slug === defaultSlug && (
+                              <span className="text-[0.6rem] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">افتراضي</span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -233,6 +252,11 @@ const SuperAdminAITemplates: React.FC = () => {
                           <Button variant="ghost" size="icon-xs" onClick={() => setEditTarget(t)} title="تعديل"><Pencil className="size-3.5" /></Button>
                           <Button variant="ghost" size="icon-xs" onClick={() => setDuplicateTarget(t)} title="نسخ"><Copy className="size-3.5" /></Button>
                           <Button variant="ghost" size="icon-xs" onClick={() => setApplyTarget(t)} title="تطبيق على شركة"><Send className="size-3.5" /></Button>
+                          {t.slug !== defaultSlug && (
+                            <Button variant="ghost" size="icon-xs" disabled={defaultUpdating} onClick={() => handleSetDefault(t.slug)} title="تعيين كافتراضي" className="text-amber-600 hover:text-amber-700">
+                              <CheckCheck className="size-3.5" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon-xs" onClick={() => setDeleteTarget(t)} title="حذف"><Trash2 className="size-3.5 text-red-500" /></Button>
                           {expandedSlug === t.slug ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
                         </div>

@@ -50,12 +50,18 @@ The `lp_pages` table (raw SQL, not Prisma) has two new columns:
 
 ## Auto-Created Default Agent
 
-After any free bundle activation (lp-activate, messaging-checkout, or marketplace bundle subscribe), a default **support-agent** (`وكيل خدمة العملاء`) is automatically spawned via `POST /admin/agents/spawn` for the company. This is non-blocking — failure to create the agent does not prevent activation.
+After any free bundle activation (lp-activate, messaging-checkout, or marketplace bundle subscribe), a default agent is automatically spawned via `POST /admin/agents/spawn` for the company. This is non-blocking — failure to create the agent does not prevent activation.
+
+The template used is configurable via `SystemSettings` (`systemName='defaultAgentTemplate'` → `config.templateSlug`). Falls back to `support-agent`. Set from `/super-admin/ai-templates`.
 
 Affected endpoints:
 - `POST /api/v1/platform-subscription/messaging-checkout` — `messagingCheckout()`
 - `POST /api/v1/platform-subscription/lp-activate` — `lpActivate()`
 - `POST /api/v1/marketplace/bundles/ai-inbox-bundle/subscribe` — `subscribeToBundle()`
+
+Super admin API:
+- `GET /api/v1/super-admin/agents/default-template` — returns current `{ templateSlug }`
+- `PUT /api/v1/super-admin/agents/default-template` — set with `{ templateSlug }`
 
 ## Frontend
 
