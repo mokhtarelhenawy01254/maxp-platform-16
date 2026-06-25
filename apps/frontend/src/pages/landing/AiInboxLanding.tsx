@@ -138,7 +138,7 @@ const AiInboxLanding: React.FC = () => {
   const handleFreeActivate = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}`);
+      navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
     if (!bundle) { alert("الباقة غير متوفرة"); return; }
@@ -166,7 +166,7 @@ const AiInboxLanding: React.FC = () => {
   const handlePaidSubscribe = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}`);
+      navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
     if (!bundle) { alert("الباقة غير متوفرة"); return; }

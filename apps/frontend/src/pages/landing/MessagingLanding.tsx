@@ -168,7 +168,7 @@ const MessagingLanding: React.FC = () => {
   const handleFreeActivate = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}`);
+      navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}&action=free`);
       return;
     }
     if (!bundle) { alert("الباقة غير متوفرة"); return; }
@@ -196,7 +196,7 @@ const MessagingLanding: React.FC = () => {
   const handlePaidSubscribe = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}`);
+      navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}&action=paid`);
       return;
     }
     if (!bundle) { alert("الباقة غير متوفرة"); return; }

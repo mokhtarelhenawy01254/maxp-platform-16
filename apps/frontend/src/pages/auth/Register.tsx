@@ -316,16 +316,44 @@ const Register: React.FC = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get("redirect");
       const source = urlParams.get("source");
+      const action = urlParams.get("action");
       const postAuthDest = getPostAuthDestination(userData);
 
-      const isValidRedirect = redirectParam && redirectParam !== "/" && !redirectParam.startsWith("/lp/");
-      const sourceRedirect = source === "ai-inbox" ? "/marketplace/bundle/ai-inbox-bundle" : null;
-      const redirectPath = (isValidRedirect ? redirectParam : null) || sourceRedirect || postAuthDest || NEW_ACCOUNT_DESTINATION;
+      const SOURCE_TO_BUNDLE: Record<string, string> = {
+        messaging: "messaging-bundle",
+        "ai-inbox": "ai-inbox-bundle",
+      };
 
-      trackPlatformSiteCompleteRegistration("auth_register", { destination: redirectPath, role: userData?.role || "UNKNOWN" });
-      // Small delay to allow the React auth state (isAuthenticated) to settle before
-      // the router evaluates which route block to render (authenticated vs. unauthenticated).
-      setTimeout(() => navigate(redirectPath, { replace: true }), 100);
+      const token = localStorage.getItem("accessToken");
+
+      if (action === "free" && source && SOURCE_TO_BUNDLE[source] && token) {
+        fetch(`${getApiUrl()}/platform-subscription/lp-activate`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ bundleSlug: SOURCE_TO_BUNDLE[source] }),
+        }).then(r => r.json()).then(d => {
+          navigate(d.success ? "/admin/ai-hub?tab=sandbox" : (redirectParam || postAuthDest || NEW_ACCOUNT_DESTINATION), { replace: true });
+        }).catch(() => {
+          navigate(postAuthDest || NEW_ACCOUNT_DESTINATION, { replace: true });
+        });
+      } else if (action === "paid" && source && SOURCE_TO_BUNDLE[source] && token) {
+        fetch(`${getApiUrl()}/platform-subscription/lp-checkout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ bundleSlug: SOURCE_TO_BUNDLE[source] }),
+        }).then(r => r.json()).then(d => {
+          if (d.success && d.data?.sessionUrl) window.location.href = d.data.sessionUrl;
+          else navigate(postAuthDest || NEW_ACCOUNT_DESTINATION, { replace: true });
+        }).catch(() => {
+          navigate(postAuthDest || NEW_ACCOUNT_DESTINATION, { replace: true });
+        });
+      } else {
+        const isValidRedirect = redirectParam && redirectParam !== "/" && !redirectParam.startsWith("/lp/");
+        const sourceRedirect = source === "ai-inbox" ? "/marketplace/bundle/ai-inbox-bundle" : null;
+        const redirectPath = (isValidRedirect ? redirectParam : null) || sourceRedirect || postAuthDest || NEW_ACCOUNT_DESTINATION;
+        trackPlatformSiteCompleteRegistration("auth_register", { destination: redirectPath, role: userData?.role || "UNKNOWN" });
+        setTimeout(() => navigate(redirectPath, { replace: true }), 100);
+      }
     } catch (err: any) {
       setError(extractErrorMessage(err, copy.errors.register));
     } finally {
