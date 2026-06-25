@@ -6,7 +6,7 @@ const { marketplaceCatalogService } = require('../services/catalog/marketplaceCa
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
-const { getDefaultAgentTemplateSlug } = require('../utils/getDefaultAgentTemplate');
+const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require('../utils/getDefaultAgentTemplate');
 
 // Legacy storefront template engine has been removed from runtime.
 const PLATFORM_ENGINE_VERSION = 'removed';
@@ -1889,10 +1889,13 @@ exports.subscribeToBundle = async (req, res) => {
         }
       });
       try {
-        const defaultTemplateSlug = await getDefaultAgentTemplateSlug();
+        const agentCfg = await buildDefaultAgentConfig();
         await aiServiceAdminClient.spawnAgent({
           companyId,
-          templateSlug: defaultTemplateSlug,
+          templateSlug: agentCfg.templateSlug,
+          name: agentCfg.name,
+          icon: agentCfg.icon,
+          config: agentCfg.config,
         });
       } catch (e) {
         console.warn('[BUNDLE-SUBSCRIBE] Auto-create agent skipped (non-blocking):', e.message);

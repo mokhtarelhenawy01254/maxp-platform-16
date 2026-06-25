@@ -54,6 +54,8 @@ After any free bundle activation (lp-activate, messaging-checkout, or marketplac
 
 The template used is configurable via `SystemSettings` (`systemName='defaultAgentTemplate'` → `config.templateSlug`). Falls back to `support-agent`. Set from `/super-admin/ai-templates`.
 
+The agent spawn now pre-populates SOUL config fields (persona, tone, language, tasks, boundaries, escalation) from the template's `agent.json`, `SOUL.md`, `AGENTS.md`, and `PERSONA.md` files via `getDefaultAgentTemplate.buildDefaultAgentConfig()`.
+
 Affected endpoints:
 - `POST /api/v1/platform-subscription/messaging-checkout` — `messagingCheckout()`
 - `POST /api/v1/platform-subscription/lp-activate` — `lpActivate()`

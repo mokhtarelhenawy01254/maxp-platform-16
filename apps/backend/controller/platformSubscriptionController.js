@@ -6,7 +6,7 @@ const WhatsAppNotificationService = require("../services/whatsapp/WhatsAppNotifi
 const KashierService = require("../services/kashierService");
 const { marketplaceCatalogService } = require("../services/catalog/marketplaceCatalogService");
 const aiServiceAdminClient = require("../services/aiServiceAdminClient");
-const { getDefaultAgentTemplateSlug } = require("../utils/getDefaultAgentTemplate");
+const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require("../utils/getDefaultAgentTemplate");
 
 const getNextBillingDate = () => {
   const nextBillingDate = new Date();
@@ -234,10 +234,13 @@ exports.messagingCheckout = async (req, res) => {
     });
 
     try {
-      const defaultTemplateSlug = await getDefaultAgentTemplateSlug();
+      const agentCfg = await buildDefaultAgentConfig();
       await aiServiceAdminClient.spawnAgent({
         companyId,
-        templateSlug: defaultTemplateSlug,
+        templateSlug: agentCfg.templateSlug,
+        name: agentCfg.name,
+        icon: agentCfg.icon,
+        config: agentCfg.config,
       });
     } catch (e) {
       console.warn('[MESSAGING-CHECKOUT] Auto-create agent skipped (non-blocking):', e.message);
@@ -351,10 +354,13 @@ exports.lpActivate = async (req, res) => {
     });
 
     try {
-      const defaultTemplateSlug = await getDefaultAgentTemplateSlug();
+      const agentCfg = await buildDefaultAgentConfig();
       await aiServiceAdminClient.spawnAgent({
         companyId,
-        templateSlug: defaultTemplateSlug,
+        templateSlug: agentCfg.templateSlug,
+        name: agentCfg.name,
+        icon: agentCfg.icon,
+        config: agentCfg.config,
       });
     } catch (e) {
       console.warn('[LP-ACTIVATE] Auto-create agent skipped (non-blocking):', e.message);
