@@ -663,6 +663,20 @@ class EnhancedOrderService {
   async prepareOrderData({ customer, conversation, orderNumber, costs, ...data }) {
     console.log('📋 [PREPARE-ORDER] تحضير بيانات الطلب - التكاليف:', costs);
 
+    // استخراج عنوان محدد إذا كان customerAddress JSON
+    let parsedAddress = null;
+    if (typeof data.customerAddress === 'string' && data.customerAddress.trim().startsWith('{')) {
+      try { parsedAddress = JSON.parse(data.customerAddress); } catch (e) { /* ignore */ }
+    } else if (typeof data.customerAddress === 'object' && !Array.isArray(data.customerAddress)) {
+      parsedAddress = data.customerAddress;
+    }
+
+    const addrGov = parsedAddress?.governorate || data.governorate || data.city || 'غير محدد';
+    const addrCity = parsedAddress?.city || data.city || data.area || 'غير محدد';
+    const addrArea = parsedAddress?.area || data.area || '';
+    const addrText = parsedAddress?.address || (typeof data.customerAddress === 'string' && !data.customerAddress.trim().startsWith('{') ? data.customerAddress : '') || '';
+    const addrPhone = parsedAddress?.phone || data.customerPhone || customer.phone;
+
     return {
       orderNumber,
       customerId: customer.id,
@@ -689,24 +703,24 @@ class EnhancedOrderService {
       customerName: data.customerName || `${customer.firstName} ${customer.lastName}`,
       customerPhone: data.customerPhone || customer.phone,
       customerEmail: data.customerEmail || customer.email,
-      city: data.city || data.area || 'غير محدد',
+      city: addrCity,
       customerAddress: data.customerAddress || '',
 
       // عناوين الشحن والفواتير
       shippingAddress: JSON.stringify({
-        governorate: data.governorate || data.city || 'غير محدد',
-        city: data.city || data.area || 'غير محدد',
-        area: data.area || '',
-        address: data.customerAddress || '',
-        phone: data.customerPhone || customer.phone,
+        governorate: addrGov,
+        city: addrCity,
+        area: addrArea,
+        address: addrText,
+        phone: addrPhone,
         country: 'مصر'
       }),
       billingAddress: JSON.stringify({
-        governorate: data.governorate || data.city || 'غير محدد',
-        city: data.city || data.area || 'غير محدد',
-        area: data.area || '',
-        address: data.customerAddress || '',
-        phone: data.customerPhone || customer.phone,
+        governorate: addrGov,
+        city: addrCity,
+        area: addrArea,
+        address: addrText,
+        phone: addrPhone,
         country: 'مصر'
       }),
 
