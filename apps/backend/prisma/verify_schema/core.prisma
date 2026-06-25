@@ -214,6 +214,8 @@ model User {
   updatedAt                                         DateTime
   resetPasswordExpires                              DateTime?
   resetPasswordToken                                String?
+  emailVerificationToken                            String?
+  emailVerificationExpires                          DateTime?
   availability                                      String?                  @default("available")
   department                                        String?
   skills                                            String?                  @db.Text

@@ -144,7 +144,7 @@ const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'البريد الإلكتروني مستخدم بالفعل'
+        message: 'فشل إنشاء الحساب، يرجى التحقق من البيانات'
       });
     }
 
@@ -285,7 +285,7 @@ const register = async (req, res) => {
         companyId: company.id
       },
       getJwtSecret(),
-      { expiresIn: '24h' }
+      { expiresIn: '8h' }
     );
 
     const refreshToken = jwt.sign(
@@ -361,6 +361,14 @@ const register = async (req, res) => {
       user
     );
 
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+
     res.status(201).json({
       success: true,
       message: 'تم إنشاء الحساب بنجاح',
@@ -387,7 +395,6 @@ const register = async (req, res) => {
           hasMultipleCompanies: false
         },
         token,
-        refreshToken,
         signupCoupon: appliedSignupCoupon
       }
     });
@@ -686,7 +693,7 @@ const login = async (req, res) => {
         companyId: user.companyId
       },
       getJwtSecret(),
-      { expiresIn: '24h' }
+      { expiresIn: '8h' }
     );
 
     const refreshToken = jwt.sign(
@@ -796,7 +803,7 @@ const login = async (req, res) => {
         },
         token,
         refreshToken,
-        expiresIn: '24h'
+        expiresIn: '8h'
       }
     });
 
@@ -1098,7 +1105,7 @@ const refresh = async (req, res) => {
         companyId: decoded.companyId || user.companyId
       },
       getJwtSecret(),
-      { expiresIn: '24h' }
+      { expiresIn: '8h' }
     );
 
     const newRefreshToken = jwt.sign(
@@ -1351,12 +1358,8 @@ const forgotPassword = async (req, res) => {
 
     res.json({
       success: true,
-      message: emailSent
-        ? 'ÃƒËœÃ‚ÂªÃƒâ„¢Ã¢â‚¬Â¦ ÃƒËœÃ‚Â¥ÃƒËœÃ‚Â±ÃƒËœÃ‚Â³ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ ÃƒËœÃ‚Â±ÃƒËœÃ‚Â§ÃƒËœÃ‚Â¨ÃƒËœÃ‚Â· ÃƒËœÃ‚Â¥ÃƒËœÃ‚Â¹ÃƒËœÃ‚Â§ÃƒËœÃ‚Â¯ÃƒËœÃ‚Â© ÃƒËœÃ‚ÂªÃƒËœÃ‚Â¹Ãƒâ„¢Ã…Â Ãƒâ„¢Ã…Â Ãƒâ„¢Ã¢â‚¬Â  Ãƒâ„¢Ã†â€™Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã¢â‚¬Â¦ÃƒËœÃ‚Â© ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã¢â‚¬Â¦ÃƒËœÃ‚Â±Ãƒâ„¢Ã‹â€ ÃƒËœÃ‚Â± ÃƒËœÃ‚Â¥Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã¢â‚¬Â° ÃƒËœÃ‚Â¨ÃƒËœÃ‚Â±Ãƒâ„¢Ã…Â ÃƒËœÃ‚Â¯Ãƒâ„¢Ã†â€™ ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ÃƒËœÃ‚Â¥Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã†â€™ÃƒËœÃ‚ÂªÃƒËœÃ‚Â±Ãƒâ„¢Ã‹â€ Ãƒâ„¢Ã¢â‚¬Â Ãƒâ„¢Ã…Â '
-        : 'ÃƒËœÃ‚ÂªÃƒâ„¢Ã¢â‚¬Â¦ ÃƒËœÃ‚Â¥Ãƒâ„¢Ã¢â‚¬Â ÃƒËœÃ‚Â´ÃƒËœÃ‚Â§ÃƒËœÃ‚Â¡ ÃƒËœÃ‚Â±ÃƒËœÃ‚Â§ÃƒËœÃ‚Â¨ÃƒËœÃ‚Â· ÃƒËœÃ‚Â¥ÃƒËœÃ‚Â¹ÃƒËœÃ‚Â§ÃƒËœÃ‚Â¯ÃƒËœÃ‚Â© ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ÃƒËœÃ‚ÂªÃƒËœÃ‚Â¹Ãƒâ„¢Ã…Â Ãƒâ„¢Ã…Â Ãƒâ„¢Ã¢â‚¬Â  (Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã¢â‚¬Â¦ Ãƒâ„¢Ã…Â ÃƒËœÃ‚ÂªÃƒâ„¢Ã¢â‚¬Â¦ ÃƒËœÃ‚Â¥ÃƒËœÃ‚Â±ÃƒËœÃ‚Â³ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ÃƒËœÃ‚Â¨ÃƒËœÃ‚Â±Ãƒâ„¢Ã…Â ÃƒËœÃ‚Â¯ ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ÃƒËœÃ‚Â¥Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã†â€™ÃƒËœÃ‚ÂªÃƒËœÃ‚Â±Ãƒâ„¢Ã‹â€ Ãƒâ„¢Ã¢â‚¬Â Ãƒâ„¢Ã…Â )',
-      emailSent,
-      resetLink,
-      emailError: emailError ? emailError.message : (emailSent ? null : 'SMTP not configured')
+      message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
+      emailSent
     });
 
   } catch (error) {
@@ -1372,8 +1375,6 @@ const forgotPassword = async (req, res) => {
 // Reset Password - Verify token and update password
 const resetPassword = async (req, res) => {
   try {
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â [RESET-PASSWORD] Request received');
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ [RESET-PASSWORD] Body:', req.body);
 
     // Accept both 'password' and 'newPassword' for compatibility
     const { token, password, newPassword } = req.body;
@@ -1730,7 +1731,7 @@ const switchCompany = async (req, res) => {
         companyId: companyId  // Use the target company ID
       },
       getJwtSecret(),
-      { expiresIn: '24h' }
+      { expiresIn: '8h' }
     );
 
     const newRefreshToken = jwt.sign(
@@ -1815,7 +1816,7 @@ const switchCompany = async (req, res) => {
         role: userRole,
         companies: Array.from(companiesMap.values()),
         hasMultipleCompanies: companiesMap.size > 1,
-        expiresIn: '24h'
+        expiresIn: '8h'
       }
     });
 
@@ -2285,6 +2286,97 @@ const changePassword = async (req, res) => {
 };
 
 
+// Verify email address
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'رمز التحقق مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await prisma.user.findFirst({
+      where: {
+        emailVerificationToken: tokenHash,
+        emailVerificationExpires: { gt: new Date() }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'رمز التحقق غير صالح أو منتهي الصلاحية' });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+        emailVerificationToken: null,
+        emailVerificationExpires: null
+      }
+    });
+
+    res.json({ success: true, message: 'تم توثيق البريد الإلكتروني بنجاح' });
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء توثيق البريد الإلكتروني' });
+  }
+};
+
+// Send email verification link
+const sendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'البريد الإلكتروني مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!user) {
+      return res.json({ success: true, message: 'إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط التوثيق' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.json({ success: true, message: 'البريد الإلكتروني موثق بالفعل' });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: tokenHash,
+        emailVerificationExpires: tokenExpiry
+      }
+    });
+
+    const verificationLink = `https://maxp.online/api/v1/auth/verify-email?token=${verificationToken}`;
+
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      try {
+        await emailTransporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: email,
+          subject: 'توثيق البريد الإلكتروني - MaxP',
+          html: `<p>اضغط على الرابط لتوثيق بريدك الإلكتروني:</p><a href="${verificationLink}">${verificationLink}</a>`
+        });
+      } catch (error) {
+        console.error('Failed to send verification email:', error);
+      }
+    }
+
+    res.json({ success: true, message: 'إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط التوثيق' });
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء إرسال رابط التوثيق' });
+  }
+};
+
 module.exports = {
   register,
   validateSignupCoupon,
@@ -2296,6 +2388,8 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
+  verifyEmail,
+  sendVerificationEmail,
   getUserCompanies,
   switchCompany,
   addUserToCompany,
@@ -2303,3 +2397,6 @@ module.exports = {
   setPrimaryCompany,
   setDefaultCompany
 };
+
+
+

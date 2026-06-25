@@ -349,6 +349,7 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/auth/verify-email',
   'POST /api/v1/auth/forgot-password',
   'POST /api/v1/auth/reset-password',
+  'POST /api/v1/auth/send-verification',
 
   // Health and system routes
   'GET /health*',

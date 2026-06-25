@@ -350,6 +350,7 @@ const {
   securityHeaders,
   sanitizeRequest,
   securityMonitoring,
+  smartRateLimit,
   enhancedCORS,
 } = require("./middleware/securityEnhancements");
 const { sanitizeInput } = require("./middleware/inputValidation");
@@ -455,6 +456,9 @@ app.use(tenantContext.middleware());
 
 // Dynamic CORS configuration (Allows only dashboard + approved storefront origins)
 app.use(enhancedCORS);
+
+// ponytail: smartRateLimit was exported but never mounted — now applied globally
+app.use(smartRateLimit);
 
 // Performance Optimization: Cache Header Control
 app.use((req, res, next) => {
