@@ -4069,7 +4069,9 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
       city,
       customerPhone,
       shippingAddress,
-      notes
+      notes,
+      governorate,
+      address
     } = req.body;
 
     if (!companyId) {
@@ -4127,8 +4129,9 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
       quantity: products.reduce((sum, p) => sum + p.quantity, 0),
 
       // معلومات الشحن
-      customerAddress: shippingAddress || '',
+      customerAddress: address || shippingAddress || '',
       city: city || 'غير محدد',
+      governorate: governorate || '',
       customerPhone: customerPhone || '',
 
       // التكاليف

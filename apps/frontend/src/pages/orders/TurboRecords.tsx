@@ -150,7 +150,7 @@ const TurboRecords: React.FC = () => {
         try {
             const response = await apiClient.post("/turbo/bulk/create-shipments", { orderIds: selectedOrders });
             if (response.data.success) {
-                toast.success(`Success: ${response.data.data?.success || 0}, Failed: ${response.data.data?.failed || 0}`);
+                toast.success(`Success: ${response.data.data?.success?.length || 0}, Failed: ${response.data.data?.failed?.length || 0}`);
                 fetchOrders(); // Refresh
                 setSelectedOrders([]);
             } else {
@@ -158,7 +158,8 @@ const TurboRecords: React.FC = () => {
             }
         } catch (error: any) {
             console.error(error);
-            toast.error(error.response?.data?.message || "An error occurred");
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || "An error occurred";
+            toast.error(errorMsg);
         } finally {
             setCreatingShipments(false);
         }
