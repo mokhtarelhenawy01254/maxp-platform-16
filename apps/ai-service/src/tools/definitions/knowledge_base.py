@@ -9,13 +9,15 @@ from src.tools.knowledge_search import knowledge_search as _knowledge_search
 
 
 class KnowledgeSearchInput(BaseModel):
-    query: str = Field(description="REQUIRED: The customer's exact question or the topic to search for. You MUST pass the actual question text here — do NOT omit this field.")
+    query: str | None = Field(default=None, description="The customer's exact question or topic to search for. Pass the actual question text here. If omitted, no search is performed.")
     source_type: str | None = Field(default=None, description="Filter by source type: 'faq', 'policy', or None for both")
     limit: int = Field(default=5, description="Maximum number of results (default 5)")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
 async def knowledge_search_handler(input_data: KnowledgeSearchInput) -> dict[str, Any]:
+    if not input_data.query:
+        return {"results": [], "count": 0, "note": "No query provided"}
     results = await _knowledge_search(
         company_id=input_data.company_id or "",
         query=input_data.query,
