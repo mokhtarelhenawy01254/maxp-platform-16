@@ -9,7 +9,7 @@ from src.tools.knowledge_search import knowledge_search as _knowledge_search
 
 
 class KnowledgeSearchInput(BaseModel):
-    query: str = Field(description="Natural-language question or topic to search for in the knowledge base")
+    query: str = Field(description="REQUIRED: The customer's exact question or the topic to search for. You MUST pass the actual question text here — do NOT omit this field.")
     source_type: str | None = Field(default=None, description="Filter by source type: 'faq', 'policy', or None for both")
     limit: int = Field(default=5, description="Maximum number of results (default 5)")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")

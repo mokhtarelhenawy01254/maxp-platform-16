@@ -13,7 +13,7 @@ logger = structlog.get_logger(__name__)
 
 
 class KnowledgeAskMerchantInput(BaseModel):
-    customer_question: str = Field(description="The question the customer asked that the AI couldn't find an answer for")
+    customer_question: str = Field(description="REQUIRED: The exact question the customer asked that the AI couldn't find an answer for. You MUST copy the customer's question here — do NOT omit this field.")
     conversation_id: str | None = Field(default=None, description="Conversation/thread ID")
     channel: str | None = Field(default=None, description="Communication channel (facebook, whatsapp, chat, etc.)")
     context: str | None = Field(default=None, description="JSON string with additional context like product IDs, order IDs, etc.")
