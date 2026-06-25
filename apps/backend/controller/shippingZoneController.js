@@ -35,7 +35,7 @@ const governorateSeedData = [
     code: 'cairo',
     nameAr: 'القاهرة',
     nameEn: 'Cairo',
-    aliases: ['القاهرة', 'القاهره', 'قاهرة', 'قاهره', 'cairo', 'nasr city', 'مدينة نصر']
+    aliases: ['القاهرة', 'القاهره', 'قاهرة', 'قاهره', 'cairo', 'nasr city', 'مدينة نصر', 'أطراف القاهرة والجيزة', 'اطراف القاهرة والجيزة']
   },
   {
     code: 'new-cairo',
@@ -59,7 +59,7 @@ const governorateSeedData = [
     code: 'giza',
     nameAr: 'الجيزة',
     nameEn: 'Giza',
-    aliases: ['الجيزة', 'الجيزه', 'جيزة', 'جيزه', 'giza']
+    aliases: ['الجيزة', 'الجيزه', 'جيزة', 'جيزه', 'giza', 'أطراف القاهرة والجيزة', 'اطراف القاهرة والجيزة']
   },
   {
     code: '6th-october',
