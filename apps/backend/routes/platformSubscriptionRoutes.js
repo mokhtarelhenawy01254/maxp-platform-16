@@ -13,6 +13,8 @@ router.use(verifyToken.authenticateToken);
 // Bundle activation — before subscription check so new users can activate
 router.post('/messaging-checkout', platformSubscriptionController.messagingCheckout);
 router.post('/messaging-upgrade', platformSubscriptionController.messagingUpgrade);
+router.post('/lp-activate', platformSubscriptionController.lpActivate);
+router.post('/lp-checkout', platformSubscriptionController.lpCheckout);
 
 router.use(basicSubscriptionCheck);
 

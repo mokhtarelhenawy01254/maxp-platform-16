@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
@@ -9,18 +9,33 @@ import { toast } from "sonner";
 import { lpAdminService, type LpPage } from "../../services/lpAdminService";
 import i18n from "../../i18n";
 
+const ACTIVATION_OPTIONS = [
+  { value: "free", label: "مجاني فقط" },
+  { value: "paid", label: "مقابل فقط" },
+  { value: "both", label: "مجاني ومقابل" },
+];
+
+type BundleOption = { slug: string; name: string; price: number };
+
 const SuperAdminLandingPages: React.FC = () => {
   const [pages, setPages] = useState<LpPage[]>([]);
+  const [bundles, setBundles] = useState<BundleOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await lpAdminService.list();
+      const [data, bundleData] = await Promise.all([
+        lpAdminService.list(),
+        fetch("/api/v1/marketplace/bundles", { credentials: "include" }).then(r => r.ok ? r.json() : []),
+      ]);
       setPages(data);
+      const rawBundles = Array.isArray(bundleData) ? bundleData : bundleData?.data || [];
+      setBundles(rawBundles.map((b: any) => ({ slug: b.slug, name: b.name, price: b.monthlyPrice })));
     } catch {
-      toast.error("فشل تحميل صفحات اللاندينغ");
+      toast.error("فشل تحميل الصفحات");
     } finally {
       setLoading(false);
     }
@@ -38,6 +53,32 @@ const SuperAdminLandingPages: React.FC = () => {
       toast.error("فشل تحديث حالة الصفحة");
     } finally {
       setToggling(null);
+    }
+  };
+
+  const handleBundleChange = async (page: LpPage, bundleSlug: string) => {
+    try {
+      setSaving(page.id);
+      const updated = await lpAdminService.update(page.id, { bundleSlug });
+      setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      toast.success("تم ربط الباقة");
+    } catch {
+      toast.error("فشل تحديث الباقة");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleActivationChange = async (page: LpPage, activationType: string) => {
+    try {
+      setSaving(page.id);
+      const updated = await lpAdminService.update(page.id, { activationType });
+      setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      toast.success("تم تحديث نوع التفعيل");
+    } catch {
+      toast.error("فشل تحديث نوع التفعيل");
+    } finally {
+      setSaving(null);
     }
   };
 
@@ -82,6 +123,8 @@ const SuperAdminLandingPages: React.FC = () => {
                   <th className="px-5 py-4">العنوان</th>
                   <th className="px-5 py-4">المسار</th>
                   <th className="px-5 py-4">الكومبوننت</th>
+                  <th className="px-5 py-4">الباقة</th>
+                  <th className="px-5 py-4">نوع التفعيل</th>
                   <th className="px-5 py-4">الحالة</th>
                   <th className="px-5 py-4">معاينة</th>
                 </tr>
@@ -93,7 +136,7 @@ const SuperAdminLandingPages: React.FC = () => {
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-slate-700/50 dark:hover:bg-slate-700/30"
                   >
                     <td className="px-5 py-4 font-mono text-xs text-slate-400">{i + 1}</td>
-                    <td className="px-5 py-4 font-medium text-slate-900 dark:text-white">
+                    <td className="px-5 py-4 font-medium text-slate-900 dark:text-white text-xs">
                       {page.title}
                     </td>
                     <td className="px-5 py-4">
@@ -103,6 +146,31 @@ const SuperAdminLandingPages: React.FC = () => {
                     </td>
                     <td className="px-5 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">
                       {page.componentName}
+                    </td>
+                    <td className="px-5 py-4">
+                      <select
+                        value={page.bundleSlug || ""}
+                        disabled={saving === page.id}
+                        onChange={(e) => void handleBundleChange(page, e.target.value || (null as any))}
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                      >
+                        <option value="">— بدون باقة —</option>
+                        {bundles.map((b) => (
+                          <option key={b.slug} value={b.slug}>{b.name} ({b.price} ج.م)</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-5 py-4">
+                      <select
+                        value={page.activationType}
+                        disabled={saving === page.id}
+                        onChange={(e) => void handleActivationChange(page, e.target.value)}
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                      >
+                        {ACTIVATION_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-5 py-4">
                       <button

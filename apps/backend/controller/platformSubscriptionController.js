@@ -4,6 +4,7 @@ const {
 } = require("../services/sharedDatabase");
 const WhatsAppNotificationService = require("../services/whatsapp/WhatsAppNotificationService");
 const KashierService = require("../services/kashierService");
+const { marketplaceCatalogService } = require("../services/catalog/marketplaceCatalogService");
 
 const getNextBillingDate = () => {
   const nextBillingDate = new Date();
@@ -297,6 +298,112 @@ exports.messagingUpgrade = async (req, res) => {
   } catch (error) {
     console.error("[MESSAGING-UPGRADE] Error:", error);
     res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
+  }
+};
+
+/**
+ * @route POST /api/v1/platform-subscription/lp-activate
+ * @desc Free activation of a bundle from a landing page
+ * @access Protected
+ */
+exports.lpActivate = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { bundleSlug } = req.body;
+    if (!bundleSlug) return res.status(400).json({ success: false, message: 'bundleSlug مطلوب' });
+
+    const bundle = await marketplaceCatalogService.getBundleBySlug(bundleSlug, { onlyActive: true });
+    if (!bundle) return res.status(404).json({ success: false, message: 'الباقة غير موجودة' });
+
+    const prisma = getSharedPrismaClient();
+    const appSlugs = bundle.appSlugs || [];
+    const nextBillingDate = new Date();
+    nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.platformSubscription.upsert({
+        where: { companyId },
+        update: { status: 'ACTIVE', nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+        create: { companyId, status: 'ACTIVE', nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
+      });
+      for (const slug of appSlugs) {
+        const app = await tx.marketplaceApp.findUnique({ where: { slug } });
+        if (app) {
+          await tx.companyApp.upsert({
+            where: { companyId_appId: { companyId, appId: app.id } },
+            update: { status: 'ACTIVE' },
+            create: { companyId, appId: app.id, status: 'ACTIVE' }
+          });
+        }
+      }
+    });
+
+    res.json({ success: true, message: 'تم تفعيل الباقة مجاناً', data: { trialDays: 7 } });
+  } catch (error) {
+    console.error('[LP-ACTIVATE] Error:', error);
+    res.status(500).json({ success: false, message: 'خطأ أثناء التفعيل المجاني' });
+  }
+};
+
+/**
+ * @route POST /api/v1/platform-subscription/lp-checkout
+ * @desc Paid activation of a bundle from a landing page
+ * @access Protected
+ */
+exports.lpCheckout = async (req, res) => {
+  try {
+    const { companyId, email, phone } = req.user;
+    const { bundleSlug } = req.body;
+    if (!bundleSlug) return res.status(400).json({ success: false, message: 'bundleSlug مطلوب' });
+
+    const bundle = await marketplaceCatalogService.getBundleBySlug(bundleSlug, { onlyActive: true });
+    if (!bundle) return res.status(404).json({ success: false, message: 'الباقة غير موجودة' });
+
+    const amount = Number(bundle.monthlyPrice);
+    const prisma = getSharedPrismaClient();
+
+    const billingRecord = await prisma.billingHistory.create({
+      data: {
+        companyId,
+        type: 'PLATFORM_FEE',
+        amount,
+        description: `اشتراك ${bundle.name} (من صفحة تعريفية)`,
+        status: 'PENDING'
+      }
+    });
+
+    const host = req.headers.host || 'maxp.online';
+    const redirectUrl = `http://${host}/subscription?status=success&billingId=${billingRecord.id}`;
+    const baseDomain = process.env.MAIN_DOMAIN || 'maxp.online';
+    const webhookUrl = `https://${baseDomain}/api/v1/public/platform-subscription/webhook`;
+
+    const session = await KashierService.createPaymentSession({
+      amount,
+      currency: 'EGP',
+      orderId: `messaging-${billingRecord.id}`,
+      customer: { email, reference: phone || companyId },
+      redirectUrl,
+      webhookUrl,
+      description: `${bundle.name} - دفع الاشتراك`,
+    }, null);
+
+    if (!session.success) {
+      await prisma.billingHistory.update({
+        where: { id: billingRecord.id },
+        data: { status: 'FAILED', description: `فشل إنشاء جلسة الدفع: ${session.error}` }
+      });
+      return res.status(502).json({ success: false, message: 'فشل إنشاء جلسة الدفع' });
+    }
+
+    await prisma.billingHistory.update({
+      where: { id: billingRecord.id },
+      data: { referenceId: session.sessionId }
+    });
+
+    res.json({ success: true, data: { sessionUrl: session.sessionUrl, billingId: billingRecord.id } });
+  } catch (error) {
+    console.error('[LP-CHECKOUT] Error:', error);
+    res.status(500).json({ success: false, message: 'خطأ أثناء إنشاء عملية الدفع' });
   }
 };
 

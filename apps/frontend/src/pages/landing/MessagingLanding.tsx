@@ -92,6 +92,12 @@ const faqs = [
   { q: "هل أسترد فلوسي لو مش عجبني?", a: "أيوة، ضمان استرداد كامل خلال أول ٧ أيام من الاشتراك. من غير ما تسأل سؤال." },
 ];
 
+type BundleInfo = {
+  slug: string; name: string; monthlyPrice: number; discount: number; appSlugs: string[];
+};
+
+const LP_SLUG = "messaging";
+
 const MessagingLanding: React.FC = () => {
   const navigate = useNavigate();
   usePlatformSiteMetaPixel();
@@ -102,6 +108,8 @@ const MessagingLanding: React.FC = () => {
   const [leadForm, setLeadForm] = useState({ name: "", phone: "" });
   const [leadSent, setLeadSent] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [bundle, setBundle] = useState<BundleInfo | null>(null);
+  const [activationType, setActivationType] = useState<string>("both");
 
   useEffect(() => {
     document.title = "Max P Inbox | واتساب وتلجرام وانستجرام وماسنجر في صندوق واحد";
@@ -127,6 +135,16 @@ const MessagingLanding: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    fetch(`/api/v1/public/lp-pages/${LP_SLUG}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.bundle) setBundle({ slug: data.bundle.slug, name: data.bundle.name, monthlyPrice: Number(data.bundle.monthlyPrice), discount: Number(data.bundle.discount || 0), appSlugs: data.bundle.appSlugs || [] });
+        if (data?.activationType) setActivationType(data.activationType);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const t = setTimeout(() => setShowChat(true), 500);
     return () => clearTimeout(t);
   }, []);
@@ -145,18 +163,50 @@ const MessagingLanding: React.FC = () => {
   };
 
   const [subscribing, setSubscribing] = useState(false);
+  const [actionType, setActionType] = useState<"free" | "paid" | null>(null);
 
-  const handleSubscribe = async () => {
+  const handleFreeActivate = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      navigate("/auth/register?source=messaging&theme=messaging&redirect=/lp/messaging");
+      navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}`);
       return;
     }
+    if (!bundle) { alert("الباقة غير متوفرة"); return; }
     setSubscribing(true);
+    setActionType("free");
     try {
-      const res = await fetch("/api/v1/platform-subscription/messaging-checkout", {
+      const res = await fetch("/api/v1/platform-subscription/lp-activate", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ bundleSlug: bundle.slug }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        navigate("/admin/ai-hub?tab=sandbox");
+      } else {
+        alert(data.message || "فشل التفعيل");
+        setSubscribing(false);
+      }
+    } catch {
+      alert("خطأ في الاتصال");
+      setSubscribing(false);
+    }
+  };
+
+  const handlePaidSubscribe = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate(`/auth/register?source=${LP_SLUG}&theme=messaging&redirect=/lp/${LP_SLUG}`);
+      return;
+    }
+    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    setSubscribing(true);
+    setActionType("paid");
+    try {
+      const res = await fetch("/api/v1/platform-subscription/lp-checkout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ bundleSlug: bundle.slug }),
       });
       const data = await res.json();
       if (data.success && data.data?.sessionUrl) {
@@ -171,6 +221,10 @@ const MessagingLanding: React.FC = () => {
     }
   };
 
+  const handleSubscribe = bundle && activationType === "paid" ? handlePaidSubscribe
+    : bundle && activationType === "free" ? handleFreeActivate
+    : handlePaidSubscribe;
+
   return (
     <div className="msg-landing" dir="rtl">
       <nav className={`msg-nav ${isScrolled ? "is-scrolled" : ""}`}>
@@ -184,7 +238,12 @@ const MessagingLanding: React.FC = () => {
         </div>
         <div className="msg-nav-actions">
           <Link to="/auth/login" className="msg-btn msg-btn-ghost msg-nav-login">تسجيل الدخول</Link>
-          <button onClick={handleSubscribe} className="msg-btn msg-btn-primary msg-nav-subscribe">ابدأ الاشتراك</button>
+          {activationType !== "paid" && (
+            <button onClick={handleFreeActivate} disabled={subscribing} className="msg-btn msg-btn-primary msg-nav-subscribe">جرب مجانا</button>
+          )}
+          {activationType !== "free" && (
+            <button onClick={handlePaidSubscribe} disabled={subscribing} className="msg-btn msg-btn-primary msg-nav-subscribe">اشترك {bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : ""} ج.م</button>
+          )}
           <button className="msg-mobile-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label={isMobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}>
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -199,7 +258,12 @@ const MessagingLanding: React.FC = () => {
           <a href="#faq" onClick={() => setIsMobileMenuOpen(false)}>الأسئلة</a>
           <div className="msg-mobile-menu-divider" />
           <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>تسجيل الدخول</Link>
-          <button onClick={() => { setIsMobileMenuOpen(false); handleSubscribe(); }} className="msg-btn msg-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "0.5rem" }}>ابدأ الاشتراك</button>
+          {activationType !== "paid" && (
+            <button onClick={() => { setIsMobileMenuOpen(false); handleFreeActivate(); }} className="msg-btn msg-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "0.25rem" }}>جرب مجانا</button>
+          )}
+          {activationType !== "free" && (
+            <button onClick={() => { setIsMobileMenuOpen(false); handlePaidSubscribe(); }} className="msg-btn msg-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "0.25rem" }}>اشترك {bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : ""} ج.م</button>
+          )}
         </div>
       )}
 
@@ -221,10 +285,17 @@ const MessagingLanding: React.FC = () => {
                 فريق كامل يشتغل عليها والذكاء الاصطناعي يرد على العملاء ويعمل طلبات وحجوزات بشكل تلقائي — ٢٤ ساعة.
               </motion.p>
               <motion.div variants={itemVariants} className="flex flex-wrap gap-3 mb-6">
-                <button onClick={handleSubscribe} className="msg-btn msg-btn-primary">
-                  ابدأ الاشتراك <ArrowLeft className="w-4 h-4" />
-                </button>
-                <a href="#features" className="msg-btn msg-btn-secondary">شوف المميزات</a>
+                {activationType !== "paid" && (
+                  <button onClick={handleFreeActivate} disabled={subscribing} className="msg-btn msg-btn-primary">
+                    {subscribing && actionType === "free" ? "جاري..." : "جرب مجانا"} <ArrowLeft className="w-4 h-4" />
+                  </button>
+                )}
+                {activationType !== "free" && (
+                  <button onClick={handlePaidSubscribe} disabled={subscribing} className="msg-btn msg-btn-secondary">
+                    {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م`}
+                  </button>
+                )}
+                <a href="#features" className="msg-btn msg-btn-ghost">شوف المميزات</a>
               </motion.div>
               <motion.div variants={itemVariants} className="flex items-center gap-4 text-sm" style={{ color: "var(--msg-text-muted)" }}>
                 <div className="flex -space-x-2">
@@ -476,12 +547,23 @@ const MessagingLanding: React.FC = () => {
                 <span className="msg-badge msg-badge-save">توفير ٦٩٪</span>
                 <span className="msg-badge" style={{ background: "rgba(197,95,106,0.12)", color: "#c55f6a" }}>الأفضل في السوق</span>
               </div>
-              <div className="msg-price-original mb-1">٣٬٢٠٠ ج.م/شهر</div>
-              <div className="msg-price mb-2">٩٩٩ ج.م<span className="text-base font-normal" style={{ color: "var(--msg-text-muted)" }}>/شهر</span></div>
+              {bundle && bundle.discount > 0 && <div className="msg-price-original mb-1">{Math.round(bundle.monthlyPrice / (1 - bundle.discount / 100)).toLocaleString("ar-EG")} ج.م/شهر</div>}
+              <div className="msg-price mb-2">{bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م<span className="text-base font-normal" style={{ color: "var(--msg-text-muted)" }}>/شهر</span></div>
               <p className="text-xs mb-6" style={{ color: "var(--msg-text-muted)" }}>ضمان استرداد كامل خلال ٧ أيام — من غير ما تسأل</p>
-              <button onClick={handleSubscribe} className="msg-btn msg-btn-primary w-full justify-center mb-6">
-                ابدأ الاشتراك <ArrowLeft className="w-4 h-4" />
-              </button>
+              {activationType === "both" ? (
+                <div className="flex flex-col gap-2 mb-6">
+                  <button onClick={handlePaidSubscribe} disabled={subscribing} className="msg-btn msg-btn-primary w-full justify-center">
+                    {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م/شهر`} <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleFreeActivate} disabled={subscribing} className="msg-btn msg-btn-secondary w-full justify-center">
+                    {subscribing && actionType === "free" ? "جاري..." : "جرب مجانا ٧ أيام"}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={handleSubscribe} disabled={subscribing} className="msg-btn msg-btn-primary w-full justify-center mb-6">
+                  {subscribing ? "جاري..." : activationType === "free" ? "جرب مجانا" : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م/شهر`} <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
               <div className="space-y-3 text-right">
                 {[
                   "واتساب + تلجرام + انستجرام + ماسنجر",
@@ -536,10 +618,17 @@ const MessagingLanding: React.FC = () => {
               ابدأ دلوقتي واربط حساباتك في ٥ دقايق. ضمان استرداد كامل ٧ أيام.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={handleSubscribe} className="msg-btn msg-btn-primary">
-                ابدأ الاشتراك <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button onClick={() => setLeadFormOpen(true)} className="msg-btn msg-btn-secondary">
+              {activationType !== "paid" && (
+                <button onClick={handleFreeActivate} disabled={subscribing} className="msg-btn msg-btn-primary">
+                  {subscribing && actionType === "free" ? "جاري..." : "جرب مجانا"} <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
+              {activationType !== "free" && (
+                <button onClick={handlePaidSubscribe} disabled={subscribing} className="msg-btn msg-btn-secondary">
+                  {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م`}
+                </button>
+              )}
+              <button onClick={() => setLeadFormOpen(true)} className="msg-btn msg-btn-ghost">
                 <Headphones className="w-4 h-4" /> كلم المبيعات
               </button>
             </div>

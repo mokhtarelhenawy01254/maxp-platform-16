@@ -79,6 +79,12 @@ const faqs = [
   { q: "هل أسترد فلوسي لو مش عجبني?", a: "أيوة، ضمان استرداد كامل خلال أول ٧ أيام من الاشتراك. من غير ما تسأل سؤال." },
 ];
 
+type BundleInfo = {
+  slug: string; name: string; monthlyPrice: number; discount: number; appSlugs: string[];
+};
+
+const LP_SLUG = "ai-inbox";
+
 const AiInboxLanding: React.FC = () => {
   const navigate = useNavigate();
   usePlatformSiteMetaPixel();
@@ -86,6 +92,8 @@ const AiInboxLanding: React.FC = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [bundle, setBundle] = useState<BundleInfo | null>(null);
+  const [activationType, setActivationType] = useState<string>("both");
 
   useEffect(() => {
     document.title = "Max P AI + Inbox | الذكاء الاصطناعي وصندوق الوارد الموحد";
@@ -110,29 +118,69 @@ const AiInboxLanding: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    fetch(`/api/v1/public/lp-pages/${LP_SLUG}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.bundle) setBundle({ slug: data.bundle.slug, name: data.bundle.name, monthlyPrice: Number(data.bundle.monthlyPrice), discount: Number(data.bundle.discount || 0), appSlugs: data.bundle.appSlugs || [] });
+        if (data?.activationType) setActivationType(data.activationType);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const t = setTimeout(() => setShowChat(true), 500);
     return () => clearTimeout(t);
   }, []);
 
   const [subscribing, setSubscribing] = useState(false);
+  const [actionType, setActionType] = useState<"free" | "paid" | null>(null);
 
-  const handleSubscribe = async () => {
+  const handleFreeActivate = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      navigate("/auth/register?source=ai-inbox&theme=ai-inbox&redirect=/lp/ai-inbox");
+      navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}`);
       return;
     }
+    if (!bundle) { alert("الباقة غير متوفرة"); return; }
     setSubscribing(true);
+    setActionType("free");
     try {
-      const res = await fetch("/api/v1/platform-subscription/messaging-checkout", {
+      const res = await fetch("/api/v1/platform-subscription/lp-activate", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ bundleSlug: bundle.slug }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        navigate("/admin/ai-hub?tab=sandbox");
+      } else {
+        alert(data.message || "فشل التفعيل");
+        setSubscribing(false);
+      }
+    } catch {
+      alert("خطأ في الاتصال");
+      setSubscribing(false);
+    }
+  };
+
+  const handlePaidSubscribe = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate(`/auth/register?source=${LP_SLUG}&theme=ai-inbox&redirect=/lp/${LP_SLUG}`);
+      return;
+    }
+    if (!bundle) { alert("الباقة غير متوفرة"); return; }
+    setSubscribing(true);
+    setActionType("paid");
+    try {
+      const res = await fetch("/api/v1/platform-subscription/lp-checkout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ bundleSlug: bundle.slug }),
       });
       const data = await res.json();
       if (data.success && data.data?.sessionUrl) {
         window.location.href = data.data.sessionUrl;
-      } else if (data.success) {
-        navigate("/marketplace/bundles");
       } else {
         alert(data.message || "فشل إنشاء الدفع");
         setSubscribing(false);
@@ -142,6 +190,10 @@ const AiInboxLanding: React.FC = () => {
       setSubscribing(false);
     }
   };
+
+  const handleSubscribe = bundle && activationType === "paid" ? handlePaidSubscribe
+    : bundle && activationType === "free" ? handleFreeActivate
+    : handlePaidSubscribe;
 
   return (
     <div className="ai-landing" dir="rtl">
@@ -155,7 +207,12 @@ const AiInboxLanding: React.FC = () => {
         </div>
         <div className="ai-nav-actions">
           <Link to="/auth/login" className="ai-btn ai-btn-ghost ai-nav-login">تسجيل الدخول</Link>
-          <button onClick={handleSubscribe} className="ai-btn ai-btn-primary ai-nav-subscribe">ابدأ الاشتراك</button>
+          {activationType !== "paid" && (
+            <button onClick={handleFreeActivate} disabled={subscribing} className="ai-btn ai-btn-primary ai-nav-subscribe">جرب مجانا</button>
+          )}
+          {activationType !== "free" && (
+            <button onClick={handlePaidSubscribe} disabled={subscribing} className="ai-btn ai-btn-primary ai-nav-subscribe">اشترك {bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : ""} ج.م</button>
+          )}
           <button className="ai-mobile-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label={isMobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}>
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -169,7 +226,12 @@ const AiInboxLanding: React.FC = () => {
           <a href="#faq" onClick={() => setIsMobileMenuOpen(false)}>الأسئلة</a>
           <div className="ai-mobile-menu-divider" />
           <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>تسجيل الدخول</Link>
-          <button onClick={() => { setIsMobileMenuOpen(false); handleSubscribe(); }} className="ai-btn ai-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "0.5rem" }}>ابدأ الاشتراك</button>
+          {activationType !== "paid" && (
+            <button onClick={() => { setIsMobileMenuOpen(false); handleFreeActivate(); }} className="ai-btn ai-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "0.25rem" }}>جرب مجانا</button>
+          )}
+          {activationType !== "free" && (
+            <button onClick={() => { setIsMobileMenuOpen(false); handlePaidSubscribe(); }} className="ai-btn ai-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "0.25rem" }}>اشترك {bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : ""} ج.م</button>
+          )}
         </div>
       )}
 
@@ -191,10 +253,17 @@ const AiInboxLanding: React.FC = () => {
                 والذكاء الاصطناعي يرد على العملاء وينشئ طلبات وحجوزات — ٢٤ ساعة.
               </motion.p>
               <motion.div variants={itemVariants} className="flex flex-wrap gap-3 mb-6">
-                <button onClick={handleSubscribe} className="ai-btn ai-btn-primary">
-                  ابدأ الاشتراك <ArrowLeft className="w-4 h-4" />
-                </button>
-                <a href="#features" className="ai-btn ai-btn-secondary">شوف المميزات</a>
+                {activationType !== "paid" && (
+                  <button onClick={handleFreeActivate} disabled={subscribing} className="ai-btn ai-btn-primary">
+                    {subscribing && actionType === "free" ? "جاري..." : "جرب مجانا"} <ArrowLeft className="w-4 h-4" />
+                  </button>
+                )}
+                {activationType !== "free" && (
+                  <button onClick={handlePaidSubscribe} disabled={subscribing} className="ai-btn ai-btn-secondary">
+                    {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م`}
+                  </button>
+                )}
+                <a href="#features" className="ai-btn ai-btn-ghost">شوف المميزات</a>
               </motion.div>
               <motion.div variants={itemVariants} className="flex items-center gap-4 text-sm" style={{ color: "var(--ai-text-muted)" }}>
                 <div className="flex -space-x-2">
@@ -424,11 +493,22 @@ const AiInboxLanding: React.FC = () => {
                 <span className="ai-badge ai-badge-save">AI Agent + Inbox</span>
                 <span className="ai-badge" style={{ background: "rgba(236,72,153,0.12)", color: "#ec4899" }}>الأفضل للمبيعات</span>
               </div>
-              <div className="ai-price mb-2">٩٩٩ ج.م<span className="text-base font-normal" style={{ color: "var(--ai-text-muted)" }}>/شهر</span></div>
+              <div className="ai-price mb-2">{bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م<span className="text-base font-normal" style={{ color: "var(--ai-text-muted)" }}>/شهر</span></div>
               <p className="text-xs mb-6" style={{ color: "var(--ai-text-muted)" }}>ضمان استرداد كامل خلال ٧ أيام — من غير ما تسأل</p>
-              <button onClick={handleSubscribe} className="ai-btn ai-btn-primary w-full justify-center mb-6">
-                ابدأ الاشتراك <ArrowLeft className="w-4 h-4" />
-              </button>
+              {activationType === "both" ? (
+                <div className="flex flex-col gap-2 mb-6">
+                  <button onClick={handlePaidSubscribe} disabled={subscribing} className="ai-btn ai-btn-primary w-full justify-center">
+                    {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م/شهر`} <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleFreeActivate} disabled={subscribing} className="ai-btn ai-btn-secondary w-full justify-center">
+                    {subscribing && actionType === "free" ? "جاري..." : "جرب مجانا ٧ أيام"}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={handleSubscribe} disabled={subscribing} className="ai-btn ai-btn-primary w-full justify-center mb-6">
+                  {subscribing ? "جاري..." : activationType === "free" ? "جرب مجانا" : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م/شهر`} <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
               <div className="space-y-3 text-right">
                 {[
                   "واتساب + تلجرام + انستجرام + ماسنجر",
@@ -483,12 +563,16 @@ const AiInboxLanding: React.FC = () => {
               ابدأ دلوقتي واربط حساباتك في ٥ دقايق. ضمان استرداد كامل ٧ أيام.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={handleSubscribe} className="ai-btn ai-btn-primary">
-                ابدأ الاشتراك <ArrowLeft className="w-4 h-4" />
-              </button>
-              <Link to="/marketplace/bundle/ai-inbox-bundle" className="ai-btn ai-btn-secondary">
-                شوف كل الباقات
-              </Link>
+              {activationType !== "paid" && (
+                <button onClick={handleFreeActivate} disabled={subscribing} className="ai-btn ai-btn-primary">
+                  {subscribing && actionType === "free" ? "جاري..." : "جرب مجانا"} <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
+              {activationType !== "free" && (
+                <button onClick={handlePaidSubscribe} disabled={subscribing} className="ai-btn ai-btn-secondary">
+                  {subscribing && actionType === "paid" ? "جاري..." : `اشترك ب ${bundle ? bundle.monthlyPrice.toLocaleString("ar-EG") : "٩٩٩"} ج.م`}
+                </button>
+              )}
             </div>
           </motion.div>
         </div>
