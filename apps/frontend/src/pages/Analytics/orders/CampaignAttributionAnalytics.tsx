@@ -301,7 +301,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
         <select
           value={period}
           onChange={(event) => setPeriod(event.target.value)}
-          className="w-full lg:w-52 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          className="lg:w-52 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         >
           <option value="7">آخر 7 أيام</option>
           <option value="30">آخر 30 يوم</option>

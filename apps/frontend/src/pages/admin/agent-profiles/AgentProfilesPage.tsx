@@ -761,7 +761,7 @@ export default function AgentProfilesPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     {editing ? (
-                      <Input value={draftName} onChange={(e) => { setDraftName(e.target.value); if (!editing) setEditing(true); }} className="h-8 text-base font-bold w-full lg:w-64" />
+                      <Input value={draftName} onChange={(e) => { setDraftName(e.target.value); if (!editing) setEditing(true); }} className="h-8 text-base font-bold lg:w-64" />
                     ) : (
                       <h1 className="text-base font-bold text-foreground/90">{selectedAgent.name}</h1>
                     )}

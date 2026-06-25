@@ -544,7 +544,7 @@ export default function AppPricingSheet() {
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               {/* Search */}
-              <div className="relative w-full lg:w-96">
+              <div className="relative lg:w-96">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                 <Input
                   type="text"

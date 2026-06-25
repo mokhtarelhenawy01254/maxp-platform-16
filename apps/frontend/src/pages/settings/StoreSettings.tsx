@@ -1151,7 +1151,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
 
       <div className={hideNavigation ? "block" : "flex flex-col lg:flex-row gap-8"}>
         {!hideNavigation ? (
-          <aside className="w-full lg:w-72 flex-shrink-0">
+          <aside className="lg:w-72 flex-shrink-0">
             <nav className="flex flex-col space-y-2 bg-gray-50/50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50">
               {tabsWithCheckout.map((tab) => (
                 <button
@@ -1186,26 +1186,25 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
               />
             ) : activeTab === "shipping" ? (
               <div className="space-y-6">
+                <ShippingSectionV2
+                  zones={shippingZones}
+                  canonicalGovernorates={canonicalGovernorates}
+                  onAdd={handleAddShipping}
+                  onEdit={handleEditShipping}
+                  onDelete={handleDeleteShipping}
+                  shippingClasses={shippingClasses}
+                  promotionSettings={promotionSettings}
+                  onUpdatePromotionSettings={handleUpdatePromotionSettings}
+                />
+
                 <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        رسوم فئات الشحن
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        حدّد الزيادة حسب فئة المنتج وطريقة احتسابها.
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSaveShippingClassFees}
-                      disabled={savingShippingClassFees}
-                      className={`px-4 py-2 rounded-md text-sm font-semibold ${savingShippingClassFees
-                        ? "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
-                        : "bg-indigo-600 text-white hover:bg-indigo-700"
-                        }`}
-                    >
-                      {savingShippingClassFees ? "جاري الحفظ..." : "حفظ الرسوم"}
-                    </button>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      رسوم فئات الشحن
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      حدّد الزيادة حسب فئة المنتج وطريقة احتسابها.
+                    </p>
                   </div>
 
                   <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1333,18 +1332,20 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                       })}
                     </div>
                   </div>
-                </div>
 
-                <ShippingSectionV2
-                  zones={shippingZones}
-                  canonicalGovernorates={canonicalGovernorates}
-                  onAdd={handleAddShipping}
-                  onEdit={handleEditShipping}
-                  onDelete={handleDeleteShipping}
-                  shippingClasses={shippingClasses}
-                  promotionSettings={promotionSettings}
-                  onUpdatePromotionSettings={handleUpdatePromotionSettings}
-                />
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={handleSaveShippingClassFees}
+                      disabled={savingShippingClassFees}
+                      className={`px-4 py-2 rounded-md text-sm font-semibold ${savingShippingClassFees
+                        ? "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700"
+                        }`}
+                    >
+                      {savingShippingClassFees ? "جاري الحفظ..." : "حفظ الرسوم"}
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : activeTab === "checkout" ? (
               <div className="space-y-6">

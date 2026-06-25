@@ -64,7 +64,6 @@ const userValidationRules = () => {
       .withMessage('رقم الهاتف غير صحيح'),
       
     body('password')
-      .optional()
       .isLength({ min: 6 })
       .withMessage('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)

@@ -500,7 +500,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'فشل في إنشاء الحساب');
+        throw new Error(
+          repairMojibakeText(result.message, 'فشل في إنشاء الحساب'),
+        );
       }
 
       // Store token and user data

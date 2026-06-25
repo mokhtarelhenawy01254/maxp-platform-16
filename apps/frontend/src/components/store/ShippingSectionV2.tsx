@@ -573,9 +573,9 @@ export const ShippingSectionV2: React.FC<ShippingSectionV2Props> = ({
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <div className="text-lg font-semibold text-gray-900 dark:text-white">
                         {zone.name || "منطقة بدون اسم"}
-                      </h3>
+                      </div>
                       <span
                         className={`px-2.5 py-1 text-xs font-medium rounded-full ${zone.isActive
                           ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400"

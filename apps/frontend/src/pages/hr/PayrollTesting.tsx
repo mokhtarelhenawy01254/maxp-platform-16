@@ -588,7 +588,7 @@ const PayrollTesting: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Employee Selection Panel */}
-        <Card className="w-full lg:w-80 flex flex-col shrink-0 shadow-lg">
+        <Card className="lg:w-80 flex flex-col shrink-0 shadow-lg">
           <CardHeader className="pb-3 bg-indigo-600 text-white">
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -2311,7 +2311,7 @@ const PayrollTesting: React.FC = () => {
 
         {/* Results Panel */}
         {selectedEmployee && (
-          <Card className="w-full lg:w-80 flex flex-col shrink-0 shadow-lg">
+          <Card className="lg:w-80 flex flex-col shrink-0 shadow-lg">
             <CardHeader className="pb-3 bg-indigo-600 text-white">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Calculator className="h-5 w-5" />

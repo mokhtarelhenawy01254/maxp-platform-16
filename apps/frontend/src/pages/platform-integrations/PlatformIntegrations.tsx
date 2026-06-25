@@ -115,7 +115,7 @@ const PlatformIntegrations: React.FC = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar Tabs */}
-          <div className="w-full lg:w-64 flex-shrink-0">
+          <div className="lg:w-64 flex-shrink-0">
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden lg:sticky lg:top-6">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 hidden lg:block">
                 <h2 className="font-semibold text-gray-900 dark:text-white">
