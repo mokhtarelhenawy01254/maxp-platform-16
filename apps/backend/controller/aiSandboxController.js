@@ -1097,6 +1097,7 @@ async function getAgentProfile(req, res) {
         model: agentData.model || agentJson.modelPolicy?.default || null,
         status: agentData.status,
         templateSlug: agentData.templateSlug || agentData.template_slug || null,
+        config: agentData.config || {},
       },
       files: {
         'SOUL.md': resolveFile('SOUL.md') || agentData.soul || agentData.persona?.soulInstructions || '',

@@ -109,6 +109,7 @@ export interface AgentProfileResponse {
     model: string | null;
     status: string;
     templateSlug: string | null;
+    config?: Record<string, string>;
   };
   files: {
     'SOUL.md': string;
