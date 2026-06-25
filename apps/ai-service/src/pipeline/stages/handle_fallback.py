@@ -230,10 +230,18 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                 loop_count = 0
                 while tool_calls and loop_count < 5:
                     loop_count += 1
+                    serialized_calls = []
+                    for tc in tool_calls:
+                        func = dict(tc.get("function", {}))
+                        if isinstance(func.get("arguments"), dict):
+                            func["arguments"] = json.dumps(func["arguments"], ensure_ascii=False)
+                        call = dict(tc)
+                        call["function"] = func
+                        serialized_calls.append(call)
                     fallback_messages.append({
                         "role": "assistant",
                         "content": raw_text or "",
-                        "tool_calls": tool_calls,
+                        "tool_calls": serialized_calls,
                     })
                     gateway = ToolGateway()
                     agent_role = str(getattr(ctx.agent, "role", "") or "")
