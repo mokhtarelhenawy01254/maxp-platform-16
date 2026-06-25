@@ -486,8 +486,11 @@ class TurboService {
       }
     }
 
-    // البحث الجزئي
-    for (const [key, value] of Object.entries(governorateMap)) {
+    // البحث الجزئي - الأطول (الأكثر تحديداً) أولاً
+    const sortedEntries = Object.entries(governorateMap)
+      .sort(([a], [b]) => b.length - a.length);
+
+    for (const [key, value] of sortedEntries) {
       if (govName.includes(key.toLowerCase()) || key.toLowerCase().includes(govName)) {
         return value;
       }
@@ -550,12 +553,22 @@ class TurboService {
 
         // التحقق من أن المحافظة موجودة في قائمة Turbo API
         if (governments.length > 0) {
-          const foundGov = governments.find(g => {
-            const govName = g.name.toLowerCase();
-            return govName === cleanedGov.toLowerCase() ||
-              govName.includes(cleanedGov.toLowerCase()) ||
-              cleanedGov.toLowerCase().includes(govName);
-          });
+          const cleanedLower = cleanedGov.toLowerCase();
+
+          // 1. Exact match first
+          let foundGov = governments.find(g => g.name.toLowerCase() === cleanedLower);
+
+          // 2. Gov name contains search term
+          if (!foundGov) {
+            foundGov = governments.find(g => g.name.toLowerCase().includes(cleanedLower));
+          }
+
+          // 3. Search term contains gov name (longer/specific names first)
+          if (!foundGov) {
+            foundGov = [...governments]
+              .sort((a, b) => b.name.length - a.name.length)
+              .find(g => cleanedLower.includes(g.name.toLowerCase()));
+          }
 
           if (foundGov) {
             cleanGovernorate = foundGov.name;
