@@ -1,5 +1,4 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const verifyToken = require("../utils/verifyToken");
 const {
@@ -21,22 +20,8 @@ const {
   resumeRun,
 } = require('../controller/aiSandboxController');
 
-const aiSandboxLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 120,
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { trustProxy: false },
-  message: {
-    success: false,
-    error: 'AI_SANDBOX_RATE_LIMITED',
-    code: 'AI_SANDBOX_RATE_LIMITED',
-  },
-});
-
 router.use(verifyToken.authenticateToken);
 router.use(verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']));
-router.use(aiSandboxLimiter);
 
 router.get('/agents', listAgents);
 router.get('/agents/:agentId/profile', getAgentProfile);

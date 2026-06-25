@@ -256,45 +256,9 @@ const rateLimits = {
 };
 
 /**
- * Smart Rate Limiting Middleware - applies appropriate limits based on route patterns
+ * Smart Rate Limiting Middleware - disabled per user request
  */
-const smartRateLimit = (req, res, next) => {
-  const path = req.path;
-  const method = req.method;
-  
-  // Determine which rate limit to apply based on path patterns
-  if (path.match(/\/api\/v1\/(conversations|messages)/) && (method === 'POST' || method === 'PUT')) {
-    return rateLimits.messaging(req, res, next);
-  }
-  
-  if (path.match(/\/api\/v1\/customers/) && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
-    return rateLimits.customerData(req, res, next);
-  }
-  
-  if (path.match(/\/api\/v1\/super-admin\/ai/) || /\/chat(\/|$)/.test(path) || path.includes('generate')) {
-    return rateLimits.providerOperations(req, res, next);
-  }
-  
-  if (path.match(/\/api\/v1\/(conversations|customers|orders|users|settings)/)) {
-    return rateLimits.sensitiveCompany(req, res, next);
-  }
-  
-  if (path.includes('upload') || method === 'POST' && req.headers['content-type']?.includes('multipart')) {
-    return rateLimits.upload(req, res, next);
-  }
-  
-  if (path.match(/\/api\/v1\/admin/)) {
-    return rateLimits.admin(req, res, next);
-  }
-  
-  // Default to company API limits for authenticated routes
-  if (req.user?.companyId) {
-    return rateLimits.companyApi(req, res, next);
-  }
-  
-  // Fall back to general API limits
-  return rateLimits.api(req, res, next);
-};
+const smartRateLimit = (_req, _res, next) => next();
 
 /**
  * Rate Limit Status Endpoint (for monitoring)
