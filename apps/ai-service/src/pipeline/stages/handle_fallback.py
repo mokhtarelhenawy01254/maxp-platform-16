@@ -230,10 +230,16 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                 loop_count = 0
                 while tool_calls and loop_count < 5:
                     loop_count += 1
+                    fallback_messages.append({
+                        "role": "assistant",
+                        "content": raw_text or "",
+                        "tool_calls": tool_calls,
+                    })
                     gateway = ToolGateway()
                     agent_role = str(getattr(ctx.agent, "role", "") or "")
                     allowed_tools = list(getattr(ctx.agent, "get_tools", lambda: [])() or [])
                     for tc in tool_calls:
+                        tc_id = tc.get("id", "")
                         name = tc.get("function", {}).get("name", "")
                         try:
                             args = json.loads(tc.get("function", {}).get("arguments", "{}"))
@@ -249,6 +255,7 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                         result_text = json.dumps(result, ensure_ascii=False, default=str)
                         fallback_messages.append({
                             "role": "tool",
+                            "tool_call_id": tc_id,
                             "content": f"[Tool Result for {name}]\n{result_text}\n[/Tool Result]",
                         })
                         ctx.tool_context += f"Tool result for {name}:\n{result_text}\n\n"
