@@ -168,6 +168,13 @@ const templateIcon = (slug: string) => {
   return "🤖";
 };
 
+const READY_AGENTS = [
+  { slug: 'support-agent', icon: '🎧', title: 'خدمة العملاء', desc: 'يرد على استفسارات العملاء، يفتح تيكيت، ويتابع الشكاوى' },
+  { slug: 'sales-agent', icon: '🛒', title: 'المبيعات', desc: 'يبيع المنتجات، يعرض الكتالوج، وينشئ الطلبات' },
+  { slug: 'order-agent', icon: '📦', title: 'متابعة الطلبات', desc: 'يتتبع الشحنات ويحدث حالة الطلبات' },
+  { slug: 'marketing-agent', icon: '📣', title: 'التسويق', desc: 'يدير الحملات التسويقية والعروض والتواصل مع العملاء' },
+];
+
 export default function AgentProfilesPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -210,6 +217,13 @@ export default function AgentProfilesPage() {
   const [newConfig, setNewConfig] = useState<Record<string, string>>({});
   const [createStep, setCreateStep] = useState(0);
 
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [quickSlug, setQuickSlug] = useState('');
+  const [quickIcon, setQuickIcon] = useState('🤖');
+  const [quickName, setQuickName] = useState('');
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickCreating, setQuickCreating] = useState(false);
+
   const hasUnsavedChanges = useMemo(() => {
     if (!profile) return false;
     return (
@@ -246,18 +260,10 @@ export default function AgentProfilesPage() {
   /* ── Load agents ── */
   useEffect(() => { loadAgents(); }, [loadAgents]);
 
-  /* ── Auto-open create dialog when no agents ── */
+  /* ── Show ready cards instead of auto-opening dialog ── */
   useEffect(() => {
-    if (agentsLoading) return;
-    if (agents.length > 0) {
-      autoOpenedRef.current = false;
-      return;
-    }
-    if (!autoOpenedRef.current && agents.length === 0) {
-      autoOpenedRef.current = true;
-      setCreateOpen(true);
-    }
-  }, [agents.length, agentsLoading]);
+    if (agents.length > 0) autoOpenedRef.current = false;
+  }, [agents.length]);
 
   const orderedAgents = useMemo(() => {
     const ceo = agents.find((a) => a.role === "CEO");
@@ -462,6 +468,37 @@ export default function AgentProfilesPage() {
       setCreateError(t("agentProfiles.toast.createFailed"));
     }
     setCreating(false);
+  };
+
+  /* ── Quick create ready agent ── */
+  const handleQuickCreate = async () => {
+    if (!quickName.trim()) return;
+    setQuickCreating(true);
+    const ready = READY_AGENTS.find((a) => a.slug === quickSlug);
+    const data = await tryApiFetch<Record<string, unknown>>(
+      "/agent/agents",
+      { method: "POST", body: JSON.stringify({
+        name: quickName.trim(),
+        templateSlug: quickSlug,
+        icon: quickIcon,
+        description: ready?.desc || null,
+      })},
+    );
+    if (data?.id) {
+      setQuickOpen(false);
+      setQuickName('');
+      toast.success(`تم إنشاء وكيل ${quickTitle}`);
+      sandboxApi.getAgents().then((res) => {
+        setAgents(res.agents as AgentItem[]);
+        setSelectedId(data.id as string);
+        const params = new URLSearchParams(searchParams);
+        params.set("agent", data.id as string);
+        setSearchParams(params, { replace: true });
+      }).catch(() => {});
+    } else {
+      toast.error("فشل إنشاء الوكيل، حاول مرة أخرى");
+    }
+    setQuickCreating(false);
   };
 
   /* ── Delete agent ── */
@@ -1070,13 +1107,27 @@ export default function AgentProfilesPage() {
           )}
 
           {agents.length === 0 && !agentsLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Bot className="mx-auto mb-4 size-14 text-muted-foreground/20" />
-              <h2 className="text-base font-semibold text-muted-foreground/80">{t("agentProfiles.empty.title")}</h2>
-              <p className="mt-2 text-sm text-muted-foreground/60 max-w-md">{t("agentProfiles.empty.desc")}</p>
-              <Button className="mt-6" onClick={() => setCreateOpen(true)}>
-                <Plus className="size-4 ml-2" />{t("agentProfiles.empty.createCta")}
-              </Button>
+            <div className="flex flex-col items-center py-10 text-center px-4">
+              <Bot className="mx-auto mb-3 size-12 text-muted-foreground/20" />
+              <h2 className="text-lg font-bold text-foreground mb-1">اختر وكيلاً جاهزاً</h2>
+              <p className="text-sm text-muted-foreground/60 max-w-md mb-8">ابدأ بواحد من الوكلاء الجاهزين — كل اللي عليك تختار الاسم</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
+                {READY_AGENTS.map((a) => (
+                  <button key={a.slug} type="button" onClick={() => { setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(`وكيل ${a.title}`); setQuickOpen(true); }}
+                    className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-right shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
+                  >
+                    <span className="text-2xl">{a.icon}</span>
+                    <div className="text-right w-full">
+                      <p className="text-sm font-bold text-foreground">{a.title}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-0.5 leading-relaxed">{a.desc}</p>
+                    </div>
+                    <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">اختر هذا →</span>
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => setCreateOpen(true)} className="mt-6 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                أو أنشئ وكيل مخصص ←
+              </button>
             </div>
           ) : !selectedId && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -1298,6 +1349,32 @@ export default function AgentProfilesPage() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Quick Create Dialog ── */}
+      <Dialog open={quickOpen} onOpenChange={(o) => { if (!o && !quickCreating) { setQuickOpen(false); setQuickName(''); } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <span className="text-xl">{quickIcon}</span>
+              {quickTitle}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-3 space-y-3">
+            <p className="text-sm text-muted-foreground/70">الوكيل جاهز — كل اللي عليك تختار اسمه</p>
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">اسم الوكيل</label>
+              <Input value={quickName} onChange={(e) => setQuickName(e.target.value)} placeholder="أدخل اسم الوكيل" className="h-9 text-sm" autoFocus />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setQuickOpen(false); setQuickName(''); }} disabled={quickCreating} className="h-8 text-xs">إلغاء</Button>
+            <Button onClick={handleQuickCreate} disabled={quickCreating || !quickName.trim()} className="h-8 text-xs">
+              {quickCreating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
+              {quickCreating ? 'جارٍ الإنشاء...' : 'تأكيد'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

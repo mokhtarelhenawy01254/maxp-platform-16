@@ -5,6 +5,7 @@ const {
 const WhatsAppNotificationService = require("../services/whatsapp/WhatsAppNotificationService");
 const KashierService = require("../services/kashierService");
 const { marketplaceCatalogService } = require("../services/catalog/marketplaceCatalogService");
+const aiServiceAdminClient = require("../services/aiServiceAdminClient");
 
 const getNextBillingDate = () => {
   const nextBillingDate = new Date();
@@ -231,6 +232,19 @@ exports.messagingCheckout = async (req, res) => {
       }
     });
 
+    try {
+      await aiServiceAdminClient.spawnAgent({
+        companyId,
+        name: `وكيل خدمة العملاء`,
+        role: 'SUPPORT',
+        templateSlug: 'support-agent',
+        icon: '🎧',
+        description: 'وكيل ذكي للرد على استفسارات العملاء وإنشاء الطلبات',
+      });
+    } catch (e) {
+      console.warn('[MESSAGING-CHECKOUT] Auto-create agent skipped (non-blocking):', e.message);
+    }
+
     res.json({
       success: true,
       message: 'تم تفعيل الباقة بنجاح',
@@ -337,6 +351,19 @@ exports.lpActivate = async (req, res) => {
         }
       }
     });
+
+    try {
+      await aiServiceAdminClient.spawnAgent({
+        companyId,
+        name: `وكيل خدمة العملاء`,
+        role: 'SUPPORT',
+        templateSlug: 'support-agent',
+        icon: '🎧',
+        description: 'وكيل ذكي للرد على استفسارات العملاء وإنشاء الطلبات',
+      });
+    } catch (e) {
+      console.warn('[LP-ACTIVATE] Auto-create agent skipped (non-blocking):', e.message);
+    }
 
     res.json({ success: true, message: 'تم تفعيل الباقة مجاناً', data: { trialDays: 7 } });
   } catch (error) {

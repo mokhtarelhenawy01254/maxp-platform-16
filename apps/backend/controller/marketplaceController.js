@@ -5,6 +5,7 @@ const path = require('path');
 const { marketplaceCatalogService } = require('../services/catalog/marketplaceCatalogService');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 
 // Legacy storefront template engine has been removed from runtime.
 const PLATFORM_ENGINE_VERSION = 'removed';
@@ -1886,6 +1887,18 @@ exports.subscribeToBundle = async (req, res) => {
           }
         }
       });
+      try {
+        await aiServiceAdminClient.spawnAgent({
+          companyId,
+          name: `وكيل خدمة العملاء`,
+          role: 'SUPPORT',
+          templateSlug: 'support-agent',
+          icon: '🎧',
+          description: 'وكيل ذكي للرد على استفسارات العملاء وإنشاء الطلبات',
+        });
+      } catch (e) {
+        console.warn('[BUNDLE-SUBSCRIBE] Auto-create agent skipped (non-blocking):', e.message);
+      }
       return res.json({ success: true, message: "تم تفعيل باقة AI + Inbox بنجاح" });
     }
 

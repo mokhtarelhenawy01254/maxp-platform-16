@@ -48,6 +48,15 @@ The `lp_pages` table (raw SQL, not Prisma) has two new columns:
 - Returns `{ success: true, data: { sessionUrl: "...", billingId: "..." } }`
 - On webhook success, bundle apps are installed
 
+## Auto-Created Default Agent
+
+After any free bundle activation (lp-activate, messaging-checkout, or marketplace bundle subscribe), a default **support-agent** (`وكيل خدمة العملاء`) is automatically spawned via `POST /admin/agents/spawn` for the company. This is non-blocking — failure to create the agent does not prevent activation.
+
+Affected endpoints:
+- `POST /api/v1/platform-subscription/messaging-checkout` — `messagingCheckout()`
+- `POST /api/v1/platform-subscription/lp-activate` — `lpActivate()`
+- `POST /api/v1/marketplace/bundles/ai-inbox-bundle/subscribe` — `subscribeToBundle()`
+
 ## Frontend
 
 - `MessagingLanding.tsx` and `AiInboxLanding.tsx` fetch `GET /api/v1/public/lp-pages/:slug` on mount
