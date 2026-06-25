@@ -13,7 +13,7 @@ logger = structlog.get_logger(__name__)
 
 
 class KnowledgeAskMerchantInput(BaseModel):
-    customer_question: str = Field(description="REQUIRED: The exact question the customer asked that the AI couldn't find an answer for. You MUST copy the customer's question here — do NOT omit this field.")
+    customer_question: str | None = Field(default=None, description="The question the customer asked that the AI couldn't find an answer for. Pass the exact customer question here.")
     conversation_id: str | None = Field(default=None, description="Conversation/thread ID")
     channel: str | None = Field(default=None, description="Communication channel (facebook, whatsapp, chat, etc.)")
     context: str | None = Field(default=None, description="JSON string with additional context like product IDs, order IDs, etc.")
@@ -23,7 +23,13 @@ class KnowledgeAskMerchantInput(BaseModel):
 async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
     if not company_id:
+        logger.warning("knowledge_ask_merchant_missing_company_id")
         return {"status": "error", "message": "Company ID is required"}
+
+    question = (input_data.customer_question or "").strip()
+    if not question:
+        logger.warning("knowledge_ask_merchant_missing_question", company=company_id, conversation_id=input_data.conversation_id)
+        question = "طلب استفسار (لم يتم تحديد السؤال)"
 
     qid = str(uuid.uuid4())
     ctx = {}
@@ -48,7 +54,7 @@ async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput) -> dict[
                 "company_id": company_id,
                 "conversation_id": input_data.conversation_id,
                 "channel": input_data.channel or "chat",
-                "customer_question": input_data.customer_question,
+                "customer_question": question,
                 "context": json.dumps(ctx),
             })
             await sess.commit()
