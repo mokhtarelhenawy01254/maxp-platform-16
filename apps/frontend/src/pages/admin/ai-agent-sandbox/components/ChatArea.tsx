@@ -75,10 +75,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const threshold = 100;
+    setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < threshold);
+  };
 
   useEffect(() => {
+    if (!isAtBottom) return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isAtBottom]);
 
   if (!agent) {
     return (
@@ -215,7 +225,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full min-w-0 bg-slate-50/20 dark:bg-slate-905 overflow-hidden">
       {/* Scrollable Chat Message History */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Quick action chips for merchants when chat is empty */}
         {!isSuper && messages.length === 0 && agent && canSend && (
           <div className="flex flex-col items-center justify-center min-h-[200px] gap-4">

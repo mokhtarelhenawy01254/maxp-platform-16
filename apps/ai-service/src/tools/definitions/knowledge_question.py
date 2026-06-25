@@ -34,7 +34,7 @@ async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput) -> dict[
             ctx = {"raw": input_data.context}
 
     try:
-        import src.db.session as _db_mod
+        from src.db.session import get_session
 
         sql = text("""
             INSERT INTO ai.knowledge_questions
@@ -42,7 +42,7 @@ async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput) -> dict[
             VALUES
                 (:id, :company_id, :conversation_id, :channel, :customer_question, CAST(:context AS jsonb), 'pending', now(), now())
         """)
-        async with _db_mod.async_session() as sess:
+        async for sess in get_session():
             await sess.execute(sql, {
                 "id": qid,
                 "company_id": company_id,

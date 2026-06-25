@@ -27,7 +27,7 @@ async def knowledge_search_handler(input_data: KnowledgeSearchInput) -> dict[str
 
 knowledge_search_tool = FunctionTool(
     name="knowledge_search",
-    description="Search the company knowledge base (FAQs + policies) using semantic/embedding search. Use this when you need to find information about company policies, FAQs, or any knowledge the merchant has saved. Returns ranked results with relevance scores.",
+    description="Search the company knowledge base (FAQs + policies) using semantic/embedding search. Use this when you need to find information about company policies, FAQs, or any knowledge the merchant has saved. Returns ranked results with relevance scores. IMPORTANT: If you find no relevant results after 1-2 attempts, stop searching and use 'knowledge_ask_merchant' instead to escalate to the merchant.",
     func=knowledge_search_handler,
     input_model=KnowledgeSearchInput,
 )

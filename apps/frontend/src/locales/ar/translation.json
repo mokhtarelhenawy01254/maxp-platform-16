@@ -66,7 +66,7 @@
       "tools": "الصلاحيات التي تمكن المساعد من تنفيذ مهام محددة"
     },
     "sidebar": {
-      "title": "فريق المساعدين",
+      "title": "فريق الايجنت",
       "addTitle": "إضافة مساعد",
       "search": "بحث",
       "noResults": "لا توجد نتائج",
@@ -4677,7 +4677,7 @@
     "agentWorkspace": "مركز التأكيد والمتابعة",
     "aiAgentMap": "خريطة الوكلاء",
     "aiAgentsTeam": "فريق الوكلاء",
-    "agentProfiles": "ملفات الوكلاء",
+    "agentProfiles": "فريق الايجنت",
     "aiCatalog": "كتالوج المنتجات (البوت)",
     "aiAgentSkills": "مهارات الوكلاء",
     "aiAgentTools": "أدوات الوكلاء",
