@@ -287,10 +287,6 @@ const smartRateLimit = (req, res, next) => {
     return rateLimits.admin(req, res, next);
   }
   
-  if (path.match(/\/api\/v1\/auth/)) {
-    return rateLimits.auth(req, res, next);
-  }
-  
   // Default to company API limits for authenticated routes
   if (req.user?.companyId) {
     return rateLimits.companyApi(req, res, next);
