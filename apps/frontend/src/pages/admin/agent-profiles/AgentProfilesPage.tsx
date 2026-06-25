@@ -803,6 +803,11 @@ export default function AgentProfilesPage() {
               {/* Toolbar row */}
               {profile && (
                 <div className="flex items-center gap-2 pt-3 border-t border-border/50">
+                  {!editing && (
+                    <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={() => { setEditing(true); }}>
+                      <PenLine className="size-3.5 ml-1" aria-hidden="true" />تعديل
+                    </Button>
+                  )}
                   <div className="mr-auto" />
                   <Button variant="ghost" size="icon" className="size-8" onClick={loadAgents} disabled={agentsLoading} aria-label={t("agentProfiles.header.refresh")} title={t("agentProfiles.header.refresh")}>
                     <RefreshCw className={cn("size-3.5", agentsLoading && "animate-spin")} aria-hidden="true" />
@@ -1072,31 +1077,6 @@ export default function AgentProfilesPage() {
                     </div>
                   )}
 
-                  <hr className="border-t border-border/50" />
-
-                  {/* ── Status footer ── */}
-                  <div className="flex items-center justify-end gap-2">
-                    {!editing ? (
-                      <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={() => { setEditing(true); }}>
-                        <PenLine className="size-3.5 ml-1" aria-hidden="true" />تعديل
-                      </Button>
-                    ) : profileSaving ? (
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Loader2 className="size-3 animate-spin" />
-                        {t("agentProfiles.header.saving")}
-                      </span>
-                    ) : hasUnsavedChanges ? (
-                      <span className="flex items-center gap-1.5 text-xs text-amber-600">
-                        <span className="size-1.5 rounded-full bg-amber-500" />
-                        تعديلات غير محفوظة
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-xs text-emerald-600">
-                        <Save className="size-3" />
-                        {t("agentProfiles.header.saved")}
-                      </span>
-                    )}
-                  </div>
                 </div>
               )}
             </>
