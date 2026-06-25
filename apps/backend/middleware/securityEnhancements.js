@@ -225,7 +225,7 @@ const rateLimits = {
   // Provider and generation operations
   providerOperations: createAdvancedRateLimit({
     windowMs: 2 * 60 * 1000, // 2 minutes
-    max: process.env.NODE_ENV === 'production' ? 20 : 100, // Provider requests per company
+    max: process.env.NODE_ENV === 'production' ? 60 : 200, // Provider requests per company
     message: 'تم تجاوز الحد المسموح لعمليات المزودين. حاول مرة أخرى بعد دقيقتين',
     byCompany: true,
     sensitive: true
@@ -271,7 +271,7 @@ const smartRateLimit = (req, res, next) => {
     return rateLimits.customerData(req, res, next);
   }
   
-  if (path.match(/\/api\/v1\/super-admin\/ai/) || path.includes('chat') || path.includes('generate')) {
+  if (path.match(/\/api\/v1\/super-admin\/ai/) || /\/chat(\/|$)/.test(path) || path.includes('generate')) {
     return rateLimits.providerOperations(req, res, next);
   }
   
