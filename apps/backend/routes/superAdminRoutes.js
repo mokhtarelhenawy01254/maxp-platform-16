@@ -681,6 +681,47 @@ router.post("/agents/apply-template", async (req, res) => {
   }
 });
 
+// GET /agents/default-template — get the default agent template slug
+router.get("/agents/default-template", async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const setting = await prisma.systemSettings.findFirst({
+      where: { systemName: 'defaultAgentTemplate' },
+    });
+    const templateSlug = setting?.config ? JSON.parse(setting.config).templateSlug : 'support-agent';
+    return res.json({ success: true, templateSlug });
+  } catch (error) {
+    console.error('[SA-AGENTS] GET default-template error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /agents/default-template — set the default agent template slug
+router.put("/agents/default-template", async (req, res) => {
+  try {
+    const { templateSlug } = req.body || {};
+    if (!templateSlug) return res.status(400).json({ success: false, error: 'templateSlug مطلوب' });
+    const prisma = getSharedPrismaClient();
+    await prisma.systemSettings.upsert({
+      where: { systemName: 'defaultAgentTemplate' },
+      update: { config: JSON.stringify({ templateSlug }), updatedAt: new Date() },
+      create: {
+        id: `sys_defaultAgentTemplate`,
+        systemName: 'defaultAgentTemplate',
+        displayName: 'Default Agent Template',
+        description: 'الوكيل الافتراضي الذي يتم إنشاؤه تلقائيًا للشركات الجديدة',
+        category: 'ai',
+        isEnabled: true,
+        config: JSON.stringify({ templateSlug }),
+      },
+    });
+    return res.json({ success: true, templateSlug, message: 'تم تعيين القالب الافتراضي بنجاح' });
+  } catch (error) {
+    console.error('[SA-AGENTS] PUT default-template error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // GET /agents/:id — get agent template with expanded details
 router.get("/agents/:id", async (req, res) => {
   try {
@@ -745,47 +786,6 @@ router.delete("/agents/:id", async (req, res) => {
   } catch (error) {
     console.error('[SA-AGENTS] DELETE error:', error.message);
     return res.status(500).json({ success: false, error: 'فشل حذف الوكيل' });
-  }
-});
-
-// GET /agents/default-template — get the default agent template slug
-router.get("/agents/default-template", async (req, res) => {
-  try {
-    const prisma = getSharedPrismaClient();
-    const setting = await prisma.systemSettings.findFirst({
-      where: { systemName: 'defaultAgentTemplate' },
-    });
-    const templateSlug = setting?.config ? JSON.parse(setting.config).templateSlug : 'support-agent';
-    return res.json({ success: true, templateSlug });
-  } catch (error) {
-    console.error('[SA-AGENTS] GET default-template error:', error.message);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// PUT /agents/default-template — set the default agent template slug
-router.put("/agents/default-template", async (req, res) => {
-  try {
-    const { templateSlug } = req.body || {};
-    if (!templateSlug) return res.status(400).json({ success: false, error: 'templateSlug مطلوب' });
-    const prisma = getSharedPrismaClient();
-    await prisma.systemSettings.upsert({
-      where: { systemName: 'defaultAgentTemplate' },
-      update: { config: JSON.stringify({ templateSlug }), updatedAt: new Date() },
-      create: {
-        id: `sys_defaultAgentTemplate`,
-        systemName: 'defaultAgentTemplate',
-        displayName: 'Default Agent Template',
-        description: 'الوكيل الافتراضي الذي يتم إنشاؤه تلقائيًا للشركات الجديدة',
-        category: 'ai',
-        isEnabled: true,
-        config: JSON.stringify({ templateSlug }),
-      },
-    });
-    return res.json({ success: true, templateSlug, message: 'تم تعيين القالب الافتراضي بنجاح' });
-  } catch (error) {
-    console.error('[SA-AGENTS] PUT default-template error:', error.message);
-    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
