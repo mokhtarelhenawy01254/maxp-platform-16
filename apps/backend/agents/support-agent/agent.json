@@ -33,7 +33,10 @@
     "order.create.confirmed",
     "order.refund",
     "whatsapp.send",
-    "agent.handoff.to"
+    "agent.handoff.to",
+    "knowledge.search",
+    "knowledge.ask.merchant",
+    "knowledge.create.faq"
   ],
   "allowedSkills": [
     "customer-context-summary",

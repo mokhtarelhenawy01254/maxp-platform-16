@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 
 from agent_framework import Message
@@ -7,6 +8,8 @@ from agent_framework import Message
 from src.pipeline.context import PipelineContext
 from src.pipeline.llm_messages import to_client_messages
 from src.pipeline.provider_errors import provider_error_result
+from src.tools.gateway import ToolGateway
+from src.tools.names import canonical_tool_name
 
 
 def _strip_tool_sections(prompt: str) -> str:
@@ -206,6 +209,8 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
 
     # Conversational fallback: generate a direct reply when no tool call was needed
     # and no LLM call was made yet (e.g. general.chat, greetings, policy questions).
+    # When native tools are available (like knowledge_ask_merchant), enable tool
+    # calling so the LLM can natively decide to look up or ask for info it doesn't have.
     if (not ctx.llm_response or not ctx.llm_response.strip()) and not ctx.early_return:
         client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
         if client:
@@ -213,12 +218,53 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
             fallback_messages = [
                 {"role": "system", "content": ctx.system_prompt or "You are a helpful customer support assistant."},
             ] + fallback_messages + [{"role": "user", "content": ctx.message}]
+            native_tools = list(getattr(ctx, "native_tools", []) or [])
+            has_tools = bool(native_tools)
             try:
                 response = await client.get_response(
                     to_client_messages(fallback_messages),
-                    options={"tools_enabled": False, "temperature": 0.7},
+                    options={"tools_enabled": has_tools, "temperature": 0.7},
                 )
                 raw_text = response.text if hasattr(response, "text") else str(response)
+                tool_calls = getattr(response, "tool_calls", None) or []
+                loop_count = 0
+                while tool_calls and loop_count < 5:
+                    loop_count += 1
+                    gateway = ToolGateway()
+                    agent_role = str(getattr(ctx.agent, "role", "") or "")
+                    allowed_tools = list(getattr(ctx.agent, "get_tools", lambda: [])() or [])
+                    for tc in tool_calls:
+                        name = tc.get("function", {}).get("name", "")
+                        try:
+                            args = json.loads(tc.get("function", {}).get("arguments", "{}"))
+                        except (json.JSONDecodeError, TypeError):
+                            args = {}
+                        result = await gateway.execute(
+                            tool_name=name,
+                            company_id=ctx.company_id,
+                            agent_role=agent_role,
+                            allowed_tools=allowed_tools,
+                            input_data=args,
+                        )
+                        result_text = json.dumps(result, ensure_ascii=False, default=str)
+                        fallback_messages.append({
+                            "role": "tool",
+                            "content": f"[Tool Result for {name}]\n{result_text}\n[/Tool Result]",
+                        })
+                        ctx.tool_context += f"Tool result for {name}:\n{result_text}\n\n"
+                        ctx.executed_tools.append({
+                            "tool": name,
+                            "params": args,
+                            "status": result.get("status"),
+                            "success": result.get("status") == "success",
+                            "result": result.get("result", result),
+                        })
+                    response = await client.get_response(
+                        to_client_messages(fallback_messages),
+                        options={"tools_enabled": True, "temperature": 0.3},
+                    )
+                    raw_text = response.text if hasattr(response, "text") else str(response)
+                    tool_calls = getattr(response, "tool_calls", None) or []
                 ctx.llm_response = _strip_reasoning(raw_text)
             except Exception as exc:
                 _provider_error(ctx, exc)

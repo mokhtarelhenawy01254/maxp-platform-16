@@ -12,6 +12,9 @@ roles:
     - shipping_update
     - whatsapp_send
     - agent_handoff_to
+    - knowledge_search
+    - knowledge_ask_merchant
+    - knowledge_create_faq
 
   ORDER:
     - product_search
