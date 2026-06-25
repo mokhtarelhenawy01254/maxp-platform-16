@@ -5,7 +5,7 @@ import uuid
 from typing import Any
 
 import structlog
-from agent_framework import FunctionInvocationContext, FunctionTool
+from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
@@ -20,7 +20,7 @@ class KnowledgeAskMerchantInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
-async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput, ctx: FunctionInvocationContext | None = None) -> dict[str, Any]:
+async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
     if not company_id:
         logger.warning("knowledge_ask_merchant_missing_company_id")
@@ -28,22 +28,8 @@ async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput, ctx: Fun
 
     question = (input_data.customer_question or "").strip()
     if not question:
-        # Try to extract from conversation context
-        if ctx and ctx.kwargs:
-            last_msg = ctx.kwargs.get("last_customer_message") or ""
-            if last_msg:
-                question = last_msg.strip()
-        if not question and ctx and ctx.session and ctx.session.state:
-            msgs = ctx.session.state.get("messages", [])
-            if msgs:
-                last = msgs[-1]
-                if hasattr(last, "content"):
-                    question = last.content.strip()
-                elif isinstance(last, dict):
-                    question = last.get("content", "").strip()
-        if not question:
-            logger.warning("knowledge_ask_merchant_missing_question", company=company_id, conversation_id=input_data.conversation_id)
-            question = "طلب استفسار (لم يتم تحديد السؤال)"
+        logger.warning("knowledge_ask_merchant_missing_question", company=company_id, conversation_id=input_data.conversation_id)
+        question = "طلب استفسار (لم يتم تحديد السؤال)"
 
     qid = str(uuid.uuid4())
     ctx = {}

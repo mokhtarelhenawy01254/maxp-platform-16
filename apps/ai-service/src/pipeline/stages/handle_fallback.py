@@ -253,6 +253,9 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                             args = json.loads(tc.get("function", {}).get("arguments", "{}"))
                         except (json.JSONDecodeError, TypeError):
                             args = {}
+                        # ponytail: inject customer question when LLM omits it
+                        if name == "knowledge_ask_merchant" and not args.get("customer_question"):
+                            args["customer_question"] = ctx.message
                         result = await gateway.execute(
                             tool_name=name,
                             company_id=ctx.company_id,
