@@ -221,6 +221,13 @@ const READY_AGENTS: ReadyAgent[] = [
       { id: 'marketing-rasmi', name: 'محترف', desc: 'منهجي واحترافي في إدارة الحملات', tone: 'formal', persona: 'مسوق محترف', goal: 'تدير استراتيجيات تسويقية احترافية تحقق أعلى عائد' },
     ],
   },
+  {
+    slug: 'medical-center-agent', icon: '🏥', title: 'مساعد مركز طبي', category: 'الخدمات الطبية',
+    desc: 'وكيل حجز متكامل — يدير المواعيد، الأطباء، الخدمات، والفروع للمراكز الطبية',
+    personalities: [
+      { id: 'medical-default', name: 'مساعد طبي', desc: 'أسلوب مهني ولطيف في التعامل مع المرضى', tone: 'friendly', persona: 'مساعد مركز طبي', goal: 'تساعد المرضى في حجز المواعيد وإدارة الخدمات الطبية بسهولة' },
+    ],
+  },
 ];
 
 export default function AgentProfilesPage() {
