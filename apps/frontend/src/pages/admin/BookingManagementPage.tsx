@@ -21,7 +21,7 @@ interface BookingBranch {
 
 interface BookingDoctor {
   id: string; name: string; branchId: string; branchName?: string;
-  specialization: string; phone: string; isActive: boolean; createdAt: string;
+  specialty: string; phone: string; isActive: boolean; createdAt: string;
 }
 
 interface BookingService {
@@ -124,7 +124,7 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
   onClose: () => void;
   onSave: (d: Partial<BookingDoctor>) => Promise<void>;
 }) => {
-  const [form, setForm] = useState({ name: "", branchId: "", specialization: "", phone: "", isActive: true, ...doctor });
+  const [form, setForm] = useState({ name: "", branchId: "", specialty: "", phone: "", isActive: true, ...doctor });
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
@@ -140,7 +140,7 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
               {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">التخصص</label><input className="w-full border rounded-lg px-3 py-2" value={form.specialization} onChange={e => setForm({ ...form, specialization: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">التخصص</label><input className="w-full border rounded-lg px-3 py-2" value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">الهاتف</label><input className="w-full border rounded-lg px-3 py-2" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
@@ -371,7 +371,14 @@ export default function BookingManagementPage() {
   const saveBranch = async (d: Partial<BookingBranch>) => {
     const isEdit = !!d.id;
     const url = isEdit ? api(`branches/${d.id}`) : api("branches");
-    await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(d) });
+    const body: Record<string, unknown> = { name: d.name, address: d.address, phone: d.phone, isActive: d.isActive };
+    if ((d as any).workingDays && (d as any).workStart) {
+      const days = (d as any).workingDays.split(",").filter(Boolean);
+      const wd: Record<string, string> = {};
+      days.forEach((day: string) => { wd[day] = `${(d as any).workStart}-${(d as any).workEnd}`; });
+      body.workingDays = wd;
+    }
+    await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     setBranchModal(undefined); fetchBranches();
   };
 
@@ -504,7 +511,17 @@ export default function BookingManagementPage() {
               <td className="py-3 px-4 font-medium">{b.name}</td>
               <td className="py-3 px-4 text-gray-500">{b.address || "—"}</td>
               <td className="py-3 px-4">{b.phone || "—"}</td>
-              <td className="py-3 px-4 text-xs text-gray-500">{b.workStart} - {b.workEnd}</td>
+                            <td className="py-3 px-4 text-xs text-gray-500">{
+                (() => {
+                  try {
+                    const wd = typeof b.workingDays === 'string' ? JSON.parse(b.workingDays) : b.workingDays;
+                    if (!wd || typeof wd !== 'object') return "—";
+                    const dayNames = {sat:"سبت",sun:"أحد",mon:"اثنين",tue:"ثلاثاء",wed:"أربعاء",thu:"خميس",fri:"جمعة"};
+                    const days = Object.entries(wd).filter(([k,v]) => v).map(([k,v]) => `${dayNames[k]||k} (${v})`);
+                    return days.join(" / ") || "—";
+                  } catch(e) { return "—"; }
+                })()
+              }</td>
               <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${b.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{b.isActive ? "نشط" : "غير نشط"}</span></td>
               <td className="py-3 px-4">
                 <div className="flex gap-2">
@@ -522,7 +539,7 @@ export default function BookingManagementPage() {
   );
 
   const renderDoctors = () => {
-    const filtered = doctors.filter(d => (!searchDoctor || d.name.includes(searchDoctor) || d.specialization.includes(searchDoctor)));
+    const filtered = doctors.filter(d => !searchDoctor || (d.name || '').includes(searchDoctor) || (d.specialty || '').includes(searchDoctor));
     return (
       <div>
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
@@ -538,7 +555,7 @@ export default function BookingManagementPage() {
             return (
               <div key={d.id} className={`bg-white rounded-xl shadow-sm border p-4 ${!d.isActive ? "opacity-60" : ""}`}>
                 <div className="flex items-start justify-between mb-2">
-                  <div><h3 className="font-bold">{d.name}</h3><p className="text-sm text-gray-500">{d.specialization}</p></div>
+                  <div><h3 className="font-bold">{d.name}</h3><p className="text-sm text-gray-500">{d.specialty}</p></div>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${d.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{d.isActive ? "نشط" : "غير نشط"}</span>
                 </div>
                 <p className="text-xs text-gray-400 mb-3">{branch?.name || "—"}</p>

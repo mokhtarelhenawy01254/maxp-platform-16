@@ -19,16 +19,19 @@ model BookingBranch {
   @@map("booking_branches")
 }
 
-/// Booking module - Doctors (generic, no name - only title)
+/// Booking module - Doctors
 model BookingDoctor {
-  id        String   @id @default(cuid())
-  companyId String
-  branchId  String
-  title     String   /// e.g. "دكتور العلاج الطبيعي"
-  gender    Gender?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  companyId  String
+  branchId   String
+  title      String   /// e.g. "دكتور", "أخصائي"
+  name       String?  /// Doctor's full name
+  specialty  String?  /// Specialty: "علاج طبيعي", "عظام", etc.
+  phone      String?
+  gender     Gender?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   branch      BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
   appointments Appointment[]
