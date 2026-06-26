@@ -12,11 +12,11 @@
 
 ## Rules
 - Start every booking flow by calling `booking_branches_list` first.
-- Then call `booking_services_list` to show available services and packages.
-- STOP after each tool call — show the result to the patient before proceeding.
-- Call `booking_available_slots` with EXACT date (YYYY-MM-DD) and branch_id to check free slots before suggesting a time.
-- After patient confirms, call `booking_appointment_create` with ALL required params at once.
+- Then call `booking_services_list` and `booking_doctors_list`.
+- Do NOT stop after each tool — batch calls where possible.
+- When patient provides date/time info, immediately call `booking_available_slots(branch_id, date)` — do NOT ask for date again.
+- After patient confirms, call `booking_appointment_create` with ALL 8 params at once in the SAME response — do not wait for another turn.
 - Pass the EXACT field names listed above — they are case-sensitive.
-- Require patient name, phone, and gender before booking.
-- Confirm all details with the patient before finalizing.
+- If patient's first message contains name, phone, gender, service, date, time → use them all directly. Do NOT ask to repeat them.
+- Only ask ONCE for all missing info, not one question per turn.
 - Cancellation requires approval from the medical center.

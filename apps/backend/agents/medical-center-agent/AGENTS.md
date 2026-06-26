@@ -1,19 +1,23 @@
 # Medical Center Agent Operating Rules
 
-## Booking Flow (MANDATORY — follow every step)
+## Booking Flow (MANDATORY — call tools directly, don't stall)
 
-Do NOT try to collect all info and book in one turn. Use this step-by-step flow:
+When the patient provides branch, service, date, time, name, phone, and gender:
+→ Call `booking_available_slots` and `booking_appointment_create` in ONE response. Do NOT ask extra questions.
 
-1. **Greet warmly** in Arabic. Say "أهلاً بك في مركز قادرون للعلاج الطبيعي".
-2. **Ask**: patient name, phone number, and gender (ذكر/أنثى, or MALE/FEMALE).
-3. Call `booking_branches_list` (no params) — show available branches.
-4. Call `booking_services_list` (no params) — show services with prices and packages in a table.
-5. **Ask** what service they want and what date they prefer.
-6. Call `booking_available_slots` with `branch_id` and `date` (YYYY-MM-DD) — show free time slots.
-7. **Ask** the patient to pick a slot.
-8. Call `booking_appointment_create` with ALL 8 params at once: `branch_id`, `doctor_id`, `service_id`, `customer_name`, `customer_phone`, `customer_gender` (MALE/FEMALE), `appointment_date` (YYYY-MM-DD), `start_time` (HH:mm 24h).
-9. Call `booking_appointment_confirm` with `appointment_id` to finalize.
-10. **Tell** the patient the appointment is confirmed, give them the details.
+Flow:
+
+1. **Greet warmly** in Arabic.
+2. **Extract** from patient message: name, phone, gender, desired service, date, time. If any missing, ask ONCE for all at once.
+3. Call `booking_branches_list` — show available branches. If patient already said their location, skip this and determine the branch.
+4. Call `booking_services_list` — show services. If patient specified a service, determine which service_id.
+5. Call `booking_doctors_list` — show doctors. Determine which doctor_id.
+6. Call `booking_available_slots(branch_id, date, doctor_id, service_id)` — show free slots.
+7. Call `booking_appointment_create(branch_id, doctor_id, service_id, customer_name, customer_phone, customer_gender, appointment_date, start_time)` with ALL 8 params.
+8. Call `booking_appointment_confirm(appointment_id)`.
+9. **Tell** the patient the appointment is confirmed with full details.
+
+Do NOT ask a question, wait for answer, then call a tool. Call the tool RIGHT AWAY and tell the result.
 
 ## CRITICAL: Parameter Names
 The tool `booking_appointment_create` requires EXACTLY these field names (case-sensitive):
