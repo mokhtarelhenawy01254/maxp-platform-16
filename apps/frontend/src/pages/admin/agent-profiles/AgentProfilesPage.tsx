@@ -305,19 +305,41 @@ export default function AgentProfilesPage() {
     { key: "settings", label: t("agentProfiles.tabs.settings"), icon: <Shield className="size-4" aria-hidden="true" /> },
   ];
 
+  const [agentsListTab, setAgentsListTab] = useState<"active" | "archived">("active");
+
   const loadAgents = useCallback(async () => {
     setAgentsLoading(true);
     setProfileError(null);
     try {
-      const res = await sandboxApi.getAgents();
-      setAgents(res.agents as AgentItem[]);
-      if (res.agents.length > 0) setSelectedId((prev) => prev || res.agents[0].id);
+      if (agentsListTab === "archived") {
+        const res = await tryApiFetch<{ success: boolean; agents: AgentItem[] }>("/agent/agents?status=ARCHIVED");
+        const list = res?.agents || [];
+        setAgents(list);
+        if (list.length > 0) {
+          setSelectedId((prev) => {
+            if (list.some((a) => a.id === prev)) return prev;
+            return list[0].id;
+          });
+        } else {
+          setSelectedId(null);
+        }
+      } else {
+        const res = await sandboxApi.getAgents();
+        const list = (res.agents || []) as AgentItem[];
+        setAgents(list);
+        if (list.length > 0) {
+          setSelectedId((prev) => {
+            if (list.some((a) => a.id === prev)) return prev;
+            return list[0].id;
+          });
+        }
+      }
     } catch {
       setProfileError("فشل تحميل الوكلاء");
     } finally {
       setAgentsLoading(false);
     }
-  }, []);
+  }, [agentsListTab]);
 
   const autoOpenedRef = useRef(false);
 
@@ -714,6 +736,36 @@ export default function AgentProfilesPage() {
           <Input placeholder={t("agentProfiles.sidebar.search")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-8 pr-8 text-xs" />
         </div>
       </div>
+      <div className="px-3 pb-2 flex gap-1 border-b border-border/20">
+        <button
+          onClick={() => {
+            setAgentsListTab("active");
+            setSearchQuery("");
+          }}
+          className={cn(
+            "flex-1 py-1 text-center text-[11px] font-semibold rounded-md transition-all",
+            agentsListTab === "active"
+              ? "bg-primary/10 text-primary font-bold"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          )}
+        >
+          {t("agentProfiles.sidebar.activeTab", "النشطين")}
+        </button>
+        <button
+          onClick={() => {
+            setAgentsListTab("archived");
+            setSearchQuery("");
+          }}
+          className={cn(
+            "flex-1 py-1 text-center text-[11px] font-semibold rounded-md transition-all",
+            agentsListTab === "archived"
+              ? "bg-primary/10 text-primary font-bold"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          )}
+        >
+          {t("agentProfiles.sidebar.archivedTab", "المؤرشفين")}
+        </button>
+      </div>
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {agentsLoading ? (
           <div className="space-y-2 p-2">
@@ -959,8 +1011,52 @@ export default function AgentProfilesPage() {
 
           {!profileLoading && !profileError && profile && (
             <>
-              {tab === "settings" && (
-                <div className="max-w-3xl space-y-6">
+              {profile.agent.status?.toUpperCase() === "ARCHIVED" ? (
+                <div className="max-w-xl mx-auto my-12 p-8 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center space-y-6 shadow-sm">
+                  <div className="size-16 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto text-2xl">
+                    {draftIcon || "🤖"}
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-foreground">{draftName}</h3>
+                    <p className="text-xs text-muted-foreground">{profile.agent.role}</p>
+                    <p className="text-sm text-foreground/80 max-w-md mx-auto leading-relaxed">
+                      {t("agentProfiles.archived.desc", "هذا الوكيل مؤرشف حالياً. يمكنك استعادته للعمل وتعديل إعداداته، أو حذفه بشكل نهائي من قاعدة البيانات.")}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-4 pt-4">
+                    <Button
+                      onClick={async () => {
+                        const data = await tryApiFetch<{ success: boolean; agent: { status: string } }>(
+                          `/agent/agents/${selectedId}/status`,
+                          { method: "PATCH", body: JSON.stringify({ status: "ACTIVE" }) }
+                        );
+                        if (data) {
+                          toast.success(t("agentProfiles.archived.restoreSuccess", "تمت استعادة الوكيل بنجاح."));
+                          setAgentsListTab("active");
+                          loadAgents();
+                        } else {
+                          toast.error(t("agentProfiles.archived.restoreFailed", "فشل استعادة الوكيل."));
+                        }
+                      }}
+                      className="gap-2 h-9 text-xs"
+                    >
+                      <RefreshCw className="size-3.5" />
+                      {t("agentProfiles.archived.restoreBtn", "استعادة الوكيل")}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDeleteConfirm("permanent")}
+                      className="gap-2 h-9 text-xs"
+                    >
+                      <Trash2 className="size-3.5" />
+                      {t("agentProfiles.archived.deleteBtn", "حذف نهائي")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {tab === "settings" && (
+                    <div className="max-w-3xl space-y-6">
                   {!editing ? (
                     <div className="space-y-5">
                       {[
@@ -1157,6 +1253,8 @@ export default function AgentProfilesPage() {
                   )}
 
                 </div>
+              )}
+            </>
               )}
             </>
           )}
@@ -1489,7 +1587,7 @@ export default function AgentProfilesPage() {
       </Dialog>
 
       {/* ── Archive Confirmation Dialog ── */}
-      <Dialog open={!!deleteConfirm} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>
+      <Dialog open={!!deleteConfirm && deleteConfirm !== "permanent"} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600">
@@ -1508,6 +1606,49 @@ export default function AgentProfilesPage() {
             <Button variant="destructive" onClick={handleDeleteAgent} disabled={deleting}>
               {deleting ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
               {deleting ? t("agentProfiles.archive.archiving") : t("agentProfiles.archive.confirmButton")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Permanent Delete Confirmation Dialog ── */}
+      <Dialog open={deleteConfirm === "permanent"} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="size-4" />
+              {t("agentProfiles.permanentDelete.title", "حذف الوكيل نهائياً")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {t("agentProfiles.permanentDelete.confirm", "هل أنت متأكد من رغبتك في حذف هذا الوكيل نهائياً؟ لا يمكن التراجع عن هذا الإجراء وسيتم مسح كافة البيانات بشكل كامل.")}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={deleting}>{t("agentProfiles.archive.cancel", "إلغاء")}</Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                setDeleting(true);
+                const data = await tryApiFetch<{ success: boolean }>(
+                  `/agent/agents/${selectedId}?permanent=true`,
+                  { method: "DELETE" }
+                );
+                if (data) {
+                  setDeleteConfirm(null);
+                  toast.success(t("agentProfiles.toast.deleteSuccess", "تم حذف الوكيل نهائياً."));
+                  setAgentsListTab("archived");
+                  loadAgents();
+                } else {
+                  toast.error(t("agentProfiles.toast.deleteFailed", "فشل الحذف النهائي."));
+                }
+                setDeleting(false);
+              }}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
+              {deleting ? t("agentProfiles.permanentDelete.deleting", "جارٍ الحذف...") : t("agentProfiles.permanentDelete.confirmButton", "حذف نهائي")}
             </Button>
           </DialogFooter>
         </DialogContent>

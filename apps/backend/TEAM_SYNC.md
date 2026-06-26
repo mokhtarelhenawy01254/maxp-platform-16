@@ -2,6 +2,13 @@
 
 ## [2026-06-26]
 
+### Agent Archiving & Permanent Deletion Support
+- **Accomplishment**: Implemented archived agents view, restoration logic, and permanent deletion option across frontend, backend proxy, and AI service.
+- **Details**:
+  - Replaced strict DB unique constraint on agent name with a partial unique index allowing name reuse for archived agents.
+  - Added support in python `ai-service` and Node `backend` proxy for `GET /agents?status=ARCHIVED` and `DELETE /agents/:id?permanent=true`.
+  - Added "Active" and "Archived" tabs to frontend `AgentProfilesPage.tsx` sidebar with options to restore or permanently delete archived agents.
+
 ### Medical Center Management Page Design Polish & Consistency
 - **Accomplishment**: Fixed visual and structural inconsistencies across all 6 tabs of the Booking Management (Medical Center) page, establishing uniform spacing, layouts, table paddings, and modal dimensions.
 - **Details**:

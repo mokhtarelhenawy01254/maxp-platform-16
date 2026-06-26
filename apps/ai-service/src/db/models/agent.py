@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -63,7 +63,13 @@ class Agent(Base):
     """
     __tablename__ = "agents"
     __table_args__ = (
-        UniqueConstraint("company_id", "name", name="uq_company_agent_name"),
+        Index(
+            "uq_company_agent_name_active",
+            "company_id",
+            "name",
+            unique=True,
+            postgresql_where=text("status != 'ARCHIVED'"),
+        ),
         Index("ix_agents_company_id", "company_id"),
         Index("ix_agents_department_id", "department_id"),
         {"schema": "ai"},

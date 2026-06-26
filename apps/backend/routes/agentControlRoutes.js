@@ -23,6 +23,11 @@ router.get('/agents', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const { status } = req.query;
+    if (status === 'ARCHIVED') {
+      const archivedAgents = await aiServiceAdminClient.listAgents(companyId, 'ARCHIVED');
+      return res.json({ success: true, agents: archivedAgents || [], count: archivedAgents?.length || 0 });
+    }
     const context = await aiServiceAdminClient.getManagerContext(companyId);
     return res.json({ success: true, agents: context?.agents || [], count: context?.agents?.length || 0 });
   } catch (error) {
@@ -34,10 +39,16 @@ router.delete('/agents/:id', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-    const result = await aiServiceAdminClient.archiveAgent(req.params.id, companyId);
-    // 2026: ai-service manages agents; no dual-write to public.company_agents
-    if (result && result.id) {
-      console.log('[AGENT] Agent archived via ai-service:', result.id);
+    const permanent = req.query.permanent === 'true';
+    let result;
+    if (permanent) {
+      result = await aiServiceAdminClient.deleteAgentPermanently(req.params.id, companyId);
+      console.log('[AGENT] Agent permanently deleted via ai-service:', req.params.id);
+    } else {
+      result = await aiServiceAdminClient.archiveAgent(req.params.id, companyId);
+      if (result && result.id) {
+        console.log('[AGENT] Agent archived via ai-service:', result.id);
+      }
     }
     return res.json(result);
   } catch (error) {

@@ -1,3 +1,19 @@
+## [2026-06-26] Strict Unique Constraint Blocking Agent Name Reuse for Archived Agents
+
+- **Bug/Issue**: Unable to create a new active agent with the same name as a soft-deleted/archived agent, because the database unique constraint `uq_company_agent_name` raised a unique key violation.
+- **Root Cause**: The database model `ai.agents` had a strict unique constraint on `(company_id, name)` that did not filter out archived/deleted records.
+- **Fix**: 
+  1. Created Alembic migration `0020_partial_unique_agent_name.py` to drop the strict unique constraint `uq_company_agent_name` and replace it with a partial unique index `uq_company_agent_name_active` conditional on `status != 'ARCHIVED'`.
+  2. Updated the SQLAlchemy model definition in `agent.py` to use a partial index.
+  3. Added frontend UI for viewing archived agents, restoring archived agents, and permanently deleting archived agents.
+- **Files**:
+  - `apps/ai-service/migrations/versions/0020_partial_unique_agent_name.py`
+  - `apps/ai-service/src/db/models/agent.py`
+  - `apps/ai-service/src/api/admin/agents.py`
+  - `apps/backend/services/aiServiceAdminClient.js`
+  - `apps/backend/routes/agentControlRoutes.js`
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+
 ## [2026-06-26] Medical Center Management Page Design Inconsistencies
 
 - **Bug/Issue**: Layout, paddings, modal widths, empty states, and action button sizes were inconsistent and misaligned across different tabs on the Booking Management (Medical Center) page.

@@ -540,6 +540,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         select(AgentModel).where(
             AgentModel.company_id == body.company_id,
             AgentModel.name == name,
+            AgentModel.status != "ARCHIVED",
         )
     )
     if existing.scalar_one_or_none():
@@ -1144,23 +1145,31 @@ async def patch_agent_status(
 
 
 @router.delete("/agents/{agent_id}", response_model=AgentRead)
-async def archive_agent(
+async def delete_agent(
     agent_id: str, session: SessionDep,
     company_id: str | None = Query(default=None),
+    permanent: bool = Query(default=False),
 ) -> AgentRead:
-    """Archive (soft-delete) an agent."""
+    """Archive (soft-delete) or permanently delete an agent."""
     agent = await _ensure_agent_in_db(agent_id, session, company_id)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 
     if agent.role == "CEO":
-        raise HTTPException(status_code=400, detail="Cannot archive the CEO agent")
+        raise HTTPException(status_code=400, detail="Cannot delete/archive the CEO agent")
 
-    agent.status = "ARCHIVED"
-    await session.commit()
-    await session.refresh(agent)
-    logger.info("Agent archived", agent_id=agent_id)
-    return _agent_to_read(agent)
+    res_val = _agent_to_read(agent)
+    if permanent:
+        await session.delete(agent)
+        await session.commit()
+        logger.info("Agent permanently deleted", agent_id=agent_id)
+        return res_val
+    else:
+        agent.status = "ARCHIVED"
+        await session.commit()
+        await session.refresh(agent)
+        logger.info("Agent archived", agent_id=agent_id)
+        return _agent_to_read(agent)
 
 
 @router.post("/agents/{agent_id}/reconcile", response_model=AgentRead)

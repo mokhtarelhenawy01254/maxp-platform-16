@@ -888,7 +888,7 @@
     "slug": "medical-system",
     "name": "النظام الطبي",
     "nameEn": "Medical System",
-    "description": "نظام متكامل لإدارة المنشآت الطبية والعيادات — الفروع، الأطباء، الخدمات، المواعيد، ووكيل ذكاء اصطناعي للحجوزات.",
+    "description": "نظام متكامل لإدارة المنشآت الطبية والعيادات — الفروع، الأطباء، الخدمات، المواعيد والتقويم.",
     "category": "MEDICAL",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 249,
@@ -945,12 +945,6 @@
         "description": "إحصائيات وأداء المنشأة الطبية — عدد المواعيد، الإلغاءات، الإيرادات.",
         "access": "PAID"
       },
-      "aiAgent": {
-        "enabled": true,
-        "name": "وكيل ذكاء اصطناعي",
-        "description": "وكيل ذكي يستقبل الحجوزات عبر واتساب، فيسبوك، ولوحة التحكم.",
-        "access": "PAID"
-      }
     },
     "isActive": true,
     "isPublic": true,

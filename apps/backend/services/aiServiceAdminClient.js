@@ -73,8 +73,11 @@ async function updateToolMeta(toolName, data) {
   return request('PUT', `/admin/tools/${encodeURIComponent(toolName)}`, data);
 }
 
-async function listAgents(companyId) {
-  const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+async function listAgents(companyId, status) {
+  const params = [];
+  if (companyId) params.push(`company_id=${encodeURIComponent(companyId)}`);
+  if (status) params.push(`status=${encodeURIComponent(status)}`);
+  const qs = params.length > 0 ? `?${params.join('&')}` : '';
   return request('GET', `/admin/agents${qs}`) || [];
 }
 
@@ -191,6 +194,10 @@ async function getTeamMap(companyId) {
 
 async function archiveAgent(agentId, companyId) {
   return request('DELETE', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function deleteAgentPermanently(agentId, companyId) {
+  return request('DELETE', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}&permanent=true`);
 }
 
 async function getAgentFiles(agentId, companyId) {
@@ -324,6 +331,7 @@ module.exports = {
   getManagerContext,
   getTeamMap,
   archiveAgent,
+  deleteAgentPermanently,
   getAgentFiles,
   updateAgent,
   getProductEmbeddingStatus,

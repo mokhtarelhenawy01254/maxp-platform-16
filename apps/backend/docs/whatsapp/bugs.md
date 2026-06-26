@@ -2,6 +2,22 @@
 
 > Domain-specific bug tracker for WhatsApp sessions, notifications, Telegram, and campaigns.
 
+### [FIX] Unique Name Constraint and Deletion of AI Agents
+
+- **Date**: 2026-06-26
+- **Description**: Creating a new active agent with the same name as a soft-deleted/archived agent resulted in a unique key violation. Also, archived agents could not be permanently deleted from the database or restored easily from the UI.
+- **Root Cause**: The SQL unique constraint was strictly defined on `(company_id, name)`. There was no separate "archived" view in the frontend to manage soft-deleted agents or hard-delete them.
+- **Resolution**:
+  1. Replaced the strict unique constraint with a partial unique index on `(company_id, name)` where `status != 'ARCHIVED'`.
+  2. Exposed status filters (`GET /agents?status=ARCHIVED`) and hard delete parameter (`DELETE /agents/:id?permanent=true`) in backend proxy and AI service.
+  3. Integrated active/archived tabs, restore action, and permanent delete confirmation dialogs in `AgentProfilesPage.tsx`.
+- **Files Modified**:
+  - `apps/ai-service/src/db/models/agent.py`
+  - `apps/ai-service/src/api/admin/agents.py`
+  - `apps/backend/services/aiServiceAdminClient.js`
+  - `apps/backend/routes/agentControlRoutes.js`
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+
 ### [FIX] AI Hub Auto-Reply Settings Did Not Reach WhatsApp Runtime
 - **Date**: 2026-06-23
 - **Description**: A company could show auto-reply enabled in the AI Hub/ai-service while WhatsApp, Messenger, Instagram, or Telegram backend runtime still treated AI auto-reply as disabled.

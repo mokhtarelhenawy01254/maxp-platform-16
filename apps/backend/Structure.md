@@ -55,4 +55,12 @@ To support unified model resolution and fallback mechanisms:
 - **Table**: `ai.agents` (mapped by `Agent` model in `apps/ai-service/src/db/models/agent.py`)
 - **Added Column**: `model_policy` (`JSONB`, default `{}`)
 - **Purpose**: Persists the fallback model configuration snapshot (copied from the agent template) to resolve failovers during message processing.
+- **Index Update (2026-06-26)**: Dropped strict `uq_company_agent_name` unique constraint on `(company_id, name)` and replaced with partial unique index `uq_company_agent_name_active` (conditional on `status != 'ARCHIVED'`). This allows name reuse when agents are archived.
+
+## Backend Agent Control API Extensions (2026-06-26)
+
+- **GET /agents?status=ARCHIVED**: Fetches soft-deleted (archived) agents.
+- **DELETE /agents/:id?permanent=true**: Performs a hard/permanent deletion of the agent from the database instead of the default soft-delete/archiving behavior.
+- **PATCH /agents/:id/status**: Restores an agent by setting status to `ACTIVE`.
+
 
