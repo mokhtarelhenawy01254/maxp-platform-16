@@ -77,10 +77,11 @@ describe("granular marketplace gates", () => {
     );
   });
 
-  it("shows business tools without restoring the removed AI workspace", () => {
-    const config = createOwnerSidebar(["smart-scheduler", "ai-rag-knowledge"]);
+  it("shows appointments and tasks when respective apps are active", () => {
+    const config = createOwnerSidebar(["booking-app", "business-tools"]);
 
-    expect(config.find((section) => section.id === "business")?.hidden).not.toBe(true);
+    expect(config.find((section) => section.id === "appointments")?.hidden).not.toBe(true);
+    expect(config.find((section) => section.id === "tasks")?.hidden).not.toBe(true);
     expect(config.find((section) => section.id === "ai")).toBeUndefined();
   });
 });

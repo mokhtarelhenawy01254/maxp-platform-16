@@ -822,8 +822,6 @@ export const getSidebarConfig = (
                 { to: '/my-companies/attendance', icon: CheckCircleIcon, label: t('sidebar.attendanceReport'), hidden: !isAppActive('hr-basic') },
                 { to: '/users', icon: UserGroupIcon, label: t('sidebar.usersManagement') },
                 { to: '/settings/company', icon: Cog6ToothIcon, label: t('sidebar.companySettings') },
-                { to: '/terms', icon: ClipboardDocumentCheckIcon, label: t('sidebar.terms') },
-                { to: '/privacy', icon: ShieldExclamationIcon, label: t('sidebar.privacy') },
                 { to: '/company/activity', icon: ChartBarIcon, label: t('sidebar.companyActivity') },
             ]
         }] : []),
@@ -868,14 +866,24 @@ export const getSidebarConfig = (
             hidden: !isAppActive('hr-basic')
         }] : []),
 
-        // 7️⃣ الأعمال والمواعيد
+        // 7️⃣ المواعيد
         {
-            id: 'business',
-            title: t('sidebar.businessSection'),
+            id: 'appointments',
+            title: t('sidebar.appointments'),
             icon: CalendarIcon,
-            hidden: !isAppActive('business-tools'),
+            hidden: !isAppActive('booking-app'),
             items: [
                 { to: '/appointments', icon: CalendarIcon, label: t('sidebar.appointments') },
+            ]
+        },
+
+        // 8️⃣ إدارة المهام
+        {
+            id: 'tasks',
+            title: t('sidebar.tasksWorkspace'),
+            icon: CheckCircleIcon,
+            hidden: !isAppActive('business-tools'),
+            items: [
                 {
                     to: '/tasks',
                     icon: CheckCircleIcon,
@@ -895,7 +903,7 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 8️⃣ التقارير والتحليلات
+        // 9️⃣ التقارير والتحليلات
         {
             id: 'analytics',
             title: t('sidebar.analyticsSection'),

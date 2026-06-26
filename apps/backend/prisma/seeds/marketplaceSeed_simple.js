@@ -86,6 +86,7 @@ async function seedMarketplace() {
         features: JSON.stringify(['تحليلات متقدمة', 'تقارير مخصصة', 'تصدير البيانات']),
         isActive: true
       },
+      { slug: 'booking-app', name: 'حجوزات المواعيد', description: 'نظام حجز وإدارة المواعيد مع جدولة الأوقات المتاحة', category: 'PRODUCTIVITY', monthlyPrice: 149, yearlyPrice: 1490, trialDays: 14, features: JSON.stringify(['إدارة المواعيد', 'المواعيد المتاحة']), isActive: true, isPublic: true, isFeatured: false, isPopular: false },
       // تطبيقات التحكم في الظهور بالـ sidebar
       { slug: 'business-tools', name: 'المهام والمواعيد', description: 'إدارة المهام والمواعيد وجدولة الأعمال', category: 'PRODUCTIVITY', monthlyPrice: 0, yearlyPrice: 0, features: JSON.stringify(['إدارة المهام', 'المواعيد']), isActive: true, isPublic: true },
       { slug: 'competitor-analysis', name: 'تحليل المنافسين', description: 'تحليل السوق والمنافسين وتقارير المقارنة', category: 'ANALYTICS', monthlyPrice: 0, yearlyPrice: 0, features: JSON.stringify(['تحليل المنافسين', 'تقارير السوق']), isActive: true, isPublic: true },

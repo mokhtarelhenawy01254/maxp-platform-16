@@ -838,5 +838,49 @@
     "engineCompatibility": null,
     "createdAt": "2026-05-01T00:00:00.000Z",
     "updatedAt": "2026-05-01T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-booking-app",
+    "slug": "booking-app",
+    "name": "حجوزات المواعيد",
+    "nameEn": "Appointment Booking",
+    "description": "نظام حجز وإدارة المواعيد مع جدولة المواعيد المتاحة وإدارة الحالات.",
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الشركات التي تحتاج إدارة مواعيد العملاء بشكل منظم.",
+      "surface": "داخل صفحة المواعيد وجدولة المواعيد المتاحة للعملاء.",
+      "outcome": "تنظيم مواعيد العملاء وتقليل التعارض ورفع كفاءة الحجوزات."
+    },
+    "features": {
+      "appointments": {
+        "enabled": true,
+        "name": "إدارة المواعيد",
+        "description": "إنشاء ومتابعة وتحديث حالة المواعيد (قيد الانتظار، مؤكد، منجز، ملغي).",
+        "access": "PAID"
+      },
+      "availableSlots": {
+        "enabled": true,
+        "name": "المواعيد المتاحة",
+        "description": "عرض الأوقات المتاحة للحجز لكل موظف في تاريخ معين.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "calendar",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-26T00:00:00.000Z",
+    "updatedAt": "2026-06-26T00:00:00.000Z"
   }
 ]
