@@ -51,7 +51,7 @@ async function request(method, path, body) {
     });
 
     req.on('error', reject);
-    const responseTimeoutMs = parseInt(process.env.AI_RESPONSE_TIMEOUT || '120000', 10) || 120000;
+    const responseTimeoutMs = parseInt(process.env.AI_RESPONSE_TIMEOUT || '600000', 10) || 600000;
     req.setTimeout(responseTimeoutMs, () => {
       req.destroy();
       reject(new Error('Request timeout'));
