@@ -1156,7 +1156,7 @@ async def delete_agent(
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 
     if agent.role == "CEO":
-        raise HTTPException(status_code=400, detail="Cannot delete/archive the CEO agent")
+        raise HTTPException(status_code=400, detail="Cannot archive the CEO agent")
 
     res_val = _agent_to_read(agent)
     if permanent:
