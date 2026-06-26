@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
@@ -18,13 +18,17 @@ import {
    ════════════════════════════════════════════════ */
 const SuperAdminAITemplates: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("search") || "";
+  const roleFilter = searchParams.get("role") || "";
+  const industryFilter = searchParams.get("industry") || "";
+  const statusFilter = searchParams.get("status") || "";
+  const setFilter = useCallback((key: string, value: string) => {
+    setSearchParams(prev => { const next = new URLSearchParams(prev); if (value) next.set(key, value); else next.delete(key); return next; }, { replace: true });
+  }, [setSearchParams]);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("");
-  const [industryFilter, setIndustryFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -138,19 +142,19 @@ const SuperAdminAITemplates: React.FC = () => {
       <div className="px-4 py-2 border-b bg-white/50 shrink-0 flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن قالب..." className="pr-9 h-9 text-sm" />
+          <Input value={search} onChange={e => setFilter("search", e.target.value)} placeholder="ابحث عن قالب..." className="pr-9 h-9 text-sm" />
         </div>
-        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+        <select value={roleFilter} onChange={e => setFilter("role", e.target.value)}
           className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
           <option value="">كل الأدوار</option>
           {allRoles.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
-        <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)}
+        <select value={industryFilter} onChange={e => setFilter("industry", e.target.value)}
           className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
           <option value="">كل المجالات</option>
           {allIndustries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
         </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+        <select value={statusFilter} onChange={e => setFilter("status", e.target.value)}
           className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
           <option value="">كل الحالات</option>
           <option value="active">نشط</option>
