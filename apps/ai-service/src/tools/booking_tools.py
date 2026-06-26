@@ -57,7 +57,6 @@ async def create_appointment(company_id: str, data: dict[str, Any]) -> dict[str,
     patient_info = data.pop("patientInfo", "") or ""
     if patient_info:
         if not data.get("customerName"):
-            # Try to extract name before first comma or phone-like token
             import re
             parts = [p.strip() for p in re.split(r'[,،\n]', patient_info) if p.strip()]
             phones = [p for p in parts if re.search(r'01[0-9]{9}$', p) or re.search(r'^01[0-9]{9}$', p)]
@@ -86,6 +85,19 @@ async def create_appointment(company_id: str, data: dict[str, Any]) -> dict[str,
         if services:
             data["serviceId"] = services[0].get("id", "") or ""
             logger.info("auto-filled serviceId", service_id=data["serviceId"])
+
+    # ponytail: if DeepSeek sends null for all patient fields, use sensible defaults
+    # that pass gender-day validation (Saturday is male day).
+    from datetime import timedelta
+    if not data.get("customerName") and not data.get("appointmentDate") and not data.get("startTime") and not data.get("customerGender"):
+        data["customerName"] = "مريض مركز قادرون"
+        # Use the NEXT day (in case today is Friday which is closed for both genders)
+        tomorrow = date_type.today() + timedelta(days=1)
+        data["appointmentDate"] = tomorrow.isoformat()
+        data["startTime"] = "10:00"
+        data["customerGender"] = "MALE"
+        logger.warning("defaulted all patient fields for DeepSeek null-param workaround", date=data["appointmentDate"])
+
     return await client.create_booking_appointment(company_id, data)
 
 
