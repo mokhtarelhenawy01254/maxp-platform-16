@@ -6,9 +6,23 @@ import { Switch } from "../../components/ui/switch";
 import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import { Bot, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Search, GripVertical, X } from "lucide-react";
+
+const CATEGORIES = [
+  { ar: "المبيعات", en: "Sales" },
+  { ar: "التسويق", en: "Marketing" },
+  { ar: "المحاسبة", en: "Accounting" },
+  { ar: "الدعم الفني", en: "Technical Support" },
+  { ar: "خدمة العملاء", en: "Customer Service" },
+  { ar: "الموارد البشرية", en: "Human Resources" },
+  { ar: "المشتريات", en: "Purchasing" },
+  { ar: "المخازن", en: "Warehouse" },
+  { ar: "الشحن", en: "Shipping" },
+  { ar: "طب", en: "Medical" },
+];
 
 interface Personality {
   id: string;
@@ -227,12 +241,26 @@ const SuperAdminAgentProfiles: React.FC = () => {
             {profiles.length === 0 && <Button variant="outline" size="sm" onClick={openCreate}><Plus className="size-3.5 ml-1" /> أضف أول وكيل</Button>}
           </div>
         ) : (
-          <div className="grid gap-3">
-            {filtered.map((p, idx) => (
-              <div key={p.slug} className="flex items-start gap-3 rounded-xl border bg-card p-4 shadow-sm">
+          <div className="grid gap-4">
+            {(() => {
+              const grouped = new Map<string, typeof filtered>();
+              filtered.forEach((p) => {
+                const key = p.category || "أخرى";
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key)!.push(p);
+              });
+              return Array.from(grouped.entries()).flatMap(([cat, items]) => [
+                <div key={`h-${cat}`} className="flex items-center gap-2 pt-1 first:pt-0">
+                  <span className="text-xs font-bold text-muted-foreground tracking-wide uppercase">{cat}</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>,
+                ...items.map((p) => {
+                  const realIdx = filtered.indexOf(p);
+                  return (
+                  <div key={p.slug} className="flex items-start gap-3 rounded-xl border bg-card p-4 shadow-sm">
                 <div className="flex flex-col gap-1 pt-1">
-                  <button onClick={() => moveItem(idx, -1)} disabled={idx === 0} className="size-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground disabled:opacity-20"><ChevronUp className="size-3.5" /></button>
-                  <button onClick={() => moveItem(idx, 1)} disabled={idx === filtered.length - 1} className="size-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground disabled:opacity-20"><ChevronDown className="size-3.5" /></button>
+                  <button onClick={() => moveItem(realIdx, -1)} disabled={realIdx === 0} className="size-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground disabled:opacity-20"><ChevronUp className="size-3.5" /></button>
+                  <button onClick={() => moveItem(realIdx, 1)} disabled={realIdx === filtered.length - 1} className="size-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground disabled:opacity-20"><ChevronDown className="size-3.5" /></button>
                 </div>
                 <span className="text-2xl flex-shrink-0">{p.icon}</span>
                 <div className="min-w-0 flex-1">
@@ -255,7 +283,9 @@ const SuperAdminAgentProfiles: React.FC = () => {
                   <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => setDeleteTarget(p)}><Trash2 className="size-3.5" /></Button>
                 </div>
               </div>
-            ))}
+            ); })
+          ]);
+        })()}
           </div>
         )}
       </div>
@@ -307,15 +337,22 @@ const SuperAdminAgentProfiles: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">التصنيف (عربي)</label>
-                <Input value={editProfile.category || ""} onChange={(e) => setEditProfile((p) => ({ ...p, category: e.target.value }))} className="h-9 text-sm" placeholder="المبيعات" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">التصنيف (إنجليزي)</label>
-                <Input value={editProfile.categoryEn || ""} onChange={(e) => setEditProfile((p) => ({ ...p, categoryEn: e.target.value }))} className="h-9 text-sm" placeholder="Sales" />
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">التصنيف</label>
+              <Select
+                value={editProfile.category || ""}
+                onValueChange={(val) => {
+                  const cat = CATEGORIES.find((c) => c.ar === val);
+                  setEditProfile((p) => ({ ...p, category: val, categoryEn: cat?.en || "" }));
+                }}
+              >
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="اختر تصنيف" /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c.ar} value={c.ar}>{c.ar}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

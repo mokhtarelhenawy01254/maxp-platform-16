@@ -32,14 +32,14 @@ class AvailableSlotsInput(BaseModel):
 
 class AppointmentCreateInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
-    branch_id: str = Field(description="Branch ID")
-    doctor_id: str = Field(description="Doctor ID")
-    service_id: str = Field(description="Service ID")
-    customer_name: str = Field(description="Patient full name")
-    customer_phone: str = Field(description="Patient phone number")
-    customer_gender: str = Field(description="Patient gender: MALE or FEMALE")
-    appointment_date: str = Field(description="Date in YYYY-MM-DD format")
-    start_time: str = Field(description="Start time in HH:mm format (24h)")
+    branch_id: str | None = Field(default=None, description="Branch ID (optional - uses first branch if empty)")
+    doctor_id: str | None = Field(default=None, description="Doctor ID (optional - uses first doctor if empty)")
+    service_id: str | None = Field(default=None, description="Service ID (optional - uses first service if empty)")
+    customer_name: str | None = Field(default=None, description="Patient full name")
+    customer_phone: str | None = Field(default=None, description="Patient phone number")
+    customer_gender: str | None = Field(default=None, description="Patient gender: MALE or FEMALE")
+    appointment_date: str | None = Field(default=None, description="Date in YYYY-MM-DD format")
+    start_time: str | None = Field(default=None, description="Start time in HH:mm format (24h)")
 
 
 class AppointmentConfirmInput(BaseModel):

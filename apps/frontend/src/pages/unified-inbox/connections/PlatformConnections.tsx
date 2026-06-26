@@ -265,7 +265,7 @@ const PlatformConnections: React.FC = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-sm" style={{ color: "var(--color-foreground)" }}>{t(c.labelKey)}</h3>
-                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${connected ? "text-green-700 bg-green-100" : "text-gray-400 bg-gray-100"}`}>
+                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${connected ? "text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/40" : "text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800"}`}>
                   {connected ? <><CheckCircleIcon className="w-3 h-3" />{t("unifiedInbox.connections.connected")}</>
                     : <><XCircleIcon className="w-3 h-3" />{t("unifiedInbox.connections.disconnected")}</>}
                 </span>
@@ -294,8 +294,8 @@ const PlatformConnections: React.FC = () => {
                       disabled={ubLoading === item.id}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
                         item.inboxEnabled
-                          ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          ? "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                       }`}
                       title={item.inboxEnabled ? "الانبوكس الموحد مفعل" : "تفعيل الانبوكس الموحد"}
                     >
@@ -311,7 +311,7 @@ const PlatformConnections: React.FC = () => {
                       else if (pid === "whatsapp") waDisconnect(item.id);
                       else if (pid === "telegram") tgDisconnect(item.id);
                     }} disabled={deleting === item.id}
-                      className="p-1 rounded-md hover:bg-red-50 transition-colors flex-shrink-0" title="حذف">
+                      className="p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors flex-shrink-0" title="حذف">
                       {deleting === item.id
                         ? <div className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
                         : <TrashIcon className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />}
@@ -366,7 +366,7 @@ const PlatformConnections: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-white" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="flex flex-col h-full w-full bg-[color:var(--color-background)]" dir={isRtl ? "rtl" : "ltr"}>
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b shrink-0" style={{ borderColor: "var(--business-muted-line)", background: "var(--business-surface-panel)" }}>
         <div className="max-w-4xl mx-auto w-full">
@@ -386,7 +386,7 @@ const PlatformConnections: React.FC = () => {
                 {connectedCount}/{totalPlatforms} {t("unifiedInbox.connections.connected")}
               </span>
             </div>
-            <button type="button" onClick={load} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-black/5"
+            <button type="button" onClick={load} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
               style={{ color: "var(--color-muted-foreground)" }} disabled={loading}>
               <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
@@ -419,11 +419,11 @@ const PlatformConnections: React.FC = () => {
       {/* ═══ WhatsApp Modal ═══ */}
       {showWa && (
         <Overlay onClose={closeWa}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[color:var(--color-card)] rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div style={{ height: 3, background: "#25D366" }} />
             <div className="flex items-center justify-between px-5 py-4">
               <h3 className="font-bold text-base" style={{ color: "var(--color-foreground)" }}>ربط واتساب</h3>
-              <button type="button" onClick={closeWa} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100">
+              <button type="button" onClick={closeWa} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
                 <XMarkIcon className="w-5 h-5" style={{ color: "var(--color-muted-foreground)" }} />
               </button>
             </div>
@@ -434,7 +434,7 @@ const PlatformConnections: React.FC = () => {
                     <label className="block text-sm font-medium mb-1.5">اسم الجلسة</label>
                     <input type="text" value={waName} onChange={(e) => setWaName(e.target.value)}
                       placeholder="مثلاً: واتساب رئيسي"
-                      className="w-full px-3.5 py-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                      className="w-full px-3.5 py-2.5 border rounded-lg text-sm bg-[color:var(--color-muted)] focus:bg-[color:var(--color-card)] focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
                       style={{ borderColor: "var(--business-card-border)" }} />
                   </div>
                   <label className="flex items-center gap-2.5 cursor-pointer select-none">
@@ -447,7 +447,7 @@ const PlatformConnections: React.FC = () => {
                       <label className="block text-sm font-medium mb-1.5">رقم الهاتف</label>
                       <input type="tel" value={waPhone} onChange={(e) => setWaPhone(e.target.value)}
                         placeholder="مثلاً: 201234567890+"
-                        className="w-full px-3.5 py-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                        className="w-full px-3.5 py-2.5 border rounded-lg text-sm bg-[color:var(--color-muted)] focus:bg-[color:var(--color-card)] focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
                         style={{ borderColor: "var(--business-card-border)" }} />
                     </div>
                   )}
@@ -466,7 +466,7 @@ const PlatformConnections: React.FC = () => {
                       : "افتح واتساب > الأجهزة المرتبطة > ربط جهاز، ثم امسح الرمز:"}
                   </p>
                   {waQr && (
-                    <div className="p-4 bg-white rounded-2xl shadow-lg border" style={{ borderColor: "var(--business-card-border)" }}>
+                    <div className="p-4 bg-[color:var(--color-card)] rounded-2xl shadow-lg border" style={{ borderColor: "var(--business-card-border)" }}>
                       <QRCodeSVG value={waQr} size={260} marginSize={4} level="M" />
                     </div>
                   )}
@@ -475,14 +475,14 @@ const PlatformConnections: React.FC = () => {
                       <p className="text-3xl font-bold tracking-[0.3em] select-all" style={{ color: "var(--color-foreground)", fontFamily: "monospace" }}>
                         {fmtCode(waPairing)}
                       </p>
-                      <button type="button" onClick={() => navigator.clipboard?.writeText(waPairing)}
-                        className="mt-3 text-xs font-medium px-4 py-2 rounded-lg border transition-colors hover:bg-gray-50"
+<button type="button" onClick={() => navigator.clipboard?.writeText(waPairing)}
+                         className="mt-3 text-xs font-medium px-4 py-2 rounded-lg border transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                         style={{ borderColor: "var(--business-card-border)", color: "var(--color-muted-foreground)" }}>
                         نسخ الكود
                       </button>
                     </div>
                   )}
-                  <div className="flex items-center gap-2.5 py-2 px-4 rounded-full bg-gray-50">
+                  <div className="flex items-center gap-2.5 py-2 px-4 rounded-full bg-gray-50 dark:bg-gray-800">
                     <div className="w-3.5 h-3.5 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
                     <span className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>في انتظار المسح...</span>
                   </div>
@@ -490,8 +490,8 @@ const PlatformConnections: React.FC = () => {
               )}
               {waStep === "done" && (
                 <div className="flex flex-col items-center gap-3 py-6">
-                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircleIcon className="w-10 h-10 text-green-600" />
+                  <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                    <CheckCircleIcon className="w-10 h-10 text-green-600 dark:text-green-400" />
                   </div>
                   <p className="font-bold text-base" style={{ color: "var(--color-foreground)" }}>تم ربط واتساب بنجاح!</p>
                 </div>
@@ -500,8 +500,8 @@ const PlatformConnections: React.FC = () => {
                 <div className="flex flex-col items-center gap-4 py-4">
                   <XCircleIcon className="w-12 h-12" style={{ color: "var(--business-danger)" }} />
                   <p className="text-sm text-center" style={{ color: "var(--business-danger)" }}>{waErr}</p>
-                  <button type="button" onClick={() => setWaStep("form")}
-                    className="px-5 py-2.5 rounded-lg text-sm font-medium border transition-colors hover:bg-gray-50"
+<button type="button" onClick={() => setWaStep("form")}
+                     className="px-5 py-2.5 rounded-lg text-sm font-medium border transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                     style={{ borderColor: "var(--business-card-border)" }}>حاول مرة أخرى</button>
                 </div>
               )}
@@ -513,11 +513,11 @@ const PlatformConnections: React.FC = () => {
       {/* ═══ Telegram Modal ═══ */}
       {showTg && (
         <Overlay onClose={closeTg}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[color:var(--color-card)] rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div style={{ height: 3, background: "#0088cc" }} />
             <div className="flex items-center justify-between px-5 py-4">
               <h3 className="font-bold text-base" style={{ color: "var(--color-foreground)" }}>ربط بوت تيليجرام</h3>
-              <button type="button" onClick={closeTg} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100">
+              <button type="button" onClick={closeTg} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
                 <XMarkIcon className="w-5 h-5" style={{ color: "var(--color-muted-foreground)" }} />
               </button>
             </div>
@@ -527,17 +527,17 @@ const PlatformConnections: React.FC = () => {
                   <label className="block text-sm font-medium mb-1.5">توكن البوت</label>
                   <input type="password" value={tgToken} onChange={(e) => setTgToken(e.target.value)}
                     placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-                    className="w-full px-3.5 py-2.5 border rounded-lg text-sm font-mono bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                    className="w-full px-3.5 py-2.5 border rounded-lg text-sm font-mono bg-[color:var(--color-muted)] focus:bg-[color:var(--color-card)] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                     style={{ borderColor: "var(--business-card-border)" }} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5">اسم البوت</label>
                   <input type="text" value={tgLabel} onChange={(e) => setTgLabel(e.target.value)}
                     placeholder="مثلاً: بوت المبيعات"
-                    className="w-full px-3.5 py-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                    className="w-full px-3.5 py-2.5 border rounded-lg text-sm bg-[color:var(--color-muted)] focus:bg-[color:var(--color-card)] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                     style={{ borderColor: "var(--business-card-border)" }} />
                 </div>
-                <div className="p-3 rounded-xl text-xs leading-relaxed" style={{ background: "#F0F9FF", color: "#006699" }}>
+                <div className="p-3 rounded-xl text-xs leading-relaxed bg-[color:var(--color-muted)]" style={{ color: "var(--color-foreground)" }}>
                   💡 احصل على توكن البوت من @BotFather على تيليجرام والصقه هنا.
                 </div>
                 <button type="button" onClick={tgConnect} disabled={tgLoading || !tgToken.trim()}
@@ -551,7 +551,7 @@ const PlatformConnections: React.FC = () => {
                   </div>
                 )}
                 {tgDone && (
-                  <div className="p-3.5 rounded-xl text-sm font-medium flex items-center gap-2" style={{ background: "rgba(34,197,94,0.08)", color: "rgb(34,197,94)" }}>
+                  <div className="p-3.5 rounded-xl text-sm font-medium flex items-center gap-2" style={{ background: "color-mix(in srgb, var(--color-success) 8%, transparent)", color: "var(--color-success)" }}>
                     <CheckCircleIcon className="w-4 h-4 flex-shrink-0" />تم ربط البوت بنجاح!
                   </div>
                 )}

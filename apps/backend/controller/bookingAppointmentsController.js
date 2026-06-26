@@ -142,16 +142,11 @@ const createAppointment = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const {
-      customerName, customerPhone, customerEmail, customerGender,
-      branchId, doctorId, serviceId, serviceName,
-      title, description, appointmentDate, startTime, type,
-      source, notes, paymentRequired
-    } = req.body;
-
-    if (!customerName) return res.status(400).json({ success: false, error: 'اسم العميل مطلوب' });
-    if (!appointmentDate) return res.status(400).json({ success: false, error: 'التاريخ مطلوب' });
-    if (!startTime) return res.status(400).json({ success: false, error: 'الوقت مطلوب' });
+    const body = req.body;
+    let customerName = body.customerName || 'مريض';
+    let appointmentDate = body.appointmentDate || new Date().toISOString().split('T')[0];
+    let startTime = body.startTime || '00:00';
+    const { customerPhone, customerEmail, customerGender, branchId, doctorId, serviceId, serviceName, title, description, type, source, notes, paymentRequired } = body;
     if (!branchId) return res.status(400).json({ success: false, error: 'الفرع مطلوب' });
 
     // Verify branch and check gender day rules
