@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
   History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, 
   Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
-  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers,
+  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers, Bot,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -57,6 +57,7 @@ export const menuGroups = [
     { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/super-admin/ai-hub?tab=tools" },
     { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/super-admin/ai-hub?tab=rag" },
     { text: "محادثات AI", icon: <MessageSquare className="size-4" />, path: "/super-admin/ai-chat" },
+    { text: i18n.t("superAdmin.evaluation.agentProfiles"), icon: <Bot className="size-4" />, path: "/super-admin/agent-profiles" },
   ]},
   { title: i18n.t("superAdmin.sidebar.monitoring"), icon: <Activity className="size-5" />, items: [
     { text: i18n.t("superAdmin.sidebar.queueMonitor"), icon: <Activity className="size-5" />, path: "/super-admin/queue-monitor" },

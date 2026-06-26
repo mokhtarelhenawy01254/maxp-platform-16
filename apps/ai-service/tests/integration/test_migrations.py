@@ -59,7 +59,8 @@ def test_migration_chain_is_linear(alembic_config):
     heads = script.get_heads()
 
     assert len(heads) == 1, f"Expected 1 head, got {len(heads)}: {heads}"
-    assert heads[0] == "0014", f"Expected head to be 0013, got {heads[0]}"
+    assert heads[0] == "0020", f"Expected head to be 0020, got {heads[0]}"
+
 
 
 def test_pgvector_migration_has_downgrade(alembic_config):

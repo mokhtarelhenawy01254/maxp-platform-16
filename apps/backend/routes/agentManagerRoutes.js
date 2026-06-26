@@ -462,6 +462,23 @@ router.delete('/agents/:id', async (req, res) => {
   }
 });
 
+// GET /quick-profiles — ready agent profiles for quick-create cards (merchant-facing)
+router.get('/quick-profiles', async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const row = await prisma.systemSettings.findFirst({
+      where: { systemName: 'agentQuickProfiles' },
+    });
+    const parsed = row?.config ? JSON.parse(row.config) : {};
+    const profiles = (parsed.profiles || [])
+      .filter((p) => p.isActive !== false)
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    return res.json({ success: true, profiles, count: profiles.length });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/departments', async (req, res) => {
   try {
     const companyId = getCompanyId(req);

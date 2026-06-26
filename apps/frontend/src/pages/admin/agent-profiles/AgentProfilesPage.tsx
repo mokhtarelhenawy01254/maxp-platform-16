@@ -193,7 +193,7 @@ interface ReadyAgent {
   personalities: ReadyAgentPersonality[];
 }
 
-const READY_AGENTS: ReadyAgent[] = [
+const FALLBACK_READY_AGENTS: ReadyAgent[] = [
   {
     slug: 'sales-agent', icon: '🛒', title: 'مندوب مبيعات شامل', category: 'المبيعات',
     desc: 'وكيل مبيعات متكامل — يبيع المنتجات، يعرض الكتالوج، وينشئ الطلبات',
@@ -287,6 +287,13 @@ export default function AgentProfilesPage() {
   const [quickPersonality, setQuickPersonality] = useState<ReadyAgentPersonality | null>(null);
   const [quickCreating, setQuickCreating] = useState(false);
   const [readySelectorOpen, setReadySelectorOpen] = useState(false);
+  const [readyProfiles, setReadyProfiles] = useState<ReadyAgent[]>(FALLBACK_READY_AGENTS);
+
+  useEffect(() => {
+    tryApiFetch<{ success: boolean; profiles: ReadyAgent[] }>("/agent-manager/quick-profiles")
+      .then((data) => { if (data?.profiles?.length) setReadyProfiles(data.profiles); })
+      .catch(() => {});
+  }, []);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!profile) return false;
@@ -560,7 +567,7 @@ export default function AgentProfilesPage() {
   const handleQuickCreate = async () => {
     if (!quickName.trim()) return;
     setQuickCreating(true);
-    const ready = READY_AGENTS.find((a) => a.slug === quickSlug);
+    const ready = readyProfiles.find((a) => a.slug === quickSlug);
     const config = quickPersonality ? {
       soul_persona: quickPersonality.persona,
       soul_goal: quickPersonality.goal,
@@ -1269,7 +1276,7 @@ export default function AgentProfilesPage() {
               <h2 className="text-lg font-bold text-foreground mb-1">اختر وكيلاً جاهزاً</h2>
               <p className="text-sm text-muted-foreground/60 max-w-md mb-8">ابدأ بواحد من الوكلاء الجاهزين — كل اللي عليك تختار الاسم</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
-                {READY_AGENTS.map((a) => (
+                {readyProfiles.map((a) => (
                   <button key={a.slug} type="button" onClick={() => { setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
                     className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-right shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
                   >
@@ -1521,7 +1528,7 @@ export default function AgentProfilesPage() {
           </DialogHeader>
           <div className="py-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {READY_AGENTS.map((a) => (
+              {readyProfiles.map((a) => (
                 <button key={a.slug} type="button" onClick={() => { setReadySelectorOpen(false); setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
                   className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-right shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
                 >
@@ -1555,7 +1562,7 @@ export default function AgentProfilesPage() {
             <p className="text-sm text-muted-foreground/70">الوكيل جاهز — اختر شخصيته واسمه</p>
 
             {/* Personality selection */}
-            {READY_AGENTS.find((a) => a.slug === quickSlug)?.personalities.map((p) => (
+            {readyProfiles.find((a) => a.slug === quickSlug)?.personalities.map((p) => (
               <button key={p.id} type="button" onClick={() => { setQuickPersonality(p); if (!quickName) setQuickName(`${quickTitle} (${p.name})`); }}
                 className={`w-full text-right p-3 rounded-xl border transition-all ${
                   quickPersonality?.id === p.id

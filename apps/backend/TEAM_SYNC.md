@@ -2,6 +2,13 @@
 
 ## [2026-06-26]
 
+### Ready Agent Profiles Catalog Management (Super Admin & Merchant UI)
+- **Accomplishment**: Added dynamic "Ready Agent Profiles" loading and a comprehensive Super Admin management panel.
+- **Details**:
+  - Added Super Admin CRUD & reordering endpoints under `/super-admin/agents/quick-profiles` and stored the templates in `SystemSettings` as JSON.
+  - Implemented `/super-admin/agent-profiles` page in the frontend allowing admins to add, edit, reorder, and activate/deactivate preset profiles.
+  - Modified merchant `AgentProfilesPage` to fetch active templates dynamically from the API instead of relying on hardcoded ones.
+
 ### Agent Archiving & Permanent Deletion Support
 - **Accomplishment**: Implemented archived agents view, restoration logic, and permanent deletion option across frontend, backend proxy, and AI service.
 - **Details**:

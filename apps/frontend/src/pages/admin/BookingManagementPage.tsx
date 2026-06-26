@@ -53,11 +53,11 @@ const TABS: { id: TabId; label: string; icon: typeof ChartBarSquareIcon }[] = [
 ];
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-800" },
-  confirmed: { label: "مؤكد", color: "bg-green-100 text-green-800" },
-  completed: { label: "مكتمل", color: "bg-blue-100 text-blue-800" },
-  cancelled: { label: "ملغي", color: "bg-red-100 text-red-800" },
-  no_show: { label: "لم يحضر", color: "bg-gray-100 text-gray-800" },
+  pending: { label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  confirmed: { label: "مؤكد", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
+  completed: { label: "مكتمل", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
+  cancelled: { label: "ملغي", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
+  no_show: { label: "لم يحضر", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
 };
 
 const fetchJson = async (url: string, options?: RequestInit) => {
@@ -66,6 +66,9 @@ const fetchJson = async (url: string, options?: RequestInit) => {
   if (!data.success) throw new Error(data.error || data.message || "فشل العملية");
   return data.data;
 };
+
+const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
+const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
 
 const BranchModal = ({ branch, onClose, onSave }: {
   branch?: Partial<BookingBranch> | null;

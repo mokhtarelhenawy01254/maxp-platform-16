@@ -206,7 +206,8 @@
     "sidebar": "Performance Evaluation",
     "aiModels": "AI Models",
     "aiProviders": "AI Providers & Keys",
-    "providerLogs": "Provider Logs"
+    "providerLogs": "Provider Logs",
+    "agentProfiles": "Ready Agent Profiles"
   },
   "globalSearchPlaceholder": "Search the entire system...",
   "globalSearchHint": "Type any word or letter to search across all system sections",

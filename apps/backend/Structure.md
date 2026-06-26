@@ -63,4 +63,19 @@ To support unified model resolution and fallback mechanisms:
 - **DELETE /agents/:id?permanent=true**: Performs a hard/permanent deletion of the agent from the database instead of the default soft-delete/archiving behavior.
 - **PATCH /agents/:id/status**: Restores an agent by setting status to `ACTIVE`.
 
+## Ready Agent Profiles System (2026-06-26)
+
+- **Storage**: Catalog stored in `SystemSettings` table under `systemName = 'agentQuickProfiles'`.
+- **Backend Endpoints**:
+  - `GET /super-admin/agents/quick-profiles`: List all profiles.
+  - `POST /super-admin/agents/quick-profiles`: Create a new profile.
+  - `PUT /super-admin/agents/quick-profiles/:slug`: Update an existing profile.
+  - `DELETE /super-admin/agents/quick-profiles/:slug`: Delete a profile.
+  - `PUT /super-admin/agents/quick-profiles/reorder`: Reorder profiles by passing a list of slugs.
+  - `GET /agent-manager/quick-profiles`: Merchant-facing endpoint to fetch active profiles.
+- **Frontend Pages**:
+  - `/super-admin/agent-profiles`: Super Admin UI for CRUD and reordering.
+  - Merchant `AgentProfilesPage`: Dynamically loads the templates from the API.
+
+
 
