@@ -274,11 +274,6 @@ const createTheme = (seed: ElessiThemeSeed): StorefrontTheme => ({
           ],
         },
       ],
-    legalLinks:
-      seed.footerLegalLinks || [
-        { label: "سياسة الخصوصية", to: "/privacy" },
-        { label: "الشروط والأحكام", to: "/terms" },
-      ],
   },
   pages: {
     home: {
@@ -728,10 +723,7 @@ const THEME_SEEDS: ElessiThemeSeed[] = [
         ],
       },
     ],
-    footerLegalLinks: [
-      { label: "سياسة الخصوصية", to: "/privacy" },
-      { label: "الشروط والأحكام", to: "/terms" },
-    ],
+
     heroVariant: "elessi-digital-launch",
     hero: {
       eyebrow: "إلكترونيات ومكتب",

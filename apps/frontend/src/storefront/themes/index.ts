@@ -174,9 +174,7 @@ const createUnregisteredThemePreset = (themeId: string): StorefrontTheme => {
           ],
         },
       ],
-      legalLinks: [
-        { label: "حالة الثيم", to: "/privacy" },
-      ],
+
     },
     seo: {
       titleTemplate: "%s | Theme Registry Check",
@@ -449,10 +447,6 @@ const pharmacyDemoData = createAliasPreset(maxCareGoData, {
         ],
       },
     ],
-    legalLinks: [
-      { label: "الشروط والأحكام", to: "/terms" },
-      { label: "سياسة الخصوصية", to: "/privacy" },
-    ],
   },
   preview: {
     imageUrl:
@@ -553,10 +547,6 @@ const cutlineClubData = createAliasPreset(legacyDefaultOldData, {
         ],
       },
     ],
-    legalLinks: [
-      { label: "سياسة الخصوصية", to: "/privacy" },
-      { label: "الشروط والأحكام", to: "/terms" },
-    ],
   },
   preview: {
     imageUrl: "/assets/themes/cutline-club/preview.jpg",
@@ -655,10 +645,6 @@ const styleStoreEgData = createAliasPreset(legacyDefaultOldData, {
           { label: "تواصل معنا", to: "/contact" },
         ],
       },
-    ],
-    legalLinks: [
-      { label: "سياسة الخصوصية", to: "/privacy" },
-      { label: "الشروط والأحكام", to: "/terms" },
     ],
   },
   preview: {
@@ -1457,72 +1443,6 @@ const buildGeneratedInfoPageTemplate = (
               { label: "Start", value: "Reach support with the order number and a quick summary of the issue." },
             ],
         ctaText: isRtl ? "العودة للمتجر" : "Back to the Store",
-        ctaLink: "/shop",
-        pageGoal: "trust",
-      };
-    case "privacy":
-    case "privacy-policy":
-      return {
-        badge: isRtl ? "الخصوصية" : "Privacy",
-        title: label,
-        subtitle: isRtl
-          ? "كيف نتعامل مع بيانات الطلب والتواصل داخل المتجر، بشكل مباشر ومفهوم."
-          : "How the store handles order and contact data, explained in a direct and readable way.",
-        body: isRtl
-          ? [
-              "نستخدم بيانات العميل لإتمام الطلب، متابعة الشحن، والرد على طلبات الدعم فقط ضمن الاحتياج التشغيلي الطبيعي.",
-              "أي تحديثات على السياسة يجب أن تبقى مفهومة وواضحة، لا مخفية داخل نصوص طويلة أو مصطلحات مبهمة.",
-            ]
-          : [
-              "Customer details are used to complete the order, coordinate delivery, and respond to support requests as part of normal store operations.",
-              "Any policy changes should stay explicit and readable rather than hidden behind vague or overloaded language.",
-            ],
-        detailsTitle: isRtl ? "مبادئ أساسية" : "Key Principles",
-        details: isRtl
-          ? [
-              { label: "البيانات", value: "الحد الأدنى اللازم لتأكيد الطلب وخدمته." },
-              { label: "الشفافية", value: "شرح واضح لما نجمعه ولماذا نستخدمه." },
-              { label: "التواصل", value: "قنوات الدعم متاحة لأي استفسار متعلق بالخصوصية." },
-            ]
-          : [
-              { label: "Data", value: "Only the information needed to fulfill and support the order." },
-              { label: "Transparency", value: "Clear explanations for what is collected and why." },
-              { label: "Questions", value: "Support stays available for privacy-related requests." },
-            ],
-        ctaText: isRtl ? "تسوّق بثقة" : "Shop with Confidence",
-        ctaLink: "/shop",
-        pageGoal: "trust",
-      };
-    case "terms":
-    case "terms-and-conditions":
-      return {
-        badge: isRtl ? "الشروط" : "Terms",
-        title: label,
-        subtitle: isRtl
-          ? "مرجع مختصر يوضح قواعد الطلب والدفع والتوصيل بدون تعقيد."
-          : "A short reference for ordering, payment, and delivery expectations without unnecessary complexity.",
-        body: isRtl
-          ? [
-              "هذه الصفحة تلخص ما يحتاج العميل معرفته قبل الشراء: التوافر، تأكيد الطلب، والتحديثات التشغيلية إذا تغيّر شيء.",
-              `الفكرة في ${brandName} ليست تعقيد الشروط، بل جعلها مرئية وعملية وتخدم القرار الشرائي بدلاً من تعطيله.`,
-            ]
-          : [
-              "This page captures the practical expectations around availability, confirmation, and operational updates before purchase.",
-              `${brandName} should use terms to reduce confusion, not to bury customers in extra friction.`,
-            ],
-        detailsTitle: isRtl ? "ملخص التشغيل" : "Operational Summary",
-        details: isRtl
-          ? [
-              { label: "التأكيد", value: "يتم تثبيت الطلب بعد مراجعة بياناته الأساسية." },
-              { label: "الدفع", value: "الخيارات المتاحة تظهر بوضوح في مسار الشراء." },
-              { label: "التحديثات", value: "أي تغيير مؤثر يتم توضيحه للعميل في الوقت المناسب." },
-            ]
-          : [
-              { label: "Confirmation", value: "Orders are locked in after the essential details are reviewed." },
-              { label: "Payment", value: "Available payment methods stay explicit during checkout." },
-              { label: "Updates", value: "Any material changes are communicated at the right time." },
-            ],
-        ctaText: isRtl ? "ابدأ التسوق" : "Start Shopping",
         ctaLink: "/shop",
         pageGoal: "trust",
       };

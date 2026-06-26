@@ -4174,21 +4174,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
   const legalLinks = theme.footer?.legalLinks?.map((link) => ({
     label: link.label,
     to: buildStorefrontPath(location.pathname, link.to, location.search),
-  })) || [
-    {
-      label:
-        theme.direction === "rtl" ? "الشروط والأحكام" : "Terms & Conditions",
-      to: buildStorefrontPath(location.pathname, "/terms", location.search),
-    },
-    {
-      label: theme.direction === "rtl" ? "سياسة الخصوصية" : "Privacy Policy",
-      to: buildStorefrontPath(location.pathname, "/privacy", location.search),
-    },
-    {
-      label: theme.direction === "rtl" ? "سياسة الشحن" : "Shipping Policy",
-      to: buildStorefrontPath(location.pathname, "/shipping", location.search),
-    },
-  ];
+  })) || [];
   const themeFooterContactRows = Array.isArray(theme.footer?.contactRows)
     ? theme.footer.contactRows.filter(
         (

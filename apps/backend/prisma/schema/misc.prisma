@@ -257,7 +257,7 @@ model WalletTransaction {
   @@map("wallet_transactions")
 }
 
-/// UNUSED - Planned feature for appointment scheduling
+/// Appointments for medical centers and general booking
 model Appointment {
   id              String    @id @default(cuid())
   companyId       String
@@ -278,16 +278,33 @@ model Appointment {
   location        String?
   meetingLink     String?
   notes           String?
+  /// Booking module fields
+  branchId        String?
+  doctorId        String?
+  serviceId       String?
+  customerGender  String?
+  serviceName     String?
+  source          String?   /// whatsapp/facebook/chat/dashboard
+  paymentRequired Boolean   @default(false)
+  paymentStatus   String?
+  confirmedAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer        Customer? @relation(fields: [customerId], references: [id])
+  branch          BookingBranch? @relation(fields: [branchId], references: [id])
+  doctor          BookingDoctor? @relation(fields: [doctorId], references: [id])
+  service         BookingService? @relation(fields: [serviceId], references: [id])
 
   @@index([companyId])
   @@index([customerId])
   @@index([staffId])
   @@index([appointmentDate])
   @@index([status])
+  @@index([branchId])
+  @@index([doctorId])
+  @@index([serviceId])
+  @@index([customerGender])
   @@map("appointments")
 }
 

@@ -65,6 +65,7 @@ import {
     PaintBrushIcon,
     GlobeAltIcon,
     GiftIcon,
+    HeartIcon,
 } from '@heroicons/react/24/outline';
 
 import i18n from '../i18n';
@@ -874,6 +875,16 @@ export const getSidebarConfig = (
             hidden: !isAppActive('booking-app'),
             items: [
                 { to: '/appointments', icon: CalendarIcon, label: t('sidebar.appointments') },
+            ]
+        },
+
+        // 7️⃣.5️⃣ المركز الطبي
+        {
+            id: 'medical-center',
+            title: t('sidebar.medicalCenter'),
+            icon: HeartIcon,
+            items: [
+                { to: '/admin/booking', icon: ChartBarIcon, label: t('sidebar.medicalCenter') },
             ]
         },
 

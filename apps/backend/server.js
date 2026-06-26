@@ -178,6 +178,10 @@ const affiliateRoutes = require("./routes/affiliateRoutes");
 const affiliateSettingsRoutes = require("./routes/affiliateSettingsRoutes");
 const platformRevenueRoutes = require("./routes/platformRevenueRoutes");
 const appointmentsRoutes = require("./routes/appointmentsRoutes");
+const bookingBranchesRoutes = require("./routes/bookingBranchesRoutes");
+const bookingDoctorsRoutes = require("./routes/bookingDoctorsRoutes");
+const bookingServicesRoutes = require("./routes/bookingServicesRoutes");
+const bookingAppointmentsRoutes = require("./routes/bookingAppointmentsRoutes");
 
 const agentInboxRoutes = require("./routes/agentInboxRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -685,6 +689,10 @@ app.use("/api/v1/turbo", turboRoutes);
 
 // Professional Tools
 app.use("/api/v1/appointments", appointmentsRoutes);
+app.use("/api/v1/booking/branches", bookingBranchesRoutes);
+app.use("/api/v1/booking/doctors", bookingDoctorsRoutes);
+app.use("/api/v1/booking/services", bookingServicesRoutes);
+app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
 app.use("/api/v1/affiliates", affiliateRoutes);
 app.use("/api/v1/affiliate-settings", affiliateSettingsRoutes);
 app.use("/api/v1/commissions", commissionRoutes);

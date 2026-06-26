@@ -267,6 +267,9 @@ model Company {
   moderatorDashboardCaches         ModeratorDashboardCache[]
    inboxSettings                    InboxSettings?
    followUp                         FollowUp?
+   bookingBranches                  BookingBranch[]
+   bookingDoctors                   BookingDoctor[]
+   bookingServices                  BookingService[]
 
    @@index([businessSpecialtyId])
   @@map("companies")

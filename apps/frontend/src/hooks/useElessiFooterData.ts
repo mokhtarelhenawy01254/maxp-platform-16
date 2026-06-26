@@ -77,8 +77,6 @@ export const useElessiFooterData = ({
       "#returns": "/shop/page/return-policy",
       "#size-guide": "/shop/page/size-guide",
       "#track": "/shop/page/track-order",
-      "#privacy": "/shop/page/privacy-policy",
-      "#terms": "/shop/page/terms",
     };
 
     const resolveLink = (href: string): string => {

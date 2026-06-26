@@ -168,11 +168,59 @@ const templateIcon = (slug: string) => {
   return "🤖";
 };
 
-const READY_AGENTS = [
-  { slug: 'support-agent', icon: '🎧', title: 'خدمة العملاء', desc: 'يرد على استفسارات العملاء، يفتح تيكيت، ويتابع الشكاوى' },
-  { slug: 'sales-agent', icon: '🛒', title: 'المبيعات', desc: 'يبيع المنتجات، يعرض الكتالوج، وينشئ الطلبات' },
-  { slug: 'order-agent', icon: '📦', title: 'متابعة الطلبات', desc: 'يتتبع الشحنات ويحدث حالة الطلبات' },
-  { slug: 'marketing-agent', icon: '📣', title: 'التسويق', desc: 'يدير الحملات التسويقية والعروض والتواصل مع العملاء' },
+interface ReadyAgentPersonality {
+  id: string;
+  name: string;
+  desc: string;
+  tone: string;
+  persona: string;
+  goal: string;
+}
+
+interface ReadyAgent {
+  slug: string;
+  icon: string;
+  title: string;
+  category?: string;
+  desc: string;
+  personalities: ReadyAgentPersonality[];
+}
+
+const READY_AGENTS: ReadyAgent[] = [
+  {
+    slug: 'sales-agent', icon: '🛒', title: 'مندوب مبيعات شامل', category: 'المبيعات',
+    desc: 'وكيل مبيعات متكامل — يبيع المنتجات، يعرض الكتالوج، وينشئ الطلبات',
+    personalities: [
+      { id: 'sales-wadud', name: 'ودود', desc: 'أسلوب ودود ومتعاون، يهتم براحة العميل', tone: 'friendly', persona: 'مندوب مبيعات ودود', goal: 'تساعد العملاء في اختيار المنتجات المناسبة وتقديم تجربة شراء سلسة' },
+      { id: 'sales-rasmi', name: 'محترف', desc: 'أسلوب رسمي ومهني، يركز على الجودة', tone: 'formal', persona: 'مندوب مبيعات محترف', goal: 'تقدم خدمة مبيعات احترافية مع أعلى معايير الجودة' },
+      { id: 'sales-khabir', name: 'خبير مبيعات', desc: 'أسلوب استشاري خبير، يحلل احتياجات العميل', tone: 'detailed', persona: 'خبير مبيعات استشاري', goal: 'تحلل احتياجات العميل وتقدم له الحلول المناسبة بخبرة واحترافية' },
+    ],
+  },
+  {
+    slug: 'support-agent', icon: '🎧', title: 'مندوب خدمة عملاء', category: 'خدمة العملاء',
+    desc: 'وكيل دعم متكامل — يرد على الاستفسارات، يفتح تيكيت، ويتابع الشكاوى',
+    personalities: [
+      { id: 'support-wadud', name: 'ودود', desc: 'صدر رحب وأسلوب لطيف في التعامل', tone: 'friendly', persona: 'ممثل خدمة عملاء ودود', goal: 'تقدم تجربة دعم ممتازة وتترك العميل راضياً' },
+      { id: 'support-rasmi', name: 'محترف', desc: 'رسمي ومهني في حل المشكلات', tone: 'formal', persona: 'ممثل خدمة عملاء محترف', goal: 'تحل استفسارات العملاء بكفاءة واحترافية عالية' },
+      { id: 'support-sary', name: 'سريع', desc: 'سريع ومختصر في تقديم الحلول', tone: 'concise', persona: 'ممثل خدمة عملاء سريع', goal: 'تقدم حلول سريعة ومباشرة لاستفسارات العملاء' },
+    ],
+  },
+  {
+    slug: 'order-agent', icon: '📦', title: 'متابع طلبات محترف', category: 'متابعة الطلبات',
+    desc: 'وكيل متابعة — يتتبع الشحنات ويحدث حالة الطلبات',
+    personalities: [
+      { id: 'order-wadud', name: 'ودود', desc: 'يطمن العميل ويهتم بتفاصيل الشحنة', tone: 'friendly', persona: 'متابع طلبات ودود', goal: 'تطمئن العميل على طلبه وتقدم تحديثات دقيقة' },
+      { id: 'order-rasmi', name: 'محترف', desc: 'دقيق ومنظم في تقارير المتابعة', tone: 'formal', persona: 'متابع طلبات محترف', goal: 'تقدم تقارير دقيقة ومنظمة عن حالة الطلبات' },
+    ],
+  },
+  {
+    slug: 'marketing-agent', icon: '📣', title: 'أخصائي تسويق', category: 'التسويق',
+    desc: 'وكيل تسويق — يدير الحملات والعروض والتواصل مع العملاء',
+    personalities: [
+      { id: 'marketing-mubdi', name: 'مبدع', desc: 'أفكار وحملات تسويقية مبتكرة', tone: 'friendly', persona: 'مسوق مبدع', goal: 'تصمم حملات تسويقية مبتكرة تجذب العملاء' },
+      { id: 'marketing-rasmi', name: 'محترف', desc: 'منهجي واحترافي في إدارة الحملات', tone: 'formal', persona: 'مسوق محترف', goal: 'تدير استراتيجيات تسويقية احترافية تحقق أعلى عائد' },
+    ],
+  },
 ];
 
 export default function AgentProfilesPage() {
@@ -222,6 +270,7 @@ export default function AgentProfilesPage() {
   const [quickIcon, setQuickIcon] = useState('🤖');
   const [quickName, setQuickName] = useState('');
   const [quickTitle, setQuickTitle] = useState('');
+  const [quickPersonality, setQuickPersonality] = useState<ReadyAgentPersonality | null>(null);
   const [quickCreating, setQuickCreating] = useState(false);
 
   const hasUnsavedChanges = useMemo(() => {
@@ -475,18 +524,33 @@ export default function AgentProfilesPage() {
     if (!quickName.trim()) return;
     setQuickCreating(true);
     const ready = READY_AGENTS.find((a) => a.slug === quickSlug);
+    const config = quickPersonality ? {
+      soul_persona: quickPersonality.persona,
+      soul_goal: quickPersonality.goal,
+      soul_tone: quickPersonality.tone,
+    } : {};
+    const soulContent = config.soul_persona ? buildSoulContent(config) : "";
     const data = await tryApiFetch<Record<string, unknown>>(
       "/agent/agents",
       { method: "POST", body: JSON.stringify({
         name: quickName.trim(),
         templateSlug: quickSlug,
         icon: quickIcon,
-        description: ready?.desc || null,
+        description: quickPersonality?.desc || ready?.desc || null,
       })},
     );
     if (data?.id) {
+      if (config.soul_persona) {
+        await tryApiFetch(`/agent/agents/${data.id}/files`, {
+          method: "PUT", body: JSON.stringify({
+            config,
+            files: soulContent ? { "SOUL.md": soulContent } : {},
+          }),
+        });
+      }
       setQuickOpen(false);
       setQuickName('');
+      setQuickPersonality(null);
       toast.success(`تم إنشاء وكيل ${quickTitle}`);
       sandboxApi.getAgents().then((res) => {
         setAgents(res.agents as AgentItem[]);
@@ -1093,12 +1157,13 @@ export default function AgentProfilesPage() {
               <p className="text-sm text-muted-foreground/60 max-w-md mb-8">ابدأ بواحد من الوكلاء الجاهزين — كل اللي عليك تختار الاسم</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
                 {READY_AGENTS.map((a) => (
-                  <button key={a.slug} type="button" onClick={() => { setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(`وكيل ${a.title}`); setQuickOpen(true); }}
+                  <button key={a.slug} type="button" onClick={() => { setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
                     className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-right shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
                   >
                     <span className="text-2xl">{a.icon}</span>
                     <div className="text-right w-full">
                       <p className="text-sm font-bold text-foreground">{a.title}</p>
+                      {a.category && <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">{a.category}</span>}
                       <p className="text-xs text-muted-foreground/70 mt-0.5 leading-relaxed">{a.desc}</p>
                     </div>
                     <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">اختر هذا →</span>
@@ -1333,24 +1398,42 @@ export default function AgentProfilesPage() {
       </Dialog>
 
       {/* ── Quick Create Dialog ── */}
-      <Dialog open={quickOpen} onOpenChange={(o) => { if (!o && !quickCreating) { setQuickOpen(false); setQuickName(''); } }}>
-        <DialogContent className="sm:max-w-sm">
+      <Dialog open={quickOpen} onOpenChange={(o) => { if (!o && !quickCreating) { setQuickOpen(false); setQuickName(''); setQuickPersonality(null); } }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <span className="text-xl">{quickIcon}</span>
-              {quickTitle}
+              {quickTitle} — اختر الشخصية
             </DialogTitle>
           </DialogHeader>
-          <div className="py-3 space-y-3">
-            <p className="text-sm text-muted-foreground/70">الوكيل جاهز — كل اللي عليك تختار اسمه</p>
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">اسم الوكيل</label>
-              <Input value={quickName} onChange={(e) => setQuickName(e.target.value)} placeholder="أدخل اسم الوكيل" className="h-9 text-sm" autoFocus />
-            </div>
+          <div className="py-3 space-y-4">
+            <p className="text-sm text-muted-foreground/70">الوكيل جاهز — اختر شخصيته واسمه</p>
+
+            {/* Personality selection */}
+            {READY_AGENTS.find((a) => a.slug === quickSlug)?.personalities.map((p) => (
+              <button key={p.id} type="button" onClick={() => { setQuickPersonality(p); if (!quickName) setQuickName(`${quickTitle} (${p.name})`); }}
+                className={`w-full text-right p-3 rounded-xl border transition-all ${
+                  quickPersonality?.id === p.id
+                    ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 shadow-sm'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <p className="text-sm font-bold text-foreground">{p.name}</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">{p.desc}</p>
+              </button>
+            ))}
+
+            {/* Name input (only after personality selected) */}
+            {quickPersonality && (
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">اسم الوكيل</label>
+                <Input value={quickName} onChange={(e) => setQuickName(e.target.value)} placeholder="أدخل اسم الوكيل" className="h-9 text-sm" autoFocus />
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setQuickOpen(false); setQuickName(''); }} disabled={quickCreating} className="h-8 text-xs">إلغاء</Button>
-            <Button onClick={handleQuickCreate} disabled={quickCreating || !quickName.trim()} className="h-8 text-xs">
+            <Button variant="outline" onClick={() => { setQuickOpen(false); setQuickName(''); setQuickPersonality(null); }} disabled={quickCreating} className="h-8 text-xs">إلغاء</Button>
+            <Button onClick={handleQuickCreate} disabled={quickCreating || !quickName.trim() || !quickPersonality} className="h-8 text-xs">
               {quickCreating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
               {quickCreating ? 'جارٍ الإنشاء...' : 'تأكيد'}
             </Button>

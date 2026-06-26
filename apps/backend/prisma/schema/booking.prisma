@@ -1,0 +1,61 @@
+/// Booking module - Medical center branches
+model BookingBranch {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  address     String?
+  phone       String?
+  workingDays Json?    /// Working hours per day: {"sat":"3-9","sun":"12-9",...}
+  genderDays  Json?    /// Gender day mapping: {"male":["sat","mon","wed"],"female":["sun","tue","thu"]}
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doctors     BookingDoctor[]
+  services    BookingService[]
+  appointments Appointment[]
+
+  @@index([companyId])
+  @@map("booking_branches")
+}
+
+/// Booking module - Doctors (generic, no name - only title)
+model BookingDoctor {
+  id        String   @id @default(cuid())
+  companyId String
+  branchId  String
+  title     String   /// e.g. "دكتور العلاج الطبيعي"
+  gender    Gender?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch      BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([companyId])
+  @@index([branchId])
+  @@map("booking_doctors")
+}
+
+/// Booking module - Services with package pricing
+model BookingService {
+  id                   String   @id @default(cuid())
+  companyId            String
+  branchId             String
+  name                 String
+  description          String?
+  hasPackages          Boolean  @default(true)
+  packages             Json?    /// Array of packages: [{"count":3,"price":500,"originalPrice":750},...]
+  requiresConsultation Boolean  @default(true) /// Needs doctor assessment first
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch               BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  appointments         Appointment[]
+
+  @@index([companyId])
+  @@index([branchId])
+  @@map("booking_services")
+}

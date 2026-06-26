@@ -796,6 +796,9 @@ const AIKnowledgeQuestionsPage = React.lazy(
 const AgentProfilesPage = React.lazy(
   () => import("./pages/admin/agent-profiles/AgentProfilesPage"),
 );
+const BookingManagementPage = React.lazy(
+  () => import("./pages/admin/BookingManagementPage"),
+);
 const SuperAdminFacebookOAuth = React.lazy(
   () => import("./pages/SuperAdminFacebookOAuth"),
 );
@@ -914,8 +917,6 @@ const PaymentPage = React.lazy(() => import("./pages/PaymentPage"));
 const MessagingCheckout = React.lazy(() => import("./pages/payment/MessagingCheckout"));
 const WalletManagement = React.lazy(() => import("./pages/WalletManagement"));
 const CustomerPayments = React.lazy(() => import("./pages/CustomerPayments"));
-const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy"));
-const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService"));
 const UnifiedCommentsManagement = React.lazy(
   () => import("./pages/comments/UnifiedCommentsManagement"),
 );
@@ -1474,9 +1475,6 @@ const AppContent = () => {
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
             
             <Route path="/app-explanations" element={<AppExplanationsPage />} />
-            {/* Legal Pages - Public Access */}
-            {/* <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} /> */}
             <Route path="/faq" element={faqRouteElement} />
             <Route path="/support/faq" element={faqRouteElement} />
             {/* Public Storefront Routes - No Authentication Required */}
@@ -5046,22 +5044,6 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                <Route
-                  path="/terms"
-                  element={
-                    <Layout>
-                      <TermsOfService />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/privacy"
-                  element={
-                    <Layout>
-                      <PrivacyPolicy />
-                    </Layout>
-                  }
-                />
                 {/* WhatsApp Routes */}
                 <Route
                   path="/whatsapp"
@@ -6049,6 +6031,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <AIKnowledgeQuestionsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/booking/*"
+                  element={
+                    <Layout fullWidth>
+                      <BookingManagementPage />
                     </Layout>
                   }
                 />

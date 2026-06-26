@@ -50,6 +50,7 @@ const getAllAppointments = async (req, res) => {
       customerName: appointment.customerName,
       customerEmail: appointment.customerEmail,
       customerPhone: appointment.customerPhone,
+      customerGender: appointment.customerGender,
       staffId: appointment.staffId,
       staffName: appointment.staffName,
       title: appointment.title,
@@ -61,6 +62,14 @@ const getAllAppointments = async (req, res) => {
       status: appointment.status,
       type: appointment.type,
       location: appointment.location,
+      branchId: appointment.branchId,
+      doctorId: appointment.doctorId,
+      serviceId: appointment.serviceId,
+      serviceName: appointment.serviceName,
+      source: appointment.source,
+      paymentRequired: appointment.paymentRequired,
+      paymentStatus: appointment.paymentStatus,
+      confirmedAt: appointment.confirmedAt,
       meetingLink: appointment.meetingLink,
       notes: appointment.notes,
       createdAt: appointment.createdAt.toISOString()
@@ -174,6 +183,7 @@ const createAppointment = async (req, res) => {
       customerName,
       customerEmail,
       customerPhone,
+      customerGender,
       staffId,
       staffName,
       title,
@@ -183,7 +193,13 @@ const createAppointment = async (req, res) => {
       type,
       location,
       meetingLink,
-      notes
+      notes,
+      branchId,
+      doctorId,
+      serviceId,
+      serviceName,
+      source,
+      paymentRequired
     } = req.body;
 
     // Validation
@@ -309,6 +325,7 @@ const createAppointment = async (req, res) => {
       customerName: customerName.trim(),
       customerEmail: customerEmail && customerEmail.trim() !== '' ? customerEmail.trim() : null,
       customerPhone: customerPhone && customerPhone.trim() !== '' ? customerPhone.trim() : null,
+      customerGender: customerGender || null,
       staffId,
       staffName: finalStaffName,
       title: title.trim(),
@@ -320,6 +337,12 @@ const createAppointment = async (req, res) => {
       status: 'pending',
       type: type || 'consultation',
       location: location && location.trim() !== '' ? location.trim() : null,
+      branchId: branchId || null,
+      doctorId: doctorId || null,
+      serviceId: serviceId || null,
+      serviceName: serviceName || null,
+      source: source || 'dashboard',
+      paymentRequired: paymentRequired || false,
       meetingLink: meetingLink && meetingLink.trim() !== '' ? meetingLink.trim() : null,
       notes: notes && notes.trim() !== '' ? notes.trim() : null
     };
@@ -347,6 +370,7 @@ const createAppointment = async (req, res) => {
       customerName: appointment.customerName,
       customerEmail: appointment.customerEmail,
       customerPhone: appointment.customerPhone,
+      customerGender: appointment.customerGender,
       staffId: appointment.staffId,
       staffName: appointment.staffName,
       title: appointment.title,
@@ -358,6 +382,12 @@ const createAppointment = async (req, res) => {
       status: appointment.status,
       type: appointment.type,
       location: appointment.location,
+      branchId: appointment.branchId,
+      doctorId: appointment.doctorId,
+      serviceId: appointment.serviceId,
+      serviceName: appointment.serviceName,
+      source: appointment.source,
+      paymentRequired: appointment.paymentRequired,
       meetingLink: appointment.meetingLink,
       notes: appointment.notes,
       createdAt: appointment.createdAt.toISOString()
