@@ -54,6 +54,21 @@ async def available_slots(
 
 async def create_appointment(company_id: str, data: dict[str, Any]) -> dict[str, Any]:
     client = get_backend_client()
+    if not data.get("branchId"):
+        branches = await client.get_booking_branches(company_id)
+        if branches:
+            data["branchId"] = branches[0].get("id") or ""
+            logger.info("auto-filled branchId", branch_id=data["branchId"])
+    if not data.get("doctorId"):
+        doctors = await client.get_booking_doctors(company_id, data.get("branchId"))
+        if doctors:
+            data["doctorId"] = doctors[0].get("id") or ""
+            logger.info("auto-filled doctorId", doctor_id=data["doctorId"])
+    if not data.get("serviceId"):
+        services = await client.get_booking_services(company_id, data.get("branchId"))
+        if services:
+            data["serviceId"] = services[0].get("id") or ""
+            logger.info("auto-filled serviceId", service_id=data["serviceId"])
     return await client.create_booking_appointment(company_id, data)
 
 
