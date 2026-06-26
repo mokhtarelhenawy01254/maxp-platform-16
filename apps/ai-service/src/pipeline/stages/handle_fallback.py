@@ -216,7 +216,12 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
         if client:
             fallback_messages = [m for m in (ctx.messages or []) if m.get("role") != "system"]
             fallback_messages = [
-                {"role": "system", "content": ctx.system_prompt or "You are a helpful customer support assistant."},
+                {"role": "system", "content": (ctx.system_prompt or "You are a helpful customer support assistant.") + (
+                    "\n\nIMPORTANT: You have access to knowledge_search and knowledge_ask_merchant tools. "
+                    "Always use knowledge_search to look up information before responding. "
+                    "If knowledge_search returns no results, use knowledge_ask_merchant. "
+                    "Never guess or invent answers — verify with tools first."
+                )},
             ] + fallback_messages + [{"role": "user", "content": ctx.message}]
             native_tools = list(getattr(ctx, "native_tools", []) or [])
             has_tools = bool(native_tools)

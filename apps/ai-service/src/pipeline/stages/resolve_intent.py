@@ -171,8 +171,10 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
                     tool_lines.append(f"- {name}: {desc}" if desc else f"- {name}")
             if tool_lines:
                 ctx.system_prompt += (
-                    "\n\n## الأدوات المتاحة (Available Tools)\nيمكنك استخدام الأدوات التالية للرد على العملاء. "
-                    "استخدم الأداة المناسبة عندما يطلب العميل الخدمة المرتبطة بها.\n"
+                    "\n\n## الأدوات المتاحة (Available Tools)\n"
+                    "إذا كنت لا تعرف الإجابة أو غير متأكد، استخدم knowledge_search أولاً للبحث في قاعدة المعرفة. "
+                    "إذا لم تجد نتائج، استخدم knowledge_ask_merchant لسؤال التاجر. "
+                    "لا ترد على العميل بمعلومات غير مؤكدة قبل استخدام الأدوات المتاحة.\n"
                 )
                 ctx.system_prompt += "\n".join(tool_lines)
         except Exception as exc:
