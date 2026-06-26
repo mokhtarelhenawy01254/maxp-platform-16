@@ -722,6 +722,128 @@ router.put("/agents/default-template", async (req, res) => {
   }
 });
 
+// ── Ready Agent Profiles (Quick-create cards for merchants) ──────
+// Stored as JSON in SystemSettings (systemName: 'agentQuickProfiles')
+
+async function getReadyProfiles() {
+  const prisma = getSharedPrismaClient();
+  const row = await prisma.systemSettings.findFirst({
+    where: { systemName: 'agentQuickProfiles' },
+  });
+  const parsed = row?.config ? JSON.parse(row.config) : {};
+  return parsed.profiles || [];
+}
+
+async function saveReadyProfiles(profiles) {
+  const prisma = getSharedPrismaClient();
+  await prisma.systemSettings.upsert({
+    where: { systemName: 'agentQuickProfiles' },
+    update: { config: JSON.stringify({ profiles }), updatedAt: new Date() },
+    create: {
+      id: `sys_agentQuickProfiles`,
+      systemName: 'agentQuickProfiles',
+      displayName: 'Ready Agent Profiles',
+      description: 'قائمة الوكلاء الجاهزين للإنشاء السريع',
+      category: 'ai',
+      isEnabled: true,
+      config: JSON.stringify({ profiles }),
+    },
+  });
+}
+
+// GET /agents/quick-profiles — list all ready agent profiles
+router.get("/agents/quick-profiles", async (req, res) => {
+  try {
+    const profiles = await getReadyProfiles();
+    return res.json({ success: true, profiles, count: profiles.length });
+  } catch (error) {
+    console.error('[SA-READY] GET list error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تحميل الوكلاء الجاهزين' });
+  }
+});
+
+// POST /agents/quick-profiles — create a new ready agent profile
+router.post("/agents/quick-profiles", async (req, res) => {
+  try {
+    const { slug, icon, title, titleEn, category, categoryEn, desc, descEn, personalities } = req.body || {};
+    if (!slug?.trim() || !title?.trim())
+      return res.status(400).json({ success: false, error: 'slug و title مطلوبان' });
+    const profiles = await getReadyProfiles();
+    if (profiles.some((p) => p.slug === slug.trim()))
+      return res.status(409).json({ success: false, error: 'هذا المعرف موجود بالفعل' });
+    const maxOrder = profiles.reduce((m, p) => Math.max(m, p.sortOrder || 0), 0);
+    profiles.push({
+      slug: slug.trim(), icon: icon || '🤖', title: title.trim(),
+      titleEn: titleEn || '', category: category || '', categoryEn: categoryEn || '',
+      desc: desc || '', descEn: descEn || '', sortOrder: maxOrder + 1,
+      isActive: true, personalities: personalities || [],
+    });
+    await saveReadyProfiles(profiles);
+    return res.status(201).json({ success: true, profiles, count: profiles.length });
+  } catch (error) {
+    console.error('[SA-READY] POST error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل إنشاء الوكيل الجاهز' });
+  }
+});
+
+// PUT /agents/quick-profiles/reorder — MUST be before :slug to avoid slug capture
+router.put("/agents/quick-profiles/reorder", async (req, res) => {
+  try {
+    const { slugs } = req.body || [];
+    if (!Array.isArray(slugs)) return res.status(400).json({ success: false, error: 'slugs مصفوفة مطلوبة' });
+    const profiles = await getReadyProfiles();
+    const reordered = slugs
+      .map((s, i) => {
+        const p = profiles.find((x) => x.slug === s);
+        if (!p) return null;
+        return { ...p, sortOrder: i };
+      })
+      .filter(Boolean);
+    const remaining = profiles.filter((p) => !slugs.includes(p.slug));
+    const merged = [...reordered, ...remaining];
+    await saveReadyProfiles(merged);
+    return res.json({ success: true, profiles: merged, count: merged.length });
+  } catch (error) {
+    console.error('[SA-READY] REORDER error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل إعادة الترتيب' });
+  }
+});
+
+// PUT /agents/quick-profiles/:slug — update a ready agent profile
+router.put("/agents/quick-profiles/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const update = req.body || {};
+    const profiles = await getReadyProfiles();
+    const idx = profiles.findIndex((p) => p.slug === slug);
+    if (idx === -1) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
+    if (update.slug && update.slug !== slug && profiles.some((p) => p.slug === update.slug))
+      return res.status(409).json({ success: false, error: 'slug موجود بالفعل' });
+    profiles[idx] = { ...profiles[idx], ...update };
+    await saveReadyProfiles(profiles);
+    return res.json({ success: true, profiles, count: profiles.length });
+  } catch (error) {
+    console.error('[SA-READY] PUT error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تحديث الوكيل الجاهز' });
+  }
+});
+
+// DELETE /agents/quick-profiles/:slug — delete a ready agent profile
+router.delete("/agents/quick-profiles/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    let profiles = await getReadyProfiles();
+    const existed = profiles.some((p) => p.slug === slug);
+    if (!existed) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
+    profiles = profiles.filter((p) => p.slug !== slug);
+    await saveReadyProfiles(profiles);
+    return res.json({ success: true, profiles, count: profiles.length });
+  } catch (error) {
+    console.error('[SA-READY] DELETE error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل حذف الوكيل الجاهز' });
+  }
+});
+
 // GET /agents/:id — get agent template with expanded details
 router.get("/agents/:id", async (req, res) => {
   try {
@@ -789,127 +911,7 @@ router.delete("/agents/:id", async (req, res) => {
   }
 });
 
-// ── Ready Agent Profiles (Quick-create cards for merchants) ──────
-// Stored as JSON in SystemSettings (systemName: 'agentQuickProfiles')
 
-async function getReadyProfiles() {
-  const prisma = getSharedPrismaClient();
-  const row = await prisma.systemSettings.findFirst({
-    where: { systemName: 'agentQuickProfiles' },
-  });
-  const parsed = row?.config ? JSON.parse(row.config) : {};
-  return parsed.profiles || [];
-}
-
-async function saveReadyProfiles(profiles) {
-  const prisma = getSharedPrismaClient();
-  await prisma.systemSettings.upsert({
-    where: { systemName: 'agentQuickProfiles' },
-    update: { config: JSON.stringify({ profiles }), updatedAt: new Date() },
-    create: {
-      id: `sys_agentQuickProfiles`,
-      systemName: 'agentQuickProfiles',
-      displayName: 'Ready Agent Profiles',
-      description: 'قائمة الوكلاء الجاهزين للإنشاء السريع',
-      category: 'ai',
-      isEnabled: true,
-      config: JSON.stringify({ profiles }),
-    },
-  });
-}
-
-// GET /agents/quick-profiles — list all ready agent profiles
-router.get("/agents/quick-profiles", async (req, res) => {
-  try {
-    const profiles = await getReadyProfiles();
-    return res.json({ success: true, profiles, count: profiles.length });
-  } catch (error) {
-    console.error('[SA-READY] GET list error:', error.message);
-    return res.status(500).json({ success: false, error: 'فشل تحميل الوكلاء الجاهزين' });
-  }
-});
-
-// POST /agents/quick-profiles — create a new ready agent profile
-router.post("/agents/quick-profiles", async (req, res) => {
-  try {
-    const { slug, icon, title, titleEn, category, categoryEn, desc, descEn, personalities } = req.body || {};
-    if (!slug?.trim() || !title?.trim())
-      return res.status(400).json({ success: false, error: 'slug و title مطلوبان' });
-    const profiles = await getReadyProfiles();
-    if (profiles.some((p) => p.slug === slug.trim()))
-      return res.status(409).json({ success: false, error: 'هذا المعرف موجود بالفعل' });
-    const maxOrder = profiles.reduce((m, p) => Math.max(m, p.sortOrder || 0), 0);
-    profiles.push({
-      slug: slug.trim(), icon: icon || '🤖', title: title.trim(),
-      titleEn: titleEn || '', category: category || '', categoryEn: categoryEn || '',
-      desc: desc || '', descEn: descEn || '', sortOrder: maxOrder + 1,
-      isActive: true, personalities: personalities || [],
-    });
-    await saveReadyProfiles(profiles);
-    return res.status(201).json({ success: true, profiles, count: profiles.length });
-  } catch (error) {
-    console.error('[SA-READY] POST error:', error.message);
-    return res.status(500).json({ success: false, error: 'فشل إنشاء الوكيل الجاهز' });
-  }
-});
-
-// PUT /agents/quick-profiles/:slug — update a ready agent profile
-router.put("/agents/quick-profiles/:slug", async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const update = req.body || {};
-    const profiles = await getReadyProfiles();
-    const idx = profiles.findIndex((p) => p.slug === slug);
-    if (idx === -1) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
-    if (update.slug && update.slug !== slug && profiles.some((p) => p.slug === update.slug))
-      return res.status(409).json({ success: false, error: 'slug موجود بالفعل' });
-    profiles[idx] = { ...profiles[idx], ...update };
-    await saveReadyProfiles(profiles);
-    return res.json({ success: true, profiles, count: profiles.length });
-  } catch (error) {
-    console.error('[SA-READY] PUT error:', error.message);
-    return res.status(500).json({ success: false, error: 'فشل تحديث الوكيل الجاهز' });
-  }
-});
-
-// DELETE /agents/quick-profiles/:slug — delete a ready agent profile
-router.delete("/agents/quick-profiles/:slug", async (req, res) => {
-  try {
-    const { slug } = req.params;
-    let profiles = await getReadyProfiles();
-    const existed = profiles.some((p) => p.slug === slug);
-    if (!existed) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
-    profiles = profiles.filter((p) => p.slug !== slug);
-    await saveReadyProfiles(profiles);
-    return res.json({ success: true, profiles, count: profiles.length });
-  } catch (error) {
-    console.error('[SA-READY] DELETE error:', error.message);
-    return res.status(500).json({ success: false, error: 'فشل حذف الوكيل الجاهز' });
-  }
-});
-
-// PUT /agents/quick-profiles/reorder — reorder profiles
-router.put("/agents/quick-profiles/reorder", async (req, res) => {
-  try {
-    const { slugs } = req.body || [];
-    if (!Array.isArray(slugs)) return res.status(400).json({ success: false, error: 'slugs مصفوفة مطلوبة' });
-    const profiles = await getReadyProfiles();
-    const reordered = slugs
-      .map((s, i) => {
-        const p = profiles.find((x) => x.slug === s);
-        if (!p) return null;
-        return { ...p, sortOrder: i };
-      })
-      .filter(Boolean);
-    const remaining = profiles.filter((p) => !slugs.includes(p.slug));
-    const merged = [...reordered, ...remaining];
-    await saveReadyProfiles(merged);
-    return res.json({ success: true, profiles: merged, count: merged.length });
-  } catch (error) {
-    console.error('[SA-READY] REORDER error:', error.message);
-    return res.status(500).json({ success: false, error: 'فشل إعادة الترتيب' });
-  }
-});
 
 // ── Dev Goals (OKRs) ──────────────────────────────────────────────
 const devGoalService = require('../services/devGoalService');
