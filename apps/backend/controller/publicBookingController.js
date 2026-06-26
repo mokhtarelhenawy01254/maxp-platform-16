@@ -222,6 +222,7 @@ const createAppointment = async (req, res) => {
         id: uuidv4(), companyId: company.id,
         customerName: customerName.trim(),
         customerPhone, customerEmail, customerGender,
+        staffId: branchId, staffName: 'حجز عام',
         branchId, serviceId, serviceName,
         title: serviceName || 'موعد جديد',
         appointmentDate: new Date(appointmentDate),
