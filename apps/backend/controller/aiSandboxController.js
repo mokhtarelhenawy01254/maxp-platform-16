@@ -943,8 +943,19 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId,
       (agentModel.keyId && agentModel.keyId !== requestedKeyId);
 
     if (shouldUseAgentModel || !requestedProvider || !requestedModel) {
+      let resolveProvider = agentModel.provider || requestedProvider;
+      if (!agentModel.provider && agentModel.model !== requestedModel) {
+        const allKeys = await listTenantAIKeys(companyId, false);
+        const allModelConfigs = await getSharedPrismaClient().aiModelConfig.findMany({
+          where: { isEnabled: true, modelName: agentModel.model },
+          select: { keyId: true },
+        });
+        const configKeyIds = new Set(allModelConfigs.map(c => c.keyId));
+        const matchingKey = allKeys.find(k => configKeyIds.has(k.id));
+        if (matchingKey) resolveProvider = matchingKey.provider;
+      }
       const selection = await resolveRequestedSandboxModelSelection(companyId, {
-        provider: agentModel.provider || requestedProvider,
+        provider: resolveProvider,
         model: agentModel.model,
         keyId: agentModel.keyId || '',
       });
