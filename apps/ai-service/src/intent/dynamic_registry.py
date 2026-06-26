@@ -82,21 +82,30 @@ class DynamicIntentRegistry:
         if not self._is_loaded:
             from src.intent.schema import INTENT_ENUM
             return INTENT_ENUM
-        return self._enum_cache
+        from src.intent.schema import INTENT_ENUM as STATIC_INTENT_ENUM
+        return list(set(self._enum_cache) | set(STATIC_INTENT_ENUM))
 
     def get_policy(self, intent: str) -> dict[str, Any]:
         """Get policy mapping dict for a given intent."""
         if not self._is_loaded:
             from src.intent.schema import INTENT_POLICIES
             return INTENT_POLICIES.get(intent) or INTENT_POLICIES["general.chat"]
-        return self._intents_cache.get(intent) or self._intents_cache.get("general.chat") or {}
+        result = self._intents_cache.get(intent)
+        if result is not None:
+            return result
+        from src.intent.schema import INTENT_POLICIES
+        return INTENT_POLICIES.get(intent) or INTENT_POLICIES["general.chat"]
 
     def get_configured_tools(self, intent: str) -> dict[str, Any] | None:
         """Get tools configuration dict for a given intent."""
         if not self._is_loaded:
             from src.intent.schema import INTENT_CONFIGURED_TOOLS
             return INTENT_CONFIGURED_TOOLS.get(intent)
-        return self._tools_cache.get(intent)
+        result = self._tools_cache.get(intent)
+        if result is None:
+            from src.intent.schema import INTENT_CONFIGURED_TOOLS
+            return INTENT_CONFIGURED_TOOLS.get(intent)
+        return result
 
 
 # Instantiate the global singleton
