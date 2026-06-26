@@ -655,6 +655,11 @@ jobs:
                 exit 1
             }
 
+            echo "🧹 Deactivating deprecated marketplace apps..."
+            NODE_ENV=production node scripts/deactivate_old_marketplace_apps.js || {
+                echo "⚠️ Deprecated app deactivation had issues, continuing..."
+            }
+
             # Restart services
             echo "🔄 Restarting services..."
             if [ -n "$PM2_BIN" ]; then

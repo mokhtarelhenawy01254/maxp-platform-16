@@ -51,6 +51,7 @@
     "catalog:validate": "node scripts/catalog/validate_marketplace_catalog.js",
     "catalog:diff": "node scripts/catalog/diff_marketplace_catalog_vs_db.js",
     "catalog:sync-target": "node scripts/sync_target_marketplace_catalog_entries.js",
+    "catalog:deactivate-old": "node scripts/deactivate_old_marketplace_apps.js",
     "seed:permissions": "node prisma/seeds/seedPermissions.js",
     "seed:migrate-roles": "node prisma/seeds/migrateCustomRoles.js",
     "seed:link-roles": "node prisma/seeds/linkUserRoles.js"
