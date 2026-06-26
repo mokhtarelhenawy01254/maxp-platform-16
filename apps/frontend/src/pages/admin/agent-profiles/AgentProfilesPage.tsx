@@ -578,7 +578,7 @@ export default function AgentProfilesPage() {
       "/agent/agents",
       { method: "POST", body: JSON.stringify({
         name: quickName.trim(),
-        templateSlug: quickSlug,
+        templateSlug: ready?.templateSlug || quickSlug,
         icon: quickIcon,
         description: quickPersonality?.desc || ready?.desc || null,
       })},

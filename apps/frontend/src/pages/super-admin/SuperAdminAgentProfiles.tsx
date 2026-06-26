@@ -19,6 +19,14 @@ interface Personality {
   goal: string;
 }
 
+interface AgentTemplate {
+  id: string;
+  name: string;
+  type: string;
+  description: string;
+  icon: string;
+}
+
 interface ReadyProfile {
   slug: string;
   icon: string;
@@ -31,6 +39,7 @@ interface ReadyProfile {
   sortOrder: number;
   isActive: boolean;
   personalities: Personality[];
+  templateSlug?: string | null;
 }
 
 const TONES = [
@@ -45,6 +54,7 @@ const ICONS = ["🤖", "💼", "🎧", "📦", "📣", "💬", "📊", "🧠", "
 const emptyProfile = (): ReadyProfile => ({
   slug: "", icon: "🤖", title: "", titleEn: "", category: "", categoryEn: "",
   desc: "", descEn: "", sortOrder: 0, isActive: true, personalities: [],
+  templateSlug: null,
 });
 
 const SuperAdminAgentProfiles: React.FC = () => {
@@ -52,6 +62,7 @@ const SuperAdminAgentProfiles: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [templates, setTemplates] = useState<AgentTemplate[]>([]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editProfile, setEditProfile] = useState<ReadyProfile>(emptyProfile());
@@ -66,8 +77,12 @@ const SuperAdminAgentProfiles: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await apiClient.get<{ success: boolean; profiles: ReadyProfile[] }>("/super-admin/agents/quick-profiles");
-      if (data.success) setProfiles(data.profiles || []);
+      const [profilesRes, templatesRes] = await Promise.all([
+        apiClient.get<{ success: boolean; profiles: ReadyProfile[] }>("/super-admin/agents/quick-profiles"),
+        apiClient.get<{ success: boolean; agents: AgentTemplate[] }>("/super-admin/agents"),
+      ]);
+      if (profilesRes.data.success) setProfiles(profilesRes.data.profiles || []);
+      if (templatesRes.data.success) setTemplates(templatesRes.data.agents || []);
     } catch {
       setError("فشل تحميل الوكلاء الجاهزين");
     } finally {
@@ -76,6 +91,8 @@ const SuperAdminAgentProfiles: React.FC = () => {
   };
 
   useEffect(() => { fetchProfiles(); }, []);
+
+  const templateMap = new Map(templates.map((t) => [t.id, t.name]));
 
   const openCreate = () => {
     setIsNew(true);
@@ -224,6 +241,7 @@ const SuperAdminAgentProfiles: React.FC = () => {
                     {p.titleEn && <span className="text-xs text-muted-foreground/50">({p.titleEn})</span>}
                     <Badge variant="outline" className="text-[10px]">{p.slug}</Badge>
                     {p.category && <span className="text-xs text-indigo-500 font-medium">{p.category}</span>}
+                    {p.templateSlug && <Badge variant="secondary" className="text-[10px]">{templateMap.get(p.templateSlug) || p.templateSlug}</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{p.desc || p.descEn || "—"}</p>
                   <div className="flex items-center gap-3 mt-1.5">
@@ -267,6 +285,15 @@ const SuperAdminAgentProfiles: React.FC = () => {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">القالب (Template)</label>
+              <select value={editProfile.templateSlug || ""} onChange={(e) => setEditProfile((p) => ({ ...p, templateSlug: e.target.value || null }))}
+                className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm">
+                <option value="">— بدون قالب —</option>
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.id})</option>)}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
