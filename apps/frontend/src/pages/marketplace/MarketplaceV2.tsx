@@ -7,7 +7,7 @@ import {
   Search, Package, Loader2, Crown,
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Star,
+  DollarSign, Grid3X3, Star, Heart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -118,6 +118,7 @@ const categoryIcons: Record<string, LucideIcon> = {
   PRODUCTIVITY: Package,
   FINANCE: DollarSign,
   MARKETING: Sparkles,
+  MEDICAL: Heart,
 };
 
 const categoryGradients: Record<string, string> = {
@@ -130,6 +131,7 @@ const categoryGradients: Record<string, string> = {
   PRODUCTIVITY: "from-indigo-500/20 to-indigo-600/5",
   FINANCE: "from-green-500/20 to-green-600/5",
   MARKETING: "from-pink-500/20 to-pink-600/5",
+  MEDICAL: "from-red-500/20 to-red-600/5",
 };
 
 type ViewMode = "grid" | "compact";

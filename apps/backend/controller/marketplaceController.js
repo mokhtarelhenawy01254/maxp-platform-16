@@ -1164,7 +1164,8 @@ exports.getCategories = async (req, res) => {
       PRODUCTIVITY: { name: 'الإنتاجية', nameEn: 'Productivity', icon: '⚡' },
       FINANCE: { name: 'المالية', nameEn: 'Finance', icon: '💰' },
       MARKETING: { name: 'التسويق', nameEn: 'Marketing', icon: '📣' },
-      GAMIFICATION: { name: 'الألعاب والترفيه', nameEn: 'Gamification', icon: '🎮' }
+      GAMIFICATION: { name: 'الألعاب والترفيه', nameEn: 'Gamification', icon: '🎮' },
+      MEDICAL: { name: 'النظام الطبي', nameEn: 'Medical System', icon: '🏥' }
     };
 
     console.log('🔍 [Marketplace] Fetching categories from DB...');

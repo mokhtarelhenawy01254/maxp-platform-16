@@ -229,10 +229,10 @@ const READY_AGENTS: ReadyAgent[] = [
     ],
   },
   {
-    slug: 'medical-center-agent', icon: '🏥', title: 'مساعد مركز طبي', category: 'الخدمات الطبية',
+    slug: 'medical-center-agent', icon: '🏥', title: 'مساعد النظام الطبي', category: 'الخدمات الطبية',
     desc: 'وكيل حجز متكامل — يدير المواعيد، الأطباء، الخدمات، والفروع للمراكز الطبية',
     personalities: [
-      { id: 'medical-default', name: 'مساعد طبي', desc: 'أسلوب مهني ولطيف في التعامل مع المرضى', tone: 'friendly', persona: 'مساعد مركز طبي', goal: 'تساعد المرضى في حجز المواعيد وإدارة الخدمات الطبية بسهولة' },
+      { id: 'medical-default', name: 'مساعد طبي', desc: 'أسلوب مهني ولطيف في التعامل مع المرضى', tone: 'friendly', persona: 'مساعد النظام الطبي', goal: 'تساعد المرضى في حجز المواعيد وإدارة الخدمات الطبية بسهولة' },
     ],
   },
 ];

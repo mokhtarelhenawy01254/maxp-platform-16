@@ -783,7 +783,7 @@ export default function BookingManagementPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">إدارة المركز الطبي</h1>
+        <h1 className="text-3xl font-bold mb-2">إدارة النظام الطبي</h1>
         <p className="text-gray-500 text-sm max-w-2xl">نظام إدارة المواعيد والخدمات الطبية</p>
       </div>
       <div className="mb-4">

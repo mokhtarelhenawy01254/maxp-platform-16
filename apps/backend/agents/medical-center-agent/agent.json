@@ -1,6 +1,6 @@
 {
   "slug": "medical-center-agent",
-  "name": "وكيل المركز الطبي",
+  "name": "وكيل النظام الطبي",
   "role": "MEDICAL_CENTER",
   "version": "1.0.0",
   "modelPolicy": {

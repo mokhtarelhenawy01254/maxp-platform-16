@@ -107,7 +107,7 @@ async def booking_appointment_details(input_data: AppointmentDetailsInput) -> di
 
 booking_branches_list_tool = FunctionTool(
     name="booking_branches_list",
-    description="قائمة الفروع المتاحة في المركز الطبي (List all branches).",
+    description="قائمة الفروع المتاحة في النظام الطبي (List all branches).",
     func=booking_branches_list,
     input_model=BranchesListInput,
 )

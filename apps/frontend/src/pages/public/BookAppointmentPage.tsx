@@ -114,7 +114,7 @@ const BookAppointmentPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50" dir="rtl">
       <div className="max-w-lg mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">{companyName || "مركز طبي"}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{companyName || "النظام الطبي"}</h1>
           <p className="text-gray-500 mt-1">حجز موعد</p>
         </div>
 

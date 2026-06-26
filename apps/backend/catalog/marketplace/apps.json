@@ -882,5 +882,85 @@
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
     "updatedAt": "2026-06-26T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-medical-system",
+    "slug": "medical-system",
+    "name": "النظام الطبي",
+    "nameEn": "Medical System",
+    "description": "نظام متكامل لإدارة المنشآت الطبية والعيادات — الفروع، الأطباء، الخدمات، المواعيد، ووكيل ذكاء اصطناعي للحجوزات.",
+    "category": "MEDICAL",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المراكز الطبية والعيادات ومقدمي الخدمات الصحية.",
+      "surface": "لوحة تحكم شاملة داخل النظام الطبي — إدارة الفروع والأطباء والخدمات والمواعيد.",
+      "outcome": "تنظيم كامل للمنشأة الطبية مع حجوزات ذكية وتقويم وتقارير أداء."
+    },
+    "features": {
+      "branches": {
+        "enabled": true,
+        "name": "إدارة الفروع",
+        "description": "إضافة وتعديل فروع متعددة لكل منشأة طبية مع أيام العمل والفترات.",
+        "access": "PAID"
+      },
+      "doctors": {
+        "enabled": true,
+        "name": "إدارة الأطباء",
+        "description": "إضافة الأطباء وتحديد التخصصات والمواعيد المتاحة لكل طبيب.",
+        "access": "PAID"
+      },
+      "services": {
+        "enabled": true,
+        "name": "إدارة الخدمات",
+        "description": "تحديد الخدمات الطبية المقدمة مع الباقات والأسعار.",
+        "access": "PAID"
+      },
+      "appointments": {
+        "enabled": true,
+        "name": "حجوزات المواعيد",
+        "description": "نظام حجوزات ذكي مع أيام منفصلة للرجال والنساء وتأكيد تلقائي.",
+        "access": "PAID"
+      },
+      "availableSlots": {
+        "enabled": true,
+        "name": "المواعيد المتاحة",
+        "description": "عرض الأوقات المتاحة للحجز لكل طبيب وفرع وتاريخ.",
+        "access": "PAID"
+      },
+      "calendar": {
+        "enabled": true,
+        "name": "تقويم المواعيد",
+        "description": "عرض تقويم شامل للمواعيد مع إمكانية التصفية بالفرع والطبيب.",
+        "access": "PAID"
+      },
+      "dashboard": {
+        "enabled": true,
+        "name": "لوحة التحكم",
+        "description": "إحصائيات وأداء المنشأة الطبية — عدد المواعيد، الإلغاءات، الإيرادات.",
+        "access": "PAID"
+      },
+      "aiAgent": {
+        "enabled": true,
+        "name": "وكيل ذكاء اصطناعي",
+        "description": "وكيل ذكي يستقبل الحجوزات عبر واتساب، فيسبوك، ولوحة التحكم.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "heart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-26T00:00:00.000Z",
+    "updatedAt": "2026-06-26T00:00:00.000Z"
   }
 ]

@@ -7,7 +7,7 @@ import {
   Search, Package, ChevronLeft, Loader2, Crown,
   Layers3, AlertTriangle, Filter, Zap, X,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Sparkles, CheckCircle2,
+  DollarSign, Sparkles, CheckCircle2, Heart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AppCard from "./components/AppCard";
@@ -159,6 +159,7 @@ const categoryIcons: Record<string, LucideIcon> = {
   PRODUCTIVITY: Package,
   FINANCE: DollarSign,
   MARKETING: Sparkles,
+  MEDICAL: Heart,
 };
 
 function shouldUseTextIcon(icon?: string) {

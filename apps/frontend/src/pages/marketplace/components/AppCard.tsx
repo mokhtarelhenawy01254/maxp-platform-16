@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Store, Users, MessageSquare, BarChart3, Zap,
   DollarSign, TrendingUp, Package, Sparkles,
-  Check, Loader2, X,
+  Check, Loader2, X, Heart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ const categoryIcons: Record<string, LucideIcon> = {
   PRODUCTIVITY: Package,
   FINANCE: DollarSign,
   MARKETING: Sparkles,
+  MEDICAL: Heart,
 };
 
 function shouldUseTextIcon(icon?: string) {

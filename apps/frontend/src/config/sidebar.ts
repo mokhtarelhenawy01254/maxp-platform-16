@@ -880,11 +880,12 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 7️⃣.5️⃣ المركز الطبي
+        // 7️⃣.5️⃣ النظام الطبي
         {
             id: 'medical-center',
             title: t('sidebar.medicalCenter'),
             icon: HeartIcon,
+            hidden: !isAppActive('medical-system'),
             items: [
                 { to: '/admin/booking/dashboard', icon: ChartBarIcon, label: t('sidebar.bookingDashboard') },
                 { to: '/admin/booking/appointments', icon: CalendarIcon, label: t('sidebar.bookingAppointments') },
