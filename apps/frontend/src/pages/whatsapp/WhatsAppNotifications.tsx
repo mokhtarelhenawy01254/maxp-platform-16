@@ -1348,7 +1348,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               >
                 <div className="space-y-4">
                   {!settings.isEnabled ? (
-                    <Alert className="rounded-xl border-amber-300/70 bg-amber-500/10 text-amber-900">
+                    <Alert className="rounded-xl border-amber-300/70 bg-amber-500/10 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/[0.08] dark:text-amber-200">
                       <AlertTriangle className="size-4" />
                       <AlertTitle>{t("whatsappNotifications.title")}</AlertTitle>
                       <AlertDescription>
@@ -1431,7 +1431,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   />
 
                   {sessions.length === 0 ? (
-                    <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900">
+                    <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/[0.08] dark:text-sky-200">
                       <AlertCircle className="size-4" />
                       <AlertTitle>{t("whatsappNotifications.general.noSessionsWarning")}</AlertTitle>
                       <AlertDescription>
@@ -1538,16 +1538,16 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   </Button>
                 }
               >
-                <div className="rounded-2xl border border-emerald-300/70 bg-emerald-500/10 p-5">
+                <div className="rounded-2xl border border-emerald-300/70 bg-emerald-500/10 p-5 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08]">
                   <div className="flex items-start gap-3">
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white">
                       <TrendingUp className="size-5" />
                     </div>
                     <div className="space-y-2">
-                      <p className="text-base font-semibold text-emerald-900">
+                      <p className="text-base font-semibold text-emerald-900 dark:text-emerald-100">
                         {t("whatsappJourney.title")}
                       </p>
-                      <p className="text-sm leading-6 text-emerald-800">
+                      <p className="text-sm leading-6 text-emerald-800 dark:text-emerald-200">
                         {i18n.language === "ar"
                           ? "راجع سلاسل ما بعد الشراء وعدّل الرسائل المؤتمتة من شاشة مخصّصة للتجارب المتتابعة."
                           : "Review post-purchase flows and tune sequenced customer journeys from a dedicated workspace."}
@@ -1735,7 +1735,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
               {settings.abandonedCartEnabled ? (
                 <>
-                  <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900">
+                  <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/[0.08] dark:text-sky-200">
                     <AlertCircle className="size-4" />
                     <AlertTitle>{t("whatsappNotifications.abandonedCart.title")}</AlertTitle>
                     <AlertDescription>
@@ -1939,7 +1939,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
               {settings.companyLifecycleNotificationsEnabled ? (
                 <>
-                  <Alert className="rounded-xl border-indigo-300/70 bg-indigo-500/10 text-indigo-950">
+                  <Alert className="rounded-xl border-indigo-300/70 bg-indigo-500/10 text-indigo-950 dark:border-indigo-500/40 dark:bg-indigo-500/[0.08] dark:text-indigo-200">
                     <AlertCircle className="size-4" />
                     <AlertTitle>
                       {i18n.language === "ar" ? "مناسبة للتعامل مع أصحاب الشركات" : "Owner-ready controls"}

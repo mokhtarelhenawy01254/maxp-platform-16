@@ -627,8 +627,8 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                             variant="outline"
                             className={
                               template.isActive !== false
-                                ? "border-emerald-300/70 bg-emerald-500/10 text-emerald-800"
-                                : "border-slate-300/70 bg-slate-500/10 text-slate-700"
+                                ? "border-emerald-300/70 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08] dark:text-emerald-200"
+                                : "border-slate-300/70 bg-slate-500/10 text-slate-700 dark:border-slate-500/40 dark:bg-slate-500/[0.08] dark:text-slate-300"
                             }
                           >
                             {template.isActive !== false
@@ -654,11 +654,11 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       </Button>
                     </div>
 
-                    <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-4">
-                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-800">
+                    <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-4 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08]">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-800 dark:text-emerald-200">
                         {i18n.language === "ar" ? "محتوى الرسالة" : "Message preview"}
                       </p>
-                      <p className="line-clamp-5 whitespace-pre-wrap text-sm leading-7 text-emerald-950">
+                      <p className="line-clamp-5 whitespace-pre-wrap text-sm leading-7 text-emerald-950 dark:text-emerald-100">
                         {template.content}
                       </p>
                     </div>
@@ -675,14 +675,14 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                         icon={CheckCircle}
                         label={i18n.language === "ar" ? "مستلم" : "Delivered"}
                         value={template.deliveredCount || 0}
-                        colorClass="text-emerald-600"
+                        colorClass="text-emerald-600 dark:text-emerald-400"
                       />
                       <Separator orientation="vertical" className="mx-1" />
                       <TemplateMetric
                         icon={Eye}
                         label={i18n.language === "ar" ? "مقروء" : "Read"}
                         value={template.readCount || 0}
-                        colorClass="text-sky-600"
+                        colorClass="text-sky-600 dark:text-sky-400"
                       />
                     </div>
                   </div>

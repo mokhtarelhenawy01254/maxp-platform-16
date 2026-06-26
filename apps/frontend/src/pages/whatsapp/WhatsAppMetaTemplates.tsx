@@ -60,11 +60,11 @@ interface MetaTemplate {
 }
 
 const statusBadge: Record<string, string> = {
-  APPROVED: "border-emerald-300/70 bg-emerald-500/10 text-emerald-800",
-  PENDING: "border-amber-300/70 bg-amber-500/10 text-amber-800",
-  REJECTED: "border-red-300/70 bg-red-500/10 text-red-800",
-  DISABLED: "border-slate-300/70 bg-slate-500/10 text-slate-700",
-  PAUSED: "border-blue-300/70 bg-blue-500/10 text-blue-800",
+  APPROVED: "border-emerald-300/70 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08] dark:text-emerald-200",
+  PENDING: "border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/[0.08] dark:text-amber-200",
+  REJECTED: "border-red-300/70 bg-red-500/10 text-red-800 dark:border-red-500/40 dark:bg-red-500/[0.08] dark:text-red-200",
+  DISABLED: "border-slate-300/70 bg-slate-500/10 text-slate-700 dark:border-slate-500/40 dark:bg-slate-500/[0.08] dark:text-slate-300",
+  PAUSED: "border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:bg-blue-500/[0.08] dark:text-blue-200",
 };
 
 const statusIcon: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -271,7 +271,7 @@ const WhatsAppMetaTemplates: React.FC<{
                       {t.language}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon-sm" className="text-red-500" onClick={() => setDeleteConfirm(t.name)}>
+                      <Button variant="ghost" size="icon-sm" className="text-red-500 dark:text-red-400" onClick={() => setDeleteConfirm(t.name)}>
                         <Trash2 className="size-4" />
                       </Button>
                     </TableCell>

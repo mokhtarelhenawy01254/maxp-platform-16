@@ -231,7 +231,7 @@ const AgentConfigPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1100px] space-y-6 px-4 py-6 md:px-6">
+    <div className="w-full space-y-6 px-4 py-6 md:px-6">
       {/* Page header */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>

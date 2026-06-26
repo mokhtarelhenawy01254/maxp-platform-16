@@ -571,7 +571,7 @@ const WhatsAppNumberSettings: React.FC = () => {
                       <span
                         className={`h-4 w-4 shrink-0 rounded-full border-2 ${
                           routingMode === 'NUMBER_OWNER'
-                            ? 'border-emerald-500 bg-white'
+                            ? 'border-emerald-500 bg-[color:var(--color-card)]'
                             : 'border-border bg-transparent'
                         }`}
                       />
@@ -596,7 +596,7 @@ const WhatsAppNumberSettings: React.FC = () => {
                       <span
                         className={`h-4 w-4 shrink-0 rounded-full border-2 ${
                           routingMode === 'ROUND_ROBIN'
-                            ? 'border-amber-500 bg-white'
+                            ? 'border-amber-500 bg-[color:var(--color-card)]'
                             : 'border-border bg-transparent'
                         }`}
                       />

@@ -54,7 +54,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children, fullWidth
         onMobileMenuOpen={() => setMobileOpen(true)} activeUsersCount={activeUsersCount} onShowActiveUsers={() => setShowActive(true)} user={u} title={title} />
       <SuperAdminSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} user={u} />
       <main className="flex-1 overflow-y-auto overflow-x-hidden pt-16 transition-all duration-300" style={{ width: `calc(100% - ${cw}px)` }}>
-        <div className="w-full px-4 py-6 sm:px-8" style={{ maxWidth: fullWidth ? "none" : "1400px", margin: fullWidth ? 0 : "0 auto" }}>{children}</div>
+        <div className="w-full px-4 py-6 sm:px-8">{children}</div>
       </main>
       {showActive && <ActiveUsersMonitor isOpen={showActive} onClose={() => setShowActive(false)} />}
     </div>

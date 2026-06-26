@@ -45,7 +45,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
   user,
   title,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -54,7 +54,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
       className={cn(
         "fixed top-0 z-40 flex h-16 items-center border-b backdrop-blur-lg transition-all duration-300 bg-background/80 border-border",
       )}
-      style={{ right: 0, width: `calc(100% - ${currentDrawerWidth}px)` }}
+      style={i18n.dir() === "rtl" ? { left: 0, width: `calc(100% - ${currentDrawerWidth}px)` } : { right: 0, width: `calc(100% - ${currentDrawerWidth}px)` }}
     >
       <div className="flex w-full items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3 flex-shrink-0">

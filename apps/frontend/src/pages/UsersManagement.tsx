@@ -1192,7 +1192,7 @@ const UsersManagement: React.FC = () => {
 
   if (!user?.companyId) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
+      <div className="p-4 md:p-6 lg:p-8 w-full">
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>هذه الصفحة غير متاحة</AlertTitle>
@@ -1207,7 +1207,7 @@ const UsersManagement: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 w-full">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("users.title")}</h1>

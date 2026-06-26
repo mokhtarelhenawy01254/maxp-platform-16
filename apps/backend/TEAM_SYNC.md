@@ -2,6 +2,13 @@
 
 ## [2026-06-26]
 
+### Super Admin Shell Layout & RTL Alignment Fixes
+- **Accomplishment**: Solved layout constraints and RTL spacing issues for all Super Admin panels and dashboard views.
+- **Details**:
+  - Removed standard `maxWidth` limit and centering margins from `SuperAdminLayout` so that layout elements extend fully and start directly next to the sidebar.
+  - Dynamically altered `SuperAdminHeader` placement using `i18n.dir()` so the fixed header stays aligned in both LTR and RTL orientations without overlapping.
+  - Cleaned up container styling classes in `SuperAdminDashboard.tsx`, `BookingManagementPage.tsx`, `UsersManagement.tsx`, and `AgentConfigPage.tsx` to remove manual max-width settings.
+
 ### Ready Agent Profiles Catalog Management (Super Admin & Merchant UI)
 - **Accomplishment**: Added dynamic "Ready Agent Profiles" loading and a comprehensive Super Admin management panel.
 - **Details**:

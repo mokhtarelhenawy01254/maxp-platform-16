@@ -2107,7 +2107,7 @@ const WhatsAppChatContent: React.FC = () => {
                     className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
                   >
                     <span>الرسائل المميزة بنجمة</span>
-                    <Star className="size-4 text-amber-500" />
+                    <Star className="size-4 text-amber-500 dark:text-amber-400" />
                   </button>
                   <div className="h-px bg-[color:var(--shell-control-border)]" />
                   <button
@@ -2134,7 +2134,7 @@ const WhatsAppChatContent: React.FC = () => {
 
                   <UiButton
                     variant="outline"
-                    className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-rose-50/75 text-rose-600 hover:bg-rose-100/80 hover:text-rose-700"
+                    className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-rose-50/75 text-rose-600 hover:bg-rose-100/80 hover:text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/[0.08] dark:text-rose-300 dark:hover:bg-rose-500/[0.12] dark:hover:text-rose-200"
                     onClick={() => {
                       handleDeleteChat(selectedContact);
                       setShowContactInfo(false);
@@ -2156,7 +2156,7 @@ const WhatsAppChatContent: React.FC = () => {
                   ) : (
                     <UiButton
                       variant="outline"
-                      className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-rose-50/75 text-rose-600 hover:bg-rose-100/80 hover:text-rose-700"
+                      className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-rose-50/75 text-rose-600 hover:bg-rose-100/80 hover:text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/[0.08] dark:text-rose-300 dark:hover:bg-rose-500/[0.12] dark:hover:text-rose-200"
                       onClick={() => handleBlockContact(selectedContact)}
                     >
                       <span>حظر {selectedContactName}</span>
@@ -2166,7 +2166,7 @@ const WhatsAppChatContent: React.FC = () => {
 
                   <UiButton
                     variant="outline"
-                    className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-[var(--whatsapp-surface-strong)] text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                    className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-[var(--whatsapp-surface-strong)] text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/[0.12] dark:hover:text-rose-200"
                     onClick={() => toast.info('قريباً')}
                   >
                     <span>الإبلاغ عن {selectedContactName}</span>

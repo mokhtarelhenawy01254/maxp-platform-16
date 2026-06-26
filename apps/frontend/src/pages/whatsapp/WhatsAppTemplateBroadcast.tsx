@@ -268,19 +268,19 @@ const WhatsAppTemplateBroadcast: React.FC<{
                 </p>
               ) : (
                 <>
-                  <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 p-4">
-                    <CheckCircle className="size-8 text-emerald-600" />
+                  <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 p-4 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08]">
+                    <CheckCircle className="size-8 text-emerald-600 dark:text-emerald-300" />
                     <div>
-                      <p className="text-lg font-bold text-emerald-800">{result.sent}</p>
-                      <p className="text-sm text-emerald-700">تم الإرسال</p>
+                      <p className="text-lg font-bold text-emerald-800 dark:text-emerald-200">{result.sent}</p>
+                      <p className="text-sm text-emerald-700 dark:text-emerald-300">تم الإرسال</p>
                     </div>
                   </div>
                   {result.failed > 0 && (
-                    <div className="flex items-center gap-3 rounded-2xl border border-red-200/80 bg-red-500/10 p-4">
-                      <XCircle className="size-8 text-red-600" />
+                    <div className="flex items-center gap-3 rounded-2xl border border-red-200/80 bg-red-500/10 p-4 dark:border-red-500/40 dark:bg-red-500/[0.08]">
+                      <XCircle className="size-8 text-red-600 dark:text-red-300" />
                       <div>
-                        <p className="text-lg font-bold text-red-800">{result.failed}</p>
-                        <p className="text-sm text-red-700">فشل</p>
+                        <p className="text-lg font-bold text-red-800 dark:text-red-200">{result.failed}</p>
+                        <p className="text-sm text-red-700 dark:text-red-300">فشل</p>
                       </div>
                     </div>
                   )}
@@ -292,7 +292,7 @@ const WhatsAppTemplateBroadcast: React.FC<{
                       </p>
                       <div className="max-h-40 space-y-1 overflow-y-auto">
                         {result.errors.map((e, i) => (
-                          <p key={i} className="rounded-lg bg-[color:var(--color-muted)] px-3 py-1.5 text-xs text-red-600">
+                          <p key={i} className="rounded-lg bg-[color:var(--color-muted)] px-3 py-1.5 text-xs text-red-600 dark:text-red-400">
                             {e.recipient?.to || e.recipient?.phone || "?"}: {e.error}
                           </p>
                         ))}

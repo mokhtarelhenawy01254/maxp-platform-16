@@ -1,3 +1,25 @@
+## [2026-06-26] Super Admin Layout Sidebar Gap and RTL Header Alignment Issues
+
+- **Bug/Issue**: 
+  1. On wide screens, page layouts in the Super Admin interface did not start immediately after the sidebar; instead, they had a large empty margin and were centered, causing visual misalignment.
+  2. In RTL mode, the header positioned itself with `right: 0`, overlapping the right sidebar and leaving a blank gap on the left.
+  3. Individual page-level containers (Dashboard, Booking, Users, Agent Config) had manual `max-w` settings and `mx-auto` centering classes that restricted their width.
+- **Root Cause**: 
+  1. `SuperAdminLayout` had a hardcoded `maxWidth: 1400px` and `margin: 0 auto` centering logic.
+  2. `SuperAdminHeader` had a static `right: 0` positioning stylesheet style.
+  3. Pages used container classes like `max-w-[1600px] mx-auto` or `max-w-[1100px] mx-auto`.
+- **Fix**:
+  1. Removed `maxWidth: 1400px` and centering margins from `SuperAdminLayout.tsx` to let content utilize 100% of horizontal space.
+  2. Updated `SuperAdminHeader.tsx` to dynamically switch position using `i18n.dir() === 'rtl' ? { left: 0 } : { right: 0 }`.
+  3. Cleaned up `SuperAdminDashboard.tsx`, `BookingManagementPage.tsx`, `UsersManagement.tsx`, and `AgentConfigPage.tsx` container classes to remove `max-w` restrictions.
+- **Files**:
+  - `apps/frontend/src/components/layout/SuperAdminLayout.tsx`
+  - `apps/frontend/src/components/layout/SuperAdminHeader.tsx`
+  - `apps/frontend/src/pages/SuperAdminDashboard.tsx`
+  - `apps/frontend/src/pages/UsersManagement.tsx`
+  - `apps/frontend/src/pages/admin/BookingManagementPage.tsx`
+  - `apps/frontend/src/pages/admin/AgentConfigPage.tsx`
+
 ## [2026-06-26] Strict Unique Constraint Blocking Agent Name Reuse for Archived Agents
 
 - **Bug/Issue**: Unable to create a new active agent with the same name as a soft-deleted/archived agent, because the database unique constraint `uq_company_agent_name` raised a unique key violation.

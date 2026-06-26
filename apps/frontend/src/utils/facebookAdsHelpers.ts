@@ -6,7 +6,11 @@
  * advertising surfaces.
  */
 
-import type { FacebookCampaign } from "../services/facebookAdsService";
+import type {
+  FacebookCampaign,
+  FacebookAdsPerformanceSummary,
+  FacebookAdsBudgetAlertRule,
+} from "../services/facebookAdsService";
 
 // ─── Status Sets ─────────────────────────────────────────
 
@@ -248,3 +252,76 @@ export const buildSparklinePath = (
 
   return `M${points.join("L")}`;
 };
+
+// ─── Health & Decision Helpers ───────────────────────────
+
+export const getHealthDecision = (
+  performance?: FacebookAdsPerformanceSummary["campaigns"][number]["performance"],
+) => {
+  if (!performance || performance.impressions === 0) {
+    return {
+      label: "لا توجد عينة",
+      className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+    };
+  }
+
+  if (performance.spend >= 150 && performance.purchases === 0) {
+    return {
+      label: "افحص النزيف",
+      className: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200",
+    };
+  }
+
+  if (performance.roas >= 2 && performance.purchases > 0) {
+    return {
+      label: "مرشح للتوسيع",
+      className:
+        "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200",
+    };
+  }
+
+  if (performance.ctr > 0 && performance.ctr < 1) {
+    return {
+      label: "الكريتيف ضعيف",
+      className:
+        "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200",
+    };
+  }
+
+  return {
+    label: "راقب",
+    className: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-200",
+  };
+};
+
+export const getDecisionClass = (tone?: string) => {
+  if (tone === "green") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100";
+  }
+  if (tone === "red") {
+    return "border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100";
+  }
+  if (tone === "amber") {
+    return "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100";
+  }
+  if (tone === "blue") {
+    return "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100";
+  }
+  return "border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100";
+};
+
+export const getRulePayload = (
+  rule: FacebookAdsBudgetAlertRule,
+  isEnabled = rule.isEnabled,
+) => ({
+  adAccountId: rule.adAccountId || null,
+  campaignId: rule.campaignId || null,
+  scope: rule.scope,
+  metric: rule.metric,
+  thresholdAmount: rule.thresholdAmount,
+  currency: rule.currency,
+  recipientPhones: rule.recipientPhones,
+  isEnabled,
+  cooldownMinutes: rule.cooldownMinutes,
+  settings: rule.settings,
+});

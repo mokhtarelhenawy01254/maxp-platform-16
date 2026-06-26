@@ -253,7 +253,7 @@ const WhatsAppInbox: React.FC = () => {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500 dark:border-slate-600 dark:border-t-cyan-400" />
       </div>
     );
   }

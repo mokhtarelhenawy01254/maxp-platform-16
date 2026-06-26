@@ -300,7 +300,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500 dark:border-slate-600 dark:border-t-cyan-400" />
       </div>
     );
   }
@@ -495,7 +495,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   type="button"
                   onClick={transferConversation}
                   disabled={!transferTarget}
-                  className="w-full rounded-lg bg-amber-400 px-3 py-2 text-sm font-medium text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-lg bg-amber-400 px-3 py-2 text-sm font-medium text-slate-950 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-500 dark:text-slate-950"
                 >
                   Transfer Chat
                 </button>
@@ -634,7 +634,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
               {conversation.notes.map((note) => (
                 <div key={note.id} className="rounded-lg border border-border/50 bg-card p-3">
                   <div className="text-sm leading-6 text-slate-700 dark:text-slate-200">{note.content}</div>
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
                     <span>{`${note.author.firstName} ${note.author.lastName}`.trim()}</span>
                     <span>{formatTime(note.createdAt)}</span>
                   </div>

@@ -348,7 +348,7 @@ const SuperAdminDashboard = () => {
       <div className="pointer-events-none absolute -right-20 -top-20 size-[500px] rounded-full bg-primary/5 blur-[120px]" />
       <div className="pointer-events-none absolute -bottom-20 -left-20 size-[500px] rounded-full bg-indigo-500/5 blur-[120px]" />
 
-      <div className="relative mx-auto max-w-[1600px] space-y-6">
+      <div className="relative w-full space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">

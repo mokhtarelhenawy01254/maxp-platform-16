@@ -169,7 +169,7 @@ const primaryActionClassName =
   "rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90";
 
 const outlineActionClassName =
-  "rounded-full border-[color:var(--shell-control-border)] bg-white/75 hover:bg-white";
+  "rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75 hover:bg-[color:var(--color-card)]";
 
 const isNotFoundError = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("response" in error)) {
@@ -206,7 +206,7 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-[color:var(--shell-control-border)] bg-white/45 px-6 py-10 text-center">
+    <div className="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/45 px-6 py-10 text-center">
       <div className="flex size-16 items-center justify-center rounded-3xl bg-primary/10 text-[color:var(--color-primary)]">
         <Icon className="size-8" />
       </div>
@@ -685,7 +685,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
         onValueChange={(value) => setActiveTab(value as TabId)}
         className="space-y-4"
       >
-        <TabsList className="h-auto rounded-full border border-[color:var(--shell-control-border)] bg-white/70 p-1">
+        <TabsList className="h-auto rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-1">
           <TabsTrigger className="rounded-full px-4 py-2" value="flows">
             <Layout className="size-4" />
             {t("whatsappJourney.tabs.flows")}
@@ -716,7 +716,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder={t("common.search")}
                       className={cn(
-                        "h-11 rounded-full border-[color:var(--shell-control-border)] bg-white/75",
+                        "h-11 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/75",
                         isRtl ? "pr-10" : "pl-10",
                       )}
                     />
@@ -741,7 +741,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                             }}
                             className={cn(
                               "rounded-3xl border px-4 py-4 shadow-sm transition-all",
-                              "cursor-pointer bg-white/70 hover:-translate-y-0.5 hover:bg-white",
+                              "cursor-pointer bg-[color:var(--color-card)]/70 hover:-translate-y-0.5 hover:bg-[color:var(--color-card)]",
                               selected
                                 ? "border-[color:var(--business-success)] bg-[color:color-mix(in_srgb,var(--business-success)_8%,white)] shadow-md"
                                 : "border-[color:var(--shell-control-border)]",
@@ -845,7 +845,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
               >
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10 text-[color:var(--business-warning)]">
+                    <div className="flex size-11 items-center justify-center rounded-2xl bg-[color:var(--color-card)]/10 text-[color:var(--business-warning)]">
                       <Zap className="size-5" />
                     </div>
                     <div>
@@ -861,9 +861,9 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     {[1, 2, 3].map((index) => (
                       <div
                         key={index}
-                        className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/6 px-4 py-3"
+                        className="flex items-start gap-3 rounded-xl border border-white/10 bg-[color:var(--color-card)]/6 px-4 py-3"
                       >
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-card)]/10 text-xs font-semibold text-white">
                           {index}
                         </div>
                         <p className="text-sm leading-6 text-white/82">
@@ -957,7 +957,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                         {index + 1}
                       </div>
 
-                      <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-white/72 p-5 shadow-md">
+                      <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/72 p-5 shadow-md">
                         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.85fr)]">
                           <div className="space-y-4">
                             <div className="flex flex-wrap items-center gap-2">
@@ -972,7 +972,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               </Badge>
                               <Badge
                                 variant="outline"
-                                className="rounded-full border-[color:var(--shell-control-border)] bg-white/70 px-3 py-1 text-[color:var(--color-muted-foreground)]"
+                                className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 px-3 py-1 text-[color:var(--color-muted-foreground)]"
                               >
                                 {t("whatsappJourney.steps.title")}
                               </Badge>
@@ -1056,7 +1056,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
             }
           >
             {journeys.length > 0 ? (
-              <div className="overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] bg-white/70">
+              <div className="overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70">
                 <Table>
                   <TableHeader className="bg-[color:var(--color-muted)]">
                     <TableRow className="hover:bg-transparent">
@@ -1095,7 +1095,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                                 <div className="flex flex-wrap items-center gap-2 text-sm text-[color:var(--color-muted-foreground)]">
                                   <Badge
                                     variant="outline"
-                                    className="rounded-full border-[color:var(--shell-control-border)] bg-white/70"
+                                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70"
                                   >
                                     <Package className="size-3.5" />
                                     #{journey.order.orderNumber}
@@ -1166,7 +1166,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 </Table>
               </div>
             ) : (
-              <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-white/70">
+              <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70">
                 <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
                 <AlertTitle>{t("whatsappJourney.tabs.monitoring")}</AlertTitle>
                 <AlertDescription>{t("common.no_data")}</AlertDescription>
@@ -1186,7 +1186,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
           {selectedJourney ? (
             <div className="space-y-5 px-6 pb-6">
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
                     {t("whatsappJourney.monitoring.customer")}
                   </p>
@@ -1198,7 +1198,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
                     {t("whatsappJourney.monitoring.status")}
                   </p>
@@ -1217,7 +1217,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     </Badge>
                     <Badge
                       variant="outline"
-                      className="rounded-full border-[color:var(--shell-control-border)] bg-white/70"
+                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70"
                     >
                       <Package className="size-3.5" />
                       #{selectedJourney.order.orderNumber}
@@ -1234,7 +1234,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   <RefreshCw className="size-4" />
                   Activity History
                 </div>
-                <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+                <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
                   {selectedJourney.logs?.trim() ? (
                     selectedJourney.logs
                       .split("\n")
@@ -1297,11 +1297,11 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   }))
                 }
                 placeholder="Post-delivery feedback sequence"
-                className="h-11 bg-white/75"
+                className="h-11 bg-[color:var(--color-card)]/75"
               />
             </div>
 
-            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 px-4 py-4">
+            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 px-4 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -1381,11 +1381,11 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       ),
                     }))
                   }
-                  className="h-11 bg-white/75"
+                  className="h-11 bg-[color:var(--color-card)]/75"
                 />
               </div>
 
-              <div className="space-y-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+              <div className="space-y-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/70 p-4">
                 <div>
                   <p className="text-sm font-medium text-[color:var(--color-foreground)]">
                     {t("whatsappJourney.steps.variables")}
@@ -1400,7 +1400,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       key={token}
                       variant="outline"
                       size="sm"
-                      className="rounded-full border-[color:var(--shell-control-border)] bg-white/80"
+                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/80"
                       onClick={() =>
                         setCurrentStep((previous) => ({
                           ...previous,
@@ -1430,7 +1430,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     }))
                   }
                   placeholder="Hi {firstName}, how was your order #{orderNumber}?"
-                  className="min-h-[14rem] bg-white/75"
+                  className="min-h-[14rem] bg-[color:var(--color-card)]/75"
                 />
               </div>
 
