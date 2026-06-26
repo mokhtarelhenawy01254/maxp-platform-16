@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date as date_type
 from typing import Any
 
 import structlog
@@ -32,12 +33,22 @@ async def list_services(company_id: str, branch_id: str | None = None) -> list[d
 
 
 async def available_slots(
-    company_id: str, branch_id: str, date: str,
+    company_id: str, branch_id: str | None = None, date: str | None = None,
     doctor_id: str | None = None, service_id: str | None = None,
 ) -> list[str]:
     if not company_id:
         return []
     client = get_backend_client()
+    if not branch_id:
+        branches = await client.get_booking_branches(company_id)
+        if branches:
+            branch_id = branches[0].get("id") or ""
+            logger.info("auto-selected first branch", branch_id=branch_id)
+    if not date:
+        date = date_type.today().isoformat()
+        logger.info("auto-selected today date", date=date)
+    if not branch_id:
+        return []
     return await client.get_booking_available_slots(company_id, branch_id, date, doctor_id, service_id)
 
 

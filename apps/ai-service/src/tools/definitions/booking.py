@@ -24,8 +24,8 @@ class ServicesListInput(BaseModel):
 
 class AvailableSlotsInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
-    branch_id: str = Field(description="Branch ID to check availability for")
-    date: str = Field(description="Date in YYYY-MM-DD format")
+    branch_id: str | None = Field(default=None, description="Branch ID (optional - uses first branch if empty)")
+    date: str | None = Field(default=None, description="Date YYYY-MM-DD (optional - uses today if empty)")
     doctor_id: str | None = Field(default=None, description="Doctor ID (optional)")
     service_id: str | None = Field(default=None, description="Service ID (optional)")
 
