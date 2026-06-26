@@ -87,9 +87,16 @@ async function tryApiFetch<T>(path: string, init?: RequestInit): Promise<T | nul
       headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json", ...(init?.headers || {}) },
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) return null;
+    if (!res.ok || data.success === false) {
+      const msg = data?.error || data?.detail || data?.message || `HTTP ${res.status}`;
+      console.warn("[tryApiFetch] %s %s: %s", init?.method || "GET", path, msg);
+      return null;
+    }
     return data as T;
-  } catch { return null; }
+  } catch (err) {
+    console.warn("[tryApiFetch] %s %s exception: %o", init?.method || "GET", path, err);
+    return null;
+  }
 }
 
 

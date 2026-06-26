@@ -507,11 +507,26 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
             template_slug = template.slug
 
     if not template:
-        raise HTTPException(
-            status_code=400,
-            detail=f"No template found for role '{role}' or slug '{template_slug}'. "
-                   "Every agent must have a template (single source of truth).",
-        )
+        blank = await get_template("blank", session)
+        if blank:
+            template = blank
+            template_slug = "blank"
+        else:
+            template = AgentTemplate(
+                slug="blank",
+                role="CUSTOM",
+                name="Blank Agent",
+                version="1.0.0",
+                model_policy={},
+                allowed_tools=[],
+                allowed_skills=[],
+                channels=[],
+                guardrails={},
+                budget={},
+            )
+            session.add(template)
+            await session.flush()
+            template_slug = "blank"
 
     name = body.name or (template.name if template else f"{role} Agent")
     if template:
