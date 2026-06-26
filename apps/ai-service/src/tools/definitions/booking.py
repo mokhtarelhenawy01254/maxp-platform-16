@@ -32,14 +32,16 @@ class AvailableSlotsInput(BaseModel):
 
 class AppointmentCreateInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    patient_info: str | None = Field(default=None, description="Patient information as text: name, phone, gender. Example: 'محمد عبدالله, 01234567890, ذكر' or 'name=أحمد phone=01111111111 gender=MALE'")
     branch_id: str | None = Field(default=None, description="Branch ID (optional - uses first branch if empty)")
     doctor_id: str | None = Field(default=None, description="Doctor ID (optional - uses first doctor if empty)")
     service_id: str | None = Field(default=None, description="Service ID (optional - uses first service if empty)")
-    customer_name: str | None = Field(default=None, description="Patient full name")
-    customer_phone: str | None = Field(default=None, description="Patient phone number")
-    customer_gender: str | None = Field(default=None, description="Patient gender: MALE or FEMALE")
     appointment_date: str | None = Field(default=None, description="Date in YYYY-MM-DD format")
     start_time: str | None = Field(default=None, description="Start time in HH:mm format (24h)")
+    customer_name: str | None = Field(default=None, description="Patient full name (alternative to patient_info)")
+    customer_phone: str | None = Field(default=None, description="Patient phone number (alternative to patient_info)")
+    customer_gender: str | None = Field(default=None, description="Patient gender: MALE or FEMALE (alternative to patient_info)")
+    notes: str | None = Field(default=None, description="Additional notes about the appointment")
 
 
 class AppointmentConfirmInput(BaseModel):
@@ -82,6 +84,7 @@ async def booking_available_slots(input_data: AvailableSlotsInput) -> list[str]:
 
 async def booking_appointment_create(input_data: AppointmentCreateInput) -> dict[str, Any]:
     return await booking_tools.create_appointment(input_data.company_id or "", {
+        "patientInfo": input_data.patient_info,
         "branchId": input_data.branch_id,
         "doctorId": input_data.doctor_id,
         "serviceId": input_data.service_id,
@@ -90,6 +93,7 @@ async def booking_appointment_create(input_data: AppointmentCreateInput) -> dict
         "customerGender": input_data.customer_gender,
         "appointmentDate": input_data.appointment_date,
         "startTime": input_data.start_time,
+        "notes": input_data.notes,
     })
 
 
@@ -135,7 +139,7 @@ booking_available_slots_tool = FunctionTool(
 
 booking_appointment_create_tool = FunctionTool(
     name="booking_appointment_create",
-    description="[REQUIRED: ALL 8 PARAMS] Creates a new appointment in the system. MUST provide: branch_id, doctor_id, service_id, customer_name, customer_phone, customer_gender (MALE or FEMALE), appointment_date (YYYY-MM-DD), start_time (HH:mm 24h). Requires human approval.",
+    description="إنشاء موعد جديد في النظام الطبي (Create appointment). Pass ALL patient info in patient_info text field: name, phone, gender. Example patient_info: 'محمد عبدالله, 01234567890, ذكر'. All other fields are optional (auto-filled).",
     func=booking_appointment_create,
     input_model=AppointmentCreateInput,
 )

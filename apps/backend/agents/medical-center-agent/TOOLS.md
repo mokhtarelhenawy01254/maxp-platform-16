@@ -5,7 +5,7 @@
 - `booking_doctors_list` — List doctors. Params: `branch_id` (optional filter).
 - `booking_services_list` — List services + pricing. Params: `branch_id` (optional filter).
 - `booking_available_slots` — Check free slots. REQUIRED params: `branch_id`, `date` (YYYY-MM-DD). Optional: `doctor_id`, `service_id`.
-- `booking_appointment_create` — Create appointment (requires approval). REQUIRED params: `branch_id`, `doctor_id`, `service_id`, `customer_name`, `customer_phone`, `customer_gender` (MALE/FEMALE), `appointment_date` (YYYY-MM-DD), `start_time` (HH:mm, 24h).
+- `booking_appointment_create` — Create appointment. Put ALL patient info in `patient_info` like: `"محمد عبدالله, 01234567890, ذكر"`. Other fields (branch_id, doctor_id, service_id, appointment_date, start_time) are optional and will be auto-filled.
 - `booking_appointment_confirm` — Confirm pending appointment. Params: `appointment_id`.
 - `booking_appointment_cancel` — Cancel appointment (requires approval). Params: `appointment_id`, `reason` (optional).
 - `booking_appointment_details` — View appointment. Params: `appointment_id`.

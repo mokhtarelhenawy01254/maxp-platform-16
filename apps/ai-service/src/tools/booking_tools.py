@@ -54,6 +54,23 @@ async def available_slots(
 
 async def create_appointment(company_id: str, data: dict[str, Any]) -> dict[str, Any]:
     client = get_backend_client()
+    patient_info = data.pop("patientInfo", "") or ""
+    if patient_info:
+        if not data.get("customerName"):
+            # Try to extract name before first comma or phone-like token
+            import re
+            parts = [p.strip() for p in re.split(r'[,،\n]', patient_info) if p.strip()]
+            phones = [p for p in parts if re.search(r'01[0-9]{9}$', p) or re.search(r'^01[0-9]{9}$', p)]
+            genders = [p for p in parts if p in ("ذكر", "MALE", "male", "M", "أنثى", "FEMALE", "female", "F")]
+            names = [p for p in parts if p not in phones and p not in genders and not re.search(r'^0', p)]
+            if names:
+                data["customerName"] = names[0]
+            if phones:
+                data["customerPhone"] = phones[0]
+            if genders:
+                raw = genders[0]
+                data["customerGender"] = "MALE" if raw in ("ذكر", "MALE", "male", "M") else "FEMALE"
+            logger.info("parsed patient_info", name=data.get("customerName"), phone=data.get("customerPhone"), gender=data.get("customerGender"))
     if not data.get("branchId"):
         branches = await client.get_booking_branches(company_id)
         if branches:
