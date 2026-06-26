@@ -237,6 +237,9 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
             "governorate",
             _first_slot(slots, "governorate", "city", "area", "location") or ctx.message,
         )
+    elif tool_name == "knowledge_search":
+        if not str(params.get("query") or "").strip():
+            params["query"] = _first_slot(slots, "query", "productName", "product") or ctx.message
     elif tool_name == "order_lookup":
         order_number = _first_slot(slots, "orderNumber", "order_number")
         if order_number:
