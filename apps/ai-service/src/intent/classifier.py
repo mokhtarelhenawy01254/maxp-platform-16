@@ -244,6 +244,10 @@ async def classify_intent(
         "like 'عندي كام طلب', 'كام طلب النهاردة', 'مبيعات النهاردة', 'إجمالي الطلبات', 'performance'. "
         "sales maps to company_snapshot (dashboard overview). "
         "Only use 'products.manage' when the customer explicitly wants to add or edit a product.\n"
+        "Use 'general.knowledge' for questions about company policies, return policy, shipping policy, "
+        "FAQs, working hours, store hours, or any merchant-specific knowledge the agent should look up. "
+        "Examples: 'ما هي سياسة الإرجاع', 'مواعيد العمل', 'هل يوجد شحن لكل المحافظات', 'عايز اعرف سياسة الاستبدال'. "
+        "Do NOT use general.chat for these — general.knowledge will search the knowledge base for the answer.\n"
     )
 
     # Fallback chain: build list of (provider, model) combos to try

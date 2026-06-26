@@ -20,6 +20,7 @@ SCHEMA_VERSION = "1.0.0"
 class Intent(str, Enum):
     """Intent enum - all possible intents the classifier can return."""
     GENERAL_CHAT = "general.chat"
+    GENERAL_KNOWLEDGE = "general.knowledge"
     IMPLEMENTATION_ADVICE = "implementation.advice"
     GOALS_CREATE_PRODUCT = "goals.create_product"
     GOALS_CREATE_AGENT_WITH_SKILL = "goals.create_agent_with_skill"
@@ -122,6 +123,13 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "respond",
         "requiredSlots": [],
         "guardrails": ["no_live_data_claims"],
+    },
+    "general.knowledge": {
+        "actionType": "read",
+        "riskLevel": "low",
+        "nextState": "respond",
+        "requiredSlots": [],
+        "guardrails": DEFAULT_GUARDRAILS,
     },
     "implementation.advice": {
         "actionType": "analysis",
@@ -438,6 +446,10 @@ INTENT_CONFIGURED_TOOLS: dict[str, dict[str, Any]] = {
     "company.snapshot": {
         "primaryTool": "company_snapshot",
         "allowedTools": ["company_snapshot", "sales_revenue"],
+    },
+    "general.knowledge": {
+        "primaryTool": "knowledge_search",
+        "allowedTools": ["knowledge_search", "knowledge_ask_merchant"],
     },
 }
 
