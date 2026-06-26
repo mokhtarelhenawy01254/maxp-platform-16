@@ -87,7 +87,7 @@ export const SessionList: React.FC<SessionListProps> = ({
 
   return (
     <div
-      className="h-full flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden"
+      className="self-stretch flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden"
       style={{ width: collapsed ? 0 : width, minWidth: collapsed ? 0 : width }}
     >
       {/* Header & Add Button */}

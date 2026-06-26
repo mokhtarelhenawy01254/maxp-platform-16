@@ -191,7 +191,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         }
       `}</style>
     <div
-      className={`h-full flex flex-col border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
+      className={`self-stretch flex flex-col border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
         collapsed ? "w-0 min-w-0" : ""
       }`}
       style={collapsed ? undefined : { width, minWidth: width }}
