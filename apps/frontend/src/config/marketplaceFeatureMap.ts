@@ -95,7 +95,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "order-core",
     appLabel: "إدارة الطلبات - المستوى الأساسي",
     currentGate: "order-core",
-    legacyGate: "ecommerce-basic",
+    legacyGate: "store",
     routes: [
       { path: "/orders", label: "الطلبات" },
       { path: "/orders/preparation", label: "تجهيز الطلبات" },
@@ -150,7 +150,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "conversion-suite",
     appLabel: "Conversion Suite",
     currentGate: "conversion-suite",
-    legacyGate: "ecommerce-basic",
+    legacyGate: "store",
     routes: [
       { path: "/settings/store/product-conversion", label: "أدوات التحويل" },
       { path: "/settings/store/offers-bundles", label: "العروض والباقات" },
@@ -169,7 +169,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "inventory-pro",
     appLabel: "إدارة المخزون المتقدمة",
     currentGate: "inventory-pro",
-    legacyGate: "ecommerce-basic",
+    legacyGate: "store",
     routes: [
       { path: "/inventory", label: "المخزون" },
       { path: "/inventory/warehouses", label: "المستودعات" },

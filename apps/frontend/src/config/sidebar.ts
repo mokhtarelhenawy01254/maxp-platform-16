@@ -417,7 +417,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/company-dashboard', icon: ChartBarIcon, label: t('sidebar.dashboard') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
         },
         
         // 1.5 الإنبوكس الموحد
@@ -560,7 +560,7 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
         },
 
         // 3️⃣.5 إحصائيات الطلبات
@@ -607,7 +607,7 @@ export const getSidebarConfig = (
                 { to: '/settings/upsell', icon: ArrowTrendingUpIcon, label: 'إدارة الـ Upsell' },
                 { to: '/analytics/store', icon: ArrowTrendingUpIcon, label: t('sidebar.storeAnalytics') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
         },
 
         // 4️⃣.1 تصميم وتنسيق المتجر (Storefront Design)
@@ -657,7 +657,7 @@ export const getSidebarConfig = (
                 },
             ],
             // 🔒 متاح للمالك والأدمن فقط لتغيير تصميم المتجر
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['ecommerce-basic', 'conversion-suite'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'conversion-suite'])
         },
 
         // 4️⃣.2 العملاء
@@ -748,7 +748,7 @@ export const getSidebarConfig = (
                 { to: '/inventory/reports', icon: ChartBarIcon, label: t('sidebar.inventoryReports') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
         },
 
         // 5️⃣ التسويق والإعلانات
@@ -819,9 +819,9 @@ export const getSidebarConfig = (
             title: t('sidebar.companyManagementSection'),
             icon: BuildingOfficeIcon,
             items: [
-                { to: '/my-companies/hr', icon: ChartBarIcon, label: t('sidebar.companiesDashboard'), hidden: !isAppActive('ecommerce-basic') },
+                { to: '/my-companies/hr', icon: ChartBarIcon, label: t('sidebar.companiesDashboard'), hidden: !isAppActive('store') },
                 { to: '/my-companies/links', icon: BuildingOfficeIcon, label: t('sidebar.companyLinks') },
-                { to: '/my-companies/reports', icon: PresentationChartLineIcon, label: t('sidebar.unifiedReports'), hidden: !isAppActive('ecommerce-basic') },
+                { to: '/my-companies/reports', icon: PresentationChartLineIcon, label: t('sidebar.unifiedReports'), hidden: !isAppActive('store') },
                 { to: '/my-companies/attendance', icon: CheckCircleIcon, label: t('sidebar.attendanceReport'), hidden: !isAppActive('hr-basic') },
                 { to: '/users', icon: UserGroupIcon, label: t('sidebar.usersManagement') },
                 { to: '/settings/company', icon: Cog6ToothIcon, label: t('sidebar.companySettings') },

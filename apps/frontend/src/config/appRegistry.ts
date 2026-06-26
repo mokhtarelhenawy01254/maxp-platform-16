@@ -120,7 +120,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-orange-500 to-orange-600',
     sectionIds: ['orders', 'orders-analytics'],
     category: 'sales',
-    requiredApps: ['ecommerce-basic'],
+    requiredApps: ['store'],
   },
   {
     id: 'products',
@@ -141,7 +141,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-purple-500 to-purple-600',
     sectionIds: ['storefront-design'],
     category: 'sales',
-    requiredApps: ['ecommerce-basic', 'conversion-suite'],
+    requiredApps: ['store', 'conversion-suite'],
   },
   {
     id: 'customers',
@@ -183,7 +183,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-slate-500 to-slate-600',
     sectionIds: ['inventory'],
     category: 'operations',
-    requiredApps: ['ecommerce-basic'],
+    requiredApps: ['store'],
   },
   {
     id: 'marketing',

@@ -40,8 +40,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-03-06T00:00:00.000Z"
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-03-06T00:00:00Z"
   },
   {
     "id": "cat-app-analytics-basic",
@@ -84,8 +84,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-03-06T00:00:00.000Z"
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-03-06T00:00:00Z"
   },
   {
     "id": "cat-app-ai-chat-basic",
@@ -101,7 +101,7 @@
     "unitName": "message",
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق المبيعات والدعم التي تستقبل محادثات كثيرة.",
@@ -130,27 +130,27 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-03-06T00:00:00.000Z"
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-03-06T00:00:00Z"
   },
   {
-    "id": "cat-app-ecommerce-basic",
-    "slug": "ecommerce-basic",
-    "name": "Ecommerce Basic",
-    "nameEn": "Ecommerce Basic",
-    "description": "Core ecommerce workflows for catalog, checkout, and orders.",
+    "id": "cat-app-store",
+    "slug": "store",
+    "name": "المتجر",
+    "nameEn": "Store",
+    "description": "إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 199,
-    "yearlyPrice": 1999,
+    "monthlyPrice": 299,
+    "yearlyPrice": 2990,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
-      "audience": "المتاجر التي تحتاج تشغيل الطلبات والمنتجات من مكان واحد.",
-      "surface": "داخل إدارة الطلبات والمنتجات والمخزون.",
-      "outcome": "تشغيل يومي أكثر انتظامًا للطلبات والكتالوج."
+      "audience": "أي متجر عايز يدير منتجاته وطلباته وواجهة بيعه من مكان واحد.",
+      "surface": "داخل إدارة الطلبات والمنتجات والمتجر الإلكتروني.",
+      "outcome": "تشغيل كامل للمتجر — منتجات وطلبات وواجهة بيع — بدون تعقيد."
     },
     "features": {
       "orders": {
@@ -164,49 +164,11 @@
         "name": "إدارة المنتجات",
         "description": "تنظيم المنتجات والتصنيفات والمخزون داخل لوحة التشغيل.",
         "access": "PAID"
-      }
-    },
-    "isActive": true,
-    "isPublic": true,
-    "isFeatured": false,
-    "isPopular": true,
-    "icon": "shopping-cart",
-    "logo": null,
-    "coverImage": null,
-    "engineCompatibility": null,
-    "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-03-06T00:00:00.000Z"
-  },
-  {
-    "id": "cat-app-store-basic",
-    "slug": "store-basic",
-    "name": "Store Basic",
-    "nameEn": "Store Basic",
-    "description": "Storefront essentials with theme, pages, and conversion controls.",
-    "category": "ECOMMERCE",
-    "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 249,
-    "yearlyPrice": 2499,
-    "unitPrice": null,
-    "unitName": null,
-    "trialDays": 0,
-    "requiredApps": [],
-    "positioning": {
-      "audience": "أي متجر يريد واجهة بيع جاهزة أمام العميل.",
-      "surface": "في واجهة المتجر العامة وصفحات العرض والشراء.",
-      "outcome": "إطلاق المتجر بسرعة مع أساس قوي للتخصيص."
-    },
-    "features": {
+      },
       "storefront": {
         "enabled": true,
-        "name": "واجهة المتجر",
-        "description": "تشغيل المتجر العام وصفحات العرض والشراء أمام العميل.",
-        "access": "PAID"
-      },
-      "themes": {
-        "enabled": true,
-        "name": "الثيمات والقوالب",
-        "description": "اختيار مظهر المتجر وتخصيص التجربة البصرية بشكل أسرع.",
+        "name": "المتجر الإلكتروني",
+        "description": "تشغيل صفحات العرض والشراء أمام العميل.",
         "access": "PAID"
       }
     },
@@ -219,7 +181,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-03-06T00:00:00.000Z"
+    "updatedAt": "2026-06-26T00:00:00.000Z"
   },
   {
     "id": "cat-app-crm-lite",
@@ -262,8 +224,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-03-06T00:00:00.000Z"
+    "createdAt": "2026-03-06T00:00:00Z",
+    "updatedAt": "2026-03-06T00:00:00Z"
   },
   {
     "id": "cat-app-conversion-suite",
@@ -279,7 +241,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي عندها زيارات وتريد رفع التحويل.",
@@ -314,8 +276,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-04-01T00:00:00.000Z",
-    "updatedAt": "2026-04-01T00:00:00.000Z"
+    "createdAt": "2026-04-01T00:00:00Z",
+    "updatedAt": "2026-04-01T00:00:00Z"
   },
   {
     "id": "cat-app-quantity-offers-pro",
@@ -331,7 +293,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تبيع باقات أو ترغب في تكبير السلة.",
@@ -366,8 +328,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-04-05T00:00:00.000Z",
-    "updatedAt": "2026-04-05T00:00:00.000Z"
+    "createdAt": "2026-04-05T00:00:00Z",
+    "updatedAt": "2026-04-05T00:00:00Z"
   },
   {
     "id": "cat-app-ugc-reviews-pro",
@@ -383,7 +345,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج ثقة اجتماعية أقوى قبل الشراء.",
@@ -418,8 +380,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-04-01T00:00:00.000Z",
-    "updatedAt": "2026-04-01T00:00:00.000Z"
+    "createdAt": "2026-04-01T00:00:00Z",
+    "updatedAt": "2026-04-01T00:00:00Z"
   },
   {
     "id": "cat-app-commerce-advanced",
@@ -435,7 +397,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج سيناريوهات بيع أكثر مرونة.",
@@ -470,8 +432,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-04-01T00:00:00.000Z",
-    "updatedAt": "2026-04-01T00:00:00.000Z"
+    "createdAt": "2026-04-01T00:00:00Z",
+    "updatedAt": "2026-04-01T00:00:00Z"
   },
   {
     "id": "cat-app-procurement-pro",
@@ -487,7 +449,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "ecommerce-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق التشغيل التي تدير موردين ومشتريات بشكل يومي.",
@@ -528,8 +490,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-05-01T00:00:00.000Z",
-    "updatedAt": "2026-05-01T00:00:00.000Z"
+    "createdAt": "2026-05-01T00:00:00Z",
+    "updatedAt": "2026-05-01T00:00:00Z"
   },
   {
     "id": "cat-app-affiliate-pro",
@@ -545,7 +507,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "ecommerce-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تريد تشغيل أفليت أو دروب شيبنج من داخل المنصة.",
@@ -586,8 +548,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-05-01T00:00:00.000Z",
-    "updatedAt": "2026-05-01T00:00:00.000Z"
+    "createdAt": "2026-05-01T00:00:00Z",
+    "updatedAt": "2026-05-01T00:00:00Z"
   },
   {
     "id": "cat-app-order-source-tracking",
@@ -603,7 +565,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "ecommerce-basic"
+      "store"
     ],
     "positioning": {
       "audience": "الشركات التي تحتاج معرفة مصدر كل طلب داخل التشغيل اليومي.",
@@ -632,8 +594,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-05-04T00:00:00.000Z",
-    "updatedAt": "2026-05-04T00:00:00.000Z"
+    "createdAt": "2026-05-04T00:00:00Z",
+    "updatedAt": "2026-05-04T00:00:00Z"
   },
   {
     "id": "cat-app-campaign-attribution",
@@ -649,7 +611,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "ecommerce-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق التسويق التي تحتاج ربط الطلبات بالحملات الإعلانية.",
@@ -678,8 +640,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-05-04T00:00:00.000Z",
-    "updatedAt": "2026-05-04T00:00:00.000Z"
+    "createdAt": "2026-05-04T00:00:00Z",
+    "updatedAt": "2026-05-04T00:00:00Z"
   },
   {
     "id": "cat-app-order-confirmation-distribution",
@@ -687,7 +649,7 @@
     "name": "Order Confirmation & Distribution",
     "nameEn": "Order Confirmation & Distribution",
     "description": "Confirmation and internal assignment details for order operations teams.",
-    "category": "PRODUCTIVITY",
+    "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
@@ -695,7 +657,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "ecommerce-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق التأكيد والتوزيع التي تدير الطلبات داخلياً.",
@@ -724,8 +686,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-05-04T00:00:00.000Z",
-    "updatedAt": "2026-05-04T00:00:00.000Z"
+    "createdAt": "2026-05-04T00:00:00Z",
+    "updatedAt": "2026-05-04T00:00:00Z"
   },
   {
     "id": "cat-app-unified-inbox",
@@ -780,8 +742,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-06-19T00:00:00.000Z",
-    "updatedAt": "2026-06-19T00:00:00.000Z"
+    "createdAt": "2026-06-19T00:00:00Z",
+    "updatedAt": "2026-06-19T00:00:00Z"
   },
   {
     "id": "cat-app-notification-automation",
@@ -836,8 +798,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-05-01T00:00:00.000Z",
-    "updatedAt": "2026-05-01T00:00:00.000Z"
+    "createdAt": "2026-05-01T00:00:00Z",
+    "updatedAt": "2026-05-01T00:00:00Z"
   },
   {
     "id": "cat-app-booking-app",
@@ -880,8 +842,8 @@
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
-    "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-06-26T00:00:00.000Z"
+    "createdAt": "2026-06-26T00:00:00Z",
+    "updatedAt": "2026-06-26T00:00:00Z"
   },
   {
     "id": "cat-app-medical-system",
@@ -951,6 +913,168 @@
     "isFeatured": true,
     "isPopular": true,
     "icon": "heart",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-26T00:00:00Z",
+    "updatedAt": "2026-06-26T00:00:00Z"
+  },
+  {
+    "id": "cat-app-inventory-pro",
+    "slug": "inventory-pro",
+    "name": "المخزون والمستودعات",
+    "nameEn": "Inventory Pro",
+    "description": "نظام إدارة مخزون متقدم مع باركود، تتبع Serial Numbers، وتنبيهات ذكية.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر اللي عندها مخزون كبير وتحتاج تتبعه بدقة.",
+      "surface": "داخل لوحة المخزون والمستودعات والجرد.",
+      "outcome": "تحكم دقيق في المخزون مع تنبيهات ذكية وتقارير."
+    },
+    "features": {
+      "barcode": {
+        "enabled": true,
+        "name": "باركود",
+        "description": "مسح وطباعة باركود للمنتجات لتسريع الجرد.",
+        "access": "PAID"
+      },
+      "warehouses": {
+        "enabled": true,
+        "name": "المستودعات",
+        "description": "إدارة مستودعات متعددة وتتبع المخزون في كل منها.",
+        "access": "PAID"
+      },
+      "audits": {
+        "enabled": true,
+        "name": "الجرد",
+        "description": "جرد دوري آلي للمخزون مع تقارير الفروق.",
+        "access": "PAID"
+      },
+      "alerts": {
+        "enabled": true,
+        "name": "تنبيهات المخزون",
+        "description": "إشعارات عند نفاد المخزون أو اقتراب الحد الأدنى.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "package",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-26T00:00:00.000Z",
+    "updatedAt": "2026-06-26T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-shipping-turbo",
+    "slug": "order-shipping-turbo",
+    "name": "الشحن الذكي",
+    "nameEn": "Smart Shipping",
+    "description": "تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر اللي بتشحن طلبات بشكل يومي.",
+      "surface": "داخل إعدادات الشحن وإنشاء البوالص والتتبع.",
+      "outcome": "شحن أسرع وتتبع دقيق للشحنات بدون مجهود يدوي."
+    },
+    "features": {
+      "labels": {
+        "enabled": true,
+        "name": "بوالص الشحن",
+        "description": "إنشاء وطباعة بوالص شحن Turbo مباشرة.",
+        "access": "PAID"
+      },
+      "tracking": {
+        "enabled": true,
+        "name": "تتبع الشحنات",
+        "description": "تتبع الشحنات في الوقت الفعلي للعميل والفريق.",
+        "access": "PAID"
+      },
+      "costEstimate": {
+        "enabled": true,
+        "name": "تقدير التكلفة",
+        "description": "حساب تكلفة الشحن التقديرية قبل التأكيد.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "truck",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-26T00:00:00.000Z",
+    "updatedAt": "2026-06-26T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-order-invoicing",
+    "slug": "order-invoicing",
+    "name": "الفواتير",
+    "nameEn": "Invoicing",
+    "description": "تصميم وإصدار فواتير احترافية للطلبات، تقارير الضرائب، وإحصائيات المبيعات المالية.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 129,
+    "yearlyPrice": 1290,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "المتاجر اللي تحتاج فواتير ضريبية محترفة.",
+      "surface": "داخل الفواتير وإعداداتها والتقارير المالية.",
+      "outcome": "فواتير احترافية وتقارير ضريبية بدون تعقيد."
+    },
+    "features": {
+      "pdfInvoices": {
+        "enabled": true,
+        "name": "فواتير PDF",
+        "description": "إصدار فواتير PDF احترافية تلقائيا لكل طلب.",
+        "access": "PAID"
+      },
+      "taxReports": {
+        "enabled": true,
+        "name": "تقارير ضريبية",
+        "description": "تقارير ضريبة القيمة المضافة الجاهزة للتقديم.",
+        "access": "PAID"
+      },
+      "customization": {
+        "enabled": true,
+        "name": "تخصيص الفاتورة",
+        "description": "تخصيص تصميم الفاتورة بشعار الشركة وألوانها.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "file-text",
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
