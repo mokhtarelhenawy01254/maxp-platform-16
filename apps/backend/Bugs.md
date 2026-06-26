@@ -1,3 +1,15 @@
+## [2026-06-26] Prisma P2022 Database Schema Out-of-Sync — Auth Failures & Missing Columns
+
+- **Bug/Issue**: Backend returned `P2022` errors (e.g., "Column does not exist in the current database: `emailVerificationToken`, `roleId`, `isPinned`") causing 401 auth failures on the `/api/users/me` endpoint.
+- **Root Cause**: The Prisma schema had evolved significantly (new fields added) but `prisma db push` had not been run against the local database. Additionally, a unique constraint `company_follow_ups_company_id_key` on the `company_follow_ups` table blocked `prisma db push` because it conflicted with the updated schema.
+- **Fix**:
+  1. Wrote a custom Node.js script to drop the blocking `company_follow_ups_company_id_key` constraint directly via SQL.
+  2. Re-ran `npx prisma db push` successfully to sync all missing columns.
+  3. Verified user data and JWT tokens were intact after sync.
+- **Files**:
+  - `apps/backend/prisma/schema.prisma` (synced via db push)
+  - Scratch scripts: `drop_constraint.js`, `check_user_db.js`
+
 ## [2026-06-26] Super Admin Layout Sidebar Gap and RTL Header Alignment Issues
 
 - **Bug/Issue**: 

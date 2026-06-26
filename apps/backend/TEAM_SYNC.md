@@ -2,6 +2,16 @@
 
 ## [2026-06-26]
 
+### Facebook Ads Dashboard Component Refactoring
+- **Accomplishment**: Refactored the monolithic `FacebookAdsDashboard.tsx` (~1200 lines) into modular, maintainable components (~500 lines orchestrator + 3 focused components).
+- **Details**:
+  - Extracted `BudgetAlertsPanel.tsx` — WhatsApp budget alerts UI (form, rules list, logs).
+  - Extracted `CampaignsListSection.tsx` — campaigns listing, filtering, sorting, pagination.
+  - Extracted `DecisionSummarySection.tsx` — quick AI decisions and recommendations cards.
+  - Moved shared helper functions (`getHealthDecision`, `getDecisionClass`, `getRulePayload`) into `facebookAdsHelpers.ts`.
+  - Dashboard now acts as a thin orchestrator: manages top-level state (campaigns, performance, accounts) and delegates rendering to sub-components.
+  - Reduced re-renders: form input state in BudgetAlertsPanel no longer triggers full dashboard re-renders.
+
 ### Super Admin Shell Layout & RTL Alignment Fixes
 - **Accomplishment**: Solved layout constraints and RTL spacing issues for all Super Admin panels and dashboard views.
 - **Details**:

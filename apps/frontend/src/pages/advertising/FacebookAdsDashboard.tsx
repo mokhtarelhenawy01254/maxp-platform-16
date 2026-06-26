@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertTriangle,
+  ArrowUpRight,
   BarChart3,
+  BellRing,
   CalendarDays,
   CheckCircle2,
   Gauge,
@@ -16,9 +19,6 @@ import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
-import BudgetAlertsPanel from "../../components/advertising/dashboard/BudgetAlertsPanel";
-import CampaignsListSection from "../../components/advertising/dashboard/CampaignsListSection";
-import DecisionSummarySection from "../../components/advertising/dashboard/DecisionSummarySection";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
   type FacebookAdsDecisionSummary,
@@ -27,7 +27,6 @@ import {
   facebookAdsService,
 } from "../../services/facebookAdsService";
 import {
-  type DeliveryFilter,
   formatCurrency,
   formatNumber,
   getApiErrorMessage,
@@ -44,31 +43,13 @@ import {
 
 const FILTER_STORAGE_KEY = "facebookAds.dashboard.filters.v2";
 
-export type CampaignSortKey =
-  | "delivery"
-  | "spend"
-  | "roas"
-  | "budget"
-  | "name"
-  | "lastSync";
-
-export interface DashboardFilters {
-  searchTerm: string;
-  statusFilter: DeliveryFilter;
-  objectiveFilter: string;
-  sourceFilter: "ALL" | "META" | "LOCAL";
-  sortBy: CampaignSortKey;
+interface DashboardDateFilters {
   datePreset: FacebookAdsDatePreset;
   startDate?: string;
   endDate?: string;
 }
 
-const defaultFilters: DashboardFilters = {
-  searchTerm: "",
-  statusFilter: "ALL",
-  objectiveFilter: "ALL",
-  sourceFilter: "ALL",
-  sortBy: "delivery",
+const defaultFilters: DashboardDateFilters = {
   datePreset: "last_30d",
 };
 
@@ -83,7 +64,7 @@ const FacebookAdsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [filters, setFilters] = useState<DashboardFilters>(() =>
+  const [filters, setFilters] = useState<DashboardDateFilters>(() =>
     readStoredFacebookAdsFilters(FILTER_STORAGE_KEY, defaultFilters),
   );
 
@@ -101,12 +82,6 @@ const FacebookAdsDashboard: React.FC = () => {
     selectedAdAccount?.billingHealth?.currency ||
     "EGP";
   const selectedReportingTimezone = selectedAdAccount?.timezone_name;
-  const selectedAccountBalance = selectedAdAccount?.billingHealth?.balance ?? null;
-  const selectedSpendCapRemaining =
-    selectedAdAccount?.billingHealth?.spendCap != null
-      ? selectedAdAccount.billingHealth.spendCap -
-        (selectedAdAccount.billingHealth.amountSpent || 0)
-      : null;
 
   const dateRange = useMemo(
     () =>
@@ -127,7 +102,7 @@ const FacebookAdsDashboard: React.FC = () => {
     writeStoredFacebookAdsFilters(FILTER_STORAGE_KEY, filters);
   }, [filters]);
 
-  const updateFilters = (patch: Partial<DashboardFilters>) => {
+  const updateFilters = (patch: Partial<DashboardDateFilters>) => {
     setFilters((current) => ({ ...current, ...patch }));
   };
 
@@ -225,6 +200,15 @@ const FacebookAdsDashboard: React.FC = () => {
     };
   }, [campaigns]);
 
+  const decisionCounts = useMemo(() => {
+    const rows = decisionSummary?.rows || [];
+    const warnings = rows.filter((r) => r.decision.tone === "warning" || r.decision.tone === "danger").length;
+    const opportunities = rows.filter((r) => r.decision.tone === "success").length;
+    return { total: rows.length, warnings, opportunities };
+  }, [decisionSummary?.rows]);
+
+  const recommendationCount = performanceSummary?.recommendations?.length || 0;
+
   const selectedDateLabel =
     FACEBOOK_ADS_DATE_PRESETS.find((preset) => preset.value === filters.datePreset)
       ?.label || "آخر 30 يوم";
@@ -272,6 +256,9 @@ const FacebookAdsDashboard: React.FC = () => {
       `/advertising/facebook-ads/campaigns/create?adAccountId=${selectedAdAccountId}`,
     );
   };
+
+  const buildLink = (path: string) =>
+    selectedAdAccountId ? `${path}?adAccountId=${selectedAdAccountId}` : path;
 
   if (loading || contextLoading) {
     return (
@@ -384,28 +371,6 @@ const FacebookAdsDashboard: React.FC = () => {
         {/* Sub Navigation */}
         <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
 
-        {/* Diagnosis Bar */}
-        <section className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-            <Gauge className="h-3.5 w-3.5 text-blue-500" />
-            القائمة التشغيلية
-            <span className="hidden rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-500 sm:inline dark:bg-slate-800 dark:text-slate-300">
-              {formatNumber(stats.delivering)}/{formatNumber(stats.total)} يسلم
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              navigate(
-                `/advertising/facebook-ads/diagnosis${selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""}`,
-              )
-            }
-            className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[11px] font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
-          >
-            تشخيص
-          </button>
-        </section>
-
         {/* Metrics Overview */}
         <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
           <MetricCard
@@ -462,33 +427,158 @@ const FacebookAdsDashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Quick Decisions & Recommendations */}
-        <DecisionSummarySection
-          decisionSummary={decisionSummary}
-          performanceSummary={performanceSummary}
-          selectedCurrency={selectedCurrency}
-        />
+        {/* Quick Access Cards */}
+        <section className="grid gap-2.5 lg:grid-cols-3">
+          {/* Campaigns Card */}
+          <Link
+            to={buildLink("/advertising/facebook-ads/campaigns")}
+            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                  <Megaphone className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-black">الحملات</h2>
+                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    إدارة وتصفية ومراقبة
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-blue-500" />
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-slate-50 px-2.5 py-2 text-center dark:bg-slate-800">
+                <p className="text-lg font-black text-blue-600 dark:text-blue-300">
+                  {formatNumber(stats.total)}
+                </p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">إجمالي</p>
+              </div>
+              <div className="rounded-lg bg-emerald-50 px-2.5 py-2 text-center dark:bg-emerald-950/30">
+                <p className="text-lg font-black text-emerald-600 dark:text-emerald-300">
+                  {formatNumber(stats.delivering)}
+                </p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">يسلم</p>
+              </div>
+              <div className="rounded-lg bg-amber-50 px-2.5 py-2 text-center dark:bg-amber-950/30">
+                <p className="text-lg font-black text-amber-600 dark:text-amber-300">
+                  {formatNumber(stats.activeButBlocked)}
+                </p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">محظور</p>
+              </div>
+            </div>
+            {stats.activeDailyBudget > 0 && (
+              <p className="mt-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                ميزانية يومية نشطة: {formatCurrency(stats.activeDailyBudget, selectedCurrency)}
+              </p>
+            )}
+          </Link>
 
-        {/* WhatsApp Budget Alerts */}
-        <BudgetAlertsPanel
-          selectedAdAccountId={selectedAdAccountId}
-          campaigns={campaigns}
-          selectedCurrency={selectedCurrency}
-          selectedAccountBalance={selectedAccountBalance}
-          selectedSpendCapRemaining={selectedSpendCapRemaining}
-        />
+          {/* Decisions & Recommendations Card */}
+          <Link
+            to={buildLink("/advertising/facebook-ads/decision-reports")}
+            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-amber-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-amber-700"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
+                  <Gauge className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-black">القرارات والتوصيات</h2>
+                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    تحليل أداء وقرارات ذكية
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-amber-500" />
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-slate-50 px-2.5 py-2 text-center dark:bg-slate-800">
+                <p className="text-lg font-black text-slate-700 dark:text-slate-200">
+                  {formatNumber(decisionCounts.total)}
+                </p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">قرار</p>
+              </div>
+              <div className="rounded-lg bg-red-50 px-2.5 py-2 text-center dark:bg-red-950/30">
+                <p className="text-lg font-black text-red-600 dark:text-red-300">
+                  {formatNumber(decisionCounts.warnings)}
+                </p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">تحذير</p>
+              </div>
+              <div className="rounded-lg bg-emerald-50 px-2.5 py-2 text-center dark:bg-emerald-950/30">
+                <p className="text-lg font-black text-emerald-600 dark:text-emerald-300">
+                  {formatNumber(decisionCounts.opportunities)}
+                </p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">فرصة</p>
+              </div>
+            </div>
+            {recommendationCount > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-3 w-3" />
+                {formatNumber(recommendationCount)} توصية تحتاج مراجعة
+              </div>
+            )}
+          </Link>
 
-        {/* Campaigns Listing & Filtering */}
-        <CampaignsListSection
-          campaigns={campaigns}
-          performanceSummary={performanceSummary}
-          selectedCurrency={selectedCurrency}
-          selectedAdAccountId={selectedAdAccountId}
-          selectedDateLabel={selectedDateLabel}
-          filters={filters}
-          updateFilters={updateFilters}
-          defaultFilters={defaultFilters}
-        />
+          {/* Budget Alerts Card */}
+          <Link
+            to={buildLink("/advertising/facebook-ads/budget-alerts")}
+            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-emerald-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-700"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
+                  <BellRing className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-black">تنبيهات الرصيد</h2>
+                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    WhatsApp Budget Alerts
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-emerald-500" />
+            </div>
+            <div className="mt-4 rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+              <p className="text-xs font-bold leading-5 text-slate-600 dark:text-slate-300">
+                راقب رصيد حسابك الإعلاني وميزانيات الحملات، واستلم تنبيه WhatsApp عند الوصول للحد المختار.
+              </p>
+            </div>
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+              <BellRing className="h-3 w-3" />
+              إدارة القواعد والتنبيهات
+            </div>
+          </Link>
+        </section>
+
+        {/* Diagnosis Quick Link */}
+        <section className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+              <Gauge className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="text-sm font-black">تشخيص الحساب</h2>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                تحليل شامل لأداء الحملات والمشاكل المحتملة
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                `/advertising/facebook-ads/diagnosis${selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""}`,
+              )
+            }
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-[11px] font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
+          >
+            تشخيص
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </button>
+        </section>
       </main>
     </div>
   );

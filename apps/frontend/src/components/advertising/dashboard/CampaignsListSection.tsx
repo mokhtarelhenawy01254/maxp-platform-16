@@ -34,7 +34,7 @@ import {
 import type {
   CampaignSortKey,
   DashboardFilters,
-} from "../../../pages/advertising/FacebookAdsDashboard";
+} from "../../../utils/facebookAdsDashboardTypes";
 
 interface CampaignsListSectionProps {
   campaigns: FacebookCampaign[];

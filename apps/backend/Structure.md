@@ -77,5 +77,22 @@ To support unified model resolution and fallback mechanisms:
   - `/super-admin/agent-profiles`: Super Admin UI for CRUD and reordering.
   - Merchant `AgentProfilesPage`: Dynamically loads the templates from the API.
 
+## Facebook Ads Dashboard Component Architecture (2026-06-26)
+
+The Facebook Ads Dashboard page (`/advertising/facebook-ads`) was refactored from a single monolithic file into modular components:
+
+- **Orchestrator**: `apps/frontend/src/pages/advertising/FacebookAdsDashboard.tsx`
+  - Manages top-level state: campaigns, performance summary, decision summary, ad accounts, filters.
+  - Renders header, metrics overview, sub-navigation, and delegates sections to child components.
+
+- **Components** (`apps/frontend/src/components/advertising/dashboard/`):
+  - `BudgetAlertsPanel.tsx` — WhatsApp budget alerts (create rules, view active rules, view logs).
+  - `CampaignsListSection.tsx` — Campaign listing with filtering, sorting, search, pagination.
+  - `DecisionSummarySection.tsx` — AI-driven quick decisions and performance recommendations.
+  - `MetricCard.tsx`, `MiniMetric.tsx`, `SelectFilter.tsx` — Shared UI atoms.
+
+- **Helpers**: `apps/frontend/src/utils/facebookAdsHelpers.ts`
+  - `getHealthDecision()`, `getDecisionClass()`, `getRulePayload()` — extracted from the dashboard.
+  - Formatting utilities: `formatCurrency`, `formatNumber`, `formatPercentage`, `formatDate`.
 
 

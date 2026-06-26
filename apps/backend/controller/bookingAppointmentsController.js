@@ -144,6 +144,7 @@ const createAppointment = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const body = req.body;
+    console.log('[BOOKING-DEBUG] createAppointment body:', JSON.stringify(body));
     let customerName = body.customerName || 'مريض';
     let appointmentDate = body.appointmentDate || new Date().toISOString().split('T')[0];
     let startTime = body.startTime || '00:00';
