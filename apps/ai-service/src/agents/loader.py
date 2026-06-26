@@ -30,8 +30,11 @@ def _get_agents_root() -> Path:
         p = Path(env_root)
         if p.exists():
             return p
+    sites_dir = Path(__file__).resolve().parent.parent.parent.parent
     candidates = [
-        Path(__file__).resolve().parent.parent.parent.parent / "backend" / "agents",
+        sites_dir / "backend2" / "agents",
+        sites_dir / "backend" / "agents",
+        sites_dir.parent / "ai-service" / "agents",
         Path(__file__).resolve().parent.parent.parent / "agents",
     ]
     for c in candidates:
