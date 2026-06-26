@@ -107,56 +107,56 @@ async def booking_appointment_details(input_data: AppointmentDetailsInput) -> di
 
 booking_branches_list_tool = FunctionTool(
     name="booking_branches_list",
-    description="List all branches of the medical center.",
+    description="قائمة الفروع المتاحة في المركز الطبي (List all branches).",
     func=booking_branches_list,
     input_model=BranchesListInput,
 )
 
 booking_doctors_list_tool = FunctionTool(
     name="booking_doctors_list",
-    description="List doctors available in the medical center. Optionally filter by branch.",
+    description="قائمة الأطباء بالمركز (List doctors). Params: branch_id (optional filter).",
     func=booking_doctors_list,
     input_model=DoctorsListInput,
 )
 
 booking_services_list_tool = FunctionTool(
     name="booking_services_list",
-    description="List medical services and their pricing packages. Optionally filter by branch.",
+    description="قائمة الخدمات الطبية والأسعار (List services). Params: branch_id (optional filter).",
     func=booking_services_list,
     input_model=ServicesListInput,
 )
 
 booking_available_slots_tool = FunctionTool(
     name="booking_available_slots",
-    description="Get available appointment time slots for a branch on a specific date.",
+    description="المواعيد المتاحة في فرع معين في تاريخ محدد (Check available slots). Params: branch_id (required), date (YYYY-MM-DD), doctor_id (optional), service_id (optional).",
     func=booking_available_slots,
     input_model=AvailableSlotsInput,
 )
 
 booking_appointment_create_tool = FunctionTool(
     name="booking_appointment_create",
-    description="Create a new patient appointment. REQUIRES APPROVAL.",
+    description="إنشاء حجز موعد جديد (Create appointment) REQUIRES APPROVAL. Params: branch_id, doctor_id, service_id, customer_name, customer_phone, customer_gender (MALE/FEMALE), appointment_date (YYYY-MM-DD), start_time (HH:mm 24h).",
     func=booking_appointment_create,
     input_model=AppointmentCreateInput,
 )
 
 booking_appointment_confirm_tool = FunctionTool(
     name="booking_appointment_confirm",
-    description="Confirm a pending appointment.",
+    description="تأكيد موعد قيد الانتظار (Confirm appointment). Params: appointment_id (required).",
     func=booking_appointment_confirm,
     input_model=AppointmentConfirmInput,
 )
 
 booking_appointment_cancel_tool = FunctionTool(
     name="booking_appointment_cancel",
-    description="Cancel an existing appointment. REQUIRES APPROVAL.",
+    description="إلغاء موعد (Cancel appointment) REQUIRES APPROVAL. Params: appointment_id (required), reason (optional).",
     func=booking_appointment_cancel,
     input_model=AppointmentCancelInput,
 )
 
 booking_appointment_details_tool = FunctionTool(
     name="booking_appointment_details",
-    description="View details of a specific appointment.",
+    description="عرض تفاصيل موعد (View appointment details). Params: appointment_id (required).",
     func=booking_appointment_details,
     input_model=AppointmentDetailsInput,
 )
