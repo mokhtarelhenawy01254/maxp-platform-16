@@ -52,4 +52,45 @@ router.post('/agents/chat', async (req, res) => {
   }
 });
 
+// POST /seed-template — re-seed medical-center-agent template from filesystem
+router.post('/seed-template', async (req, res) => {
+  try {
+    const { slug } = req.body || {};
+    if (!slug) return res.status(400).json({ success: false, error: 'slug is required' });
+
+    const { readFileSync, existsSync } = require('fs');
+    const { join } = require('path');
+
+    const agentsDir = join(__dirname, '..', 'agents', slug);
+    const agentJsonPath = join(agentsDir, 'agent.json');
+    if (!existsSync(agentJsonPath)) return res.status(404).json({ success: false, error: `Agent ${slug} not found` });
+
+    const config = JSON.parse(readFileSync(agentJsonPath, 'utf8'));
+    const readMd = (name) => {
+      const p = join(agentsDir, name);
+      return existsSync(p) ? readFileSync(p, 'utf8') : '';
+    };
+
+    const data = {
+      slug: config.slug, role: config.role, name: config.name, version: config.version,
+      model_policy: config.modelPolicy, allowed_tools: config.allowedTools,
+      allowed_skills: config.allowedSkills, channels: config.channels,
+      guardrails: config.guardrails, persona_meta: config.personaMeta,
+      instructions_soul: readMd(config.instructions?.soul),
+      instructions_agents: readMd(config.instructions?.agents),
+      instructions_tools: readMd(config.instructions?.tools),
+      instructions_persona: readMd(config.instructions?.persona),
+      human_approval: config.humanApproval, handoffs: config.handoffs,
+      mcp_servers: config.mcpServers, budget: config.budget,
+      output_schema: config.outputSchema, is_active: true
+    };
+
+    const result = await aiServiceAdminClient.updateAgentTemplate(slug, data);
+    res.json({ success: true, message: `Template ${slug} updated`, data: result });
+  } catch (error) {
+    console.error('[ai-proxy] seed-template failed:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
