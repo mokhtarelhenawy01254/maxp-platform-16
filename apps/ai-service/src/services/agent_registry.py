@@ -287,6 +287,12 @@ async def init_registry_from_db(session_factory) -> None:
                         model=await _resolve_agent_model(db_agent, session),
                         allowed_skills=list(db_agent.allowed_skills or []),
                         persona=db_agent.persona or {},
+                        instructions={
+                            "soul": (db_agent.persona or {}).get("soulInstructions") or db_agent.soul or "",
+                            "persona": (db_agent.persona or {}).get("personaInstructions") or "",
+                            "agents": (db_agent.persona or {}).get("agentInstructions") or "",
+                            "tools": (db_agent.persona or {}).get("toolsInstructions") or "",
+                        },
                         policies={
                             "model_policy": db_agent.model_policy or {},
                             "guardrails": db_agent.guardrails or {},

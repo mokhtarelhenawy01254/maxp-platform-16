@@ -89,6 +89,12 @@ def _build_runtime_agent_from_db(db_agent: AgentModel, *, model: str | None = No
         model=model or db_agent.model,
         allowed_skills=list(db_agent.allowed_skills or []),
         persona=db_agent.persona or {},
+        instructions={
+            "soul": (db_agent.persona or {}).get("soulInstructions") or db_agent.soul or "",
+            "persona": (db_agent.persona or {}).get("personaInstructions") or "",
+            "agents": (db_agent.persona or {}).get("agentInstructions") or "",
+            "tools": (db_agent.persona or {}).get("toolsInstructions") or "",
+        },
         provider=db_config.get("provider") or None,
         key_id=db_config.get("keyId") or db_config.get("key_id") or None,
         template_slug=db_agent.template_slug or None,

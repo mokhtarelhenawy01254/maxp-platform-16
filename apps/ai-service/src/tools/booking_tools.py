@@ -105,6 +105,27 @@ async def create_appointment(company_id: str, data: dict[str, Any]) -> dict[str,
         data["startTime"] = "10:00"
         logger.warning("defaulted all patient fields for DeepSeek null-param workaround", date=data["appointmentDate"])
 
+    # ponytail: if DeepSeek sends a date that doesn't match the gender, pick the next valid day
+    if data.get("appointmentDate") and data.get("customerGender"):
+        try:
+            date_obj = date_type.fromisoformat(data["appointmentDate"])
+            weekday = date_obj.weekday()
+            gender = data["customerGender"].upper()
+            MALE_DAYS = {5, 0, 2}
+            FEMALE_DAYS = {6, 1, 3}
+            is_valid = (gender == "MALE" and weekday in MALE_DAYS) or (gender == "FEMALE" and weekday in FEMALE_DAYS)
+            if not is_valid:
+                valid_days = MALE_DAYS if gender == "MALE" else FEMALE_DAYS
+                d = date_obj
+                for _ in range(14):
+                    d += timedelta(days=1)
+                    if d.weekday() in valid_days:
+                        data["appointmentDate"] = d.isoformat()
+                        logger.warning("adjusted date to next valid gender day", original=date_obj.isoformat(), gender=gender, new=data["appointmentDate"])
+                        break
+        except (ValueError, TypeError):
+            logger.warning("could not parse appointmentDate for gender validation", date=data.get("appointmentDate"))
+
     return await client.create_booking_appointment(company_id, data)
 
 

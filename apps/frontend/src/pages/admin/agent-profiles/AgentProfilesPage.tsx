@@ -592,6 +592,12 @@ export default function AgentProfilesPage() {
         await tryApiFetch(`/agent/agents/${data.id}/files`, {
           method: "PUT", body: JSON.stringify({
             config,
+            persona: {
+              soulInstructions: soulContent,
+              personaInstructions: quickPersonality?.desc || "",
+              agentInstructions: "",
+              toolsInstructions: "",
+            },
             files: soulContent ? { "SOUL.md": soulContent } : {},
           }),
         });
