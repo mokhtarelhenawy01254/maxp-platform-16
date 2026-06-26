@@ -31,6 +31,8 @@ interface Personality {
   tone: string;
   persona: string;
   goal: string;
+  tasks?: string;
+  boundaries?: string;
 }
 
 interface AgentTemplate {
@@ -126,7 +128,7 @@ const SuperAdminAgentProfiles: React.FC = () => {
     const id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     setEditProfile((p) => ({
       ...p,
-      personalities: [...p.personalities, { id, name: "", desc: "", tone: "friendly", persona: "", goal: "" }],
+      personalities: [...p.personalities, { id, name: "", desc: "", tone: "friendly", persona: "", goal: "", tasks: "", boundaries: "" }],
     }));
   };
 
@@ -397,6 +399,8 @@ const SuperAdminAgentProfiles: React.FC = () => {
                       <Input value={pers.persona} onChange={(e) => updatePersonality(pers.id, "persona", e.target.value)} className="h-8 text-sm" placeholder="الشخصية (مندوب مبيعات ودود)" />
                       <Input value={pers.goal} onChange={(e) => updatePersonality(pers.id, "goal", e.target.value)} className="h-8 text-sm" placeholder="الهدف (تساعد العملاء...)" />
                     </div>
+                    <Textarea value={pers.tasks || ""} onChange={(e) => updatePersonality(pers.id, "tasks", e.target.value)} className="text-xs min-h-[50px]" placeholder="المهام الأساسية (مثال: يعرض المنتجات، ينشئ الطلبات، يتابع الشحنات)" />
+                    <Textarea value={pers.boundaries || ""} onChange={(e) => updatePersonality(pers.id, "boundaries", e.target.value)} className="text-xs min-h-[50px]" placeholder="الحدود (مثال: ما يقدم خصومات غير مصرح بها، ما يضغط على العميل)" />
                   </div>
                 ))}
               </div>

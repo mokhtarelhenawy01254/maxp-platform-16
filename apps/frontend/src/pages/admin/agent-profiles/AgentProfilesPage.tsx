@@ -182,6 +182,8 @@ interface ReadyAgentPersonality {
   tone: string;
   persona: string;
   goal: string;
+  tasks?: string;
+  boundaries?: string;
 }
 
 interface ReadyAgent {
@@ -572,6 +574,8 @@ export default function AgentProfilesPage() {
       soul_persona: quickPersonality.persona,
       soul_goal: quickPersonality.goal,
       soul_tone: quickPersonality.tone,
+      soul_tasks: quickPersonality.tasks || "",
+      soul_boundaries: quickPersonality.boundaries || "",
     } : {};
     const soulContent = config.soul_persona ? buildSoulContent(config) : "";
     const data = await tryApiFetch<Record<string, unknown>>(
