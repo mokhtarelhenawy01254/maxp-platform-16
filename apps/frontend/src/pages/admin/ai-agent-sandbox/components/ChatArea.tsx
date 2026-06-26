@@ -223,7 +223,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0 bg-slate-50/20 dark:bg-slate-905 overflow-hidden">
+    <div className="flex-1 flex flex-col self-stretch min-w-0 bg-slate-50/20 dark:bg-slate-905 overflow-hidden">
       {/* Scrollable Chat Message History */}
       <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Quick action chips for merchants when chat is empty */}
