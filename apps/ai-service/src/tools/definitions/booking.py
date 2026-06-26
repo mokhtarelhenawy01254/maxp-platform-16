@@ -128,14 +128,14 @@ booking_services_list_tool = FunctionTool(
 
 booking_available_slots_tool = FunctionTool(
     name="booking_available_slots",
-    description="المواعيد المتاحة في فرع معين في تاريخ محدد (Check available slots). Params: branch_id (required), date (YYYY-MM-DD), doctor_id (optional), service_id (optional).",
+    description="[REQUIRED PARAMS: branch_id, date] Returns available appointment time slots. branch_id from branches_list result id. date format YYYY-MM-DD. Optional: doctor_id, service_id.",
     func=booking_available_slots,
     input_model=AvailableSlotsInput,
 )
 
 booking_appointment_create_tool = FunctionTool(
     name="booking_appointment_create",
-    description="إنشاء حجز موعد جديد (Create appointment) REQUIRES APPROVAL. Params: branch_id, doctor_id, service_id, customer_name, customer_phone, customer_gender (MALE/FEMALE), appointment_date (YYYY-MM-DD), start_time (HH:mm 24h).",
+    description="[REQUIRED: ALL 8 PARAMS] Creates a new appointment in the system. MUST provide: branch_id, doctor_id, service_id, customer_name, customer_phone, customer_gender (MALE or FEMALE), appointment_date (YYYY-MM-DD), start_time (HH:mm 24h). Requires human approval.",
     func=booking_appointment_create,
     input_model=AppointmentCreateInput,
 )
