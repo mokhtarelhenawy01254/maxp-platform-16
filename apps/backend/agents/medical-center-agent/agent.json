@@ -4,8 +4,8 @@
   "role": "MEDICAL_CENTER",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "deepseek-v4-flash",
-    "fallback": "deepseek-v4-flash"
+    "default": "gemini-2.5-flash",
+    "fallback": "gemini-2.5-pro"
   },
   "instructions": {
     "agents": "AGENTS.md",
