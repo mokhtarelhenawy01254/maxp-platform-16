@@ -1,9 +1,14 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-"codebase-memory-mcp": {
+    "codebase-memory-mcp": {
       "type": "local",
       "command": ["C:\\Users\\mokhtar\\AppData\\Local\\codebase-memory-mcp\\codebase-memory-mcp.exe"],
+      "enabled": true
+    },
+    "chrome-devtools-mcp": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
       "enabled": true
     }
   },

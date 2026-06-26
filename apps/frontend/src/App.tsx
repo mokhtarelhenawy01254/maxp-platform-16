@@ -192,6 +192,9 @@ const PublicCompanyLinks = React.lazy(
 const PublicApplicationForm = React.lazy(
   () => import("./pages/public/PublicApplicationForm"),
 );
+const BookAppointmentPage = React.lazy(
+  () => import("./pages/public/BookAppointmentPage"),
+);
 const ProductStoreRedirect = React.lazy(
   () => import("./pages/products/ProductStoreRedirect"),
 );
@@ -1303,6 +1306,7 @@ const AppContent = () => {
     currentPath.startsWith("/theme-demo/") ||
     currentPath.startsWith("/store") ||
     currentPath.startsWith("/cafe-demo") ||
+    currentPath.startsWith("/book/") ||
     currentPath === "/faq" ||
     currentPath === "/support/faq" ||
     currentPath === "/";
@@ -1475,6 +1479,7 @@ const AppContent = () => {
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
             
             <Route path="/app-explanations" element={<AppExplanationsPage />} />
+            <Route path="/book/:slug" element={<BookAppointmentPage />} />
             <Route path="/faq" element={faqRouteElement} />
             <Route path="/support/faq" element={faqRouteElement} />
             {/* Public Storefront Routes - No Authentication Required */}

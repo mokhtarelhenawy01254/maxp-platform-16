@@ -395,6 +395,76 @@ class BackendClient:
         )
 
 
+    # ── Booking APIs ──
+
+    async def get_booking_branches(self, company_id: str) -> list[dict[str, Any]]:
+        result = await self._request("GET", "/api/v1/booking/branches", params={"companyId": company_id})
+        return result.get("data", [])
+
+    async def get_booking_doctors(self, company_id: str, branch_id: str | None = None) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"companyId": company_id}
+        if branch_id:
+            params["branchId"] = branch_id
+        result = await self._request("GET", "/api/v1/booking/doctors", params=params)
+        return result.get("data", [])
+
+    async def get_booking_services(self, company_id: str, branch_id: str | None = None) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"companyId": company_id}
+        if branch_id:
+            params["branchId"] = branch_id
+        result = await self._request("GET", "/api/v1/booking/services", params=params)
+        return result.get("data", [])
+
+    async def get_booking_available_slots(
+        self, company_id: str, branch_id: str, date: str,
+        doctor_id: str | None = None, service_id: str | None = None,
+    ) -> list[str]:
+        params: dict[str, Any] = {
+            "companyId": company_id, "branchId": branch_id, "date": date,
+        }
+        if doctor_id:
+            params["doctorId"] = doctor_id
+        if service_id:
+            params["serviceId"] = service_id
+        result = await self._request("GET", "/api/v1/booking/appointments/available-slots", params=params)
+        return result.get("data", [])
+
+    async def create_booking_appointment(
+        self, company_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/booking/appointments", json_body={**data, "companyId": company_id})
+
+    async def confirm_booking_appointment(
+        self, company_id: str, appointment_id: str
+    ) -> dict[str, Any]:
+        return await self._request(
+            "PUT", f"/api/v1/booking/appointments/{appointment_id}/confirm",
+            json_body={"companyId": company_id},
+        )
+
+    async def cancel_booking_appointment(
+        self, company_id: str, appointment_id: str, reason: str | None = None
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {"companyId": company_id}
+        if reason:
+            body["reason"] = reason
+        return await self._request(
+            "PUT", f"/api/v1/booking/appointments/{appointment_id}/status",
+            json_body={"status": "cancelled", **body},
+        )
+
+    async def get_booking_appointment_details(
+        self, company_id: str, appointment_id: str
+    ) -> dict[str, Any] | None:
+        try:
+            return await self._request(
+                "GET", f"/api/v1/booking/appointments/{appointment_id}",
+                params={"companyId": company_id},
+            )
+        except RuntimeError:
+            return None
+
+
 _backend_client: BackendClient | None = None
 
 

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import {
   BuildingOffice2Icon, UserGroupIcon, WrenchScrewdriverIcon,
   CalendarDaysIcon, ChartBarSquareIcon, PlusIcon,
   PencilIcon, TrashIcon, EyeIcon, XMarkIcon, CheckIcon,
-  ClockIcon, FunnelIcon, MagnifyingGlassIcon
+  ClockIcon, FunnelIcon, MagnifyingGlassIcon,
+  ChevronLeftIcon, ChevronRightIcon
 } from "@heroicons/react/24/outline";
 
 const getAuthHeaders = () => tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
@@ -40,10 +41,11 @@ interface BookingAppointment {
   notes: string; confirmedAt?: string; createdAt: string;
 }
 
-type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments";
+type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar";
 const TABS: { id: TabId; label: string; icon: typeof ChartBarSquareIcon }[] = [
   { id: "dashboard", label: "لوحة التحكم", icon: ChartBarSquareIcon },
   { id: "appointments", label: "المواعيد", icon: CalendarDaysIcon },
+  { id: "calendar", label: "التقويم", icon: CalendarDaysIcon },
   { id: "branches", label: "الفروع", icon: BuildingOffice2Icon },
   { id: "doctors", label: "الأطباء", icon: UserGroupIcon },
   { id: "services", label: "الخدمات", icon: WrenchScrewdriverIcon },
@@ -314,6 +316,9 @@ export default function BookingManagementPage() {
   const [serviceModal, setServiceModal] = useState<Partial<BookingService> | null | undefined>(undefined);
   const [appointmentModal, setAppointmentModal] = useState<Partial<BookingAppointment> | null | undefined>(undefined);
 
+  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [calDate, setCalDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [filters, setFilters] = useState({ status: "", branchId: "", dateFrom: "", dateTo: "" });
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
@@ -321,8 +326,18 @@ export default function BookingManagementPage() {
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
     if (activeTab === "appointments") fetchAppointments();
-    if (activeTab === "dashboard") { fetchAll(); }
+    if (activeTab === "dashboard" || activeTab === "calendar") { fetchAll(); }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (selectedBranchId) {
+      fetchDoctors(selectedBranchId);
+      fetchServices(selectedBranchId);
+    } else {
+      fetchDoctors();
+      fetchServices();
+    }
+  }, [selectedBranchId]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -331,13 +346,18 @@ export default function BookingManagementPage() {
   };
 
   const fetchBranches = async () => { try { setBranches(await fetchJson(api("branches"))); } catch {} };
-  const fetchDoctors = async () => { try { setDoctors(await fetchJson(api("doctors"))); } catch {} };
-  const fetchServices = async () => { try { setServices(await fetchJson(api("services"))); } catch {} };
+  const fetchDoctors = async (branchId?: string) => {
+    try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch {}
+  };
+  const fetchServices = async (branchId?: string) => {
+    try { setServices(await fetchJson(api(`services${branchId ? `?branchId=${branchId}` : ""}`))); } catch {}
+  };
   const fetchAppointments = async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filters.status) params.append("status", filters.status);
     if (filters.branchId) params.append("branchId", filters.branchId);
+    if (!filters.branchId && selectedBranchId) params.append("branchId", selectedBranchId);
     if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.append("dateTo", filters.dateTo);
     try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch { setAppointments([]); } finally { setLoading(false); }
@@ -389,21 +409,30 @@ export default function BookingManagementPage() {
     else fetchServices();
   };
 
+  const branchAppointments = useMemo(() =>
+    selectedBranchId ? appointments.filter(a => a.branchId === selectedBranchId) : appointments,
+    [appointments, selectedBranchId]
+  );
+  const today = new Date().toISOString().split("T")[0];
   const stats = {
-    todayAppointments: appointments.filter(a => a.appointmentDate === new Date().toISOString().split("T")[0]),
-    pendingCount: appointments.filter(a => a.status === "pending").length,
-    totalBranches: branches.length,
-    totalDoctors: doctors.filter(d => d.isActive).length,
+    todayAppointments: branchAppointments.filter(a => a.appointmentDate === today),
+    pendingCount: branchAppointments.filter(a => a.status === "pending").length,
+    confirmedCount: branchAppointments.filter(a => a.status === "confirmed").length,
+    totalBranches: selectedBranchId ? 1 : branches.length,
+    totalDoctors: selectedBranchId ? doctors.length : doctors.filter(d => d.isActive).length,
+    maleCount: branchAppointments.filter(a => a.customerGender === "male").length,
+    femaleCount: branchAppointments.filter(a => a.customerGender === "female").length,
+    revenue: branchAppointments.reduce((sum, a) => sum + (a.serviceId ? 1 : 0), 0) * 100,
   };
 
   const renderDashboard = () => (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "المواعيد اليوم", value: stats.todayAppointments.length, icon: CalendarDaysIcon, color: "bg-blue-500" },
-          { label: "في الانتظار", value: stats.pendingCount, icon: ClockIcon, color: "bg-yellow-500" },
-          { label: "الفروع", value: stats.totalBranches, icon: BuildingOffice2Icon, color: "bg-green-500" },
-          { label: "الأطباء النشطون", value: stats.totalDoctors, icon: UserGroupIcon, color: "bg-purple-500" },
+          { label: "مواعيد اليوم", value: stats.todayAppointments.length, icon: CalendarDaysIcon, color: "bg-blue-500" },
+          { label: "بانتظار التأكيد", value: stats.pendingCount, icon: ClockIcon, color: "bg-yellow-500" },
+          { label: "مؤكدة", value: stats.confirmedCount, icon: CheckIcon, color: "bg-green-500" },
+          { label: "الأطباء", value: stats.totalDoctors, icon: UserGroupIcon, color: "bg-purple-500" },
         ].map((c, i) => (
           <div key={i} className="bg-white rounded-xl shadow-sm border p-4 flex items-center gap-4">
             <div className={`${c.color} p-3 rounded-lg`}><c.icon className="w-6 h-6 text-white" /></div>
@@ -411,8 +440,25 @@ export default function BookingManagementPage() {
           </div>
         ))}
       </div>
-      {branches.map(branch => {
-        const branchAppts = appointments.filter(a => a.branchId === branch.id).slice(0, 10);
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border p-4">
+          <p className="text-sm text-gray-500 mb-1">المواعيد اليوم</p>
+          <div className="flex gap-4 mt-2">
+            <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-500"></span><span className="text-sm">ذكور: {stats.maleCount}</span></div>
+            <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-pink-500"></span><span className="text-sm">إناث: {stats.femaleCount}</span></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border p-4">
+          <p className="text-sm text-gray-500 mb-1">الفروع النشطة</p>
+          <p className="text-2xl font-bold">{stats.totalBranches}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border p-4">
+          <p className="text-sm text-gray-500 mb-1">إجمالي الحجوزات</p>
+          <p className="text-2xl font-bold">{branchAppointments.length}</p>
+        </div>
+      </div>
+      {(selectedBranchId ? branches.filter(b => b.id === selectedBranchId) : branches).map(branch => {
+        const branchAppts = branchAppointments.filter(a => a.branchId === branch.id).slice(0, 10);
         return (
           <div key={branch.id} className="bg-white rounded-xl shadow-sm border p-4 mb-4">
             <h3 className="font-bold text-lg mb-3 flex items-center gap-2"><BuildingOffice2Icon className="w-5 h-5 text-gray-500" />{branch.name}</h3>
@@ -471,7 +517,7 @@ export default function BookingManagementPage() {
   );
 
   const renderDoctors = () => {
-    const filtered = doctors.filter(d => !searchDoctor || d.name.includes(searchDoctor) || d.specialization.includes(searchDoctor));
+    const filtered = doctors.filter(d => (!searchDoctor || d.name.includes(searchDoctor) || d.specialization.includes(searchDoctor)));
     return (
       <div>
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
@@ -610,11 +656,119 @@ export default function BookingManagementPage() {
     </div>
   );
 
+  const renderCalendar = () => {
+    const monthNames = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+    const dayNamesShort = ["ح","ن","ث","ر","خ","ج","س"];
+
+    const year = calDate.getFullYear();
+    const month = calDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date().toISOString().split("T")[0];
+
+    const apptsByDate: Record<string, typeof appointments> = {};
+    appointments.forEach(a => {
+      if (!apptsByDate[a.appointmentDate]) apptsByDate[a.appointmentDate] = [];
+      apptsByDate[a.appointmentDate].push(a);
+    });
+
+    const dayAppts = selectedDay ? apptsByDate[selectedDay] || [] : [];
+
+    const prevMonth = () => setCalDate(new Date(year, month - 1, 1));
+    const nextMonth = () => setCalDate(new Date(year, month + 1, 1));
+
+    const days: { date: string; day: number; isToday: boolean; hasAppts: boolean; male: number; female: number }[] = [];
+    for (let i = 0; i < firstDay; i++) days.push({ date: "", day: 0, isToday: false, hasAppts: false, male: 0, female: 0 });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const ad = apptsByDate[dateStr] || [];
+      days.push({
+        date: dateStr, day: d, isToday: dateStr === today,
+        hasAppts: ad.length > 0,
+        male: ad.filter(a => a.customerGender === "male").length,
+        female: ad.filter(a => a.customerGender === "female").length,
+      });
+    }
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">{monthNames[month]} {year}</h2>
+          <div className="flex gap-2">
+            <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronRightIcon className="w-5 h-5" /></button>
+            <button onClick={() => setCalDate(new Date())} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50">اليوم</button>
+            <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronLeftIcon className="w-5 h-5" /></button>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <div className="grid grid-cols-7 border-b bg-gray-50">
+            {dayNamesShort.map(d => <div key={d} className="text-center py-3 text-sm font-medium text-gray-500">{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7">
+            {days.map((d, i) => (
+              <div key={i} onClick={() => d.date && setSelectedDay(d.date === selectedDay ? null : d.date)}
+                className={`min-h-[80px] p-2 border-b border-l cursor-pointer transition-colors
+                  ${d.isToday ? "bg-blue-50" : ""}
+                  ${d.date === selectedDay ? "ring-2 ring-blue-500 ring-inset" : ""}
+                  ${!d.date ? "bg-gray-50" : "hover:bg-gray-50"}`}>
+                {d.date && (
+                  <>
+                    <span className={`text-sm font-medium ${d.isToday ? "text-blue-600" : "text-gray-700"}`}>{d.day}</span>
+                    {d.hasAppts && (
+                      <div className="mt-1 space-y-0.5">
+                        {d.male > 0 && <div className="text-xs px-1 py-0.5 rounded bg-blue-100 text-blue-700">{d.male} ذكر</div>}
+                        {d.female > 0 && <div className="text-xs px-1 py-0.5 rounded bg-pink-100 text-pink-700">{d.female} أنثى</div>}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        {selectedDay && (
+          <div className="mt-4 bg-white rounded-xl shadow-sm border p-4">
+            <h3 className="font-bold mb-3">مواعيد {selectedDay}</h3>
+            {dayAppts.length === 0 ? (
+              <p className="text-sm text-gray-400">لا توجد مواعيد</p>
+            ) : (
+              <div className="space-y-2">
+                {dayAppts.map(a => (
+                  <div key={a.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-2 h-2 rounded-full ${a.customerGender === "female" ? "bg-pink-500" : "bg-blue-500"}`}></span>
+                      <div>
+                        <p className="font-medium text-sm">{a.customerName}</p>
+                        <p className="text-xs text-gray-500">{a.startTime} - {a.serviceName || a.branchName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1">إدارة المركز الطبي</h1>
         <p className="text-gray-500 text-sm">نظام إدارة المواعيد والخدمات الطبية</p>
+      </div>
+      <div className="mb-4">
+        <select className="border rounded-lg px-3 py-2 text-sm w-64" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
+          <option value="">كل الفروع</option>
+          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        {selectedBranchId && (
+          <button onClick={() => setSelectedBranchId("")} className="mr-2 text-sm text-blue-600 hover:text-blue-700">إزالة الفلتر</button>
+        )}
       </div>
       <div className="flex gap-1 mb-6 border-b overflow-x-auto">
         {TABS.map(tab => (
@@ -624,7 +778,7 @@ export default function BookingManagementPage() {
           </button>
         ))}
       </div>
-      {loading && activeTab !== "appointments" ? (
+      {loading && activeTab !== "appointments" && activeTab !== "calendar" ? (
         <div className="text-center py-12 text-gray-400">جاري التحميل...</div>
       ) : (
         <>
@@ -633,6 +787,7 @@ export default function BookingManagementPage() {
           {activeTab === "doctors" && renderDoctors()}
           {activeTab === "services" && renderServices()}
           {activeTab === "appointments" && renderAppointments()}
+          {activeTab === "calendar" && renderCalendar()}
         </>
       )}
     </div>
