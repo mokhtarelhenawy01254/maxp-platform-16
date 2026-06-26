@@ -633,10 +633,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             {headerBlock}
 
              <main
-               className={`business-shell-main flex-1 overflow-y-auto ${
-                 shouldRemovePadding ? "p-0" : "p-4 md:p-6"
-               } hr-theme`}
-             >
+                className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
+                  shouldRemovePadding ? "p-0" : "p-4 md:p-6"
+                } hr-theme`}
+              >
                 {location.pathname === '/apps' ? (
                   <AppDashboardPage
                     userId={user?.id}
@@ -711,9 +711,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               {headerBlock}
 
               <main
-                className={`business-shell-main flex-1 overflow-y-auto ${
-                  shouldRemovePadding ? "p-0" : "p-4 md:p-6"
-                } hr-theme`}
+                 className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
+                   shouldRemovePadding ? "p-0" : "p-4 md:p-6"
+                 } hr-theme`}
               >
                 {location.pathname === '/apps' ? (
                   <AppDashboardPage
