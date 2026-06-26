@@ -1,9 +1,15 @@
-name: Migrate Agent Roles
+name: SSH Command Runner
 on:
   workflow_dispatch:
+    inputs:
+      command:
+        description: 'Command to run via SSH on the server'
+        required: true
+        default: 'echo "hello"'
+        type: string
 
 jobs:
-  migrate:
+  ssh:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,12 +29,13 @@ jobs:
           chmod 600 "$HOME/.ssh/maxp_deploy_key"
           ssh-keyscan -p "${{ secrets.SERVER_PORT || '22' }}" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
 
-      - name: Execute Migration Script
+      - name: Execute Command
         shell: bash
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+          CMD: ${{ inputs.command }}
         run: |
           set -euo pipefail
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
@@ -40,22 +47,7 @@ jobs:
             -o ServerAliveCountMax=10
             -o ConnectTimeout=300
           )
-          
-          echo "🚀 Uploading latest migration script to server..."
-          scp -i "$SSH_KEY_PATH" -P "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new \
-            backend/scripts/migrateAgentRoles.js "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/migrateAgentRoles.js"
 
-          timeout 15m ssh "${SSH_OPTS[@]}" "$SERVER_USER@$SERVER_HOST" "bash -se" <<'REMOTE_SCRIPT'
-            set -euo pipefail
-            cd /var/www/backend2
-            export NODE_ENV=production
-            export PATH="/root/.nvm/versions/node/v20.19.5/bin:$PATH"
-            
-            echo "🔄 Generating Prisma Client..."
-            npx prisma generate --schema=prisma/schema
-            
-            echo "🚀 Running Migration Script: migrateAgentRoles.js..."
-            node scripts/migrateAgentRoles.js
-            
-            echo "✅ Migration completed successfully"
-          REMOTE_SCRIPT
+          echo "🚀 Running command on server..."
+          timeout 15m ssh "${SSH_OPTS[@]}" "$SERVER_USER@$SERVER_HOST" "export PATH=\"/root/.nvm/versions/node/v20.19.5/bin:/root/.local/bin:\$PATH\" && $CMD"
+          echo "✅ Command completed"
