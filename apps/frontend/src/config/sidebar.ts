@@ -7,8 +7,10 @@ import {
     DocumentTextIcon,
     CogIcon,
     BuildingOfficeIcon,
+    BuildingOffice2Icon,
     BuildingStorefrontIcon,
     CalendarIcon,
+    CalendarDaysIcon,
     CheckCircleIcon,
     SpeakerWaveIcon,
     TagIcon,
@@ -884,7 +886,12 @@ export const getSidebarConfig = (
             title: t('sidebar.medicalCenter'),
             icon: HeartIcon,
             items: [
-                { to: '/admin/booking', icon: ChartBarIcon, label: t('sidebar.medicalCenter') },
+                { to: '/admin/booking/dashboard', icon: ChartBarIcon, label: t('sidebar.bookingDashboard') },
+                { to: '/admin/booking/appointments', icon: CalendarIcon, label: t('sidebar.bookingAppointments') },
+                { to: '/admin/booking/calendar', icon: CalendarDaysIcon, label: t('sidebar.bookingCalendar') },
+                { to: '/admin/booking/branches', icon: BuildingOffice2Icon, label: t('sidebar.bookingBranches') },
+                { to: '/admin/booking/doctors', icon: UserGroupIcon, label: t('sidebar.bookingDoctors') },
+                { to: '/admin/booking/services', icon: WrenchScrewdriverIcon, label: t('sidebar.bookingServices') },
             ]
         },
 

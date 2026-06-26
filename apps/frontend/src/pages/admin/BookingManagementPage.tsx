@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import {
@@ -303,7 +304,11 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
 };
 
 export default function BookingManagementPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const { "*": path } = useParams();
+  const navigate = useNavigate();
+  const urlTab = (path || "").split("/")[0];
+  const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services"].includes(urlTab) ? urlTab : "dashboard") as TabId;
+  const setActiveTab = (tab: TabId) => navigate(`/admin/booking/${tab === "dashboard" ? "" : tab}`);
 
   const [branches, setBranches] = useState<BookingBranch[]>([]);
   const [doctors, setDoctors] = useState<BookingDoctor[]>([]);
