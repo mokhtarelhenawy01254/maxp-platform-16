@@ -77,7 +77,8 @@ const getAvailableSlots = async (req, res) => {
     // Check gender-based access if genderDays is configured
     if (gender && branch.genderDays) {
       const genderMap = branch.genderDays;
-      const allowedDays = gender === 'male' ? genderMap.male : genderMap.female;
+      const genderLower = gender.toLowerCase();
+      const allowedDays = genderLower === 'male' ? genderMap.male : genderMap.female;
       if (allowedDays && !allowedDays.includes(dayName)) {
         return res.json({ success: true, data: [], message: 'اليوم غير متاح لهذا الجنس' });
       }
@@ -158,7 +159,8 @@ const createAppointment = async (req, res) => {
 
     if (customerGender && branch.genderDays) {
       const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(appointmentDate).getDay()];
-      const allowedDays = customerGender === 'male' ? branch.genderDays.male : branch.genderDays.female;
+      const genderLower = customerGender.toLowerCase();
+      const allowedDays = genderLower === 'male' ? branch.genderDays.male : branch.genderDays.female;
       if (allowedDays && !allowedDays.includes(dayName)) {
         return res.status(400).json({ success: false, error: 'اليوم غير متاح لهذا الجنس' });
       }
