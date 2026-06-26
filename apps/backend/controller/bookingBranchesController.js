@@ -5,10 +5,12 @@ const getAllBranches = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const branches = await getSharedPrismaClient().bookingBranch.findMany({
+    let branches = await getSharedPrismaClient().bookingBranch.findMany({
       where: { companyId },
       orderBy: { name: 'asc' }
     });
+    const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
+    branches = branches.map(b => ({ ...b, workingDays: tryParse(b.workingDays), genderDays: tryParse(b.genderDays) }));
     res.json({ success: true, data: branches });
   } catch (error) {
     console.error('Error fetching branches:', error);
@@ -21,8 +23,11 @@ const createBranch = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { name, address, phone, workingDays, genderDays } = req.body;
+    let { name, address, phone, workingDays, genderDays } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم الفرع مطلوب' });
+
+    if (typeof workingDays === 'string') { try { workingDays = JSON.parse(workingDays); } catch (e) {} }
+    if (typeof genderDays === 'string') { try { genderDays = JSON.parse(genderDays); } catch (e) {} }
 
     const branch = await getSharedPrismaClient().bookingBranch.create({
       data: { companyId, name: name.trim(), address, phone, workingDays, genderDays }
@@ -40,10 +45,13 @@ const updateBranch = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { name, address, phone, workingDays, genderDays, isActive } = req.body;
+    let { name, address, phone, workingDays, genderDays, isActive } = req.body;
 
     const existing = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الفرع غير موجود' });
+
+    if (typeof workingDays === 'string') { try { workingDays = JSON.parse(workingDays); } catch (e) {} }
+    if (typeof genderDays === 'string') { try { genderDays = JSON.parse(genderDays); } catch (e) {} }
 
     const branch = await getSharedPrismaClient().bookingBranch.update({
       where: { id },

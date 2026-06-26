@@ -85,11 +85,15 @@ const getServices = async (req, res) => {
     const where = { companyId: company.id, isActive: true };
     if (branchId) where.branchId = branchId;
 
-    const services = await getSharedPrismaClient().bookingService.findMany({
+    let services = await getSharedPrismaClient().bookingService.findMany({
       where,
       select: { id: true, name: true, description: true, branchId: true, hasPackages: true, packages: true, requiresConsultation: true },
       orderBy: { name: 'asc' }
     });
+    services = services.map(s => ({
+      ...s,
+      packages: typeof s.packages === 'string' ? (() => { try { return JSON.parse(s.packages); } catch (e) { return s.packages; } })() : s.packages
+    }));
 
     res.json({ success: true, data: services });
   } catch (error) {
@@ -114,6 +118,10 @@ const getAvailableSlots = async (req, res) => {
     if (!branch) return res.status(404).json({ success: false, error: 'الفرع غير موجود' });
 
     if (!branch.isActive) return res.status(400).json({ success: false, error: 'الفرع غير متاح حالياً' });
+
+    const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
+    branch.genderDays = tryParse(branch.genderDays);
+    branch.workingDays = tryParse(branch.workingDays);
 
     const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(date).getDay()];
 
@@ -176,6 +184,9 @@ const createAppointment = async (req, res) => {
     });
     if (!branch) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
     if (!branch.isActive) return res.status(400).json({ success: false, error: 'الفرع غير متاح حالياً' });
+
+    const tryParse2 = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
+    branch.genderDays = tryParse2(branch.genderDays);
 
     if (customerGender && branch.genderDays) {
       const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(appointmentDate).getDay()];

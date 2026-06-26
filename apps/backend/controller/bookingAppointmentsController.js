@@ -68,6 +68,10 @@ const getAvailableSlots = async (req, res) => {
     const branch = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id: branchId, companyId } });
     if (!branch) return res.status(404).json({ success: false, error: 'الفرع غير موجود' });
 
+    const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
+    branch.workingDays = tryParse(branch.workingDays);
+    branch.genderDays = tryParse(branch.genderDays);
+
     const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(date).getDay()];
 
     // Check gender-based access if genderDays is configured
@@ -153,6 +157,9 @@ const createAppointment = async (req, res) => {
     // Verify branch and check gender day rules
     const branch = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id: branchId, companyId } });
     if (!branch) return res.status(400).json({ success: false, error: 'الفرع غير موجود' });
+
+    const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch (e) { return v; } })() : v;
+    branch.genderDays = tryParse(branch.genderDays);
 
     if (customerGender && branch.genderDays) {
       const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(appointmentDate).getDay()];
