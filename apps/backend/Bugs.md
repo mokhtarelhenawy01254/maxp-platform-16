@@ -1,3 +1,11 @@
+## [2026-06-26] Medical Center Management Page Design Inconsistencies
+
+- **Bug/Issue**: Layout, paddings, modal widths, empty states, and action button sizes were inconsistent and misaligned across different tabs on the Booking Management (Medical Center) page.
+- **Root Cause**: Ad-hoc styling in `BookingManagementPage.tsx` where layout parameters (like `max-w-*` on modals or table padding classes) varied tab-by-tab.
+- **Fix**: Standardized containers, unified table spacing and header backgrounds, unified modal widths to `max-w-xl`, standardized empty state wrappers, and corrected styling on branch action buttons.
+- **Files**:
+  - `apps/frontend/src/pages/admin/BookingManagementPage.tsx`
+
 ## [2026-06-24] WhatsApp Sessions In-Memory Mismatch Due to PM2 Cluster Mode
 
 - **Bug/Issue**: Some WhatsApp messages failed to send with a "الجلسة غير متصلة حالياً" (Session not connected) error, and sessions would show up as disconnected on pages other than the creation view, even when successfully linked and QR scanned. Only ~25% of attempts went through successfully.

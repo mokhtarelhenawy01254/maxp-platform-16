@@ -1,5 +1,16 @@
 # Team Sync Notes
 
+## [2026-06-26]
+
+### Medical Center Management Page Design Polish & Consistency
+- **Accomplishment**: Fixed visual and structural inconsistencies across all 6 tabs of the Booking Management (Medical Center) page, establishing uniform spacing, layouts, table paddings, and modal dimensions.
+- **Details**:
+  - Replaced fixed/inconsistent top padding with a responsive system (`p-4 md:p-6 lg:p-8`) constrained by a unified `max-w-[1600px]` wrapper.
+  - Unified table row/cell spacing to `py-3 px-4` and standardized default backgrounds (`bg-gray-50`) for headers.
+  - Aligned branch edit/delete action button sizing to `p-1.5` and added tooltip accessibility.
+  - Unified creation and update modal widths to `max-w-xl` across all 5 settings dialogs.
+  - Consolidated empty state layouts using `text-center py-12`.
+
 ## [2026-03-09]
 
 ### WhatsApp Session Connection Resolution & PM2 Fork Configuration

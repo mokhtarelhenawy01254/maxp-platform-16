@@ -86,7 +86,7 @@ const BranchModal = ({ branch, onClose, onSave }: {
   };
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">{branch?.id ? "تعديل فرع" : "إضافة فرع"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
@@ -127,7 +127,7 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
   const [form, setForm] = useState({ name: "", branchId: "", specialty: "", phone: "", isActive: true, ...doctor });
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">{doctor?.id ? "تعديل طبيب" : "إضافة طبيب"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
@@ -439,6 +439,9 @@ export default function BookingManagementPage() {
 
   const renderDashboard = () => (
     <div>
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <h2 className="text-xl font-bold">لوحة التحكم</h2>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: "مواعيد اليوم", value: stats.todayAppointments.length, icon: CalendarDaysIcon, color: "bg-blue-500" },
@@ -475,17 +478,17 @@ export default function BookingManagementPage() {
           <div key={branch.id} className="bg-white rounded-xl shadow-sm border p-4 mb-4">
             <h3 className="font-bold text-lg mb-3 flex items-center gap-2"><BuildingOffice2Icon className="w-5 h-5 text-gray-500" />{branch.name}</h3>
             {branchAppts.length === 0 ? (
-              <p className="text-sm text-gray-400">لا توجد مواعيد</p>
+              <p className="text-center py-12 text-gray-400">لا توجد مواعيد</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b text-gray-500">{["العميل", "التاريخ", "الوقت", "الحالة"].map(h => <th key={h} className="text-right py-2 px-3">{h}</th>)}</tr></thead>
+                  <thead><tr className="border-b bg-gray-50 text-gray-500 text-sm">{["العميل", "التاريخ", "الوقت", "الحالة"].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
                   <tbody>{branchAppts.map(a => (
                     <tr key={a.id} className="border-b hover:bg-gray-50">
-                      <td className="py-2 px-3">{a.customerName}</td>
-                      <td className="py-2 px-3">{a.appointmentDate}</td>
-                      <td className="py-2 px-3">{a.startTime}</td>
-                      <td className="py-2 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
+                      <td className="py-3 px-4">{a.customerName}</td>
+                      <td className="py-3 px-4">{a.appointmentDate}</td>
+                      <td className="py-3 px-4">{a.startTime}</td>
+                      <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
                     </tr>
                   ))}</tbody>
                 </table>
@@ -499,7 +502,7 @@ export default function BookingManagementPage() {
 
   const renderBranches = () => (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h2 className="text-xl font-bold">إدارة الفروع</h2>
         <button onClick={() => setBranchModal({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة فرع</button>
       </div>
@@ -524,10 +527,10 @@ export default function BookingManagementPage() {
               }</td>
               <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${b.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{b.isActive ? "نشط" : "غير نشط"}</span></td>
               <td className="py-3 px-4">
-                <div className="flex gap-2">
-                  <button onClick={() => setBranchModal(b)} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><PencilIcon className="w-4 h-4" /></button>
-                  <button onClick={() => toggleActive("branches", b.id, b.isActive)} className={`p-1 rounded ${b.isActive ? "text-red-500 hover:bg-red-50" : "text-green-500 hover:bg-green-50"}`}><CheckIcon className="w-4 h-4" /></button>
-                  <button onClick={() => deleteItem("branches", b.id)} className="p-1 text-red-500 hover:bg-red-50 rounded"><TrashIcon className="w-4 h-4" /></button>
+                <div className="flex gap-1">
+                  <button onClick={() => setBranchModal(b)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
+                  <button onClick={() => toggleActive("branches", b.id, b.isActive)} className={`p-1.5 rounded ${b.isActive ? "text-red-500 hover:bg-red-50" : "text-green-500 hover:bg-green-50"}`} title={b.isActive ? "تعطيل" : "تفعيل"}><CheckIcon className="w-4 h-4" /></button>
+                  <button onClick={() => deleteItem("branches", b.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="حذف"><TrashIcon className="w-4 h-4" /></button>
                 </div>
               </td>
             </tr>
@@ -542,7 +545,7 @@ export default function BookingManagementPage() {
     const filtered = doctors.filter(d => !searchDoctor || (d.name || '').includes(searchDoctor) || (d.specialty || '').includes(searchDoctor));
     return (
       <div>
-        <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           <h2 className="text-xl font-bold">إدارة الأطباء</h2>
           <div className="flex gap-3">
             <div className="relative"><MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-2.5 text-gray-400" /><input className="border rounded-lg pr-9 pl-3 py-2 text-sm w-48" placeholder="بحث..." value={searchDoctor} onChange={e => setSearchDoctor(e.target.value)} /></div>
@@ -566,7 +569,7 @@ export default function BookingManagementPage() {
               </div>
             );
           })}
-          {filtered.length === 0 && <p className="col-span-full text-gray-400 text-center py-8">لا يوجد أطباء</p>}
+          {filtered.length === 0 && <p className="col-span-full text-gray-400 text-center py-12">لا يوجد أطباء</p>}
         </div>
         {doctorModal !== undefined && <DoctorModal doctor={doctorModal} branches={branches} onClose={() => setDoctorModal(undefined)} onSave={saveDoctor} />}
       </div>
@@ -577,7 +580,7 @@ export default function BookingManagementPage() {
     const filtered = services.filter(s => !searchService || s.name.includes(searchService));
     return (
       <div>
-        <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           <h2 className="text-xl font-bold">إدارة الخدمات</h2>
           <div className="flex gap-3">
             <div className="relative"><MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-2.5 text-gray-400" /><input className="border rounded-lg pr-9 pl-3 py-2 text-sm w-48" placeholder="بحث..." value={searchService} onChange={e => setSearchService(e.target.value)} /></div>
@@ -612,7 +615,7 @@ export default function BookingManagementPage() {
               </div>
             );
           })}
-          {filtered.length === 0 && <p className="col-span-full text-gray-400 text-center py-8">لا توجد خدمات</p>}
+          {filtered.length === 0 && <p className="col-span-full text-gray-400 text-center py-12">لا توجد خدمات</p>}
         </div>
         {serviceModal !== undefined && <ServiceModal service={serviceModal} onClose={() => setServiceModal(undefined)} onSave={saveService} />}
       </div>
@@ -621,7 +624,7 @@ export default function BookingManagementPage() {
 
   const renderAppointments = () => (
     <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h2 className="text-xl font-bold">المواعيد</h2>
         <div className="flex flex-wrap gap-3 items-center">
           <select className="border rounded-lg px-3 py-2 text-sm" value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>
@@ -642,9 +645,9 @@ export default function BookingManagementPage() {
           <thead><tr className="border-b bg-gray-50 text-gray-500 text-sm">{["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">جاري التحميل...</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-400">جاري التحميل...</td></tr>
             ) : appointments.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">لا توجد مواعيد</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-400">لا توجد مواعيد</td></tr>
             ) : appointments.map(a => (
               <tr key={a.id} className="border-b hover:bg-gray-50 text-sm">
                 <td className="py-3 px-4 font-medium">{a.customerName}</td>
@@ -714,7 +717,7 @@ export default function BookingManagementPage() {
 
     return (
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-xl font-bold">{monthNames[month]} {year}</h2>
           <div className="flex gap-2">
             <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronRightIcon className="w-5 h-5" /></button>
@@ -752,7 +755,7 @@ export default function BookingManagementPage() {
           <div className="mt-4 bg-white rounded-xl shadow-sm border p-4">
             <h3 className="font-bold mb-3">مواعيد {selectedDay}</h3>
             {dayAppts.length === 0 ? (
-              <p className="text-sm text-gray-400">لا توجد مواعيد</p>
+              <p className="text-center py-12 text-gray-400">لا توجد مواعيد</p>
             ) : (
               <div className="space-y-2">
                 {dayAppts.map(a => (
@@ -778,10 +781,10 @@ export default function BookingManagementPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1">إدارة المركز الطبي</h1>
-        <p className="text-gray-500 text-sm">نظام إدارة المواعيد والخدمات الطبية</p>
+    <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">إدارة المركز الطبي</h1>
+        <p className="text-gray-500 text-sm max-w-2xl">نظام إدارة المواعيد والخدمات الطبية</p>
       </div>
       <div className="mb-4">
         <select className="border rounded-lg px-3 py-2 text-sm w-64" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
@@ -792,7 +795,7 @@ export default function BookingManagementPage() {
           <button onClick={() => setSelectedBranchId("")} className="mr-2 text-sm text-blue-600 hover:text-blue-700">إزالة الفلتر</button>
         )}
       </div>
-      <div className="flex gap-1 mb-6 border-b overflow-x-auto">
+      <div className="flex gap-2 mb-8 border-b overflow-x-auto">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}>
@@ -801,7 +804,7 @@ export default function BookingManagementPage() {
         ))}
       </div>
       {loading && activeTab !== "appointments" && activeTab !== "calendar" ? (
-        <div className="text-center py-12 text-gray-400">جاري التحميل...</div>
+        <div className="text-center py-16 text-gray-400">جاري التحميل...</div>
       ) : (
         <>
           {activeTab === "dashboard" && renderDashboard()}
