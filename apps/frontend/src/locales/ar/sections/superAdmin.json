@@ -207,6 +207,7 @@
     "aiModels": "الذكاء الصناعي",
     "aiProviders": "مفاتيح ومزودي النماذج",
     "providerLogs": "لوج المزودين",
+    "aiTemplates": "قوالب الذكاء الاصطناعي",
     "agentProfiles": "الوكلاء الجاهزون"
   },
   "globalSearchPlaceholder": "ابحث في النظام بالكامل...",

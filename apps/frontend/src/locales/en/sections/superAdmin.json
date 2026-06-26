@@ -207,6 +207,7 @@
     "aiModels": "AI Models",
     "aiProviders": "AI Providers & Keys",
     "providerLogs": "Provider Logs",
+    "aiTemplates": "AI Templates",
     "agentProfiles": "Ready Agent Profiles"
   },
   "globalSearchPlaceholder": "Search the entire system...",

@@ -24,6 +24,7 @@ const SuperAdminAITemplates: React.FC = () => {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [industryFilter, setIndustryFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -57,6 +58,8 @@ const SuperAdminAITemplates: React.FC = () => {
     if (search && !t.name.toLowerCase().includes(search.toLowerCase()) && !t.role.toLowerCase().includes(search.toLowerCase()) && !t.slug.toLowerCase().includes(search.toLowerCase())) return false;
     if (roleFilter && t.role !== roleFilter) return false;
     if (industryFilter && !t.industries.includes(industryFilter)) return false;
+    if (statusFilter === "active" && t.isActive === false) return false;
+    if (statusFilter === "hidden" && t.isActive !== false) return false;
     return true;
   });
 
@@ -146,6 +149,12 @@ const SuperAdminAITemplates: React.FC = () => {
           className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
           <option value="">كل المجالات</option>
           {allIndustries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
+        </select>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+          className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
+          <option value="">كل الحالات</option>
+          <option value="active">نشط</option>
+          <option value="hidden">مخفي</option>
         </select>
         <span className="text-xs text-muted-foreground">{filtered.length} من {templates.length}</span>
       </div>
