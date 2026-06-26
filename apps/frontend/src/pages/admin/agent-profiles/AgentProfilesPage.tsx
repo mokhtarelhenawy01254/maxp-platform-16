@@ -272,6 +272,7 @@ export default function AgentProfilesPage() {
   const [quickTitle, setQuickTitle] = useState('');
   const [quickPersonality, setQuickPersonality] = useState<ReadyAgentPersonality | null>(null);
   const [quickCreating, setQuickCreating] = useState(false);
+  const [readySelectorOpen, setReadySelectorOpen] = useState(false);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!profile) return false;
@@ -576,7 +577,7 @@ export default function AgentProfilesPage() {
       const remaining = agents.filter((a) => a.id !== selectedId);
       setAgents(remaining);
       if (remaining.length > 0) setSelectedId(remaining[0].id);
-      else setSelectedId(null);
+      else { setSelectedId(null); setProfile(null); setProfileError(null); }
       toast.success(t("agentProfiles.toast.deleteSuccess"));
     } else {
       setCreateError(t("agentProfiles.toast.deleteFailed"));
@@ -686,7 +687,7 @@ export default function AgentProfilesPage() {
         <Bot className="size-4 text-primary" aria-hidden="true" />
         <h2 className="text-sm font-bold text-foreground/90">{t("agentProfiles.sidebar.title")}</h2>
         {!agentsLoading && <Badge variant="secondary" className="text-xs mr-auto">{agents.length}</Badge>}
-        <button onClick={() => setCreateOpen(true)}
+        <button onClick={() => setReadySelectorOpen(true)}
           className="flex items-center justify-center size-6 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-primary"
           title={t("agentProfiles.sidebar.addTitle")}
         >
@@ -791,7 +792,7 @@ export default function AgentProfilesPage() {
             >
               <RefreshCw className={cn("size-4", agentsLoading && "animate-spin")} aria-hidden="true" />
             </button>
-            <button onClick={() => setCreateOpen(true)}
+            <button onClick={() => setReadySelectorOpen(true)}
               className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t("agentProfiles.sidebar.addTitle")}
               title={t("agentProfiles.sidebar.addTitle")}
@@ -891,7 +892,7 @@ export default function AgentProfilesPage() {
           ) : (
             <div className="space-y-2">
             <p className="text-sm text-muted-foreground/70">{t("agentProfiles.header.noSelectionHint")}</p>
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setReadySelectorOpen(true)}>
               <Plus className="size-3.5 ml-1" />{t("agentProfiles.sidebar.addTitle")}
             </Button>
           </div>
@@ -1393,6 +1394,38 @@ export default function AgentProfilesPage() {
                 )}
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Ready Agent Selector Dialog ── */}
+      <Dialog open={readySelectorOpen} onOpenChange={(o) => { if (!o) setReadySelectorOpen(false); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Bot className="size-5 text-primary" />
+              اختر وكيلاً جاهزاً
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {READY_AGENTS.map((a) => (
+                <button key={a.slug} type="button" onClick={() => { setReadySelectorOpen(false); setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
+                  className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-right shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
+                >
+                  <span className="text-2xl">{a.icon}</span>
+                  <div className="text-right w-full">
+                    <p className="text-sm font-bold text-foreground">{a.title}</p>
+                    {a.category && <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">{a.category}</span>}
+                    <p className="text-xs text-muted-foreground/70 mt-0.5 leading-relaxed">{a.desc}</p>
+                  </div>
+                  <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">اختر هذا →</span>
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => { setReadySelectorOpen(false); setCreateOpen(true); }} className="mt-4 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+              أو أنشئ وكيل مخصص ←
+            </button>
           </div>
         </DialogContent>
       </Dialog>
