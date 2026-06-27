@@ -252,7 +252,8 @@ const authenticateToken = async (req, res, next) => {
           select: {
             role: true,
             isActive: true,
-            roleId: true
+            roleId: true,
+            roleRef: { select: { key: true } }
           }
         })
       );
@@ -275,8 +276,8 @@ const authenticateToken = async (req, res, next) => {
             userPrimaryCompany: user.companyId
           });
         }
-      } else if (membership.role) {
-        effectiveRole = membership.role;
+      } else {
+        effectiveRole = membership.roleRef?.key || membership.role || effectiveRole;
       }
     }
 

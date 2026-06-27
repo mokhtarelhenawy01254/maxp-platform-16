@@ -440,6 +440,11 @@ export const printOrderInvoice = async ({
             <div class="invoice-title">
               <h2>فاتورة</h2>
               <p><strong>رقم الطلب:</strong> ${escapeHtml(order.orderNumber)}</p>
+              ${
+                order.turboTrackingNumber
+                  ? `<p><strong>رقم تتبع تربو:</strong> ${escapeHtml(order.turboTrackingNumber)}</p>`
+                  : ""
+              }
               <p><strong>التاريخ:</strong> ${escapeHtml(
                 new Date(order.createdAt).toLocaleDateString("ar-EG", {
                   year: "numeric",

@@ -890,6 +890,9 @@ const me = async (req, res) => {
         userCompanies: {
           where: { isActive: true },
           include: {
+            roleRef: {
+              select: { key: true, name: true }
+            },
             company: {
               select: {
                 id: true,
@@ -951,10 +954,10 @@ const me = async (req, res) => {
     const companiesMap = new Map();
     let currentActiveRole = decoded.role || user.role;
 
-    // Helper to find role in a specific company
+    // Helper to find role in a specific company (prefer custom roleRef.key)
     const findRoleInCompany = (cid) => {
       const assoc = user.userCompanies.find(uc => uc.companyId === cid);
-      return assoc ? assoc.role : user.role;
+      return assoc?.roleRef?.key || (assoc ? assoc.role : user.role);
     };
 
     // Add main company first
@@ -1017,14 +1020,26 @@ const me = async (req, res) => {
       role: currentActiveRole,
     });
 
+    // Load user permissions for granular frontend gating
+    let permissions = [];
+    try {
+      const permissionService = require('../services/permissionService');
+      permissions = await permissionService.getUserPermissions(user.id, decoded.companyId || user.companyId);
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[ME] Could not load permissions:', e.message);
+      }
+    }
+
     res.json({
       success: true,
       data: {
         ...userWithoutSensitive,
-        companyId: decoded.companyId || user.companyId, // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Use active company ID from token
-        role: currentActiveRole, // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Override with context-aware role
+        companyId: decoded.companyId || user.companyId, // âœ¦ Use active company ID from token
+        role: currentActiveRole, // âœ¦ Override with context-aware role
+        permissions,
         affiliate: affiliateProfile,
-        company: currentCompany, // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Return the currently selected company
+        company: currentCompany, // âœ¦ Return the currently selected company
         companies: Array.from(companiesMap.values()),
         hasMultipleCompanies: companiesMap.size > 1,
         devStats: user.dev_team_members?.[0] ? {

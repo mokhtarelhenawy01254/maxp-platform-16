@@ -137,6 +137,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
                 <span className="font-semibold">طلب:</span>{" "}
                 {invoice.order?.orderNumber}
               </p>
+              {invoice.order?.turboTrackingNumber && (
+                <p className="text-sm">
+                  <span className="font-semibold">رقم تتبع تربو:</span>{" "}
+                  {invoice.order.turboTrackingNumber}
+                </p>
+              )}
               <p className="text-sm">
                 <span className="font-semibold">التاريخ:</span>{" "}
                 {new Date(invoice.issueDate).toLocaleDateString("ar-EG")}

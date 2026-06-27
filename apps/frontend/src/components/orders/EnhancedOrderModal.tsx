@@ -15,12 +15,20 @@ import cancellationReasonService from "../../services/cancellationReasonService"
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
 
+interface StatusOption {
+  code: string;
+  name: string;
+  color?: string;
+  icon?: string;
+}
+
 interface EnhancedOrderModalProps {
   order: any;
   isOpen: boolean;
   onClose: () => void;
   onOrderUpdate?: (updatedOrder: any) => void;
   canManagePaymentStatus?: boolean;
+  orderStatuses?: StatusOption[];
 }
 
 const isCancellationStatus = (status?: string | null) => {
@@ -34,6 +42,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   onClose,
   onOrderUpdate,
   canManagePaymentStatus = true,
+  orderStatuses,
 }) => {
   const { formatPrice } = useCurrency();
   const { t } = useTranslation();
@@ -50,6 +59,18 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const fallbackStatuses: StatusOption[] = [
+    { code: "PENDING", name: "قيد الانتظار" },
+    { code: "CONFIRMED", name: "مؤكد" },
+    { code: "ON_HOLD", name: "معلق" },
+    { code: "PROCESSING", name: "قيد التجهيز" },
+    { code: "SHIPPED", name: "تم الشحن" },
+    { code: "DELIVERED", name: "تم التسليم" },
+    { code: "CANCELLED", name: "ملغي" },
+    { code: "REFUNDED", name: "مسترد" },
+    { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً" },
+  ];
 
   const normalizeItems = (rawItems: any): any[] => {
     if (!rawItems) return [];
@@ -640,18 +661,17 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                   value={(
                     pendingCancellationStatus ||
                     order.status ||
-                    "pending"
-                  ).toLowerCase()}
+                    "PENDING"
+                  ).toUpperCase()}
                   onChange={(e) => handleStatusSelect(e.target.value)}
                   disabled={isUpdating || !canManageOrderStatus}
                   className="theme-native-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <option value="pending">{t("orders.pending")}</option>
-                  <option value="confirmed">{t("orders.confirmed")}</option>
-                  <option value="processing">{t("orders.processing")}</option>
-                  <option value="shipped">{t("orders.shipped")}</option>
-                  <option value="delivered">{t("orders.delivered")}</option>
-                  <option value="cancelled">{t("orders.cancelled")}</option>
+                  {(orderStatuses && orderStatuses.length > 0 ? orderStatuses : fallbackStatuses).map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
