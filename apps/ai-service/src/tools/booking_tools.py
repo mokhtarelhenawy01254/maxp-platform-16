@@ -88,22 +88,34 @@ async def create_appointment(company_id: str, data: dict[str, Any]) -> dict[str,
 
     # ponytail: if DeepSeek sends null for patient fields, use defaults that pass gender-day validation
     from datetime import timedelta
-    if not data.get("customerName") and not data.get("appointmentDate") and not data.get("startTime") and not data.get("customerGender"):
+    if not data.get("customerName") and not data.get("customerGender") and not data.get("startTime"):
         data["customerName"] = "مريض مركز قادرون"
         data["customerGender"] = "MALE"
-        # Pick next valid day for MALE (Sat=5, Mon=0, Wed=2)
-        MALE_DAYS = {5, 0, 2}
-        today = date_type.today()
-        d = today
-        for _ in range(7):
-            if d.weekday() in MALE_DAYS:
-                data["appointmentDate"] = d.isoformat()
-                break
-            d += timedelta(days=1)
         if not data.get("appointmentDate"):
-            data["appointmentDate"] = (today + timedelta(days=1)).isoformat()
-        data["startTime"] = "10:00"
-        logger.warning("defaulted all patient fields for DeepSeek null-param workaround", date=data["appointmentDate"])
+            MALE_DAYS = {5, 0, 2}
+            today = date_type.today()
+            d = today
+            for _ in range(7):
+                if d.weekday() in MALE_DAYS:
+                    data["appointmentDate"] = d.isoformat()
+                    break
+                d += timedelta(days=1)
+            if not data.get("appointmentDate"):
+                data["appointmentDate"] = (today + timedelta(days=1)).isoformat()
+        # Check available slots for this date and pick the first unbooked one
+        try:
+            slots = await client.get_booking_available_slots(company_id, data.get("branchId", ""), data["appointmentDate"])
+            if slots:
+                available = [s for s in slots if s.get("available")]
+                if available:
+                    data["startTime"] = available[0]["startTime"]
+                else:
+                    data["startTime"] = "10:00"
+            else:
+                data["startTime"] = "10:00"
+        except Exception:
+            data["startTime"] = "10:00"
+        logger.warning("defaulted all patient fields for DeepSeek null-param workaround", date=data["appointmentDate"], time=data["startTime"])
 
     # ponytail: if DeepSeek sends a date that doesn't match the gender, pick the next valid day
     if data.get("appointmentDate"):
