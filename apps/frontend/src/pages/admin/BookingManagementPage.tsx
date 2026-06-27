@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
@@ -6,7 +6,7 @@ import {
   BuildingOffice2Icon, UserGroupIcon, WrenchScrewdriverIcon,
   CalendarDaysIcon, ChartBarSquareIcon, PlusIcon,
   PencilIcon, TrashIcon, EyeIcon, XMarkIcon, CheckIcon,
-  ClockIcon, FunnelIcon, MagnifyingGlassIcon,
+  ClockIcon, MagnifyingGlassIcon,
   ChevronLeftIcon, ChevronRightIcon
 } from "@heroicons/react/24/outline";
 
@@ -24,10 +24,17 @@ interface BookingDoctor {
   specialty: string; phone: string; isActive: boolean; createdAt: string;
 }
 
+interface BookingBranchServiceInfo {
+  id: string; serviceId: string; branchId: string;
+  branch: { id: string; name: string };
+  hasPackages: boolean; packages: { count: number; price: number }[];
+  isActive: boolean;
+}
+
 interface BookingService {
-  id: string; name: string; description: string; duration: number;
-  defaultPrice: number; packages: { sessions: number; price: number; }[];
+  id: string; name: string; description: string;
   isActive: boolean; createdAt: string;
+  branchServices: BookingBranchServiceInfo[];
 }
 
 interface BookingAppointment {
@@ -170,58 +177,105 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
   );
 };
 
+interface BranchPkg { count: number; price: number }
+
 const ServiceModal = ({ service, branches, onClose, onSave }: {
   service?: Partial<BookingService> | null;
   branches: BookingBranch[];
   onClose: () => void;
   onSave: (d: Partial<BookingService>) => Promise<void>;
 }) => {
-  const [form, setForm] = useState<Partial<BookingService>>({ name: "", description: "", duration: 30, defaultPrice: 0, branchId: "", packages: [], isActive: true, ...service });
-  const addPackage = () => setForm({ ...form, packages: [...(form.packages || []), { sessions: 1, price: 0 }] });
-  const updatePackage = (i: number, k: string, v: number) => {
-    const p = [...(form.packages || [])];
-    p[i] = { ...p[i], [k]: v };
-    setForm({ ...form, packages: p });
+  const initBranchAssignments = () => {
+    if (!service?.branchServices) return {} as Record<string, BranchPkg[]>;
+    const acc: Record<string, BranchPkg[]> = {};
+    for (const bs of service.branchServices) {
+      acc[bs.branchId] = (bs.packages || []).map(p => ({ count: p.count, price: p.price }));
+    }
+    return acc;
   };
-  const removePackage = (i: number) => setForm({ ...form, packages: (form.packages || []).filter((_, idx) => idx !== i) });
+  const [name, setName] = useState(service?.name || "");
+  const [desc, setDesc] = useState(service?.description || "");
+  const [branchPkgs, setBranchPkgs] = useState<Record<string, BranchPkg[]>>(initBranchAssignments);
+
+  const toggleBranch = (branchId: string) => {
+    const next = { ...branchPkgs };
+    if (next[branchId]) { delete next[branchId]; }
+    else { next[branchId] = []; }
+    setBranchPkgs(next);
+  };
+
+  const addPkg = (branchId: string) => setBranchPkgs({ ...branchPkgs, [branchId]: [...(branchPkgs[branchId] || []), { count: 1, price: 0 }] });
+  const updPkg = (branchId: string, i: number, k: "count" | "price", v: number) => {
+    const pkgs = [...(branchPkgs[branchId] || [])];
+    const cur = pkgs[i];
+    if (!cur) return;
+    pkgs[i] = k === "count" ? { count: v, price: cur.price } : { count: cur.count, price: v };
+    setBranchPkgs({ ...branchPkgs, [branchId]: pkgs });
+  };
+  const delPkg = (branchId: string, i: number) => {
+    const pkgs = (branchPkgs[branchId] || []).filter((_, idx) => idx !== i);
+    const next = { ...branchPkgs };
+    if (pkgs.length) next[branchId] = pkgs; else delete next[branchId];
+    setBranchPkgs(next);
+  };
+  const hasBranches = Object.keys(branchPkgs).length > 0;
+
+  const handleSave = () => {
+    const payload: Partial<BookingService> & { assignedBranchIds?: string[]; branches?: { branchId: string; packages: BranchPkg[] }[] } = {
+      name, description: desc,
+      assignedBranchIds: Object.keys(branchPkgs),
+      branches: Object.entries(branchPkgs).map(([branchId, pkgs]) => ({
+        branchId,
+        packages: pkgs.filter(p => p.count > 0)
+      }))
+    };
+    onSave(payload);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">{service?.id ? "تعديل خدمة" : "إضافة خدمة"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
-            <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value })}>
-              <option value="">اختر الفرع</option>
-              {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المدة (دقائق)</label><input type="number" min={5} className={MODAL_INPUT_CLS} value={form.duration} onChange={e => setForm({ ...form, duration: Number(e.target.value) })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">السعر الافتراضي (ج.م)</label><input type="number" min={0} className={MODAL_INPUT_CLS} value={form.defaultPrice} onChange={e => setForm({ ...form, defaultPrice: Number(e.target.value) })} /></div>
-          </div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={name} onChange={e => setName(e.target.value)} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label><textarea className={MODAL_INPUT_CLS} rows={2} value={desc} onChange={e => setDesc(e.target.value)} /></div>
+
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">الباقات</label>
-              <button onClick={addPackage} className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium">+ إضافة باقة</button>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الفروع المقدمة فيها الخدمة</label>
+            {!hasBranches && <p className="text-sm text-gray-400 dark:text-gray-500 mb-2">اختر فرعاً واحداً على الأقل</p>}
+            <div className="space-y-2 max-h-64 overflow-y-auto border dark:border-gray-600 rounded-lg p-2">
+              {branches.filter(b => b.isActive).map(b => {
+                const checked = !!branchPkgs[b.id];
+                return (
+                  <div key={b.id} className="border dark:border-gray-600 rounded-lg">
+                    <label className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                      <input type="checkbox" checked={checked} onChange={() => toggleBranch(b.id)} className="rounded border-gray-300 dark:border-gray-600" />
+                      <span className="text-sm font-medium">{b.name}</span>
+                    </label>
+                    {checked && (
+                      <div className="pr-8 pb-2 space-y-1">
+                        {(branchPkgs[b.id] || []).map((pkg, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <input type="number" min={1} className="w-20 border dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100" placeholder="جلسات" value={pkg.count} onChange={e => updPkg(b.id, i, "count", Number(e.target.value))} />
+                            <input type="number" min={0} className="w-24 border dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100" placeholder="السعر" value={pkg.price} onChange={e => updPkg(b.id, i, "price", Number(e.target.value))} />
+                            <button onClick={() => delPkg(b.id, i)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><TrashIcon className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ))}
+                        <button onClick={() => addPkg(b.id)} className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium">+ إضافة باقة</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            {(form.packages || []).length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">لا توجد باقات</p>}
-            {(form.packages || []).map((pkg, i) => (
-              <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex-1"><label className="text-xs text-gray-500 dark:text-gray-400">الجلسات</label><input type="number" min={1} className="w-full border dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100" value={pkg.sessions} onChange={e => updatePackage(i, "sessions", Number(e.target.value))} /></div>
-                <div className="flex-1"><label className="text-xs text-gray-500 dark:text-gray-400">السعر</label><input type="number" min={0} className="w-full border dark:border-gray-600 rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100" value={pkg.price} onChange={e => updatePackage(i, "price", Number(e.target.value))} /></div>
-                <button onClick={() => removePackage(i)} className="mt-5 p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><TrashIcon className="w-4 h-4" /></button>
-              </div>
-            ))}
           </div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={() => onSave(form)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
+          <button onClick={handleSave} disabled={!name || !hasBranches} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
         </div>
       </div>
     </div>
@@ -253,10 +307,9 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
 
   const fetchSlots = async () => {
     setLoadingSlots(true);
-    const service = services.find(s => s.id === form.serviceId);
     const params = new URLSearchParams({
       branchId: form.branchId!, date: form.appointmentDate!,
-      serviceId: form.serviceId!, duration: String(service?.duration || 30),
+      serviceId: form.serviceId!, duration: "30",
     });
     try {
       const data = await fetchJson(api(`appointments/available-slots?${params}`));
@@ -382,10 +435,7 @@ export default function BookingManagementPage() {
   const fetchServices = async (branchId?: string) => {
     try {
       const data = await fetchJson(api(`services${branchId ? `?branchId=${branchId}` : ""}`));
-      setServices((data || []).map((s: any) => ({
-        ...s,
-        packages: (s.packages || []).map((p: any) => ({ sessions: p.count ?? p.sessions ?? 0, price: p.price ?? 0 }))
-      })));
+      setServices(data || []);
     } catch {}
   };
   const fetchAppointments = async () => {
@@ -428,17 +478,50 @@ export default function BookingManagementPage() {
     setDoctorModal(undefined); fetchDoctors();
   };
 
-  const saveService = async (d: Partial<BookingService>) => {
+  const saveService = async (d: any) => {
     const isEdit = !!d.id;
-    const url = isEdit ? api(`services/${d.id}`) : api("services");
-    const payload = {
-      ...d,
-      packages: (d.packages || []).filter(p => p.sessions > 0 && p.price > 0).map(p => ({ count: p.sessions, price: p.price })),
-    };
-    const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(payload) });
-    const data = await res.json();
-    if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
+    if (isEdit) {
+      const res = await fetch(api(`services/${d.id}`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ name: d.name, description: d.description }) });
+      const data = await res.json();
+      if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
+      if (d.branches) {
+        const oldService = services.find(s => s.id === d.id);
+        const oldBranchIds = new Set(oldService?.branchServices?.map(bs => bs.branchId) || []);
+        const newBranchIds = new Set(d.branches.map((b: any) => b.branchId));
+        for (const branchId of oldBranchIds) {
+          if (!newBranchIds.has(branchId)) {
+            await fetch(api(`services/${d.id}/branches/${branchId}`), { method: "DELETE", headers: getAuthHeaders() });
+          }
+        }
+        for (const b of d.branches) {
+          await fetch(api(`services/${d.id}/branches`), {
+            method: "POST", headers: getAuthHeaders(),
+            body: JSON.stringify({ branchId: b.branchId, packages: b.packages?.filter((p: any) => p.count > 0) || null })
+          });
+        }
+      }
+    } else {
+      const payload: any = { name: d.name, description: d.description };
+      if (d.branches?.length) {
+        payload.branches = d.branches.map((b: any) => ({
+          branchId: b.branchId,
+          packages: b.packages?.filter((p: any) => p.count > 0) || null,
+        }));
+      }
+      const res = await fetch(api("services"), { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
+    }
     setServiceModal(undefined); fetchServices();
+  };
+
+  const cloneService = async (s: BookingService) => {
+    const newName = prompt("اسم الخدمة الجديدة:", `نسخة من ${s.name}`);
+    if (!newName) return;
+    const res = await fetch(api(`services/${s.id}/clone`), { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ newName }) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الاستنساخ"); return; }
+    fetchServices();
   };
 
   const saveAppointment = async (d: Partial<BookingAppointment>) => {
@@ -664,28 +747,33 @@ export default function BookingManagementPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(s => {
-            const totalPkg = (s.packages || []).reduce((acc, p) => acc + p.sessions, 0);
+            const bs = s.branchServices || [];
+            const visibleBranches = bs.filter(b => b.isActive).slice(0, 3);
+            const extraCount = bs.filter(b => b.isActive).length - 3;
             return (
               <div key={s.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 ${!s.isActive ? "opacity-60" : ""}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div><h3 className="font-bold">{s.name}</h3><p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{s.description || "—"}</p></div>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${s.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{s.isActive ? "نشط" : "غير نشط"}</span>
                 </div>
-                <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  <span>{s.duration} دقيقة</span>
-                  <span>{s.defaultPrice} ج.م</span>
-                  {totalPkg > 0 && <span>باقة: {totalPkg} جلسة</span>}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {visibleBranches.map(b => (
+                    <span key={b.id} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">{b.branch.name}</span>
+                  ))}
+                  {extraCount > 0 && <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded">+{extraCount}</span>}
+                  {bs.length === 0 && <span className="text-xs text-gray-400 dark:text-gray-500">لا توجد فروع</span>}
                 </div>
-                {(s.packages || []).length > 0 && (
-                  <div className="mb-3">
-                    {s.packages!.map((pkg, i) => (
-                      <div key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 inline-block px-2 py-0.5 rounded ml-1 mb-1">{pkg.sessions} جلسات - {pkg.price} ج.م</div>
+                {bs.map(b => (b.packages || []).length > 0 && (
+                  <div key={b.id} className="mb-1">
+                    {b.packages!.map((pkg, i) => (
+                      <div key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 inline-block px-2 py-0.5 rounded ml-1 mb-1">{pkg.count} جلسات - {pkg.price} ج.م ({b.branch.name})</div>
                     ))}
                   </div>
-                )}
-                <div className="flex gap-2">
+                ))}
+                <div className="flex gap-2 mt-2">
                   <button onClick={() => setServiceModal(s)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                   <button onClick={() => toggleActive("services", s.id, s.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${s.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{s.isActive ? "تعطيل" : "تفعيل"}</button>
+                  <button onClick={() => cloneService(s)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />استنساخ</button>
                 </div>
               </div>
             );
