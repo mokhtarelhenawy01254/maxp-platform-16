@@ -20,10 +20,7 @@ class SlotsInput(BaseModel):
 
 class ReserveInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
-    service: str = Field(default="", description="Service name (e.g. حجامة, ريكفري, كشف). Partial match OK.")
-    date: str = Field(default="", description="Date YYYY-MM-DD")
-    time: str = Field(default="", description="Time HH:MM (optional - picks first available)")
-    patient_info: str = Field(default="", description="All patient info: name, phone, gender. Example: 'محمد, 01234567890, ذكر' or 'سارة 01112223333 أنثى'")
+    request: str = Field(..., description="ALL booking details in Arabic text: service name, date, time, patient name, phone, gender. Example: 'احجز جلسة حجامة السبت 27 يونيو الساعة 4 العصر لمحمد عبدالله 01234567890 ذكر'. Pass the full user message.")
 
 class StatusInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
@@ -40,14 +37,8 @@ async def booking_slots(input_data: SlotsInput) -> dict[str, Any]:
     return await booking_tools.get_slots(input_data.company_id, input_data.date, input_data.gender)
 
 async def booking_reserve(input_data: ReserveInput) -> dict[str, Any]:
-    """Books an appointment. Finds service, branch, doctor automatically. Parses patient_info for name/phone/gender."""
-    return await booking_tools.reserve_appointment(
-        input_data.company_id,
-        input_data.service,
-        input_data.date,
-        input_data.time,
-        input_data.patient_info,
-    )
+    """Books an appointment. Pass ALL details in the request text — the tool auto-extracts everything."""
+    return await booking_tools.reserve_appointment(input_data.company_id, input_data.request)
 
 async def booking_status(input_data: StatusInput) -> dict[str, Any]:
     """Checks appointment details or cancels it."""
@@ -70,7 +61,7 @@ booking_slots_tool = FunctionTool(
 
 booking_reserve_tool = FunctionTool(
     name="booking_reserve",
-    description="مركز طبي: حجز موعد. أدخل service=اسم الخدمة (مثلا حجامة), date=YYYY-MM-DD, time=HH:MM (اختياري), patient_info=اسم+رقم+جنس المريض (مثلا 'محمد, 01234567890, ذكر'). الأداة هتختار الفرع والدكتور تلقائيا.",
+    description="مركز طبي: حجز موعد. ضع كل التفاصيل في request: اسم الخدمة + التاريخ + الوقت + اسم المريض + رقم الهاتف + الجنس. مثال: 'احجز جلسة حجامة السبت 4 العصر لمحمد عبدالله 01234567890 ذكر'. الأداة تستخرج كل شئ تلقائيا.",
     func=booking_reserve,
     input_model=ReserveInput,
 )

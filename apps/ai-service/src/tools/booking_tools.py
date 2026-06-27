@@ -94,11 +94,17 @@ async def get_slots(company_id: str, date: str, gender: str = "") -> dict[str, A
 
 # ── booking_reserve ──
 
-async def reserve_appointment(company_id: str, service: str, date: str, time: str, patient_info: str) -> dict[str, Any]:
+async def reserve_appointment(company_id: str, request: str) -> dict[str, Any]:
+    """Parse one text field into all booking params, then create appointment."""
     if not company_id:
         return {"error": "no company_id"}
+    if not request or not request.strip():
+        return {"error": "request فارغ. مطلوب: اسم الخدمة + التاريخ + الوقت + اسم المريض + رقم الهاتف."}
 
     client = get_backend_client()
+
+    # Parse EVERYTHING from the single request text
+    service_name, date_str, time_str, name, phone, gender = _parse_request(request)
 
     # 1. Find branch — pick first with genderDays, else first
     branches = await client.get_booking_branches(company_id)
@@ -110,46 +116,37 @@ async def reserve_appointment(company_id: str, service: str, date: str, time: st
 
     # 2. Find service by name (partial match)
     services = await client.get_booking_services(company_id)
+    if not services:
+        return {"error": "لا توجد خدمات متاحة"}
     matched_svc = None
-    if service:
-        svc_lower = service.strip().lower().replace("ة", "ه")
+    if service_name:
+        svc_lower = service_name.strip().lower().replace("ة", "ه")
         for s in services:
             s_name = (s.get("name") or "").lower().replace("ة", "ه")
             if svc_lower in s_name or s_name in svc_lower:
                 matched_svc = s; break
-    if not matched_svc and services:
-        matched_svc = services[0]  # fallback: first service
     if not matched_svc:
-        return {"error": "لا توجد خدمات متاحة"}
+        matched_svc = services[0]  # fallback
     service_id = matched_svc.get("id", "")
-    service_name = matched_svc.get("name", "")
+    service_label = matched_svc.get("name", "")
 
     # 3. Find doctor
     doctors = await client.get_booking_doctors(company_id, branch_id)
     doctor_id = doctors[0].get("id", "") if doctors else ""
     doctor_name = doctors[0].get("name", "") if doctors else ""
 
-    # 4. Parse patient_info (may contain date/time too)
-    name, phone, gender, info_date, info_time = _parse_patient(patient_info)
+    # 4. Fallback for missing date
+    if not date_str:
+        date_str = date_type.today().isoformat()
 
-    # 5. Prefer date/time extracted from patient_info over tool params
-    if info_date and info_date != date:
-        logger.info("overriding date from patient_info", old=date, new=info_date)
-    date = info_date or date
-    time = info_time or time
-
-    # 6. Fallback for missing date
-    if not date:
-        date = date_type.today().isoformat()
-
-    # 6b. Auto-correct year hallucination (LLMs often output stale years)
-    if date and ("2024" in date or "2025" in date):
+    # 5. Auto-correct year hallucination (LLMs often output stale years)
+    if date_str and any(y in date_str for y in ("2024", "2025")):
         today = date_type.today()
-        date = date.replace("2024", str(today.year)).replace("2025", str(today.year))
-        logger.info("auto_corrected_year", corrected_date=date, reason="LLM year hallucination")
+        date_str = date_str.replace("2024", str(today.year)).replace("2025", str(today.year))
+        logger.info("auto_corrected_year", corrected_date=date_str, reason="LLM year hallucination")
 
-    # 7. Gender-day validation + auto-correct
-    date_obj = date_type.fromisoformat(date)
+    # 6. Gender-day validation + auto-correct
+    date_obj = date_type.fromisoformat(date_str)
     day_idx = date_obj.weekday()
 
     gd = _try_parse_json(branch.get("genderDays"))
@@ -164,47 +161,47 @@ async def reserve_appointment(company_id: str, service: str, date: str, time: st
     else:
         valid_days = male_days_set | female_days_set
 
-    original_date = date
+    original_date = date_str
     if day_idx not in valid_days and valid_days:
         d = date_obj
         for _ in range(14):
             d += timedelta(days=1)
             if d.weekday() in valid_days:
-                date = d.isoformat(); day_idx = d.weekday(); break
-        logger.warning("adjusted date for gender", original=original_date, new=date, gender=g)
+                date_str = d.isoformat(); day_idx = d.weekday(); break
+        logger.warning("adjusted date for gender", original=original_date, new=date_str, gender=g)
 
     # 7. Find available time if not specified
-    if not time:
+    if not time_str:
         try:
-            slots = await client.get_booking_available_slots(company_id, branch_id, date)
+            slots = await client.get_booking_available_slots(company_id, branch_id, date_str)
             avail = [s["startTime"] for s in slots if s.get("available")]
             if avail:
-                time = avail[0]
+                time_str = avail[0]
             else:
-                time = "10:00"
+                time_str = "10:00"
         except Exception:
-            time = "10:00"
+            time_str = "10:00"
 
     # 8. Create appointment
     data = {
         "branchId": branch_id, "doctorId": doctor_id, "serviceId": service_id,
         "customerName": name, "customerPhone": phone, "customerGender": g,
-        "appointmentDate": date, "startTime": time, "serviceName": service_name,
+        "appointmentDate": date_str, "startTime": time_str, "serviceName": service_label,
     }
     try:
         result = await client.create_booking_appointment(company_id, data)
     except Exception as e:
         err = str(e)
         if "محجوز بالفعل" in err:
-            return {"error": f"الوقت {time} في {date} محجوز بالفعل. اختر وقت أو يوم آخر.", "date": date, "time": time}
+            return {"error": f"الوقت {time_str} في {date_str} محجوز بالفعل. اختر وقت أو يوم آخر.", "date": date_str, "time": time_str}
         return {"error": f"تعذر الحجز: {err}"}
 
     return {
         "appointment": result,
         "branch": branch_name,
-        "service": service_name,
+        "service": service_label,
         "doctor": doctor_name,
-        "date": date, "time": time,
+        "date": date_str, "time": time_str,
         "patient": name, "phone": phone, "gender": g,
         "day_arabic": AR_DAY_NAMES.get(day_idx, ""),
     }
@@ -224,9 +221,11 @@ async def appointment_status(company_id: str, appointment_id: str, action: str =
 
 # ── helpers ──
 
-def _parse_patient(text: str) -> tuple[str, str, str, str, str]:
-    """Parse patient info from free text. Returns (name, phone, gender, date, time)."""
-    name, phone, gender, date, time = "", "", "MALE", "", ""
+def _parse_request(text: str) -> tuple[str, str, str, str, str, str]:
+    """Parse all booking info from a single Arabic text. Returns (service, date, time, name, phone, gender)."""
+    import datetime as _dt
+    service, date, time, name, phone, gender = "", "", "", "", "", "MALE"
+    today = _dt.date.today()
     parts = [p.strip() for p in re.split(r'[,،\n]', text) if p.strip()]
 
     # Phone: starts with 01 and is 11 digits
@@ -237,9 +236,7 @@ def _parse_patient(text: str) -> tuple[str, str, str, str, str]:
             gender = "MALE"; break
         if p in ("أنثى", "انثي", "انثى", "FEMALE", "female", "F", "س", "سيدة", "سيدات", "ست"):
             gender = "FEMALE"; break
-    # Date: look for explicit dates like 29-06-2026, 29/06, 29 يونيو, إثنين 29
-    import datetime as _dt
-    today = _dt.date.today()
+    # Date: explicit dates like 29-06-2026, 29/06, 29 يونيو, إثنين 29
     for p in parts:
         m = re.match(r'(\d{1,2})[-\/](\d{1,2})(?:[-\/](\d{4}))?$', p)
         if m:
@@ -248,7 +245,7 @@ def _parse_patient(text: str) -> tuple[str, str, str, str, str]:
             if y <= 2025: y = today.year
             try: date = _dt.date(y, mo, d).isoformat(); break
             except: pass
-        m = re.match(r'(\d{1,2})\s*(يونيو|يوليو|أغسطس|مايو|ابريل)', p)
+        m = re.match(r'(\d{1,2})\s*(يونيو|يوليو|أغسطس|مايو|ابريل|أغسطس)', p)
         if m:
             ar_months = {"يونيو":6,"يوليو":7,"أغسطس":8,"اغسطس":8,"مايو":5,"ابريل":4,"إبريل":4}
             mo_num = ar_months.get(m.group(2))
@@ -256,13 +253,12 @@ def _parse_patient(text: str) -> tuple[str, str, str, str, str]:
                 d = int(m.group(1))
                 try: date = _dt.date(today.year, mo_num, d).isoformat(); break
                 except: pass
-    # If date still empty, try day-of-week references
+    # Day-of-week references
     if not date:
         day_map = {"السبت":5,"سبت":5,"الأحد":6,"أحد":6,"الإثنين":0,"اثنين":0,"إثنين":0,"الثلاثاء":1,"ثلاثاء":1,"الأربعاء":2,"أربعاء":2,"الخميس":3,"الأربعاء":2,"الجمعة":4}
         for p in parts:
             for kw, idx in day_map.items():
                 if kw in p:
-                    # Check today first, then next 13 days
                     d = today - _dt.timedelta(days=1)
                     for _ in range(14):
                         d += _dt.timedelta(days=1)
@@ -270,6 +266,13 @@ def _parse_patient(text: str) -> tuple[str, str, str, str, str]:
                             date = d.isoformat(); break
                     if date: break
             if date: break
+    # Service name — look for keywords in text
+    svc_keywords = ["حجامه","حجامة","ريكفري","شوك ويف","كشف","علاج طبيعي","تصريف","مساج","مساح","شد الفقرات","شد"]
+    import unicodedata
+    text_normalized = unicodedata.normalize('NFKC', text).lower()
+    for kw in svc_keywords:
+        if kw in text_normalized:
+            service = kw; break
     # Time: extract 24h or 12h
     for p in parts:
         m = re.match(r'(\d{1,2}):(\d{2})\s*(?:ص|م)?$', p)
@@ -288,7 +291,7 @@ def _parse_patient(text: str) -> tuple[str, str, str, str, str]:
     names = [p for p in parts if p not in skip and not re.match(r'^0\d', p) and not re.match(r'\d{1,2}[-\/]\d{1,2}', p)]
     name = names[0] if names else "مريض"
     phone = phones[0] if phones else "0"
-    return name, phone, gender, date, time
+    return service, date, time, name, phone, gender
 
 
 def _try_parse_json(v: Any) -> dict[str, Any] | None:
