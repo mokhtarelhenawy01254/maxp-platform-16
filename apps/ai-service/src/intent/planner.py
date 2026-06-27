@@ -392,8 +392,14 @@ async def build_intent_contract_async(
             primary_available = _filter_available([configured_primary], available_tools)
             # Fall back to static config when CEO uses sub-agent architecture
             # (available_tools has support_specialist/order_specialist, not product_search)
-            policy_plan.primaryTool = (primary_available or filtered_allowed or [None])[0]
-            policy_plan.allowedTools = filtered_allowed
+            if not filtered_allowed and not primary_available and available_tools:
+                # ponytail: intent tools don't match agent role (e.g. MEDICAL_CENTER gets classified as orders.create_confirmed)
+                # Use all native tools so agent can still respond. Upgrade: classifier retraining for per-role intents.
+                policy_plan.primaryTool = None
+                policy_plan.allowedTools = list(available_tools)
+            else:
+                policy_plan.primaryTool = (primary_available or filtered_allowed or [None])[0]
+                policy_plan.allowedTools = filtered_allowed
         else:
             policy_plan.primaryTool = None
             policy_plan.allowedTools = []
