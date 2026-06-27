@@ -49,23 +49,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  status:
-  | "pending"
-  | "confirmed"
-  | "scheduled"
-  | "processing"
-  | "shipped"
-  | "delivered"
-  | "cancelled"
-  | "duplicate_order"
-  | "PENDING"
-  | "CONFIRMED"
-  | "SCHEDULED"
-  | "PROCESSING"
-  | "SHIPPED"
-  | "DELIVERED"
-  | "CANCELLED"
-  | "DUPLICATE_ORDER";
+  status: string;
   items: Array<{
     id: string;
     productId: string;
@@ -142,7 +126,7 @@ interface Order {
   merchantOrder?: MerchantOrderScope;
 }
 
-type OrderStatus = Order["status"];
+type OrderStatus = string;
 type PaymentStatus = Order["paymentStatus"];
 type OrderItem = Order["items"][number];
 
@@ -213,25 +197,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
 const normalizeOrderStatus = (value: unknown): OrderStatus => {
-  switch (String(value ?? "").trim().toUpperCase()) {
-    case "CONFIRMED":
-      return "confirmed";
-    case "SCHEDULED":
-      return "scheduled";
-    case "PROCESSING":
-      return "processing";
-    case "SHIPPED":
-      return "shipped";
-    case "DELIVERED":
-      return "delivered";
-    case "CANCELLED":
-      return "cancelled";
-    case "DUPLICATE_ORDER":
-      return "duplicate_order";
-    case "PENDING":
-    default:
-      return "pending";
-  }
+  return (String(value ?? "").trim().toLowerCase() || "pending") as OrderStatus;
 };
 
 const normalizePaymentStatus = (
@@ -1719,12 +1685,13 @@ const Orders: React.FC = () => {
 
       const data = response.data;
 
-      if (data.success) {
+      if (data.success && data.data?.successCount > 0) {
         alert(t("orders.ordersUpdated"));
         await fetchOrders();
         setSelectedOrders([]);
       } else {
-        alert(data.message || t("orders.updateFailed"));
+        const errors: string[] = (data.data?.results ?? []).filter((r: Record<string, unknown>) => !r.success).map((r: Record<string, unknown>) => String(r.error ?? ''));
+        alert(errors.length > 0 ? errors.join('\n') : data.message || t("orders.updateFailed"));
       }
     } catch (error: unknown) {
       console.error("Error bulk updating:", error);
@@ -3594,6 +3561,7 @@ const Orders: React.FC = () => {
           order={selectedOrder}
           isOpen={showOrderModal}
           canManagePaymentStatus={!isMerchant}
+          orderStatuses={orderStatuses}
           onClose={() => {
             setShowOrderModal(false);
             setSelectedOrder(null);

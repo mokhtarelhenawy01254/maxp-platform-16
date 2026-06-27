@@ -71,14 +71,7 @@ export interface OrderDetailsType {
   city?: string;
   country?: string;
   shippingAddress?: string | object | any; // JSON string or parsed object
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "PROCESSING"
-    | "SHIPPED"
-    | "DELIVERED"
-    | "CANCELLED"
-    | "DUPLICATE_ORDER";
+  status: string;
   paymentStatus: "PENDING" | "COMPLETED" | "FAILED" | "UNAVAILABLE";
   paymentMethod: string;
   items: OrderItem[];

@@ -39,6 +39,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  permissions?: string[];
   timezone?: string;
   lastLoginAt?: string | null;
   companyId: string | null;

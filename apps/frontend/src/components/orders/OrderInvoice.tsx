@@ -85,6 +85,8 @@ interface InvoiceData {
   order?: {
     orderNumber?: string;
     status?: string;
+    turboTrackingNumber?: string | null;
+    turboShipmentId?: string | null;
     orderItems?: InvoiceOrderItem[];
   };
 }
@@ -415,6 +417,11 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             <p className="text-sm">
               <strong>{t("orders.invoice.orderNumber")}</strong> {invoice.order?.orderNumber || "-"}
             </p>
+            {invoice.order?.turboTrackingNumber && (
+              <p className="text-sm">
+                <strong>رقم تتبع تربو:</strong> {invoice.order.turboTrackingNumber}
+              </p>
+            )}
             <p className="text-sm">
               <strong>{t("orders.invoice.orderStatus")}</strong> {invoice.order?.status || "-"}
             </p>

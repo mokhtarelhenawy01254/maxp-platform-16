@@ -26,6 +26,7 @@ interface Invoice {
   notes: string | null;
   order: {
     orderNumber: string;
+    turboTrackingNumber?: string | null;
     orderItems: Array<{
       productName: string;
       quantity: number;
@@ -177,6 +178,12 @@ const OrderInvoiceCompact: React.FC = () => {
               <span className="font-bold">طلب: </span>
               {invoice.order.orderNumber}
             </p>
+            {invoice.order.turboTrackingNumber && (
+              <p className="text-sm mb-1">
+                <span className="font-bold">رقم تتبع تربو: </span>
+                {invoice.order.turboTrackingNumber}
+              </p>
+            )}
             <p className="text-sm">
               {new Date(invoice.issueDate).toLocaleDateString("ar-EG", {
                 year: "numeric",
