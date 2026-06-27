@@ -514,10 +514,10 @@ jobs:
                 sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
               fi
 
-              # Restore uploads
+                          # Restore uploads
               if [ -d "/tmp/backend_uploads_backup" ]; then
-                sudo rm -rf /var/www/backend2/uploads
-                sudo mv /tmp/backend_uploads_backup /var/www/backend2/uploads
+                sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
+                sudo rm -rf /tmp/backend_uploads_backup
               fi
               
               echo "✅ Backend extracted and restored successfully"
@@ -548,10 +548,10 @@ jobs:
                 sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
               fi
 
-              # Restore uploads
+                          # Restore uploads
               if [ -d "/tmp/backend_uploads_backup" ]; then
-                sudo rm -rf /var/www/backend2/uploads
-                sudo mv /tmp/backend_uploads_backup /var/www/backend2/uploads
+                sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
+                sudo rm -rf /tmp/backend_uploads_backup
               fi
               
               echo "✅ Backend moved successfully from staging"
