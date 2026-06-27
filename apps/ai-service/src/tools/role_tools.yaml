@@ -148,6 +148,10 @@ roles:
     - booking_appointment_confirm
     - booking_appointment_cancel
     - booking_appointment_details
+    - booking_draft_start
+    - booking_draft_set_field
+    - booking_draft_get
+    - booking_draft_finalize
     - agent_handoff_to
 
   CEO: []

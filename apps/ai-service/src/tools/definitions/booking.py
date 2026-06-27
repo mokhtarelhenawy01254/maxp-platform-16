@@ -6,6 +6,7 @@ from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
 from src.tools import booking_tools
+from src.tools import booking_draft_tools
 
 
 class BranchesListInput(BaseModel):
@@ -165,6 +166,73 @@ booking_appointment_details_tool = FunctionTool(
     input_model=AppointmentDetailsInput,
 )
 
+# ── Booking Draft (multi-turn) ──
+
+class DraftStartInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class DraftSetFieldInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    draft_id: str = Field(description="Draft ID from booking_draft_start")
+    field: str = Field(description="Field name: branchId, doctorId, serviceId, customerName, customerPhone, customerGender, appointmentDate (YYYY-MM-DD), startTime (HH:mm)")
+    value: str = Field(description="Field value")
+
+
+class DraftGetInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    draft_id: str = Field(description="Draft ID from booking_draft_start")
+
+
+class DraftFinalizeInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    draft_id: str = Field(description="Draft ID to finalize into an appointment")
+
+
+async def booking_draft_start(input_data: DraftStartInput) -> dict[str, Any]:
+    return await booking_draft_tools.start_draft(input_data.company_id or "")
+
+
+async def booking_draft_set_field(input_data: DraftSetFieldInput) -> dict[str, Any]:
+    return await booking_draft_tools.set_draft_field(input_data.company_id or "", input_data.draft_id, input_data.field, input_data.value)
+
+
+async def booking_draft_get(input_data: DraftGetInput) -> dict[str, Any]:
+    return await booking_draft_tools.get_draft(input_data.company_id or "", input_data.draft_id)
+
+
+async def booking_draft_finalize(input_data: DraftFinalizeInput) -> dict[str, Any]:
+    return await booking_draft_tools.finalize_draft(input_data.company_id or "", input_data.draft_id)
+
+
+booking_draft_start_tool = FunctionTool(
+    name="booking_draft_start",
+    description="بدء حجز جديد (Start a new booking draft). Returns draft_id. Use this FIRST when a patient wants to book. Then collect fields one by one with booking_draft_set_field. Params: none.",
+    func=booking_draft_start,
+    input_model=DraftStartInput,
+)
+
+booking_draft_set_field_tool = FunctionTool(
+    name="booking_draft_set_field",
+    description="تحديث حقل في مسودة الحجز (Set a single draft field). Collect ONE field per call. Allowed fields: branchId, doctorId, serviceId, customerName, customerPhone, customerGender, appointmentDate (YYYY-MM-DD), startTime (HH:mm), notes.",
+    func=booking_draft_set_field,
+    input_model=DraftSetFieldInput,
+)
+
+booking_draft_get_tool = FunctionTool(
+    name="booking_draft_get",
+    description="عرض مسودة الحجز الحالية (View current draft state and what fields are filled). Useful to check what's missing before finalizing.",
+    func=booking_draft_get,
+    input_model=DraftGetInput,
+)
+
+booking_draft_finalize_tool = FunctionTool(
+    name="booking_draft_finalize",
+    description="تأكيد الحجز وإنشاء الموعد (Finalize and create the appointment). Only call this when ALL required fields are filled: customerName, customerPhone, appointmentDate, startTime. Must have at least customerName, customerPhone, appointmentDate, startTime.",
+    func=booking_draft_finalize,
+    input_model=DraftFinalizeInput,
+)
+
 __all_tools__ = [
     booking_branches_list_tool,
     booking_doctors_list_tool,
@@ -174,4 +242,8 @@ __all_tools__ = [
     booking_appointment_confirm_tool,
     booking_appointment_cancel_tool,
     booking_appointment_details_tool,
+    booking_draft_start_tool,
+    booking_draft_set_field_tool,
+    booking_draft_get_tool,
+    booking_draft_finalize_tool,
 ]

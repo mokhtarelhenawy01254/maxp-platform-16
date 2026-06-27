@@ -59,8 +59,9 @@ model Company {
    aiSandboxSessions               AiSandboxSession[]
    appReviews                      AppReview[]
   appointments                    Appointment[]
-  assetCategories                 AssetCategory[]
-  assets                          Asset[]
+   assetCategories                 AssetCategory[]
+   bookingDrafts                   BookingDraft[]
+   assets                          Asset[]
   backInStockNotifications        BackInStockNotification[]
   billingHistory                  BillingHistory[]                 @relation("CompanyBillingHistory")
   branches                        Branche[]

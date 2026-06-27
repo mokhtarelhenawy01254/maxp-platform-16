@@ -32,18 +32,22 @@
     "booking_appointment_confirm",
     "booking_appointment_cancel",
     "booking_appointment_details",
+    "booking_draft_start",
+    "booking_draft_set_field",
+    "booking_draft_get",
+    "booking_draft_finalize",
     "agent_handoff_to"
   ],
   "allowedSkills": [],
   "channels": ["dashboard", "whatsapp", "messenger"],
   "humanApproval": {
     "mode": "ON_WRITE",
-    "requiredTools": ["booking_appointment_create", "booking_appointment_cancel"],
+    "requiredTools": ["booking_appointment_cancel", "booking_appointment_confirm"],
     "approvalCode": false,
     "merchantChannels": ["DASHBOARD", "WHATSAPP"]
   },
   "budget": {
     "dailyUsd": 2,
-    "maxToolCallsPerRun": 5
+    "maxToolCallsPerRun": 10
   }
 }
