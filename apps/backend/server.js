@@ -182,6 +182,7 @@ const bookingBranchesRoutes = require("./routes/bookingBranchesRoutes");
 const bookingDoctorsRoutes = require("./routes/bookingDoctorsRoutes");
 const bookingServicesRoutes = require("./routes/bookingServicesRoutes");
 const bookingAppointmentsRoutes = require("./routes/bookingAppointmentsRoutes");
+const bookingDraftRoutes = require("./routes/bookingDraftRoutes");
 
 const agentInboxRoutes = require("./routes/agentInboxRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -694,6 +695,7 @@ app.use("/api/v1/booking/branches", bookingBranchesRoutes);
 app.use("/api/v1/booking/doctors", bookingDoctorsRoutes);
 app.use("/api/v1/booking/services", bookingServicesRoutes);
 app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
+app.use("/api/v1/booking/drafts", bookingDraftRoutes);
 app.use("/api/v1/affiliates", affiliateRoutes);
 app.use("/api/v1/affiliate-settings", affiliateSettingsRoutes);
 app.use("/api/v1/commissions", commissionRoutes);

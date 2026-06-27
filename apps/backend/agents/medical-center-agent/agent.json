@@ -4,8 +4,8 @@
   "role": "MEDICAL_CENTER",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "gemini-2.5-flash",
-    "fallback": "gemini-2.5-pro"
+    "default": "deepseek-v4-flash",
+    "fallback": "gemini-2.5-flash"
   },
   "instructions": {
     "agents": "AGENTS.md",
@@ -24,26 +24,22 @@
     "singleQuestionPerTurn": false
   },
   "allowedTools": [
-    "booking_branches_list",
-    "booking_doctors_list",
-    "booking_services_list",
-    "booking_available_slots",
-    "booking_appointment_create",
-    "booking_appointment_confirm",
-    "booking_appointment_cancel",
-    "booking_appointment_details",
+    "booking_info",
+    "booking_slots",
+    "booking_reserve",
+    "booking_status",
     "agent_handoff_to"
   ],
   "allowedSkills": [],
   "channels": ["dashboard", "whatsapp", "messenger"],
   "humanApproval": {
     "mode": "ON_WRITE",
-    "requiredTools": ["booking_appointment_create", "booking_appointment_cancel"],
+    "requiredTools": ["booking_reserve", "booking_status"],
     "approvalCode": false,
     "merchantChannels": ["DASHBOARD", "WHATSAPP"]
   },
   "budget": {
     "dailyUsd": 2,
-    "maxToolCallsPerRun": 5
+    "maxToolCallsPerRun": 10
   }
 }

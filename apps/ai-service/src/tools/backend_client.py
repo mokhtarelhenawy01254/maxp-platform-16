@@ -464,6 +464,23 @@ class BackendClient:
         except RuntimeError:
             return None
 
+    # ── Booking Draft APIs ──
+
+    async def create_booking_draft(self, company_id: str) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/booking/drafts", json_body={"companyId": company_id})
+
+    async def set_booking_draft_field(self, company_id: str, draft_id: str, field: str, value: str) -> dict[str, Any]:
+        return await self._request(
+            "PUT", f"/api/v1/booking/drafts/{draft_id}/field",
+            json_body={"companyId": company_id, "field": field, "value": value},
+        )
+
+    async def get_booking_draft(self, company_id: str, draft_id: str) -> dict[str, Any]:
+        return await self._request("GET", f"/api/v1/booking/drafts/{draft_id}", params={"companyId": company_id})
+
+    async def finalize_booking_draft(self, company_id: str, draft_id: str) -> dict[str, Any]:
+        return await self._request("POST", f"/api/v1/booking/drafts/{draft_id}/finalize", json_body={"companyId": company_id})
+
 
 _backend_client: BackendClient | None = None
 

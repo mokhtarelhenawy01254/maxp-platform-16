@@ -140,14 +140,10 @@ roles:
     - abandoned_carts
 
   MEDICAL_CENTER:
-    - booking_branches_list
-    - booking_doctors_list
-    - booking_services_list
-    - booking_available_slots
-    - booking_appointment_create
-    - booking_appointment_confirm
-    - booking_appointment_cancel
-    - booking_appointment_details
+    - booking_info
+    - booking_slots
+    - booking_reserve
+    - booking_status
     - agent_handoff_to
 
   CEO: []
