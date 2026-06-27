@@ -1,5 +1,15 @@
 # Team Sync Notes
 
+## [2026-06-27]
+
+### Repository Migration to Avoid GitHub Actions Quota Limit
+- **Accomplishment**: Migrated the active development repository to a new target to bypass Actions run limits.
+- **Details**:
+  - Renamed the old remote `origin` (quota-exhausted repo `mokhtar1983/maxp-platform-1`) to `origin-quota-old` to serve as a local backup.
+  - Added new remote `origin` pointing to `mokhtar-el7/maxp-platform2.git`.
+  - Pushed the `main` branch to the new remote and set it up to track `origin/main` dynamically.
+  - Verified write permissions, authentication, and successful upload of the ~660 MB repository history.
+
 ## [2026-06-26]
 
 ### Facebook Ads Dashboard Component Refactoring
