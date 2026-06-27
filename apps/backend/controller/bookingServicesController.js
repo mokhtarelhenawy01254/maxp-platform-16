@@ -43,7 +43,7 @@ const createService = async (req, res) => {
         description,
         requiresConsultation: requiresConsultation !== false,
         branchServices: Array.isArray(branches) && branches.length > 0 ? {
-          create: branches.map((b: any) => ({
+          create: branches.map((b) => ({
             branchId: b.branchId,
             hasPackages: b.hasPackages !== false,
             packages: b.packages || undefined,
