@@ -86,6 +86,17 @@ async def create_appointment(company_id: str, data: dict[str, Any]) -> dict[str,
             data["serviceId"] = services[0].get("id", "") or ""
             logger.info("auto-filled serviceId", service_id=data["serviceId"])
 
+    # ponytail: extract date/time from patient_info when DeepSeek sends wrong auto-fill
+    if patient_info and data.get("appointmentDate"):
+        import re as _re
+        _parsed_date = _extract_date_from_text(patient_info)
+        if _parsed_date and _parsed_date != data["appointmentDate"]:
+            logger.warning("overrode DeepSeek date from patient_info", old=data["appointmentDate"], new=_parsed_date)
+            data["appointmentDate"] = _parsed_date
+        _parsed_time = _extract_time_from_text(patient_info)
+        if _parsed_time:
+            data["startTime"] = _parsed_time
+
     # ponytail: if DeepSeek sends null for patient fields, use defaults that pass gender-day validation
     from datetime import timedelta
     if not data.get("customerName") and not data.get("customerGender") and not data.get("startTime"):
@@ -155,3 +166,78 @@ async def appointment_details(company_id: str, appointment_id: str) -> dict[str,
         return None
     client = get_backend_client()
     return await client.get_booking_appointment_details(company_id, appointment_id)
+
+
+def _extract_date_from_text(text: str) -> str | None:
+    """Extract date in YYYY-MM-DD from Arabic text (e.g. 'الاثنين 29 يونيو')."""
+    import re as _re
+    from datetime import timedelta, date as _dt
+
+    today = _dt.today()
+
+    # ISO / numeric dates
+    m = _re.search(r'(\d{4})-(\d{2})-(\d{2})', text)
+    if m: return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    m = _re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', text)
+    if m: return f"{m.group(3)}-{m.group(2):0>2}-{m.group(1):0>2}"
+
+    # "بكره" / "بعد بكره"
+    if _re.search(r'بعد\s*بكره|بعد\s*غد', text):
+        return (today + timedelta(days=2)).isoformat()
+    if _re.search(r'بكره|غدا', text):
+        return (today + timedelta(days=1)).isoformat()
+    if _re.search(r'بعد\s*غد', text):
+        return (today + timedelta(days=2)).isoformat()
+
+    # "الاثنين 29 يونيو 2026" or "29 يونيو"
+    AR_MONTHS = {
+        "يناير": 1, "فبراير": 2, "مارس": 3, "أبريل": 4, "ابريل": 4,
+        "مايو": 5, "يونيو": 6, "يوليو": 7, "أغسطس": 8, "اغسطس": 8,
+        "سبتمبر": 9, "أكتوبر": 10, "اكتوبر": 10, "نوفمبر": 11, "ديسمبر": 12,
+    }
+    AR_DAY_NAMES = {
+        "السبت": 5, "الأحد": 6, "الاحد": 6, "الإثنين": 0, "الاثنين": 0,
+        "الثلاثاء": 1, "الثلاثا": 1, "الأربعاء": 2, "الاربعاء": 2,
+        "الخميس": 3, "الجمعة": 4,
+    }
+    m = _re.search(r'(\d{1,2})\s*(%s)(?:\s*(\d{4}))?' % "|".join(AR_MONTHS), text)
+    if m:
+        day = int(m.group(1))
+        month = AR_MONTHS[m.group(2)]
+        year = int(m.group(3)) if m.group(3) else today.year
+        try: return _dt(year, month, day).isoformat()
+        except ValueError: pass
+
+    # "الاثنين" — next occurrence of that weekday
+    m = _re.search(r'(%s)' % "|".join(AR_DAY_NAMES), text)
+    if m:
+        target = AR_DAY_NAMES[m.group(1)]
+        d = today
+        for _ in range(14):
+            d += timedelta(days=1)
+            if d.weekday() == target:
+                return d.isoformat()
+
+    return None
+
+
+def _extract_time_from_text(text: str) -> str | None:
+    """Extract time in HH:MM from Arabic text (e.g. 'الساعة 4 العصر')."""
+    import re as _re
+    # HH:MM
+    m = _re.search(r'(\d{1,2}):(\d{2})', text)
+    if m: return f"{int(m.group(1)):02d}:{m.group(2)}"
+
+    # "الساعة 4 العصر" / "4 العصر" / "4 المغرب" / "6 مساء"
+    # Periods that mean PM (add 12 to convert 12h → 24h)
+    PM_PERIODS = r"ظهر|عصر|مغرب|مساء|ليل|ل"
+    AM_PERIODS = r"صباح|ص"
+    m = _re.search(r'(?:الساعه|الساعة)?\s*(\d{1,2})\s*(ال)?(%s|%s)?' % (PM_PERIODS, AM_PERIODS), text)
+    if m:
+        hour = int(m.group(1))
+        period = m.group(3)
+        if period and period in ("ظهر", "عصر", "مغرب", "مساء", "ليل", "ل") and hour < 12:
+            hour += 12
+        return f"{min(hour, 23):02d}:00"
+
+    return None
