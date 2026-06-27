@@ -401,8 +401,10 @@ async def build_intent_contract_async(
                 policy_plan.primaryTool = (primary_available or filtered_allowed or [None])[0]
                 policy_plan.allowedTools = filtered_allowed
         else:
+            # ponytail: intent not in INTENT_CONFIGURED_TOOLS (e.g. booking_reserve for MEDICAL_CENTER)
+            # Use all native tools so agent can still respond.
             policy_plan.primaryTool = None
-            policy_plan.allowedTools = []
+            policy_plan.allowedTools = list(available_tools) if available_tools else []
 
         policy_plan.requiresTool = bool(policy_plan.primaryTool)
         # When image attachment present and tool is inventory_check, switch to product_search

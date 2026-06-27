@@ -75,7 +75,22 @@ const BranchModal = ({ branch, onClose, onSave }: {
   onClose: () => void;
   onSave: (d: Partial<BookingBranch>) => Promise<void>;
 }) => {
-  const [form, setForm] = useState({ name: "", address: "", phone: "", workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", isActive: true, ...branch });
+  const initForm = () => {
+    const defaults = { name: "", address: "", phone: "", workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", isActive: true };
+    if (!branch?.workingDays || typeof branch.workingDays === 'string') {
+      return { ...defaults, ...branch };
+    }
+    const obj = branch.workingDays as Record<string, string>;
+    const dayKeys = Object.keys(obj).filter(k => obj[k]);
+    const times = dayKeys.length > 0 ? obj[dayKeys[0]].split('-') : [];
+    return {
+      ...defaults, ...branch,
+      workingDays: dayKeys.join(","),
+      workStart: times[0] || "09:00",
+      workEnd: times[1] || "22:00",
+    };
+  };
+  const [form, setForm] = useState(initForm);
   const days = [
     { value: "sat", label: "السبت" }, { value: "sun", label: "الأحد" },
     { value: "mon", label: "الإثنين" }, { value: "tue", label: "الثلاثاء" },
@@ -155,12 +170,13 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
   );
 };
 
-const ServiceModal = ({ service, onClose, onSave }: {
+const ServiceModal = ({ service, branches, onClose, onSave }: {
   service?: Partial<BookingService> | null;
+  branches: BookingBranch[];
   onClose: () => void;
   onSave: (d: Partial<BookingService>) => Promise<void>;
 }) => {
-  const [form, setForm] = useState<Partial<BookingService>>({ name: "", description: "", duration: 30, defaultPrice: 0, packages: [], isActive: true, ...service });
+  const [form, setForm] = useState<Partial<BookingService>>({ name: "", description: "", duration: 30, defaultPrice: 0, branchId: "", packages: [], isActive: true, ...service });
   const addPackage = () => setForm({ ...form, packages: [...(form.packages || []), { sessions: 1, price: 0 }] });
   const updatePackage = (i: number, k: string, v: number) => {
     const p = [...(form.packages || [])];
@@ -177,6 +193,12 @@ const ServiceModal = ({ service, onClose, onSave }: {
         </div>
         <div className="space-y-4">
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
+            <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value })}>
+              <option value="">اختر الفرع</option>
+              {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المدة (دقائق)</label><input type="number" min={5} className={MODAL_INPUT_CLS} value={form.duration} onChange={e => setForm({ ...form, duration: Number(e.target.value) })} /></div>
@@ -199,7 +221,7 @@ const ServiceModal = ({ service, onClose, onSave }: {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={() => onSave({ ...form, packages: form.packages?.filter(p => p.sessions > 0 && p.price > 0) })} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
+          <button onClick={() => onSave(form)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
         </div>
       </div>
     </div>
@@ -333,7 +355,7 @@ export default function BookingManagementPage() {
 
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
-    if (activeTab === "appointments") fetchAppointments();
+    if (activeTab === "appointments") { setLoading(true); fetchAppointments().finally(() => setLoading(false)); }
     if (activeTab === "dashboard" || activeTab === "calendar") { fetchAll(); }
   }, [activeTab]);
 
@@ -349,7 +371,7 @@ export default function BookingManagementPage() {
 
   const fetchAll = async () => {
     setLoading(true);
-    await Promise.all([fetchBranches(), fetchDoctors(), fetchServices()]);
+    await Promise.all([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments()]);
     setLoading(false);
   };
 
@@ -358,59 +380,85 @@ export default function BookingManagementPage() {
     try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch {}
   };
   const fetchServices = async (branchId?: string) => {
-    try { setServices(await fetchJson(api(`services${branchId ? `?branchId=${branchId}` : ""}`))); } catch {}
+    try {
+      const data = await fetchJson(api(`services${branchId ? `?branchId=${branchId}` : ""}`));
+      setServices((data || []).map((s: any) => ({
+        ...s,
+        packages: (s.packages || []).map((p: any) => ({ sessions: p.count ?? p.sessions ?? 0, price: p.price ?? 0 }))
+      })));
+    } catch {}
   };
   const fetchAppointments = async () => {
-    setLoading(true);
     const params = new URLSearchParams();
     if (filters.status) params.append("status", filters.status);
     if (filters.branchId) params.append("branchId", filters.branchId);
     if (!filters.branchId && selectedBranchId) params.append("branchId", selectedBranchId);
     if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.append("dateTo", filters.dateTo);
-    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch { setAppointments([]); } finally { setLoading(false); }
+    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch { setAppointments([]); }
   };
 
   const saveBranch = async (d: Partial<BookingBranch>) => {
     const isEdit = !!d.id;
     const url = isEdit ? api(`branches/${d.id}`) : api("branches");
     const body: Record<string, unknown> = { name: d.name, address: d.address, phone: d.phone, isActive: d.isActive };
-    if ((d as any).workingDays && (d as any).workStart) {
-      const days = (d as any).workingDays.split(",").filter(Boolean);
-      const wd: Record<string, string> = {};
-      days.forEach((day: string) => { wd[day] = `${(d as any).workStart}-${(d as any).workEnd}`; });
-      body.workingDays = wd;
+    const raw = d as any;
+    if (raw.workingDays) {
+      const days = raw.workingDays.split(",").filter(Boolean);
+      if (days.length > 0) {
+        const start = raw.workStart || "09:00";
+        const end = raw.workEnd || "22:00";
+        const wd: Record<string, string> = {};
+        days.forEach((day: string) => { wd[day] = `${start}-${end}`; });
+        body.workingDays = wd;
+      }
     }
-    await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
+    const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
     setBranchModal(undefined); fetchBranches();
   };
 
   const saveDoctor = async (d: Partial<BookingDoctor>) => {
     const isEdit = !!d.id;
     const url = isEdit ? api(`doctors/${d.id}`) : api("doctors");
-    await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(d) });
+    const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(d) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
     setDoctorModal(undefined); fetchDoctors();
   };
 
   const saveService = async (d: Partial<BookingService>) => {
     const isEdit = !!d.id;
     const url = isEdit ? api(`services/${d.id}`) : api("services");
-    await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(d) });
+    const payload = {
+      ...d,
+      packages: (d.packages || []).filter(p => p.sessions > 0 && p.price > 0).map(p => ({ count: p.sessions, price: p.price })),
+    };
+    const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
     setServiceModal(undefined); fetchServices();
   };
 
   const saveAppointment = async (d: Partial<BookingAppointment>) => {
-    await fetch(api("appointments"), { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(d) });
-    setAppointmentModal(undefined); fetchAppointments();
+    const res = await fetch(api("appointments"), { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(d) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الحجز"); return; }
+    setAppointmentModal(undefined); setLoading(true); fetchAppointments().finally(() => setLoading(false));
   };
 
   const updateAppointmentStatus = async (id: string, status: string) => {
-    await fetch(api(`appointments/${id}/status`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ status }) });
-    fetchAppointments();
+    const res = await fetch(api(`appointments/${id}/status`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ status }) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل التحديث"); return; }
+    setLoading(true); fetchAppointments().finally(() => setLoading(false));
   };
 
   const toggleActive = async (type: string, id: string, current: boolean) => {
-    await fetch(api(`${type}/${id}`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ isActive: !current }) });
+    const res = await fetch(api(`${type}/${id}`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ isActive: !current }) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل التحديث"); return; }
     if (type === "branches") fetchBranches();
     else if (type === "doctors") fetchDoctors();
     else fetchServices();
@@ -418,7 +466,9 @@ export default function BookingManagementPage() {
 
   const deleteItem = async (type: string, id: string) => {
     if (!confirm("تأكيد الحذف؟")) return;
-    await fetch(api(`${type}/${id}`), { method: "DELETE", headers: getAuthHeaders() });
+    const res = await fetch(api(`${type}/${id}`), { method: "DELETE", headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الحذف"); return; }
     if (type === "branches") fetchBranches();
     else if (type === "doctors") fetchDoctors();
     else fetchServices();
@@ -509,7 +559,29 @@ export default function BookingManagementPage() {
         <h2 className="text-xl font-bold">إدارة الفروع</h2>
         <button onClick={() => setBranchModal({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة فرع</button>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+      {/* Mobile card view */}
+      <div className="block md:hidden space-y-3">
+        {branches.map(b => (
+          <div key={b.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="font-bold text-sm">{b.name}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{b.address || "—"}</p>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">{b.phone || "—"}</div>
+            <div className="flex gap-2">
+              <button onClick={() => setBranchModal(b)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3 h-3 inline ml-1" />تعديل</button>
+              <button onClick={() => toggleActive("branches", b.id, b.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${b.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{b.isActive ? "تعطيل" : "تفعيل"}</button>
+              <button onClick={() => deleteItem("branches", b.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><TrashIcon className="w-3 h-3 inline ml-1" />حذف</button>
+            </div>
+          </div>
+        ))}
+        {branches.length === 0 && <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد فروع</p>}
+      </div>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full">
           <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الهاتف", "أيام العمل", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
           <tbody>{branches.map(b => (
@@ -620,7 +692,7 @@ export default function BookingManagementPage() {
           })}
           {filtered.length === 0 && <p className="col-span-full text-gray-400 dark:text-gray-500 text-center py-12">لا توجد خدمات</p>}
         </div>
-        {serviceModal !== undefined && <ServiceModal service={serviceModal} onClose={() => setServiceModal(undefined)} onSave={saveService} />}
+        {serviceModal !== undefined && <ServiceModal service={serviceModal} branches={branches} onClose={() => setServiceModal(undefined)} onSave={saveService} />}
       </div>
     );
   };
@@ -643,7 +715,43 @@ export default function BookingManagementPage() {
           <button onClick={() => setAppointmentModal({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />حجز موعد</button>
         </div>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+      {/* Mobile card view */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          <p className="text-center py-12 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
+        ) : appointments.length === 0 ? (
+          <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</p>
+        ) : appointments.map(a => (
+          <div key={a.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="font-bold text-sm">{a.customerName}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{a.customerPhone}</p>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 text-xs mb-3">
+              <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.branchName || "—"}</span>
+              <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.appointmentDate}</span>
+              <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.startTime}</span>
+            </div>
+            <div className="flex gap-2">
+              {a.status === "pending" && (
+                <>
+                  <button onClick={() => updateAppointmentStatus(a.id, "confirmed")} className="text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50"><CheckIcon className="w-3 h-3 inline ml-1" />تأكيد</button>
+                  <button onClick={() => updateAppointmentStatus(a.id, "cancelled")} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><XMarkIcon className="w-3 h-3 inline ml-1" />إلغاء</button>
+                </>
+              )}
+              {a.status === "confirmed" && (
+                <button onClick={() => updateAppointmentStatus(a.id, "completed")} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><CheckIcon className="w-3 h-3 inline ml-1" />إتمام</button>
+              )}
+              <button onClick={() => setAppointmentModal(a)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><EyeIcon className="w-3 h-3 inline ml-1" />عرض</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full">
           <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
           <tbody>
@@ -735,7 +843,7 @@ export default function BookingManagementPage() {
           <div className="grid grid-cols-7">
             {days.map((d, i) => (
               <div key={i} onClick={() => d.date && setSelectedDay(d.date === selectedDay ? null : d.date)}
-                className={`min-h-[80px] p-2 border-b dark:border-gray-700 border-l cursor-pointer transition-colors
+                className={`min-h-[60px] md:min-h-[80px] p-1 md:p-2 border-b dark:border-gray-700 border-l cursor-pointer transition-colors
                   ${d.isToday ? "bg-blue-50 dark:bg-blue-900/20" : ""}
                   ${d.date === selectedDay ? "ring-2 ring-blue-500 ring-inset" : ""}
                   ${!d.date ? "bg-gray-50 dark:bg-gray-800" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}>
@@ -790,7 +898,7 @@ export default function BookingManagementPage() {
         <p className="text-gray-500 dark:text-gray-400 text-sm max-w-2xl">نظام إدارة المواعيد والخدمات الطبية</p>
       </div>
       <div className="mb-4">
-        <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm w-64 dark:bg-gray-800 dark:text-gray-100" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
+        <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm w-full sm:w-64 dark:bg-gray-800 dark:text-gray-100" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
           <option value="">كل الفروع</option>
           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
@@ -798,10 +906,10 @@ export default function BookingManagementPage() {
           <button onClick={() => setSelectedBranchId("")} className="mr-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700">إزالة الفلتر</button>
         )}
       </div>
-      <div className="flex gap-2 mb-8 border-b dark:border-gray-700 overflow-x-auto">
+      <div className="flex flex-wrap gap-2 mb-8 md:flex-nowrap md:border-b md:dark:border-gray-700 md:overflow-x-auto">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"}`}>
+            className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 text-sm font-medium rounded-xl md:rounded-none transition-colors whitespace-nowrap ${activeTab === tab.id ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 md:bg-transparent md:text-blue-600 md:dark:text-blue-400 md:border-b-2 md:border-blue-600" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 md:bg-transparent md:text-gray-500 md:dark:text-gray-400 md:border-transparent hover:bg-gray-200 dark:hover:bg-gray-700 md:hover:border-gray-300 md:dark:hover:border-gray-600"}`}>
             <tab.icon className="w-4 h-4" />{tab.label}
           </button>
         ))}

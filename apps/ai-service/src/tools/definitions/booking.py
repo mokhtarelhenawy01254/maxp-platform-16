@@ -15,7 +15,7 @@ class InfoInput(BaseModel):
 
 class SlotsInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
-    date: str = Field(description="Date YYYY-MM-DD")
+    date: str = Field(default="", description="Date YYYY-MM-DD (optional - defaults to today)")
     gender: str = Field(default="", description="MALE or FEMALE (optional - auto-detects)")
 
 class ReserveInput(BaseModel):

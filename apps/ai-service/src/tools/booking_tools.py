@@ -61,12 +61,14 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
 async def get_slots(company_id: str, date: str, gender: str = "") -> dict[str, Any]:
     if not company_id:
         return {"error": "no company_id"}
+    if not date:
+        date = date_type.today().isoformat()
     client = get_backend_client()
-    # Find first branch
     branches = await client.get_booking_branches(company_id)
     if not branches:
         return {"slots": [], "message": "لا يوجد فروع"}
-    branch = branches[0]
+    # Pick branch with non-null genderDays; fallback to first
+    branch = next((b for b in branches if b.get("genderDays")), branches[0])
     branch_id = branch.get("id", "")
 
     slots_raw = await client.get_booking_available_slots(company_id, branch_id, date)
@@ -98,11 +100,11 @@ async def reserve_appointment(company_id: str, service: str, date: str, time: st
 
     client = get_backend_client()
 
-    # 1. Find branch
+    # 1. Find branch — pick first with genderDays, else first
     branches = await client.get_booking_branches(company_id)
     if not branches:
         return {"error": "لا يوجد فروع متاحة"}
-    branch = branches[0]
+    branch = next((b for b in branches if b.get("genderDays")), branches[0])
     branch_id = branch.get("id", "")
     branch_name = branch.get("name", "")
 
