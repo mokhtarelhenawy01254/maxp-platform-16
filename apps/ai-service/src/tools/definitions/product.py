@@ -158,7 +158,7 @@ class CategoryListInput(BaseModel):
 
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     query = "" if input_data.list_all else (input_data.query or "")
-    limit = input_data.limit if input_data.list_all else min(input_data.limit, 20)
+    limit = max(input_data.limit, 50) if input_data.list_all else min(input_data.limit, 20)
     decoded_image: bytes | None = None
     image_mime_type = input_data.mime_type
     if input_data.use_vector and not input_data.list_all:
