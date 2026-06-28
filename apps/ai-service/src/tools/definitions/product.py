@@ -156,7 +156,14 @@ class CategoryListInput(BaseModel):
     limit: int = Field(default=50, description="Maximum products to scan for category discovery")
 
 
-_LIST_ALL_SIGNALS = ("كل ", "كلها", "كلهم", "جميع", "اللي عندكم", "عندكم ايه", "عندكم إيه", "list all", "all products", "show all")
+_LIST_ALL_SIGNALS = (
+    "كل ", "كلها", "كلهم", "جميع",
+    "اللي عندكم", "عندكم ايه", "عندكم إيه", "ايه عندكم", "إيه عندكم",
+    "ايه المنتجات", "إيه المنتجات", "ايه الحاجات", "إيه الحاجات",
+    "المنتجات المتاحة", "المنتجات الموجودة", "المنتجات اللي",
+    "المتاح عندكم", "الموجود عندكم", "تقدر توريني", "وريني الكل",
+    "list all", "all products", "show all", "كتالوج", "catalog",
+)
 
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     raw_query = input_data.query or ""
