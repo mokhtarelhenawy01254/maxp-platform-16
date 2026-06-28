@@ -1582,25 +1582,42 @@ export default function AgentProfilesPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Bot className="size-5 text-primary" />
-              اختر وكيلاً جاهزاً
+              <Users className="size-5 text-primary" />
+              فريقك الذكي
             </DialogTitle>
           </DialogHeader>
           <div className="py-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {readyProfiles.map((a) => (
-                <button key={a.slug} type="button" onClick={() => { setReadySelectorOpen(false); setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
-                  className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-right shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
-                >
-                  <span className="text-2xl">{a.icon}</span>
-                  <div className="text-right w-full">
-                    <p className="text-sm font-bold text-foreground">{a.title}</p>
-                    {a.category && <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">{a.category}</span>}
-                    <p className="text-xs text-muted-foreground/70 mt-0.5 leading-relaxed">{a.desc}</p>
-                  </div>
-                  <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">اختر هذا →</span>
-                </button>
-              ))}
+              {readyProfiles.map((a) => {
+                const roleColor = AGENT_CARD_COLORS[a.slug] || 'var(--role-default)';
+                const channels = AGENT_CARD_CHANNELS[a.slug] || [];
+                const IconComp = AGENT_CARD_ICON[a.slug];
+                return (
+                  <button key={a.slug} type="button" onClick={() => { setReadySelectorOpen(false); setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
+                    className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-right shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                  >
+                    <div className="h-16 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${roleColor}, color-mix(in srgb, ${roleColor} 70%, black 30%))` }}>
+                      <div className="size-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                        {IconComp && <IconComp className="size-5 text-white" />}
+                      </div>
+                    </div>
+                    <div className="p-3 text-right">
+                      <p className="text-sm font-bold text-foreground">{a.title}</p>
+                      {channels.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {channels.map((ch) => (
+                            <span key={ch.key} className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium ${CHANNEL_STYLES[ch.key] || ''}`}>
+                              {ch.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground/60 mt-1.5 leading-relaxed line-clamp-2">{a.desc}</p>
+                      <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline mt-2 inline-block">اختر ←</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
             <button type="button" onClick={() => { setReadySelectorOpen(false); setCreateOpen(true); }} className="mt-4 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
               أو أنشئ وكيل مخصص ←
