@@ -137,6 +137,9 @@ class OpenAICompatProvider(BaseProvider):
             tool_choice = options.get("tool_choice", "auto")
             if tool_choice is not None:
                 body["tool_choice"] = tool_choice
+            # DeepSeek parallel tool calling is broken: sends only company_id without required fields
+            if str(self.provider_name or "").upper() == "DEEPSEEK":
+                body["parallel_tool_calls"] = False
         if options.get("temperature") is not None:
             body["temperature"] = options["temperature"]
         if options.get("max_tokens") is not None:

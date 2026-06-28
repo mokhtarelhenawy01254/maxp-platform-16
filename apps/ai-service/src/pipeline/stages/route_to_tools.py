@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from src.context.assembler import ContextAssembler
 from src.context.multimodal import DEFAULT_IMAGE_MIME, data_url_to_inline_data
 from src.intent.planner import (
@@ -9,6 +11,36 @@ from src.intent.planner import (
 )
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.tools.names import canonical_tool_name, canonical_tool_set
+
+
+_PHONE_RE = re.compile(r"(?:^|[\s\-,؛:،])(01[0-9]{9})(?=[\s\-,؛:،]|$)", re.MULTILINE)
+_NAME_RE = re.compile(r"(?:اسمي|اسم|انا)\s+([^\-،,\n]{3,40}?)(?=[\s\-،,]|$)", re.IGNORECASE)
+_PHONE_LABEL_RE = re.compile(r"(?:رقمي|رقم|تليفوني|موبايلي|هاتفي|phone|tel)[:\s]*([0-9+\-\s]{8,15})")
+
+
+def _scan_recent_messages_for_order_fields(ctx: PipelineContext) -> dict[str, str]:
+    """Scan recent conversation messages for customer data fields missing from slots."""
+    memory = dict(getattr(ctx, "external_memory_context", {}) or {})
+    recent = memory.get("recentMessages") or []
+    combined = " ".join(
+        str(m.get("content") or "") for m in recent if m.get("role") == "user"
+    )
+    if ctx.message:
+        combined = str(ctx.message) + " " + combined
+
+    result: dict[str, str] = {}
+
+    phone_match = _PHONE_LABEL_RE.search(combined)
+    if not phone_match:
+        phone_match = _PHONE_RE.search(combined)
+    if phone_match:
+        result["customer_phone"] = re.sub(r"[\s\-]", "", phone_match.group(1))
+
+    name_match = _NAME_RE.search(combined)
+    if name_match:
+        result["customer_name"] = name_match.group(1).strip()
+
+    return result
 
 
 def _first_slot(slots: dict, *keys: str) -> str | None:
@@ -366,6 +398,14 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
         )
         if confirmed_by_customer is not None:
             params.setdefault("confirmed_by_customer", _coerce_bool(confirmed_by_customer))
+
+        # Safety net: if critical customer fields still missing, scan recent messages
+        if tool_name == "order_create_confirmed" and (
+            not params.get("customer_name") or not params.get("customer_phone")
+        ):
+            scanned = _scan_recent_messages_for_order_fields(ctx)
+            for key, value in scanned.items():
+                _setdefault_non_empty(params, key, value)
 
     elif tool_name == "booking_reserve":
         params.setdefault("request", ctx.message)

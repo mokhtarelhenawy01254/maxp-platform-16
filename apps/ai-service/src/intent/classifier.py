@@ -238,6 +238,7 @@ async def classify_intent(
             "lastShownProductIds": external_memory_context.get("lastShownProductIds") or [],
             "queriedProducts": external_memory_context.get("queriedProducts") or [],
             "activeSearchFilters": external_memory_context.get("activeSearchFilters") or {},
+            "recentMessages": external_memory_context.get("recentMessages") or [],
         }
     preferred_provider = str(ctx.get("preferredProvider") or DEFAULT_VISION_PROVIDER).upper()
     preferred_model = ctx.get("preferredModel") or default_model_for_provider(preferred_provider)
@@ -296,7 +297,8 @@ async def classify_intent(
         "2. For read-only catalog/availability/price questions, extract slots like 'productName', 'productSize', 'productColor'. If the user requests to see images or photos of products, set slots.requestedProductImage to true.\n"
         "3. If the user refers to a previously shown/discussed product, set slots.referencesPreviousProduct to true.\n"
         "4. Extracted slots must be derived solely from the user's latest message and conversation context. Do not invent details.\n"
-        "5. For booking_reserve intent, use EXACTLY these slot keys: 'serviceName', 'date', 'time', 'patientName', 'phoneNumber', 'gender'. Example slots: {\"serviceName\": \"شوك ويف\", \"date\": \"الإثنين 29 يونيو\", \"time\": \"5 العصر\", \"patientName\": \"محمد عبدالله\", \"phoneNumber\": \"01234567890\", \"gender\": \"ذكر\"}."
+        "5. For booking_reserve intent, use EXACTLY these slot keys: 'serviceName', 'date', 'time', 'patientName', 'phoneNumber', 'gender'. Example slots: {\"serviceName\": \"شوك ويف\", \"date\": \"الإثنين 29 يونيو\", \"time\": \"5 العصر\", \"patientName\": \"محمد عبدالله\", \"phoneNumber\": \"01234567890\", \"gender\": \"ذكر\"}.\n"
+        "6. For order_create_confirmed intent (user says اوكد/تأكيد/نعم/confirm/تمام after seeing an order summary): ALWAYS scan recentMessages in context to extract ALL order slots: customerName (full name), customerPhone (phone number), productName (product ordered), quantity (integer, default 1), address (full delivery address), city (governorate/city). These may appear in any recent user message, not necessarily the latest one. Set confirmedByCustomer to true.\n"
         f"{exemplars_block}"
     )
 
