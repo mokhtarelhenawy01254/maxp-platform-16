@@ -5,9 +5,10 @@
 ### Intent Classifier Modernization to Schema-Driven Architecture
 - **Accomplishment**: Refactored the intent classification system to transition from legacy keyword-stuffed prompts to a clean, schema-driven, description-based architecture, and made the agent's configured model responsible for classification.
 - **Details**:
-  - Added semantic descriptions to `INTENT_POLICIES` in `schema.py` for all intents (such as `products`, `inventory`, `booking_reserve`).
+  - Added semantic descriptions to `INTENT_POLICIES` in `schema.py` for all intents, and purged all parenthetical Arabic/English keywords and phrase examples (e.g. `بكام الكوتشي`, `اهلا/مرحبا`) to make the classifications 100% semantic.
   - Refactored `classify_intent` in `classifier.py` to dynamically construct the LLM system prompt using descriptions loaded from `dynamic_intent_registry`.
-  - Updated `classify_intent` to respect the pipeline context's `preferredProvider` and `preferredModel`, removing hardcoded fallbacks to ensure the agent's designated model is responsible.
+  - Updated `classify_intent` to respect the pipeline context's `preferredProvider` and `preferredModel`, removing all fallback provider/model lists to ensure the agent's configured LLM is exclusively responsible.
+  - Updated `resolve_intent.py` to fallback to `ctx.agent.client` if `ctx.llm_client` is not populated.
   - **Advanced Features**: Integrated `ClassifierResponse` Pydantic model for structured output validation, replacing raw dictionaries. Added dynamic few-shotting by similarity-matching queries against `intent_golden_cases.json` and injecting the 2 best exemplars into the system prompt.
   - Verified 100% test coverage and validation matching all 10 golden case routing scenarios.
 

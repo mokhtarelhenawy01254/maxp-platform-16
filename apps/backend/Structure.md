@@ -98,8 +98,9 @@ The Facebook Ads Dashboard page (`/advertising/facebook-ads`) was refactored fro
 ## Python AI Service Intent Classifier Modernization (2026-06-28)
 
 - **Module**: `apps/ai-service/src/intent/`
-- **Pattern**: Schema-driven intent classification with dynamic exemplars.
+- **Pattern**: Pure semantic intent classification with dynamic exemplars.
 - **Details**:
-  - `schema.py`: Exposes `INTENT_POLICIES` containing dynamic semantic descriptions for each intent. Also defines the `ClassifierResponse` Pydantic model for structured output validation.
+  - `schema.py`: Exposes `INTENT_POLICIES` containing dynamic semantic descriptions for each intent, purged of all hardcoded keyword/phrase examples. Also defines the `ClassifierResponse` Pydantic model for structured output validation.
   - `dynamic_registry.py`: Extends registry loading to backfill dynamic intent descriptions from static defaults.
-  - `classifier.py`: Dynamically generates the LLM system prompt from allowed intents and their registered descriptions, removing legacy Egyptian Arabic hardcoded rules. Dynamically extracts and injects the 2 best matching few-shot exemplars from golden cases. Enforces classification execution using the agent's preferred model (`preferredProvider`/`preferredModel`) in pipeline context with `ClassifierResponse` Pydantic model validation.
+  - `classifier.py`: Dynamically generates the LLM system prompt from allowed intents and their registered descriptions. Dynamically extracts and injects the 2 best matching few-shot exemplars from golden cases. Enforces classification execution using only the agent's preferred model (`preferredProvider`/`preferredModel`) with zero fallback models.
+  - `resolve_intent.py`: Binds classification execution specifically to the agent's configured LLM client instance (`ctx.llm_client` or `ctx.agent.client`).

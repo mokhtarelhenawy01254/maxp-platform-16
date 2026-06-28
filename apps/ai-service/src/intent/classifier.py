@@ -293,51 +293,48 @@ async def classify_intent(
         f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n\n"
         "Guidelines:\n"
         "1. Semantically interpret the latest user message in the context of the conversation. Support both English and Arabic (including Egyptian dialect).\n"
-        "2. For read-only catalog/availability/price questions, extract slots like 'productName', 'productSize', 'productColor'. If the user requests to see images/photos of products (e.g. 'أريد رؤية صور', 'وريني شكله', 'صورة المنتج'), set slots.requestedProductImage to true.\n"
+        "2. For read-only catalog/availability/price questions, extract slots like 'productName', 'productSize', 'productColor'. If the user requests to see images or photos of products, set slots.requestedProductImage to true.\n"
         "3. If the user refers to a previously shown/discussed product, set slots.referencesPreviousProduct to true.\n"
         "4. Extracted slots must be derived solely from the user's latest message and conversation context. Do not invent details."
         f"{exemplars_block}"
     )
 
-    # Fallback chain: build list of (provider, model) combos to try.
-    # We strictly respect the agent's configured preferred provider/model.
-    classifier_attempts: list[tuple[str | None, str]] = []
-    if client is not None:
-        classifier_attempts.append((None, None))  # Use the passed client
-    else:
+    # Ensure the classifier uses ONLY the agent's model/client with zero fallback models.
+    if client is None:
         fallback = LLMFallbackProvider()
-        fallback_provider = model_route.provider or ctx.get("preferredProvider")
-        fallback_model = model_route.model or preferred_model
-        classifier_attempts.append((fallback_provider, fallback_model))
+        target_provider = model_route.provider or ctx.get("preferredProvider")
+        target_model = model_route.model or preferred_model
+        
+        client = await fallback.get_client(
+            company_id=company_id,
+            model=target_model,
+            provider=target_provider,
+        )
+        provider_name = target_provider
+        model_name = target_model
+    else:
+        provider_name = ctx.get("preferredProvider")
+        model_name = ctx.get("preferredModel")
 
-    result: ClassifierResult | None = None
-    for attempt_idx, (attempt_provider, attempt_model) in enumerate(classifier_attempts):
-        if client is None:
-            client = await fallback.get_client(
-                company_id=company_id,
-                model=attempt_model,
-                provider=attempt_provider,
-            )
-        if not client:
-            logger.warning("classifier client unavailable", provider=attempt_provider, model=attempt_model)
-            continue
-        try:
-            result = await _classify_with_client(
-                client,
-                system_prompt=system_prompt,
-                message=message,
-                attachments=attachments,
-                context_snapshot=context_snapshot,
-            )
-        except Exception as exc:
-            logger.warning("classifier attempt failed", attempt=attempt_idx, provider=attempt_provider, model=attempt_model, error=str(exc))
-            client = None  # Force rebuild for next attempt
-            continue
-        if result is not None:
-            logger.info("classifier result", intent=result.intent, confidence=result.confidence, slots=result.slots, provider=attempt_provider, model=attempt_model)
-            return result
-        logger.warning("classifier attempt returned None", attempt=attempt_idx, provider=attempt_provider, model=attempt_model)
-        client = None
+    if not client:
+        logger.error("classifier client unavailable for agent model", provider=provider_name, model=model_name)
+        return None
 
-    logger.error("all classifier attempts exhausted", message=message[:100])
+    try:
+        result = await _classify_with_client(
+            client,
+            system_prompt=system_prompt,
+            message=message,
+            attachments=attachments,
+            context_snapshot=context_snapshot,
+        )
+    except Exception as exc:
+        logger.error("classifier execution failed for agent model", provider=provider_name, model=model_name, error=str(exc))
+        return None
+
+    if result is not None:
+        logger.info("classifier result success", intent=result.intent, confidence=result.confidence, slots=result.slots, provider=provider_name, model=model_name)
+        return result
+
+    logger.warning("classifier returned None for agent model", provider=provider_name, model=model_name)
     return None

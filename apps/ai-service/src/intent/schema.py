@@ -124,7 +124,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "respond",
         "requiredSlots": ["serviceName", "date", "time", "patientName", "phoneNumber", "gender"],
         "guardrails": [*DEFAULT_GUARDRAILS, "idempotency"],
-        "description": "Customer wants to book or reserve a medical clinic appointment, session, physical therapy, shockwave, or cupping (حجامة/علاج طبيعي/جلسات).",
+        "description": "Customer wants to book or reserve a medical clinic appointment, session, physical therapy, shockwave, or cupping.",
     },
     "general.chat": {
         "actionType": "chat",
@@ -132,7 +132,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "respond",
         "requiredSlots": [],
         "guardrails": ["no_live_data_claims"],
-        "description": "General chit-chat, greetings (اهلا/مرحبا), thanks (شكرا/تسلم), or pleasantries.",
+        "description": "General chit-chat, greetings, thanks, or pleasantries.",
     },
     "general.knowledge": {
         "actionType": "read",
@@ -140,7 +140,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "respond",
         "requiredSlots": [],
         "guardrails": DEFAULT_GUARDRAILS,
-        "description": "Customer asks about company policies, return or exchange policy, shipping times, working hours, store address, or general FAQ knowledge (سياسة الاسترجاع/مواعيد العمل).",
+        "description": "Customer asks about company policies, return or exchange policy, shipping times, working hours, store address, or general FAQ knowledge.",
     },
     "implementation.advice": {
         "actionType": "analysis",
@@ -220,7 +220,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "create_product_draft",
         "requiredSlots": ["name", "price"],
         "guardrails": [*DEFAULT_GUARDRAILS, "draft_only_review_required", "conflict_check"],
-        "description": "Merchant wants to add (اضافة منتج), create, edit, or update catalog products.",
+        "description": "Merchant wants to add, create, edit, or update catalog products.",
     },
     "orders.create_draft": {
         "actionType": "write",
@@ -228,7 +228,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "create_order_draft_pending_approval",
         "requiredSlots": ["productName", "productPrice", "customerName", "customerPhone"],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_approval", "conflict_check"],
-        "description": "Customer or agent wants to initialize/create a draft order (عمل اوردر/طلب جديد) without final confirmation.",
+        "description": "Customer or agent wants to initialize or create a draft order without final confirmation.",
     },
     "orders.create_confirmed": {
         "actionType": "write",
@@ -256,7 +256,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_order_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
-        "description": "Customer asks about an existing order status, order details, or tracking (الاوردر فين/تتبع الطلب).",
+        "description": "Customer asks about an existing order status, order details, or tracking.",
     },
     "orders.cancel": {
         "actionType": "write",
@@ -264,7 +264,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "cancel_order",
         "requiredSlots": ["orderNumber", "cancelReason"],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_approval"],
-        "description": "Customer asks to cancel an order they placed (عايز الغي الطلب).",
+        "description": "Customer asks to cancel an order they placed.",
     },
     "orders.refund": {
         "actionType": "write",
@@ -272,7 +272,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "refund_order",
         "requiredSlots": ["orderNumber", "refundReason"],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_approval", "refund_requires_review"],
-        "description": "Customer asks to return an order and request a refund or money back (استرجاع الفلوس/استرداد).",
+        "description": "Customer asks to return an order and request a refund or money back.",
     },
     "inventory": {
         "actionType": "read",
@@ -280,7 +280,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_inventory_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
-        "description": "Customer asks about a specific product's price, size, color, or stock availability (بكام الكوتشي/المقاس موجود/فيه منه ابيض).",
+        "description": "Customer asks about a specific product's price, size, color, or stock availability.",
     },
     "products": {
         "actionType": "read",
@@ -288,7 +288,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_catalog_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
-        "description": "Customer wants to see what products are available, browse the general catalog, view broad items, or ask 'what do you have' (عندك ايه/عايز اشوف المنتجات).",
+        "description": "Customer wants to see what products are available, browse the general catalog, view broad items, or ask what products are in stock.",
     },
     "catalog.categories": {
         "actionType": "read",
@@ -296,7 +296,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_catalog_categories",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
-        "description": "Customer asks specifically about store categories, sections, or product types (الاقسام اللي عندك/الأنواع المتاحة).",
+        "description": "Customer asks specifically about store categories, sections, or product types.",
     },
     "shipping.rates": {
         "actionType": "read",
@@ -304,7 +304,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_shipping_rate",
         "requiredSlots": ["governorate"],
         "guardrails": [*DEFAULT_GUARDRAILS],
-        "description": "Customer asks for shipping costs or rates to a location (سعر الشحن/مصاريف التوصيل).",
+        "description": "Customer asks for shipping costs or rates to a location.",
     },
     "support.exchange": {
         "actionType": "handoff",
@@ -312,7 +312,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "handoff_to_human",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_in_the_loop", "no_policy_promise"],
-        "description": "Customer requests after-sale service for product replacement, size swap, or exchange (عايز ابدل المنتج).",
+        "description": "Customer requests after-sale service for product replacement, size swap, or exchange.",
     },
     "support.refund": {
         "actionType": "handoff",
@@ -328,7 +328,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "handoff_to_human",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_in_the_loop", "complaint_review"],
-        "description": "Customer has a complaint, issue, or damage report requiring support handoff (تقديم شكوى/المنتج تالف).",
+        "description": "Customer has a complaint, issue, or damage report requiring support handoff.",
     },
     "customers": {
         "actionType": "read",
