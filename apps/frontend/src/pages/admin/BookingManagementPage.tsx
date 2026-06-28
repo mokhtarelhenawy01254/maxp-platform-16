@@ -10,8 +10,20 @@ import {
   ChevronLeftIcon, ChevronRightIcon
 } from "@heroicons/react/24/outline";
 
-const getAuthHeaders = () => tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
-const api = (path: string) => buildApiUrl(`booking/${path}`);
+const getCompanyId = (): string | null => {
+  try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
+};
+const companyId = getCompanyId();
+const getAuthHeaders = () => {
+  const headers = tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
+  if (companyId) headers["X-Company-Id"] = companyId;
+  return headers;
+};
+const api = (path: string) => {
+  const url = new URL(buildApiUrl(`booking/${path}`));
+  if (companyId) url.searchParams.set("companyId", companyId);
+  return url.toString();
+};
 
 interface BookingBranch {
   id: string; name: string; address: string; phone: string;
@@ -405,6 +417,7 @@ export default function BookingManagementPage() {
   const [filters, setFilters] = useState({ status: "", branchId: "", dateFrom: "", dateTo: "" });
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
@@ -535,6 +548,43 @@ export default function BookingManagementPage() {
     const res = await fetch(api(`appointments/${id}/status`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ status }) });
     const data = await res.json();
     if (!data.success) { alert(data.error || "فشل التحديث"); return; }
+    setLoading(true); fetchAppointments().finally(() => setLoading(false));
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === appointments.length && appointments.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(appointments.map(a => a.id)));
+    }
+  };
+
+  const bulkUpdateStatus = async (status: string) => {
+    if (selectedIds.size === 0) return;
+    const label = STATUS_MAP[status]?.label || status;
+    if (!confirm(`تأكيد تغيير حالة (${selectedIds.size}) موعد إلى "${label}"؟`)) return;
+    const res = await fetch(api(`appointments/bulk-status`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ ids: Array.from(selectedIds), status }) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل التحديث الجماعي"); return; }
+    setSelectedIds(new Set());
+    setLoading(true); fetchAppointments().finally(() => setLoading(false));
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`تأكيد حذف (${selectedIds.size}) موعد بشكل نهائي؟`)) return;
+    const res = await fetch(api(`appointments/bulk-delete`), { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ ids: Array.from(selectedIds) }) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الحذف الجماعي"); return; }
+    setSelectedIds(new Set());
     setLoading(true); fetchAppointments().finally(() => setLoading(false));
   };
 
@@ -803,6 +853,19 @@ export default function BookingManagementPage() {
           <button onClick={() => setAppointmentModal({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />حجز موعد</button>
         </div>
       </div>
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300 ml-2">{selectedIds.size} موعد محدد</span>
+          <button onClick={() => bulkUpdateStatus("confirmed")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60">تأكيد</button>
+          <button onClick={() => bulkUpdateStatus("cancelled")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60">إلغاء</button>
+          <button onClick={() => bulkUpdateStatus("completed")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60">إتمام</button>
+          <button onClick={() => bulkUpdateStatus("no_show")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">لم يحضر</button>
+          <span className="w-px h-5 bg-blue-200 dark:bg-blue-800"></span>
+          <button onClick={bulkDelete} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60">حذف</button>
+          <button onClick={() => setSelectedIds(new Set())} className="text-xs px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">إلغاء التحديد</button>
+        </div>
+      )}
       {/* Mobile card view */}
       <div className="block md:hidden space-y-3">
         {loading ? (
@@ -812,9 +875,13 @@ export default function BookingManagementPage() {
         ) : appointments.map(a => (
           <div key={a.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
             <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="font-bold text-sm">{a.customerName}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{a.customerPhone}</p>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={selectedIds.has(a.id)} onChange={() => toggleSelect(a.id)}
+                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
+                <div>
+                  <h3 className="font-bold text-sm">{a.customerName}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{a.customerPhone}</p>
+                </div>
               </div>
               <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span>
             </div>
@@ -841,14 +908,24 @@ export default function BookingManagementPage() {
       {/* Desktop table */}
       <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full">
-          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
+          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
+            <th className="py-3 px-4 w-10">
+              <input type="checkbox" checked={selectedIds.size === appointments.length && appointments.length > 0} onChange={toggleSelectAll}
+                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
+            </th>
+            {["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}
+          </tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">جاري التحميل...</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400 dark:text-gray-500">جاري التحميل...</td></tr>
             ) : appointments.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</td></tr>
             ) : appointments.map(a => (
-              <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+              <tr key={a.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${selectedIds.has(a.id) ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}>
+                <td className="py-3 px-4">
+                  <input type="checkbox" checked={selectedIds.has(a.id)} onChange={() => toggleSelect(a.id)}
+                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
+                </td>
                 <td className="py-3 px-4 font-medium">{a.customerName}</td>
                 <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.customerPhone}</td>
                 <td className="py-3 px-4">{a.branchName || "—"}</td>
