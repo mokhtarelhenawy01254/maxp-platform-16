@@ -20,6 +20,7 @@
   "customer": "Customer",
   "phone": "Phone",
   "total": "Total",
+  "totalValues": "Total Values",
   "status": "Status",
   "date": "Date",
   "actions": "Actions",

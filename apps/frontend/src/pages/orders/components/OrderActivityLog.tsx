@@ -106,19 +106,29 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
           : typeof h.notes === "string" && h.notes.trim()
             ? h.notes.trim()
             : "";
+            
+      const isModification = h.status === h.oldStatus && (h.status !== "TRASH" && h.status !== "DELETED");
+      const isTrash = h.status === "TRASH" || h.status === "DELETED";
+      
       const reasonLine = reason
-        ? t(
-            isCancellationStatus(h.status)
-              ? "orderDetails.cancellationReasonLine"
-              : "orderDetails.statusReasonLine",
-            { reason },
-          )
+        ? (isCancellationStatus(h.status) || isTrash || isModification)
+            ? t("orderDetails.cancellationReasonLine", { reason })
+            : t("orderDetails.statusReasonLine", { reason })
         : "";
+
+      let actionText = "";
+      if (isModification) {
+        actionText = "تعديل بيانات الطلب";
+      } else if (isTrash) {
+        actionText = "تم نقل الطلب إلى سلة المهملات";
+      } else {
+        actionText = t("orderDetails.statusChangeTo", { status: h.status });
+      }
 
       return {
         type: "status" as const,
         content: [
-          t("orderDetails.statusChangeTo", { status: h.status }),
+          actionText,
           reasonLine,
         ]
           .filter(Boolean)
@@ -126,8 +136,8 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
         date: h.createdAt,
         author:
           h.userName || h.updatedBy || h.changedBy || t("orderDetails.system"),
-        icon: CheckCircleIcon,
-        color: "bg-blue-500",
+        icon: isModification ? PencilIcon : (isTrash ? TrashIcon : CheckCircleIcon),
+        color: isModification ? "bg-indigo-500" : (isTrash ? "bg-red-500" : "bg-blue-500"),
         noteId: undefined as string | undefined,
         canModify: false,
       };

@@ -3676,7 +3676,10 @@
     "bulkItemQuantity": "Quantity",
     "bulkItemPrice": "Price",
     "bulkItemTotal": "Total",
-    "bulkItemStatus": "Status"
+    "bulkItemStatus": "Status",
+    "found": "Found",
+    "notFound": "Not Found",
+    "ordersCount": "Orders Count"
   },
   "pageComments": {
     "pageTitle": "Manage comments by page",

@@ -120,7 +120,7 @@ export const bulkSearchService = {
       order.customer?.phone || "",
       order.customer?.email || "",
       order.status,
-      order.total.toFixed(2),
+      Number(order.total).toFixed(2),
       order.currency || "EGP",
       new Date(order.createdAt).toLocaleDateString("ar-EG"),
     ]);
