@@ -107,7 +107,7 @@ export const normalizeVolumeDiscounts = (value: unknown): VolumeDiscountTier[] =
     ? value
     : (() => {
         const metadata = parseMetadataObject(value);
-        if (Array.isArray(metadata.volumeDiscounts)) {
+        if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
           return metadata.volumeDiscounts;
         }
 

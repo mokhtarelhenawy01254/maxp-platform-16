@@ -1202,10 +1202,11 @@ router.post('/', async (req, res) => {
             : 0;
       const variantVolumeDiscounts = getVolumeDiscountsFromMetadata(
         selectedVariant?.metadata,
-        { activeOnly: true },
+        { activeOnly: true, basePrice: parseFloat(selectedVariant?.price) || 0 },
       );
       const productVolumeDiscounts = getVolumeDiscountsFromMetadata(product?.metadata, {
         activeOnly: true,
+        basePrice: parseFloat(product?.price) || 0,
       });
       const volumeDiscounts =
         variantVolumeDiscounts.length > 0 ? variantVolumeDiscounts : productVolumeDiscounts;

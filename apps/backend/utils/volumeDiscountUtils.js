@@ -88,7 +88,7 @@ const getVolumeDiscountsFromMetadata = (rawMetadata, options = {}) => {
   const metadata = parseMetadataObject(rawMetadata);
   let rawDiscounts;
 
-  if (Array.isArray(metadata.volumeDiscounts)) {
+  if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
     rawDiscounts = metadata.volumeDiscounts;
   } else if (Array.isArray(metadata.bulkSavings)) {
     rawDiscounts = metadata.bulkSavings;
