@@ -453,6 +453,9 @@ jobs:
               echo "🗄️ Running ai-service database migrations..."
               "$UV_BIN" run alembic upgrade head 2>&1
 
+              echo "🌱 Seeding agent templates..."
+              "$UV_BIN" run python -m scripts.seed_agent_templates 2>&1
+
               echo "🔄 Starting/restarting maxp-ai-service in PM2..."
               if [ -n "$PM2_BIN" ]; then
                 if "$PM2_BIN" list | grep -q "maxp-ai-service"; then
