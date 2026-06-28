@@ -93,6 +93,7 @@ type SidebarUser = {
     email?: string | null;
     id?: number | string | null;
     role?: string | null;
+    permissions?: string[];
 };
 
 const hasRoleAccess = (userRole: string | undefined | null, requiredRoles: string[] | undefined): boolean => {
@@ -159,20 +160,62 @@ const mergeSectionOverrides = (
     return { ...section, items: overriddenItems };
 };
 
+const DOMAIN_PERMISSIONS: Record<string, string[]> = {
+    'main': ['dashboard.view'],
+    'unified-inbox-section': ['conversations.view', 'facebook.view', 'instagram.view', 'whatsapp.view', 'telegram.view'],
+    'facebook': ['conversations.view', 'facebook.view'],
+    'instagram': ['conversations.view', 'instagram.view'],
+    'whatsapp': ['whatsapp.view', 'conversations.view'],
+    'telegram': ['telegram.view', 'conversations.view'],
+    'orders': ['orders.view'],
+    'customers': ['customers.view'],
+    'marketplace': ['settings.view'],
+    'company': ['settings.view', 'users.view', 'roles.view'],
+    'products': ['products.view'],
+    'procurement': ['finance.view'],
+    'analytics': ['reports.view'],
+    'notifications': ['settings.view']
+};
+
+const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId: string): boolean => {
+    if (!user) return false;
+    
+    if (['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user.role || '')) return true;
+    
+    const userPerms = user.permissions || [];
+    
+    const BUILT_IN_ROLES = ['MANAGER', 'AGENT', 'AFFILIATE', 'MERCHANT'];
+    if (BUILT_IN_ROLES.includes(user.role || '') && userPerms.length === 0) {
+        return true; 
+    }
+    
+    if (sectionId === 'settings') return true;
+
+    const reqPerms = DOMAIN_PERMISSIONS[sectionId];
+    if (reqPerms && reqPerms.length > 0) {
+        return reqPerms.some(p => userPerms.includes(p));
+    }
+    
+    return false;
+};
+
 const applySidebarOverrides = (
     sections: SidebarSection[],
     managementData: SidebarManagementData | undefined,
     userRole: string | undefined | null,
     userSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> } | undefined,
+    user?: SidebarUser | undefined,
 ): SidebarSection[] => {
     const dbSections = managementData?.sections;
     const userSections = userSettings?.enabled ? userSettings.sections : undefined;
 
+    const permissionFilteredSections = sections.filter(section => hasPermissionAccessForSection(user, section.id));
+
     if ((!dbSections || Object.keys(dbSections).length === 0) && (!userSections || Object.keys(userSections).length === 0)) {
-        return sections;
+        return permissionFilteredSections;
     }
 
-    return sections
+    return permissionFilteredSections
         .map((section) => {
             const dbSection = dbSections?.[section.id];
             const userSection = userSections?.[section.id];
@@ -1005,5 +1048,5 @@ export const getSidebarConfig = (
     ];
 
     // Apply dynamic sidebar management overrides (from DB settings + user settings)
-    return applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings);
+    return applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings, user);
 };

@@ -17,6 +17,7 @@ export interface SidebarItem {
   hidden?: boolean;
   requiredRoles?: string[];
   requiredApps?: string[];
+  requiredPermissions?: string[];
   itemId?: string;
 }
 
@@ -28,6 +29,7 @@ export interface SidebarSection {
   hidden?: boolean;
   requiredRoles?: string[];
   requiredApps?: string[];
+  requiredPermissions?: string[];
   sectionId?: string;
 }
 
