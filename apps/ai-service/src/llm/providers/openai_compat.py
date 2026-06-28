@@ -196,11 +196,28 @@ class OpenAICompatProvider(BaseProvider):
             finish_reason=finish_reason,
         )
 
+    def _supports_vision(self) -> bool:
+        from src.llm.model_capabilities import supports_vision
+        return supports_vision(self.model, self.provider_name)
+
+    def _strip_images(self, content: str | list[dict[str, Any]] | None) -> str | list[dict[str, Any]] | None:
+        if not isinstance(content, list):
+            return content
+        text_parts = [p for p in content if p.get("type") != "image_url"]
+        if not text_parts:
+            return None
+        if len(text_parts) == 1 and text_parts[0].get("type") == "text":
+            return text_parts[0]["text"]
+        return text_parts
+
     def _normalize_messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        vision_ok = self._supports_vision()
         normalized = []
         for msg in messages:
             m: dict[str, Any] = {"role": _message_value(msg, "role", "user") or "user"}
             content = _message_content(msg)
+            if not vision_ok:
+                content = self._strip_images(content)
             if content is not None:
                 m["content"] = content
             tool_calls = _message_value(msg, "tool_calls")
