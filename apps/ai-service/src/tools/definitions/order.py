@@ -152,14 +152,14 @@ order_lookup_tool = FunctionTool(
 
 order_create_draft_tool = FunctionTool(
     name="order_create_draft",
-    description="Create a draft order for merchant review. Use when customer confirms they want to buy and provides: product name, quantity, size/color, customer name, phone, and delivery governorate. REQUIRES MERCHANT APPROVAL.",
+    description="Save a pending order for merchant review ONLY when the customer has NOT yet confirmed. Use this as a draft/quote step when you are still collecting order details. REQUIRES MERCHANT APPROVAL — do NOT use when customer already said اوكد/اكد/نعم/confirm.",
     func=order_create_draft,
     input_model=OrderCreateDraftInput,
 )
 
 order_create_confirmed_tool = FunctionTool(
     name="order_create_confirmed",
-    description="Create a confirmed order directly after explicit customer confirmation and complete order details.",
+    description="Create and confirm an order in the system immediately. USE THIS when the customer explicitly confirms with اوكد / اكد / نعم / confirm / تمام after you showed them the order summary. You MUST fill: customer_name, customer_phone, product_name, quantity, address. Pull all values from the conversation history — do NOT ask the customer again.",
     func=order_create_confirmed,
     input_model=OrderCreateConfirmedInput,
 )
