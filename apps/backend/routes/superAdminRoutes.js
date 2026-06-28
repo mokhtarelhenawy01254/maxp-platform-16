@@ -765,7 +765,7 @@ router.get("/agents/quick-profiles", async (req, res) => {
 // POST /agents/quick-profiles — create a new ready agent profile
 router.post("/agents/quick-profiles", async (req, res) => {
   try {
-    const { slug, icon, title, titleEn, category, categoryEn, desc, descEn, personalities, templateSlug } = req.body || {};
+    const { slug, icon, title, titleEn, category, categoryEn, desc, descEn, personalities, templateSlug, lucideIcon, roleColor, channels } = req.body || {};
     if (!slug?.trim() || !title?.trim())
       return res.status(400).json({ success: false, error: 'slug و title مطلوبان' });
     const profiles = await getReadyProfiles();
@@ -778,6 +778,9 @@ router.post("/agents/quick-profiles", async (req, res) => {
       desc: desc || '', descEn: descEn || '', sortOrder: maxOrder + 1,
       isActive: true, personalities: personalities || [],
       templateSlug: templateSlug || null,
+      lucideIcon: lucideIcon || null,
+      roleColor: roleColor || null,
+      channels: channels || null,
     });
     await saveReadyProfiles(profiles);
     return res.status(201).json({ success: true, profiles, count: profiles.length });

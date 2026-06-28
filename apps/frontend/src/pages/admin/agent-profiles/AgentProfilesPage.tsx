@@ -5,6 +5,7 @@ import {
   Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
   BookOpen, Shield, RefreshCw, HelpCircle, Menu, MessageSquare, Archive,
   ShoppingCart, Headphones, Package, Megaphone, Heart,
+  Phone, Mail, Globe, Truck, CreditCard, BarChart, FileText, Settings, User, Bell,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -193,10 +194,18 @@ const AGENT_CARD_CHANNELS: Record<string, Array<{ key: string; label: string }>>
   'medical-center-agent': [{ key: 'dashboard', label: 'لوحة التحكم' }, { key: 'whatsapp', label: 'واتساب' }],
 };
 
+const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: 'واتساب',
+  facebook: 'فيسبوك',
+  dashboard: 'لوحة التحكم',
+  phone: 'هاتف',
+};
+
 const CHANNEL_STYLES: Record<string, string> = {
   whatsapp: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   facebook: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   dashboard: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+  phone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
 };
 
 const AGENT_CARD_ICON: Record<string, LucideIcon> = {
@@ -205,6 +214,13 @@ const AGENT_CARD_ICON: Record<string, LucideIcon> = {
   'order-agent': Package,
   'marketing-agent': Megaphone,
   'medical-center-agent': Heart,
+};
+
+const LUCIDE_ICON_MAP: Record<string, LucideIcon> = {
+  ShoppingCart, Headphones, Package, Megaphone, Heart,
+  Bot, MessageSquare, Phone, Mail, Globe,
+  Truck, CreditCard, BarChart, FileText, Settings,
+  User, Shield, Bell,
 };
 
 interface ReadyAgentPersonality {
@@ -225,6 +241,9 @@ interface ReadyAgent {
   category?: string;
   desc: string;
   personalities: ReadyAgentPersonality[];
+  lucideIcon?: string | null;
+  roleColor?: string | null;
+  channels?: string[] | null;
 }
 
 const FALLBACK_READY_AGENTS: ReadyAgent[] = [
@@ -1320,9 +1339,10 @@ export default function AgentProfilesPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl mx-auto">
                 {readyProfiles.map((a) => {
-                  const roleColor = AGENT_CARD_COLORS[a.slug] || 'var(--role-default)';
-                  const channels = AGENT_CARD_CHANNELS[a.slug] || [];
-                  const IconComp = AGENT_CARD_ICON[a.slug];
+                  const roleColor = a.roleColor ? `var(--role-${a.roleColor})` : (AGENT_CARD_COLORS[a.slug] || 'var(--role-default)');
+                  const rawChannels: string[] = a.channels || [];
+                  const channels = rawChannels.length > 0 ? rawChannels.map((k) => ({ key: k, label: CHANNEL_LABELS[k] || k })) : (AGENT_CARD_CHANNELS[a.slug] || []);
+                  const IconComp = (a.lucideIcon ? LUCIDE_ICON_MAP[a.lucideIcon] : undefined) || AGENT_CARD_ICON[a.slug];
                   return (
                     <button key={a.slug} type="button" onClick={() => { setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
                       className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-right shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
@@ -1589,9 +1609,10 @@ export default function AgentProfilesPage() {
           <div className="py-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {readyProfiles.map((a) => {
-                const roleColor = AGENT_CARD_COLORS[a.slug] || 'var(--role-default)';
-                const channels = AGENT_CARD_CHANNELS[a.slug] || [];
-                const IconComp = AGENT_CARD_ICON[a.slug];
+                const roleColor = a.roleColor ? `var(--role-${a.roleColor})` : (AGENT_CARD_COLORS[a.slug] || 'var(--role-default)');
+                const rawChannels: string[] = a.channels || [];
+                const channels = rawChannels.length > 0 ? rawChannels.map((k) => ({ key: k, label: CHANNEL_LABELS[k] || k })) : (AGENT_CARD_CHANNELS[a.slug] || []);
+                const IconComp = (a.lucideIcon ? LUCIDE_ICON_MAP[a.lucideIcon] : undefined) || AGENT_CARD_ICON[a.slug];
                 return (
                   <button key={a.slug} type="button" onClick={() => { setReadySelectorOpen(false); setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
                     className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-right shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
