@@ -203,7 +203,10 @@ class OpenAICompatProvider(BaseProvider):
     def _strip_images(self, content: str | list[dict[str, Any]] | None) -> str | list[dict[str, Any]] | None:
         if not isinstance(content, list):
             return content
+        has_images = any(p.get("type") == "image_url" for p in content)
         text_parts = [p for p in content if p.get("type") != "image_url"]
+        if has_images:
+            text_parts.append({"type": "text", "text": "[المستخدم أرسل صورة — تم استخدامها في البحث عن المنتجات المشابهة]"})
         if not text_parts:
             return None
         if len(text_parts) == 1 and text_parts[0].get("type") == "text":
