@@ -279,4 +279,51 @@ const confirmAppointment = async (req, res) => {
   }
 };
 
-module.exports = { getAllAppointments, getAvailableSlots, createAppointment, updateAppointmentStatus, confirmAppointment };
+const bulkUpdateStatus = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { ids, status } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'معرفات المواعيد مطلوبة' });
+    }
+    if (!status) return res.status(400).json({ success: false, error: 'الحالة مطلوبة' });
+
+    const updateData = { status, notes: req.body.notes !== undefined ? req.body.notes : undefined };
+    if (status === 'confirmed') updateData.confirmedAt = new Date();
+
+    const result = await getSharedPrismaClient().appointment.updateMany({
+      where: { id: { in: ids }, companyId },
+      data: updateData,
+    });
+
+    res.json({ success: true, data: result, message: `تم تحديث ${result.count} موعد` });
+  } catch (error) {
+    console.error('Error bulk updating appointments:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في التحديث الجماعي' });
+  }
+};
+
+const bulkDelete = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'معرفات المواعيد مطلوبة' });
+    }
+
+    const result = await getSharedPrismaClient().appointment.deleteMany({
+      where: { id: { in: ids }, companyId },
+    });
+
+    res.json({ success: true, data: result, message: `تم حذف ${result.count} موعد` });
+  } catch (error) {
+    console.error('Error bulk deleting appointments:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في الحذف الجماعي' });
+  }
+};
+
+module.exports = { getAllAppointments, getAvailableSlots, createAppointment, updateAppointmentStatus, confirmAppointment, bulkUpdateStatus, bulkDelete };

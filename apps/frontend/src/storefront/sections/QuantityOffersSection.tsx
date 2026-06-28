@@ -163,6 +163,7 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
       String(quantityOffersCopy["bestValueLabel"] || "الأكثر توفيرًا"),
     ),
     hideWhenSingleOffer: settings?.hideWhenSingleOffer === true,
+    hideVariantSelectors: settings?.hideVariantSelectors === true,
     decisionMode:
       typeof settings?.decisionMode === "string" && settings.decisionMode.trim()
         ? settings.decisionMode.trim()

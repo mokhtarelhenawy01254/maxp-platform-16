@@ -1056,6 +1056,7 @@
     "customer": "العميل",
     "phone": "التليفون",
     "total": "الإجمالي",
+    "totalValues": "إجمالي القيم",
     "status": "الحالة",
     "date": "التاريخ",
     "actions": "الإجراءات",
@@ -3720,10 +3721,7 @@
     "bulkItemQuantity": "الكمية",
     "bulkItemPrice": "السعر",
     "bulkItemTotal": "الإجمالي",
-    "bulkItemStatus": "الحالة",
-    "found": "موجود",
-    "notFound": "غير موجود",
-    "ordersCount": "عدد الطلبات"
+    "bulkItemStatus": "الحالة"
   },
   "pageComments": {
     "pageTitle": "إدارة التعليقات حسب الصفحة",

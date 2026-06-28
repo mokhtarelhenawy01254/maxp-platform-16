@@ -8,5 +8,7 @@ router.get('/available-slots', verifyToken.authenticateToken, controller.getAvai
 router.post('/', verifyToken.authenticateToken, controller.createAppointment);
 router.put('/:id/status', verifyToken.authenticateToken, controller.updateAppointmentStatus);
 router.post('/:id/confirm', verifyToken.authenticateToken, controller.confirmAppointment);
+router.put('/bulk-status', verifyToken.authenticateToken, controller.bulkUpdateStatus);
+router.post('/bulk-delete', verifyToken.authenticateToken, controller.bulkDelete);
 
 module.exports = router;

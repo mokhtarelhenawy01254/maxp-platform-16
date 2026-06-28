@@ -1056,6 +1056,7 @@
     "customer": "Customer",
     "phone": "Phone",
     "total": "Total",
+    "totalValues": "Total Values",
     "status": "Status",
     "date": "Date",
     "actions": "Actions",
@@ -3676,10 +3677,7 @@
     "bulkItemQuantity": "Quantity",
     "bulkItemPrice": "Price",
     "bulkItemTotal": "Total",
-    "bulkItemStatus": "Status",
-    "found": "Found",
-    "notFound": "Not Found",
-    "ordersCount": "Orders Count"
+    "bulkItemStatus": "Status"
   },
   "pageComments": {
     "pageTitle": "Manage comments by page",
