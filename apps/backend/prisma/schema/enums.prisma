@@ -78,6 +78,17 @@ enum MessageType {
     WOO_TAGHEZ
     DRAFT
     TRASH
+    READY_TO_SHIP
+    ON_HOLD
+    NOT_SHIPPED
+    OUT_FOR_DELIVERY
+    LOST
+    PENDING_PREPARATION
+    PREPARING
+    READY
+    QUALITY_CHECK
+    PACKAGED
+    ON_HOLD_PREP
 }
 
 enum PaymentStatus {
