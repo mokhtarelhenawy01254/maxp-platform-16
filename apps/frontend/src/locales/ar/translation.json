@@ -3720,7 +3720,10 @@
     "bulkItemQuantity": "الكمية",
     "bulkItemPrice": "السعر",
     "bulkItemTotal": "الإجمالي",
-    "bulkItemStatus": "الحالة"
+    "bulkItemStatus": "الحالة",
+    "found": "موجود",
+    "notFound": "غير موجود",
+    "ordersCount": "عدد الطلبات"
   },
   "pageComments": {
     "pageTitle": "إدارة التعليقات حسب الصفحة",

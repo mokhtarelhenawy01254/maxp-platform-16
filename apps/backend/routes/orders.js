@@ -4663,6 +4663,31 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       console.error('❌ [ORDER-UPDATE] Error emitting socket update:', socketError);
     }
 
+    // --- LOG MODIFICATION ---
+    try {
+      if (result.orderType === 'regular') {
+        const order = await getSharedPrismaClient().order.findUnique({
+          where: { id: result.orderId },
+          select: { id: true, status: true }
+        });
+        if (order) {
+          await getSharedPrismaClient().orderStatusHistory.create({
+            data: {
+              orderId: order.id,
+              status: order.status,
+              oldStatus: order.status,
+              reason: 'تعديل البيانات الأساسية للطلب',
+              changedBy: req.user.id,
+              userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'النظام'
+            }
+          });
+        }
+      }
+    } catch (logError) {
+      console.error('❌ [ORDER-UPDATE] Error logging modification:', logError);
+    }
+    // ------------------------
+
     return res.json({ success: true, message: 'Order updated successfully' });
 
   } catch (error) {
@@ -4781,6 +4806,23 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
           _refetch: true
         });
       }
+
+      // --- LOG MODIFICATION ---
+      try {
+        await getSharedPrismaClient().orderStatusHistory.create({
+          data: {
+            orderId: regularOrder.id,
+            status: regularOrder.status,
+            oldStatus: regularOrder.status,
+            reason: 'تعديل منتجات الطلب',
+            changedBy: req.user.id,
+            userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'النظام'
+          }
+        });
+      } catch (logError) {
+        console.error('❌ [ORDER-UPDATE] Error logging items modification:', logError);
+      }
+      // ------------------------
 
       return res.json({ success: true, message: 'Order items updated successfully' });
     }

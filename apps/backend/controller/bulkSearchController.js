@@ -163,10 +163,20 @@ const bulkSearchOrders = async (req, res) => {
             note: searchType === 'phone' ? 'found = unique phone numbers, ordersCount = total orders' : 'found = unique order numbers'
         };
 
+        // تحويل الحقول الرقمية من string إلى number (Prisma Decimal)
+        const transformedOrders = orders.map(order => ({
+            ...order,
+            total: Number(order.total) || 0,
+            subtotal: order.subtotal ? Number(order.subtotal) || 0 : undefined,
+            shipping: order.shipping ? Number(order.shipping) || 0 : undefined,
+            discount: order.discount ? Number(order.discount) || 0 : undefined,
+            tax: order.tax ? Number(order.tax) || 0 : undefined,
+        }));
+
         res.json({
             success: true,
             data: {
-                orders: orders,
+                orders: transformedOrders,
                 notFoundValues: notFoundValues,
                 stats: stats,
                 searchType: searchType

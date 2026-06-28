@@ -18,6 +18,6 @@ router.post('/trash/move', orderController.moveOrdersToTrash);
 router.post('/trash/restore', orderController.restoreOrdersFromTrash);
 
 // Bulk Search Route
-router.post('/bulk-search', verifyToken.authenticateToken, checkAppAccess('order-core'), bulkSearchController.bulkSearchOrders);
+router.post('/bulk-search', bulkSearchController.bulkSearchOrders);
 
 module.exports = router;

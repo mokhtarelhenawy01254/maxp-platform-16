@@ -304,7 +304,7 @@ const BulkSearchPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("bulkSearch.total")}
+                  {t("bulkSearch.totalValues")}
                 </p>
                 <p className="text-2xl font-bold text-gray-800 dark:text-white">
                   {stats.total}
@@ -398,13 +398,22 @@ const BulkSearchPage: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-800 dark:text-white">
               {t("bulkSearch.results")} ({results.length})
             </h2>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Download size={18} />
-              {t("bulkSearch.export")}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Copy size={18} />
+                {t("bulkSearch.copy")}
+              </button>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download size={18} />
+                {t("bulkSearch.export")}
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -464,7 +473,7 @@ const BulkSearchPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {order.total.toFixed(2)} {order.currency || "ج.م"}
+                        {Number(order.total).toFixed(2)} {order.currency || "ج.م"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
