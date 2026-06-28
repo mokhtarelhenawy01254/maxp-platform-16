@@ -1578,6 +1578,11 @@ async def update_agent_template(
     if ("allowedSkills" in body or "rules" in body) and "allowedSkills" in body:
         template.allowed_skills = body["allowedSkills"]
     await session.commit()
+    try:
+        from src.prompts.template_registry import reset_prompt_registry
+        reset_prompt_registry()
+    except Exception:
+        pass
     await session.refresh(template)
     return {"slug": template.slug, "name": template.name, "role": template.role}
 

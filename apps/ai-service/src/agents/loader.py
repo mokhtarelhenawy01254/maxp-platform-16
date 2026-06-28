@@ -148,6 +148,11 @@ async def seed_templates(session: AsyncSession) -> list[AgentTemplate]:
             logger.debug("Template created", slug=data["slug"])
 
     await session.commit()
+    try:
+        from src.prompts.template_registry import reset_prompt_registry
+        reset_prompt_registry()
+    except Exception:
+        pass
     if seeded:
         logger.info("New templates seeded", count=len(seeded), slugs=[t.slug for t in seeded])
     else:
