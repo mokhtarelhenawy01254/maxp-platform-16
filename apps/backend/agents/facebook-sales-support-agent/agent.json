@@ -11,8 +11,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "arabic",
@@ -54,7 +53,10 @@
       "description": "Transfer to shipping agent for delivery tracking and logistics"
     }
   ],
-  "channels": ["facebook", "messenger"],
+  "channels": [
+    "facebook",
+    "messenger"
+  ],
   "budget": {
     "dailyUsd": 2,
     "maxToolCallsPerRun": 4

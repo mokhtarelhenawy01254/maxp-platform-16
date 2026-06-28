@@ -11,8 +11,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "arabic",
@@ -23,8 +22,14 @@
   "guardrails": {
     "requireDraftOrders": true,
     "singleQuestionPerTurn": true,
-    "input": ["sensitive_data", "prompt_injection"],
-    "output": ["tool_name_exposure", "arabic_language"]
+    "input": [
+      "sensitive_data",
+      "prompt_injection"
+    ],
+    "output": [
+      "tool_name_exposure",
+      "arabic_language"
+    ]
   },
   "allowedTools": [
     "product.search",
@@ -40,12 +45,21 @@
     "order-support",
     "handoff-to-human"
   ],
-  "channels": ["facebook", "messenger"],
+  "channels": [
+    "facebook",
+    "messenger"
+  ],
   "humanApproval": {
     "mode": "ON_WRITE",
-    "requiredTools": ["order.create_draft", "order.create_confirmed"],
+    "requiredTools": [
+      "order.create_draft",
+      "order.create_confirmed"
+    ],
     "approvalCode": true,
-    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
+    "merchantChannels": [
+      "DASHBOARD",
+      "WHATSAPP"
+    ]
   },
   "budget": {
     "dailyUsd": 2,

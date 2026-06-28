@@ -10,8 +10,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "arabic",
@@ -43,12 +42,24 @@
     "order-support",
     "handoff-to-human"
   ],
-  "channels": ["dashboard", "whatsapp", "messenger"],
+  "channels": [
+    "dashboard",
+    "whatsapp",
+    "messenger"
+  ],
   "humanApproval": {
     "mode": "ON_WRITE",
-    "requiredTools": ["order.confirm", "order.cancel", "order.refund", "shipping.update"],
+    "requiredTools": [
+      "order.confirm",
+      "order.cancel",
+      "order.refund",
+      "shipping.update"
+    ],
     "approvalCode": true,
-    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
+    "merchantChannels": [
+      "DASHBOARD",
+      "WHATSAPP"
+    ]
   },
   "budget": {
     "dailyUsd": 2,
