@@ -1,3 +1,11 @@
+## [2026-06-28] Agent Template Seeding Skips Existing Templates — Skills Never Reach DB
+
+- **Bug**: After adding new `allowedSkills` to `agent.json` for `medical-center-agent`, the 4 new skills (`medical-center-booking`, `booking-upsell-packages`, `clinic-knowledge-resolver`, `handoff-to-human`) were never written to the `ai.agent_templates` table in the production database. Consequently, agents spawned from this template had `allowed_skills: []`.
+- **Root Cause**: `seed_templates()` in `loader.py` checked if a template with the same slug already existed in the DB and **skipped it entirely** (`logger.debug("Template exists, skipping seed update")`). Since `medical-center-agent` was seeded in a prior deployment (before skills were added), subsequent deployments never updated the row.
+- **Fix**: Changed `seed_templates()` to perform a full field-level update (upsert) on existing templates, synchronizing all columns (`allowed_tools`, `allowed_skills`, `instructions_*`, `guardrails`, `channels`, etc.) from the filesystem `agent.json` into the DB row on every deployment.
+- **Files**:
+  - `apps/ai-service/src/agents/loader.py`
+
 ## [2026-06-28] Dockerized SSH Connection Timeout on GitHub Actions Deploy Runner
 
 - **Issue/Weakness**: The `Deploy to Server` workflow was failing due to SSH connection timeout (`dial tcp ... i/o timeout`) during the `appleboy/ssh-action` step. This blocked production deployments of the updated agent code.

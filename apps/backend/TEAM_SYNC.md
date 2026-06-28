@@ -2,6 +2,13 @@
 
 ## [2026-06-28]
 
+### Agent Template Upsert Seeding System
+
+- **Accomplishment**: Fixed a bug where updates to template configuration (like `allowedSkills` or `allowedTools` in `agent.json` files) were not reflecting on the database because seeding only occurred for non-existent slugs.
+- **Details**:
+  - Rewrote the seeding check in [loader.py](file:///h:/maxp-platform/apps/ai-service/src/agents/loader.py) to perform a full field-level update (upsert) for existing templates, keeping the database in sync with any modifications in filesystem definitions.
+  - Successfully staged and committed changes for deployment.
+
 ### Verified MEDICAL_CENTER Skills and Tools on Production
 - **Accomplishment**: Verified the modular skills and tool execution of the newly restructured `MEDICAL_CENTER` agent against the live production server (https://maxp.online) under the client tenant company `مركز العلاج الطبيعى`.
 - **Details**:
