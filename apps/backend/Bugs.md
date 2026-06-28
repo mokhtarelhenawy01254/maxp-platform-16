@@ -1,3 +1,17 @@
+## [2026-06-28] Intent Classifier Prompt-Stuffing and Fallback Hierarchy Mismatch
+
+- **Bug/Issue**: The intent classifier was heavily reliant on a massive 56-line static system prompt with hardcoded Egyptian Arabic keyword examples (e.g. `عايز اشوف المنتجات`, `بكام الكوتشي`), which was brittle, unmaintainable, and consumed high tokens. Additionally, it forced a hardcoded fallback chain to Gemini/Groq, overriding the agent's configured model choice.
+- **Root Cause**: The prompt was written as a ruleset instead of leveraging modern 2026 zero-shot semantic capabilities. Model fallbacks were hardcoded directly in `classifier.py` rather than delegating solely to the agent's preferred configuration.
+- **Fix**:
+  1. Added a dynamic description field to `INTENT_POLICIES` in `src/intent/schema.py` and mapped fallback resolutions in `dynamic_registry.py`.
+  2. Refactored `classify_intent` in `classifier.py` to dynamically construct system prompts utilizing these descriptions.
+  3. Integrated `ClassifierResponse` Pydantic model for structured output validation and dynamic similarity-matching few-shot exemplar injection.
+  4. Ensured that the agent's configured `preferredProvider` and `preferredModel` are prioritized and directly responsible for classification.
+- **Files**:
+  - `apps/ai-service/src/intent/schema.py`
+  - `apps/ai-service/src/intent/classifier.py`
+  - `apps/ai-service/src/intent/dynamic_registry.py`
+
 ## [2026-06-26] Prisma P2022 Database Schema Out-of-Sync — Auth Failures & Missing Columns
 
 - **Bug/Issue**: Backend returned `P2022` errors (e.g., "Column does not exist in the current database: `emailVerificationToken`, `roleId`, `isPinned`") causing 401 auth failures on the `/api/users/me` endpoint.

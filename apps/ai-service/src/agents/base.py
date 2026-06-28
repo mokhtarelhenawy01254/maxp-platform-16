@@ -124,6 +124,7 @@ class BaseAgentConfig:
     policies: dict[str, Any] = field(default_factory=dict)
     instructions: dict[str, Any] = field(default_factory=dict)
     output_schema: Any = None
+    tool_choice: str | None = None
 
     handoffs: list[dict[str, Any]] = field(default_factory=list)
     input_guardrails: list[BaseGuardrail] = field(default_factory=list)
@@ -236,6 +237,7 @@ class BaseAgent:
             role=overrides.get("role") or profile.role,
             company_id=company_id,
             allowed_tools=overrides.get("allowed_tools") or profile.allowed_tools,
+            tool_choice=overrides.get("tool_choice") or profile.tool_choice,
             allowed_skills=overrides.get("allowed_skills") or profile.allowed_skills,
             template_slug=template_slug,
             version=profile.version,
@@ -323,6 +325,8 @@ class BaseAgent:
         default_options: dict[str, Any] = {"model": self.model}
         if self.output_schema:
             default_options["output_schema"] = self.output_schema
+        if self.config.tool_choice:
+            default_options["tool_choice"] = self.config.tool_choice
 
         self._framework_agent = Agent(
             client=client,

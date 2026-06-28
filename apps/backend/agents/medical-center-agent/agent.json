@@ -41,5 +41,8 @@
   "budget": {
     "dailyUsd": 2,
     "maxToolCallsPerRun": 10
+  },
+  "config": {
+    "toolChoice": "required"
   }
 }

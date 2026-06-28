@@ -20,7 +20,7 @@ class SlotsInput(BaseModel):
 
 class ReserveInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
-    request: str = Field(..., description="ALL booking details in Arabic text: service name, date, time, patient name, phone, gender. Example: 'احجز جلسة حجامة السبت 27 يونيو الساعة 4 العصر لمحمد عبدالله 01234567890 ذكر'. Pass the full user message.")
+    request: str = Field(..., min_length=3, description="ALL booking details in Arabic text: service name, date, time, patient name, phone, gender. Example: 'احجز جلسة حجامة السبت 27 يونيو الساعة 4 العصر لمحمد عبدالله 01234567890 ذكر'. Pass the full user message.")
 
 class StatusInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")

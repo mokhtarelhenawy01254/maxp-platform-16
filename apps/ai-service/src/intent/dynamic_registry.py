@@ -40,12 +40,15 @@ class DynamicIntentRegistry:
                     intent_name = db_intent.intent
                     new_enum.append(intent_name)
 
+                    from src.intent.schema import INTENT_POLICIES
+                    fallback_policy = INTENT_POLICIES.get(intent_name) or {}
                     new_intents[intent_name] = {
                         "actionType": db_intent.action_type,
                         "riskLevel": db_intent.risk_level,
                         "nextState": db_intent.next_state,
                         "requiredSlots": db_intent.required_slots or [],
                         "guardrails": db_intent.guardrails or [],
+                        "description": getattr(db_intent, "description", None) or fallback_policy.get("description") or "",
                     }
 
                     new_tools[intent_name] = {

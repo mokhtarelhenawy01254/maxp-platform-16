@@ -199,6 +199,17 @@ class ContextAssembler:
 
         sections: list[tuple[str, str]] = []  # (section_name, xml_content)
 
+        # 0. Current datetime — helps LLM with date math and relative day names
+        from datetime import datetime as _dt_now
+        _now = _dt_now.now()
+        sections.append(("current_datetime",
+            f"\n<current_datetime>\n"
+            f"  Today: {_now.strftime('%A, %Y-%m-%d')}\n"
+            f"  Current Time: {_now.strftime('%H:%M')}\n"
+            f"  Timezone: UTC\n"
+            f"</current_datetime>"
+        ))
+
         # 1. Customer profile
         customer = await self.fetch_customer_profile(ctx)
         if customer:

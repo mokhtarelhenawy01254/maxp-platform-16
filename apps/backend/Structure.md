@@ -95,4 +95,11 @@ The Facebook Ads Dashboard page (`/advertising/facebook-ads`) was refactored fro
   - `getHealthDecision()`, `getDecisionClass()`, `getRulePayload()` — extracted from the dashboard.
   - Formatting utilities: `formatCurrency`, `formatNumber`, `formatPercentage`, `formatDate`.
 
+## Python AI Service Intent Classifier Modernization (2026-06-28)
 
+- **Module**: `apps/ai-service/src/intent/`
+- **Pattern**: Schema-driven intent classification with dynamic exemplars.
+- **Details**:
+  - `schema.py`: Exposes `INTENT_POLICIES` containing dynamic semantic descriptions for each intent. Also defines the `ClassifierResponse` Pydantic model for structured output validation.
+  - `dynamic_registry.py`: Extends registry loading to backfill dynamic intent descriptions from static defaults.
+  - `classifier.py`: Dynamically generates the LLM system prompt from allowed intents and their registered descriptions, removing legacy Egyptian Arabic hardcoded rules. Dynamically extracts and injects the 2 best matching few-shot exemplars from golden cases. Enforces classification execution using the agent's preferred model (`preferredProvider`/`preferredModel`) in pipeline context with `ClassifierResponse` Pydantic model validation.

@@ -1,5 +1,16 @@
 # Team Sync Notes
 
+## [2026-06-28]
+
+### Intent Classifier Modernization to Schema-Driven Architecture
+- **Accomplishment**: Refactored the intent classification system to transition from legacy keyword-stuffed prompts to a clean, schema-driven, description-based architecture, and made the agent's configured model responsible for classification.
+- **Details**:
+  - Added semantic descriptions to `INTENT_POLICIES` in `schema.py` for all intents (such as `products`, `inventory`, `booking_reserve`).
+  - Refactored `classify_intent` in `classifier.py` to dynamically construct the LLM system prompt using descriptions loaded from `dynamic_intent_registry`.
+  - Updated `classify_intent` to respect the pipeline context's `preferredProvider` and `preferredModel`, removing hardcoded fallbacks to ensure the agent's designated model is responsible.
+  - **Advanced Features**: Integrated `ClassifierResponse` Pydantic model for structured output validation, replacing raw dictionaries. Added dynamic few-shotting by similarity-matching queries against `intent_golden_cases.json` and injecting the 2 best exemplars into the system prompt.
+  - Verified 100% test coverage and validation matching all 10 golden case routing scenarios.
+
 ## [2026-06-27]
 
 ### Repository Migration to Avoid GitHub Actions Quota Limit

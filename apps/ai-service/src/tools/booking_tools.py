@@ -58,9 +58,17 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
 
 # ── booking_slots ──
 
-async def get_slots(company_id: str, date: str, gender: str = "") -> dict[str, Any]:
+async def get_slots(company_id: str, date: str, gender: str = "", request: str = "") -> dict[str, Any]:
     if not company_id:
         return {"error": "no company_id"}
+    # Extract date & gender from request text (overrides stale date from DeepSeek multi-turn)
+    if request:
+        _, extracted_date, _, _, _, gender_from_text = _parse_request(request)
+        if extracted_date:
+            date = extracted_date
+            logger.info("slots_date_overridden", request=request[:80], date=date)
+        if not gender and gender_from_text:
+            gender = gender_from_text
     if not date:
         date = date_type.today().isoformat()
     client = get_backend_client()

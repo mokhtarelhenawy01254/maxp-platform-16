@@ -42,6 +42,7 @@ class _TemplateAdapter:
     handoffs: list[dict[str, Any]]
     budget: dict[str, Any]
     output_schema: Any
+    tool_choice: str | None = None
 
     @classmethod
     def from_db_or_proxy(
@@ -68,6 +69,7 @@ class _TemplateAdapter:
                 handoffs=[],
                 budget={},
                 output_schema=None,
+                tool_choice=None,
             )
         return cls(
             slug=getattr(template, "slug", slug),
@@ -86,6 +88,7 @@ class _TemplateAdapter:
             handoffs=list(getattr(template, "handoffs", []) or []),
             budget=getattr(template, "budget", {}) or {},
             output_schema=getattr(template, "output_schema", None),
+            tool_choice=getattr(template, "tool_choice", None),
         )
 
 

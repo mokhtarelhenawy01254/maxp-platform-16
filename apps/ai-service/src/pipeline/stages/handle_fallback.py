@@ -214,6 +214,8 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
     if (not ctx.llm_response or not ctx.llm_response.strip()) and not ctx.early_return:
         client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
         if client:
+            agent_config = getattr(ctx.agent, "config", None)
+            tool_choice = getattr(agent_config, "tool_choice", None)
             fallback_messages = [m for m in (ctx.messages or []) if m.get("role") != "system"]
             fallback_messages = [
                 {"role": "system", "content": ctx.system_prompt or "You are a helpful customer support assistant."},
@@ -221,9 +223,12 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
             native_tools = list(getattr(ctx, "native_tools", []) or [])
             has_tools = bool(native_tools)
             try:
+                fallback_options: dict[str, Any] = {"tools_enabled": has_tools, "temperature": 0.7}
+                if has_tools and tool_choice:
+                    fallback_options["tool_choice"] = tool_choice
                 response = await client.get_response(
                     to_client_messages(fallback_messages),
-                    options={"tools_enabled": has_tools, "temperature": 0.7},
+                    options=fallback_options,
                 )
                 raw_text = response.text if hasattr(response, "text") else str(response)
                 tool_calls = getattr(response, "tool_calls", None) or []
@@ -279,9 +284,12 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                             "success": result.get("status") == "success",
                             "result": result.get("result", result),
                         })
+                    # ponytail: continuation calls use "auto" so the LLM can
+                    # naturally decide when to stop calling tools and reply in text.
+                    loop_options: dict[str, Any] = {"tools_enabled": True, "temperature": 0.3}
                     response = await client.get_response(
                         to_client_messages(fallback_messages),
-                        options={"tools_enabled": True, "temperature": 0.3},
+                        options=loop_options,
                     )
                     raw_text = response.text if hasattr(response, "text") else str(response)
                     tool_calls = getattr(response, "tool_calls", None) or []
