@@ -156,8 +156,13 @@ class CategoryListInput(BaseModel):
     limit: int = Field(default=50, description="Maximum products to scan for category discovery")
 
 
+_LIST_ALL_SIGNALS = ("كل ", "كلها", "كلهم", "جميع", "اللي عندكم", "عندكم ايه", "عندكم إيه", "list all", "all products", "show all")
+
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
-    query = "" if input_data.list_all else (input_data.query or "")
+    raw_query = input_data.query or ""
+    if not input_data.list_all and any(sig in raw_query.lower() for sig in _LIST_ALL_SIGNALS):
+        input_data = input_data.model_copy(update={"list_all": True})
+    query = "" if input_data.list_all else raw_query
     limit = max(input_data.limit, 50) if input_data.list_all else min(input_data.limit, 20)
     decoded_image: bytes | None = None
     image_mime_type = input_data.mime_type
