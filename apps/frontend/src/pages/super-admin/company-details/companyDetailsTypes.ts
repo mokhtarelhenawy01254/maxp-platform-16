@@ -24,6 +24,27 @@ export interface FacebookPage {
   status: string; connectedAt?: string; createdAt?: string;
 }
 
+export interface TicketListItem {
+  id: string;
+  ticketId: string;
+  subject: string;
+  category: string;
+  priority: string;
+  status: string;
+  createdAt: string;
+  user?: { id: string; firstName: string; lastName: string; email: string };
+}
+
+export interface ActivityEntry {
+  id: string;
+  userId?: string;
+  category: string;
+  action: string;
+  description: string;
+  severity: string;
+  createdAt: string;
+}
+
 export interface CompanyReview {
   wallet?: {
     balance: number; totalDeposited: number; totalSpent: number;

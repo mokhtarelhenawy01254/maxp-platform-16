@@ -762,6 +762,7 @@ function formatProductResponse(product, options = {}) {
   );
   const volumeDiscounts = getVolumeDiscountsFromMetadata(product.metadata, {
     activeOnly: true,
+    basePrice: parseFloat(product.price) || 0,
   });
   const variants = (product.productVariants || []).map((variant) =>
     formatPublicVariantResponse(variant, product.wooCommerceUrl),

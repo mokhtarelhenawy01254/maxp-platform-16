@@ -20,3 +20,6 @@ export { ModalFooter } from "./ModalFooter"
 
 export { SectionSubheader } from "./SectionSubheader"
 export { CompanyActivationCenter } from "./CompanyActivationCenter"
+export { CompanyPulse } from "./CompanyPulse"
+export { CompanySupportTickets } from "./CompanySupportTickets"
+export { CompanyRecentActivity } from "./CompanyRecentActivity"
