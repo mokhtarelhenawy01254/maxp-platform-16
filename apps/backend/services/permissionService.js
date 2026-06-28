@@ -182,9 +182,15 @@ const setUserRole = async (userId, companyId, roleId, actorId) => {
   const oldRoleId = userCompany.roleId;
   const oldRole = oldRoleId ? await getSharedPrismaClient().role.findUnique({ where: { id: oldRoleId } }) : null;
 
+  const VALID_ROLE_ENUMS = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'AGENT', 'AFFILIATE'];
+  const ucData = { roleId };
+  if (VALID_ROLE_ENUMS.includes(role.key)) {
+    ucData.role = role.key;
+  }
+
   await getSharedPrismaClient().userCompany.update({
     where: { userId_companyId: { userId, companyId } },
-    data: { roleId },
+    data: ucData,
   });
 
   await logAction('role.assign', actorId, companyId, {

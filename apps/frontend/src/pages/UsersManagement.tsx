@@ -106,6 +106,8 @@ type UserRecord = {
   email: string;
   phone?: string | null;
   role: string;
+  roleId?: string | null;
+  roleName?: string | null;
   isActive: boolean;
   isEmailVerified?: boolean;
   avatar?: string | null;
@@ -660,7 +662,10 @@ const UsersManagement: React.FC = () => {
     selectedUsers.length > 0 && selectedUsers.length < users.length;
 
   const getRoleDisplayName = useCallback(
-    (role: string) => roles[role]?.name || role,
+    (role: string, user?: UserRecord) => {
+      if (user?.roleName) return user.roleName;
+      return roles[role]?.name || role;
+    },
     [roles],
   );
 
@@ -691,13 +696,16 @@ const UsersManagement: React.FC = () => {
 
   const openEditUser = (targetUser: UserRecord) => {
     setEditingUser(targetUser);
+    const resolvedRole = targetUser.roleId
+      ? (Object.entries(roles).find(([, r]) => r.id === targetUser.roleId)?.[0] || targetUser.role)
+      : targetUser.role;
     setUserForm({
       firstName: targetUser.firstName || "",
       lastName: targetUser.lastName || "",
       email: targetUser.email || "",
       password: "",
       phone: targetUser.phone || "",
-      role: targetUser.role || "AGENT",
+      role: resolvedRole || "AGENT",
       isActive: targetUser.isActive ?? true,
       departmentId: targetUser.employee?.department?.id || "",
       positionId: targetUser.employee?.position?.id || "",
@@ -958,7 +966,7 @@ const UsersManagement: React.FC = () => {
       entry.lastName,
       entry.email,
       entry.phone || "",
-      getRoleDisplayName(entry.role),
+      getRoleDisplayName(entry.role, entry),
       entry.isActive ? "نشط" : "غير نشط",
     ]);
     const csv = [
@@ -1456,7 +1464,7 @@ const UsersManagement: React.FC = () => {
                               <TableCell>{entry.email}</TableCell>
                               <TableCell>
                                 <Badge className={cn("rounded-full border", getRoleBadgeClassName(entry.role))}>
-                                  {getRoleDisplayName(entry.role)}
+                                  {getRoleDisplayName(entry.role, entry)}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -1578,7 +1586,7 @@ const UsersManagement: React.FC = () => {
 
                                 <div className="flex flex-wrap gap-2">
                                   <Badge className={cn("rounded-full border", getRoleBadgeClassName(entry.role))}>
-                                    {getRoleDisplayName(entry.role)}
+                                    {getRoleDisplayName(entry.role, entry)}
                                   </Badge>
                                   <Badge className={cn("rounded-full border", getAccountStatusClassName(entry.isActive))}>
                                     {entry.isActive ? "نشط" : "غير نشط"}
@@ -1927,7 +1935,7 @@ const UsersManagement: React.FC = () => {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">البريد الإلكتروني</span><span>{detailsUser?.email}</span></div>
                     <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">الهاتف</span><span>{detailsUser?.phone || "-"}</span></div>
-                    <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">الدور</span><Badge className={cn("rounded-full border", getRoleBadgeClassName(detailsUser?.role || ""))}>{getRoleDisplayName(detailsUser?.role || "-")}</Badge></div>
+                    <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">الدور</span><Badge className={cn("rounded-full border", getRoleBadgeClassName(detailsUser?.role || ""))}>{getRoleDisplayName(detailsUser?.role || "-", detailsUser)}</Badge></div>
                     <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">الحالة</span><Badge className={cn("rounded-full border", getAccountStatusClassName(Boolean(detailsUser?.isActive)))}>{detailsUser?.isActive ? "نشط" : "غير نشط"}</Badge></div>
                     <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">توثيق البريد</span><span>{detailsUser?.isEmailVerified ? "نعم" : "لا"}</span></div>
                     <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">آخر دخول</span><span>{formatDateTime(detailsUser?.lastLoginAt)}</span></div>

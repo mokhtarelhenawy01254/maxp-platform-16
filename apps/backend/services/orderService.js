@@ -96,7 +96,10 @@ class OrderService {
     }
   }
 
-  async validateConfiguredStatusTransition(companyId, currentStatus, nextStatus) {
+  async validateConfiguredStatusTransition(companyId, currentStatus, nextStatus, options = {}) {
+    const { skipValidation = false } = options;
+    if (skipValidation) return;
+
     const normalizedCurrentStatus = normalizeOrderStatusCode(currentStatus);
     const normalizedNextStatus = normalizeOrderStatusCode(nextStatus);
     const prisma = this.getPrisma();
@@ -823,7 +826,7 @@ class OrderService {
     console.log(`   - Is Override: ${isOverride}`);
 
     try {
-      const { skipCallAttemptGuard = false } = options || {};
+      const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
       status = normalizeOrderStatusCode(status);
 
       // 🚀 SPEED OPTIMIZATION: Use pre-fetched order if available
@@ -876,7 +879,7 @@ class OrderService {
       const isWorkflowEnabled = isWorkflowConfigEnabled(order.company?.orderWorkflowConfig);
       let workflowAuditLog = null;
 
-      if (isWorkflowEnabled) {
+      if (isWorkflowEnabled && !skipTransitionValidation) {
         console.log(`🔍 [ORDER-SERVICE-DEBUG] Calling orderWorkflowService.validateStatusChange...`);
         const orderWorkflowService = require('./orderWorkflowService');
         let workflowResult;
@@ -910,7 +913,9 @@ class OrderService {
 
       // Enforce allowed transitions if configured
       try {
-        await this.validateConfiguredStatusTransition(order.companyId, order.status, status);
+        await this.validateConfiguredStatusTransition(order.companyId, order.status, status, {
+          skipValidation: skipTransitionValidation
+        });
       } catch (transitionError) {
         console.error('❌ [ORDER-SERVICE] Invalid status transition:', transitionError.message);
         throw transitionError;
@@ -1147,7 +1152,7 @@ class OrderService {
     console.log(`   - User Name: ${userName || 'None'}`);
 
     try {
-      const { skipCallAttemptGuard = false } = options || {};
+      const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
       status = normalizeOrderStatusCode(status);
 
       const guestOrder = existingGuestOrderObject || await safeQuery(async () => {
@@ -1188,7 +1193,9 @@ class OrderService {
       if (!skipCallAttemptGuard) {
         this.assertCallAttemptRequirement(guestOrder, status);
       }
-      await this.validateConfiguredStatusTransition(guestOrder.companyId, guestOrder.status, status);
+      await this.validateConfiguredStatusTransition(guestOrder.companyId, guestOrder.status, status, {
+        skipValidation: skipTransitionValidation
+      });
 
       const updatedGuestOrder = await safeQuery(async () => {
         const prisma = this.getPrisma();

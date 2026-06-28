@@ -1125,6 +1125,9 @@ const getCompanyUsers = async (req, res) => {
               },
             },
           },
+          roleRef: {
+            select: { id: true, key: true, name: true },
+          },
         },
         orderBy:
           sortBy === "createdAt"
@@ -1218,7 +1221,9 @@ const getCompanyUsers = async (req, res) => {
       email: uc.user.email,
       phone: uc.user.phone,
       avatar: uc.user.avatar,
-      role: uc.role, // Role from UserCompany table
+      role: uc.role,
+      roleId: uc.roleId,
+      roleName: uc.roleRef?.name || null,
       isActive: uc.isActive, // isActive from UserCompany table
       isEmailVerified: uc.user.isEmailVerified,
       lastLoginAt: uc.user.lastLoginAt,
@@ -1797,15 +1802,43 @@ const updateUser = async (req, res) => {
     // ✅ FIX: Update UserCompany record (role and isActive are stored here)
     if (role !== undefined || isActive !== undefined) {
       try {
+        const ucData = {};
+
+        if (isActive !== undefined) {
+          ucData.isActive = isActive;
+        }
+
+        if (role) {
+          const VALID_ROLE_ENUMS = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'AGENT', 'AFFILIATE'];
+
+          if (VALID_ROLE_ENUMS.includes(role)) {
+            ucData.role = role;
+          }
+
+          const roleRecord = await getSharedPrismaClient().role.findFirst({
+            where: {
+              key: role,
+              OR: [
+                { companyId: '__system__', isBuiltIn: true },
+                { companyId },
+              ],
+            },
+            select: { id: true },
+          });
+
+          if (roleRecord) {
+            ucData.roleId = roleRecord.id;
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: `الدور "${role}" غير موجود في النظام`,
+            });
+          }
+        }
+
         await getSharedPrismaClient().userCompany.updateMany({
-          where: {
-            userId: userId,
-            companyId: companyId,
-          },
-          data: {
-            ...(role && { role }),
-            ...(isActive !== undefined && { isActive }),
-          },
+          where: { userId, companyId },
+          data: ucData,
         });
         console.log(
           `✅ [UPDATE-USER] UserCompany record updated for user: ${updatedUser.email}`,
@@ -1815,7 +1848,6 @@ const updateUser = async (req, res) => {
         if (role === "AFFILIATE") {
           try {
             const affiliateService = require("../services/affiliateService");
-            // Check if affiliate record already exists for this user
             const existingAffiliate =
               await getSharedPrismaClient().affiliate.findFirst({
                 where: {
@@ -1850,6 +1882,11 @@ const updateUser = async (req, res) => {
           `⚠️ [UPDATE-USER] Failed to update UserCompany record:`,
           ucError.message,
         );
+        return res.status(500).json({
+          success: false,
+          message: "فشل في تحديث صلاحية المستخدم",
+          error: ucError.message,
+        });
       }
     }
 
@@ -1896,6 +1933,9 @@ const updateUser = async (req, res) => {
               },
             },
           },
+          roleRef: {
+            select: { id: true, key: true, name: true },
+          },
         },
       });
 
@@ -1906,7 +1946,9 @@ const updateUser = async (req, res) => {
       email: userCompanyAfterUpdate.user.email,
       phone: userCompanyAfterUpdate.user.phone,
       avatar: userCompanyAfterUpdate.user.avatar,
-      role: userCompanyAfterUpdate.role, // From UserCompany
+      role: userCompanyAfterUpdate.role,
+      roleId: userCompanyAfterUpdate.roleId,
+      roleName: userCompanyAfterUpdate.roleRef?.name || null,
       isActive: userCompanyAfterUpdate.isActive, // From UserCompany
       isEmailVerified: userCompanyAfterUpdate.user.isEmailVerified,
       lastLoginAt: userCompanyAfterUpdate.user.lastLoginAt,

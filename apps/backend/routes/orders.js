@@ -743,8 +743,11 @@ const updateAnyOrderStatus = async ({
   status,
   notes,
   userId,
-  userName
+  userName,
+  options = {}
 }) => {
+  const { skipTransitionValidation = false } = options;
+
   try {
     const order = await orderService.updateOrderStatus(
       orderIdentifier,
@@ -752,7 +755,10 @@ const updateAnyOrderStatus = async ({
       status,
       notes,
       userId,
-      userName
+      userName,
+      null,
+      false,
+      { skipTransitionValidation }
     );
 
     return { orderType: 'regular', order };
@@ -768,7 +774,9 @@ const updateAnyOrderStatus = async ({
     status,
     notes,
     userId,
-    userName
+    userName,
+    null,
+    { skipTransitionValidation }
   );
 
   return { orderType: 'guest', order: guestOrder };
@@ -4372,7 +4380,8 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
           status: normalizedStatus,
           notes: bulkNote,
           userId,
-          userName
+          userName,
+          options: { skipTransitionValidation: true }
         });
         results.push({ id, success: true, orderType: updateResult.orderType });
       } catch (err) {
@@ -4432,7 +4441,8 @@ router.post('/bulk/delete', verifyToken.authenticateToken, async (req, res) => {
             status: 'TRASH',
             notes: 'Bulk trash',
             userId,
-            userName
+            userName,
+            options: { skipTransitionValidation: true }
           });
           results.push({ id, success: true, orderType: updateResult.orderType, movedToTrash: true });
         }

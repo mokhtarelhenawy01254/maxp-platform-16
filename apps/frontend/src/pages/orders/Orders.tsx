@@ -1684,13 +1684,28 @@ const Orders: React.FC = () => {
       });
 
       const data = response.data;
+      const results = data.data?.results ?? [];
+      const failedResults = results.filter((r: Record<string, unknown>) => !r.success);
+      const failedCount = failedResults.length;
+      const successCount = data.data?.successCount ?? 0;
+      const totalRequested = data.data?.totalRequested ?? selectedOrders.length;
 
-      if (data.success && data.data?.successCount > 0) {
-        alert(t("orders.ordersUpdated"));
+      if (successCount > 0) {
+        if (failedCount === 0) {
+          alert(t("orders.ordersUpdated"));
+        } else {
+          const errorSummary = failedResults
+            .slice(0, 5)
+            .map((r: Record<string, unknown>) => `طلب ${r.id}: ${r.error || 'خطأ غير معروف'}`)
+            .join('\n');
+          const moreText = failedCount > 5 ? `\n...و ${failedCount - 5} أخطاء أخرى` : '';
+          alert(`تم تحديث ${successCount} من ${totalRequested} طلب\n\nالطلبات الفاشلة:\n${errorSummary}${moreText}`);
+        }
         await fetchOrders();
-        setSelectedOrders([]);
+        const failedIds: string[] = failedResults.map((r: Record<string, unknown>) => String(r.id));
+        setSelectedOrders(failedIds.length > 0 ? failedIds : []);
       } else {
-        const errors: string[] = (data.data?.results ?? []).filter((r: Record<string, unknown>) => !r.success).map((r: Record<string, unknown>) => String(r.error ?? ''));
+        const errors: string[] = failedResults.map((r: Record<string, unknown>) => String(r.error ?? ''));
         alert(errors.length > 0 ? errors.join('\n') : data.message || t("orders.updateFailed"));
       }
     } catch (error: unknown) {
