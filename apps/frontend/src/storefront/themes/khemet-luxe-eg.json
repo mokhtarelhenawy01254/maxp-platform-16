@@ -352,6 +352,17 @@
           }
         },
         {
+          "type": "quantity-offers",
+          "variant": "selection-rail",
+          "settings": {
+            "title": "عروض الكميات",
+            "subtitle": "اختاري العرض المناسب، ثم حدّدي اللون أو المقاس لكل قطعة.",
+            "placement": "inline-buybox",
+            "decisionMode": "primary",
+            "continueToFormLabel": "كمّلي البيانات"
+          }
+        },
+        {
           "type": "pdp-checkout",
           "settings": {
             "title": "كمّلي بيانات الطلب",
