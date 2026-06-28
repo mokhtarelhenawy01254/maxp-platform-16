@@ -156,20 +156,8 @@ class CategoryListInput(BaseModel):
     limit: int = Field(default=50, description="Maximum products to scan for category discovery")
 
 
-_LIST_ALL_SIGNALS = (
-    "كل ", "كلها", "كلهم", "جميع",
-    "اللي عندكم", "عندكم ايه", "عندكم إيه", "ايه عندكم", "إيه عندكم",
-    "ايه المنتجات", "إيه المنتجات", "ايه الحاجات", "إيه الحاجات",
-    "المنتجات المتاحة", "المنتجات الموجودة", "المنتجات اللي",
-    "المتاح عندكم", "الموجود عندكم", "تقدر توريني", "وريني الكل",
-    "list all", "all products", "show all", "كتالوج", "catalog",
-)
-
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
-    raw_query = input_data.query or ""
-    if not input_data.list_all and any(sig in raw_query.lower() for sig in _LIST_ALL_SIGNALS):
-        input_data = input_data.model_copy(update={"list_all": True})
-    query = "" if input_data.list_all else raw_query
+    query = "" if input_data.list_all else (input_data.query or "")
     limit = max(input_data.limit, 50) if input_data.list_all else min(input_data.limit, 20)
     decoded_image: bytes | None = None
     image_mime_type = input_data.mime_type
@@ -206,7 +194,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     )
     products = result.get("products", [])
 
-    # Vector fallback: if text search returned no results and we have a query, use semantic search
+    # Semantic fallback: text search returned no results → try vector search
     if not products and query and not input_data.list_all and input_data.use_vector:
         vec_results = await vector_product_search(
             company_id=input_data.company_id or "",
@@ -214,6 +202,15 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
             limit=limit,
         )
         if vec_results:
+            top_score = max((r.get("score", 0) for r in vec_results), default=0)
+            # Low confidence → query is likely a catalog-browse intent, return full catalog
+            if top_score < 0.65:
+                catalog = await product_tools.search_products(
+                    input_data.company_id or "", "", limit=50, use_vector=False,
+                )
+                cat_products = catalog.get("products", [])
+                if cat_products:
+                    return {"results": cat_products, "count": catalog.get("count", len(cat_products)), "listAll": True, "searchType": "text"}
             products = vec_results
             return {"results": products, "count": len(products), "listAll": False, "searchType": "semantic"}
 
