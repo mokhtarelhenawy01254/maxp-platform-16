@@ -1,3 +1,20 @@
+## [2026-06-28] Greeting Matching Failure (وعليكم السلام mismatch) & Node-to-Python Template Seeding Ignored
+
+- **Bug**: 
+  1. The `MEDICAL_CENTER` agent replied with "وعليكم السلام" to informal greetings (like "ازيك"), failing to match the user's greeting style.
+  2. When seeding templates from the Node backend proxy (`POST /seed-template`), the updated markdown instructions (soul, persona, tools, agents) were silently ignored by the Python backend API (`update_agent_template`), leaving the database templates outdated.
+- **Root Cause**:
+  1. The model (DeepSeek) had a strong internal predisposition to output standard Islamic greetings in Arabic conversation unless heavily constrained with explicit examples.
+  2. `update_agent_template` in `apps/ai-service/src/api/admin/agents.py` only mapped camelCase keys (`soulInstructions`, etc.) to database columns, ignoring the snake_case keys (`instructions_soul`, etc.) sent by the Node backend.
+- **Fix**:
+  1. Strengthened `SOUL.md` of `medical-center-agent` with explicit informal greeting matching rules, examples, and negative patterns.
+  2. Added snake_case instruction keys to `instruction_map` in `apps/ai-service/src/api/admin/agents.py` so that seeding from the Node backend successfully updates database template instruction columns.
+  3. Fixed unit tests in `test_agent_generation.py` to skip validation for boilerplate `blank` agents and correct obsolete model default assertions to expect `""` default.
+- **Files**:
+  - `apps/backend/agents/medical-center-agent/SOUL.md`
+  - `apps/ai-service/src/api/admin/agents.py`
+  - `apps/ai-service/tests/agents/test_agent_generation.py`
+
 ## [2026-06-28] Agent Template Seeding Skips Existing Templates — Skills Never Reach DB
 
 - **Bug**: After adding new `allowedSkills` to `agent.json` for `medical-center-agent`, the 4 new skills (`medical-center-booking`, `booking-upsell-packages`, `clinic-knowledge-resolver`, `handoff-to-human`) were never written to the `ai.agent_templates` table in the production database. Consequently, agents spawned from this template had `allowed_skills: []`.

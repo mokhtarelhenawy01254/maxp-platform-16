@@ -13,15 +13,16 @@ import {
 const getCompanyId = (): string | null => {
   try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
 };
-const companyId = getCompanyId();
 const getAuthHeaders = () => {
   const headers = tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
-  if (companyId) headers["X-Company-Id"] = companyId;
+  const cid = getCompanyId();
+  if (cid) headers["X-Company-Id"] = cid;
   return headers;
 };
 const api = (path: string) => {
   const url = new URL(buildApiUrl(`booking/${path}`));
-  if (companyId) url.searchParams.set("companyId", companyId);
+  const cid = getCompanyId();
+  if (cid) url.searchParams.set("companyId", cid);
   return url.toString();
 };
 
@@ -32,7 +33,7 @@ interface BookingBranch {
 }
 
 interface BookingDoctor {
-  id: string; name: string; branchId: string; branchName?: string;
+  id: string; title: string; name: string; branchId: string; branchName?: string;
   specialty: string; phone: string; isActive: boolean; createdAt: string;
 }
 
@@ -161,7 +162,7 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
   onClose: () => void;
   onSave: (d: Partial<BookingDoctor>) => Promise<void>;
 }) => {
-  const [form, setForm] = useState({ name: "", branchId: "", specialty: "", phone: "", isActive: true, ...doctor });
+  const [form, setForm] = useState({ title: "دكتور", name: "", branchId: "", specialty: "", phone: "", isActive: true, ...doctor });
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
       <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
@@ -170,7 +171,10 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اللقب</label><input className={MODAL_INPUT_CLS} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
             <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value })}>
               <option value="">اختر الفرع</option>
@@ -326,7 +330,7 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
     try {
       const data = await fetchJson(api(`appointments/available-slots?${params}`));
       setSlots(Array.isArray(data) ? data : []);
-    } catch { setSlots([]); } finally { setLoadingSlots(false); }
+    } catch (e) { console.error("fetchSlots", e); setSlots([]); } finally { setLoadingSlots(false); }
   };
 
   const doctors = branchDoctors.filter(d => d.branchId === form.branchId && d.isActive);
@@ -441,15 +445,15 @@ export default function BookingManagementPage() {
     setLoading(false);
   };
 
-  const fetchBranches = async () => { try { setBranches(await fetchJson(api("branches"))); } catch {} };
+  const fetchBranches = async () => { try { setBranches(await fetchJson(api("branches"))); } catch (e) { console.error("fetchBranches", e); } };
   const fetchDoctors = async (branchId?: string) => {
-    try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch {}
+    try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch (e) { console.error("fetchDoctors", e); }
   };
   const fetchServices = async (branchId?: string) => {
     try {
       const data = await fetchJson(api(`services${branchId ? `?branchId=${branchId}` : ""}`));
       setServices(data || []);
-    } catch {}
+    } catch (e) { console.error("fetchServices", e); }
   };
   const fetchAppointments = async () => {
     const params = new URLSearchParams();
@@ -458,7 +462,7 @@ export default function BookingManagementPage() {
     if (!filters.branchId && selectedBranchId) params.append("branchId", selectedBranchId);
     if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.append("dateTo", filters.dateTo);
-    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch { setAppointments([]); }
+    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch (e) { console.error("fetchAppointments", e); setAppointments([]); }
   };
 
   const saveBranch = async (d: Partial<BookingBranch>) => {
@@ -766,7 +770,7 @@ export default function BookingManagementPage() {
             return (
               <div key={d.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 ${!d.isActive ? "opacity-60" : ""}`}>
                 <div className="flex items-start justify-between mb-2">
-                  <div><h3 className="font-bold">{d.name}</h3><p className="text-sm text-gray-500 dark:text-gray-400">{d.specialty}</p></div>
+                  <div><h3 className="font-bold">{d.title ? d.title + " " : ""}{d.name}</h3><p className="text-sm text-gray-500 dark:text-gray-400">{d.specialty}</p></div>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${d.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{d.isActive ? "نشط" : "غير نشط"}</span>
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{branch?.name || "—"}</p>

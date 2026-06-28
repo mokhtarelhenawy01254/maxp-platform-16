@@ -125,4 +125,9 @@ The Facebook Ads Dashboard page (`/advertising/facebook-ads`) was refactored fro
   - **`clinic-knowledge-resolver` Skill**: Located at `apps/ai-service/skills/clinic-knowledge-resolver/`. Utilises `knowledge_search` tool to execute semantic lookups over the clinic's local knowledge base (for insurance, rules, location).
   - **Skill Registry**: Mapped under `allowedSkills` in the `MEDICAL_CENTER` agent configuration (`agent.json`). Allowed tools expanded to include `knowledge_search` mapped in `role_tools.yaml`.
 
+## Python AI Service Template Seeding API Mappings (2026-06-28)
+
+- **API Endpoint**: `POST /seed-template` (proxied via `aiServiceAgentProxy.js` to `/agent-templates/:slug` on Python backend).
+- **Update**: Fixed a mapping gap in `update_agent_template` inside `apps/ai-service/src/api/admin/agents.py`. Added support for snake_case instruction keys (`instructions_soul`, `instructions_persona`, `instructions_tools`, `instructions_agents`) in `instruction_map` to align with Node's proxy request body.
+
 

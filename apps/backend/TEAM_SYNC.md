@@ -1,5 +1,22 @@
 # Team Sync Notes
 
+## [2026-03-09]
+
+### Refined Greeting and Greeting Matching Rules
+- **Accomplishment**: Strengthened the `SOUL.md` profile of the `MEDICAL_CENTER` agent template with explicit examples, negative patterns, and strict greeting-matching rules to prevent incorrect greeting responses (e.g. replying with "وعليكم السلام" to "ازيك").
+- **Details**:
+  - Defined explicit examples for greetings like "ازيك" and "مساء الخير" mapping to direct informal replies rather than Islamic return greetings.
+
+### Fixed Seeding of Instructions in Python AI Service
+- **Accomplishment**: Resolved an API integration bug in `update_agent_template` where snake_case instruction keys (such as `instructions_soul`, `instructions_persona`, `instructions_tools`, `instructions_agents`) sent from the Node backend were ignored by the Python backend.
+- **Details**:
+  - Added proper mappings for snake_case keys in the admin update API mapping in `agents.py`.
+
+### Cleaned and Fixed Unit Tests
+- **Accomplishment**: Fixed obsolete unit test assertions to match the new dynamic model resolution behavior in `BaseAgent` and skipped manifest validation for boilerplate `blank` agents.
+- **Details**:
+  - Modified `test_agent_generation.py` to skip `blank` directories and expect empty string defaults for models initialized without overrides.
+
 ## [2026-06-28]
 
 ### Agent Template Upsert Seeding System
