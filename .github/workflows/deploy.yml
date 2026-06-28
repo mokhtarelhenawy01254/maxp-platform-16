@@ -239,7 +239,7 @@ jobs:
               -o ServerAliveInterval=30 \
               -o ServerAliveCountMax=10 \
               -o ConnectTimeout=30 \
-              *.tar.gz deploy_script.sh \
+              *.tar.gz \
               "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/"; then
               echo "✅ Tarballs transferred successfully"
               break
