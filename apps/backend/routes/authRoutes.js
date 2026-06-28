@@ -7,26 +7,7 @@ const { userValidationRules, validate } = require('../middleware/inputValidation
 // Basic auth routes
 router.get('/business-specialties', authController.getBusinessSpecialties);
 
-const { getSharedPrismaClient } = require('../services/sharedDatabase');
-router.get('/debug-resolve', async (req, res) => {
-  try {
-    const prisma = getSharedPrismaClient();
-    const aiKeys = await prisma.aiKey.findMany();
-    const modelConfigs = await prisma.aiModelConfig.findMany();
-    let globalConfigs = [];
-    if (prisma.globalAiConfig?.findMany) {
-      globalConfigs = await prisma.globalAiConfig.findMany();
-    }
-    return res.json({
-      success: true,
-      aiKeys,
-      modelConfigs,
-      globalConfigs
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.message, stack: error.stack });
-  }
-});
+
 
 router.post('/register', userValidationRules(), validate, authController.register);
 router.post('/signup-coupon/validate', authController.validateSignupCoupon);

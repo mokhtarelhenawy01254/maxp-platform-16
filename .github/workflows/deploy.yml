@@ -188,44 +188,36 @@ jobs:
           chmod 600 "$HOME/.ssh/maxp_deploy_key"
 
       - name: Test SSH Connection (with retry)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ env.SERVER_SSH_PORT }}
-          debug: true
-          timeout: 60s
-          command_timeout: 30s
-          script: |
-            echo "✅ SSH connection successful"
-            echo "👤 User: $(whoami)"
-            echo "🏠 Home: $HOME"
-            echo "📁 Current dir: $(pwd)"
-            echo "📊 Disk space:"
-            df -h $HOME
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
+          ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+          ssh -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" "echo '✅ SSH connection successful' && echo \"👤 User: \$(whoami)\" && df -h \$HOME"
 
       - name: Setup Remote Staging Directory
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ env.SERVER_SSH_PORT }}
-          debug: true
-          timeout: 120s
-          command_timeout: 60s
-          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT
-          script: |
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
+          ssh -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" "
             set -e
-            DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
-            echo "🚀 Creating staging directory..."
-            rm -rf "$DEPLOY_STAGING"
-            mkdir -p "$DEPLOY_STAGING/backend"
-            mkdir -p "$DEPLOY_STAGING/frontend"
-            echo "✅ Staging directory created: $DEPLOY_STAGING"
-            echo "📊 Disk space:"
-            df -h $HOME
+            DEPLOY_STAGING=\"\$HOME/deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}\"
+            echo '🚀 Creating staging directory...'
+            rm -rf \"\$DEPLOY_STAGING\"
+            mkdir -p \"\$DEPLOY_STAGING/backend\"
+            mkdir -p \"\$DEPLOY_STAGING/frontend\"
+            echo \"✅ Staging directory created: \$DEPLOY_STAGING\"
+            df -h \$HOME
+          "
 
       # Deploy Tarballs to Server
       - name: Deploy Tarballs to Server
@@ -247,7 +239,7 @@ jobs:
               -o ServerAliveInterval=30 \
               -o ServerAliveCountMax=10 \
               -o ConnectTimeout=30 \
-              *.tar.gz \
+              *.tar.gz deploy_script.sh \
               "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/"; then
               echo "✅ Tarballs transferred successfully"
               break

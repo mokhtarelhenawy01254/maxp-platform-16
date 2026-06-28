@@ -1,3 +1,11 @@
+## [2026-06-28] Dockerized SSH Connection Timeout on GitHub Actions Deploy Runner
+
+- **Issue/Weakness**: The `Deploy to Server` workflow was failing due to SSH connection timeout (`dial tcp ... i/o timeout`) during the `appleboy/ssh-action` step. This blocked production deployments of the updated agent code.
+- **Root Cause**: The dockerized `appleboy/ssh-action@v1.0.3` runs inside a Docker container on the GitHub runner, which can experience MTU size mismatches or routing failures on certain virtualization subnets, whereas raw SSH commands executed directly on the host runner succeed immediately.
+- **Fix**: Patched `.github/workflows/deploy.yml` to replace all `appleboy/ssh-action` steps (SSH Test, Staging setup, and Deployment execution) with native, raw SSH/SCP commands executed directly on the runner host shell. The deployment script is dynamically written to `deploy_script.sh` on the runner, uploaded via `scp` along with the tarballs, and executed via a single `ssh` command.
+- **Files**:
+  - `.github/workflows/deploy.yml`
+
 ## [2026-06-28] Medical Center Agent Monolithic Configuration Blocked SaaS Reusability
 
 - **Issue/Weakness**: The `MEDICAL_CENTER` agent configuration (`AGENTS.md` and `SOUL.md`) contained hardcoded clinic policies, slot-filling constraints, and specific clinic instructions inside the agent's core files. This monolithic approach prevented the agent preset from being reused as a generic template across multiple centers/tenants (a core SaaS requirement), since different centers would want to toggle booking options, upsell behaviors, or edit local FAQ files.

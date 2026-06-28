@@ -66,8 +66,8 @@ sudo rsync -a --delete \
   --exclude node_modules \
   "$REPO_DIR/apps/backend/" "$BACKEND_DIR/"
 
-# Restore preserved files
-[ -d /tmp/maxp_uploads_bak ] && sudo mv /tmp/maxp_uploads_bak "$BACKEND_DIR/uploads" || true
+# Restore preserved files (rsync merge, never rm+mv to avoid data loss)
+[ -d /tmp/maxp_uploads_bak ] && sudo rsync -a /tmp/maxp_uploads_bak/ "$BACKEND_DIR/uploads/" && sudo rm -rf /tmp/maxp_uploads_bak || true
 if [ -f "$BACKEND_DIR/.env.production" ]; then
   sudo cp "$BACKEND_DIR/.env.production" "$BACKEND_DIR/.env"
 elif [ -f /tmp/maxp_env_bak.env ]; then

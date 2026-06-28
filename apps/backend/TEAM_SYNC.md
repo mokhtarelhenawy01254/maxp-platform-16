@@ -2,6 +2,15 @@
 
 ## [2026-06-28]
 
+### Verified MEDICAL_CENTER Skills and Tools on Production
+- **Accomplishment**: Verified the modular skills and tool execution of the newly restructured `MEDICAL_CENTER` agent against the live production server (https://maxp.online) under the client tenant company `مركز العلاج الطبيعى`.
+- **Details**:
+  - **Created Test Suite**: Authored `test-physio-agent.js` to log in as the company administrator for the Physiotherapy Center, clean up any stale agents, recreate the `MEDICAL_CENTER` agent using the `medical-center-agent` template, and start a sandbox chat session.
+  - **Successful Slot-Filling Booking**: Validated the `medical-center-booking` skill via interactive conversations. The agent correctly recognized slots, requested patient info (name, phone, gender, branch), and successfully invoked `booking_info` and `booking_slots` tools.
+  - **Knowledge Base FAQ Integration**: Tested `clinic-knowledge-resolver` query routing. When asked about Bupa insurance, the agent successfully performed a knowledge base query and fell back to administrative escalation gracefully.
+  - **Upsell Packages & Pricing**: Tested `booking-upsell-packages` execution, ensuring the agent retrieves available pricing and offers the "first session free" promotion when packages are requested.
+  - **Deploy Optimization**: Patched `deploy.yml` SSH steps to use raw, native SSH commands rather than dockerized `appleboy/ssh-action` to completely eliminate deployment timeouts on GitHub runners.
+
 ### Medical Center Agent Restructuring & Intent Fallback Isolation
 - **Accomplishment**: Modernized the `MEDICAL_CENTER` agent to use structured parameters and conversational slot-filling, and fixed a planner bug that leaked mismatched tools.
 - **Details**:
