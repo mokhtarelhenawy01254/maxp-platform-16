@@ -43,23 +43,35 @@ async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
         repo = InventoryRepository(sess)
         product = await repo.find_product_by_name_or_sku(company_id, product_name)
 
+        similar_suggestions: list[dict] = []
         if not product:
             try:
                 vec_results = await vector_product_search(
                     query=product_name,
                     company_id=company_id,
-                    limit=1,
+                    limit=3,
+                    min_score=0.45,
                 )
                 if vec_results:
                     top = vec_results[0]
                     top_sku = top.get("sku")
                     if top_sku:
                         product = await repo.find_product_by_sku(top_sku, company_id)
+                    similar_suggestions = [
+                        {"name": r["name"], "price": r["price"], "status": r["status"], "score": r["score"]}
+                        for r in vec_results
+                    ]
             except Exception:
                 pass
 
         if not product:
-            return {"found": False, "code": "PRODUCT_NOT_FOUND", "error": f"No product matching '{product_name}'"}
+            resp: dict = {"found": False, "code": "PRODUCT_NOT_FOUND", "queriedName": product_name}
+            if similar_suggestions:
+                resp["similar"] = similar_suggestions
+                resp["message"] = f"'{product_name}' غير موجود، لكن وجدنا منتجات مشابهة"
+            else:
+                resp["error"] = f"No product matching '{product_name}'"
+            return resp
 
         variants = await repo.fetch_variants(product["id"])
 
