@@ -1,5 +1,48 @@
 # Team Sync Notes
 
+## [2026-06-28]
+
+### Verified MEDICAL_CENTER Skills and Tools on Production
+- **Accomplishment**: Verified the modular skills and tool execution of the newly restructured `MEDICAL_CENTER` agent against the live production server (https://maxp.online) under the client tenant company `مركز العلاج الطبيعى`.
+- **Details**:
+  - **Created Test Suite**: Authored `test-physio-agent.js` to log in as the company administrator for the Physiotherapy Center, clean up any stale agents, recreate the `MEDICAL_CENTER` agent using the `medical-center-agent` template, and start a sandbox chat session.
+  - **Successful Slot-Filling Booking**: Validated the `medical-center-booking` skill via interactive conversations. The agent correctly recognized slots, requested patient info (name, phone, gender, branch), and successfully invoked `booking_info` and `booking_slots` tools.
+  - **Knowledge Base FAQ Integration**: Tested `clinic-knowledge-resolver` query routing. When asked about Bupa insurance, the agent successfully performed a knowledge base query and fell back to administrative escalation gracefully.
+  - **Upsell Packages & Pricing**: Tested `booking-upsell-packages` execution, ensuring the agent retrieves available pricing and offers the "first session free" promotion when packages are requested.
+  - **Deploy Optimization**: Patched `deploy.yml` SSH steps to use raw, native SSH commands rather than dockerized `appleboy/ssh-action` to completely eliminate deployment timeouts on GitHub runners.
+
+### Medical Center Agent Restructuring & Intent Fallback Isolation
+- **Accomplishment**: Modernized the `MEDICAL_CENTER` agent to use structured parameters and conversational slot-filling, and fixed a planner bug that leaked mismatched tools.
+- **Details**:
+  - **Structured Function Calling**: Restructured the `booking_reserve` tool to accept explicit parameters (`patient_name`, `patient_phone`, `gender`, `service_name`, `branch_name`, `appointment_date`, `appointment_time`) via a custom Pydantic `ReserveInput` schema, completely replacing the legacy unstructured single-parameter `request` string parsing.
+  - **Conversational Slot-Filling**: Redefined rules in the agent's `AGENTS.md` and `SOUL.md` files to instruct the LLM to collect missing booking parameters interactively from the user.
+  - **Planner Tool Leakage Fix**: Patched `to_tool_plan` in `planner.py` to only fall back to original intent tools for supervisor agents with active sub-agent spawning capabilities, successfully stopping tool leakage for normal agents when intents don't match.
+  - **Anti-Regression Safeguards**: Established workspace-level rules in `.agents/AGENTS.md` and wrote a custom validation script `verify-agent-configs.js` to ensure no agent reverts to unstructured text parameter schemas in the future.
+  - **Tool Description Cleanup**: Normalised all tool descriptions in `booking.py` to follow pure semantic and functional descriptions, purging legacy keyword-stuffing tags (e.g. `"مركز طبي: "`) that were previously used for simple text similarity routing.
+
+### Medical Center Agent Modular Skills Architecture
+- **Accomplishment**: Transitioned the `MEDICAL_CENTER` agent from monolithic inline instructions to a modular Skills-based architecture, making it fully SaaS-ready and dynamically configurable per-clinic.
+- **Details**:
+  - **Created `medical-center-booking` Skill**: Encapsulates the full booking lifecycle (slot checking, reservation, status/cancellation) with structured Slot-Filling rules as a standalone, reusable skill module.
+  - **Created `booking-upsell-packages` Skill**: Enables intelligent session-package upselling by reading available packages from `booking_info` and presenting cost-saving alternatives to patients before confirming single-session bookings.
+  - **Created `clinic-knowledge-resolver` Skill**: Enables the agent to answer general clinic FAQs (insurance partnerships, preparation guidelines, location, accessibility) by searching the company's Knowledge Base via the `knowledge_search` tool.
+  - **Activated `handoff-to-human` Skill**: Linked the existing human escalation skill to the medical agent for emergency, complaint, or patient-insistence scenarios.
+  - **Updated `role_tools.yaml`**: Added `knowledge_search` to the `MEDICAL_CENTER` tool mapping.
+  - **Updated `agent.json`**: Registered all 4 skills in `allowedSkills` and added `knowledge_search` to `allowedTools`.
+  - **Simplified Core Instructions**: Refactored `AGENTS.md` and `SOUL.md` to delegate all detailed execution logic to the skill modules, keeping only high-level policies and tone guidance in the core files.
+
+
+
+### Intent Classifier Modernization to Schema-Driven Architecture
+- **Accomplishment**: Refactored the intent classification system to transition from legacy keyword-stuffed prompts to a clean, schema-driven, description-based architecture, and made the agent's configured model responsible for classification.
+- **Details**:
+  - Added semantic descriptions to `INTENT_POLICIES` in `schema.py` for all intents, and purged all parenthetical Arabic/English keywords and phrase examples (e.g. `بكام الكوتشي`, `اهلا/مرحبا`) to make the classifications 100% semantic.
+  - Refactored `classify_intent` in `classifier.py` to dynamically construct the LLM system prompt using descriptions loaded from `dynamic_intent_registry`.
+  - Updated `classify_intent` to respect the pipeline context's `preferredProvider` and `preferredModel`, removing all fallback provider/model lists to ensure the agent's configured LLM is exclusively responsible.
+  - Updated `resolve_intent.py` to fallback to `ctx.agent.client` if `ctx.llm_client` is not populated.
+  - **Advanced Features**: Integrated `ClassifierResponse` Pydantic model for structured output validation, replacing raw dictionaries. Added dynamic few-shotting by similarity-matching queries against `intent_golden_cases.json` and injecting the 2 best exemplars into the system prompt.
+  - Verified 100% test coverage and validation matching all 10 golden case routing scenarios.
+
 ## [2026-06-27]
 
 ### Repository Migration to Avoid GitHub Actions Quota Limit

@@ -26,6 +26,8 @@ const {
   serializeJsonField,
 } = require('../utils/productMediaUtils');
 const { formatProductResponse } = require('../utils/productNormalizationUtils');
+const ragKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const {
   PRODUCT_WORKFLOW_STATUSES,
   resolveProductWorkflow,
@@ -424,6 +426,27 @@ const refreshProductRetrievalArtifacts = async (
   } catch (error) {
     console.error(`❌ Failed to refresh retrieval artifacts for product ${productId}:`, error.message);
     return null;
+  }
+};
+
+const refreshProductVectorKnowledge = (product, companyId) => {
+  try {
+    ragKnowledgeMaintenanceService.backfillProductEmbeddings(companyId, {
+      productId: product.id,
+      force: true,
+    }).catch(() => {});
+
+    aiServiceAdminClient.embedKnowledgeItem({
+      sourceId: product.id,
+      sourceType: 'product',
+      companyId,
+      title: product.name,
+      content: product.description || '',
+      category: product.category?.name || '',
+      tags: product.tags || '',
+    }).catch(() => {});
+  } catch (_) {
+    // fire and forget
   }
 };
 
@@ -1739,6 +1762,8 @@ const updateSingleProduct = async (req, res) => {
 
     await refreshProductRetrievalArtifacts(product.id, companyId);
 
+    refreshProductVectorKnowledge(product, companyId);
+
     // 🔄 Sync update to consumer companies
     internalSyncService.syncProductUpdate(product.id, companyId, updateData).catch(err => {
       console.error(`❌ Failed to sync product update for ${product.id}:`, err.message);
@@ -2221,6 +2246,8 @@ const createProduct = async (req, res) => {
     }
 
     await refreshProductRetrievalArtifacts(product.id, companyId);
+
+    refreshProductVectorKnowledge(product, companyId);
 
     res.json({
       success: true,

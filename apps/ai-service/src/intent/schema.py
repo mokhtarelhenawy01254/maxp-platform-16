@@ -47,6 +47,7 @@ class Intent(str, Enum):
     SALES = "sales"
     COMPANY_SNAPSHOT = "company.snapshot"
     HR_ATTENDANCE_TODAY = "hr.attendance.today"
+    BOOKING_RESERVE = "booking_reserve"
 
 
 class ConfidenceLevel(str, Enum):
@@ -117,12 +118,21 @@ ADMIN_CHANNELS = {"ADMIN", "INTERNAL", "DEV", "TEST"}
 DEFAULT_GUARDRAILS = ["tenant_scope", "tool_allowlist", "schema_validation", "audit_trail"]
 
 INTENT_POLICIES: dict[str, dict[str, Any]] = {
+    "booking_reserve": {
+        "actionType": "write",
+        "riskLevel": "medium",
+        "nextState": "respond",
+        "requiredSlots": ["serviceName", "date", "time", "patientName", "phoneNumber", "gender"],
+        "guardrails": [*DEFAULT_GUARDRAILS, "idempotency"],
+        "description": "Customer wants to book or reserve a medical clinic appointment, session, physical therapy, shockwave, or cupping.",
+    },
     "general.chat": {
         "actionType": "chat",
         "riskLevel": "low",
         "nextState": "respond",
         "requiredSlots": [],
         "guardrails": ["no_live_data_claims"],
+        "description": "General chit-chat, greetings, thanks, or pleasantries.",
     },
     "general.knowledge": {
         "actionType": "read",
@@ -130,6 +140,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "respond",
         "requiredSlots": [],
         "guardrails": DEFAULT_GUARDRAILS,
+        "description": "Customer asks about company policies, return or exchange policy, shipping times, working hours, store address, or general FAQ knowledge.",
     },
     "implementation.advice": {
         "actionType": "analysis",
@@ -137,6 +148,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "respond",
         "requiredSlots": [],
         "guardrails": ["no_live_company_data"],
+        "description": "Technical or implementation advice requests.",
     },
     "goals.create_product": {
         "actionType": "write",
@@ -144,6 +156,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "execute_saved_goal",
         "requiredSlots": ["name", "price"],
         "guardrails": [*DEFAULT_GUARDRAILS, "draft_only_review_required", "idempotency"],
+        "description": "Request to create or define a new system goal for product creation.",
     },
     "goals.create_agent_with_skill": {
         "actionType": "workflow",
@@ -151,6 +164,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "execute_saved_goal",
         "requiredSlots": ["agent", "skill"],
         "guardrails": [*DEFAULT_GUARDRAILS, "explicit_user_confirmation", "least_privilege_tools"],
+        "description": "Request to create an agent equipped with specific skills.",
     },
     "agents.run_task": {
         "actionType": "handoff",
@@ -158,6 +172,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "delegate_to_specialist",
         "requiredSlots": ["task"],
         "guardrails": [*DEFAULT_GUARDRAILS, "specialist_tool_scope"],
+        "description": "Request to run a specific task using a background agent.",
     },
     "agents.manage": {
         "actionType": "workflow",
@@ -165,6 +180,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "agent_control_plane",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS, "least_privilege_tools", "state_machine_or_role_slot"],
+        "description": "Administrative actions to spawn, manage, or edit agents.",
     },
     "agents.read": {
         "actionType": "read",
@@ -172,6 +188,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_current_state",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Read agent status, metadata, or active agent configurations.",
     },
     "audit.read": {
         "actionType": "read",
@@ -179,6 +196,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_audit_trail",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS, "append_only_audit"],
+        "description": "Read audit trails or system activity logs.",
     },
     "skills.manage": {
         "actionType": "write",
@@ -186,6 +204,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "create_or_update_skill",
         "requiredSlots": ["displayName", "description"],
         "guardrails": [*DEFAULT_GUARDRAILS, "controlled_skill_write", "allowed_tool_subset"],
+        "description": "Create, delete, or update agent skills in the system.",
     },
     "skills.read": {
         "actionType": "read",
@@ -193,6 +212,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_skill_registry",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Read or list registered agent skills.",
     },
     "products.manage": {
         "actionType": "write",
@@ -200,6 +220,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "create_product_draft",
         "requiredSlots": ["name", "price"],
         "guardrails": [*DEFAULT_GUARDRAILS, "draft_only_review_required", "conflict_check"],
+        "description": "Merchant wants to add, create, edit, or update catalog products.",
     },
     "orders.create_draft": {
         "actionType": "write",
@@ -207,6 +228,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "create_order_draft_pending_approval",
         "requiredSlots": ["productName", "productPrice", "customerName", "customerPhone"],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_approval", "conflict_check"],
+        "description": "Customer or agent wants to initialize or create a draft order without final confirmation.",
     },
     "orders.create_confirmed": {
         "actionType": "write",
@@ -226,6 +248,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
             "idempotency",
             "conflict_check",
         ],
+        "description": "Customer wants to place a finalized, confirmed order with phone number, customer details, and explicit customer agreement.",
     },
     "orders": {
         "actionType": "read",
@@ -233,6 +256,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_order_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Customer asks about an existing order status, order details, or tracking.",
     },
     "orders.cancel": {
         "actionType": "write",
@@ -240,6 +264,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "cancel_order",
         "requiredSlots": ["orderNumber", "cancelReason"],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_approval"],
+        "description": "Customer asks to cancel an order they placed.",
     },
     "orders.refund": {
         "actionType": "write",
@@ -247,6 +272,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "refund_order",
         "requiredSlots": ["orderNumber", "refundReason"],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_approval", "refund_requires_review"],
+        "description": "Customer asks to return an order and request a refund or money back.",
     },
     "inventory": {
         "actionType": "read",
@@ -254,6 +280,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_inventory_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Customer asks about a specific product's price, size, color, or stock availability.",
     },
     "products": {
         "actionType": "read",
@@ -261,6 +288,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_catalog_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Customer wants to see what products are available, browse the general catalog, view broad items, or ask what products are in stock.",
     },
     "catalog.categories": {
         "actionType": "read",
@@ -268,6 +296,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_catalog_categories",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Customer asks specifically about store categories, sections, or product types.",
     },
     "shipping.rates": {
         "actionType": "read",
@@ -275,6 +304,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_shipping_rate",
         "requiredSlots": ["governorate"],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Customer asks for shipping costs or rates to a location.",
     },
     "support.exchange": {
         "actionType": "handoff",
@@ -282,6 +312,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "handoff_to_human",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_in_the_loop", "no_policy_promise"],
+        "description": "Customer requests after-sale service for product replacement, size swap, or exchange.",
     },
     "support.refund": {
         "actionType": "handoff",
@@ -289,6 +320,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "handoff_to_human",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_in_the_loop", "refund_requires_review"],
+        "description": "Customer requests after-sale financial dispute or refund policy exceptions.",
     },
     "support.complaint": {
         "actionType": "handoff",
@@ -296,6 +328,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "handoff_to_human",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS, "human_in_the_loop", "complaint_review"],
+        "description": "Customer has a complaint, issue, or damage report requiring support handoff.",
     },
     "customers": {
         "actionType": "read",
@@ -303,6 +336,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_customer_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Read, query, or check customer profile and history info.",
     },
     "sales": {
         "actionType": "read",
@@ -310,6 +344,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_sales_data",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Merchant asks for sales stats, order count summary, or business performance metrics (عندي كام طلب/مبيعات النهاردة).",
     },
     "company.snapshot": {
         "actionType": "read",
@@ -317,6 +352,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_company_snapshot",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "Merchant dashboard snapshot or broad performance review.",
     },
     "hr.attendance.today": {
         "actionType": "read",
@@ -324,6 +360,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "nextState": "read_hr_attendance",
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
+        "description": "HR attendance queries for today.",
     },
 }
 
@@ -446,6 +483,10 @@ INTENT_CONFIGURED_TOOLS: dict[str, dict[str, Any]] = {
     "company.snapshot": {
         "primaryTool": "company_snapshot",
         "allowedTools": ["company_snapshot", "sales_revenue"],
+    },
+    "booking_reserve": {
+        "primaryTool": "booking_reserve",
+        "allowedTools": ["booking_info", "booking_slots", "booking_reserve", "booking_status", "agent_handoff_to"],
     },
     "general.knowledge": {
         "primaryTool": "knowledge_search",
@@ -875,3 +916,28 @@ def is_admin_channel(channel: str | None) -> bool:
 
 def is_customer_channel(channel: str | None) -> bool:
     return (channel or "").strip().upper() in CUSTOMER_CHANNELS
+
+
+from pydantic import BaseModel, Field
+
+class ToolEligibilitySchema(BaseModel):
+    status: str = Field(description="allowed, blocked, or needs_clarification")
+    blockedReason: str | None = Field(default=None, description="Reason for blocking tool use")
+    requiredTool: str | None = Field(default=None, description="Specific tool required")
+
+class AlternativeIntentSchema(BaseModel):
+    intent: str
+    confidence: float
+
+class ClassifierResponse(BaseModel):
+    schemaVersion: str = Field(default=SCHEMA_VERSION, description="The schema version identifier")
+    intent: str = Field(description="One of the allowed intent names")
+    confidence: float = Field(description="Confidence score from 0.0 to 1.0")
+    confidenceLevel: str = Field(description="low, medium, or high")
+    ambiguity: bool = Field(description="True if the query is vague/unclear or fits multiple intents")
+    clarificationQuestion: str | None = Field(default=None, description="Clarification question if the intent is ambiguous or required slots are missing")
+    slots: dict[str, Any] = Field(default_factory=dict, description="Extracted slots from user message")
+    missingSlots: list[str] = Field(default_factory=list, description="Required slot names missing from message")
+    toolEligibility: ToolEligibilitySchema = Field(description="Tool eligibility status and reason details")
+    reasonCodes: list[str] = Field(default_factory=list, description="Reason codes describing classification logic decisions")
+    alternativeIntents: list[AlternativeIntentSchema] = Field(default_factory=list, description="Alternative intents considered")

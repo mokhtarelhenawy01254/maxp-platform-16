@@ -95,4 +95,34 @@ The Facebook Ads Dashboard page (`/advertising/facebook-ads`) was refactored fro
   - `getHealthDecision()`, `getDecisionClass()`, `getRulePayload()` — extracted from the dashboard.
   - Formatting utilities: `formatCurrency`, `formatNumber`, `formatPercentage`, `formatDate`.
 
+## Python AI Service Intent Classifier Modernization (2026-06-28)
+
+- **Module**: `apps/ai-service/src/intent/`
+- **Pattern**: Pure semantic intent classification with dynamic exemplars.
+- **Details**:
+  - `schema.py`: Exposes `INTENT_POLICIES` containing dynamic semantic descriptions for each intent, purged of all hardcoded keyword/phrase examples. Also defines the `ClassifierResponse` Pydantic model for structured output validation.
+  - `dynamic_registry.py`: Extends registry loading to backfill dynamic intent descriptions from static defaults.
+  - `classifier.py`: Dynamically generates the LLM system prompt from allowed intents and their registered descriptions. Dynamically extracts and injects the 2 best matching few-shot exemplars from golden cases. Enforces classification execution using only the agent's preferred model (`preferredProvider`/`preferredModel`) with zero fallback models.
+  - `resolve_intent.py`: Binds classification execution specifically to the agent's configured LLM client instance (`ctx.llm_client` or `ctx.agent.client`).
+
+## Agent Modernization & Structured Parameter Passing (2026-06-28)
+
+- **Goal**: Transition from single-parameter unstructured requests to explicit multi-parameter schema validations.
+- **Details**:
+  - `booking_reserve`: Redefined in `booking.py` using a structured `ReserveInput` Pydantic model. Accepts explicit fields: `patient_name`, `patient_phone`, `gender`, `service_name`, `branch_name`, `appointment_date`, and `appointment_time`.
+  - `booking_tools.py`: Restructured `reserve_appointment` function to process these parameters directly, resolving branch names dynamically and bypassing legacy regex/NLP text parsing.
+  - `planner.py`: Restructured `to_tool_plan` to restrict the allowedTools fallback to supervisor agents with active sub-agent spawning capabilities, avoiding scoping mismatch leakages for normal agents.
+- **Workspace-wide Anti-Regression Control**:
+  - `.agents/AGENTS.md`: Establishes project-wide rules prohibiting unstructured `request` string parameters for data creation/updates.
+  - `scripts/verify-agent-configs.js`: Lint script that automatically inspects all local agent configs on commit/push to prevent regressions to unstructured request configurations.
+
+## Agent Modular Skills Architecture (2026-06-28)
+
+- **Goal**: Transition agents from monolithic files to modular, reusable, and toggleable SaaS skills.
+- **Details**:
+  - **`medical-center-booking` Skill**: Located at `apps/ai-service/skills/medical-center-booking/`. Contains `skill.json` metadata mapping `booking_slots`, `booking_reserve`, and `booking_status` tools, plus `SKILL.md` detailing slot-filling and branch matching policies.
+  - **`booking-upsell-packages` Skill**: Located at `apps/ai-service/skills/booking-upsell-packages/`. Uses `booking_info` to parse session pack prices and upsell cost-saving package combinations to patients.
+  - **`clinic-knowledge-resolver` Skill**: Located at `apps/ai-service/skills/clinic-knowledge-resolver/`. Utilises `knowledge_search` tool to execute semantic lookups over the clinic's local knowledge base (for insurance, rules, location).
+  - **Skill Registry**: Mapped under `allowedSkills` in the `MEDICAL_CENTER` agent configuration (`agent.json`). Allowed tools expanded to include `knowledge_search` mapped in `role_tools.yaml`.
+
 

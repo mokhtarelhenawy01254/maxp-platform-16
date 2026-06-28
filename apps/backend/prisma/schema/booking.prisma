@@ -12,7 +12,7 @@ model BookingBranch {
   updatedAt   DateTime @updatedAt
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   doctors     BookingDoctor[]
-  services    BookingService[]
+  branchServices BookingBranchService[]
   appointments Appointment[]
 
   @@index([companyId])
@@ -41,26 +41,41 @@ model BookingDoctor {
   @@map("booking_doctors")
 }
 
-/// Booking module - Services with package pricing
+/// Booking module - Service template (shared across branches)
 model BookingService {
   id                   String   @id @default(cuid())
   companyId            String
-  branchId             String
   name                 String
   description          String?
-  hasPackages          Boolean  @default(true)
-  packages             Json?    /// Array of packages: [{"count":3,"price":500,"originalPrice":750},...]
   requiresConsultation Boolean  @default(true) /// Needs doctor assessment first
   isActive             Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  branch               BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchServices       BookingBranchService[]
   appointments         Appointment[]
 
   @@index([companyId])
-  @@index([branchId])
   @@map("booking_services")
+}
+
+/// Per-branch service config (pricing, availability)
+model BookingBranchService {
+  id          String   @id @default(cuid())
+  serviceId   String
+  branchId    String
+  hasPackages Boolean  @default(true)
+  packages    Json?    /// Array of packages: [{"count":3,"price":500,"originalPrice":750},...]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  service BookingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  branch  BookingBranch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, branchId])
+  @@index([branchId])
+  @@map("booking_branch_services")
 }
 
 /// Multi-turn booking drafts - agent collects fields one at a time

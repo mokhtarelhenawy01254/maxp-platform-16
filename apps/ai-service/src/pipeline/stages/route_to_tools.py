@@ -367,6 +367,9 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
         if confirmed_by_customer is not None:
             params.setdefault("confirmed_by_customer", _coerce_bool(confirmed_by_customer))
 
+    elif tool_name == "booking_reserve":
+        params.setdefault("request", ctx.message)
+
     execution["params"] = params
 
 

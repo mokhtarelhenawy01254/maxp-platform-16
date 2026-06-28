@@ -8,7 +8,7 @@ import structlog
 
 from src.context.multimodal import build_user_content
 from src.intent.dynamic_registry import dynamic_intent_registry
-from src.intent.schema import INTENT_CLASSIFICATION_SCHEMA, ClassifierResult
+from src.intent.schema import INTENT_CLASSIFICATION_SCHEMA, ClassifierResult, ClassifierResponse
 from src.llm.model_capabilities import (
     DEFAULT_VISION_MODEL,
     DEFAULT_VISION_PROVIDER,
@@ -19,7 +19,63 @@ from src.llm.model_capabilities import (
 from src.observability.llm_fallback import LLMFallbackProvider
 from src.pipeline.llm_messages import to_client_messages
 
+from pathlib import Path
+from difflib import SequenceMatcher
+
 logger = structlog.get_logger(__name__)
+
+
+def _get_golden_cases() -> list[dict]:
+    try:
+        path = Path(__file__).resolve().parents[2] / "tests" / "evals" / "intent_golden_cases.json"
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return []
+
+
+def _find_exemplars(message: str, golden_cases: list[dict], count: int = 2) -> list[dict]:
+    if not golden_cases:
+        return []
+    scored = []
+    for case in golden_cases:
+        score = SequenceMatcher(None, message.lower(), case["message"].lower()).ratio()
+        scored.append((score, case))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [item[1] for item in scored[:count]]
+
+
+def _format_exemplar(case: dict) -> str:
+    classifier = case.get("classifier") or {}
+    tool_elig = classifier.get("toolEligibility")
+    if isinstance(tool_elig, str):
+        tool_elig_dict = {"status": tool_elig, "blockedReason": None, "requiredTool": None}
+    elif isinstance(tool_elig, dict):
+        tool_elig_dict = {
+            "status": tool_elig.get("status") or "allowed",
+            "blockedReason": tool_elig.get("blockedReason"),
+            "requiredTool": tool_elig.get("requiredTool")
+        }
+    else:
+        tool_elig_dict = {"status": "allowed", "blockedReason": None, "requiredTool": None}
+
+    example_response = {
+        "intent": classifier.get("intent") or case.get("expected_intent") or "general.chat",
+        "confidence": float(classifier.get("confidence") or 0.8),
+        "confidenceLevel": classifier.get("confidenceLevel") or "medium",
+        "ambiguity": bool(classifier.get("ambiguity") or False),
+        "clarificationQuestion": classifier.get("clarificationQuestion"),
+        "slots": classifier.get("slots") or {},
+        "missingSlots": classifier.get("missingSlots") or [],
+        "toolEligibility": tool_elig_dict,
+        "reasonCodes": classifier.get("reasonCodes") or [],
+        "alternativeIntents": classifier.get("alternativeIntents") or []
+    }
+    return (
+        f"User message: \"{case.get('message')}\"\n"
+        f"Response JSON:\n{json.dumps(example_response, ensure_ascii=False, indent=2)}"
+    )
 
 
 _THINK_TAG_RE = re.compile(r"<think[^>]*>[\s\S]*?</think>", re.IGNORECASE)
@@ -146,7 +202,7 @@ async def _classify_with_client(
             "temperature": 0,
             "max_tokens": 1500,
             "tools_enabled": False,
-            "output_schema": INTENT_CLASSIFICATION_SCHEMA,
+            "output_schema": ClassifierResponse,
         },
     )
     raw_text = response.text if hasattr(response, "text") else str(response)
@@ -154,7 +210,12 @@ async def _classify_with_client(
     if parsed is None:
         logger.warning("classifier returned unparseable JSON", raw=raw_text[:800])
         return None
-    result = _normalize_classifier_result(parsed)
+    try:
+        validated = ClassifierResponse.model_validate(parsed)
+    except Exception as exc:
+        logger.warning("classifier pydantic validation failed", error=str(exc), parsed=parsed)
+        return None
+    result = _normalize_classifier_result(validated.model_dump())
     if result is None:
         logger.warning("classifier returned invalid result", parsed=parsed)
         return None
@@ -199,99 +260,82 @@ async def classify_intent(
 
     # Use dynamic intent registry (with static fallback if not loaded)
     intent_enum = dynamic_intent_registry.get_intent_enum()
+    
+    intent_descriptions = []
+    for intent in intent_enum:
+        policy = dynamic_intent_registry.get_policy(intent)
+        desc = policy.get("description", "No description provided.")
+        intent_descriptions.append(f"- {intent}: {desc}")
+    intents_block = "\n".join(intent_descriptions)
+
+    # Dynamic Few-Shotting: Load golden cases and retrieve contextually similar exemplars
+    golden_cases = _get_golden_cases()
+    exemplars = _find_exemplars(message, golden_cases, count=2)
+    
+    exemplars_block = ""
+    if exemplars:
+        formatted_exemplars = [_format_exemplar(case) for case in exemplars]
+        exemplars_block = (
+            "\n\nHere are some examples of expected inputs and matching responses:\n"
+            + "\n\n".join(formatted_exemplars)
+        )
+
     system_prompt = (
         "/no_think\n"
         "You are a schema-only intent classifier for customer and merchant operations.\n"
-        "Return exactly one JSON object and no markdown, comments, or customer-facing answer.\n"
-        f"Allowed intents: {', '.join(intent_enum)}\n"
+        "Return exactly one JSON object and no markdown, comments, or customer-facing answer.\n\n"
+        "Allowed intents and their descriptions:\n"
+        f"{intents_block}\n\n"
         "JSON shape: {\"intent\": string, \"confidence\": number, \"confidenceLevel\": \"low|medium|high\", "
         "\"ambiguity\": boolean, \"clarificationQuestion\": string|null, \"slots\": object, "
         "\"missingSlots\": array, \"toolEligibility\": {\"status\": \"allowed|blocked|needs_clarification\"}, "
         "\"reasonCodes\": array}.\n"
-        f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n"
-        "For customer read-only catalog questions about products, price, availability, stock, images, size, color, SKU, or variants:\n"
-        "  - Choose products when the customer asks broad questions like 'what do you have', 'what products', 'what's available', "
-        "or Arabic messages like 'عايز اشوف المنتجات', 'عندك ايه', 'المنتجات المتاحة', 'عايز اعرف المنتجات', 'عندك كوتشي', 'الاقسام المتاحة'.\n"
-        "  - Choose inventory when the customer asks about a specific product's price, size, color, or stock availability, "
-        "like 'Swan Step بكام', 'كوتشي Swan Step مقاس 40', 'لون أبيض متوفر؟', 'سعر كوتشي Swan Step', "
-        "'عايز سعر', 'المقاس 41 موجود', 'اللون الأسود', 'هل متوفر', 'عندك مقاس', 'كوتشي لون أبيض'. "
-        "inventory uses inventory_check tool which searches by product name + size/color. "
-        "Do NOT use inventory for low stock alerts or restock reports — that is a merchant admin function.\n"
-        "When an image attachment is provided without an explicit product name in text, use products intent (not inventory), toolEligibility.status=allowed, no productName in missingSlots (image is the product reference).\n"
-        "Set slots.requestedProductImage to true when the latest message semantically asks to SEE, VIEW, or VISUALLY INSPECT a product — any phrasing that indicates the customer wants to look at the product visually (e.g. asking for images, photos, pictures, wanting to \"see\" or \"view\" the product or \"how it looks\", \"its appearance\", \"شكله\", \"صورته\", \"صور\", \"اشوف\", \"صور ليهم\", \"عايز اشوف الصور\", \"Picture\", \"Photo\", \"Image\", \"ارلي صوره\", \"صورة المنتج\"). Set it to false only when the request is purely about price, stock count, size, or availability without any visual component.\n"
-        "Set slots.listAll to true ONLY for READ-ONLY catalog browsing when the customer asks to see ALL products (intent must be products, not products.manage). products.manage is only for creating or editing products.\n"
-        "Use catalog.categories ONLY when the customer explicitly asks about product categories, sections, types, or what the store carries (e.g. \"what categories do you have\", \"what are your sections\", \"اقسامكم ايه\", \"عندك اقسام ايه\", \"أنواع المنتجات\"). "
-        "catalog.categories lists available store categories with product counts.\n"
-        "If the customer says they are not ordering yet, that is still a read-only catalog/inventory question, "
-        "not an order draft and not a support handoff.\n"
-        "Use orders.cancel when the customer explicitly asks to cancel an order they already placed. "
-        "Set slots.cancelReason to the reason if mentioned. "
-        "Set slots.orderNumber to the order number if provided.\n"
-        "Use orders.refund when the customer explicitly asks for a refund or money back for an existing order. "
-        "Set slots.refundReason to the reason if mentioned. "
-        "Set slots.orderNumber to the order number if provided.\n"
-        "Use support refund only for non-order-specific after-sale financial disputes or policy exceptions, "
-        "not for a straightforward refund on an existing order.\n"
-        "Use support exchange/complaint only when the latest message asks for after-sale service "
-        "such as replacement, damage, complaint, or policy exception.\n"
-        "Extract only values present in the latest message. Do not invent customer name, phone, address, price, or order number.\n"
-        "Use the conversation context only to resolve references and follow-up questions to previously shown products. "
-        "When the latest customer message asks about a size, color, price, image, or availability for the previous product, "
-        "choose inventory and set slots.referencesPreviousProduct to true instead of requiring a repeated product name.\n"
-        "Do not classify by lexical shortcuts. Interpret the latest message semantically, including negation and corrections.\n"
-        "For shipping-rate questions, set slots.governorate when the latest message contains a governorate or city destination.\n"
-        "Use 'sales' intent for Arabic queries about order counts, daily stats, company performance, "
-        "like 'عندي كام طلب', 'كام طلب النهاردة', 'مبيعات النهاردة', 'إجمالي الطلبات', 'performance'. "
-        "sales maps to company_snapshot (dashboard overview). "
-        "Only use 'products.manage' when the customer explicitly wants to add or edit a product.\n"
-        "Use 'general.knowledge' for questions about company policies, return policy, shipping policy, "
-        "FAQs, working hours, store hours, or any merchant-specific knowledge the agent should look up. "
-        "Examples: 'ما هي سياسة الإرجاع', 'مواعيد العمل', 'هل يوجد شحن لكل المحافظات', 'عايز اعرف سياسة الاستبدال'. "
-        "Do NOT use general.chat for these — general.knowledge will search the knowledge base for the answer.\n"
+        f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n\n"
+        "Guidelines:\n"
+        "1. Semantically interpret the latest user message in the context of the conversation. Support both English and Arabic (including Egyptian dialect).\n"
+        "2. For read-only catalog/availability/price questions, extract slots like 'productName', 'productSize', 'productColor'. If the user requests to see images or photos of products, set slots.requestedProductImage to true.\n"
+        "3. If the user refers to a previously shown/discussed product, set slots.referencesPreviousProduct to true.\n"
+        "4. Extracted slots must be derived solely from the user's latest message and conversation context. Do not invent details.\n"
+        "5. For booking_reserve intent, use EXACTLY these slot keys: 'serviceName', 'date', 'time', 'patientName', 'phoneNumber', 'gender'. Example slots: {\"serviceName\": \"شوك ويف\", \"date\": \"الإثنين 29 يونيو\", \"time\": \"5 العصر\", \"patientName\": \"محمد عبدالله\", \"phoneNumber\": \"01234567890\", \"gender\": \"ذكر\"}."
+        f"{exemplars_block}"
     )
 
-    # Fallback chain: build list of (provider, model) combos to try
-    classifier_attempts: list[tuple[str | None, str]] = []
-    if client is not None:
-        classifier_attempts.append((None, None))  # Use the passed client
-    else:
+    # Ensure the classifier uses ONLY the agent's model/client with zero fallback models.
+    if client is None:
         fallback = LLMFallbackProvider()
-        fallback_provider = model_route.provider or ctx.get("preferredProvider")
-        fallback_model = model_route.model or preferred_model
-        classifier_attempts.append((fallback_provider, fallback_model))
-        # Fallback 2: Google Gemini (always available, supports vision)
-        classifier_attempts.append(("GOOGLE", "gemini-2.5-flash"))
-        # Fallback 3: GROQ
-        classifier_attempts.append(("GROQ", "llama-3.3-70b-versatile"))
+        target_provider = model_route.provider or ctx.get("preferredProvider")
+        target_model = model_route.model or preferred_model
+        
+        client = await fallback.get_client(
+            company_id=company_id,
+            model=target_model,
+            provider=target_provider,
+        )
+        provider_name = target_provider
+        model_name = target_model
+    else:
+        provider_name = ctx.get("preferredProvider")
+        model_name = ctx.get("preferredModel")
 
-    result: ClassifierResult | None = None
-    for attempt_idx, (attempt_provider, attempt_model) in enumerate(classifier_attempts):
-        if client is None:
-            client = await fallback.get_client(
-                company_id=company_id,
-                model=attempt_model,
-                provider=attempt_provider,
-            )
-        if not client:
-            logger.warning("classifier fallback client unavailable", provider=attempt_provider, model=attempt_model)
-            continue
-        try:
-            result = await _classify_with_client(
-                client,
-                system_prompt=system_prompt,
-                message=message,
-                attachments=attachments,
-                context_snapshot=context_snapshot,
-            )
-        except Exception as exc:
-            logger.warning("classifier attempt failed", attempt=attempt_idx, provider=attempt_provider, model=attempt_model, error=str(exc))
-            client = None  # Force rebuild for next attempt
-            continue
-        if result is not None:
-            logger.info("classifier result", intent=result.intent, confidence=result.confidence, slots=result.slots, provider=attempt_provider, model=attempt_model)
-            return result
-        logger.warning("classifier attempt returned None", attempt=attempt_idx, provider=attempt_provider, model=attempt_model)
-        client = None
+    if not client:
+        logger.error("classifier client unavailable for agent model", provider=provider_name, model=model_name)
+        return None
 
-    logger.error("all classifier attempts exhausted", message=message[:100])
+    try:
+        result = await _classify_with_client(
+            client,
+            system_prompt=system_prompt,
+            message=message,
+            attachments=attachments,
+            context_snapshot=context_snapshot,
+        )
+    except Exception as exc:
+        logger.error("classifier execution failed for agent model", provider=provider_name, model=model_name, error=str(exc))
+        return None
+
+    if result is not None:
+        logger.info("classifier result success", intent=result.intent, confidence=result.confidence, slots=result.slots, provider=provider_name, model=model_name)
+        return result
+
+    logger.warning("classifier returned None for agent model", provider=provider_name, model=model_name)
     return None

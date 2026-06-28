@@ -28,9 +28,15 @@
     "booking_slots",
     "booking_reserve",
     "booking_status",
-    "agent_handoff_to"
+    "agent_handoff_to",
+    "knowledge_search"
   ],
-  "allowedSkills": [],
+  "allowedSkills": [
+    "medical-center-booking",
+    "booking-upsell-packages",
+    "clinic-knowledge-resolver",
+    "handoff-to-human"
+  ],
   "channels": ["dashboard", "whatsapp", "messenger"],
   "humanApproval": {
     "mode": "ON_WRITE",
@@ -41,5 +47,8 @@
   "budget": {
     "dailyUsd": 2,
     "maxToolCallsPerRun": 10
+  },
+  "config": {
+    "toolChoice": "required"
   }
 }

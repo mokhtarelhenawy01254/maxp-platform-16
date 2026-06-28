@@ -82,18 +82,37 @@ const getServices = async (req, res) => {
     const company = await resolveCompany(slug);
     if (!company) return res.status(404).json({ success: false, error: 'الشركة غير موجودة' });
 
-    const where = { companyId: company.id, isActive: true };
-    if (branchId) where.branchId = branchId;
+    const tryParse = (v) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch { return v; } })() : v;
+
+    if (branchId) {
+      const branchServices = await getSharedPrismaClient().bookingBranchService.findMany({
+        where: { branchId, isActive: true, service: { companyId: company.id, isActive: true } },
+        select: {
+          id: true,
+          hasPackages: true,
+          packages: true,
+          service: { select: { id: true, name: true, description: true, requiresConsultation: true } }
+        },
+        orderBy: { service: { name: 'asc' } }
+      });
+      const data = branchServices.map(bs => ({
+        id: bs.service.id,
+        name: bs.service.name,
+        description: bs.service.description,
+        requiresConsultation: bs.service.requiresConsultation,
+        branchServiceId: bs.id,
+        branchId,
+        hasPackages: bs.hasPackages,
+        packages: tryParse(bs.packages)
+      }));
+      return res.json({ success: true, data });
+    }
 
     let services = await getSharedPrismaClient().bookingService.findMany({
-      where,
-      select: { id: true, name: true, description: true, branchId: true, hasPackages: true, packages: true, requiresConsultation: true },
+      where: { companyId: company.id, isActive: true },
+      select: { id: true, name: true, description: true, requiresConsultation: true },
       orderBy: { name: 'asc' }
     });
-    services = services.map(s => ({
-      ...s,
-      packages: typeof s.packages === 'string' ? (() => { try { return JSON.parse(s.packages); } catch (e) { return s.packages; } })() : s.packages
-    }));
 
     res.json({ success: true, data: services });
   } catch (error) {

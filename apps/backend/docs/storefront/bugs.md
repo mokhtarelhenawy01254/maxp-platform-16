@@ -1849,3 +1849,15 @@
   - `frontend/src/storefront/__tests__/variantSelector.test.tsx`
   - `frontend/src/storefront/sections/ProductInfo.tsx`
   - `frontend/src/storefront/__tests__/productInfoGearLoadout.test.tsx`
+### [FIX] Storefront Product Cards Were Missing Images Because Upload Files Were Not on Disk (2026-06-28)
+- **Description**: The Swan public storefront (`swan.maxp.online/shop`) showed product cards without images. Only 8 of ~210 local `/uploads/products/...` URLs referenced by active products existed on the server disk.
+- **Root Cause**:
+  1. The production deploy workflow excludes `backend/uploads` from the packaged artifact to avoid overwriting user uploads, but the source uploads were never restored to `/var/www/backend2/uploads/` for Swan/Wofod/Alpha/Sola companies.
+  2. `sanitizePublicAssetUrl()` in `routes/publicProductsRoutes.js` filtered out any local upload URL whose file was missing, so the public products API returned `mainImage: null` and `images: []`.
+  3. The storefront `StorefrontProductImage` component has no fallback UI when no image candidates are returned, so cards rendered with no media.
+- **Fix**:
+  1. Restored all available local upload files from the dev workspace (`apps/backend/uploads`) to `/var/www/backend2/uploads/` using `rsync --ignore-existing`.
+  2. Updated `sanitizePublicAssetUrl()` to fall back to `/placeholders/product-image.svg` for missing local uploads instead of returning `null`, preserving the product card layout until the original files are restored.
+- **Impact**: Swan and other storefronts now display product placeholder images for missing uploads instead of blank cards. Original missing files (202 URLs across multiple companies) still need to be sourced from a backup or re-uploaded.
+- **Files Modified**:
+  - `apps/backend/routes/publicProductsRoutes.js`

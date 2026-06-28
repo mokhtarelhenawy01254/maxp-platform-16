@@ -6,6 +6,9 @@ const { userValidationRules, validate } = require('../middleware/inputValidation
 
 // Basic auth routes
 router.get('/business-specialties', authController.getBusinessSpecialties);
+
+
+
 router.post('/register', userValidationRules(), validate, authController.register);
 router.post('/signup-coupon/validate', authController.validateSignupCoupon);
 router.post('/login', authController.login);
