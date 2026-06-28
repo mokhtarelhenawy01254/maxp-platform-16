@@ -402,7 +402,16 @@ function sanitizePublicAssetUrl(value) {
     return null;
   }
 
-  return isAvailablePublicAsset(normalizedValue) ? normalizedValue : null;
+  if (isAvailablePublicAsset(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  // Fallback to a product placeholder for missing local uploads so storefront cards still render
+  if (isLocalUploadAssetPath(normalizedValue)) {
+    return "/placeholders/product-image.svg";
+  }
+
+  return null;
 }
 
 function normalizeProductImages(product) {
