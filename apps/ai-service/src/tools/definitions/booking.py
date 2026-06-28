@@ -20,7 +20,13 @@ class SlotsInput(BaseModel):
 
 class ReserveInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
-    request: str = Field(..., min_length=3, description="ALL booking details in Arabic text: service name, date, time, patient name, phone, gender. Example: 'احجز جلسة حجامة السبت 27 يونيو الساعة 4 العصر لمحمد عبدالله 01234567890 ذكر'. Pass the full user message.")
+    patient_name: str = Field(..., description="اسم المريض بالكامل")
+    patient_phone: str = Field(..., description="رقم هاتف المريض")
+    gender: str = Field(..., description="جنس المريض (MALE أو FEMALE)")
+    service_name: str = Field(..., description="اسم الخدمة الطبية المطلوبة (مثل: علاج طبيعي، حجامة)")
+    branch_name: str = Field(default="", description="اسم فرع المركز الطبي (مثل: التجمع، الدقي)")
+    appointment_date: str = Field(default="", description="تاريخ الحجز بصيغة YYYY-MM-DD")
+    appointment_time: str = Field(default="", description="وقت الحجز بصيغة HH:MM (مثال: 15:30)")
 
 class StatusInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
@@ -37,8 +43,17 @@ async def booking_slots(input_data: SlotsInput) -> dict[str, Any]:
     return await booking_tools.get_slots(input_data.company_id, input_data.date, input_data.gender)
 
 async def booking_reserve(input_data: ReserveInput) -> dict[str, Any]:
-    """Books an appointment. Pass ALL details in the request text — the tool auto-extracts everything."""
-    return await booking_tools.reserve_appointment(input_data.company_id, input_data.request)
+    """Books an appointment using structured patient and booking details."""
+    return await booking_tools.reserve_appointment(
+        company_id=input_data.company_id,
+        patient_name=input_data.patient_name,
+        patient_phone=input_data.patient_phone,
+        gender=input_data.gender,
+        service_name=input_data.service_name,
+        branch_name=input_data.branch_name,
+        appointment_date=input_data.appointment_date,
+        appointment_time=input_data.appointment_time,
+    )
 
 async def booking_status(input_data: StatusInput) -> dict[str, Any]:
     """Checks appointment details or cancels it."""
@@ -47,28 +62,28 @@ async def booking_status(input_data: StatusInput) -> dict[str, Any]:
 
 booking_info_tool = FunctionTool(
     name="booking_info",
-    description="مركز طبي: عرض كل المعلومات (الفروع، الخدمات، الأطباء، الأسعار، أيام العمل للرجال والنساء). استخدمها أول حاجة.",
+    description="استرجاع كافة معلومات المركز الطبي (مثل الفروع، الخدمات، الأطباء، الأسعار، وأيام العمل للرجال والنساء).",
     func=booking_info,
     input_model=InfoInput,
 )
 
 booking_slots_tool = FunctionTool(
     name="booking_slots",
-    description="مركز طبي: عرض المواعيد المتاحة في تاريخ محدد. date=YYYY-MM-DD, gender=MALE أو FEMALE.",
+    description="استعلام وعرض مواعيد الحجز المتاحة لفرع المركز الطبي في تاريخ معين وبناءً على نوع المريض (MALE/FEMALE).",
     func=booking_slots,
     input_model=SlotsInput,
 )
 
 booking_reserve_tool = FunctionTool(
     name="booking_reserve",
-    description="مركز طبي: حجز موعد. ضع كل التفاصيل في request: اسم الخدمة + التاريخ + الوقت + اسم المريض + رقم الهاتف + الجنس. مثال: 'احجز جلسة حجامة السبت 4 العصر لمحمد عبدالله 01234567890 ذكر'. الأداة تستخرج كل شئ تلقائيا.",
+    description="إنشاء وحجز موعد جديد للمريض في المركز الطبي باستخدام تفاصيل حجز مهيكلة ومحددة.",
     func=booking_reserve,
     input_model=ReserveInput,
 )
 
 booking_status_tool = FunctionTool(
     name="booking_status",
-    description="مركز طبي: عرض تفاصيل موعد أو إلغاؤه. appointment_id=رقم الموعد, action=check للتفاصيل أو cancel للإلغاء.",
+    description="الاستعلام عن تفاصيل موعد محجوز مسبقاً أو إلغاء الحجز باستخدام معرف الموعد.",
     func=booking_status,
     input_model=StatusInput,
 )

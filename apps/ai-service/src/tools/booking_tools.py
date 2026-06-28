@@ -102,23 +102,46 @@ async def get_slots(company_id: str, date: str, gender: str = "", request: str =
 
 # ── booking_reserve ──
 
-async def reserve_appointment(company_id: str, request: str) -> dict[str, Any]:
-    """Parse one text field into all booking params, then create appointment."""
+async def reserve_appointment(
+    company_id: str,
+    patient_name: str,
+    patient_phone: str,
+    gender: str,
+    service_name: str,
+    branch_name: str = "",
+    appointment_date: str = "",
+    appointment_time: str = ""
+) -> dict[str, Any]:
+    """Create an appointment using structured parameters."""
     if not company_id:
         return {"error": "no company_id"}
-    if not request or not request.strip():
-        return {"error": "request فارغ. مطلوب: اسم الخدمة + التاريخ + الوقت + اسم المريض + رقم الهاتف."}
+    if not patient_name or not patient_phone or not service_name:
+        return {"error": "بيانات غير مكتملة. مطلوب: اسم المريض، الهاتف، والخدمة المطلوبة."}
 
     client = get_backend_client()
 
-    # Parse EVERYTHING from the single request text
-    service_name, date_str, time_str, name, phone, gender = _parse_request(request)
+    name = patient_name.strip()
+    phone = patient_phone.strip()
+    date_str = appointment_date.strip() if appointment_date else ""
+    time_str = appointment_time.strip() if appointment_time else ""
 
-    # 1. Find branch — pick first with genderDays, else first
+    # 1. Find branch — search by name if provided, else pick first with genderDays, else first
     branches = await client.get_booking_branches(company_id)
     if not branches:
         return {"error": "لا يوجد فروع متاحة"}
-    branch = next((b for b in branches if b.get("genderDays")), branches[0])
+    
+    branch = None
+    if branch_name:
+        branch_lower = branch_name.strip().lower().replace("ة", "ه")
+        for b in branches:
+            b_name = (b.get("name") or "").lower().replace("ة", "ه")
+            if branch_lower in b_name or b_name in branch_lower:
+                branch = b
+                break
+    
+    if not branch:
+        branch = next((b for b in branches if b.get("genderDays")), branches[0])
+        
     branch_id = branch.get("id", "")
     branch_name = branch.get("name", "")
 
@@ -234,46 +257,43 @@ def _parse_request(text: str) -> tuple[str, str, str, str, str, str]:
     import datetime as _dt
     service, date, time, name, phone, gender = "", "", "", "", "", "MALE"
     today = _dt.date.today()
-    parts = [p.strip() for p in re.split(r'[,،\n]', text) if p.strip()]
+    parts = [p.strip() for p in re.split(r'[،,\n.؟!]', text) if p.strip()]
 
-    # Phone: starts with 01 and is 11 digits
-    phones = [p for p in parts if re.match(r'^01\d{9}$', p)]
-    # Gender
-    for p in parts:
-        if p in ("ذكر", "MALE", "male", "M", "ر", "رجال", "رجل"):
-            gender = "MALE"; break
-        if p in ("أنثى", "انثي", "انثى", "FEMALE", "female", "F", "س", "سيدة", "سيدات", "ست"):
-            gender = "FEMALE"; break
-    # Date: explicit dates like 29-06-2026, 29/06, 29 يونيو, إثنين 29
-    for p in parts:
-        m = re.match(r'(\d{1,2})[-\/](\d{1,2})(?:[-\/](\d{4}))?$', p)
-        if m:
-            d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3 or '0'))
-            if not y: y = today.year
-            if y <= 2025: y = today.year
-            try: date = _dt.date(y, mo, d).isoformat(); break
-            except: pass
-        m = re.match(r'(\d{1,2})\s*(يونيو|يوليو|أغسطس|مايو|ابريل|أغسطس)', p)
+    # Phone: 11 digits starting with 01 anywhere in the full text
+    phones = re.findall(r'01\d{9}', text)
+    # Gender — search full text
+    if re.search(r'ذكر|MALE|male|\bM\b|رجال|رجل', text):
+        gender = "MALE"
+    elif re.search(r'أنثى|انثي|انثى|FEMALE|female|\bF\b|سيدة|سيدات', text):
+        gender = "FEMALE"
+    # Date: explicit dates like 29-06-2026, 29/06, 29 يونيو
+    m = re.search(r'(\d{1,2})[-\/](\d{1,2})(?:[-\/](\d{4}))?', text)
+    if m:
+        d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3 or '0'))
+        if not y: y = today.year
+        if y <= 2025: y = today.year
+        try: date = _dt.date(y, mo, d).isoformat()
+        except: pass
+    if not date:
+        m = re.search(r'(\d{1,2})\s*(يونيو|يوليو|أغسطس|مايو|ابريل|أغسطس)', text)
         if m:
             ar_months = {"يونيو":6,"يوليو":7,"أغسطس":8,"اغسطس":8,"مايو":5,"ابريل":4,"إبريل":4}
             mo_num = ar_months.get(m.group(2))
             if mo_num:
                 d = int(m.group(1))
-                try: date = _dt.date(today.year, mo_num, d).isoformat(); break
+                try: date = _dt.date(today.year, mo_num, d).isoformat()
                 except: pass
     # Day-of-week references
     if not date:
         day_map = {"السبت":5,"سبت":5,"الأحد":6,"أحد":6,"الإثنين":0,"اثنين":0,"إثنين":0,"الثلاثاء":1,"ثلاثاء":1,"الأربعاء":2,"أربعاء":2,"الخميس":3,"الأربعاء":2,"الجمعة":4}
-        for p in parts:
-            for kw, idx in day_map.items():
-                if kw in p:
-                    d = today - _dt.timedelta(days=1)
-                    for _ in range(14):
-                        d += _dt.timedelta(days=1)
-                        if d.weekday() == idx:
-                            date = d.isoformat(); break
-                    if date: break
-            if date: break
+        for kw, idx in day_map.items():
+            if kw in text:
+                d = today - _dt.timedelta(days=1)
+                for _ in range(14):
+                    d += _dt.timedelta(days=1)
+                    if d.weekday() == idx:
+                        date = d.isoformat(); break
+                if date: break
     # Service name — look for keywords in text
     svc_keywords = ["حجامه","حجامة","ريكفري","شوك ويف","كشف","علاج طبيعي","تصريف","مساج","مساح","شد الفقرات","شد"]
     import unicodedata
@@ -281,23 +301,23 @@ def _parse_request(text: str) -> tuple[str, str, str, str, str, str]:
     for kw in svc_keywords:
         if kw in text_normalized:
             service = kw; break
-    # Time: extract 24h or 12h
-    for p in parts:
-        m = re.match(r'(\d{1,2}):(\d{2})\s*(?:ص|م)?$', p)
-        if m:
-            time = f"{int(m.group(1)):02d}:{m.group(2)}"; break
-        m = re.match(r'(\d{1,2})\s*(العصر|المغرب|المساء|الليل|الصباح|الظهر|صباحا|مساء|ليل|عصر|مغرب)', p)
+    # Time: extract 24h or 12h from full text
+    m = re.search(r'(\d{1,2}):(\d{2})\s*(?:ص|م)?', text)
+    if m:
+        time = f"{int(m.group(1)):02d}:{m.group(2)}"
+    else:
+        m = re.search(r'(\d{1,2})\s*(العصر|المغرب|المساء|الليل|الصباح|الظهر|صباحا|مساء|ليل|عصر|مغرب)', text)
         if m:
             h = int(m.group(1))
             if m.group(2) in ("الصباح","صباحا","الظهر"):
                 time = f"{h:02d}:00"
             elif m.group(2) in ("العصر","المغرب","المساء","الليل","مساء","ليل","عصر","مغرب"):
                 time = f"{h + 12 if h < 12 else h:02d}:00"
-            break
-    # Name: first non-phone non-gender non-date non-time part
-    skip = set(phones) | {"ذكر","أنثى","انثي","انثى","MALE","FEMALE","male","female","M","F","ر","س","رجال","رجل","سيدة","سيدات","ست"}
-    names = [p for p in parts if p not in skip and not re.match(r'^0\d', p) and not re.match(r'\d{1,2}[-\/]\d{1,2}', p)]
-    name = names[0] if names else "مريض"
+    # Name: from the request pattern
+    name = "مريض"
+    m = re.search(r'اسمي\s+(\S+(?:\s+\S+){0,3})', text)
+    if m:
+        name = m.group(1).strip()
     phone = phones[0] if phones else "0"
     return service, date, time, name, phone, gender
 

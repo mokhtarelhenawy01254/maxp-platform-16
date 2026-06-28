@@ -425,6 +425,10 @@ async def build_intent_contract_async(
         logger.info("intent_routed", intent=policy_plan.intent, requiresTool=policy_plan.requiresTool, primaryTool=policy_plan.primaryTool, allowedTools=policy_plan.allowedTools)
         classifier_missing_slots = _unique(classifier_result.missingSlots or [])
         slots = dict(classifier_result.slots or {})
+        slot_aliases = {"patientPhone": "phoneNumber", "patientGender": "gender", "patientName": "patientName"}
+        for alias, canonical in slot_aliases.items():
+            if alias in slots and canonical not in slots:
+                slots[canonical] = slots.pop(alias)
         blocking_missing_slots = _resolve_blocking_missing_slots(
             policy=policy,
             tool_name=policy_plan.primaryTool,
@@ -527,7 +531,11 @@ def to_tool_plan(contract: IntentContract, available_tools: list[str]) -> ToolPl
         primaryTool=contract.route.get("primaryTool"),
         allowedTools=(
             _filter_available(contract.route.get("allowedTools", []), available_tools)
-            or contract.route.get("allowedTools", [])
+            or (
+                contract.route.get("allowedTools", [])
+                if any(canonical_tool_name(t) in {"agent_spawn", "agent_assign_task"} for t in (available_tools or []))
+                else []
+            )
         ),
         blockedTools=_filter_available(contract.route.get("blockedTools", []), available_tools),
         reason=contract.reason,

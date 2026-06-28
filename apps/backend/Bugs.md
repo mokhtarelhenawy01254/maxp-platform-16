@@ -1,3 +1,45 @@
+## [2026-06-28] Medical Center Agent Monolithic Configuration Blocked SaaS Reusability
+
+- **Issue/Weakness**: The `MEDICAL_CENTER` agent configuration (`AGENTS.md` and `SOUL.md`) contained hardcoded clinic policies, slot-filling constraints, and specific clinic instructions inside the agent's core files. This monolithic approach prevented the agent preset from being reused as a generic template across multiple centers/tenants (a core SaaS requirement), since different centers would want to toggle booking options, upsell behaviors, or edit local FAQ files.
+- **Root Cause**: All business logic (interactive booking, package details, general FAQs, and human escalation) was coupled directly inside the agent's configuration files instead of being separated into dynamic, reusable, and toggleable `Skills`.
+- **Fix**:
+  1. Created three new modular skills: `medical-center-booking` (booking lifecycle and slot-filling), `booking-upsell-packages` (automatic package upselling), and `clinic-knowledge-resolver` (answering questions using local FAQ semantic search).
+  2. Map-linked the existing `handoff-to-human` skill to the agent.
+  3. Added `knowledge_search` tool mapping to `MEDICAL_CENTER` role in `role_tools.yaml` and added it to allowed tools in `agent.json`.
+  4. Registered all 4 skills under `allowedSkills` in the agent's configuration (`agent.json`).
+  5. Simplified `AGENTS.md` and `SOUL.md` to remove detailed execution logic, delegating it entirely to the skills.
+- **Files**:
+  - `apps/backend/agents/medical-center-agent/agent.json`
+  - `apps/backend/agents/medical-center-agent/AGENTS.md`
+  - `apps/backend/agents/medical-center-agent/SOUL.md`
+  - `apps/ai-service/src/tools/role_tools.yaml`
+  - `apps/ai-service/skills/medical-center-booking/`
+  - `apps/ai-service/skills/booking-upsell-packages/`
+  - `apps/ai-service/skills/clinic-knowledge-resolver/`
+
+## [2026-06-28] Medical Center Agent Brittle Single-Parameter Booking & Scoping Mismatch Fallback Leakage
+
+- **Bug/Issue**: 
+  1. The `booking_reserve` tool relied on a single unstructured `request` string parameter that expected the LLM to pack all booking details (name, phone, service, time, date, gender) into one Arabic paragraph. This was highly brittle, failed on incomplete queries, and did not support proper interactive slot-filling.
+  2. If a customer asked about products, the intent classifier correctly identified a `products` intent. However, because `product_search` was not in the `MEDICAL_CENTER` agent's allowed tools, the planner fallback set `allowedTools` to the agent's full native toolset. But `to_tool_plan` would incorrectly fall back to the original intent tools (such as `product_search`), leaking unauthorized tools into the execution plan and causing downstream execution crashes.
+- **Root Cause**:
+  1. The agent was configured with strict instructions in `AGENTS.md` and `SOUL.md` to pass everything in a single string, instead of using modern multi-parameter function calling with schema validation.
+  2. The planner's `to_tool_plan` had a fallback `or contract.route.get("allowedTools", [])` intended for CEO/supervisor agents with spawning capabilities, but this fallback was executed for all agents regardless of their spawning capability, leaking mismatched tools.
+- **Fix**:
+  1. Restructured `ReserveInput` (in `booking.py`) and `reserve_appointment` (in `booking_tools.py`) to receive and parse explicit structured parameters (`patient_name`, `patient_phone`, `gender`, `service_name`, `branch_name`, `appointment_date`, `appointment_time`).
+  2. Removed legacy paragraph-parsing rules from `AGENTS.md` and `SOUL.md` of `medical-center-agent` and updated them to enforce conversational slot-filling.
+  3. Modified `to_tool_plan` in `planner.py` to restrict the allowedTools fallback exclusively to supervisor agents who possess sub-agent spawning capabilities (`agent_spawn` or `agent_assign_task`).
+  4. Established a workspace-wide rule in `.agents/AGENTS.md` and created an automated validator script `scripts/verify-agent-configs.js` to block regression to unstructured request parameters in agent configs.
+- **Files**:
+  - `apps/ai-service/src/tools/definitions/booking.py`
+  - `apps/ai-service/src/tools/booking_tools.py`
+  - `apps/ai-service/src/intent/planner.py`
+  - `apps/backend/agents/medical-center-agent/AGENTS.md`
+  - `apps/backend/agents/medical-center-agent/SOUL.md`
+  - `apps/backend/agents/medical-center-agent/TOOLS.md`
+  - `.agents/AGENTS.md`
+  - `scripts/verify-agent-configs.js`
+
 ## [2026-06-28] Intent Classifier Prompt-Stuffing and Fallback Hierarchy Mismatch
 
 - **Bug/Issue**: The intent classifier was heavily reliant on a massive 56-line static system prompt with hardcoded Egyptian Arabic keyword examples (e.g. `عايز اشوف المنتجات`, `بكام الكوتشي`), which was brittle, unmaintainable, and consumed high tokens. Additionally, it forced a hardcoded fallback chain to Gemini/Groq, overriding the agent's configured model choice.

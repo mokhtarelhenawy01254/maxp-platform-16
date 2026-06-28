@@ -145,5 +145,6 @@ roles:
     - booking_reserve
     - booking_status
     - agent_handoff_to
+    - knowledge_search
 
   CEO: []

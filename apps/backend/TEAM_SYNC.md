@@ -2,6 +2,28 @@
 
 ## [2026-06-28]
 
+### Medical Center Agent Restructuring & Intent Fallback Isolation
+- **Accomplishment**: Modernized the `MEDICAL_CENTER` agent to use structured parameters and conversational slot-filling, and fixed a planner bug that leaked mismatched tools.
+- **Details**:
+  - **Structured Function Calling**: Restructured the `booking_reserve` tool to accept explicit parameters (`patient_name`, `patient_phone`, `gender`, `service_name`, `branch_name`, `appointment_date`, `appointment_time`) via a custom Pydantic `ReserveInput` schema, completely replacing the legacy unstructured single-parameter `request` string parsing.
+  - **Conversational Slot-Filling**: Redefined rules in the agent's `AGENTS.md` and `SOUL.md` files to instruct the LLM to collect missing booking parameters interactively from the user.
+  - **Planner Tool Leakage Fix**: Patched `to_tool_plan` in `planner.py` to only fall back to original intent tools for supervisor agents with active sub-agent spawning capabilities, successfully stopping tool leakage for normal agents when intents don't match.
+  - **Anti-Regression Safeguards**: Established workspace-level rules in `.agents/AGENTS.md` and wrote a custom validation script `verify-agent-configs.js` to ensure no agent reverts to unstructured text parameter schemas in the future.
+  - **Tool Description Cleanup**: Normalised all tool descriptions in `booking.py` to follow pure semantic and functional descriptions, purging legacy keyword-stuffing tags (e.g. `"مركز طبي: "`) that were previously used for simple text similarity routing.
+
+### Medical Center Agent Modular Skills Architecture
+- **Accomplishment**: Transitioned the `MEDICAL_CENTER` agent from monolithic inline instructions to a modular Skills-based architecture, making it fully SaaS-ready and dynamically configurable per-clinic.
+- **Details**:
+  - **Created `medical-center-booking` Skill**: Encapsulates the full booking lifecycle (slot checking, reservation, status/cancellation) with structured Slot-Filling rules as a standalone, reusable skill module.
+  - **Created `booking-upsell-packages` Skill**: Enables intelligent session-package upselling by reading available packages from `booking_info` and presenting cost-saving alternatives to patients before confirming single-session bookings.
+  - **Created `clinic-knowledge-resolver` Skill**: Enables the agent to answer general clinic FAQs (insurance partnerships, preparation guidelines, location, accessibility) by searching the company's Knowledge Base via the `knowledge_search` tool.
+  - **Activated `handoff-to-human` Skill**: Linked the existing human escalation skill to the medical agent for emergency, complaint, or patient-insistence scenarios.
+  - **Updated `role_tools.yaml`**: Added `knowledge_search` to the `MEDICAL_CENTER` tool mapping.
+  - **Updated `agent.json`**: Registered all 4 skills in `allowedSkills` and added `knowledge_search` to `allowedTools`.
+  - **Simplified Core Instructions**: Refactored `AGENTS.md` and `SOUL.md` to delegate all detailed execution logic to the skill modules, keeping only high-level policies and tone guidance in the core files.
+
+
+
 ### Intent Classifier Modernization to Schema-Driven Architecture
 - **Accomplishment**: Refactored the intent classification system to transition from legacy keyword-stuffed prompts to a clean, schema-driven, description-based architecture, and made the agent's configured model responsible for classification.
 - **Details**:
