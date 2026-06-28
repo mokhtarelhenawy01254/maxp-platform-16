@@ -69,19 +69,20 @@ async function getOrCreateMedicalAgent(token) {
   }
 
   const agents = listRes.body.agents || [];
-  let medicalAgent = agents.find(a => a.role === 'MEDICAL_CENTER' || a.templateSlug === 'medical-center-agent');
+  const existingAgents = agents.filter(a => a.role === 'MEDICAL_CENTER' || a.templateSlug === 'medical-center-agent');
 
-  if (medicalAgent) {
-    console.log(`${GREEN}✓${RESET} Found existing MEDICAL_CENTER agent: ID = ${medicalAgent.id}`);
-    return medicalAgent.id;
+  for (const agent of existingAgents) {
+    console.log(`${YELLOW}⚠ Archiving/Deleting existing MEDICAL_CENTER agent: ID = ${agent.id}...${RESET}`);
+    await apiRequest('DELETE', `/api/v1/agent/agents/${agent.id}?permanent=true`, null, token);
   }
 
-  console.log(`${YELLOW}⚠ No MEDICAL_CENTER agent found. Spawning a new one...${RESET}`);
+  console.log(`${CYAN}▶ Spawning new MEDICAL_CENTER agent with gemini-2.5-pro...${RESET}`);
   const spawnRes = await apiRequest('POST', '/api/v1/agent/agents', {
     name: 'الوكيل الطبي للتجارب',
     role: 'MEDICAL_CENTER',
     templateSlug: 'medical-center-agent',
-    description: 'وكيل طبي تجريبي لاختبار المهارات المعيارية'
+    description: 'وكيل طبي تجريبي لاختبار المهارات المعيارية',
+    model: 'gemini-2.5-pro'
   }, token);
 
   if (spawnRes.status !== 201 || !spawnRes.body?.id) {
@@ -107,19 +108,21 @@ async function createChatSession(token, agentId) {
   return res.body.session.id;
 }
 
-async function sendChatMessage(token, sessionId, message) {
+async function sendChatMessage(token, sessionId, agentId, message) {
   console.log(`\n${CYAN}Patient: "${message}"${RESET}`);
   const start = Date.now();
   const res = await apiRequest('POST', '/api/v1/ai-sandbox/chat', {
     sessionId,
+    agentId,
     message,
     provider: 'google',
-    model: 'gemini-1.5-flash'
+    model: 'gemini-2.5-pro'
   }, token);
   const ms = Date.now() - start;
 
   if (!res.body?.success) {
     console.log(`${RED}✗ Failed to send message: ${res.body?.error || 'Unknown error'}${RESET}`);
+    console.log('Full Response:', JSON.stringify(res.body || res.raw, null, 2));
     return null;
   }
 
@@ -140,16 +143,16 @@ async function main() {
 
     // Test Scenario 1: Interactive Booking Slot-Filling
     console.log(`\n${BOLD}--- Scenario 1: Booking & Slot-Filling ---${RESET}`);
-    await sendChatMessage(token, sessionId, 'عايز أحجز كشف جلدية بكرة لوسمحت');
-    await sendChatMessage(token, sessionId, 'اسمي محمد وتليفوني 01234567890');
+    await sendChatMessage(token, sessionId, agentId, 'عايز أحجز كشف جلدية بكرة لوسمحت');
+    await sendChatMessage(token, sessionId, agentId, 'اسمي محمد وتليفوني 01234567890');
 
     // Test Scenario 2: Knowledge Base FAQs Search (clinic-knowledge-resolver)
     console.log(`\n${BOLD}--- Scenario 2: FAQs & Insurance lookup ---${RESET}`);
-    await sendChatMessage(token, sessionId, 'هل بتقبلوا تأمين بوبا؟');
+    await sendChatMessage(token, sessionId, agentId, 'هل بتقبلوا تأمين بوبا؟');
 
     // Test Scenario 3: Package Upselling (booking-upsell-packages)
     console.log(`\n${BOLD}--- Scenario 3: Package Upselling ---${RESET}`);
-    await sendChatMessage(token, sessionId, 'سعر جلسة ليزر إزالة الشعر كام؟ وعايز أحجز جلسة واحدة');
+    await sendChatMessage(token, sessionId, agentId, 'سعر جلسة ليزر إزالة الشعر كام؟ وعايز أحجز جلسة واحدة');
 
   } catch (err) {
     console.error(`\n${RED}${BOLD}Error during execution:${RESET} ${err.message}`);
