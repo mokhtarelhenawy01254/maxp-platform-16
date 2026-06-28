@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
+  Cpu,
+  BookOpen,
   Image as ImageIcon,
   X,
   Loader2,
@@ -352,6 +354,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         <span>{tc.name}</span>
                       </Badge>
                     ))}
+                  </div>
+                )}
+
+                {/* Model & Skill Info */}
+                {!isUser && (msg.model || msg.metadata?.activeSkill) && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {msg.model && (
+                      <Badge variant="outline" className="text-[10px] py-0 px-2 flex items-center gap-1 font-medium select-none border-slate-300 dark:border-slate-700">
+                        <Cpu className="size-3" />
+                        <span>{msg.provider ? `${msg.provider}/${msg.model}` : msg.model}</span>
+                      </Badge>
+                    )}
+                    {msg.metadata?.activeSkill && (
+                      <Badge variant="outline" className="text-[10px] py-0 px-2 flex items-center gap-1 font-medium select-none border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400">
+                        <BookOpen className="size-3" />
+                        <span>{msg.metadata.activeSkill.skillId}</span>
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>
