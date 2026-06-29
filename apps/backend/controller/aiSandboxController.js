@@ -154,8 +154,8 @@ function createSandboxAgentMeta(templateSlug, companyId, config) {
     role: config.role || 'CUSTOMER_SALES',
     companyId,
     templateSlug,
-    allowedTools: config.allowedTools || [],
-    allowedSkills: config.allowedSkills || [],
+    allowedTools: config.allowedTools || config.allowed_tools || [],
+    allowedSkills: config.allowedSkills || config.allowed_skills || [],
     model: config.model || 'default',
     persona: config.persona || { soulInstructions: '' },
   };
@@ -173,10 +173,10 @@ function buildAiServiceAgentConfig(agent) {
     parentId: agent.parentId,
     allowedTools: typeof agent.getTools === 'function'
       ? agent.getTools()
-      : normalizeStringList(agent.allowedTools),
+      : normalizeStringList(agent.allowedTools || agent.allowed_tools),
     allowedSkills: typeof agent.getSkills === 'function'
       ? agent.getSkills()
-      : normalizeStringList(agent.allowedSkills),
+      : normalizeStringList(agent.allowedSkills || agent.allowed_skills),
     persona: agent.persona || {},
     policies: agent.policies || {},
   };
@@ -610,8 +610,8 @@ async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
     name: runtimeAgent.name,
     role: runtimeAgent.role,
     model: modelSelection.model,
-    allowedTools: normalizeStringList(runtimeAgent.allowedTools),
-    allowedSkills: normalizeStringList(runtimeAgent.allowedSkills),
+    allowedTools: normalizeStringList(runtimeAgent.allowedTools || runtimeAgent.allowed_tools),
+    allowedSkills: normalizeStringList(runtimeAgent.allowedSkills || runtimeAgent.allowed_skills),
     persona: {
       ...(runtimeAgent.persona || {}),
       modelPolicy,
@@ -986,7 +986,7 @@ async function listAgents(req, res) {
       role: a.role,
       icon: a.icon || '🤖',
       description: a.description || '',
-      skills: (() => { try { return typeof a.skillsRaw === 'string' ? JSON.parse(a.skillsRaw || '[]') : (a.allowedSkills || []); } catch { return []; } })(),
+      skills: (() => { try { return typeof a.skillsRaw === 'string' ? JSON.parse(a.skillsRaw || '[]') : (a.allowedSkills || a.allowed_skills || []); } catch { return []; } })(),
       allowedTools: a.allowedTools || a.allowed_tools || [],
       model: a.model || null,
       status: a.status,

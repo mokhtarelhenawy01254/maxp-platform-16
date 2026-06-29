@@ -1564,12 +1564,16 @@ async def update_agent_template(
     instruction_map = {
         "soulInstructions": "instructions_soul",
         "instructionsSoul": "instructions_soul",
+        "instructions_soul": "instructions_soul",
         "personaInstructions": "instructions_persona",
         "instructionsPersona": "instructions_persona",
+        "instructions_persona": "instructions_persona",
         "toolsInstructions": "instructions_tools",
         "instructionsTools": "instructions_tools",
+        "instructions_tools": "instructions_tools",
         "agentInstructions": "instructions_agents",
         "instructionsAgents": "instructions_agents",
+        "instructions_agents": "instructions_agents",
     }
     for api_key, model_key in instruction_map.items():
         if api_key in body:
@@ -1578,6 +1582,11 @@ async def update_agent_template(
     if ("allowedSkills" in body or "rules" in body) and "allowedSkills" in body:
         template.allowed_skills = body["allowedSkills"]
     await session.commit()
+    try:
+        from src.prompts.template_registry import reset_prompt_registry
+        reset_prompt_registry()
+    except Exception:
+        pass
     await session.refresh(template)
     return {"slug": template.slug, "name": template.name, "role": template.role}
 

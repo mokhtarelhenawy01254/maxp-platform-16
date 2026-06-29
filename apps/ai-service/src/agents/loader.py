@@ -121,7 +121,26 @@ async def seed_templates(session: AsyncSession) -> list[AgentTemplate]:
         template = existing.scalar_one_or_none()
 
         if template:
-            logger.debug("Template exists, skipping seed update", slug=data["slug"])
+            template.name = data["name"]
+            template.role = data["role"]
+            template.version = data["version"]
+            template.model_policy = data["model_policy"]
+            template.allowed_tools = data["allowed_tools"]
+            template.allowed_skills = data["allowed_skills"]
+            template.channels = data["channels"]
+            template.guardrails = data["guardrails"]
+            template.persona_meta = data.get("persona_meta") or {}
+            template.human_approval = data.get("human_approval") or {}
+            template.handoffs = data.get("handoffs") or []
+            template.mcp_servers = data.get("mcp_servers") or []
+            template.budget = data.get("budget") or {}
+            template.config = data.get("config") or {}
+            template.instructions_agents = data.get("instructions_agents")
+            template.instructions_soul = data.get("instructions_soul")
+            template.instructions_tools = data.get("instructions_tools")
+            template.instructions_persona = data.get("instructions_persona")
+            seeded.append(template)
+            logger.debug("Template exists, updated with file changes", slug=data["slug"])
         else:
             template = AgentTemplate(**data)
             session.add(template)
@@ -129,6 +148,11 @@ async def seed_templates(session: AsyncSession) -> list[AgentTemplate]:
             logger.debug("Template created", slug=data["slug"])
 
     await session.commit()
+    try:
+        from src.prompts.template_registry import reset_prompt_registry
+        reset_prompt_registry()
+    except Exception:
+        pass
     if seeded:
         logger.info("New templates seeded", count=len(seeded), slugs=[t.slug for t in seeded])
     else:

@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, ArrowLeftRight, CheckCircle2, Loader2, LogIn, RefreshCw, Sparkles, UserPlus, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowLeftRight, CheckCircle2, Loader2, LogIn, MessageSquare, RefreshCw, Sparkles, UserPlus, Wallet } from "lucide-react";
 import { useCallback, useState, type ChangeEvent } from "react";
 import { cn } from "../../lib/utils";
 import i18n from "../../i18n";
@@ -14,7 +14,8 @@ import {
   CompanyHeroCard, StatusBadge, MiniStat, MetricCard, FormField, ResponsiveOverlay, ModalFooter,
   CompanyBillingSection, CompanyTeamSection, CompanyWalletSection,
   CompanySubscriptionSection, CompanyLimitsSection, CompanyUsageSection,
-  CompanyActivationCenter,
+  CompanyActivationCenter, CompanyPulse, CompanySupportTickets, CompanyRecentActivity,
+  SectionShell,
 } from "./company-details";
 import { formatCurrency, getRoleLabel } from "./company-details/helpers";
 import { useCompanyDetails } from "./company-details/useCompanyDetails";
@@ -43,6 +44,8 @@ const SuperAdminCompanyDetails = () => {
     handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
     deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
     handleCancelSubscription, handleRetryPayment,
+    companyTickets, ticketsLoading,
+    companyActivities, activitiesLoading,
     editOpen, setEditOpen, editSaving, editForm, setEditForm, editErrors, handleSaveCompany,
     transferOpen, transferLoading, changeOwnerTargetUserId, setChangeOwnerTargetUserId, handleTransferOwnership,
     addEmployeeOpen, setAddEmployeeOpen, employeeLoading, addEmployeeForm, setAddEmployeeForm,
@@ -101,6 +104,13 @@ const SuperAdminCompanyDetails = () => {
           ) : company ? (
             <CompanyHeroCard company={company} review={review} ownerUser={ownerUser} />
           ) : null}
+          {company ? (
+            <CompanyPulse review={review} reviewCurrency={reviewCurrency}
+              openTickets={companyTickets.filter((t) => t.status === "OPEN" || t.status === "IN_PROGRESS").length}
+              recentActivity={companyActivities[0] || null}
+              activeUsers={companyUsers.filter((u) => u.isActive).length}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -112,6 +122,8 @@ const SuperAdminCompanyDetails = () => {
             <TabsTrigger value="management" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">الإدارة</TabsTrigger>
             <TabsTrigger value="activation" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">تفعيل</TabsTrigger>
             <TabsTrigger value="team" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">فريق</TabsTrigger>
+            <TabsTrigger value="support" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">دعم</TabsTrigger>
+            <TabsTrigger value="activity" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">نشاط</TabsTrigger>
 
           </TabsList>
 
@@ -180,6 +192,26 @@ const SuperAdminCompanyDetails = () => {
               deleteConfirmUserId={deleteConfirmUserId} setDeleteConfirmUserId={setDeleteConfirmUserId}
               deleteUserLoading={deleteUserLoading}
             />
+          </TabsContent>
+
+          <TabsContent value="support" className="pt-4">
+            <div className="space-y-4">
+              <SectionShell title="تذاكر الدعم" description="التذاكر المرفوعة من مستخدمي هذه الشركة." actions={
+                <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
+                  <a href="/support/admin/tickets"><MessageSquare className="size-3.5" /> كل التذاكر</a>
+                </Button>
+              }>
+                <CompanySupportTickets tickets={companyTickets} companyId={company?.id || ""} loading={ticketsLoading} />
+              </SectionShell>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity" className="pt-4">
+            <div className="space-y-4">
+              <SectionShell title="النشاطات الأخيرة" description="آخر الأنشطة المسجلة في هذه الشركة.">
+                <CompanyRecentActivity activities={companyActivities} loading={activitiesLoading} />
+              </SectionShell>
+            </div>
           </TabsContent>
 
         </Tabs>

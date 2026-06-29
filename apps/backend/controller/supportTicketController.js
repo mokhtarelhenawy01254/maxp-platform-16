@@ -542,11 +542,12 @@ const getAllTickets = async (req, res) => {
       });
     }
 
-    const { status, category, page = 1, limit = 10, search } = req.query;
+    const { status, category, page = 1, limit = 10, search, companyId } = req.query;
 
     const where = {};
     if (status) where.status = mapStatus(status);
     if (category) where.category = mapCategory(category);
+    if (companyId) where.companyId = companyId;
     if (search) {
       where.OR = [
         { ticketId: { contains: search } },

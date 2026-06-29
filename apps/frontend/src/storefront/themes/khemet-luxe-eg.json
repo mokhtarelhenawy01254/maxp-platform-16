@@ -352,12 +352,23 @@
           }
         },
         {
+          "type": "quantity-offers",
+          "variant": "selection-rail",
+          "settings": {
+            "title": "وفّر مع العرض",
+            "subtitle": "اختار الكمية، واختار اللون والمقاس لكل قطعة.",
+            "decisionMode": "primary",
+            "continueToFormLabel": "كمّلي البيانات",
+            "placement": "inline-buybox"
+          }
+        },
+        {
           "type": "pdp-checkout",
           "settings": {
-            "title": "كمّلي بيانات الطلب",
-            "subtitle": "اختاري اللون والمقاس الأول، وبعدها سيبي بياناتك وسنأكد معاكي الطلب.",
-            "emptyStateText": "اختاري اللون والمقاس الأول.",
-            "scrollToBuyBoxText": "اختيار اللون والمقاس",
+            "title": "بيانات الطلب",
+            "subtitle": "الاسم ورقم الهاتف والمحافظة والعنوان.",
+            "emptyStateText": "اختاري العرض أولًا.",
+            "scrollToBuyBoxText": "اختيار العرض",
             "submitButtonText": "تأكيد الطلب",
             "formVariant": "khemet-luxe-eg",
             "placement": "before-description",

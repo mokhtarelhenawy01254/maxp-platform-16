@@ -83,17 +83,43 @@ const normalizeDiscount = (
   };
 };
 
+const quantityOfferToVolumeDiscount = (
+  offer: unknown,
+): VolumeDiscountTier | null => {
+  if (!isRecord(offer)) return null;
+  const quantity = Math.max(1, Math.floor(toFiniteNumber(offer.quantity, 0)));
+  if (quantity <= 0) return null;
+  return {
+    id:
+      typeof offer.id === "string" && offer.id.trim()
+        ? offer.id.trim()
+        : `volume-discount-${quantity}`,
+    minQuantity: quantity,
+    maxQuantity: null,
+    discountType: "fixed",
+    discountValue: 0,
+    isActive: offer.isActive !== false,
+  };
+};
+
 export const normalizeVolumeDiscounts = (value: unknown): VolumeDiscountTier[] => {
   const rawDiscounts = Array.isArray(value)
     ? value
     : (() => {
         const metadata = parseMetadataObject(value);
-        if (Array.isArray(metadata.volumeDiscounts)) {
+        if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
           return metadata.volumeDiscounts;
         }
 
         if (Array.isArray(metadata.bulkSavings)) {
           return metadata.bulkSavings;
+        }
+
+        if (Array.isArray(metadata.quantityOffers)) {
+          return metadata.quantityOffers
+            .filter((offer: unknown) => isRecord(offer) && offer.isDefault !== true)
+            .map((offer: unknown) => quantityOfferToVolumeDiscount(offer))
+            .filter(Boolean);
         }
 
         return [];

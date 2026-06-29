@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from datetime import date as date_type, timedelta
 from typing import Any
 
@@ -58,17 +57,9 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
 
 # ── booking_slots ──
 
-async def get_slots(company_id: str, date: str, gender: str = "", request: str = "") -> dict[str, Any]:
+async def get_slots(company_id: str, date: str, gender: str = "") -> dict[str, Any]:
     if not company_id:
         return {"error": "no company_id"}
-    # Extract date & gender from request text (overrides stale date from DeepSeek multi-turn)
-    if request:
-        _, extracted_date, _, _, _, gender_from_text = _parse_request(request)
-        if extracted_date:
-            date = extracted_date
-            logger.info("slots_date_overridden", request=request[:80], date=date)
-        if not gender and gender_from_text:
-            gender = gender_from_text
     if not date:
         date = date_type.today().isoformat()
     client = get_backend_client()
@@ -252,74 +243,7 @@ async def appointment_status(company_id: str, appointment_id: str, action: str =
 
 # ── helpers ──
 
-def _parse_request(text: str) -> tuple[str, str, str, str, str, str]:
-    """Parse all booking info from a single Arabic text. Returns (service, date, time, name, phone, gender)."""
-    import datetime as _dt
-    service, date, time, name, phone, gender = "", "", "", "", "", "MALE"
-    today = _dt.date.today()
-    parts = [p.strip() for p in re.split(r'[،,\n.؟!]', text) if p.strip()]
 
-    # Phone: 11 digits starting with 01 anywhere in the full text
-    phones = re.findall(r'01\d{9}', text)
-    # Gender — search full text
-    if re.search(r'ذكر|MALE|male|\bM\b|رجال|رجل', text):
-        gender = "MALE"
-    elif re.search(r'أنثى|انثي|انثى|FEMALE|female|\bF\b|سيدة|سيدات', text):
-        gender = "FEMALE"
-    # Date: explicit dates like 29-06-2026, 29/06, 29 يونيو
-    m = re.search(r'(\d{1,2})[-\/](\d{1,2})(?:[-\/](\d{4}))?', text)
-    if m:
-        d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3 or '0'))
-        if not y: y = today.year
-        if y <= 2025: y = today.year
-        try: date = _dt.date(y, mo, d).isoformat()
-        except: pass
-    if not date:
-        m = re.search(r'(\d{1,2})\s*(يونيو|يوليو|أغسطس|مايو|ابريل|أغسطس)', text)
-        if m:
-            ar_months = {"يونيو":6,"يوليو":7,"أغسطس":8,"اغسطس":8,"مايو":5,"ابريل":4,"إبريل":4}
-            mo_num = ar_months.get(m.group(2))
-            if mo_num:
-                d = int(m.group(1))
-                try: date = _dt.date(today.year, mo_num, d).isoformat()
-                except: pass
-    # Day-of-week references
-    if not date:
-        day_map = {"السبت":5,"سبت":5,"الأحد":6,"أحد":6,"الإثنين":0,"اثنين":0,"إثنين":0,"الثلاثاء":1,"ثلاثاء":1,"الأربعاء":2,"أربعاء":2,"الخميس":3,"الأربعاء":2,"الجمعة":4}
-        for kw, idx in day_map.items():
-            if kw in text:
-                d = today - _dt.timedelta(days=1)
-                for _ in range(14):
-                    d += _dt.timedelta(days=1)
-                    if d.weekday() == idx:
-                        date = d.isoformat(); break
-                if date: break
-    # Service name — look for keywords in text
-    svc_keywords = ["حجامه","حجامة","ريكفري","شوك ويف","كشف","علاج طبيعي","تصريف","مساج","مساح","شد الفقرات","شد"]
-    import unicodedata
-    text_normalized = unicodedata.normalize('NFKC', text).lower()
-    for kw in svc_keywords:
-        if kw in text_normalized:
-            service = kw; break
-    # Time: extract 24h or 12h from full text
-    m = re.search(r'(\d{1,2}):(\d{2})\s*(?:ص|م)?', text)
-    if m:
-        time = f"{int(m.group(1)):02d}:{m.group(2)}"
-    else:
-        m = re.search(r'(\d{1,2})\s*(العصر|المغرب|المساء|الليل|الصباح|الظهر|صباحا|مساء|ليل|عصر|مغرب)', text)
-        if m:
-            h = int(m.group(1))
-            if m.group(2) in ("الصباح","صباحا","الظهر"):
-                time = f"{h:02d}:00"
-            elif m.group(2) in ("العصر","المغرب","المساء","الليل","مساء","ليل","عصر","مغرب"):
-                time = f"{h + 12 if h < 12 else h:02d}:00"
-    # Name: from the request pattern
-    name = "مريض"
-    m = re.search(r'اسمي\s+(\S+(?:\s+\S+){0,3})', text)
-    if m:
-        name = m.group(1).strip()
-    phone = phones[0] if phones else "0"
-    return service, date, time, name, phone, gender
 
 
 def _try_parse_json(v: Any) -> dict[str, Any] | None:

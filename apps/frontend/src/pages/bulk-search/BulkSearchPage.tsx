@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   bulkSearchService,
   Order,
@@ -20,6 +21,7 @@ import {
 
 const BulkSearchPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchType, setSearchType] = useState<"orderNumber" | "phone">(
     "orderNumber",
   );
@@ -443,10 +445,11 @@ const BulkSearchPage: React.FC = () => {
                 {results.map((order) => (
                   <tr
                     key={order.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/orders/${order.id}`)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400">
+                      <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
                         {order.orderNumber}
                       </span>
                     </td>

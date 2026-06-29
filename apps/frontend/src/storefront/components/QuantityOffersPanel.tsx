@@ -41,6 +41,7 @@ interface QuantityOffersPanelProps {
     bestValueLabel?: string;
     decisionMode?: string;
     hideWhenSingleOffer?: boolean;
+    hideVariantSelectors?: boolean;
   };
 }
 
@@ -268,6 +269,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
   const bestValueLabel = settings?.bestValueLabel || "الأكثر توفيرًا";
   const isPrimaryDecisionMode = settings?.decisionMode === "primary";
   const hideWhenSingleOffer = settings?.hideWhenSingleOffer === true;
+  const hideVariantSelectors = settings?.hideVariantSelectors === true;
   const isLookBuilder = variant === "look-builder";
   const isSelectionRail = variant === "selection-rail";
   const shouldHidePrimaryContinueButton =
@@ -748,7 +750,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
                     </p>
                   ) : null}
 
-                  {hasVariants ? (
+                  {hasVariants && !hideVariantSelectors ? (
                     <div className={isCompactLike ? "space-y-3" : "space-y-4"}>
                       {offer.quantity > 1 ? (
                         <div className={`flex items-center justify-between gap-3 ${isCompactLike ? "flex-wrap" : ""}`}>

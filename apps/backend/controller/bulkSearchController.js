@@ -58,12 +58,22 @@ const bulkSearchOrders = async (req, res) => {
         // تحديد نوع البحث
         if (searchType === 'orderNumber') {
             searchField = 'orderNumber';
+
+            // بناء استعلام مرن: كل قيمة تبحث بـ exact match أو endsWith أو contains
+            // هذا يحل مشكلة البحث بـ "1793047" بينما الـ DB فيه "ORD-1793047"
+            const orderNumberConditions = cleanedValues.map(v => ({
+                OR: [
+                    { orderNumber: v },                          // exact match
+                    { orderNumber: { endsWith: `-${v}` } },     // مثال: ORD-1793047
+                    { orderNumber: { endsWith: v } },            // يغطي أي suffix
+                    { orderNumber: { contains: v } },            // fallback عام
+                ]
+            }));
+
             orders = await prisma.order.findMany({
                 where: {
                     companyId: companyId,
-                    orderNumber: {
-                        in: cleanedValues
-                    }
+                    OR: orderNumberConditions
                 },
                 include: {
                     customer: {
@@ -91,6 +101,7 @@ const bulkSearchOrders = async (req, res) => {
                     createdAt: 'desc'
                 }
             });
+
         } else if (searchType === 'phone') {
             searchField = 'phone';
             // البحث المحسّن: استعلام واحد بدلاً من اثنين
@@ -137,20 +148,31 @@ const bulkSearchOrders = async (req, res) => {
         }
 
         // تحديد القيم الموجودة والمفقودة
-        let foundValues = [];
+        let foundInputValues = []; // القيم التي أدخلها المستخدم وتم إيجادها
         let uniqueMatches = 0;
-        
+
         if (searchType === 'orderNumber') {
-            foundValues = orders.map(o => o.orderNumber);
-            uniqueMatches = foundValues.length;
+            const dbOrderNumbers = orders.map(o => o.orderNumber);
+
+            // لكل قيمة أدخلها المستخدم، نتحقق هل طابقت أي orderNumber في النتائج
+            foundInputValues = cleanedValues.filter(searchVal =>
+                dbOrderNumbers.some(dbNum =>
+                    dbNum === searchVal ||              // exact match
+                    dbNum.endsWith(`-${searchVal}`) || // مثال: ORD-1793047
+                    dbNum.endsWith(searchVal) ||
+                    dbNum.includes(searchVal)          // fallback
+                )
+            );
+            uniqueMatches = foundInputValues.length;
         } else if (searchType === 'phone') {
             // استخراج أرقام التليفونات الفريدة من النتائج
             const uniquePhones = [...new Set(orders.map(o => o.customer?.phone).filter(Boolean))];
-            foundValues = uniquePhones;
+            foundInputValues = uniquePhones;
             uniqueMatches = uniquePhones.length;
         }
 
-        const notFoundValues = cleanedValues.filter(v => !foundValues.includes(v));
+        const notFoundValues = cleanedValues.filter(v => !foundInputValues.includes(v));
+
 
         // إحصائيات محسّنة
         const stats = {

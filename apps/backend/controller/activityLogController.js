@@ -296,14 +296,16 @@ exports.getCompanyActivities = async (req, res) => {
       isSuccess,
       startDate,
       endDate,
-      search
+      search,
+      companyId
     } = req.query;
 
     const prisma = getSharedPrismaClient();
 
-    // بناء where clause
+    // بناء where clause — super_admin can query any company
+    const targetCompanyId = (req.user.role === 'super_admin' && companyId) ? companyId : req.user.companyId;
     const where = {
-      companyId: req.user.companyId
+      companyId: targetCompanyId
     };
 
     if (userId) where.userId = userId;

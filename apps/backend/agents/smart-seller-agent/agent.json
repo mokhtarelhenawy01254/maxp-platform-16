@@ -10,8 +10,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "arabic",
@@ -60,7 +59,10 @@
     "sales-co-pilot",
     "post-sale-retention"
   ],
-  "channels": ["dashboard", "whatsapp"],
+  "channels": [
+    "dashboard",
+    "whatsapp"
+  ],
   "budget": {
     "dailyUsd": 3,
     "maxToolCallsPerRun": 8
@@ -68,14 +70,25 @@
   "outputSchema": {
     "type": "object",
     "properties": {
-      "recommendation": { "type": "string" },
-      "customerImpact": { "type": "string" },
+      "recommendation": {
+        "type": "string"
+      },
+      "customerImpact": {
+        "type": "string"
+      },
       "actionItems": {
         "type": "array",
-        "items": { "type": "string" }
+        "items": {
+          "type": "string"
+        }
       },
-      "requiresApproval": { "type": "boolean" }
+      "requiresApproval": {
+        "type": "boolean"
+      }
     },
-    "required": ["recommendation", "requiresApproval"]
+    "required": [
+      "recommendation",
+      "requiresApproval"
+    ]
   }
 }

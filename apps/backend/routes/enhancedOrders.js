@@ -794,7 +794,7 @@ router.patch('/:id/validation', async (req, res) => {
  * حذف طلب
  * DELETE /api/v1/orders-enhanced/:id
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const enhancedOrderService = new EnhancedOrderService();
     const { id } = req.params;

@@ -762,6 +762,7 @@ function formatProductResponse(product, options = {}) {
   );
   const volumeDiscounts = getVolumeDiscountsFromMetadata(product.metadata, {
     activeOnly: true,
+    basePrice: parseFloat(product.price) || 0,
   });
   const variants = (product.productVariants || []).map((variant) =>
     formatPublicVariantResponse(variant, product.wooCommerceUrl),
@@ -1658,6 +1659,7 @@ router.get('/:id/volume-discounts', async (req, res) => {
 
     const discounts = getVolumeDiscountsFromMetadata(product.metadata, {
       activeOnly: true,
+      basePrice: parseFloat(product.price) || 0,
     });
     const quantity = Math.max(parseInt(req.query.quantity, 10) || 1, 1);
     const pricing = applyVolumeDiscount({

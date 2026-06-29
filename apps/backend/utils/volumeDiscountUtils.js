@@ -67,18 +67,43 @@ const sortVolumeDiscounts = (discounts) =>
     return leftMax - rightMax;
   });
 
+const quantityOfferToVolumeDiscount = (offer, basePrice) => {
+  if (!isRecord(offer)) return null;
+  const quantity = Math.max(1, Math.floor(toFiniteNumber(offer.quantity, 0)));
+  if (quantity <= 0) return null;
+  const unitPrice = toFiniteNumber(offer.unitPrice, 0);
+  const discountValue = basePrice ? Math.max(0, basePrice - unitPrice) : 0;
+  return {
+    id: typeof offer.id === 'string' && offer.id.trim() ? offer.id.trim() : `volume-discount-${quantity}`,
+    minQuantity: quantity,
+    maxQuantity: null,
+    discountType: 'fixed',
+    discountValue,
+    isActive: offer.isActive !== false,
+  };
+};
+
 const getVolumeDiscountsFromMetadata = (rawMetadata, options = {}) => {
-  const { activeOnly = true } = options;
+  const { activeOnly = true, basePrice } = options;
   const metadata = parseMetadataObject(rawMetadata);
-  const rawDiscounts = Array.isArray(metadata.volumeDiscounts)
-    ? metadata.volumeDiscounts
-    : Array.isArray(metadata.bulkSavings)
-      ? metadata.bulkSavings
-      : [];
+  let rawDiscounts;
+
+  if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
+    rawDiscounts = metadata.volumeDiscounts;
+  } else if (Array.isArray(metadata.bulkSavings)) {
+    rawDiscounts = metadata.bulkSavings;
+  } else if (Array.isArray(metadata.quantityOffers)) {
+    rawDiscounts = metadata.quantityOffers
+      .filter((offer) => isRecord(offer) && offer.isDefault !== true)
+      .map((offer) => quantityOfferToVolumeDiscount(offer, basePrice))
+      .filter(Boolean);
+  } else {
+    rawDiscounts = [];
+  }
 
   return sortVolumeDiscounts(
     rawDiscounts
-      .map((discount, index) => normalizeVolumeDiscount(discount, index))
+      .map((discount, index) => (isRecord(discount) ? normalizeVolumeDiscount(discount, index) : null))
       .filter(Boolean)
       .filter((discount) => (activeOnly ? discount.isActive !== false : true)),
   );

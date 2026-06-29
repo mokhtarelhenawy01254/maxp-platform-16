@@ -10,8 +10,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "arabic",
@@ -30,7 +29,11 @@
     "agent.handoff"
   ],
   "allowedSkills": [],
-  "channels": ["chat", "whatsapp", "messenger"],
+  "channels": [
+    "chat",
+    "whatsapp",
+    "messenger"
+  ],
   "budget": {
     "dailyUsd": 2,
     "maxToolCallsPerRun": 5

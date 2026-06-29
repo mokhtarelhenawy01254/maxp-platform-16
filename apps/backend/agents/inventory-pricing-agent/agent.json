@@ -10,8 +10,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "arabic",
@@ -38,7 +37,9 @@
     "pricing-review",
     "discount-proposal"
   ],
-  "channels": ["dashboard"],
+  "channels": [
+    "dashboard"
+  ],
   "budget": {
     "dailyUsd": 2,
     "maxToolCallsPerRun": 6
@@ -51,17 +52,42 @@
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "string" },
-            "name": { "type": "string" },
-            "price": { "type": "number" },
-            "stockLevel": { "type": "string", "enum": ["low", "medium", "high"] },
-            "recommendedAction": { "type": "string" }
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "price": {
+              "type": "number"
+            },
+            "stockLevel": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "recommendedAction": {
+              "type": "string"
+            }
           },
-          "required": ["id", "name", "price", "stockLevel"]
+          "required": [
+            "id",
+            "name",
+            "price",
+            "stockLevel"
+          ]
         }
       },
-      "summary": { "type": "string" }
+      "summary": {
+        "type": "string"
+      }
     },
-    "required": ["products", "summary"]
+    "required": [
+      "products",
+      "summary"
+    ]
   }
 }

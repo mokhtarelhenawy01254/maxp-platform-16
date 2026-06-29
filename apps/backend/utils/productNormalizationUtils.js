@@ -353,6 +353,7 @@ function formatProductResponse(product) {
   );
   const volumeDiscounts = getVolumeDiscountsFromMetadata(product.metadata, {
     activeOnly: true,
+    basePrice: parseFloat(product.price) || 0,
   });
   
   const rawVariants = product.productVariants || product.variants || [];

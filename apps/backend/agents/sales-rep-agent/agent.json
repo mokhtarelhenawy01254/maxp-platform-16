@@ -11,8 +11,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "arabic",
@@ -55,12 +54,22 @@
     "sales-co-pilot",
     "post-sale-retention"
   ],
-  "channels": ["dashboard", "whatsapp", "messenger"],
+  "channels": [
+    "dashboard",
+    "whatsapp",
+    "messenger"
+  ],
   "humanApproval": {
     "mode": "ON_WRITE",
-    "requiredTools": ["order_create_confirmed", "discount_create_draft"],
+    "requiredTools": [
+      "order_create_confirmed",
+      "discount_create_draft"
+    ],
     "approvalCode": true,
-    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
+    "merchantChannels": [
+      "DASHBOARD",
+      "WHATSAPP"
+    ]
   },
   "budget": {
     "dailyUsd": 3,

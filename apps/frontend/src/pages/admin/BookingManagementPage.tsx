@@ -10,8 +10,23 @@ import {
   ChevronLeftIcon, ChevronRightIcon
 } from "@heroicons/react/24/outline";
 
-const getAuthHeaders = () => tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
-const api = (path: string) => buildApiUrl(`booking/${path}`);
+const getCompanyId = (): string | null => {
+  try { return JSON.parse(localStorage.getItem("user") || "{}").companyId || null; } catch { return null; }
+};
+const getAuthHeaders = () => {
+  const headers = tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
+  const cid = getCompanyId();
+  if (cid) headers["X-Company-Id"] = cid;
+  return headers;
+};
+const api = (path: string) => {
+  const base = buildApiUrl(`booking/${path}`);
+  let url: URL;
+  try { url = new URL(base); } catch { url = new URL(base, window.location.origin); }
+  const cid = getCompanyId();
+  if (cid) url.searchParams.set("companyId", cid);
+  return url.toString();
+};
 
 interface BookingBranch {
   id: string; name: string; address: string; phone: string;
@@ -20,7 +35,7 @@ interface BookingBranch {
 }
 
 interface BookingDoctor {
-  id: string; name: string; branchId: string; branchName?: string;
+  id: string; title: string; name: string; branchId: string; branchName?: string;
   specialty: string; phone: string; isActive: boolean; createdAt: string;
 }
 
@@ -67,11 +82,25 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   no_show: { label: "لم يحضر", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
 };
 
-const fetchJson = async (url: string, options?: RequestInit) => {
-  const res = await fetch(url, { headers: getAuthHeaders(), ...options });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || data.message || "فشل العملية");
-  return data.data;
+const fetchJson = async (url: string, options?: RequestInit, retries = 2): Promise<any> => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { headers: getAuthHeaders(), ...options });
+      if (res.status === 502 || res.status === 503) {
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); continue; }
+        throw new Error("الخادم غير متاح حالياً - جارٍ إعادة التشغيل");
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || data.message || "فشل العملية");
+      return data.data;
+    } catch (e: any) {
+      if (attempt < retries && (e.message?.includes("502") || e.message?.includes("503") || e.message?.includes("fetch"))) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
 };
 
 const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
@@ -149,7 +178,7 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
   onClose: () => void;
   onSave: (d: Partial<BookingDoctor>) => Promise<void>;
 }) => {
-  const [form, setForm] = useState({ name: "", branchId: "", specialty: "", phone: "", isActive: true, ...doctor });
+  const [form, setForm] = useState({ title: "دكتور", name: "", branchId: "", specialty: "", phone: "", isActive: true, ...doctor });
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
       <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
@@ -158,7 +187,10 @@ const DoctorModal = ({ doctor, branches, onClose, onSave }: {
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اللقب</label><input className={MODAL_INPUT_CLS} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
             <select className={MODAL_INPUT_CLS} value={form.branchId} onChange={e => setForm({ ...form, branchId: e.target.value })}>
               <option value="">اختر الفرع</option>
@@ -314,7 +346,7 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
     try {
       const data = await fetchJson(api(`appointments/available-slots?${params}`));
       setSlots(Array.isArray(data) ? data : []);
-    } catch { setSlots([]); } finally { setLoadingSlots(false); }
+    } catch (e) { console.error("fetchSlots", e); setSlots([]); } finally { setLoadingSlots(false); }
   };
 
   const doctors = branchDoctors.filter(d => d.branchId === form.branchId && d.isActive);
@@ -393,6 +425,7 @@ export default function BookingManagementPage() {
   const [services, setServices] = useState<BookingService[]>([]);
   const [appointments, setAppointments] = useState<BookingAppointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [branchModal, setBranchModal] = useState<Partial<BookingBranch> | null | undefined>(undefined);
   const [doctorModal, setDoctorModal] = useState<Partial<BookingDoctor> | null | undefined>(undefined);
@@ -405,6 +438,7 @@ export default function BookingManagementPage() {
   const [filters, setFilters] = useState({ status: "", branchId: "", dateFrom: "", dateTo: "" });
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
@@ -424,19 +458,24 @@ export default function BookingManagementPage() {
 
   const fetchAll = async () => {
     setLoading(true);
-    await Promise.all([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments()]);
+    setError(null);
+    try {
+      await Promise.all([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments()]);
+    } catch (e: any) {
+      setError(e.message || "فشل تحميل البيانات");
+    }
     setLoading(false);
   };
 
-  const fetchBranches = async () => { try { setBranches(await fetchJson(api("branches"))); } catch {} };
+  const fetchBranches = async () => { try { setBranches(await fetchJson(api("branches"))); } catch (e: any) { console.error("fetchBranches", e); throw e; } };
   const fetchDoctors = async (branchId?: string) => {
-    try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch {}
+    try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch (e: any) { console.error("fetchDoctors", e); throw e; }
   };
   const fetchServices = async (branchId?: string) => {
     try {
       const data = await fetchJson(api(`services${branchId ? `?branchId=${branchId}` : ""}`));
       setServices(data || []);
-    } catch {}
+    } catch (e: any) { console.error("fetchServices", e); throw e; }
   };
   const fetchAppointments = async () => {
     const params = new URLSearchParams();
@@ -445,7 +484,7 @@ export default function BookingManagementPage() {
     if (!filters.branchId && selectedBranchId) params.append("branchId", selectedBranchId);
     if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.append("dateTo", filters.dateTo);
-    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch { setAppointments([]); }
+    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch (e: any) { console.error("fetchAppointments", e); setAppointments([]); throw e; }
   };
 
   const saveBranch = async (d: Partial<BookingBranch>) => {
@@ -535,6 +574,43 @@ export default function BookingManagementPage() {
     const res = await fetch(api(`appointments/${id}/status`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ status }) });
     const data = await res.json();
     if (!data.success) { alert(data.error || "فشل التحديث"); return; }
+    setLoading(true); fetchAppointments().finally(() => setLoading(false));
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === appointments.length && appointments.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(appointments.map(a => a.id)));
+    }
+  };
+
+  const bulkUpdateStatus = async (status: string) => {
+    if (selectedIds.size === 0) return;
+    const label = STATUS_MAP[status]?.label || status;
+    if (!confirm(`تأكيد تغيير حالة (${selectedIds.size}) موعد إلى "${label}"؟`)) return;
+    const res = await fetch(api(`appointments/bulk-status`), { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify({ ids: Array.from(selectedIds), status }) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل التحديث الجماعي"); return; }
+    setSelectedIds(new Set());
+    setLoading(true); fetchAppointments().finally(() => setLoading(false));
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`تأكيد حذف (${selectedIds.size}) موعد بشكل نهائي؟`)) return;
+    const res = await fetch(api(`appointments/bulk-delete`), { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ ids: Array.from(selectedIds) }) });
+    const data = await res.json();
+    if (!data.success) { alert(data.error || "فشل الحذف الجماعي"); return; }
+    setSelectedIds(new Set());
     setLoading(true); fetchAppointments().finally(() => setLoading(false));
   };
 
@@ -716,13 +792,14 @@ export default function BookingManagementPage() {
             return (
               <div key={d.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 ${!d.isActive ? "opacity-60" : ""}`}>
                 <div className="flex items-start justify-between mb-2">
-                  <div><h3 className="font-bold">{d.name}</h3><p className="text-sm text-gray-500 dark:text-gray-400">{d.specialty}</p></div>
+                  <div><h3 className="font-bold">{d.title ? d.title + " " : ""}{d.name}</h3><p className="text-sm text-gray-500 dark:text-gray-400">{d.specialty}</p></div>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${d.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{d.isActive ? "نشط" : "غير نشط"}</span>
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{branch?.name || "—"}</p>
                 <div className="flex gap-2">
                   <button onClick={() => setDoctorModal(d)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                   <button onClick={() => toggleActive("doctors", d.id, d.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${d.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{d.isActive ? "تعطيل" : "تفعيل"}</button>
+                  <button onClick={() => deleteItem("doctors", d.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />حذف</button>
                 </div>
               </div>
             );
@@ -803,6 +880,19 @@ export default function BookingManagementPage() {
           <button onClick={() => setAppointmentModal({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />حجز موعد</button>
         </div>
       </div>
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300 ml-2">{selectedIds.size} موعد محدد</span>
+          <button onClick={() => bulkUpdateStatus("confirmed")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60">تأكيد</button>
+          <button onClick={() => bulkUpdateStatus("cancelled")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60">إلغاء</button>
+          <button onClick={() => bulkUpdateStatus("completed")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60">إتمام</button>
+          <button onClick={() => bulkUpdateStatus("no_show")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">لم يحضر</button>
+          <span className="w-px h-5 bg-blue-200 dark:bg-blue-800"></span>
+          <button onClick={bulkDelete} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60">حذف</button>
+          <button onClick={() => setSelectedIds(new Set())} className="text-xs px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">إلغاء التحديد</button>
+        </div>
+      )}
       {/* Mobile card view */}
       <div className="block md:hidden space-y-3">
         {loading ? (
@@ -812,9 +902,13 @@ export default function BookingManagementPage() {
         ) : appointments.map(a => (
           <div key={a.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
             <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="font-bold text-sm">{a.customerName}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{a.customerPhone}</p>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={selectedIds.has(a.id)} onChange={() => toggleSelect(a.id)}
+                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
+                <div>
+                  <h3 className="font-bold text-sm">{a.customerName}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{a.customerPhone}</p>
+                </div>
               </div>
               <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span>
             </div>
@@ -841,14 +935,24 @@ export default function BookingManagementPage() {
       {/* Desktop table */}
       <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full">
-          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
+          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
+            <th className="py-3 px-4 w-10">
+              <input type="checkbox" checked={selectedIds.size === appointments.length && appointments.length > 0} onChange={toggleSelectAll}
+                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
+            </th>
+            {["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}
+          </tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">جاري التحميل...</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400 dark:text-gray-500">جاري التحميل...</td></tr>
             ) : appointments.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</td></tr>
             ) : appointments.map(a => (
-              <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+              <tr key={a.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${selectedIds.has(a.id) ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}>
+                <td className="py-3 px-4">
+                  <input type="checkbox" checked={selectedIds.has(a.id)} onChange={() => toggleSelect(a.id)}
+                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
+                </td>
                 <td className="py-3 px-4 font-medium">{a.customerName}</td>
                 <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{a.customerPhone}</td>
                 <td className="py-3 px-4">{a.branchName || "—"}</td>
@@ -1002,7 +1106,13 @@ export default function BookingManagementPage() {
           </button>
         ))}
       </div>
-      {loading && activeTab !== "appointments" && activeTab !== "calendar" ? (
+      {error ? (
+        <div className="text-center py-16">
+          <div className="text-red-500 dark:text-red-400 text-lg mb-2">⚠️ فشل تحميل البيانات</div>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+          <button onClick={fetchAll} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">إعادة المحاولة</button>
+        </div>
+      ) : loading && activeTab !== "appointments" && activeTab !== "calendar" ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">جاري التحميل...</div>
       ) : (
         <>

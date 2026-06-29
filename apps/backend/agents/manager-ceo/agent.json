@@ -10,8 +10,7 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md",
-    "persona": "PERSONA.md"
+    "tools": "TOOLS.md"
   },
   "personaMeta": {
     "language": "english",
@@ -83,10 +82,16 @@
     {
       "name": "filesystem",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ]
     }
   ],
-  "channels": ["dashboard"],
+  "channels": [
+    "dashboard"
+  ],
   "budget": {
     "dailyUsd": 5,
     "maxToolCallsPerRun": 8

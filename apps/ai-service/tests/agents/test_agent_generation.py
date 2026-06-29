@@ -44,7 +44,7 @@ class TestAgentManifestValidation:
     def _load_manifests(self):
         manifests = {}
         for entry in sorted(BACKEND_AGENTS_ROOT.iterdir()):
-            if entry.name == "_shared" or not entry.is_dir():
+            if entry.name in ("_shared", "blank") or not entry.is_dir():
                 continue
             manifest_path = entry / "agent.json"
             if not manifest_path.exists():
@@ -593,7 +593,7 @@ class TestBaseAgentConfig:
         config = BaseAgentConfig(id="a3", name="Agent Three", role="ORDER", company_id="comp_003")
         agent = BaseAgent(config)
         assert agent.status == "ACTIVE"
-        assert agent.model == "gemini-2.5-flash"
+        assert agent.model == ""
         assert agent.model_source == "runtime-default"
         assert agent.allowed_tools == set()
         assert agent.allowed_skills == set()
@@ -928,7 +928,7 @@ class TestAgentSpawnScenarios:
             "support-agent", "comp_001",
             overrides={"id": "agent_default"}, session=None,
         )
-        assert agent_default.model == "gemini-2.5-flash"
+        assert agent_default.model == ""
 
         agent_custom = await BaseAgent.from_template(
             "support-agent", "comp_001",

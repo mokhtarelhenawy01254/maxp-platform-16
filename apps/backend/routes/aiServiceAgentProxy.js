@@ -67,6 +67,7 @@ router.post('/seed-template', async (req, res) => {
 
     const config = JSON.parse(readFileSync(agentJsonPath, 'utf8'));
     const readMd = (name) => {
+      if (!name) return '';
       const p = join(agentsDir, name);
       return existsSync(p) ? readFileSync(p, 'utf8') : '';
     };

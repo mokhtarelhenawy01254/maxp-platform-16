@@ -56,6 +56,9 @@ interface ReadyProfile {
   isActive: boolean;
   personalities: Personality[];
   templateSlug?: string | null;
+  lucideIcon?: string | null;
+  roleColor?: string | null;
+  channels?: string[] | null;
 }
 
 const TONES = [
@@ -67,10 +70,32 @@ const TONES = [
 
 const ICONS = ["🤖", "💼", "🎧", "📦", "📣", "💬", "📊", "🧠", "⚡", "🎯", "🛒", "🔧", "🏥", "🤝", "🔍", "🛍️"];
 
+const LUCIDE_ICON_OPTIONS = [
+  'ShoppingCart', 'Headphones', 'Package', 'Megaphone', 'Heart',
+  'Bot', 'MessageSquare', 'Phone', 'Mail', 'Globe',
+  'Truck', 'CreditCard', 'BarChart', 'FileText', 'Settings',
+  'User', 'Shield', 'Bell',
+];
+
+const ROLE_COLOR_OPTIONS = [
+  { value: 'sales', label: 'مبيعات' },
+  { value: 'support', label: 'دعم فني' },
+  { value: 'inventory', label: 'مخازن' },
+  { value: 'marketing', label: 'تسويق' },
+  { value: 'default', label: 'افتراضي' },
+];
+
+const CHANNEL_OPTIONS = [
+  { value: 'whatsapp', label: 'واتساب' },
+  { value: 'facebook', label: 'فيسبوك' },
+  { value: 'dashboard', label: 'لوحة التحكم' },
+  { value: 'phone', label: 'هاتف' },
+];
+
 const emptyProfile = (): ReadyProfile => ({
   slug: "", icon: "🤖", title: "", titleEn: "", category: "", categoryEn: "",
   desc: "", descEn: "", sortOrder: 0, isActive: true, personalities: [],
-  templateSlug: null,
+  templateSlug: null, lucideIcon: null, roleColor: null, channels: null,
 });
 
 const SuperAdminAgentProfiles: React.FC = () => {
@@ -355,6 +380,56 @@ const SuperAdminAgentProfiles: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">أيقونة Lucide</label>
+              <Select value={editProfile.lucideIcon || ""} onValueChange={(v) => setEditProfile((p) => ({ ...p, lucideIcon: v || null }))}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="افتراضي" /></SelectTrigger>
+                <SelectContent>
+                  {LUCIDE_ICON_OPTIONS.map((name) => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">لون البطاقة</label>
+              <Select value={editProfile.roleColor || ""} onValueChange={(v) => setEditProfile((p) => ({ ...p, roleColor: v || null }))}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="افتراضي" /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_COLOR_OPTIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <span className="flex items-center gap-2">
+                        <span className="size-3 rounded-full inline-block" style={{ background: `var(--role-${c.value})` }} />
+                        {c.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">القنوات</label>
+              <div className="flex flex-wrap gap-2">
+                {CHANNEL_OPTIONS.map((ch) => {
+                  const selected = editProfile.channels?.includes(ch.value) || false;
+                  return (
+                    <button key={ch.value} type="button" onClick={() => {
+                      const next = selected
+                        ? (editProfile.channels || []).filter((v) => v !== ch.value)
+                        : [...(editProfile.channels || []), ch.value];
+                      setEditProfile((p) => ({ ...p, channels: next.length > 0 ? next : null }));
+                    }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        selected ? 'border-primary bg-primary/10 text-primary' : 'border-input text-muted-foreground hover:border-foreground/30'
+                      }`}
+                    >{ch.label}</button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

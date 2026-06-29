@@ -5,7 +5,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { toast } from "sonner";
 import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, Users, Wallet } from "lucide-react";
 import type { ElementType } from "react";
-import type { CompanyData, CompanyReview, CompanyUser, FacebookPage } from "./companyDetailsTypes";
+import type { CompanyData, CompanyReview, CompanyUser, FacebookPage, TicketListItem, ActivityEntry } from "./companyDetailsTypes";
 import { apiClient } from "../../../services/apiClient";
 import { tokenManager } from "../../../utils/tokenManager";
 import {
@@ -98,6 +98,8 @@ interface UseCompanyDetailsReturn {
   handleDeleteUser: (userId: string) => Promise<void>;
   deleteConfirmUserId: string | null; setDeleteConfirmUserId: (id: string | null) => void; deleteUserLoading: boolean;
   handleCancelSubscription: () => Promise<void>; handleRetryPayment: () => Promise<void>;
+  companyTickets: TicketListItem[]; ticketsLoading: boolean;
+  companyActivities: ActivityEntry[]; activitiesLoading: boolean;
 }
 
 export function useCompanyDetails(): UseCompanyDetailsReturn {
@@ -109,6 +111,10 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [review, setReview] = useState<CompanyReview | null>(null);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
+  const [companyTickets, setCompanyTickets] = useState<TicketListItem[]>([]);
+  const [companyActivities, setCompanyActivities] = useState<ActivityEntry[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -177,16 +183,20 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const refreshCompanyWorkspace = async ({ background = false }: { background?: boolean } = {}): Promise<void> => {
     if (!companyId) { setError("معرف الشركة غير متوفر"); setReview(null); setLoading(false); return; }
     if (background) setRefreshing(true); else setLoading(true);
-    setUsersLoading(true); setPagesLoading(true); setError("");
+    setUsersLoading(true); setPagesLoading(true); setTicketsLoading(true); setActivitiesLoading(true); setError("");
     try {
-      const [detailResult, usersResult, pagesResult] = await Promise.allSettled([
+      const [detailResult, usersResult, pagesResult, ticketsResult, activitiesResult] = await Promise.allSettled([
         apiClient.get(`/admin/companies/${companyId}`),
         apiClient.get(`/admin/companies/${companyId}/users`, { params: { limit: 100, sortBy: "createdAt", sortOrder: "desc" } }),
         apiClient.get(`/admin/companies/${companyId}/facebook-pages`),
+        apiClient.get(`/support/admin/tickets`, { params: { companyId, limit: 20 } }),
+        apiClient.get(`/activity/company/activities`, { params: { companyId, limit: 10 } }),
       ]);
       const detailData: any = detailResult.status === "fulfilled" ? detailResult.value.data : null;
       const usersData: any = usersResult.status === "fulfilled" ? usersResult.value.data : null;
       const pagesData: any = pagesResult.status === "fulfilled" ? pagesResult.value.data : null;
+      const ticketsData: any = ticketsResult.status === "fulfilled" ? ticketsResult.value.data : null;
+      const activitiesData: any = activitiesResult.status === "fulfilled" ? activitiesResult.value.data : null;
       if (!detailData?.success) {
         setCompany(null); setReview(null); setCompanyUsers([]); setFacebookPages([]);
         setError("تعذر تحميل بيانات الشركة"); return;
@@ -201,11 +211,15 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         setFacebookPages(nextPages);
         nextCompany = normalizeCompanyData(nextCompany, { _count: { facebookPages: nextPages.length } }) as CompanyData | null;
       } else { setFacebookPages([]); toast.error("تعذر تحميل صفحات فيسبوك"); }
+      if (ticketsData?.tickets) setCompanyTickets(ticketsData.tickets);
+      else setCompanyTickets([]);
+      if (activitiesData?.success) setCompanyActivities(activitiesData.data?.activities || []);
+      else setCompanyActivities([]);
       setCompany(nextCompany); setReview(nextReview); syncEditForm(nextCompany);
     } catch (nextError) {
-      setCompany(null); setReview(null); setCompanyUsers([]); setFacebookPages([]);
+      setCompany(null); setReview(null); setCompanyUsers([]); setFacebookPages([]); setCompanyTickets([]); setCompanyActivities([]);
       setError(extractErrorMessage(nextError, "تعذر تحميل مساحة الشركة"));
-    } finally { setLoading(false); setRefreshing(false); setUsersLoading(false); setPagesLoading(false); }
+    } finally { setLoading(false); setRefreshing(false); setUsersLoading(false); setPagesLoading(false); setTicketsLoading(false); setActivitiesLoading(false); }
   };
 
   const refreshActivationCatalog = async (): Promise<void> => {
@@ -516,5 +530,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
     deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
     handleCancelSubscription, handleRetryPayment,
+    companyTickets, ticketsLoading,
+    companyActivities, activitiesLoading,
   };
 }
