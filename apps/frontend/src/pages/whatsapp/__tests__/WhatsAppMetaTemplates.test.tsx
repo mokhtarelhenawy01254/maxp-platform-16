@@ -92,9 +92,9 @@ describe('WhatsAppMetaTemplates', () => {
 
     expect(screen.getByText('greeting')).toBeInTheDocument();
     expect(screen.getByText('pending_temp')).toBeInTheDocument();
-    expect(screen.getByText('APPROVED')).toBeInTheDocument();
+    expect(screen.getAllByText('APPROVED')).toHaveLength(2);
     expect(screen.getByText('PENDING')).toBeInTheDocument();
-    expect(screen.getByText('MARKETING')).toBeInTheDocument();
+    expect(screen.getAllByText('MARKETING')).toHaveLength(2);
     expect(screen.getByText('UTILITY')).toBeInTheDocument();
 
     expect(screen.getByText('رقم المبيعات')).toBeInTheDocument();
@@ -187,7 +187,7 @@ describe('WhatsAppMetaTemplates', () => {
 
     await userEvent.click(screen.getByText('قالب جديد'));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('أنشئ قالب رسالة جديد في Meta Cloud API.')).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('أنشئ قالب رسالة'))).toBeInTheDocument();
   });
 
   test('shows super admin title when companyName is provided', async () => {
