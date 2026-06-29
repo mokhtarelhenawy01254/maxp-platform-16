@@ -271,14 +271,20 @@ class ContextAssembler:
                 memories_xml = "\n<relevant_memories>\n" + "\n".join(memory_lines) + "\n</relevant_memories>"
                 sections.append(("relevant_memories", memories_xml))
 
-        # 5. Skills (L1 progressive disclosure — name + description only)
-        #    The LLM calls load_skill('<skill_id>') to get full instructions on demand.
+        # 5. Skills — always inject full skill instructions when the agent has
+        #    skills, so the LLM follows the skill playbooks directly and knows
+        #    exactly which tools to use without needing to call load_skill().
         agent = ctx.agent
         if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
-            from src.skills.integration import get_l1_skills_block
-            skills_block = get_l1_skills_block(agent.allowed_skills)
-            if skills_block:
-                sections.append(("skills_available", skills_block))
+            from src.skills.integration import get_skills_block
+            full_skills_block = get_skills_block(agent.allowed_skills)
+            if full_skills_block:
+                sections.append(("skills", full_skills_block))
+                logger.info(
+                    "injected_full_skills",
+                    skill_count=len(agent.allowed_skills),
+                    skills=sorted(agent.allowed_skills),
+                )
 
         # Combine base + sections
         full_prompt = base_prompt

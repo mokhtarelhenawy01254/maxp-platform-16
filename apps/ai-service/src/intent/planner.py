@@ -594,13 +594,94 @@ def get_model_classified_read_tool_execution(
     relevance_plan: ToolPlan,
     native_tools: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
-    if not relevance_plan.requiresTool or not relevance_plan.primaryTool:
+    if not relevance_plan.requiresTool:
         return None
-    return {
-        "tool": relevance_plan.primaryTool,
-        "nativeName": relevance_plan.primaryTool,
-        "params": {},
-    }
+    if relevance_plan.primaryTool:
+        return {
+            "tool": relevance_plan.primaryTool,
+            "nativeName": relevance_plan.primaryTool,
+            "params": {},
+        }
+    return None
+
+
+def get_model_classified_read_tool_execution_with_message(
+    relevance_plan: ToolPlan,
+    native_tools: list[dict[str, Any]],
+    message: str,
+) -> dict[str, Any] | None:
+    if not relevance_plan.requiresTool:
+        return None
+    if relevance_plan.primaryTool:
+        return {
+            "tool": relevance_plan.primaryTool,
+            "nativeName": relevance_plan.primaryTool,
+            "params": {},
+        }
+    # Classifier unavailable — use keyword matching to pick the best tool
+    if relevance_plan.blockedReason == "CLASSIFIER_UNAVAILABLE" and relevance_plan.allowedTools:
+        skill_tool_names = {"load_skill", "read_skill_resource", "unlock_advanced_tools"}
+        available = [
+            t for t in relevance_plan.allowedTools
+            if canonical_tool_name(t) not in skill_tool_names
+        ]
+        if available:
+            tool = _keyword_match_tool(message, available)
+            if tool:
+                logger.info(
+                    "classifier_unavailable_keyword_fallback",
+                    tool=tool,
+                    message=message[:80],
+                )
+                return {
+                    "tool": tool,
+                    "nativeName": tool,
+                    "params": {},
+                }
+    return None
+
+
+_KEYWORD_TOOL_MAP: dict[str, list[str]] = {
+    "product_search": [
+        "كتالوج", "منتجات", "المنتجات", "catalog", "products", "عندك", "عندكم",
+        "متاح", "متاحة", "بتبيع", "بتبيعوا", "عايز", "عاوزه", "وريني", "شوف",
+    ],
+    "order_lookup": [
+        "اوردر", "طلب", "شحنة", "توصيل", "order", "رقم", "تتبع",
+    ],
+    "booking_info": [
+        "حجز", "دكتور", "كشف", "عيادة", "مركز", "موعد", "book",
+    ],
+    "knowledge_search": [
+        "معلومات", "اسئله", "سؤال", "know", "info",
+    ],
+    "company_snapshot": [
+        "حالة", "تقرير", "snapshot", "report", "احصائيات",
+    ],
+}
+
+
+def _keyword_match_tool(message: str, available: list[str]) -> str | None:
+    """Pick the best tool from available based on message keyword matching."""
+    msg = (message or "").lower()
+    if not msg:
+        return available[0] if available else None
+
+    available_canonical = {canonical_tool_name(t): t for t in available}
+    scores: dict[str, int] = {}
+    for tool_key, keywords in _KEYWORD_TOOL_MAP.items():
+        canonical = canonical_tool_name(tool_key)
+        if canonical not in available_canonical:
+            continue
+        score = sum(1 for kw in keywords if kw.lower() in msg)
+        if score > 0:
+            scores[canonical] = score
+
+    if scores:
+        best = max(scores, key=scores.get)
+        return available_canonical[best]
+
+    return available[0] if available else None
 
 
 def get_model_classified_handoff_execution(
