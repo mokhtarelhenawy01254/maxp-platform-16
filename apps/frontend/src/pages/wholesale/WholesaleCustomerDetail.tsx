@@ -59,7 +59,17 @@ export default function WholesaleCustomerDetail() {
         if (!isNew) {
           const res = await apiClient.get(`/wholesale/customers/${id}`);
           const data = res?.data?.data;
-          if (data) setForm(data);
+          if (data) setForm({
+            customerId: data.customerId,
+            customerName: data.customer ? `${data.customer.firstName} ${data.customer.lastName}` : '',
+            customerPhone: data.customer?.phone || '',
+            customerEmail: data.customer?.email || '',
+            creditLimit: Number(data.creditLimit),
+            currentBalance: Number(data.currentBalance),
+            paymentTermsDays: data.paymentTermsDays || 30,
+            priceListId: data.priceListId || '',
+            isActive: data.isActive,
+          });
         }
       } catch (err: any) {
         setError(err?.response?.data?.message || "فشل التحميل");
@@ -218,7 +228,7 @@ export default function WholesaleCustomerDetail() {
                 <label className="mb-1 block text-sm font-medium">الرصيد المستحق</label>
                 <input
                   type="text"
-                  value={`${form.currentBalance.toFixed(2)} EGP`}
+                  value={`${Number(form.currentBalance).toFixed(2)} EGP`}
                   className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
                   disabled
                 />

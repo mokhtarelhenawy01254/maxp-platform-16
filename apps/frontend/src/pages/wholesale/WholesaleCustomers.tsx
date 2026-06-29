@@ -5,8 +5,7 @@ import { apiClient } from "../../services/apiClient";
 interface WholesaleCustomer {
   id: string;
   customerId: string;
-  customerName: string;
-  customerPhone?: string;
+  customer: { firstName: string; lastName: string; phone?: string };
   creditLimit: number;
   currentBalance: number;
   paymentTermsDays: number;
@@ -75,12 +74,12 @@ export default function WholesaleCustomers() {
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <Link to={`/wholesale/customers/${c.id}`} className="font-medium text-primary hover:underline">
-                      {c.customerName}
+                      {c.customer ? `${c.customer.firstName} ${c.customer.lastName}` : '—'}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{c.customerPhone || "—"}</td>
-                  <td className="px-4 py-3 font-medium">{c.creditLimit.toFixed(2)} EGP</td>
-                  <td className="px-4 py-3 font-medium">{c.currentBalance.toFixed(2)} EGP</td>
+                  <td className="px-4 py-3 text-gray-600">{c.customer?.phone || "—"}</td>
+                  <td className="px-4 py-3 font-medium">{Number(c.creditLimit).toFixed(2)} EGP</td>
+                  <td className="px-4 py-3 font-medium">{Number(c.currentBalance).toFixed(2)} EGP</td>
                   <td className="px-4 py-3 text-gray-600">{c.paymentTermsDays} يوم</td>
                   <td className="px-4 py-3 text-gray-600">{c.priceListName || "—"}</td>
                   <td className="px-4 py-3">

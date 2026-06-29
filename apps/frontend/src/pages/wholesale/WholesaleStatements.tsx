@@ -144,8 +144,8 @@ export default function WholesaleStatements() {
               <p className="text-sm text-gray-500">{statement.customerPhone}</p>
             )}
             <div className="mt-2 flex gap-6 text-sm">
-              <span>الرصيد الافتتاحي: <strong>{statement.openingBalance.toFixed(2)} EGP</strong></span>
-              <span>الرصيد الختامي: <strong>{statement.closingBalance.toFixed(2)} EGP</strong></span>
+              <span>الرصيد الافتتاحي: <strong>{Number(statement.openingBalance).toFixed(2)} EGP</strong></span>
+              <span>الرصيد الختامي: <strong>{Number(statement.closingBalance).toFixed(2)} EGP</strong></span>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -175,12 +175,12 @@ export default function WholesaleStatements() {
                     <td className="px-4 py-3 text-gray-600">{line.reference}</td>
                     <td className="px-4 py-3 text-gray-600">{line.description}</td>
                     <td className="px-4 py-3 font-medium text-red-600">
-                      {line.debit > 0 ? `${line.debit.toFixed(2)}` : "—"}
+                      {Number(line.debit) > 0 ? `${Number(line.debit).toFixed(2)}` : "—"}
                     </td>
                     <td className="px-4 py-3 font-medium text-green-600">
-                      {line.credit > 0 ? `${line.credit.toFixed(2)}` : "—"}
+                      {Number(line.credit) > 0 ? `${Number(line.credit).toFixed(2)}` : "—"}
                     </td>
-                    <td className="px-4 py-3 font-medium">{line.balance.toFixed(2)}</td>
+                    <td className="px-4 py-3 font-medium">{Number(line.balance).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

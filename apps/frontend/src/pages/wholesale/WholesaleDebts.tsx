@@ -119,9 +119,9 @@ export default function WholesaleDebts() {
                   <tr key={c.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">{c.customerName}</td>
                     <td className="px-4 py-3 text-gray-600">{c.customerPhone || "—"}</td>
-                    <td className="px-4 py-3">{c.creditLimit.toFixed(2)} EGP</td>
+                    <td className="px-4 py-3">{Number(c.creditLimit).toFixed(2)} EGP</td>
                     <td className="px-4 py-3 font-medium text-red-600">
-                      {c.currentBalance.toFixed(2)} EGP
+                      {Number(c.currentBalance).toFixed(2)} EGP
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.daysOverdue > 30 ? "bg-red-100 text-red-700" : c.daysOverdue > 7 ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>
