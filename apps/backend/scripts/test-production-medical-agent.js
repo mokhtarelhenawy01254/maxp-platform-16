@@ -8,7 +8,7 @@
 const https = require('https');
 
 const BASE_URL = 'https://maxp.online';
-const EMAIL = 'swan@h2m.com';
+const EMAIL = 'mokhtar2@elhenawy.com';
 const PASSWORD = process.env.PASSWORD || '0165676135';
 
 const GREEN = '\x1b[32m';
@@ -82,7 +82,7 @@ async function getOrCreateMedicalAgent(token) {
     role: 'MEDICAL_CENTER',
     templateSlug: 'medical-center-agent',
     description: 'وكيل طبي تجريبي لاختبار المهارات المعيارية',
-    model: 'gemini-2.5-pro'
+    model: 'deepseek-v4-flash'
   }, token);
 
   if (spawnRes.status !== 201 || !spawnRes.body?.id) {
@@ -114,9 +114,7 @@ async function sendChatMessage(token, sessionId, agentId, message) {
   const res = await apiRequest('POST', '/api/v1/ai-sandbox/chat', {
     sessionId,
     agentId,
-    message,
-    provider: 'google',
-    model: 'gemini-2.5-pro'
+    message
   }, token);
   const ms = Date.now() - start;
 

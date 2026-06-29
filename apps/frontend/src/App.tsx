@@ -1306,6 +1306,7 @@ const AppContent = () => {
     currentPath.startsWith("/register/") ||
     currentPath.startsWith("/affiliate-register") ||
     currentPath.startsWith("/payment/") ||
+    currentPath.startsWith("/checkout/") ||
     currentPath.startsWith("/apply/") ||
     currentPath.startsWith("/for-merchants") ||
     currentPath.startsWith("/lp/") ||

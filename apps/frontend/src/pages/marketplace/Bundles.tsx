@@ -244,7 +244,7 @@ export default function Bundles() {
                           عرض التفاصيل
                         </button>
                         <button
-                          onClick={() => { window.location.href = "/checkout/messaging"; }}
+                          onClick={() => navigate("/checkout/messaging")}
                           className={`flex-1 bg-gradient-to-r ${theme.gradient} text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2`}
                         >
                           <Sparkles size={18} />

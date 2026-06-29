@@ -209,48 +209,49 @@ exports.getBillingHistory = async (req, res) => {
  */
 exports.messagingCheckout = async (req, res) => {
   try {
-    const { companyId } = req.user;
+    const { companyId, email, phone } = req.user;
+    const amount = 999;
     const prisma = getSharedPrismaClient();
 
-    const nextBillingDate = new Date();
-    nextBillingDate.setDate(nextBillingDate.getDate() + 30);
-
-    await prisma.$transaction(async (tx) => {
-      await tx.platformSubscription.upsert({
-        where: { companyId },
-        update: { status: 'ACTIVE', nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-        create: { companyId, status: 'ACTIVE', nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
-      });
-      for (const slug of ["ai-chat-basic", "unified-inbox", "whatsapp-business"]) {
-        const app = await tx.marketplaceApp.findUnique({ where: { slug } });
-        if (app) {
-          await tx.companyApp.upsert({
-            where: { companyId_appId: { companyId, appId: app.id } },
-            update: { status: 'ACTIVE' },
-            create: { companyId, appId: app.id, status: 'ACTIVE' }
-          });
-        }
+    const billingRecord = await prisma.billingHistory.create({
+      data: {
+        companyId,
+        type: "PLATFORM_FEE",
+        amount,
+        description: "اشتراك باقة AI + Inbox (999 ج.م/شهر)",
+        status: "PENDING"
       }
     });
 
-    try {
-      const agentCfg = await buildDefaultAgentConfig();
-      await aiServiceAdminClient.spawnAgent({
-        companyId,
-        templateSlug: agentCfg.templateSlug,
-        name: agentCfg.name,
-        icon: agentCfg.icon,
-        config: agentCfg.config,
+    const host = req.headers.host || "maxp.online";
+    const redirectUrl = `http://${host}/subscription?status=success&billingId=${billingRecord.id}`;
+    const baseDomain = process.env.MAIN_DOMAIN || "maxp.online";
+    const webhookUrl = `https://${baseDomain}/api/v1/public/platform-subscription/webhook`;
+
+    const session = await KashierService.createPaymentSession({
+      amount,
+      currency: "EGP",
+      orderId: `messaging-direct-${billingRecord.id}`,
+      customer: { email, reference: phone || companyId },
+      redirectUrl,
+      webhookUrl,
+      description: "AI + Inbox Bundle - دفع الاشتراك",
+    }, null);
+
+    if (!session.success) {
+      await prisma.billingHistory.update({
+        where: { id: billingRecord.id },
+        data: { status: "FAILED", description: `فشل إنشاء جلسة الدفع: ${session.error}` }
       });
-    } catch (e) {
-      console.warn('[MESSAGING-CHECKOUT] Auto-create agent skipped (non-blocking):', e.message);
+      return res.status(502).json({ success: false, message: "فشل إنشاء جلسة الدفع في كاشير" });
     }
 
-    res.json({
-      success: true,
-      message: 'تم تفعيل الباقة بنجاح',
-      data: { skipPayment: true, trialDays: 7 }
+    await prisma.billingHistory.update({
+      where: { id: billingRecord.id },
+      data: { referenceId: session.sessionId }
     });
+
+    res.json({ success: true, data: { sessionUrl: session.sessionUrl, billingId: billingRecord.id } });
   } catch (error) {
     console.error("[MESSAGING-CHECKOUT] Error:", error);
     res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
@@ -453,13 +454,19 @@ exports.handleWebhook = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid payload parameters" });
     }
 
-    // Extract billing history ID from merchantOrderId (formatted as platform-sub-xxxx or messaging-xxxx)
-    if (!orderId.startsWith("platform-sub-") && !orderId.startsWith("messaging-")) {
+    // Extract billing history ID from merchantOrderId (formatted as platform-sub-xxxx, messaging-xxxx, or messaging-direct-xxxx)
+    const isDirectCheckout = orderId.startsWith("messaging-direct-");
+    const isMessaging = orderId.startsWith("messaging-");
+
+    if (!orderId.startsWith("platform-sub-") && !isMessaging) {
       return res.status(200).json({ success: true, message: "Ignored (non-platform order)" });
     }
 
-    const isMessaging = orderId.startsWith("messaging-");
-    const billingId = isMessaging ? orderId.replace("messaging-", "") : orderId.replace("platform-sub-", "");
+    const billingId = isDirectCheckout
+      ? orderId.replace("messaging-direct-", "")
+      : isMessaging
+        ? orderId.replace("messaging-", "")
+        : orderId.replace("platform-sub-", "");
     const prisma = getSharedPrismaClient();
 
     const billingRecord = await prisma.billingHistory.findUnique({
@@ -516,7 +523,19 @@ exports.handleWebhook = async (req, res) => {
           }
         });
 
-        if (isMessaging) {
+        if (isDirectCheckout) {
+          const directApps = await tx.marketplaceApp.findMany({
+            where: { slug: { in: ['ai-chat-basic', 'unified-inbox', 'whatsapp-business'] } },
+            select: { id: true, slug: true }
+          });
+          for (const app of directApps) {
+            await tx.companyApp.upsert({
+              where: { companyId_appId: { companyId: billingRecord.companyId, appId: app.id } },
+              update: { status: 'ACTIVE' },
+              create: { companyId: billingRecord.companyId, appId: app.id, status: 'ACTIVE' }
+            });
+          }
+        } else if (isMessaging) {
           const messagingApps = await tx.marketplaceApp.findMany({
             where: { slug: { in: ['crm-basic', 'whatsapp-business', 'telegram-business'] } },
             select: { id: true, slug: true }
@@ -532,6 +551,24 @@ exports.handleWebhook = async (req, res) => {
       });
 
       console.log(`✅ [BILLING-WEBHOOK] Subscription activated for company ${billingRecord.companyId}`);
+
+      // Async agent creation for direct checkout
+      if (isDirectCheckout) {
+        (async () => {
+          try {
+            const agentCfg = await buildDefaultAgentConfig();
+            await aiServiceAdminClient.spawnAgent({
+              companyId: billingRecord.companyId,
+              templateSlug: agentCfg.templateSlug,
+              name: agentCfg.name,
+              icon: agentCfg.icon,
+              config: agentCfg.config,
+            });
+          } catch (e) {
+            console.warn('[BILLING-WEBHOOK] Auto-create agent skipped (non-blocking):', e.message);
+          }
+        })();
+      }
 
       // Async distribution of commissions
       const platformPartnerService = require("../services/platformPartner.service");

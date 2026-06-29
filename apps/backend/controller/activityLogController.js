@@ -156,8 +156,8 @@ exports.getActivityById = async (req, res) => {
 
     // التحقق من الصلاحيات - فقط المستخدم نفسه أو مدير الشركة
     if (activity.userId !== req.user.id && 
-        req.user.role !== 'company_admin' && 
-        req.user.role !== 'super_admin') {
+        req.user.role !== 'COMPANY_ADMIN' && 
+        req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
         message: 'ليس لديك صلاحية لعرض هذا النشاط'
@@ -279,7 +279,7 @@ exports.getMyStats = async (req, res) => {
 exports.getCompanyActivities = async (req, res) => {
   try {
     // التحقق من الصلاحيات
-    if (req.user.role !== 'company_admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'COMPANY_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
         message: 'ليس لديك صلاحية لعرض نشاطات الشركة'
@@ -303,7 +303,7 @@ exports.getCompanyActivities = async (req, res) => {
     const prisma = getSharedPrismaClient();
 
     // بناء where clause — super_admin can query any company
-    const targetCompanyId = (req.user.role === 'super_admin' && companyId) ? companyId : req.user.companyId;
+    const targetCompanyId = (req.user.role === 'SUPER_ADMIN' && companyId) ? companyId : req.user.companyId;
     const where = {
       companyId: targetCompanyId
     };
@@ -374,7 +374,7 @@ exports.getCompanyActivities = async (req, res) => {
 exports.getCompanyStats = async (req, res) => {
   try {
     // التحقق من الصلاحيات
-    if (req.user.role !== 'company_admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'COMPANY_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
         message: 'ليس لديك صلاحية لعرض إحصائيات الشركة'
@@ -467,7 +467,7 @@ exports.getCompanyStats = async (req, res) => {
 exports.getUserActivities = async (req, res) => {
   try {
     // التحقق من الصلاحيات
-    if (req.user.role !== 'company_admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'COMPANY_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
         message: 'ليس لديك صلاحية لعرض نشاطات المستخدمين'
@@ -568,7 +568,7 @@ exports.exportActivities = async (req, res) => {
     const where = {};
 
     // إذا كان مستخدم عادي، فقط نشاطاته
-    if (req.user.role !== 'company_admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'COMPANY_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
       where.userId = req.user.id;
     } else {
       // إذا كان مدير، يمكنه تصدير نشاطات الشركة أو مستخدم محدد
@@ -630,7 +630,7 @@ exports.exportActivities = async (req, res) => {
 exports.cleanupOldActivities = async (req, res) => {
   try {
     // فقط السوبر أدمن
-    if (req.user.role !== 'super_admin') {
+    if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
         success: false,
         message: 'ليس لديك صلاحية لحذف النشاطات'
