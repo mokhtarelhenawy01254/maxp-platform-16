@@ -80,11 +80,25 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   no_show: { label: "لم يحضر", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
 };
 
-const fetchJson = async (url: string, options?: RequestInit) => {
-  const res = await fetch(url, { headers: getAuthHeaders(), ...options });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || data.message || "فشل العملية");
-  return data.data;
+const fetchJson = async (url: string, options?: RequestInit, retries = 2): Promise<any> => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { headers: getAuthHeaders(), ...options });
+      if (res.status === 502 || res.status === 503) {
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); continue; }
+        throw new Error("الخادم غير متاح حالياً - جارٍ إعادة التشغيل");
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || data.message || "فشل العملية");
+      return data.data;
+    } catch (e: any) {
+      if (attempt < retries && (e.message?.includes("502") || e.message?.includes("503") || e.message?.includes("fetch"))) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
 };
 
 const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
@@ -409,6 +423,7 @@ export default function BookingManagementPage() {
   const [services, setServices] = useState<BookingService[]>([]);
   const [appointments, setAppointments] = useState<BookingAppointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [branchModal, setBranchModal] = useState<Partial<BookingBranch> | null | undefined>(undefined);
   const [doctorModal, setDoctorModal] = useState<Partial<BookingDoctor> | null | undefined>(undefined);
@@ -441,19 +456,24 @@ export default function BookingManagementPage() {
 
   const fetchAll = async () => {
     setLoading(true);
-    await Promise.all([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments()]);
+    setError(null);
+    try {
+      await Promise.all([fetchBranches(), fetchDoctors(), fetchServices(), fetchAppointments()]);
+    } catch (e: any) {
+      setError(e.message || "فشل تحميل البيانات");
+    }
     setLoading(false);
   };
 
-  const fetchBranches = async () => { try { setBranches(await fetchJson(api("branches"))); } catch (e) { console.error("fetchBranches", e); } };
+  const fetchBranches = async () => { try { setBranches(await fetchJson(api("branches"))); } catch (e: any) { console.error("fetchBranches", e); throw e; } };
   const fetchDoctors = async (branchId?: string) => {
-    try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch (e) { console.error("fetchDoctors", e); }
+    try { setDoctors(await fetchJson(api(`doctors${branchId ? `?branchId=${branchId}` : ""}`))); } catch (e: any) { console.error("fetchDoctors", e); throw e; }
   };
   const fetchServices = async (branchId?: string) => {
     try {
       const data = await fetchJson(api(`services${branchId ? `?branchId=${branchId}` : ""}`));
       setServices(data || []);
-    } catch (e) { console.error("fetchServices", e); }
+    } catch (e: any) { console.error("fetchServices", e); throw e; }
   };
   const fetchAppointments = async () => {
     const params = new URLSearchParams();
@@ -462,7 +482,7 @@ export default function BookingManagementPage() {
     if (!filters.branchId && selectedBranchId) params.append("branchId", selectedBranchId);
     if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.append("dateTo", filters.dateTo);
-    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch (e) { console.error("fetchAppointments", e); setAppointments([]); }
+    try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch (e: any) { console.error("fetchAppointments", e); setAppointments([]); throw e; }
   };
 
   const saveBranch = async (d: Partial<BookingBranch>) => {
@@ -1083,7 +1103,13 @@ export default function BookingManagementPage() {
           </button>
         ))}
       </div>
-      {loading && activeTab !== "appointments" && activeTab !== "calendar" ? (
+      {error ? (
+        <div className="text-center py-16">
+          <div className="text-red-500 dark:text-red-400 text-lg mb-2">⚠️ فشل تحميل البيانات</div>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+          <button onClick={fetchAll} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">إعادة المحاولة</button>
+        </div>
+      ) : loading && activeTab !== "appointments" && activeTab !== "calendar" ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">جاري التحميل...</div>
       ) : (
         <>
