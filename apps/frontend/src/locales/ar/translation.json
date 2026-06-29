@@ -3619,6 +3619,10 @@
     "bulkCreatedAt": "تاريخ الإنشاء",
     "bulkUpdatedAt": "آخر تحديث",
     "bulkStatus": "حالة التنفيذ",
+    "found": "الطلبات الموجودة",
+    "notFound": "الطلبات غير الموجودة",
+    "ordersCount": "إجمالي عدد الطلبات",
+    "notFoundValues": "القيم غير الموجودة ({{count}})",
     "invoice": {
       "title": "فاتورة",
       "notFound": "الفاتورة غير موجودة",
