@@ -13,7 +13,11 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-from src.intent.schema import INTENT_POLICIES, INTENT_CONFIGURED_TOOLS
+try:
+    from src.intent.schema import INTENT_POLICIES, INTENT_CONFIGURED_TOOLS
+except ImportError:
+    INTENT_POLICIES = {}
+    INTENT_CONFIGURED_TOOLS = {}
 
 revision: str = "0008"
 down_revision: Union[str, None] = "0007"

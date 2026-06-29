@@ -54,6 +54,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
     # 5. Handle tool calls
     if provider_response.tool_calls:
+        logger.info("skills_pipeline_tool_calls", count=len(provider_response.tool_calls), skills=[tc.get("function", {}).get("name", "") for tc in provider_response.tool_calls])
         executed = []
         for tc in provider_response.tool_calls:
             func_name = tc.get("function", {}).get("name", "")

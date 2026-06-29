@@ -10,7 +10,7 @@ Wraps Microsoft Agent Framework ``Agent`` with MaxP-specific concerns:
 * System-prompt assembly from modular templates (SOUL / PERSONA / TOOLS / AGENTS)
 * Handoffs to other agents (via ``as_tool``)
 * Input / output guardrails
-* Pipeline execution: ``resolve_intent`` -> ``route_to_tools`` -> ``execute_tools`` -> ``handle_fallback`` -> ``validate_reply``
+ * Pipeline execution: ``process_with_skills`` -> ``validate_reply``
 * Streaming / event-driven execution
 * Observability hooks (task log, ``get_info``)
 
@@ -925,7 +925,6 @@ class BaseAgent:
             ctx,
             [
                 process_with_skills,
-                handle_fallback,
                 validate_reply,
             ],
         )
@@ -1114,7 +1113,6 @@ class BaseAgent:
 
             for stage in (
                 process_with_skills,
-                handle_fallback,
                 validate_reply,
             ):
                 ctx = await stage(ctx)

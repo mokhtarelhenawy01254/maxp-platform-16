@@ -40,6 +40,7 @@ import {
 
 interface Session {
   id: string;
+  name?: string;
   phoneNumber: string;
 }
 
@@ -166,7 +167,7 @@ const WhatsAppTemplateBroadcast: React.FC<{
                   </SelectTrigger>
                   <SelectContent>
                     {sessions.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.phoneNumber || s.id}</SelectItem>
+                      <SelectItem key={s.id} value={s.id}>{s.name || s.phoneNumber || s.id}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
