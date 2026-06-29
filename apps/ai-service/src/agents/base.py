@@ -67,9 +67,6 @@ from src.llm.model_capabilities import (
 from src.mcp_integration.registry import get_mcp_registry
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.pipeline.runner import execute_pipeline
-from src.pipeline.stages.handle_fallback import handle_fallback
-from src.pipeline.stages.retrieve_episodic import retrieve_episodic_memory
-from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
 from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry

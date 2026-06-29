@@ -3,22 +3,24 @@ from pydantic import BaseModel, Field
 from src.skills.base import Skill
 
 class KnowledgeSearchInput(BaseModel):
-    query: str = Field(description="Search query in Arabic or English for FAQs, policies, or store information")
-    category: str | None = Field(None, description="Category: 'policies', 'faq', 'about', 'shipping_policy', 'return_policy'")
+    query: str = Field(description="Search query for FAQs, policies, or store information")
+    source_type: str | None = Field(None, description="Filter: 'faq', 'policy', or None for both")
+    company_id: str = Field(default="", description="")
 
 async def search_knowledge(params: KnowledgeSearchInput) -> dict:
-    # ponytail: stub — searches knowledge base / FAQ via RAG or DB
-    return {
-        "results": [
-            {"question": "ما هي سياسة الاسترجاع؟", "answer": "يمكن استرجاع المنتجات خلال 14 يوم من الاستلام."},
-            {"question": "كم تكلفة الشحن؟", "answer": "الشحن مجاني للطلبات فوق 200 جنيه."},
-        ],
-        "total": 2,
-    }
+    from src.tools.knowledge_search import knowledge_search as _search
+    results = await _search(
+        company_id=params.company_id,
+        query=params.query,
+        source_type=params.source_type,
+        limit=5,
+    )
+    return {"results": results, "count": len(results)}
 
 knowledge_search = Skill(
     name="knowledge_search",
-    description="Search the store's knowledge base for FAQs, policies, store information, and general inquiries. Use when customer asks about store policies, business hours, shipping info, or general questions. Arabic keywords: معلومات, اسئله, سؤال, سياسة, شحن, توصيل, مواعيد, عنوان",
+    description="Search the store's knowledge base for FAQs, policies, store information, and general inquiries. Use when customer asks about store policies, business hours, shipping info, or general questions.",
     input_schema=KnowledgeSearchInput,
     handler=search_knowledge,
+    internal_fields=["company_id"],
 )

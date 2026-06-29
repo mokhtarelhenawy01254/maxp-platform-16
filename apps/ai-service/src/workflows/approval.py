@@ -178,8 +178,6 @@ async def resume_sdk_approval_workflow(
         session=session,
     )
 
-    from src.pipeline.stages.handle_fallback import handle_fallback
-    from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
     from src.pipeline.stages.skills_pipeline import process_with_skills
     from src.pipeline.stages.validate_reply import validate_reply
 
@@ -195,7 +193,6 @@ async def resume_sdk_approval_workflow(
         context,
         [
             process_with_skills,
-            handle_fallback,
             validate_reply,
         ],
         checkpoint_storage=storage,

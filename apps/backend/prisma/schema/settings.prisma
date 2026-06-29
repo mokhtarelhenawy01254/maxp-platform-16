@@ -325,14 +325,15 @@ model StorePromotionSettings {
 /// تخفيضات المتجر الشاملة — عروض على كل المنتجات بكميات محددة
 /// يدعم: اشتر X وخد الأرخص بنص التمن، اشتر X وخد الأرخص هدية، خصم على الكل
 model StorePromotion {
-  id              String    @id @default(cuid())
-  companyId       String    @unique
-  isActive        Boolean   @default(false)
-  title           String    @default("")
-  tiers           String    @default("[]")
-  startDate       DateTime?
-  endDate         DateTime?
-  createdAt       DateTime  @default(now())
+  id                    String    @id @default(cuid())
+  companyId             String    @unique
+  isActive              Boolean   @default(false)
+  title                 String    @default("")
+  tiers                 String    @default("[]")
+  disableOtherDiscounts Boolean   @default(false)
+  startDate             DateTime?
+  endDate               DateTime?
+  createdAt             DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

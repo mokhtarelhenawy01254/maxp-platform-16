@@ -179,7 +179,7 @@ class ContextAssembler:
         4. <company_knowledge> — RAG evidence from knowledge base
         5. <relevant_memories> — episodic memories for this customer
         """
-        from src.pipeline.stages.resolve_intent import get_agent_instructions
+        from src.pipeline.stages.skills_pipeline import get_agent_instructions
         base_prompt = ctx.system_prompt or (get_agent_instructions(ctx.agent) if ctx.agent else "") or ""
 
         # Inject persona.agentInstructions, persona.toolsInstructions, and rules

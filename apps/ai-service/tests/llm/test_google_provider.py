@@ -6,7 +6,22 @@ import pytest
 import respx
 from httpx import Response
 
-from src.intent.schema import INTENT_CLASSIFICATION_SCHEMA
+INTENT_CLASSIFICATION_SCHEMA = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "test_schema",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "intent": {"type": "string"},
+                "confidence": {"type": "number"},
+            },
+            "required": ["intent", "confidence"],
+            "additionalProperties": False,
+        },
+    },
+}
 from src.llm.providers.google_provider import GoogleProvider
 
 
@@ -82,11 +97,5 @@ def test_google_provider_converts_json_schema_to_gemini_response_schema() -> Non
     assert not _contains_key(response_schema, "const")
     assert not _contains_key(response_schema, "minimum")
     assert not _contains_key(response_schema, "maximum")
-    assert response_schema["properties"]["clarificationQuestion"] == {
-        "type": "string",
-        "nullable": True,
-    }
-    assert response_schema["properties"]["slots"]["properties"]["productName"] == {
-        "type": "string",
-        "nullable": True,
-    }
+    assert response_schema["properties"]["intent"] == {"type": "string"}
+    assert response_schema["properties"]["confidence"] == {"type": "number"}

@@ -87,7 +87,7 @@ const WhatsAppMetaTemplates: React.FC<{
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
-  const [sessions, setSessions] = useState<{ id: string; phoneNumber: string }[]>([]);
+  const [sessions, setSessions] = useState<{ id: string; name?: string; phoneNumber: string }[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);

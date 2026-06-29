@@ -18,6 +18,7 @@ interface StorePromotion {
   isActive: boolean;
   title: string;
   tiers: PromotionTier[];
+  disableOtherDiscounts?: boolean;
   startDate?: string | null;
   endDate?: string | null;
 }
@@ -162,9 +163,10 @@ export const getActiveStorePromotionFromCompany = (
     isActive: true,
     title: String(p.title || ""),
     tiers,
+    disableOtherDiscounts: p.disableOtherDiscounts === true,
     startDate: p.startDate ? String(p.startDate) : null,
     endDate: p.endDate ? String(p.endDate) : null,
   };
 };
-// ponytail: no product exclusions, no category filter, no coupon-stacking precedence
+// ponytail: no product exclusions, no category filter
 // add when: stores need granular control over applicable items

@@ -74,6 +74,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 continue
 
             try:
+                if ctx.company_id and "company_id" not in arguments:
+                    arguments["company_id"] = ctx.company_id
                 result = await skill.execute(**arguments)
                 executed.append({"tool": func_name, "status": "success", "result": result})
                 ctx.tool_evidence.append({"tool": func_name, "result": result})
@@ -203,6 +205,24 @@ def _build_followup_messages(ctx: PipelineContext, first_response: ProviderRespo
             })
 
     return messages
+
+
+def get_agent_instructions(agent: Any) -> str:
+    """Extract the agent's instructions/system prompt from various agent representations."""
+    if not agent:
+        return ""
+    if hasattr(agent, "instructions"):
+        try:
+            return str(agent.instructions or "")
+        except AttributeError:
+            pass
+    if hasattr(agent, "default_options") and isinstance(agent.default_options, dict):
+        inst = agent.default_options.get("instructions")
+        if inst:
+            return str(inst)
+    if hasattr(agent, "soul") and agent.soul:
+        return str(agent.soul)
+    return ""
 
 
 def _default_system_prompt() -> str:

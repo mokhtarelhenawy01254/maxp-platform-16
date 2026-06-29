@@ -3,22 +3,24 @@ from pydantic import BaseModel, Field
 from src.skills.base import Skill
 
 class RefundRequestInput(BaseModel):
-    orderId: str | None = Field(None, description="Order ID for the refund")
+    order_number: str = Field(description="Order number for the refund")
     reason: str = Field(description="Reason for refund/return")
-    items: str | None = Field(None, description="Items to return, if specific")
+    company_id: str = Field(default="", description="")
 
 async def request_refund(params: RefundRequestInput) -> dict:
-    # ponytail: stub — creates refund ticket, handoff to support team
-    return {
-        "status": "ticket_created",
-        "ticketId": "tkt_" + __import__("uuid").uuid4().hex[:12],
-        "requiresManualReview": True,
-        "message": "تم استلام طلب الاسترجاع. فريق الدعم سيتواصل معك قريباً.",
-    }
+    from src.tools.definitions.order import order_refund
+    from src.tools.definitions.order import OrderRefundInput
+    inp = OrderRefundInput(
+        order_number=params.order_number,
+        reason=params.reason,
+        company_id=params.company_id,
+    )
+    return await order_refund(inp)
 
 support_refund = Skill(
     name="support_refund",
-    description="Handle refund, return, or financial dispute requests. Use when customer wants to return a product, get a refund, or has a payment issue. Arabic keywords: استرجاع, مرتجع, استرداد, فلوس, refund, مرجوع, شكوى مالية",
+    description="Handle refund, return, or financial dispute requests. Use when customer wants to return a product, get a refund, or has a payment issue.",
     input_schema=RefundRequestInput,
     handler=request_refund,
+    internal_fields=["company_id"],
 )

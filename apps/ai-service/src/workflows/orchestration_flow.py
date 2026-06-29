@@ -18,7 +18,6 @@ from src.observability.llm_fallback import LLMFallbackProvider
 from src.pipeline.checkpointer import PipelineCheckpointer
 from src.pipeline.context import PipelineContext
 from src.pipeline.runner import execute_pipeline
-from src.pipeline.stages.handle_fallback import handle_fallback
 from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.pipeline.stages.validate_reply import validate_reply
 from src.services.a2a_bridge import AGENT_CARD_META
@@ -361,7 +360,6 @@ async def run_orchestration(
 
         pipeline_stages = [
             process_with_skills,
-            handle_fallback,
             validate_reply,
         ]
 

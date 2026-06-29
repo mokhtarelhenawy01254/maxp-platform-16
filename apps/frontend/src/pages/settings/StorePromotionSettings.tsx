@@ -54,6 +54,7 @@ interface StorePromotion {
   isActive: boolean;
   title: string;
   tiers: PromotionTier[];
+  disableOtherDiscounts: boolean;
   startDate: string;
   endDate: string;
 }
@@ -64,7 +65,7 @@ const DEFAULT_TIERS: PromotionTier[] = [
 ];
 
 const defaultPromotion = (): StorePromotion => ({
-  isActive: false, title: "عروض المتجر", tiers: [], startDate: "", endDate: "",
+  isActive: false, title: "عروض المتجر", tiers: [], disableOtherDiscounts: false, startDate: "", endDate: "",
 });
 
 const typeOptions = [
@@ -95,6 +96,7 @@ export default function StorePromotionSettings() {
           isActive: d.isActive ?? false,
           title: d.title || "",
           tiers: parseTiersJson(d.tiers),
+          disableOtherDiscounts: d.disableOtherDiscounts ?? false,
           startDate: d.startDate ? d.startDate.slice(0, 16) : "",
           endDate: d.endDate ? d.endDate.slice(0, 16) : "",
         });
@@ -116,6 +118,7 @@ export default function StorePromotionSettings() {
         isActive: promotion.isActive,
         title: promotion.title,
         tiers: JSON.stringify(promotion.tiers.filter(t => t.isActive)),
+        disableOtherDiscounts: promotion.disableOtherDiscounts,
         startDate: promotion.startDate || null,
         endDate: promotion.endDate || null,
       });
@@ -212,6 +215,26 @@ export default function StorePromotionSettings() {
             <Switch
               checked={promotion.isActive}
               onCheckedChange={checked => setPromotion(p => ({ ...p, isActive: checked }))}
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          icon={ShoppingCart}
+          title="تعطيل الخصومات الأخرى"
+          description="عند التفعيل، يوقف هذا العرض جميع الخصومات الأخرى (خصومات الكمية، الكوبونات)"
+          accentClassName="bg-rose-50 text-rose-700 ring-rose-200/70"
+        >
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label>تعطيل الخصومات الأخرى</Label>
+              <p className="text-sm text-muted-foreground">
+                الخصم الشامل هو الوحيد اللي يشتغل، وكل الخصومات التانية تتوقف
+              </p>
+            </div>
+            <Switch
+              checked={promotion.disableOtherDiscounts}
+              onCheckedChange={checked => setPromotion(p => ({ ...p, disableOtherDiscounts: checked }))}
             />
           </div>
         </SettingsSection>

@@ -60,7 +60,7 @@ exports.upsertPromotion = async (req, res) => {
     if (!companyId) {
       return res.status(400).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
-    const { isActive, title, tiers, startDate, endDate } = req.body;
+    const { isActive, title, tiers, disableOtherDiscounts, startDate, endDate } = req.body;
     const promotion = await safePromotionQuery(
       (p) => p.storePromotion.upsert({
         where: { companyId },
@@ -69,6 +69,7 @@ exports.upsertPromotion = async (req, res) => {
           isActive: Boolean(isActive),
           title: String(title || ''),
           tiers: typeof tiers === 'string' ? tiers : JSON.stringify(tiers || []),
+          disableOtherDiscounts: Boolean(disableOtherDiscounts),
           startDate: startDate ? new Date(startDate) : null,
           endDate: endDate ? new Date(endDate) : null,
         },
@@ -76,6 +77,7 @@ exports.upsertPromotion = async (req, res) => {
           isActive: Boolean(isActive),
           title: String(title || ''),
           tiers: typeof tiers === 'string' ? tiers : JSON.stringify(tiers || []),
+          disableOtherDiscounts: Boolean(disableOtherDiscounts),
           startDate: startDate ? new Date(startDate) : null,
           endDate: endDate ? new Date(endDate) : null,
         },
