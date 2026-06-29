@@ -560,7 +560,7 @@ class TestBuild:
              patch("src.agents.base.build_agent_client_async", new=AsyncMock()) as build_default, \
              patch.object(agent, "_resolve_tools", return_value=[]), \
              patch.object(agent, "_get_system_prompt", return_value="system"):
-            with pytest.raises(RuntimeError, match="Selected LLM provider unavailable"):
+            with pytest.raises(RuntimeError, match="No LLM client available"):
                 await agent.ensure_client()
 
         build_default.assert_not_awaited()
