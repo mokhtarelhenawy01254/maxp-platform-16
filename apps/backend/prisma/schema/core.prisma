@@ -203,6 +203,7 @@ model Company {
   shippingZones                   ShippingZone[]
   storePages                      StorePage[]
   storePromotionSettings          StorePromotionSettings?
+  storePromotion                  StorePromotion?
   storeVisits                     StoreVisit[]
   storefrontSettings              StorefrontSettings?
   supplierPayments                SupplierPayment[]
