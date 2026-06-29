@@ -67,12 +67,10 @@ from src.llm.model_capabilities import (
 from src.mcp_integration.registry import get_mcp_registry
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.pipeline.runner import execute_pipeline
-from src.pipeline.stages.execute_tools import execute_tools
 from src.pipeline.stages.handle_fallback import handle_fallback
-from src.pipeline.stages.resolve_intent import resolve_intent
 from src.pipeline.stages.retrieve_episodic import retrieve_episodic_memory
 from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
-from src.pipeline.stages.route_to_tools import route_to_tools
+from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
 from src.tools.names import canonical_tool_name, canonical_tool_set
@@ -929,10 +927,7 @@ class BaseAgent:
         ctx = await execute_pipeline(
             ctx,
             [
-                resolve_intent,
-                retrieve_episodic_memory,
-                route_to_tools,
-                execute_tools,
+                process_with_skills,
                 handle_fallback,
                 validate_reply,
             ],
@@ -1121,11 +1116,7 @@ class BaseAgent:
             emitter.emit("agent_thinking", {"stage": "resolve_intent"})
 
             for stage in (
-                resolve_intent,
-                retrieve_knowledge,
-                retrieve_episodic_memory,
-                route_to_tools,
-                execute_tools,
+                process_with_skills,
                 handle_fallback,
                 validate_reply,
             ):

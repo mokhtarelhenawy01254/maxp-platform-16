@@ -441,5 +441,11 @@
   "storeThemeDesign": "الثيم والتصميم",
   "storefrontStudioRail": "استوديو",
   "storeManagementRail": "المتجر",
-  "turboRecords": "سجلات Turbo"
+  "turboRecords": "سجلات Turbo",
+  "wholesale": "البيع بالجملة",
+  "wholesaleRail": "الجملة",
+  "wholesaleCustomers": "عملاء الجملة",
+  "priceLists": "قوائم الأسعار",
+  "customerStatements": "كشوف الحساب",
+  "debtTracking": "المديونية"
 }

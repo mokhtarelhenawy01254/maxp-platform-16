@@ -1080,5 +1080,69 @@
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
     "updatedAt": "2026-06-26T00:00:00.000Z"
+  },
+  {
+    "id": "cat-app-wholesale-pro",
+    "slug": "wholesale-pro",
+    "name": "البيع بالجملة",
+    "nameEn": "Wholesale Pro",
+    "description": "نظام متكامل للبيع بالجملة — قوائم أسعار، شريحة عملاء، كشوف حساب، تتبع المديونية، وإدارة الموزعين.",
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 299,
+    "yearlyPrice": 2990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store"
+    ],
+    "positioning": {
+      "audience": "شركات الجملة والتوزيع التي تبيع لتجار جملة وموزعين بأسعار خاصة وحدود ائتمانية.",
+      "surface": "داخل لوحة الجملة — قوائم الأسعار، العملاء، كشوف الحساب، والمديونية.",
+      "outcome": "تحكم كامل في البيع بالجملة بدون برامج منفصلة أو ملفات إكسل خارجية."
+    },
+    "features": {
+      "priceLists": {
+        "enabled": true,
+        "name": "قوائم الأسعار",
+        "description": "إنشاء قوائم أسعار خاصة بفئات العملاء مع أسعار جملة مميزة.",
+        "access": "PAID"
+      },
+      "wholesaleCustomers": {
+        "enabled": true,
+        "name": "عملاء الجملة",
+        "description": "إدارة عملاء الجملة والموزعين مع حدود ائتمانية ورصيد مستحق.",
+        "access": "PAID"
+      },
+      "customerStatements": {
+        "enabled": true,
+        "name": "كشوف الحساب",
+        "description": "كشف حساب تفصيلي لكل عميل — فواتير، مدفوعات، وأرصدة.",
+        "access": "PAID"
+      },
+      "debtTracking": {
+        "enabled": true,
+        "name": "المديونية",
+        "description": "متابعة المديونية والأرصدة المستحقة مع تقارير التقادم.",
+        "access": "PAID"
+      },
+      "distributorPortal": {
+        "enabled": true,
+        "name": "بوابة الموزع",
+        "description": "بوابة خاصة للموزع يتابع فيها طلباته وكشف حسابه وأسعاره.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "percent",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-30T00:00:00.000Z",
+    "updatedAt": "2026-06-30T00:00:00.000Z"
   }
 ]

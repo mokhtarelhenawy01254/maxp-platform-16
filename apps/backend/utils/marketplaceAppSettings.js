@@ -177,6 +177,20 @@ const DEFAULT_MARKETPLACE_APP_SETTINGS = {
       bestValueLabel: 'الأكثر توفيرًا',
     },
   },
+  'wholesale-pro': {
+    general: {
+      enabled: true,
+      defaultPaymentTermsDays: 30,
+      enableCustomerPortal: true,
+    },
+    modules: {
+      priceLists: true,
+      wholesaleCustomers: true,
+      customerStatements: true,
+      debtTracking: true,
+      distributorPortal: true,
+    },
+  },
 };
 
 const SUPPORTED_MARKETPLACE_APP_SETTING_SLUGS = Object.freeze(

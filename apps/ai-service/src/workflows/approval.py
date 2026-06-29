@@ -178,11 +178,9 @@ async def resume_sdk_approval_workflow(
         session=session,
     )
 
-    from src.pipeline.stages.execute_tools import execute_tools
     from src.pipeline.stages.handle_fallback import handle_fallback
-    from src.pipeline.stages.resolve_intent import resolve_intent
     from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
-    from src.pipeline.stages.route_to_tools import route_to_tools
+    from src.pipeline.stages.skills_pipeline import process_with_skills
     from src.pipeline.stages.validate_reply import validate_reply
 
     context = PipelineContext(
@@ -196,9 +194,7 @@ async def resume_sdk_approval_workflow(
     return await execute_pipeline_workflow(
         context,
         [
-            resolve_intent,
-            route_to_tools,
-            execute_tools,
+            process_with_skills,
             handle_fallback,
             validate_reply,
         ],

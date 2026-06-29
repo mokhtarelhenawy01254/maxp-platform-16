@@ -745,6 +745,21 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro', 'ecommerce-pro'])
         },
 
+        // 4️⃣.4 البيع بالجملة
+        {
+            id: 'wholesale',
+            title: t('sidebar.wholesale'),
+            icon: TagIcon,
+            items: [
+                { to: '/wholesale/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
+                { to: '/wholesale/price-lists', icon: DocumentTextIcon, label: t('sidebar.priceLists') },
+                { to: '/wholesale/customers', icon: UserGroupIcon, label: t('sidebar.wholesaleCustomers') },
+                { to: '/wholesale/statements', icon: ClipboardDocumentCheckIcon, label: t('sidebar.customerStatements') },
+                { to: '/wholesale/debts', icon: ExclamationTriangleIcon, label: t('sidebar.debtTracking') },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['wholesale-pro'])
+        },
+
         // 4️⃣.5 الافليت والدروب شيبنج
         {
             id: 'affiliate',

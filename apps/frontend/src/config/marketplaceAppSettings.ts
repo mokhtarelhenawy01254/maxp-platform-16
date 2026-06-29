@@ -338,6 +338,21 @@ export const DEFAULT_QUANTITY_OFFERS_PRO_SETTINGS = {
   },
 } as const;
 
+export const DEFAULT_WHOLESALE_PRO_SETTINGS = {
+  general: {
+    enabled: true,
+    defaultPaymentTermsDays: 30,
+    enableCustomerPortal: true,
+  },
+  modules: {
+    priceLists: true,
+    wholesaleCustomers: true,
+    customerStatements: true,
+    debtTracking: true,
+    distributorPortal: true,
+  },
+} as const;
+
 export const getDefaultMarketplaceAppSettings = (slug: string): JsonRecord => {
   switch (slug) {
     case "conversion-suite":
@@ -348,6 +363,8 @@ export const getDefaultMarketplaceAppSettings = (slug: string): JsonRecord => {
       return deepMerge({}, DEFAULT_COMMERCE_ADVANCED_SETTINGS as unknown as JsonRecord);
     case "quantity-offers-pro":
       return deepMerge({}, DEFAULT_QUANTITY_OFFERS_PRO_SETTINGS as unknown as JsonRecord);
+    case "wholesale-pro":
+      return deepMerge({}, DEFAULT_WHOLESALE_PRO_SETTINGS as unknown as JsonRecord);
     default:
       return {};
   }
@@ -362,7 +379,8 @@ export const normalizeMarketplaceAppSettings = (
       return buildConversionSuiteSettings(rawSettings);
     case "ugc-reviews-pro":
     case "commerce-advanced":
-    case "quantity-offers-pro": {
+    case "quantity-offers-pro":
+    case "wholesale-pro": {
       const defaults = getDefaultMarketplaceAppSettings(slug);
       if (!isRecord(rawSettings)) {
         return defaults;

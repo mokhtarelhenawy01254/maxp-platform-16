@@ -272,6 +272,11 @@ model Company {
    bookingBranches                  BookingBranch[]
    bookingDoctors                   BookingDoctor[]
    bookingServices                  BookingService[]
+   wholesalePriceLists              WholesalePriceList[]
+   wholesaleCustomers               WholesaleCustomer[]
+   wholesaleTransactions            WholesaleTransaction[]
+   wholesaleStatements              WholesaleStatement[]
+   wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
 
    @@index([businessSpecialtyId])
   @@map("companies")

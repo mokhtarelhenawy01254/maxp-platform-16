@@ -101,6 +101,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if db_session.async_session:
                 await init_registry_from_db(db_session.async_session)
 
+        # Register skills for the new skill-based pipeline
+        from src.skills.register_all import register_all_skills
+        register_all_skills()
+
         log = structlog.get_logger()
         log.info(
             "Starting maxp-ai-service",

@@ -364,6 +364,27 @@ const SupplierPayments = React.lazy(
 const ProcurementDashboard = React.lazy(
   () => import("./components/procurement/ProcurementDashboard"),
 );
+const WholesaleDashboard = React.lazy(
+  () => import("./pages/wholesale/WholesaleDashboard"),
+);
+const WholesalePriceLists = React.lazy(
+  () => import("./pages/wholesale/WholesalePriceLists"),
+);
+const WholesalePriceListDetail = React.lazy(
+  () => import("./pages/wholesale/WholesalePriceListDetail"),
+);
+const WholesaleCustomers = React.lazy(
+  () => import("./pages/wholesale/WholesaleCustomers"),
+);
+const WholesaleCustomerDetail = React.lazy(
+  () => import("./pages/wholesale/WholesaleCustomerDetail"),
+);
+const WholesaleStatements = React.lazy(
+  () => import("./pages/wholesale/WholesaleStatements"),
+);
+const WholesaleDebts = React.lazy(
+  () => import("./pages/wholesale/WholesaleDebts"),
+);
 
 // Advertising
 const FacebookPixelSettings = React.lazy(
@@ -3762,6 +3783,71 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <SupplierPayments />
+                    </Layout>
+                  }
+                />
+                {/* Wholesale Routes */}
+                <Route
+                  path="/wholesale/dashboard"
+                  element={
+                    <Layout>
+                      <WholesaleDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/price-lists"
+                  element={
+                    <Layout>
+                      <WholesalePriceLists />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/price-lists/new"
+                  element={
+                    <Layout>
+                      <WholesalePriceListDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/price-lists/:id"
+                  element={
+                    <Layout>
+                      <WholesalePriceListDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/customers"
+                  element={
+                    <Layout>
+                      <WholesaleCustomers />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/customers/:id"
+                  element={
+                    <Layout>
+                      <WholesaleCustomerDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/statements"
+                  element={
+                    <Layout>
+                      <WholesaleStatements />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wholesale/debts"
+                  element={
+                    <Layout>
+                      <WholesaleDebts />
                     </Layout>
                   }
                 />

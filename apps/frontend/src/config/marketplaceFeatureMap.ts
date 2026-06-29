@@ -554,6 +554,26 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     ],
     action: "تم تجهيز notification-automation وربط التنبيهات والتذكيرات به.",
   },
+  {
+    id: "wholesale",
+    area: "commerce",
+    label: "البيع بالجملة",
+    description: "قوائم الأسعار، عملاء الجملة، كشوف الحساب، المديونية، وبوابة الموزعين.",
+    status: "covered",
+    appSlug: "wholesale-pro",
+    appLabel: "البيع بالجملة",
+    currentGate: "wholesale-pro",
+    routes: [
+      { path: "/wholesale/dashboard", label: "لوحة الجملة" },
+      { path: "/wholesale/price-lists", label: "قوائم الأسعار" },
+      { path: "/wholesale/price-lists/:id", label: "قائمة أسعار" },
+      { path: "/wholesale/customers", label: "عملاء الجملة" },
+      { path: "/wholesale/customers/:id", label: "عميل جملة" },
+      { path: "/wholesale/statements", label: "كشوف الحساب" },
+      { path: "/wholesale/debts", label: "المديونية" },
+    ],
+    action: "تم تجهيز wholesale-pro لربط البيع بالجملة.",
+  },
 ];
 
 export const getMarketplaceFeatureAudit = (
