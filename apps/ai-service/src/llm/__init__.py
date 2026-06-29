@@ -1,12 +1,11 @@
-"""LLM client package for the MaxP ai-service.
-
-Exposes the Gemma 4 chat template, the GemmaClient (native Gemini API
-adapter that injects Gemma 4's <|tool>/<|tool_call>/<|tool_response>
-protocol), and the provider-routing factory used by agent_registry and
-the per-role agent modules.
-"""
-
-from src.llm.agent_client_factory import build_agent_client
+from src.llm.agent_client_factory import (
+    AdapterResponse,
+    AgentClientAdapter,
+    build_agent_client,
+    build_agent_client_async,
+    build_provider_client,
+    build_provider_client_async,
+)
 from src.llm.gemma_chat_template import (
     is_gemma_model,
     parse_tool_calls,
@@ -15,10 +14,15 @@ from src.llm.gemma_chat_template import (
 from src.llm.gemma_client import GemmaClient, GemmaResponse, build_gemma_client
 
 __all__ = [
+    "AdapterResponse",
+    "AgentClientAdapter",
     "GemmaClient",
     "GemmaResponse",
     "build_agent_client",
+    "build_agent_client_async",
     "build_gemma_client",
+    "build_provider_client",
+    "build_provider_client_async",
     "is_gemma_model",
     "parse_tool_calls",
     "render_tools",

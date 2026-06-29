@@ -19,11 +19,12 @@ from src.config import get_settings
 class TestMigrationSprint1:
     """Sprint 1: Pure Logic Components"""
 
-    def test_intent_schema_exists_in_python(self):
-        """intentClassificationSchema.js should be migrated to Python"""
-        schema_path = Path("src/intent/schema.py")
-        assert schema_path.exists(), "Python intent schema should exist"
-        assert schema_path.stat().st_size > 1000, "Schema should have substantial content"
+    def test_skills_module_exists_in_python(self):
+        """Intent schema was replaced by Skill classes"""
+        skills_init = Path("src/skills/__init__.py")
+        assert skills_init.exists(), "Skills package should exist"
+        skills_count = len(list(Path("src/skills").rglob("search.py")))
+        assert skills_count >= 3, "Should have at least 3 skill modules with search handlers"
 
     def test_dag_planner_exists_in_python(self):
         """DAGPlannerExecutor.js should be migrated to Python"""

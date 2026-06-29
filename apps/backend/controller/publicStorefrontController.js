@@ -406,7 +406,7 @@ exports.getStorefrontSettings = async (req, res) => {
     const prisma = await getSharedPrismaClientAsync();
 
     // Fetch active homepage template and general company info
-    const [template, company, storefrontSettings, companyApps, defaultThemeId] = await Promise.all([
+    const [template, company, storefrontSettings, companyApps, defaultThemeId, storePromotion] = await Promise.all([
       safeQuery(() => prisma.homepageTemplate.findFirst({
         where: {
           companyId: companyId,
@@ -462,6 +462,16 @@ exports.getStorefrontSettings = async (req, res) => {
       storefrontThemeCatalogService.getDefaultThemeId({
         fallbackThemeId: DEFAULT_THEME_ID,
       }),
+      safeQuery(() => prisma.storePromotion.findFirst({
+        where: {
+          companyId,
+          isActive: true,
+          AND: [
+            { OR: [{ startDate: null }, { startDate: { lte: new Date() } }] },
+            { OR: [{ endDate: null }, { endDate: { gte: new Date() } }] },
+          ],
+        },
+      })),
     ]);
 
     if (!company) {
@@ -498,7 +508,8 @@ exports.getStorefrontSettings = async (req, res) => {
           customDomain: company.customDomain || null,
           logo: company.logo,
           currency: company.currency,
-          settings: parsedCompanySettings
+          settings: parsedCompanySettings,
+          storePromotion: storePromotion || null,
         },
         storefront: storefrontConfig,
         storefrontSettings: publicStorefrontSettings,

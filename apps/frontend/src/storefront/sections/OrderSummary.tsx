@@ -24,6 +24,10 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from "../utils/marketplaceApps";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
+import {
+  getActiveStorePromotionFromCompany,
+  calculateStorePromotionDiscount,
+} from "../utils/storePromotion";
 
 type StorefrontSettingsRecord = Record<string, unknown>;
 
@@ -353,6 +357,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
       ? appliedCoupon
       : null;
   const couponDiscount = Number(activeCoupon?.discountAmount || 0);
+  const storePromotion = getActiveStorePromotionFromCompany(
+    storefrontSettings?.company,
+  );
+  const { discount: storePromotionDiscount, tier: storePromotionTier } =
+    calculateStorePromotionDiscount(items, storePromotion);
 
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
     storefrontSettings,
@@ -648,7 +657,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     sectionSettings?.showNextSteps,
     shouldShowNextStepsCard,
   );
-  const estimatedTotal = Math.max(0, subtotal + shippingCost - couponDiscount);
+  const estimatedTotal = Math.max(0, subtotal + shippingCost - couponDiscount - storePromotionDiscount);
   const resolvedFreeShippingText = quantityOfferFreeShippingActive
     ? quantityOfferFreeShippingText
     : freeShippingReachedText;
@@ -1350,6 +1359,16 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
               </span>
               <span className="text-emerald-600">
                 -{formatStorefrontCurrency(couponDiscount, currency)}
+              </span>
+            </div>
+          ) : null}
+          {storePromotionDiscount > 0 ? (
+            <div className="flex justify-between text-foreground">
+              <span className="text-[#6f6455]">
+                {storePromotionTier?.label || "عرض الكمية"}
+              </span>
+              <span className="text-emerald-600">
+                -{formatStorefrontCurrency(storePromotionDiscount, currency)}
               </span>
             </div>
           ) : null}

@@ -5037,6 +5037,7 @@
     "storeAnalytics": "تحليلات المتجر",
     "storeThemes": "قوالب المتجر",
     "storePages": "صفحات السياسات والمحتوى",
+    "storePromotion": "عروض المتجر الشاملة",
     "storeSettings": "إعدادات المتجر",
     "subscription": "الاشتراك والخطة",
     "successAnalytics": "تحليلات أنماط النجاح",
@@ -5110,7 +5111,13 @@
     "storeThemeDesign": "الثيم والتصميم",
     "storefrontStudioRail": "استوديو",
     "storeManagementRail": "المتجر",
-    "turboRecords": "سجلات Turbo"
+    "turboRecords": "سجلات Turbo",
+    "wholesale": "البيع بالجملة",
+    "wholesaleRail": "الجملة",
+    "wholesaleCustomers": "عملاء الجملة",
+    "priceLists": "قوائم الأسعار",
+    "customerStatements": "كشوف الحساب",
+    "debtTracking": "المديونية"
   },
   "stockAnalytics": {
     "title": "تحليلات المخزون",

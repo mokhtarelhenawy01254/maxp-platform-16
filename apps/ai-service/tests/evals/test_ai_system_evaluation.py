@@ -231,13 +231,13 @@ class TestDecisionUnification:
         # This is a Node.js concept. Python is always "primary" when running.
         assert settings.default_llm_provider in ("anthropic", "openai", "google")
 
-    def test_python_ai_service_has_intent_module(self):
+    def test_python_ai_service_has_skills_module(self):
         """
-        VERIFY: Python AI service has intent classification module
+        VERIFY: Python AI service has skills module (replaced intent classification)
         """
-        intent_path = Path("src/intent")
-        assert intent_path.exists(), \
-            f"Python intent module should exist at {intent_path.resolve()}"
+        skills_path = Path("src/skills")
+        assert skills_path.exists(), \
+            f"Python skills module should exist at {skills_path.resolve()}"
 
     def test_python_ai_service_has_pipeline_stages(self):
         """
@@ -245,9 +245,7 @@ class TestDecisionUnification:
         """
         stages_path = Path("src/pipeline/stages")
         required_stages = [
-            "resolve_intent.py",
-            "execute_tools.py",
-            "handle_fallback.py",
+            "skills_pipeline.py",
             "validate_reply.py",
         ]
         for stage in required_stages:

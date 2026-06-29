@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 import structlog
-from sqlalchemy import select, update, cast, String
+from sqlalchemy import String, cast, select, update
 
 from src.config import get_settings
 from src.db import session
@@ -327,28 +326,20 @@ class ModelManager:
         )
 
         try:
-            from src.llm.providers.factory import get_provider_factory
-            factory = get_provider_factory()
-            client = await factory.get_provider(
-                provider,
-                model,
-                key_record.company_id or "default",
+            from src.llm.client import OPENAI_COMPAT_PROVIDERS, LLMClient
+
+            base_url = None if provider == "GOOGLE" else OPENAI_COMPAT_PROVIDERS.get(provider)
+            client = LLMClient(
+                provider=provider,
+                model=model,
+                api_key=key_record.api_key,
+                base_url=key_record.base_url or base_url,
+                company_id=key_record.company_id or "default",
                 key_id=key_id,
             )
 
-            if client is None:
-                return self._key_test_result(
-                    key_id=key_id,
-                    started_at=started_at,
-                    tested_at=tested_at,
-                    ok=False,
-                    error="Provider not available",
-                    provider=provider,
-                    model=model,
-                )
-
             response = await asyncio.wait_for(
-                client.generate_response(
+                client.generate(
                     [{"role": "user", "content": "Reply with exactly: KEY_OK"}],
                     max_tokens=50,
                 ),

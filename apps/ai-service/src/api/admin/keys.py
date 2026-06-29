@@ -8,7 +8,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import select, cast, String
+from sqlalchemy import String, cast, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,11 +25,6 @@ from src.api.admin.schemas import (
     ProviderPriorityUpdate,
     ProviderRead,
 )
-from src.llm.providers.base import BaseProvider
-from src.llm.providers.factory import PROVIDER_DEFS
-from src.llm.providers.google_provider import GoogleProvider
-from src.llm.providers.ollama_provider import OllamaProvider
-from src.llm.providers.openai_compat import OpenAICompatProvider
 from src.db.models import (
     AiKey,
     GlobalAiConfig,
@@ -37,6 +32,7 @@ from src.db.models import (
     ProviderLog,
 )
 from src.db.session import get_session
+from src.llm.client import OPENAI_COMPAT_PROVIDERS, LLMClient
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -405,37 +401,28 @@ async def list_logs(
     return [LogEntry.model_validate(r) for r in result.scalars().all()]
 
 
-def _build_direct_provider(provider_type: str, api_key: str, model: str | None = None, timeout_ms: int | None = None) -> BaseProvider:
-    provider_type = provider_type.upper()
-    pdef = PROVIDER_DEFS.get(provider_type)
-    if not pdef:
-        raise ValueError(f"Unknown provider: {provider_type}")
+_DEFAULT_TEST_MODELS: dict[str, str] = {
+    "GOOGLE": "gemini-2.5-flash",
+    "OLLAMA": "llama3.2",
+    "GROQ": "llama-3.3-70b-versatile",
+    "OPENAI": "gpt-4o-mini",
+    "DEEPSEEK": "deepseek-chat",
+    "ANTHROPIC": "claude-sonnet-4-20250514",
+    "CEREBRAS": "qwen-3-235b-a22b-instruct-2507",
+    "MISTRAL": "mistral-large-latest",
+    "SAMBANOVA": "DeepSeek-V3.1",
+    "OPENROUTER": "openrouter/auto",
+    "NVIDIA": "openai/gpt-oss-120b",
+    "HUGGINGFACE": "mistralai/Mistral-7B-Instruct-v0.3",
+    "GITHUB": "gpt-4o",
+}
 
-    resolved_model = model or pdef["default_model"]
-    cls_name = pdef.get("class", "OpenAICompatProvider")
-    kwargs = {}
-    if timeout_ms is not None:
-        kwargs["timeout_ms"] = timeout_ms
 
-    if cls_name == "GoogleProvider":
-        return GoogleProvider(api_key, resolved_model, **kwargs)
-    if cls_name == "OllamaProvider":
-        return OllamaProvider(resolved_model, base_url=pdef.get("base_url", ""), **kwargs)
-
-    extra_config = {
-        k: v
-        for k, v in pdef.items()
-        if k not in {"class", "env_key", "default_model", "priority", "base_url", "provider_name", "extra_headers"}
-    }
-    return OpenAICompatProvider(
-        api_key,
-        resolved_model,
-        base_url=pdef.get("base_url", ""),
-        provider_name=pdef.get("provider_name", provider_type),
-        extra_headers=pdef.get("extra_headers"),
-        **extra_config,
-        **kwargs,
-    )
+def _build_test_client(provider_type: str, api_key: str, model: str | None = None) -> LLMClient:
+    ptype = provider_type.upper()
+    base_url = None if ptype == "GOOGLE" else OPENAI_COMPAT_PROVIDERS.get(ptype)
+    resolved_model = model or _DEFAULT_TEST_MODELS.get(ptype, "gpt-4o-mini")
+    return LLMClient(provider=ptype, model=resolved_model, api_key=api_key, base_url=base_url)
 
 
 class KeyTestRequest(BaseModel):
@@ -459,7 +446,7 @@ class KeyTestResponse(BaseModel):
 async def test_key_raw(body: KeyTestRequest) -> KeyTestResponse:
     """Test a raw provider API key by sending a simple completion request. Used by super admin dashboard."""
     try:
-        provider = _build_direct_provider(body.provider, body.api_key, body.model, timeout_ms=body.timeout_ms)
+        client = _build_test_client(body.provider, body.api_key, body.model)
     except ValueError as exc:
         return KeyTestResponse(success=False, latency_ms=0, model="", error=str(exc))
 
@@ -475,13 +462,10 @@ async def test_key_raw(body: KeyTestRequest) -> KeyTestResponse:
 
     started = _time.perf_counter()
     try:
-        response = await provider.generate_response(
-            prompt_messages,
-            max_tokens=max_tokens,
-        )
+        response = await client.generate(prompt_messages, max_tokens=max_tokens)
         latency_ms = round((_time.perf_counter() - started) * 1000, 2)
-        used_model = response.model or provider.model
-        reply_text = getattr(response, 'text', None) or str(response)
+        used_model = response.model or client.model
+        reply_text = str(response.text or "")
         logger.info(
             "raw_key_test_ok",
             provider=body.provider.upper(),
@@ -498,7 +482,7 @@ async def test_key_raw(body: KeyTestRequest) -> KeyTestResponse:
             error=error_msg,
             latency_ms=latency_ms,
         )
-        return KeyTestResponse(success=False, latency_ms=latency_ms, model=provider.model, error=error_msg, reply=None)
+        return KeyTestResponse(success=False, latency_ms=latency_ms, model=client.model, error=error_msg, reply=None)
 
 
 class KeyHealthRequest(BaseModel):
@@ -516,22 +500,19 @@ async def health_check_keys(body: KeyHealthRequest) -> list[KeyTestResponse]:
         if not provider_type or not api_key:
             return KeyTestResponse(success=False, latency_ms=0, model="", error="provider and api_key are required")
         try:
-            provider = _build_direct_provider(provider_type, api_key, model)
+            client = _build_test_client(provider_type, api_key, model)
         except ValueError as exc:
             return KeyTestResponse(success=False, latency_ms=0, model="", error=str(exc))
 
         started = _time.perf_counter()
         try:
-            response = await provider.generate_response(
-                [{"role": "user", "content": "Hi"}],
-                max_tokens=5,
-            )
+            response = await client.generate([{"role": "user", "content": "Hi"}], max_tokens=5)
             latency_ms = round((_time.perf_counter() - started) * 1000, 2)
-            used_model = response.model or provider.model
+            used_model = response.model or client.model
             return KeyTestResponse(success=True, latency_ms=latency_ms, model=used_model)
         except Exception as exc:
             latency_ms = round((_time.perf_counter() - started) * 1000, 2)
             error_msg = str(exc)[:500]
-            return KeyTestResponse(success=False, latency_ms=latency_ms, model=provider.model, error=error_msg)
+            return KeyTestResponse(success=False, latency_ms=latency_ms, model=client.model, error=error_msg)
 
     return list(await asyncio.gather(*[_test_one(entry) for entry in body.keys]))

@@ -317,93 +317,12 @@ def test_jit_scope_no_plan_passthrough():
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Phase 3.1: Admin CRUD API for Intents
+# Phase 3: Intents Admin API + DynamicRegistry — REMOVED
 # ═══════════════════════════════════════════════════════════════════
-
-
-def test_intent_create_schema_validates_risk_level():
-    """Risk level must be one of low/medium/high/critical."""
-    from src.api.admin.intents_schemas import IntentDefinitionCreate
-
-    # Valid
-    intent = IntentDefinitionCreate(
-        intent="test.intent",
-        action_type="read",
-        risk_level="high",
-        next_state="read_data",
-    )
-    assert intent.risk_level == "high"
-
-    # Invalid
-    with pytest.raises(ValueError, match="risk_level"):
-        IntentDefinitionCreate(
-            intent="test.intent",
-            action_type="read",
-            risk_level="extreme",
-            next_state="read_data",
-        )
-
-
-def test_intent_update_schema_partial():
-    """Update schema should allow partial updates."""
-    from src.api.admin.intents_schemas import IntentDefinitionUpdate
-
-    update = IntentDefinitionUpdate(risk_level="low")
-    data = update.model_dump(exclude_unset=True)
-    assert data == {"risk_level": "low"}
-    assert "action_type" not in data
-
-
-def test_intent_response_schema():
-    """Response schema should include id and timestamps."""
-    from src.api.admin.intents_schemas import IntentDefinitionResponse
-    from datetime import datetime
-
-    resp = IntentDefinitionResponse(
-        id="uuid-123",
-        intent="orders.create_draft",
-        action_type="write",
-        risk_level="high",
-        next_state="create_order_draft",
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-    )
-    assert resp.id == "uuid-123"
-    assert resp.intent == "orders.create_draft"
-
-
-# ═══════════════════════════════════════════════════════════════════
-# Phase 3.2: Cache Invalidation (DynamicIntentRegistry)
-# ═══════════════════════════════════════════════════════════════════
-
-
-@pytest.mark.asyncio
-async def test_dynamic_registry_force_reload():
-    """force_reload=True should re-fetch from DB even if already loaded."""
-    # ponytail: stub for deleted module
-    class DynamicIntentRegistry:
-        def __init__(self):
-            self._is_loaded = False
-        async def load_intents(self, session, force_reload=False):
-            self._is_loaded = True
-            if force_reload:
-                await session.execute("dummy")
-
-    registry = DynamicIntentRegistry()
-    session = AsyncMock()
-
-    # First load (mock empty table → fallback)
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = []
-    session.execute.return_value = mock_result
-
-    await registry.load_intents(session)
-    assert registry._is_loaded is True
-
-    # Force reload should call execute again
-    session.execute.reset_mock()
-    await registry.load_intents(session, force_reload=True)
-    session.execute.assert_called_once()
+# The old intents admin API (intents_schemas, DynamicIntentRegistry) was
+# deleted in the intent → skills migration. Intent definitions are now
+# static Skill classes in src/skills/. DB-based intent_definitions table
+# is no longer the source of truth.
 
 
 # ═══════════════════════════════════════════════════════════════════
