@@ -303,14 +303,16 @@ const Header: React.FC = () => {
             {/* Notifications */}
             <NotificationDropdown />
 
-            {/* Support */}
-            <Link
-              to="/support"
+            {/* Support - WhatsApp */}
+            <a
+              href="https://wa.me/201123087745"
+              target="_blank"
+              rel="noopener noreferrer"
               className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title={t("header.support") || "الدعم الفني"}
+              title="تواصل عبر واتساب"
             >
               <ChatBubbleLeftRightIcon className="h-5 w-5" />
-            </Link>
+            </a>
 
             {/* Profile Dropdown */}
             <div className="relative">
