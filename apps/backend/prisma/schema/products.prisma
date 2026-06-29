@@ -39,6 +39,8 @@ model Customer {
   whatsAppContacts               WhatsAppContact[]
   whatsapp_notification_logs     WhatsAppNotificationLog[]
   customerJourneys               CustomerJourney[]
+  wholesaleCustomerPriceLists    WholesaleCustomerPriceList[]
+  wholesaleCustomer              WholesaleCustomer?
 
   @@unique([facebookId, companyId])
   @@unique([instagramId, companyId])
@@ -292,6 +294,7 @@ model ProductVariant {
   updatedAt      DateTime @updatedAt
   orderItems     OrderItem[]
   product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  wholesalePriceListItems WholesalePriceListItem[]
 
   @@unique([productId, sku])
   @@index([productId])
@@ -322,7 +325,7 @@ model Product {
   companyId                  String
   createdAt                  DateTime                  @default(now())
   updatedAt                  DateTime                  @updatedAt
-  deletedAt                  DateTime?                 // سلة المحذوفات - الحذف الناعم
+  deletedAt                  DateTime?
   barcode                    String?
   easyOrdersId               String?
   easyOrdersUrl              String?
@@ -371,6 +374,7 @@ model Product {
   stockAlerts                StockAlert[]
   stockMovements             StockMovement[]
   whatsapp_notification_logs WhatsAppNotificationLog[]
+  wholesalePriceListItems    WholesalePriceListItem[]
   wishlists                  Wishlist[]
 
   showFakeStock              Boolean                   @default(false)

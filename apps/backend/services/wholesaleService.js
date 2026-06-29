@@ -160,23 +160,67 @@ const wholesaleService = {
     return { statement, transactions, openingBalance, closingBalance, totalInvoiced, totalPaid };
   },
 
+  // ── Dashboard ──
+  async dashboard(companyId) {
+    const prisma = getSharedPrismaClient();
+    const [customers, priceLists, transactions] = await Promise.all([
+      prisma.wholesaleCustomer.findMany({ where: { companyId }, select: { id: true, currentBalance: true, creditLimit: true } }),
+      prisma.wholesalePriceList.count({ where: { companyId, isActive: true } }),
+      prisma.wholesaleTransaction.findMany({
+        where: { companyId, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } },
+        select: { amount: true, type: true },
+      }),
+    ]);
+    const totalOutstanding = customers.reduce((s, c) => s + Number(c.currentBalance), 0);
+    const overdueAmount = customers.filter(c => Number(c.currentBalance) > Number(c.creditLimit)).reduce((s, c) => s + Number(c.currentBalance), 0);
+    const monthlySales = transactions.filter(t => t.type === 'INVOICE').reduce((s, t) => s + Number(t.amount), 0);
+    const monthlyOrderCount = transactions.filter(t => t.type === 'INVOICE').length;
+    return {
+      totalCustomers: customers.length,
+      activePriceLists: priceLists,
+      totalOutstanding,
+      overdueAmount,
+      monthlySales,
+      monthlyOrderCount,
+    };
+  },
+
   // ── Reports ──
   async debtAgingReport(companyId) {
     const prisma = getSharedPrismaClient();
     const customers = await prisma.wholesaleCustomer.findMany({
       where: { companyId, currentBalance: { gt: 0 } },
-      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } } },
+      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } }, transactions: { orderBy: { createdAt: 'desc' }, take: 1 } },
       orderBy: { currentBalance: 'desc' },
     });
-    return customers.map(c => ({
-      id: c.id,
-      customerId: c.customerId,
-      customerName: `${c.customer.firstName} ${c.customer.lastName}`,
-      phone: c.customer.phone,
-      creditLimit: Number(c.creditLimit),
-      currentBalance: Number(c.currentBalance),
-      availableCredit: Number(c.creditLimit) - Number(c.currentBalance),
-    }));
+    const now = new Date();
+    const agingBuckets = [
+      { label: '0-7 يوم', minDays: 0, maxDays: 7, amount: 0, count: 0 },
+      { label: '8-30 يوم', minDays: 8, maxDays: 30, amount: 0, count: 0 },
+      { label: '31-60 يوم', minDays: 31, maxDays: 60, amount: 0, count: 0 },
+      { label: '61-90 يوم', minDays: 61, maxDays: 90, amount: 0, count: 0 },
+      { label: 'أكثر من 90 يوم', minDays: 91, maxDays: Infinity, amount: 0, count: 0 },
+    ];
+    const mapped = customers.map(c => {
+      const lastTx = c.transactions[0];
+      const lastPaymentDate = lastTx && (lastTx.type === 'PAYMENT' || lastTx.type === 'CREDIT_NOTE') ? lastTx.createdAt : null;
+      const daysOverdue = lastPaymentDate ? Math.floor((now.getTime() - new Date(lastPaymentDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      const bucket = agingBuckets.find(b => daysOverdue >= b.minDays && daysOverdue <= b.maxDays);
+      if (bucket) { bucket.amount += Number(c.currentBalance); bucket.count += 1; }
+      return {
+        id: c.id,
+        customerId: c.customerId,
+        customerName: `${c.customer.firstName} ${c.customer.lastName}`,
+        customerPhone: c.customer.phone,
+        creditLimit: Number(c.creditLimit),
+        currentBalance: Number(c.currentBalance),
+        daysOverdue,
+        lastPaymentDate: lastPaymentDate ? lastPaymentDate.toISOString() : null,
+      };
+    });
+    const totalOutstanding = mapped.reduce((s, c) => s + c.currentBalance, 0);
+    const totalOverdue = mapped.filter(c => c.currentBalance > c.creditLimit).reduce((s, c) => s + c.currentBalance, 0);
+    return { totalOutstanding, totalOverdue, agingBuckets, customers: mapped };
   },
 };
 

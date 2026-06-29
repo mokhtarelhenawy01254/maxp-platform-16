@@ -34,7 +34,10 @@ router.get('/customers/:customerId/transactions', ctrl.getTransactions);
 // Statement
 router.get('/customers/:customerId/statement', ctrl.generateStatement);
 
+// Dashboard
+router.get('/dashboard', ctrl.dashboard);
+
 // Reports
-router.get('/reports/debt-aging', ctrl.debtAgingReport);
+router.get('/debts/aging', ctrl.debtAgingReport);
 
 module.exports = router;

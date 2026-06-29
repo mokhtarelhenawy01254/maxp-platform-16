@@ -116,6 +116,14 @@ const wholesaleController = {
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   },
 
+  // Dashboard
+  async dashboard(req, res) {
+    try {
+      const data = await wholesaleService.dashboard(req.user.companyId);
+      res.json({ success: true, data });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+  },
+
   // Reports
   async debtAgingReport(req, res) {
     try {
