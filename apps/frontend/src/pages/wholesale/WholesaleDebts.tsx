@@ -36,6 +36,7 @@ export default function WholesaleDebts() {
         setLoading(true);
         setError(null);
         const res = await apiClient.get("/wholesale/debts/aging");
+
         setReport(res?.data?.data || null);
       } catch (err: any) {
         setError(err?.response?.data?.message || "تعذر تحميل تقرير المديونية");
