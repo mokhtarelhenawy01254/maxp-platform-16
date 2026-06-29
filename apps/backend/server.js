@@ -310,6 +310,7 @@ const inboxSettingsRoutes = require("./routes/inboxSettingsRoutes");
 const googleSheetsRoutes = require("./routes/googleSheetsRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const wooCommerceRoutes = require("./routes/wooCommerceRoutes");
+const storePromotionRoutes = require("./routes/storePromotionRoutes");
 
 // Marketplace System Routes
 const marketplaceRoutes = require("./routes/marketplaceRoutes");
@@ -668,6 +669,7 @@ app.use("/api/v1/shipping-zones", shippingZoneRoutes);
 app.use("/api/v1/store-settings", require("./routes/storeSettingsRoutes"));
 app.use("/api/v1/store-pages", storePagesRoutes);
 app.use("/api/v1/promotion-settings", promotionSettingsRoutes);
+app.use("/api/v1/store-promotions", storePromotionRoutes);
 app.use("/api/v1/delivery-options", deliveryOptionRoutes);
 app.use("/api/v1/coupons", couponsRoutes);
 app.use("/api/v1/reviews", productReviewRoutes);

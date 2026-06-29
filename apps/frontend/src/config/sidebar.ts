@@ -676,6 +676,7 @@ export const getSidebarConfig = (
                 { to: '/settings/store?tab=shipping', icon: TruckIcon, label: t('sidebar.storeShipping') },
                 { to: '/settings/store?tab=footer', icon: DocumentTextIcon, label: t('sidebar.footerSettings') },
                 { to: '/settings/promotion', icon: GiftIcon, label: t('sidebar.freeShippingSettings') },
+                { to: '/settings/store-promotion', icon: GiftIcon, label: t('sidebar.storePromotion') },
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
                 { to: '/settings/clarity', icon: ChartBarIcon, label: 'Microsoft Clarity' },

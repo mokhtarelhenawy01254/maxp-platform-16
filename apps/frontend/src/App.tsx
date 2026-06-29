@@ -321,6 +321,9 @@ const DeliveryOptions = React.lazy(
 const PromotionSettings = React.lazy(
   () => import("./pages/settings/PromotionSettings"),
 );
+const StorePromotionSettings = React.lazy(
+  () => import("./pages/settings/StorePromotionSettings"),
+);
 const RecommendationSettings = React.lazy(
   () => import("./pages/settings/RecommendationSettings"),
 );
@@ -4926,6 +4929,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <PromotionSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store-promotion"
+                  element={
+                    <Layout>
+                      <StorePromotionSettings />
                     </Layout>
                   }
                 />
