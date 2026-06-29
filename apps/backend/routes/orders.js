@@ -4872,6 +4872,100 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
   }
 });
 
+// Schedule/Postpone an existing order
+router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { scheduledDeliveryDate, scheduledNotes, autoTransitionEnabled, changeStatusToScheduled } = req.body;
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+
+    if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    const hasPermission = await checkOrderEditPermission(req, orderNumber);
+    if (!hasPermission) {
+      return res.status(403).json({
+        success: false,
+        message: 'ليس لديك صلاحية لتعديل هذا الطلب'
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id: orderNumber, companyId },
+          { orderNumber, companyId }
+        ]
+      },
+      select: { id: true, orderNumber: true, status: true, isScheduled: true }
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    }
+
+    if (!scheduledDeliveryDate) {
+      return res.status(400).json({ success: false, message: 'تاريخ التسليم مطلوب' });
+    }
+
+    const deliveryDate = new Date(scheduledDeliveryDate);
+    if (isNaN(deliveryDate.getTime())) {
+      return res.status(400).json({ success: false, message: 'تاريخ التسليم غير صالح' });
+    }
+
+    const updateData = {
+      isScheduled: true,
+      scheduledDeliveryDate: deliveryDate,
+      scheduledNotes: scheduledNotes || null,
+      autoTransitionEnabled: autoTransitionEnabled !== false,
+    };
+
+    if (changeStatusToScheduled !== false && order.status !== 'SCHEDULED') {
+      updateData.status = 'SCHEDULED';
+    }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: updateData
+    });
+
+    await prisma.orderStatusHistory.create({
+      data: {
+        orderId: order.id,
+        status: updateData.status || order.status,
+        oldStatus: order.status,
+        changedBy: req.user?.id,
+        userName: req.user?.firstName ? `${req.user.firstName} ${req.user.lastName || ''}`.trim() : 'النظام',
+        reason: scheduledNotes
+          ? `تأجيل الطلب إلى ${deliveryDate.toLocaleDateString('ar-EG')} - ${scheduledNotes}`
+          : `تأجيل الطلب إلى ${deliveryDate.toLocaleDateString('ar-EG')}`
+      }
+    });
+
+    try {
+      if (socketService?.getIO()) {
+        socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          isScheduled: true,
+          scheduledDeliveryDate: updateData.scheduledDeliveryDate,
+          status: updateData.status || order.status
+        });
+      }
+    } catch (socketError) {
+      console.error('❌ [ORDER-SCHEDULE] Socket error:', socketError);
+    }
+
+    return res.json({ success: true, message: 'تم تأجيل الطلب بنجاح' });
+  } catch (error) {
+    console.error('❌ [ORDER-SCHEDULE] Error:', error);
+    res.status(500).json({ success: false, message: 'فشل تأجيل الطلب', error: error.message });
+  }
+});
+
 module.exports = router;
 
 

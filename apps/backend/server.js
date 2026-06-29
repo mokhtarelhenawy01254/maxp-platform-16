@@ -976,6 +976,15 @@ try {
   console.error("❌ [ORDER-CONFIRMATION-CRON] Failed to start order confirmation scheduler:", error);
 }
 
+// Start Scheduled order auto-transition cron
+try {
+  const { startScheduledOrderCron } = require("./cron/scheduledOrderCron");
+  startScheduledOrderCron();
+  console.log("✅ [SCHEDULED-ORDER-CRON] Scheduled order transition cron started (runs every 12 hours)");
+} catch (error) {
+  console.error("❌ [SCHEDULED-ORDER-CRON] Failed to start scheduled order cron:", error);
+}
+
 // AI Provider Health Check — delegated to Python ai-service
 try {
   const { healthCheck } = require("./services/aiSdkClient");
