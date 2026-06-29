@@ -514,6 +514,7 @@ app.use(
   "/api/v1/public/products",
   require("./routes/publicProductsSimpleRoutes"),
 );
+app.use("/api/v1/public/products/feed", require("./routes/productFeedRoutes"));
 app.use(
   "/api/v1/public/customers",
   require("./routes/publicCustomerRoutes"),

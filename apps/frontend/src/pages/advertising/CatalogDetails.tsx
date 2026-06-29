@@ -15,6 +15,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
+  LinkIcon,
+  ClipboardDocumentIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import {
@@ -250,6 +252,36 @@ const CatalogDetails: React.FC = () => {
                   : "محذوف"}
             </span>
           </p>
+        </div>
+      </div>
+
+      {/* Product Feed Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <LinkIcon className="w-5 h-5 text-indigo-600" />
+          Product Feed URL
+        </h2>
+        <p className="text-sm text-gray-600 mb-3">
+          استخدم هذا الرابط في Facebook Catalog أو أي منصة أخرى لاستيراد المنتجات تلقائياً
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            readOnly
+            value={`${window.location.origin}/api/v1/public/products/feed/${catalog.id}.xml`}
+            className="flex-1 px-3 py-2 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg ltr text-left font-mono"
+            onClick={(e) => e.currentTarget.select()}
+          />
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/api/v1/public/products/feed/${catalog.id}.xml`);
+              toast.success("تم نسخ الرابط");
+            }}
+            className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            <ClipboardDocumentIcon className="w-4 h-4" />
+            نسخ
+          </button>
         </div>
       </div>
 
