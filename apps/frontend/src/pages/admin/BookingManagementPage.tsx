@@ -20,7 +20,9 @@ const getAuthHeaders = () => {
   return headers;
 };
 const api = (path: string) => {
-  const url = new URL(buildApiUrl(`booking/${path}`));
+  const base = buildApiUrl(`booking/${path}`);
+  let url: URL;
+  try { url = new URL(base); } catch { url = new URL(base, window.location.origin); }
   const cid = getCompanyId();
   if (cid) url.searchParams.set("companyId", cid);
   return url.toString();
@@ -797,6 +799,7 @@ export default function BookingManagementPage() {
                 <div className="flex gap-2">
                   <button onClick={() => setDoctorModal(d)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                   <button onClick={() => toggleActive("doctors", d.id, d.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${d.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{d.isActive ? "تعطيل" : "تفعيل"}</button>
+                  <button onClick={() => deleteItem("doctors", d.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />حذف</button>
                 </div>
               </div>
             );
