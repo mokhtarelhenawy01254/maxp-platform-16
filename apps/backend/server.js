@@ -532,6 +532,7 @@ app.use("/api/v1/public", publicProductReviewRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
+app.use("/api/v1/public/store-promotions", storePromotionRoutes);
 app.use("/api/v1/product-landings", productLandingPagesRoutes);
   console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
 
