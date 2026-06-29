@@ -436,6 +436,9 @@ const CatalogsManagement = React.lazy(
 const CatalogDetails = React.lazy(
   () => import("./pages/advertising/CatalogDetails"),
 );
+const CreateCatalog = React.lazy(
+  () => import("./pages/advertising/CreateCatalog"),
+);
 const CreateDynamicAd = React.lazy(
   () => import("./pages/advertising/CreateDynamicAd"),
 );
@@ -2830,6 +2833,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/advertising/facebook-ads/catalogs/create"
+                  element={
+                    <Layout>
+                      <CreateCatalog />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/advertising/facebook-ads/adsets/:adSetId/dynamic-ads/create"
                   element={
                     <Layout>
@@ -4526,6 +4537,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CatalogDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/catalogs/create"
+                  element={
+                    <Layout>
+                      <CreateCatalog />
                     </Layout>
                   }
                 />
