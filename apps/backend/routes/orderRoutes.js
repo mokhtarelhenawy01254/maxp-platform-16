@@ -13,9 +13,9 @@ router.use(checkAppAccess('order-core'));
 router.get('/', orderController.getAllOrders);
 router.get('/:id', orderController.getOneOrder);
 router.put('/:id', orderController.updateOrder);
-router.delete('/all', orderController.deleteAllOrders);
-router.post('/trash/move', orderController.moveOrdersToTrash);
-router.post('/trash/restore', orderController.restoreOrdersFromTrash);
+router.delete('/all', verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN', 'MANAGER']), orderController.deleteAllOrders);
+router.post('/trash/move', verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN', 'MANAGER']), orderController.moveOrdersToTrash);
+router.post('/trash/restore', verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN', 'MANAGER']), orderController.restoreOrdersFromTrash);
 
 // Bulk Search Route
 router.post('/bulk-search', bulkSearchController.bulkSearchOrders);

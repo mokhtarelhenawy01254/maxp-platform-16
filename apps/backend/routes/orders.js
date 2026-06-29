@@ -4408,7 +4408,7 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // Bulk Delete
-router.post('/bulk/delete', verifyToken.authenticateToken, async (req, res) => {
+router.post('/bulk/delete', verifyToken.authenticateToken, verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { orderIds, permanent = false } = req.body;
     const shouldPermanentlyDelete = permanent === true || permanent === 'true';
