@@ -6,7 +6,8 @@ import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { ArrowPathIcon, CreditCardIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
 
@@ -19,6 +20,7 @@ import OrderActivityLog from "./components/OrderActivityLog";
 import OrderSourceCard from "./components/OrderSourceCard";
 import OrderAttributionCard from "./components/OrderAttributionCard";
 import ConfirmationModal from "./components/ConfirmationModal";
+import PostponeOrderModal from "./components/PostponeOrderModal";
 
 // Hooks
 import { useOrderDetails } from "./hooks/useOrderDetails";
@@ -104,6 +106,7 @@ const OrderDetails: React.FC = () => {
     updatingNote,
     deletingNote,
     saveChanges,
+    fetchOrderDetails,
   } = useOrderDetails(orderNumber);
 
   const {
@@ -121,6 +124,7 @@ const OrderDetails: React.FC = () => {
   // Local UI State (Modals)
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPostponeModal, setShowPostponeModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showCancelShipmentModal, setShowCancelShipmentModal] = useState(false);
   const [showUnlinkShipmentModal, setShowUnlinkShipmentModal] = useState(false);
@@ -137,6 +141,7 @@ const OrderDetails: React.FC = () => {
   >([]);
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
+  const [postponing, setPostponing] = useState(false);
 
   const isGuestOrder = Boolean(order?.metadata?.isGuestOrder);
   const isModalCancellationStatus = isCancellationStatus(newStatus);
@@ -391,6 +396,35 @@ const OrderDetails: React.FC = () => {
       setShowPaymentModal(false);
       setNewPaymentStatus("");
       setPaymentNotes("");
+    }
+  };
+
+  const handlePostponeOrder = async (data: {
+    scheduledDeliveryDate: string;
+    scheduledNotes: string;
+    autoTransitionEnabled: boolean;
+  }) => {
+    if (!order) return;
+    setPostponing(true);
+    try {
+      const response = await apiClient.post(
+        `/orders-new/simple/${order.orderNumber}/schedule`,
+        {
+          scheduledDeliveryDate: data.scheduledDeliveryDate,
+          scheduledNotes: data.scheduledNotes,
+          autoTransitionEnabled: data.autoTransitionEnabled,
+          changeStatusToScheduled: true,
+        },
+      );
+      if (response.data.success) {
+        setShowPostponeModal(false);
+        await fetchOrderDetails();
+        toast.success("تم تأجيل الطلب بنجاح");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "فشل تأجيل الطلب");
+    } finally {
+      setPostponing(false);
     }
   };
 
@@ -729,7 +763,7 @@ const OrderDetails: React.FC = () => {
         onStatusSelect={canUpdateOrderStatus ? handleQuickStatusSelect : undefined}
       />
 
-      {/* Quick Actions Bar (Below Header) - If we want to trigger status changes from here */}
+      {/* Quick Actions Bar (Below Header) */}
       <div className="mt-4 flex gap-4">
         {!isEditing && (
           <>
@@ -740,6 +774,15 @@ const OrderDetails: React.FC = () => {
               >
                 <CreditCardIcon className="ml-2 -mr-0.5 h-4 w-4" />
                 {t("orderDetails.updatePayment")}
+              </button>
+            )}
+            {canUpdateOrderStatus && (
+              <button
+                onClick={() => setShowPostponeModal(true)}
+                className="inline-flex items-center px-3 py-2 border border-orange-300 shadow-sm text-sm leading-4 font-medium rounded-md text-orange-700 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700 dark:hover:bg-orange-900/30"
+              >
+                <CalendarDaysIcon className="ml-2 -mr-0.5 h-4 w-4" />
+                تأجيل الطلب
               </button>
             )}
           </>
@@ -1232,6 +1275,21 @@ const OrderDetails: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Postpone Order Modal */}
+      <PostponeOrderModal
+        isOpen={showPostponeModal}
+        onClose={() => setShowPostponeModal(false)}
+        onConfirm={handlePostponeOrder}
+        loading={postponing}
+        initialDate={
+          order?.scheduledDeliveryDate
+            ? new Date(order.scheduledDeliveryDate).toISOString().split("T")[0]
+            : ""
+        }
+        initialNotes={order?.scheduledNotes || ""}
+        initialAutoTransition={order?.autoTransitionEnabled !== false}
+      />
 
       {/* Confirmation Modal for Cancellation */}
       <ConfirmationModal
