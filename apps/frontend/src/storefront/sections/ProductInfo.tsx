@@ -1154,7 +1154,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         variant === 'gear-loadout' ||
         variant === 'playful-story');
   const forceInlineKhemetQuickOrder =
-    isKhemetInlineQuickOrderBuybox;
+    isKhemetInlineQuickOrderBuybox && productPageCheckoutEnabled;
     const shouldCollapseDescriptionByDefault =
       isWomenUtilityRail || isVelaFashionDirectBuybox;
   const shouldRenderInlinePdpQuickOrder =
