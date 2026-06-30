@@ -38,3 +38,15 @@
 - **Files Modified**:
   - `apps/backend/middleware/numberAccessGuard.js`
   - `apps/frontend/src/pages/whatsapp-inbox/components/NumberSidebar.tsx`
+
+### [FIX] Meta Cloud WhatsApp Session showing Disconnected in Routing Workspace
+- **Date**: 2026-07-01
+- **Description**: Meta Cloud API sessions (like `SalesApiss`) were shown as CONNECTED on the Settings page but as DISCONNECTED in the Routing Workspace page.
+- **Root Cause**:
+  1. Meta Cloud sessions are webhook-based and are not managed in the in-memory Baileys `activeSessions` map.
+  2. The `getRoutingWorkspace` query in `numberAssignmentService.js` was falling back to the database status for any session not in `activeSessions`, resulting in `DISCONNECTED` for `SalesApiss`.
+  3. The main WhatsApp Settings page resolves any `META_CLOUD` provider session to `connected` as it doesn't rely on web socket uptime.
+- **Resolution**:
+  1. Updated `getRoutingWorkspace` in `apps/backend/services/numberAssignmentService.js` to explicitly resolve `META_CLOUD` sessions as `CONNECTED`.
+- **Files Modified**:
+  - `apps/backend/services/numberAssignmentService.js`

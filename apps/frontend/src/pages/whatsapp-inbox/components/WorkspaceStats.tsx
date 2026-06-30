@@ -1,24 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Phone,
-  UserCheck,
-  Shuffle,
-  Wifi,
-} from 'lucide-react';
 import type { WorkspaceStats as WorkspaceStatsType } from '../types';
 
 interface WorkspaceStatsProps {
   stats: WorkspaceStatsType;
   onStatClick?: (key: string) => void;
 }
-
-const STAT_ICONS: Record<string, React.ElementType> = {
-  configured: Phone,
-  exclusive: UserCheck,
-  roundRobin: Shuffle,
-  connected: Wifi,
-};
 
 const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats, onStatClick }) => {
   const { t } = useTranslation();
@@ -47,31 +34,22 @@ const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats, onStatClick }) =
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {items.map((item, index) => {
-        const Icon = STAT_ICONS[item.key];
-        return (
-          <button
-            type="button"
-            key={item.key}
-            onClick={() => onStatClick?.(item.key)}
-            className="group relative w-full overflow-hidden rounded-xl border border-border/50 bg-card p-4 text-start shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <div className="absolute -right-3 -top-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 opacity-0 transition-all duration-300 group-hover:scale-150 group-hover:opacity-100" />
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground">
-                {item.label}
-              </p>
-              {Icon && (
-                <Icon className="size-4 text-muted-foreground/40 transition-all duration-300 group-hover:text-primary group-hover:opacity-80" />
-              )}
-            </div>
-            <p className="mt-2 text-2xl font-bold text-foreground transition-all duration-300 group-hover:text-primary">
-              {item.value}
-            </p>
-          </button>
-        );
-      })}
+    <div className="-mx-4 flex divide-x divide-border border-y border-border px-1 md:-mx-6 md:px-3 lg:-mx-8">
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => onStatClick?.(item.key)}
+          className="flex flex-1 items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-muted/50"
+        >
+          <span className="text-2xl font-semibold tracking-tight text-foreground">
+            {item.value}
+          </span>
+          <span className="text-xs leading-tight text-muted-foreground">
+            {item.label}
+          </span>
+        </button>
+      ))}
     </div>
   );
 };

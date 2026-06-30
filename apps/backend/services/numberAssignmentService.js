@@ -309,9 +309,11 @@ class NumberAssignmentService {
         logged_out: 'DISCONNECTED',
         authenticating: 'CONNECTING'
       };
-      const resolvedStatus = activeSession?.status
-        ? (inMemoryStatusMap[String(activeSession.status).toLowerCase()] || 'CONNECTED')
-        : (liveStatusMap[session.status] || 'DISCONNECTED');
+      const resolvedStatus = session.provider === 'META_CLOUD'
+        ? 'CONNECTED'
+        : (activeSession?.status
+          ? (inMemoryStatusMap[String(activeSession.status).toLowerCase()] || 'CONNECTED')
+          : (liveStatusMap[session.status] || 'DISCONNECTED'));
 
       return {
         id: session.id,
