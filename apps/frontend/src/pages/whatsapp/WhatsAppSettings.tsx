@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
-  BarChart3,
   Bell,
   CheckCircle2,
   Clock,
@@ -17,7 +16,6 @@ import {
   Link2,
   Link2Off,
   Lock,
-  Megaphone,
   MessageSquareText,
   Package,
   Plus,
@@ -25,7 +23,6 @@ import {
   RefreshCw,
   Save,
   Settings,
-  ShoppingCart,
   Smartphone,
   Tag,
   Trash2,
@@ -198,41 +195,6 @@ interface LabelItem {
   color: string;
 }
 
-interface DailyStatsItem {
-  date: string;
-  sent: number;
-  received: number;
-}
-
-interface StatsState {
-  totalMessages: number;
-  sentMessages: number;
-  receivedMessages: number;
-  totalConversations: number;
-  activeConversations: number;
-  dailyStats: DailyStatsItem[];
-}
-
-interface BusinessHoursConfig {
-  day: number;
-  mode: string;
-  openTime?: string;
-  closeTime?: string;
-}
-
-interface BusinessHoursState {
-  timezone: string;
-  config: BusinessHoursConfig[];
-}
-
-interface TemplateItem {
-  id?: string;
-  name: string;
-  status?: string;
-  language?: string;
-  category?: string;
-}
-
 interface DeleteState {
   kind: "session" | "quickReply" | "label";
   id: string;
@@ -320,10 +282,6 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 
 function isConnectedStatus(status?: string | null) {
   return status === "connected" || status === "CONNECTED";
-}
-
-function isAuthenticatingStatus(status?: string | null) {
-  return status === "authenticating" || status === "AUTHENTICATING";
 }
 
 function isPendingStatus(status?: string | null) {
@@ -462,16 +420,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const [loadingPrivacy, setLoadingPrivacy] = useState(false);
   const [labels, setLabels] = useState<LabelItem[]>([]);
   const [loadingLabels, setLoadingLabels] = useState(false);
-  const [stats, setStats] = useState<StatsState | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState("");
-  const [statusText, setStatusText] = useState("");
-  const [loadingStatus, setLoadingStatus] = useState(false);
-  const [businessHours, setBusinessHours] =
-    useState<BusinessHoursState | null>(null);
-  const [loadingBusinessHours, setLoadingBusinessHours] = useState(false);
-  const [templates, setTemplates] = useState<TemplateItem[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const withCompanyConfig = useCallback(
     (config: ApiRequestConfig = {}) =>
       companyId ? { ...config, _companyId: companyId } : config,
@@ -591,9 +539,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     [sessions],
   );
 
-  const activeTabMeta =
-    tabs.find((tab) => tab.id === activeTab) || tabs[0] || null;
-
   const linkedContactsCount = sessions.reduce(
     (sum, session) => sum + (session._count?.contacts || 0),
     0,
@@ -687,21 +632,14 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const loadBusinessProfile = useCallback(
     async (sessionId: string) => {
       setLoadingBusiness(true);
-      try {
-        const [profileResponse, hoursResponse] = await Promise.all([
-          apiClient.get(
-            "/whatsapp/business/profile",
-            withCompanyConfig({ params: { sessionId } }),
-          ),
-          apiClient.get(
-            "/whatsapp/business/hours",
-            withCompanyConfig({ params: { sessionId } }),
-          ),
-        ]);
+       try {
+         const profileResponse = await apiClient.get(
+           "/whatsapp/business/profile",
+           withCompanyConfig({ params: { sessionId } }),
+         );
 
-        setBusinessProfile(profileResponse.data.profile || null);
-        setBusinessHours(hoursResponse.data.hours || null);
-      } catch (error) {
+         setBusinessProfile(profileResponse.data.profile || null);
+       } catch (error) {
         showError(error, t("whatsappSettings.dialogs.errorLoading"));
       } finally {
         setLoadingBusiness(false);
@@ -754,79 +692,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     [showError, t, withCompanyConfig],
   );
 
-  const loadStats = useCallback(
-    async (sessionId: string) => {
-      setLoadingStats(true);
-      try {
-        const response = await apiClient.get(
-          "/whatsapp/stats",
-          withCompanyConfig({ params: { sessionId } }),
-        );
-        setStats(response.data.stats || null);
-      } catch (error) {
-        showError(error, t("whatsappSettings.dialogs.errorLoading"));
-      } finally {
-        setLoadingStats(false);
-      }
-    },
-    [showError, t, withCompanyConfig],
-  );
-
-  const loadStatus = useCallback(
-    async (sessionId: string) => {
-      setLoadingStatus(true);
-      try {
-        const response = await apiClient.get(
-          "/whatsapp/status",
-          withCompanyConfig({ params: { sessionId } }),
-        );
-        setCurrentStatus(response.data.status || "");
-        setStatusText(response.data.status || "");
-      } catch (error) {
-        showError(error, t("whatsappSettings.dialogs.errorLoading"));
-      } finally {
-        setLoadingStatus(false);
-      }
-    },
-    [showError, t, withCompanyConfig],
-  );
-
-  const loadBusinessHours = useCallback(
-    async (sessionId: string) => {
-      setLoadingBusinessHours(true);
-      try {
-        const response = await apiClient.get(
-          "/whatsapp/business/hours",
-          withCompanyConfig({ params: { sessionId } }),
-        );
-        setBusinessHours(response.data.businessHours || null);
-      } catch (error) {
-        showError(error, t("whatsappSettings.dialogs.errorLoading"));
-      } finally {
-        setLoadingBusinessHours(false);
-      }
-    },
-    [showError, t, withCompanyConfig],
-  );
-
-  const loadTemplates = useCallback(
-    async (sessionId: string) => {
-      setLoadingTemplates(true);
-      try {
-        const response = await apiClient.get(
-          "/whatsapp/templates",
-          withCompanyConfig({ params: { sessionId } }),
-        );
-        setTemplates(response.data.templates || []);
-      } catch (error) {
-        showError(error, t("whatsappSettings.dialogs.errorLoading"));
-      } finally {
-        setLoadingTemplates(false);
-      }
-    },
-    [showError, t, withCompanyConfig],
-  );
-
   const loadScopedTabData = useCallback(
     async (tabId: TabId, sessionId: string) => {
       switch (tabId) {
@@ -845,7 +710,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       }
     },
     [
-      loadBusinessHours,
       loadBusinessProfile,
       loadLabels,
       loadPrivacySettings,
@@ -1385,53 +1249,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       setLabelDialogOpen(false);
       setLabelForm({ name: "", color: "#25D366" });
       toast.success(t("whatsappSettings.dialogs.labelCreated"));
-    } catch (error) {
-      showError(error, t("common.error"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSetStatus = async () => {
-    if (!scopedSessionId || !statusText.trim()) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      await apiClient.post(
-        "/whatsapp/status",
-        {
-          sessionId: scopedSessionId,
-          status: statusText,
-        },
-        withCompanyConfig(),
-      );
-      setCurrentStatus(statusText);
-      toast.success(t("whatsappSettings.dialogs.statusUpdated"));
-    } catch (error) {
-      showError(error, t("common.error"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveBusinessHours = async () => {
-    if (!scopedSessionId || !businessHours) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      await apiClient.post(
-        "/whatsapp/business/hours",
-        {
-          sessionId: scopedSessionId,
-          ...businessHours,
-        },
-        withCompanyConfig(),
-      );
-      toast.success(t("whatsappSettings.dialogs.hoursSaved"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -2389,418 +2206,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     </WhatsAppSurfaceCard>
   );
 
-  const renderStatsTab = () => (
-    <div className="space-y-4">
-      <WhatsAppSurfaceCard
-        title={t("whatsappSettings.stats")}
-        description={t("whatsappSettings.selectSessionStats")}
-        action={
-          <SessionScopeSelector
-            label={t("whatsappSettings.selectSession")}
-            sessions={connectedSessions}
-            value={scopedSessionId}
-            onValueChange={handleScopedSessionChange}
-          />
-        }
-      >
-        {connectedSessions.length === 0 ? (
-          renderEmptyScopedSessionState(t("whatsappSettings.selectSessionStats"))
-        ) : loadingStats ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-36 rounded-3xl" />
-            ))}
-          </div>
-        ) : stats ? (
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <WhatsAppMetricCard
-                label={t("whatsappSettings.totalMessages")}
-                value={stats.totalMessages}
-                icon={MessageSquareText}
-                tone="primary"
-              />
-              <WhatsAppMetricCard
-                label={t("whatsappSettings.sentMessages")}
-                value={stats.sentMessages}
-                icon={Package}
-                tone="success"
-              />
-              <WhatsAppMetricCard
-                label={t("whatsappSettings.receivedMessages")}
-                value={stats.receivedMessages}
-                icon={Users}
-                tone="info"
-              />
-              <WhatsAppMetricCard
-                label={t("whatsappSettings.totalConversations")}
-                value={stats.totalConversations}
-                icon={BarChart3}
-                tone="info"
-              />
-              <WhatsAppMetricCard
-                label={t("whatsappSettings.activeConversations")}
-                value={stats.activeConversations}
-                icon={Users}
-                tone="success"
-              />
-            </div>
-
-            <WhatsAppSurfaceCard
-              title={t("whatsappSettings.dailyStats")}
-              description={currentScopedSession?.name || t("whatsappSettings.stats")}
-              className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
-            >
-              {stats.dailyStats?.length ? (
-                <div className="space-y-3">
-                  {stats.dailyStats.map((day) => {
-                    const total = Math.max(1, day.sent + day.received);
-                    const sentWidth = `${Math.round((day.sent / total) * 100)}%`;
-                    const receivedWidth = `${Math.round((day.received / total) * 100)}%`;
-
-                    return (
-                      <div
-                        key={day.date}
-                        className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <p className="text-sm font-medium text-[color:var(--color-foreground)]">
-                            {day.date}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge
-                              variant="outline"
-                              className="rounded-full border-emerald-300/70 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200"
-                            >
-                              {day.sent}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className="rounded-full border-sky-300/70 bg-sky-500/10 text-sky-800 dark:border-sky-500/40 dark:text-sky-200"
-                            >
-                              {day.received}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-xs text-[color:var(--color-muted-foreground)]">
-                              <span>{t("whatsappSettings.sentMessages")}</span>
-                              <span>{sentWidth}</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-emerald-500/10">
-                              <div
-                                className="h-2 rounded-full bg-emerald-500"
-                                style={{ width: sentWidth }}
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-xs text-[color:var(--color-muted-foreground)]">
-                              <span>{t("whatsappSettings.receivedMessages")}</span>
-                              <span>{receivedWidth}</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-sky-500/10">
-                              <div
-                                className="h-2 rounded-full bg-sky-500"
-                                style={{ width: receivedWidth }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
-                  <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
-                  <AlertTitle>{t("whatsappSettings.dailyStats")}</AlertTitle>
-                  <AlertDescription>{t("common.no_data")}</AlertDescription>
-                </Alert>
-              )}
-            </WhatsAppSurfaceCard>
-          </div>
-        ) : (
-          renderEmptyScopedSessionState(t("whatsappSettings.selectSessionStats"))
-        )}
-      </WhatsAppSurfaceCard>
-    </div>
-  );
-
-  const renderStatusTab = () => (
-    <WhatsAppSurfaceCard
-      title={t("whatsappSettings.status")}
-      description={t("whatsappSettings.currentStatus")}
-      action={
-        <SessionScopeSelector
-          label={t("whatsappSettings.selectSession")}
-          sessions={connectedSessions}
-          value={scopedSessionId}
-          onValueChange={handleScopedSessionChange}
-        />
-      }
-    >
-      {connectedSessions.length === 0 ? (
-        renderEmptyScopedSessionState(t("whatsappSettings.selectSession"))
-      ) : loadingStatus ? (
-        <Skeleton className="h-72 rounded-3xl" />
-      ) : (
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-5 py-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
-              {t("whatsappSettings.currentStatus")}
-            </p>
-            <p className="mt-2 text-base leading-7 text-[color:var(--color-foreground)]">
-              {currentStatus || t("whatsappSettings.noStatus")}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status-text">{t("whatsappSettings.newStatus")}</Label>
-            <Textarea
-              id="status-text"
-              value={statusText}
-              onChange={(event) => setStatusText(event.target.value)}
-              placeholder={t("whatsappSettings.typeStatus")}
-              className="min-h-[8rem] bg-[color:var(--color-card)]"
-            />
-          </div>
-
-          <Button
-            className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
-            onClick={() => void handleSetStatus()}
-            disabled={saving || !statusText.trim()}
-          >
-            {saving ? (
-              <RefreshCw className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
-            {t("whatsappSettings.updateStatus")}
-          </Button>
-        </div>
-      )}
-    </WhatsAppSurfaceCard>
-  );
-
-  const updateBusinessHourDay = (
-    dayIndex: number,
-    patch: Partial<BusinessHoursConfig>,
-  ) => {
-    setBusinessHours((previous) => {
-      if (!previous) {
-        return previous;
-      }
-
-      const existing =
-        previous.config.find((item) => item.day === dayIndex) || {
-          day: dayIndex,
-          mode: "closed",
-        };
-      const nextConfig = previous.config.filter((item) => item.day !== dayIndex);
-      nextConfig.push({ ...existing, ...patch, day: dayIndex });
-      nextConfig.sort((left, right) => left.day - right.day);
-
-      return { ...previous, config: nextConfig };
-    });
-  };
-
-  const renderHoursTab = () => (
-    <WhatsAppSurfaceCard
-      title={t("whatsappSettings.businessHours")}
-      description={t("whatsappSettings.selectSessionHours")}
-      action={
-        <SessionScopeSelector
-          label={t("whatsappSettings.selectSession")}
-          sessions={connectedSessions}
-          value={scopedSessionId}
-          onValueChange={handleScopedSessionChange}
-        />
-      }
-    >
-      {connectedSessions.length === 0 ? (
-        renderEmptyScopedSessionState(t("whatsappSettings.selectSessionHours"))
-      ) : loadingBusinessHours ? (
-        <Skeleton className="h-[28rem] rounded-3xl" />
-      ) : businessHours ? (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="business-timezone">{t("whatsappSettings.timezone")}</Label>
-            <Input
-              id="business-timezone"
-              value={businessHours.timezone || "Africa/Cairo"}
-              onChange={(event) =>
-                setBusinessHours((previous) =>
-                  previous
-                    ? { ...previous, timezone: event.target.value }
-                    : previous,
-                )
-              }
-              className="h-11 bg-[color:var(--color-card)]"
-            />
-          </div>
-
-          <div className="space-y-3">
-            {Array.from({ length: 7 }).map((_, dayIndex) => {
-              const currentDayConfig =
-                businessHours.config.find((item) => item.day === dayIndex) || {
-                  day: dayIndex,
-                  mode: "closed",
-                };
-
-              return (
-                <div
-                  key={dayIndex}
-                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4"
-                >
-                  <div className="grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
-                    <div>
-                      <p className="text-sm font-medium text-[color:var(--color-foreground)]">
-                        {t(`whatsappSettings.days.${dayIndex}`)}
-                      </p>
-                    </div>
-
-                    <div className="grid gap-3 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
-                      <Select
-                        value={currentDayConfig.mode}
-                        onValueChange={(value) =>
-                          updateBusinessHourDay(dayIndex, { mode: value })
-                        }
-                      >
-                        <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
-                          <SelectValue placeholder={t("whatsappSettings.businessHours")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(
-                            [
-                              "open_24h",
-                              "appointment_only",
-                              "specific_hours",
-                              "closed",
-                            ] as const
-                          ).map((modeKey) => (
-                            <SelectItem key={modeKey} value={modeKey}>
-                              {t(`whatsappSettings.modes.${modeKey}`)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {currentDayConfig.mode === "specific_hours" ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label>{t("whatsappSettings.from")}</Label>
-                            <Input
-                              type="time"
-                              value={currentDayConfig.openTime || "09:00"}
-                              onChange={(event) =>
-                                updateBusinessHourDay(dayIndex, {
-                                  openTime: event.target.value,
-                                })
-                              }
-                              className="h-11 bg-[color:var(--color-card)]"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>{t("whatsappSettings.to")}</Label>
-                            <Input
-                              type="time"
-                              value={currentDayConfig.closeTime || "17:00"}
-                              onChange={(event) =>
-                                updateBusinessHourDay(dayIndex, {
-                                  closeTime: event.target.value,
-                                })
-                              }
-                              className="h-11 bg-[color:var(--color-card)]"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-4 py-3 text-sm text-[color:var(--color-muted-foreground)]">
-                          {t(`whatsappSettings.modes.${currentDayConfig.mode}`)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <Button
-            className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
-            onClick={() => void handleSaveBusinessHours()}
-            disabled={saving}
-          >
-            {saving ? (
-              <RefreshCw className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
-            {t("whatsappSettings.saveHours")}
-          </Button>
-        </div>
-      ) : (
-        renderEmptyScopedSessionState(t("whatsappSettings.selectSessionHours"))
-      )}
-    </WhatsAppSurfaceCard>
-  );
-
-  const renderNotificationsTab = () => (
-    <WhatsAppSurfaceCard
-      title={t("whatsappSettings.autoNotifications")}
-      description={t("whatsappSettings.autoNotificationsDesc")}
-    >
-      <div className="space-y-4">
-        <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
-          <Bell className="size-4 text-[color:var(--business-success)]" />
-          <AlertTitle>{t("whatsappSettings.autoNotifications")}</AlertTitle>
-          <AlertDescription>{t("whatsappSettings.autoNotificationsAlert")}</AlertDescription>
-        </Alert>
-
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant="outline"
-            className="rounded-full border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:text-blue-200"
-          >
-            <Package className="size-3.5" />
-            {t("whatsappSettings.orderNotifications")}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="rounded-full border-orange-300/70 bg-orange-500/10 text-orange-800 dark:border-orange-500/40 dark:text-orange-200"
-          >
-            <ShoppingCart className="size-3.5" />
-            {t("whatsappSettings.abandonedCart")}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="rounded-full border-pink-300/70 bg-pink-500/10 text-pink-800 dark:border-pink-500/40 dark:text-pink-200"
-          >
-            <Megaphone className="size-3.5" />
-            {t("whatsappSettings.marketing")}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="rounded-full border-teal-300/70 bg-teal-500/10 text-teal-800 dark:border-teal-500/40 dark:text-teal-200"
-          >
-            <Users className="size-3.5" />
-            {t("whatsappSettings.hr")}
-          </Badge>
-        </div>
-
-        <Button
-          className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
-          onClick={() => navigate(notificationsHref)}
-        >
-          <Bell className="size-4" />
-          {t("whatsappSettings.openNotificationSettings")}
-        </Button>
-      </div>
-    </WhatsAppSurfaceCard>
-  );
-
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case "sessions":
@@ -2847,8 +2252,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   return (
     <WhatsAppPageShell
       title={pageTitle}
-      description={activeTabMeta?.description || t("whatsappSettings.description")}
-      icon={activeTabMeta?.icon || Smartphone}
+      description={t("whatsappSettings.description")}
+      icon={Smartphone}
       actions={shellActions}
       backHref={workspaceHref}
       backLabel={t("common.back")}
@@ -3468,7 +2873,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             {t("whatsappSettings.dialogs.importHistory")}
                           </span>
                           <span className="font-medium text-[color:var(--color-foreground)]">
-                            {newImportHistory ? "نعم" : "لا"}
+                            {newImportHistory ? t("common.yes") : t("common.no")}
                           </span>
                         </div>
                       </>
@@ -3649,145 +3054,172 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               </div>
 
               {editingSession.provider === "META_CLOUD" ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-phone-id">Phone Number ID</Label>
-                    <Input
-                      id="edit-meta-phone-id"
-                      value={editingSession.metaPhoneNumberId || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? {
-                                ...previous,
-                                metaPhoneNumberId: event.target.value,
-                              }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
+                <div className="space-y-4">
+                  {/* Auth Details */}
+                  <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
+                      <Key className="size-4 text-[color:var(--color-primary)]" />
+                      {t("whatsappSettings.dialogs.authDetails")}
+                    </h4>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-meta-phone-id">
+                          {t("whatsappSettings.dialogs.metaPhoneNumberId")}
+                        </Label>
+                        <Input
+                          id="edit-meta-phone-id"
+                          value={editingSession.metaPhoneNumberId || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaPhoneNumberId: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-meta-access">
+                          {t("whatsappSettings.dialogs.metaAccessToken")}
+                        </Label>
+                        <Input
+                          id="edit-meta-access"
+                          type="password"
+                          value={editingSession.metaAccessToken || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaAccessToken: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-access">Access Token</Label>
-                    <Input
-                      id="edit-meta-access"
-                      type="password"
-                      value={editingSession.metaAccessToken || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? {
-                                ...previous,
-                                metaAccessToken: event.target.value,
-                              }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
+
+                  {/* Account Info */}
+                  <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
+                      <Briefcase className="size-4 text-[color:var(--color-primary)]" />
+                      {t("whatsappSettings.dialogs.accountDetails")}
+                    </h4>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-meta-waba">
+                          {t("whatsappSettings.dialogs.metaWabaId")}
+                        </Label>
+                        <Input
+                          id="edit-meta-waba"
+                          value={editingSession.metaWabaId || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaWabaId: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-meta-business">
+                          {t("whatsappSettings.dialogs.metaBusinessId")}
+                        </Label>
+                        <Input
+                          id="edit-meta-business"
+                          value={editingSession.metaBusinessId || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaBusinessId: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-meta-display">
+                          {t("whatsappSettings.dialogs.metaDisplayPhone")}
+                        </Label>
+                        <Input
+                          id="edit-meta-display"
+                          value={editingSession.metaDisplayPhoneNumber || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaDisplayPhoneNumber: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-waba">WABA ID</Label>
-                    <Input
-                      id="edit-meta-waba"
-                      value={editingSession.metaWabaId || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? { ...previous, metaWabaId: event.target.value }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-business">Business ID</Label>
-                    <Input
-                      id="edit-meta-business"
-                      value={editingSession.metaBusinessId || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? {
-                                ...previous,
-                                metaBusinessId: event.target.value,
-                              }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-api">API Version</Label>
-                    <Input
-                      id="edit-meta-api"
-                      value={editingSession.metaApiVersion || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? { ...previous, metaApiVersion: event.target.value }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-display">Display Phone</Label>
-                    <Input
-                      id="edit-meta-display"
-                      value={editingSession.metaDisplayPhoneNumber || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? {
-                                ...previous,
-                                metaDisplayPhoneNumber: event.target.value,
-                              }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-verify">Webhook Verify Token</Label>
-                    <Input
-                      id="edit-meta-verify"
-                      value={editingSession.metaWebhookVerifyToken || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? {
-                                ...previous,
-                                metaWebhookVerifyToken: event.target.value,
-                              }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-meta-secret">Webhook Secret</Label>
-                    <Input
-                      id="edit-meta-secret"
-                      value={editingSession.metaWebhookSecret || ""}
-                      onChange={(event) =>
-                        setEditingSession((previous) =>
-                          previous
-                            ? {
-                                ...previous,
-                                metaWebhookSecret: event.target.value,
-                              }
-                            : previous,
-                        )
-                      }
-                      className="h-11 bg-[color:var(--color-card)]"
-                    />
+
+                  {/* Advanced Settings */}
+                  <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
+                      <Settings className="size-4 text-[color:var(--color-muted-foreground)]" />
+                      {t("whatsappSettings.dialogs.advancedSettings")}
+                    </h4>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-meta-api">
+                          {t("whatsappSettings.dialogs.metaApiVersion")}
+                        </Label>
+                        <Input
+                          id="edit-meta-api"
+                          value={editingSession.metaApiVersion || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaApiVersion: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-meta-verify">
+                          {t("whatsappSettings.dialogs.metaWebhookVerifyToken")}
+                        </Label>
+                        <Input
+                          id="edit-meta-verify"
+                          value={editingSession.metaWebhookVerifyToken || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaWebhookVerifyToken: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="edit-meta-secret">
+                          {t("whatsappSettings.dialogs.metaWebhookSecret")}
+                        </Label>
+                        <Input
+                          id="edit-meta-secret"
+                          value={editingSession.metaWebhookSecret || ""}
+                          onChange={(event) =>
+                            setEditingSession((previous) =>
+                              previous
+                                ? { ...previous, metaWebhookSecret: event.target.value }
+                                : previous,
+                            )
+                          }
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : null}
