@@ -13,7 +13,7 @@ async def lookup_order(params: OrderLookupInput) -> dict:
 
 order_lookup = Skill(
     name="order_lookup",
-    description="Look up order status, tracking info, or order details. Use when customer asks about their order status, tracking, delivery, or order history.",
+    description="ORDER LOOKUP TOOL — use for ALL order status, tracking, delivery inquiries. When customer says: 'عايز اعرف طلبي', 'حالة الطلب', 'اوردر', 'رقم الطلب', 'الطلب', 'الشحنة', 'التوصيل', 'track order', 'order status'. THIS is the only order lookup tool. Do not make up any other tool name like order_info.",
     input_schema=OrderLookupInput,
     handler=lookup_order,
     internal_fields=["company_id"],
