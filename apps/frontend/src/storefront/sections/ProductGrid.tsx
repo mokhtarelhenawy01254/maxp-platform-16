@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { useCategories } from '../hooks/useCategories';
