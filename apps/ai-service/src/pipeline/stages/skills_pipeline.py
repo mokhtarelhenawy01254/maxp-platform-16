@@ -201,20 +201,14 @@ def _build_followup_messages(ctx: PipelineContext, first_response: ProviderRespo
         assistant_msg["tool_calls"] = first_response.tool_calls
     messages.append(assistant_msg)
 
-    # Tool results
-    for item in executed:
-        tool_name = item.get("tool", "unknown")
+    # Tool results — match by index to avoid duplicate tool_call_id when same skill is called twice
+    tool_calls = first_response.tool_calls or []
+    for idx, item in enumerate(executed):
         status = item.get("status", "unknown")
         result = item.get("result", {})
         error = item.get("error", "")
 
-        # Find the actual tool_call_id from the first_response
-        tc_id = tool_name
-        if first_response.tool_calls:
-            for tc in first_response.tool_calls:
-                if tc.get("function", {}).get("name") == tool_name:
-                    tc_id = tc.get("id", tool_name)
-                    break
+        tc_id = tool_calls[idx].get("id", f"call_{idx}") if idx < len(tool_calls) else f"call_{idx}"
 
         if status == "success":
             messages.append({

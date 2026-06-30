@@ -167,7 +167,7 @@
           "settings": {
             "eyebrow": "Crafted in Cairo — توصيل مجاني داخل مصر",
             "title": "أناقة قبل خطواتك",
-            "subtitle": "كوتشيات وأحذية حريمي بلمسة فخمة — جلد مصري، كبسولات محدودة، وشحن خلال ٤٨ ساعة.",
+            "subtitle": "جلد مصري — كبسولات محدودة — شحن خلال ٤٨ ساعة.",
             "ctaText": "تسوقي دلوقتي",
             "ctaLink": "/shop",
             "secondaryCtaText": "شوفي المجموعات",
@@ -214,7 +214,7 @@
           "settings": {
             "badge": "لوك بوك الموسم",
             "title": "إطلالات من ضوء القاهرة",
-            "subtitle": "كبسولة الموسم مصوّرة في أحياء القاهرة التاريخية."
+            "subtitle": "كبسولة الموسم من شوارع القاهرة."
           }
         },
         {
@@ -223,7 +223,7 @@
           "settings": {
             "badge": "حكاية الصنعة",
             "title": "جلود مصرية… صنعة بإيدين",
-            "content": "مهارة الحرفي المصري، خامات جلد مختارة، ولمسة عصرية — وخلّي كل موديل قطعة توقيع.",
+            "content": "مهارة الحرفي المصري… كل موديل قطعة توقيع.",
             "image": "https://images.unsplash.com/photo-1564013443919-43c31a1e9fef?auto=format&fit=crop&q=85&w=1400",
             "ctaText": "شاهدي كل المجموعات",
             "ctaLink": "/collections"
@@ -235,7 +235,7 @@
           "settings": {
             "eyebrow": "Best Sellers",
             "title": "الأكثر مبيعاً",
-            "subtitle": "موديلات بتقود الصفحة كريل تحريري مفتوح.",
+            "subtitle": "الأكثر طلباً",
             "ctaText": "عرض الكل",
             "ctaLink": "/shop",
             "limit": 6
@@ -246,7 +246,7 @@
           "variant": "editorial-cards",
           "settings": {
             "badge": "جورنال الدار",
-            "title": "حاجات تقرّيها عشان تقرّري صح",
+            "title": "إقرأي قبل ما تشتري",
             "articles": [
               {
                 "title": "إزاي تعتني بالجلد الطبيعي",
@@ -274,7 +274,7 @@
           "variant": "editorial-strip",
           "settings": {
             "title": "انضمي لنادي Luxe",
-            "subtitle": "أوّل واحدة تعلم بالكبسولات الحصرية والعروض.",
+            "subtitle": "أول واحدة تعرف بالعروض.",
             "buttonText": "اشتراك",
             "placeholder": "إيميلك"
           }
@@ -357,12 +357,12 @@
             "shippingModalTitle": "التوصيل وتبديل المقاس",
             "guaranteesTitle": "الخدمة باينة قبل الطلب",
             "guaranteesSubtitle": "المقاس والخامة والتوصيل باينين من بدري.",
-            "guaranteeItems": "[{\"title\":\"تبديل المقاس\",\"description\":\"خطوات تبديل المقاس واضحة قبل الطلب.\"},{\"title\":\"جلد طبيعي مختار\",\"description\":\"الخامة واللون ظاهرين بشكل أوضح في الصور.\"},{\"title\":\"شحن داخل مصر\",\"description\":\"متابعة واضحة لحد ما الطلب يوصلك.\"}]",
+            "guaranteeItems": "[{\"title\":\"تبديل المقاس\",\"description\":\"سهل وواضح من البداية.\"},{\"title\":\"جلد طبيعي مختار\",\"description\":\"الخامة واللون ظاهرين في الصور.\"},{\"title\":\"شحن داخل مصر\",\"description\":\"متابعة لحد ما الطلب يوصلك.\"}]",
             "sizeGuideText": "شوفي دليل المقاسات",
             "sizeGuideLink": "/size-guide",
             "sizeGuideInteraction": "modal",
             "sizeGuideModalTitle": "دليل المقاسات",
-            "fitNote": "لو مقاسك بين رقمين أو هتلبسي جورب تقيل شوية، اختاري الأكبر غالبًا.",
+            "fitNote": "لو مقاسك بين رقمين، اختاري الأكبر.",
             "guideRows": "default|35|2|4|22.0\ndefault|36|3|5|22.5\ndefault|37|4|6|23.2\ndefault|38|5|7|24.0\ndefault|39|6|8|24.7\ndefault|40|6.5|8.5|25.4\ndefault|41|7|9|26.0\ndefault|42|8|10|26.7"
           }
         },
@@ -396,12 +396,12 @@
           "type": "reviews",
           "variant": "elessi-story-grid",
           "settings": {
-            "title": "آراء العميلات بعد الشراء",
+            "title": "العميلات رأيهم",
             "mediaTitle": "صور وملاحظات من العميلات",
-            "mediaDescription": "الصور والفيديوهات دي بتظهر لما مراجعات الصور تكون شغالة.",
+            "mediaDescription": "صور حقيقية من العميلات.",
             "listTitle": "كل التقييمات",
             "writeReviewText": "شاركي رأيك",
-            "emptyText": "لسه ما فيش تقييمات على المنتج ده. كوني أول واحدة تشاركي رأيك.",
+            "emptyText": "كوني أول واحدة تشارك رأيك.",
             "verifiedLabel": "شراء موثق",
             "reviewsLabel": "تقييمات",
             "reviewLimit": 4,
@@ -413,7 +413,7 @@
           "variant": "elessi-complete-set",
           "settings": {
             "title": "ممكن يعجبك كمان",
-            "subtitle": "ستايلات قريبة في نفس الروح والخامة.",
+            "subtitle": "نفس الروح والخامة.",
             "limit": 4
           }
         }

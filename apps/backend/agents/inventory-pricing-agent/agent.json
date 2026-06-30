@@ -4,8 +4,8 @@
   "role": "INVENTORY",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "gemini-2.5-flash",
-    "fallback": "gemini-2.5-pro"
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
   },
   "instructions": {
     "agents": "AGENTS.md",
