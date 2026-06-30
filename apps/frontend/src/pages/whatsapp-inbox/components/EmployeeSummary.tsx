@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Users, Clock } from 'lucide-react';
+import { AlertTriangle, Users } from 'lucide-react';
 import type { Employee, PreviewResult, RoutingMode, WorkspaceNumber } from '../types';
 
 interface EmployeeSummaryProps {
@@ -28,10 +28,7 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
   const { t } = useTranslation();
 
   const selectedEmployees = useMemo(
-    () =>
-      selectedEmployeeIds
-        .map((id) => employeeLookup[id])
-        .filter(Boolean) as Employee[],
+    () => selectedEmployeeIds.map((id) => employeeLookup[id]).filter(Boolean) as Employee[],
     [selectedEmployeeIds, employeeLookup],
   );
 
@@ -45,65 +42,46 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
       onPreviewResult(null);
       return;
     }
-
     const candidates = selectedEmployeeIds
       .map((id) => employeeLookup[id])
-      .filter((employee): employee is Employee => Boolean(employee))
-      .filter((employee) => showInactive || employee.isActive !== false)
-      .filter((employee) => employee.isActive);
+      .filter((e): e is Employee => Boolean(e))
+      .filter((e) => showInactive || e.isActive !== false)
+      .filter((e) => e.isActive);
 
     if (candidates.length === 0) {
-      onPreviewResult({
-        nextUserId: null,
-        candidateCount: 0,
-        skippedOffline: 0,
-        skippedOverCapacity: 0,
-      });
+      onPreviewResult({ nextUserId: null, candidateCount: 0, skippedOffline: 0, skippedOverCapacity: 0 });
       return;
     }
-
     const cursor = selectedNumber.roundRobinCursor || 0;
-    const picked = candidates[cursor % candidates.length];
-
     onPreviewResult({
-      nextUserId: picked?.id || null,
+      nextUserId: candidates[cursor % candidates.length]?.id || null,
       candidateCount: candidates.length,
       skippedOffline: 0,
       skippedOverCapacity: 0,
     });
-  }, [
-    routingMode,
-    selectedEmployeeIds,
-    selectedNumber,
-    employeeLookup,
-    showInactive,
-    onPreviewResult,
-  ]);
+  }, [routingMode, selectedEmployeeIds, selectedNumber, employeeLookup, showInactive, onPreviewResult]);
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-200">
-        <h3 className="text-base font-semibold text-foreground">
+    <div className="flex flex-col gap-3">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground">
           {t('whatsappInbox.selectedEmployeesTitle')}
         </h3>
-
         {selectedEmployees.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             {t('whatsappInbox.selectedEmployeesEmpty')}
           </p>
         ) : (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-2 flex flex-wrap gap-1">
             {selectedEmployees.map((employee) => (
               <span
                 key={employee.id}
-                className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-all duration-200 hover:bg-muted/80"
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
               >
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-card text-[9px] font-bold text-primary shadow-sm">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-card text-[7px] font-bold text-primary shadow">
                   {getInitials(employee.firstName, employee.lastName)}
                 </span>
-                <span>
-                  {employee.firstName} {employee.lastName}
-                </span>
+                {employee.firstName} {employee.lastName}
               </span>
             ))}
           </div>
@@ -111,75 +89,49 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
       </div>
 
       {routingMode === 'ROUND_ROBIN' && selectedEmployeeIds.length >= 2 && (
-        <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-200">
-          <h3 className="text-base font-semibold text-foreground">
+        <div className="rounded-md border border-secondary/30 bg-secondary/5 p-3">
+          <h3 className="text-xs font-semibold text-foreground">
             {t('whatsappInbox.routingPreviewTitle')}
           </h3>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {t('whatsappInbox.routingPreviewDescription')}
-          </p>
 
           {previewResult && (
-            <div className="mt-3 rounded-lg border border-secondary/30 bg-secondary/5 p-3 transition-all duration-200">
+            <div className="mt-2">
               {previewResult.nextUserId ? (
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20 text-secondary">
-                    <Users className="size-4" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary/20 text-secondary">
+                    <Users className="size-3" />
                   </div>
-                  <div>
-                    <span className="text-sm font-medium text-foreground">
-                      {t('whatsappInbox.nextAssignmentWillGoTo', {
-                        name:
-                          `${employeeLookup[previewResult.nextUserId]?.firstName || ''} ${employeeLookup[previewResult.nextUserId]?.lastName || ''}`.trim() ||
-                          t('whatsappInbox.notAvailable'),
-                      })}
-                    </span>
-                  </div>
+                  <span className="text-xs font-medium text-foreground">
+                    {t('whatsappInbox.nextAssignmentWillGoTo', {
+                      name:
+                        `${employeeLookup[previewResult.nextUserId]?.firstName || ''} ${employeeLookup[previewResult.nextUserId]?.lastName || ''}`.trim() ||
+                        t('whatsappInbox.notAvailable'),
+                    })}
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-warning">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20">
-                    <AlertTriangle className="size-4" />
-                  </div>
-                  <span className="text-sm font-medium">
+                  <AlertTriangle className="size-3" />
+                  <span className="text-xs font-medium">
                     {t('whatsappInbox.routingPreviewNoCandidate')}
                   </span>
                 </div>
               )}
-
-              <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span>
-                  {t('whatsappInbox.routingPreviewCandidates', {
-                    count: previewResult.candidateCount,
-                  })}
-                </span>
+              <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+                <span>{t('whatsappInbox.routingPreviewCandidates', { count: previewResult.candidateCount })}</span>
                 {previewResult.skippedOffline > 0 && (
-                  <span>
-                    {t('whatsappInbox.routingPreviewSkippedOffline', {
-                      count: previewResult.skippedOffline,
-                    })}
-                  </span>
+                  <span>{t('whatsappInbox.routingPreviewSkippedOffline', { count: previewResult.skippedOffline })}</span>
                 )}
                 {previewResult.skippedOverCapacity > 0 && (
-                  <span>
-                    {t('whatsappInbox.routingPreviewSkippedCapacity', {
-                      count: previewResult.skippedOverCapacity,
-                    })}
-                  </span>
+                  <span>{t('whatsappInbox.routingPreviewSkippedCapacity', { count: previewResult.skippedOverCapacity })}</span>
                 )}
               </div>
             </div>
           )}
 
           {lastDistributedUser && selectedNumber?.lastDistributedAt && (
-            <div className="mt-3 border-t border-border/50 pt-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <Clock className="size-3.5" />
-                {t('whatsappInbox.lastDistribution')}
-              </div>
-              <p className="mt-1 text-sm text-foreground">
-                {lastDistributedUser.firstName} {lastDistributedUser.lastName}
-              </p>
+            <div className="mt-2 border-t border-secondary/20 pt-2 text-[11px] text-muted-foreground">
+              {t('whatsappInbox.lastDistribution')}: {lastDistributedUser.firstName} {lastDistributedUser.lastName}
             </div>
           )}
         </div>
