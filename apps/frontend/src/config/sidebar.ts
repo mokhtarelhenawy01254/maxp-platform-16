@@ -826,6 +826,7 @@ export const getSidebarConfig = (
                 { to: '/advertising/facebook-ads/tests', icon: BeakerIcon, label: t('sidebar.abTests') },
                 { to: '/advertising/facebook-ads/audiences', icon: UserGroupIcon, label: t('sidebar.audiences') },
                 { to: '/advertising/facebook-ads/catalogs', icon: ShoppingBagIcon, label: t('sidebar.productCatalogs') },
+                { to: '/tools/break-even', icon: CalculatorIcon, label: t('sidebar.projectBreakEven') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])

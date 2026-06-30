@@ -252,7 +252,7 @@ const PromotionSettings: React.FC = () => {
     setHideUtilityBar(value);
     setUtilityBarSaving(true);
     try {
-      await apiClient.put('/settings/company', { settings: { hideUtilityBar: value } });
+      await storefrontSettingsService.updateSettings({ hideUtilityBar: value });
     } catch {
       setHideUtilityBar(!value);
     } finally {

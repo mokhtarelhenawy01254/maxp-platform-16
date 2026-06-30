@@ -80,6 +80,9 @@ const SentMessagesStats = React.lazy(
 const CampaignPredictionCalculator = React.lazy(
   () => import("./pages/conversations/CampaignPredictionCalculator"),
 );
+const ProjectBreakEvenCalculator = React.lazy(
+  () => import("./pages/marketing/ProjectBreakEvenCalculator"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2466,6 +2469,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CampaignPredictionCalculator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/break-even"
+                  element={
+                    <Layout>
+                      <ProjectBreakEvenCalculator />
                     </Layout>
                   }
                 />
