@@ -41,58 +41,53 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 
   const filteredEmployees = useMemo(() => {
     let pool = employees;
-    if (!showInactive) {
-      pool = pool.filter((employee) => employee.isActive !== false);
-    }
+    if (!showInactive) pool = pool.filter((e) => e.isActive !== false);
     if (!query.trim()) return pool;
-
     const q = query.trim().toLowerCase();
     return pool.filter(
-      (employee) =>
-        `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(q) ||
-        employee.email.toLowerCase().includes(q),
+      (e) =>
+        `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
+        e.email.toLowerCase().includes(q),
     );
   }, [employees, showInactive, query]);
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-200">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-base font-semibold text-foreground">
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground">
           {t('whatsappInbox.workspaceEmployeesTitle')}
           {selectedEmployeeIds.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
               ({selectedEmployeeIds.length})
             </span>
           )}
         </h3>
-
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:w-48">
-            <Search className="pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-all duration-200 ltr:left-3 rtl:right-3" />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 size-3 -translate-y-1/2 text-muted-foreground ltr:left-2 rtl:right-2" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('whatsappInbox.searchEmployees') as string}
-              className="w-full rounded-lg border border-border/50 bg-card py-1.5 pr-8 text-sm text-foreground outline-none transition-all duration-200 focus:border-ring focus:ring-1 focus:ring-ring/20 ltr:pl-9 rtl:pr-9"
+              className="w-32 rounded-md border border-border bg-transparent py-1 pr-6 text-xs text-foreground outline-none transition-colors focus:border-ring ltr:pl-6 rtl:pr-6"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground ltr:right-2 rtl:left-2"
+                className="absolute top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground ltr:right-1 rtl:left-1"
               >
-                <X className="size-3.5" />
+                <X className="size-2.5" />
               </button>
             )}
           </div>
-
-          <label className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-xs text-muted-foreground transition-colors hover:text-foreground">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground">
             <input
               type="checkbox"
               checked={showInactive}
-              onChange={(event) => onToggleInactive(event.target.checked)}
-              className="size-4 rounded border-border text-primary transition-all"
+              onChange={(e) => onToggleInactive(e.target.checked)}
+              className="size-3 rounded border-border text-primary"
             />
             {t('whatsappInbox.showInactiveModerators')}
           </label>
@@ -100,11 +95,11 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
       </div>
 
       {onSelectAll && filteredEmployees.length > 0 && (
-        <div className="mt-3 flex items-center gap-2 border-b border-border/50 pb-3">
+        <div className="mt-2 flex items-center gap-2 border-b border-border pb-2">
           <button
             type="button"
             onClick={() => onSelectAll(filteredEmployees.map((e) => e.id))}
-            className="rounded-md bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-all hover:bg-primary/20"
+            className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20"
           >
             {t('whatsappInbox.selectAll')}
           </button>
@@ -112,7 +107,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
             <button
               type="button"
               onClick={() => onSelectAll([])}
-              className="rounded-md bg-muted px-3 py-1 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/80"
+              className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80"
             >
               {t('whatsappInbox.clearSelection')}
             </button>
@@ -120,73 +115,56 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
         </div>
       )}
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
         {filteredEmployees.length === 0 && (
-          <div className="col-span-full rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="col-span-full py-6 text-center text-xs text-muted-foreground">
             {t('whatsappInbox.noEmployeesMatch')}
           </div>
         )}
 
         {filteredEmployees.map((employee) => {
           const isSelected = selectedEmployeeIds.includes(employee.id);
-          const isOwnerMode = routingMode === 'NUMBER_OWNER';
+          const isOwner = routingMode === 'NUMBER_OWNER';
+          const accent = isOwner ? 'primary' : 'secondary';
 
           return (
             <button
               key={employee.id}
               type="button"
               onClick={() => onToggleEmployee(employee.id)}
-              className={`group relative rounded-lg border p-3 text-start transition-all duration-200 ${
+              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-start transition-colors ${
                 isSelected
-                  ? isOwnerMode
-                    ? 'border-primary/40 bg-card shadow-sm dark:border-primary/60'
-                    : 'border-secondary/40 bg-card shadow-sm dark:border-secondary/60'
-                  : 'border-border/50 bg-card hover:border-border hover:shadow-sm'
+                  ? `border-${accent}/40 bg-${accent}/5`
+                  : 'border-border hover:border-border/80 hover:bg-muted'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-200 ${
-                    isSelected
-                      ? isOwnerMode
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-secondary-foreground'
-                      : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
-                  }`}
-                >
-                  {getInitials(employee.firstName, employee.lastName)}
-                  {isSelected && (
-                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-card shadow-sm">
-                      <Check className={`size-3 ${isOwnerMode ? 'text-primary' : 'text-secondary'}`} />
-                    </span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
-                    {employee.firstName} {employee.lastName}
-                    {employee.isActive === false && (
-                      <span className="inline-flex shrink-0 items-center rounded-full border border-border px-1.5 py-0 text-[10px] font-medium text-muted-foreground">
-                        {t('whatsappInbox.inactiveLabel')}
-                      </span>
-                    )}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {employee.email}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-2.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                    {resolveRoleLabel(employee.role)}
+              <div className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                isSelected
+                  ? `bg-${accent} text-${accent}-foreground`
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {getInitials(employee.firstName, employee.lastName)}
+                {isSelected && (
+                  <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-card shadow">
+                    <Check className={`size-2 text-${accent}`} />
                   </span>
-                  {typeof employee.currentChatCount === 'number' && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                      {employee.currentChatCount} {t('whatsappInbox.chatsSuffix')}
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-foreground">
+                  {employee.firstName} {employee.lastName}
+                  {employee.isActive === false && (
+                    <span className="ml-1 inline rounded border border-border px-1 py-0 text-[9px] font-medium text-muted-foreground">
+                      {t('whatsappInbox.inactiveLabel')}
                     </span>
                   )}
-                </div>
+                </p>
+                <p className="flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+                  <span>{resolveRoleLabel(employee.role)}</span>
+                  {typeof employee.currentChatCount === 'number' && (
+                    <span>· {employee.currentChatCount} {t('whatsappInbox.chatsSuffix')}</span>
+                  )}
+                </p>
               </div>
             </button>
           );
