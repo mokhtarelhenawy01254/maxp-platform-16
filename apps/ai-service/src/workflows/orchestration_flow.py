@@ -25,6 +25,7 @@ from src.services.a2a_bridge import AGENT_CARD_META
 from src.services.agent_feedback import AgentFeedbackTracker
 from src.services.agent_manager_service import get_agent_manager_service
 from src.services.agent_registry import _resolve_agent_model, get_agent_registry
+from src.memory.working_memory import working_memory_service
 from src.services.memory_router import get_ceo_lessons
 from src.services.run_state_manager import RunStateManager
 from src.tools.registry import get_tool_names_for_role
@@ -364,6 +365,17 @@ async def run_orchestration(
             existing = external_context.get("ceo_lessons", "")
             external_context["ceo_lessons"] = existing + ceo_lessons
 
+        # Load recent messages from working memory for conversation continuity
+        if session:
+            try:
+                wm_key = conversation_id or thread_id
+                if wm_key:
+                    wm_ctx = await working_memory_service.get_context(company_id, wm_key)
+                    if wm_ctx and wm_ctx.get("recentMessages"):
+                        external_context.setdefault("recentMessages", wm_ctx["recentMessages"])
+            except Exception:
+                logger.warning("failed to load working memory", exc_info=True)
+
         ctx = PipelineContext(
             message=message,
             thread_id=thread_id,
@@ -401,13 +413,25 @@ async def run_orchestration(
             context_message=message,
         )
 
+        # Save messages to working memory for conversation continuity
+        reply_text = final_ctx.final_reply or final_ctx.llm_response or ""
+        if session:
+            try:
+                wm_key = conversation_id or thread_id
+                if wm_key and message:
+                    await working_memory_service.add_message(company_id, wm_key, {"role": "user", "content": message})
+                if wm_key and reply_text:
+                    await working_memory_service.add_message(company_id, wm_key, {"role": "assistant", "content": reply_text})
+            except Exception:
+                logger.warning("failed to save working memory", exc_info=True)
+
         if state_manager:
             state_id = f"state_{int(time.time())}"
             await state_manager.save_state(
                 thread_id=thread_id,
                 state_id=state_id,
                 state={
-                    "last_reply": final_ctx.final_reply or final_ctx.llm_response,
+                    "last_reply": reply_text,
                     "status": "completed",
                 },
             )
