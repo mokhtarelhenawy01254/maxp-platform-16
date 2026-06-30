@@ -50,6 +50,13 @@ import {
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
 
+interface MetaComponent {
+  type: string;
+  format?: string;
+  text?: string;
+  buttons?: { type: string; text: string; url?: string }[];
+}
+
 interface MetaTemplate {
   name: string;
   status: string;
@@ -57,6 +64,7 @@ interface MetaTemplate {
   language: string;
   id?: string;
   rejected_reason?: string;
+  components?: MetaComponent[];
 }
 
 const statusBadge: Record<string, string> = {
@@ -388,8 +396,8 @@ const WhatsAppMetaTemplates: React.FC<{
               {viewTemplate && (() => {
                 const StatusIcon = statusIcon[viewTemplate.status] || AlertTriangle;
                 return (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <p className="text-sm text-[color:var(--color-muted-foreground)]">الحالة</p>
                         <Badge variant="outline" className={statusBadge[viewTemplate.status] || ""}>
@@ -401,10 +409,10 @@ const WhatsAppMetaTemplates: React.FC<{
                         <p className="text-sm text-[color:var(--color-muted-foreground)]">التصنيف</p>
                         <p className="font-medium">{viewTemplate.category}</p>
                       </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[color:var(--color-muted-foreground)]">اللغة</p>
-                      <p className="font-medium">{viewTemplate.language}</p>
+                      <div>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">اللغة</p>
+                        <p className="font-medium">{viewTemplate.language}</p>
+                      </div>
                     </div>
                     {viewTemplate.rejected_reason && (
                       <div>
@@ -412,6 +420,55 @@ const WhatsAppMetaTemplates: React.FC<{
                         <p className="font-medium text-red-500">{viewTemplate.rejected_reason}</p>
                       </div>
                     )}
+                    <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">معاينة القالب</p>
+                      {viewTemplate.components?.map((c, i) => {
+                        if (c.type === "HEADER") {
+                          return (
+                            <div key={i} className="space-y-1">
+                              <p className="text-[10px] font-medium text-[color:var(--color-muted-foreground)]">
+                                {(c.format || "TEXT") === "TEXT" ? "رأس الرسالة" : `رأس (${c.format})`}
+                              </p>
+                              <p className="rounded-xl bg-[var(--shell-overlay-bg)] px-3 py-2 text-sm font-medium">{c.text || "(بدون نص)"}</p>
+                            </div>
+                          );
+                        }
+                        if (c.type === "BODY") {
+                          return (
+                            <div key={i} className="space-y-1">
+                              <p className="text-[10px] font-medium text-[color:var(--color-muted-foreground)]">محتوى الرسالة</p>
+                              <p className="rounded-xl bg-[var(--shell-overlay-bg)] px-3 py-2 text-sm whitespace-pre-wrap">{c.text || "(بدون نص)"}</p>
+                            </div>
+                          );
+                        }
+                        if (c.type === "FOOTER") {
+                          return (
+                            <div key={i} className="space-y-1">
+                              <p className="text-[10px] font-medium text-[color:var(--color-muted-foreground)]">تذييل</p>
+                              <p className="rounded-xl bg-[var(--shell-overlay-bg)] px-3 py-2 text-xs text-[color:var(--color-muted-foreground)]">{c.text || "(بدون نص)"}</p>
+                            </div>
+                          );
+                        }
+                        if (c.type === "BUTTONS") {
+                          return (
+                            <div key={i} className="space-y-1">
+                              <p className="text-[10px] font-medium text-[color:var(--color-muted-foreground)]">أزرار</p>
+                              <div className="flex flex-wrap gap-2">
+                                {c.buttons?.map((b, bi) => (
+                                  <span key={bi} className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--shell-overlay-bg)] px-3 py-1 text-xs">
+                                    {b.text}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                      {(!viewTemplate.components || viewTemplate.components.length === 0) && (
+                        <p className="py-4 text-center text-sm text-[color:var(--color-muted-foreground)]">لا توجد تفاصيل للمكونات</p>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
