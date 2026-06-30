@@ -953,6 +953,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <option value="CONFIRMED">مؤكد (CONFIRMED)</option>
                 <option value="PROCESSING">جاري التجهيز</option>
                 <option value="RETURNED">مرتجع (RETURNED)</option>
+                <option value="EXCHANGED">استبدال (EXCHANGED)</option>
               </select>
             </div>
             <div className="col-span-2 sm:col-span-1">
@@ -967,7 +968,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   if (val === "return") {
                     setStatus("RETURNED");
                   } else if (val === "exchange") {
-                    setStatus("PENDING"); // الاستبدال يبدأ كطلب جديد
+                    setStatus("EXCHANGED");
                   } else {
                     setStatus("PENDING");
                   }
