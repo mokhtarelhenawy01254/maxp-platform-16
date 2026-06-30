@@ -1590,7 +1590,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           emoji: '🔥',
           key: 'sold' as const,
           label: prefersArabicCopy
-            ? `${initialAnimatedRecentOrderCount} تم بيعها خلال آخر 7 ساعات`
+            ? `${initialAnimatedRecentOrderCount} اتباعت في آخر ٧ ساعات`
             : `${initialAnimatedRecentOrderCount} sold in the last 7 hours`,
         }
       : null,
@@ -1600,7 +1600,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           emoji: '✨',
           key: 'cart' as const,
           label: prefersArabicCopy
-            ? `أكثر من ${initialAnimatedActiveCartPressure} عميلة أضافوه إلى سلاتهن الآن`
+            ? `أكثر من ${initialAnimatedActiveCartPressure} عميلة ضافتهم لسلاتهم دلوقتي`
             : `Hurry! Over ${initialAnimatedActiveCartPressure} shoppers have this in their carts`,
         }
       : null,
@@ -1611,7 +1611,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     label: string;
   }>;
   const initialElessiCountdownLabel = prefersArabicCopy
-    ? 'أسرعي! العرض ينتهي خلال:'
+    ? 'أسرعي! العرض بيخلص خلال:'
     : 'Hurry up! Sale end in:';
   const initialElessiSaleCountdownTarget = resolveSaleCountdownTimestamp(initialSaleEndDate);
   const initialElessiSaleCountdown = (() => {
@@ -2958,23 +2958,23 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
       <div className="flex items-center gap-4">
         <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a27b75]">
-          {prefersArabicCopy ? 'مشاركة' : 'Share'}
+          {prefersArabicCopy ? 'شاركي' : 'Share'}
         </span>
         <div className="flex items-center gap-2">
           {[
             {
               id: 'facebook' as const,
-              label: prefersArabicCopy ? 'مشاركة على فيسبوك' : 'Share on Facebook',
+              label: prefersArabicCopy ? 'شاركي على فيسبوك' : 'Share on Facebook',
               icon: Facebook,
             },
             {
               id: 'twitter' as const,
-              label: prefersArabicCopy ? 'مشاركة على إكس' : 'Share on X',
+              label: prefersArabicCopy ? 'شاركي على إكس' : 'Share on X',
               icon: Twitter,
             },
             {
               id: 'copy' as const,
-              label: prefersArabicCopy ? 'نسخ رابط المنتج' : 'Copy product link',
+              label: prefersArabicCopy ? 'انسخي رابط المنتج' : 'Copy product link',
               icon: Share2,
             },
           ].map((item) => {
@@ -3060,23 +3060,23 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
       <div className="flex items-center gap-4">
         <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b6258]">
-          {prefersArabicCopy ? 'مشاركة' : 'Share'}
+          {prefersArabicCopy ? 'شاركي' : 'Share'}
         </span>
         <div className="flex items-center gap-2">
           {[
             {
               id: 'facebook' as const,
-              label: prefersArabicCopy ? 'مشاركة على فيسبوك' : 'Share on Facebook',
+              label: prefersArabicCopy ? 'شاركي على فيسبوك' : 'Share on Facebook',
               icon: Facebook,
             },
             {
               id: 'twitter' as const,
-              label: prefersArabicCopy ? 'مشاركة على إكس' : 'Share on X',
+              label: prefersArabicCopy ? 'شاركي على إكس' : 'Share on X',
               icon: Twitter,
             },
             {
               id: 'copy' as const,
-              label: prefersArabicCopy ? 'نسخ رابط المنتج' : 'Copy product link',
+              label: prefersArabicCopy ? 'انسخي رابط المنتج' : 'Copy product link',
               icon: Share2,
             },
           ].map((item) => {
@@ -4072,23 +4072,23 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
       <div className="flex items-center gap-6 pt-2">
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
-          {prefersArabicCopy ? 'مشاركة' : 'Share'}
+          {prefersArabicCopy ? 'شاركي' : 'Share'}
         </span>
         <div className="flex gap-3 text-muted-foreground/60">
           {[
             {
               id: 'facebook' as const,
-              label: prefersArabicCopy ? 'مشاركة على فيسبوك' : 'Share on Facebook',
+              label: prefersArabicCopy ? 'شاركي على فيسبوك' : 'Share on Facebook',
               icon: Facebook,
             },
             {
               id: 'twitter' as const,
-              label: prefersArabicCopy ? 'مشاركة على إكس' : 'Share on X',
+              label: prefersArabicCopy ? 'شاركي على إكس' : 'Share on X',
               icon: Twitter,
             },
             {
               id: 'copy' as const,
-              label: prefersArabicCopy ? 'نسخ رابط المنتج' : 'Copy product link',
+              label: prefersArabicCopy ? 'انسخي رابط المنتج' : 'Copy product link',
               icon: Share2,
             },
           ].map((item) => {
@@ -4335,7 +4335,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
       <div className="flex items-center gap-4">
         <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8f5c44]">
-          {prefersArabicCopy ? 'مشاركة' : 'Share'}
+          {prefersArabicCopy ? 'شاركي' : 'Share'}
         </span>
         <div className="flex items-center gap-2">
           {[
@@ -4346,17 +4346,17 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
             },
             {
               id: 'facebook' as const,
-              label: prefersArabicCopy ? 'مشاركة على فيسبوك' : 'Share on Facebook',
+              label: prefersArabicCopy ? 'شاركي على فيسبوك' : 'Share on Facebook',
               icon: Facebook,
             },
             {
               id: 'twitter' as const,
-              label: prefersArabicCopy ? 'مشاركة على إكس' : 'Share on X',
+              label: prefersArabicCopy ? 'شاركي على إكس' : 'Share on X',
               icon: Twitter,
             },
             {
               id: 'copy' as const,
-              label: prefersArabicCopy ? 'نسخ رابط المنتج' : 'Copy product link',
+              label: prefersArabicCopy ? 'انسخي رابط المنتج' : 'Copy product link',
               icon: Share2,
             },
           ].map((item) => {
@@ -4626,17 +4626,17 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     const atelierShareActions = [
       {
         id: 'facebook' as const,
-        label: prefersArabicCopy ? 'مشاركة على فيسبوك' : 'Share on Facebook',
+        label: prefersArabicCopy ? 'شاركي على فيسبوك' : 'Share on Facebook',
         icon: Facebook,
       },
       {
         id: 'twitter' as const,
-        label: prefersArabicCopy ? 'مشاركة على إكس' : 'Share on X',
+        label: prefersArabicCopy ? 'شاركي على إكس' : 'Share on X',
         icon: Twitter,
       },
       {
         id: 'copy' as const,
-        label: prefersArabicCopy ? 'نسخ رابط المنتج' : 'Copy product link',
+        label: prefersArabicCopy ? 'انسخي رابط المنتج' : 'Copy product link',
         icon: Share2,
       },
     ];
@@ -4810,7 +4810,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                 ) : null}
                 <div className="flex items-center gap-4 sm:ms-auto">
                   <span className="text-[10px] font-black tracking-[0.2em] text-[#9c6274]">
-                    {prefersArabicCopy ? 'مشاركة' : 'Share'}
+                    {prefersArabicCopy ? 'شاركي' : 'Share'}
                   </span>
                   <div className="flex gap-3 text-[#6e5757]">
                     {atelierShareActions.map((item) => {
@@ -5468,23 +5468,23 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const gearShareActions = (
     <div className="flex items-center gap-6 pt-2">
       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100/55">
-        {prefersArabicCopy ? 'مشاركة' : 'Share'}
+        {prefersArabicCopy ? 'شاركي' : 'Share'}
       </span>
       <div className="flex gap-3 text-slate-300/75">
         {[
           {
             id: 'facebook' as const,
-            label: prefersArabicCopy ? 'مشاركة على فيسبوك' : 'Share on Facebook',
+            label: prefersArabicCopy ? 'شاركي على فيسبوك' : 'Share on Facebook',
             icon: Facebook,
           },
           {
             id: 'twitter' as const,
-            label: prefersArabicCopy ? 'مشاركة على إكس' : 'Share on X',
+            label: prefersArabicCopy ? 'شاركي على إكس' : 'Share on X',
             icon: Twitter,
           },
           {
             id: 'copy' as const,
-            label: prefersArabicCopy ? 'نسخ رابط المنتج' : 'Copy product link',
+            label: prefersArabicCopy ? 'انسخي رابط المنتج' : 'Copy product link',
             icon: Share2,
           },
         ].map((item) => {

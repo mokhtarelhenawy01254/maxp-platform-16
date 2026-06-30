@@ -1,7 +1,7 @@
 {
   "id": "khemet-luxe-v2",
   "name": "KHEMET LUXE — Editorial Premium",
-  "description": "نسخة بريميم 2026 من قالب KHEMET LUXE: أهداف تحويل بدل ثقة، دليل إيجاد الحذاء المناسب، إثبات اجتماعي حي، تكملات الإطلالة، فيديو هيرو، لوكبوك، تيك جريد، نوايا تسوق، وجورنال قصة الحرفة.",
+  "description": "نسخة بريميم 2026: أهداف تحويل بدل ثقة، دليل إيجاد الحذاء، إثبات اجتماعي، تكملات إطلالة، فيديو، لوكبوك، وجورنال الصنعة.",
   "direction": "rtl",
   "tokens": {
     "colors": {
@@ -44,7 +44,7 @@
   },
   "seo": {
     "titleTemplate": "%s | KHEMET LUXE",
-    "description": "بوتيك أحذية حريمي بريميم 2026: دليل إيجاد الحذاء المناسب، إثبات اجتماعي حي، تكملات إطلالة، وفيديو تحريري من القاهرة."
+    "description": "بوتيك أحذية حريمي بريميم: دليل الحذاء المناسب، إثبات اجتماعي، تكملات إطلالة، وفيديو من القاهرة."
   },
   "preview": {
     "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
@@ -84,7 +84,7 @@
   },
   "footer": {
     "variant": "signature-panel",
-    "description": "أحذية حريمي مصنوعة بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلي القرار أسرع.",
+    "description": "أحذية حريمي بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلّي القرار أسرع.",
     "copyrightText": "© 2026 KHEMET LUXE. CRAFTED IN EGYPT.",
     "contactRows": [
       {
@@ -108,7 +108,7 @@
         "title": "الدار",
         "links": [
           {
-            "label": "قصة الصناعة",
+            "label": "حكاية الصنعة",
             "to": "/collections"
           },
           {
@@ -166,11 +166,11 @@
           "variant": "luxury-minimal",
           "settings": {
             "eyebrow": "Crafted in Cairo — توصيل مجاني داخل مصر",
-            "title": "أناقة تسبق خطواتك",
-            "subtitle": "كوتشيات وأحذية حريمي بلمسة فاخرة. جلد مصري، كبسولات محدودة، وشحن خلال 48 ساعة.",
-            "ctaText": "تسوقي الآن",
+            "title": "أناقة قبل خطواتك",
+            "subtitle": "كوتشيات وأحذية حريمي بلمسة فخمة — جلد مصري، كبسولات محدودة، وشحن خلال ٤٨ ساعة.",
+            "ctaText": "تسوقي دلوقتي",
             "ctaLink": "/shop",
-            "secondaryCtaText": "اكتشفي المجموعات",
+            "secondaryCtaText": "شوفي المجموعات",
             "secondaryCtaLink": "/collections",
             "backgroundImage": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=85&w=1920",
             "backgroundVideo": "https://cdn.coverr.co/videos/coverr-a-woman-trying-on-shoes-in-a-boutique-2586/1080p.mp4"
@@ -181,7 +181,7 @@
           "variant": "gallery-columns",
           "settings": {
             "title": "مجموعاتنا",
-            "subtitle": "ثلاث مسارات تقودك للإحساس المناسب.",
+            "subtitle": "تلات مسارات توصلك للإحساس الصح.",
             "limit": 3,
             "preferRuntimeCategories": true,
             "ctaText": "عرض كل المجموعات",
@@ -221,9 +221,9 @@
           "type": "story-parallax",
           "variant": "split-editorial",
           "settings": {
-            "badge": "قصة الحرفة",
-            "title": "صناعة يدوية بجلود مصرية فاخرة",
-            "content": "نمزج بين مهارة الحرفي المصري، خامات الجلد المختارة، وإيقاع بصري معاصر يجعل كل موديل أقرب لقطعة توقيع.",
+            "badge": "حكاية الصنعة",
+            "title": "جلود مصرية… صنعة بإيدين",
+            "content": "مهارة الحرفي المصري، خامات جلد مختارة، ولمسة عصرية — وخلّي كل موديل قطعة توقيع.",
             "image": "https://images.unsplash.com/photo-1564013443919-43c31a1e9fef?auto=format&fit=crop&q=85&w=1400",
             "ctaText": "شاهدي كل المجموعات",
             "ctaLink": "/collections"
@@ -246,23 +246,23 @@
           "variant": "editorial-cards",
           "settings": {
             "badge": "جورنال الدار",
-            "title": "قراءات تخدم قرارك قبل الشراء",
+            "title": "حاجات تقرّيها عشان تقرّري صح",
             "articles": [
               {
-                "title": "العناية بالجلد الطبيعي",
-                "excerpt": "خمس خطوات تحافظ على لمعان الحذاء لسنوات.",
+                "title": "إزاي تعتني بالجلد الطبيعي",
+                "excerpt": "٥ خطوات تحافظ على لمعة الحذاء سنين.",
                 "link": "/collections",
                 "tag": "عناية"
               },
               {
-                "title": "كيف تختارين مقاسك بثقة",
-                "excerpt": "دليل سريع لقياس القدم وتجنب الاستبدال.",
+                "title": "إزاي تختاري مقاسك من غير تفكير",
+                "excerpt": "دليل سريع لقياس رجلك وتجنّبي الاستبدال.",
                 "link": "/size-guide",
                 "tag": "مقاسات"
               },
               {
-                "title": "قصة حرفة القاهرة",
-                "excerpt": "من ورش الجلد في مصر القديمة لورش الكبسولات المعاصرة.",
+                "title": "حكاية الصنعة في القاهرة",
+                "excerpt": "من ورش الجلد في مصر القديمة لكبسولات معاصرة.",
                 "link": "/collections",
                 "tag": "حرفة"
               }
@@ -273,10 +273,10 @@
           "type": "newsletter",
           "variant": "editorial-strip",
           "settings": {
-            "title": "انضمي إلى نادي Luxe",
-            "subtitle": "كوني أول من يعلم عن الكبسولات الحصرية والعروض الخاصة.",
+            "title": "انضمي لنادي Luxe",
+            "subtitle": "أوّل واحدة تعلم بالكبسولات الحصرية والعروض.",
             "buttonText": "اشتراك",
-            "placeholder": "بريدك الإلكتروني"
+            "placeholder": "إيميلك"
           }
         }
       ],
@@ -355,7 +355,7 @@
             "shippingInteraction": "modal",
             "shippingTriggerText": "شوفي سياسة التوصيل وتبديل المقاس",
             "shippingModalTitle": "التوصيل وتبديل المقاس",
-            "guaranteesTitle": "الخدمة واضحة قبل الطلب",
+            "guaranteesTitle": "الخدمة باينة قبل الطلب",
             "guaranteesSubtitle": "المقاس والخامة والتوصيل باينين من بدري.",
             "guaranteeItems": "[{\"title\":\"تبديل المقاس\",\"description\":\"خطوات تبديل المقاس واضحة قبل الطلب.\"},{\"title\":\"جلد طبيعي مختار\",\"description\":\"الخامة واللون ظاهرين بشكل أوضح في الصور.\"},{\"title\":\"شحن داخل مصر\",\"description\":\"متابعة واضحة لحد ما الطلب يوصلك.\"}]",
             "sizeGuideText": "شوفي دليل المقاسات",
@@ -371,7 +371,7 @@
           "variant": "seamless",
           "settings": {
             "title": "",
-            "soldCounterMessage": "تم طلب {count} قطعة آخر 30 يوم • {count} شخصة بتشوف الحذاء دلوقتي • توصيل متوقع خلال 2-5 يوليو",
+            "soldCounterMessage": "اتطلب {count} قطعة في آخر ٣٠ يوم • {count} شخصة بتشوف الحذاء دلوقتي • توصيل متوقع ٢-٥ يوليو",
             "soldCounterStyle": "minimal",
             "contentAlign": "start"
           }
@@ -432,7 +432,7 @@
           "variant": "wardrobe-cart",
           "settings": {
             "title": "سلة KHEMET LUXE",
-            "emptyText": "سلتك فارغة حالياً.",
+            "emptyText": "سلتك فاضية دلوقتي.",
             "continueShoppingText": "متابعة التسوق"
           }
         },
@@ -441,15 +441,15 @@
           "variant": "boutique-summary",
           "settings": {
             "title": "ملخص الطلب",
-            "shippingHelpText": "سيتم احتساب الشحن بعد اختيار المحافظة في صفحة الدفع.",
+            "shippingHelpText": "الشحن هيتحسب بعد اختيار المحافظة.",
             "couponPlaceholder": "كود الخصم",
             "couponButtonText": "تطبيق",
             "checkoutButtonText": "إتمام الشراء",
             "assuranceTitle": "يشملك مع الطلب",
             "assuranceItems": [
-              "تغليف مرتب يحافظ على الحذاء حتى الاستلام",
-              "تأكيد المقاس أو اللون قبل التجهيز عند الحاجة",
-              "متابعة واضحة حتى الاستلام أو الاستبدال"
+              "تغليف محترم يحافظ على الحذاء لحد ما تستلميه",
+              "نتأكد من المقاس واللون قبل التجهيز لو محتاجة",
+              "متابعة واضحة لحد الاستلام أو الاستبدال"
             ]
           }
         }
@@ -468,12 +468,12 @@
           "variant": "boutique-payment",
           "settings": {
             "title": "طريقة الدفع",
-            "subtitle": "اختاري وسيلة الدفع المناسبة، ثم أكّدي الطلب بعد مراجعة العنوان والشحن.",
+            "subtitle": "اختاري وسيلة الدفع وبعد كده أكّدي الطلب.",
             "summaryTitle": "ملخص الطلب",
             "confirmOrderText": "تأكيد الطلب",
             "payButtonPrefix": "ادفعي",
-            "processingText": "جارٍ المعالجة...",
-            "shippingPromptText": "اختاري المحافظة لحساب تكلفة الشحن.",
+            "processingText": "بنحضر طلبك...",
+            "shippingPromptText": "اختاري المحافظة عشان نحسب الشحن.",
             "enterGovernorateText": "اختاري المحافظة",
             "enabledMethods": [
               "cod",
@@ -481,7 +481,7 @@
               "wallet"
             ],
             "codLabel": "الدفع عند الاستلام",
-            "codDesc": "ادفعي نقدًا عند وصول طلبك",
+            "codDesc": "ادفعي كاش لما الطلب يوصل",
             "cardLabel": "بطاقة الائتمان",
             "cardDesc": "Visa, Mastercard",
             "walletLabel": "محفظة إلكترونية",
@@ -503,9 +503,9 @@
             "notesTitle": "ملاحظات على الطلب",
             "showNotesSection": false,
             "notesOptionalLabel": "(اختياري)",
-            "fullNameLabel": "الاسم الكامل",
+            "fullNameLabel": "الاسم بالكامل",
             "fullNamePlaceholder": "مثال: سارة أحمد",
-            "emailLabel": "البريد الإلكتروني",
+            "emailLabel": "الإيميل",
             "emailPlaceholder": "name@example.com",
             "phoneLabel": "رقم الهاتف",
             "phonePlaceholder": "01xxxxxxxxx",

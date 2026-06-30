@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const redisCacheService = require('./redisCacheService');
+const WhatsAppManager = require('./whatsapp/WhatsAppManager');
 const {
   ROUTING_MODES,
   DISTRIBUTION_STRATEGIES,
@@ -290,6 +291,18 @@ class NumberAssignmentService {
       const routingMembers = assignment?.routingUsers || [];
       const activeMembers = routingMembers.filter((member) => member.isActive);
       const routingMode = assignment?.routingMode || ROUTING_MODES.NUMBER_OWNER;
+    
+      const activeSession = WhatsAppManager.getSession(session.id);
+      const liveStatusMap = {
+        CONNECTED: 'CONNECTED',
+        CONNECTING: 'CONNECTING',
+        QR_PENDING: 'CONNECTING',
+        LOGGED_OUT: 'DISCONNECTED',
+        DISCONNECTED: 'DISCONNECTED'
+      };
+      const resolvedStatus = activeSession
+        ? 'CONNECTED'
+        : (liveStatusMap[session.status] || 'DISCONNECTED');
 
       return {
         id: session.id,

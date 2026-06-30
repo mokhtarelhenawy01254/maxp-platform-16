@@ -1,14 +1,49 @@
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const FRAMED_DIR = path.join(__dirname, '..', 'uploads', 'products', 'framed');
 
-function ensureDir() {
-  if (!fs.existsSync(FRAMED_DIR)) {
-    fs.mkdirSync(FRAMED_DIR, { recursive: true });
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
+}
+
+function downloadUrl(url) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    mod.get(url, { rejectUnauthorized: false }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return downloadUrl(res.headers.location).then(resolve).catch(reject);
+      }
+      if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+    }).on('error', reject);
+  });
+}
+
+async function resolveOverlayPath(overlayImage) {
+  if (overlayImage.startsWith('/')) {
+    const p = path.join(__dirname, '..', overlayImage);
+    if (!fs.existsSync(p)) throw new Error('Overlay image not found');
+    return p;
+  }
+  if (overlayImage.startsWith('http://') || overlayImage.startsWith('https://')) {
+    const tmpDir = path.join(__dirname, '..', 'uploads', 'products', 'framed', '.tmp');
+    ensureDir(tmpDir);
+    const tmpPath = path.join(tmpDir, `overlay-${Date.now()}.png`);
+    const buf = await downloadUrl(overlayImage);
+    fs.writeFileSync(tmpPath, buf);
+    return tmpPath;
+  }
+  if (!fs.existsSync(overlayImage)) throw new Error('Overlay image not found');
+  return overlayImage;
 }
 
 async function generateFramedImage(originalUrl, overlayPath) {
