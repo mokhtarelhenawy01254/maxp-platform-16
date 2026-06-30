@@ -7,7 +7,7 @@ function escapeXml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
-router.get('/feed/:catalogId.xml', async (req, res) => {
+router.get('/:catalogId.xml', async (req, res) => {
   try {
     const prisma = await getSharedPrismaClientAsync();
     const catalog = await prisma.facebookProductCatalog.findUnique({
