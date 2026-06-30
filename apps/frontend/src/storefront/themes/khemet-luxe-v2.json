@@ -418,16 +418,6 @@
             "subtitle": "ستايلات قريبة في نفس الروح والخامة.",
             "limit": 4
           }
-        },
-        {
-          "type": "shoe-fit-finder",
-          "settings": {
-            "badge": "مش عارفة مقاسك؟",
-            "title": "وظبطي حذائك على مقاس يومك",
-            "subtitle": "اختاري إنتِ فين النهاردة، ونرشحلك الموديل الأنسب ليكِ — شغل، مشاوير، رياضة، أو مناسبة.",
-            "primaryCtaText": "ابدئي الاختبار",
-            "primaryCtaLink": "/shop"
-          }
         }
       ],
       "pageGoal": "conversion",
