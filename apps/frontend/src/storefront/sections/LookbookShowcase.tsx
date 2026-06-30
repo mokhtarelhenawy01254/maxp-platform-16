@@ -145,7 +145,7 @@ const LookbookShowcase: React.FC<LookbookShowcaseProps> = ({ section, settings }
             subtitle:
               category.description?.trim() ||
               'تنسيق سريع ومقترحات تساعدك على الوصول للموديل المناسب أسرع.',
-            mood: 'Category Edit',
+            mood: 'تنسيق المجموعة',
             image: category.image?.trim() || resolveCategoryImage(category.name, index),
             link: buildStorefrontPath(
               location.pathname,

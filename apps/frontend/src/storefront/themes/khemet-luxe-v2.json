@@ -273,6 +273,8 @@
             "badge": "تفكيك الخامة",
             "title": "التفاصيل اللي بتفرق على المدى",
             "subtitle": "أربعة عناصر نركّز عليهم في كل موديل لأنهم بيحددوا العمر والراحة والحضور.",
+            "viewAllText": "شاهدي كل المجموعة",
+            "itemCtaText": "اضيفي للسلة",
             "items": [
               {
                 "icon": "layers",
@@ -526,6 +528,16 @@
           }
         },
         {
+          "type": "viewer-counter",
+          "variant": "seamless",
+          "settings": {
+            "title": "بيشوفوا الموديل ده دلوقتي",
+            "fakeVisitorMessage": "{count} شخصة بتشوف الحذاء ده النهاردة",
+            "fakeVisitorStyle": "pulse",
+            "contentAlign": "start"
+          }
+        },
+        {
           "type": "delivery-proof",
           "settings": {
             "estimatedDeliveryLabel": "التوصيل المتوقع لباب بيتك",
@@ -707,12 +719,15 @@
             "enterGovernorateText": "اختاري المحافظة",
             "enabledMethods": [
               "cod",
-              "card"
+              "card",
+              "wallet"
             ],
             "codLabel": "الدفع عند الاستلام",
             "codDesc": "ادفعي نقدًا عند وصول طلبك",
             "cardLabel": "بطاقة الائتمان",
             "cardDesc": "Visa, Mastercard",
+            "walletLabel": "محفظة إلكترونية",
+            "walletDesc": "Apple Pay, Google Pay, Vodafone Cash",
             "showHeaderBadge": false,
             "showSummaryCard": false,
             "showAssuranceCard": false,

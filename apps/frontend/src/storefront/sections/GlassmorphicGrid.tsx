@@ -5,11 +5,18 @@ import { buildStorefrontPath } from '../utils/paths';
 interface GlassmorphicGridProps {
   settings?: {
     title?: string;
+    subtitle?: string;
+    badge?: string;
     items?: Array<{
-      image: string;
+      icon?: string;
+      label?: string;
       title: string;
+      description?: string;
+      image?: string;
       price?: string;
     }>;
+    viewAllText?: string;
+    itemCtaText?: string;
     blur?: number;
     borderGlow?: boolean;
   };
@@ -21,6 +28,8 @@ const GlassmorphicGrid: React.FC<GlassmorphicGridProps> = ({ settings }) => {
   const title = settings?.title || 'Trending Tech';
   const blur = settings?.blur || 12;
   const borderGlow = settings?.borderGlow !== false;
+  const viewAllText = settings?.viewAllText || 'View All Gear';
+  const itemCtaText = settings?.itemCtaText || 'Add to Rig';
 
   const demoItems = settings?.items || [
     { image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=400', title: 'Earbuds Pro', price: '$129' },
@@ -42,7 +51,7 @@ const GlassmorphicGrid: React.FC<GlassmorphicGridProps> = ({ settings }) => {
           to={buildStorefrontPath(location.pathname, '/shop', location.search)}
           className="text-primary font-bold tracking-widest text-xs uppercase hover:underline"
         >
-          View All Gear
+          {viewAllText}
         </Link>
       </div>
 
@@ -74,7 +83,7 @@ const GlassmorphicGrid: React.FC<GlassmorphicGridProps> = ({ settings }) => {
             </div>
 
             <button className="mt-4 w-full py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-md font-bold text-xs uppercase tracking-widest group-hover:bg-primary group-hover:text-black transition-colors">
-              Add to Rig
+              {itemCtaText}
             </button>
           </div>
         ))}
