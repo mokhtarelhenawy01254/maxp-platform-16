@@ -6,7 +6,7 @@ import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon, TruckIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
@@ -21,6 +21,7 @@ import OrderSourceCard from "./components/OrderSourceCard";
 import OrderAttributionCard from "./components/OrderAttributionCard";
 import ConfirmationModal from "./components/ConfirmationModal";
 import PostponeOrderModal from "./components/PostponeOrderModal";
+import PartialDeliveryModal from "./components/PartialDeliveryModal";
 
 // Hooks
 import { useOrderDetails } from "./hooks/useOrderDetails";
@@ -130,6 +131,8 @@ const OrderDetails: React.FC = () => {
   const [showUnlinkShipmentModal, setShowUnlinkShipmentModal] = useState(false);
   const [showRecreateShipmentModal, setShowRecreateShipmentModal] =
     useState(false);
+  const [showPartialDeliveryModal, setShowPartialDeliveryModal] = useState(false);
+  const [partialDeliveryLoading, setPartialDeliveryLoading] = useState(false);
 
   // Temporary Form State for Modals
   const [newStatus, setNewStatus] = useState("");
@@ -425,6 +428,58 @@ const OrderDetails: React.FC = () => {
       toast.error(error.response?.data?.message || "فشل تأجيل الطلب");
     } finally {
       setPostponing(false);
+    }
+  };
+
+  const handlePartialDelivery = async (deliveredItems: any[], returnedItems: any[]) => {
+    if (!order) return;
+    setPartialDeliveryLoading(true);
+    try {
+      // Step 1: Update the current order with only delivered items and change status
+      const deliveredSubtotal = deliveredItems.reduce(
+        (sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1),
+        0,
+      );
+      await apiClient.patch(`/orders-new/simple/${order.orderNumber}`, {
+        items: deliveredItems,
+        subtotal: deliveredSubtotal,
+      });
+      await updateStatus("PARTIALLY_RETURNED", "تسليم جزئي للطلب");
+
+      // Step 2: If there are returned items, create a new order for them
+      if (returnedItems.length > 0) {
+        const returnedSubtotal = returnedItems.reduce(
+          (sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1),
+          0,
+        );
+        await apiClient.post(`/orders-new/simple`, {
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          alternativePhone: order.alternativePhone,
+          customerAddress: order.customerAddress,
+          city: order.city,
+          government: order.government,
+          items: returnedItems,
+          subtotal: returnedSubtotal,
+          shipping: order.shipping || 0,
+          tax: order.tax || 0,
+          currency: order.currency,
+          notes: `مرتجع من الطلب ${order.orderNumber}`,
+          status: "PENDING",
+          paymentMethod: order.paymentMethod,
+          paymentStatus: order.paymentStatus,
+        });
+        toast.success("تم التسليم الجزئي وإنشاء طلب جديد للمرتجع بنجاح");
+      } else {
+        toast.success("تم تحديث الطلب بنجاح");
+      }
+
+      setShowPartialDeliveryModal(false);
+      await fetchOrderDetails();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "حدث خطأ أثناء تنفيذ التسليم الجزئي");
+    } finally {
+      setPartialDeliveryLoading(false);
     }
   };
 
@@ -783,6 +838,15 @@ const OrderDetails: React.FC = () => {
               >
                 <CalendarDaysIcon className="ml-2 -mr-0.5 h-4 w-4" />
                 تأجيل الطلب
+              </button>
+            )}
+            {canUpdateOrderStatus && order.items && order.items.length > 0 && (
+              <button
+                onClick={() => setShowPartialDeliveryModal(true)}
+                className="inline-flex items-center px-3 py-2 border border-indigo-300 shadow-sm text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-700 dark:hover:bg-indigo-900/30"
+              >
+                <TruckIcon className="ml-2 -mr-0.5 h-4 w-4" />
+                تسليم جزئي
               </button>
             )}
           </>
@@ -1289,6 +1353,15 @@ const OrderDetails: React.FC = () => {
         }
         initialNotes={order?.scheduledNotes || ""}
         initialAutoTransition={order?.autoTransitionEnabled !== false}
+      />
+
+      {/* Partial Delivery Modal */}
+      <PartialDeliveryModal
+        isOpen={showPartialDeliveryModal}
+        onClose={() => setShowPartialDeliveryModal(false)}
+        onConfirm={handlePartialDelivery}
+        order={order}
+        loading={partialDeliveryLoading}
       />
 
       {/* Confirmation Modal for Cancellation */}
