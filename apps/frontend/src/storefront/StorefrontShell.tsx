@@ -4733,9 +4733,11 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
                           : `Follow us on ${social}`
                       }
                     >
-                      <span className="text-xs capitalize">
-                        {social[0]?.toUpperCase()}
-                      </span>
+                      {renderVelaFooterIcon(social as 'facebook' | 'instagram' | 'youtube' | 'linkedin' | 'twitter' | 'tiktok' | 'snapchat' | 'whatsapp') ?? (
+                        <span className="text-xs capitalize" aria-hidden="true">
+                          {social[0]?.toUpperCase()}
+                        </span>
+                      )}
                     </a>
                   ) : null,
                 )}
