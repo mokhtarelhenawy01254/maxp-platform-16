@@ -5,7 +5,9 @@ export type CatalogSortValue =
   | 'featured'
   | 'price-asc'
   | 'price-desc'
-  | 'newest';
+  | 'newest'
+  | 'best-selling'
+  | 'top-rated';
 
 export type CatalogPriceRangeValue =
   | 'under-25'
@@ -31,6 +33,8 @@ export const SORT_OPTIONS: SortOption[] = [
   { label: 'Price: Low to High', value: 'price-asc' },
   { label: 'Price: High to Low', value: 'price-desc' },
   { label: 'Newest', value: 'newest' },
+  { label: 'Best Selling', value: 'best-selling' },
+  { label: 'Top Rated', value: 'top-rated' },
 ];
 
 const RTL_SORT_OPTIONS: SortOption[] = [
@@ -38,6 +42,8 @@ const RTL_SORT_OPTIONS: SortOption[] = [
   { label: 'السعر: من الأقل إلى الأعلى', value: 'price-asc' },
   { label: 'السعر: من الأعلى إلى الأقل', value: 'price-desc' },
   { label: 'وصل حديثًا', value: 'newest' },
+  { label: 'الأكثر مبيعًا', value: 'best-selling' },
+  { label: 'الأعلى تقييمًا', value: 'top-rated' },
 ];
 
 const RTL_CATEGORY_LABELS: Record<string, string> = {
@@ -138,6 +144,7 @@ const CATALOG_FILTER_PARAM_KEYS = [
   'sortBy',
   'sortOrder',
   'search',
+  'size',
 ] as const;
 
 const parseNumberParam = (value: string | null): number | undefined => {
@@ -171,6 +178,14 @@ export const resolveSortValue = (
     return 'newest';
   }
 
+  if (sortBy === 'popularity') {
+    return 'best-selling';
+  }
+
+  if (sortBy === 'rating') {
+    return 'top-rated';
+  }
+
   return 'featured';
 };
 
@@ -200,6 +215,7 @@ export const getCatalogProductQuery = (
       : undefined,
   minPrice: parseNumberParam(searchParams.get('minPrice')),
   maxPrice: parseNumberParam(searchParams.get('maxPrice')),
+  size: searchParams.get('size') || undefined,
 });
 
 export const applyCatalogFilters = (
@@ -233,6 +249,12 @@ export const applyCatalogFilters = (
       nextParams.set('sortOrder', 'desc');
     } else if (updates.sortValue === 'newest') {
       nextParams.set('sortBy', 'createdAt');
+      nextParams.set('sortOrder', 'desc');
+    } else if (updates.sortValue === 'best-selling') {
+      nextParams.set('sortBy', 'popularity');
+      nextParams.set('sortOrder', 'desc');
+    } else if (updates.sortValue === 'top-rated') {
+      nextParams.set('sortBy', 'rating');
       nextParams.set('sortOrder', 'desc');
     }
   }

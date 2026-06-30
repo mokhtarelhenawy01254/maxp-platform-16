@@ -354,6 +354,7 @@ const resolveCardImageFetchPriority = (
 
 const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const location = useLocation();
   const { categories, isLoading: isLoadingCategories } = useCategories();
   const { settings: storefrontSettings } = useStorefrontSettings();
@@ -578,12 +579,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
     hasCustomShopStudio && shopStudioConfig?.layout.type === 'list' && variant === 'standard'
       ? 'list'
       : resolveCardVariant(variant, studioProductCardVariant);
+  const listCardVariant = viewMode === 'list' ? 'list' : null;
   const resolvedCardVariant: ProductCardVariant =
-    isKhemetLuxe &&
+    listCardVariant ??
+    (isKhemetLuxe &&
     isShopPage &&
     (variant === 'boutique-shelf' || variant === 'editorial-card')
       ? 'editorial-bare'
-      : cardVariant;
+      : cardVariant);
   const isHorizontalRail = variant === 'carousel' || variant === 'boutique-rail';
   const shopProductCardTokens = hasCustomShopStudio
     ? resolveShopProductCardTokens(shopStudioConfig)
@@ -644,6 +647,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
           : isZenOrganic && isShopPage
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8'
             : resolveDefaultGridClass(variant);
+  const resolvedGridClass = viewMode === 'list' && isKhemetLuxe && isShopPage ? 'flex flex-col gap-5' : gridClass;
   const carouselCardClass =
     variant === 'compact'
       ? 'w-[250px] md:w-[270px]'
@@ -1710,6 +1714,33 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
           </div>
         )} 
 
+        {isKhemetLuxe && isShopPage && (
+          <div className="mb-4 flex items-center gap-2" dir={theme.direction}>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
+                viewMode === 'grid'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border text-muted-foreground hover:border-primary/40'
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+              {theme.direction === 'rtl' ? 'شبكة' : 'Grid'}
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
+                viewMode === 'list'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border text-muted-foreground hover:border-primary/40'
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="3.5" rx="1"/><rect x="3" y="10.25" width="18" height="3.5" rx="1"/><rect x="3" y="16.5" width="18" height="3.5" rx="1"/></svg>
+              {theme.direction === 'rtl' ? 'قائمة' : 'List'}
+            </button>
+          </div>
+        )}
+
         {filteredProducts.length > 0 ? (
           isHorizontalRail ? (
             <div className={`flex snap-x snap-mandatory overflow-x-auto pb-4 [scrollbar-width:thin] ${variant === 'boutique-rail' ? 'gap-5 md:gap-6' : 'gap-4'}`}>
@@ -1838,7 +1869,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
                   </span>
                 </div>
               ) : null}
-              <div className={gridClass}>
+              <div className={resolvedGridClass}>
                 {filteredProducts.map((product, index) => (
                   <ProductCard
                     key={product.id}

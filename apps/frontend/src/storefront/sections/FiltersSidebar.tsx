@@ -666,7 +666,39 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ settings }) => {
         </div>
       ) : null}
 
-      {/* Price */}
+      {/* Size (khemet-luxe shoes) */}
+  {isKhemetLuxe && settings?.showSizeFilter !== false ? (
+    <div className={shellClassName}>
+      <h3 className={`font-heading uppercase ${headingClassName}`}>
+        {prefersArabicCopy ? 'المقاس' : 'Size'}
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {['35','36','37','38','39','40','41','42'].map((size) => {
+          const isSelected = searchParams.get('size') === size;
+          return (
+            <button
+              key={size}
+              onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                if (isSelected) next.delete('size');
+                else next.set('size', size);
+                setSearchParams(next);
+              }}
+              className={`h-9 min-w-[2.5rem] rounded-full px-3 text-sm font-medium transition-all ${
+                isSelected
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'border border-border text-foreground hover:border-primary hover:bg-accent/10'
+              }`}
+            >
+              {size}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  ) : null}
+
+  {/* Price */}
       {showPriceFilter ? (
         <div className={shellClassName}>
           <h3 className={`font-heading uppercase ${

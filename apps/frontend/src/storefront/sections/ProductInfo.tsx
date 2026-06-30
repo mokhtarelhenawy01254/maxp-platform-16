@@ -306,7 +306,7 @@ export const isProductInfoConversionModuleEnabled = (
 export const shouldProductInfoAddToCartOpenCart = (
   themeId: string | null | undefined,
   hasEmbeddedPdpCheckout: boolean,
-) => !hasEmbeddedPdpCheckout || themeId === 'khemet-luxe-eg';
+) => !hasEmbeddedPdpCheckout || isKhemetLuxeThemeId(themeId);
 
 export const shouldProductInfoAddToCartOpenEmbeddedCheckout = (
   themeId: string | null | undefined,

@@ -26,6 +26,7 @@ import {
 } from '../utils/biteRushCopy';
 import { isPharmacyThemeId } from '../utils/pharmacyThemes';
 import { createStorefrontThemeTextReplacer } from '../utils/runtimeBrandText';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 
 const LazyCartUpsellHost = React.lazy(() => import('./CartUpsellHost'));
 
@@ -64,7 +65,7 @@ const CartDrawer: React.FC = () => {
   const isBiteRush = theme.id === 'restaurant-demo';
   const isCafeDemo = theme.id === 'cafe-demo';
   const isPharmacy = isPharmacyThemeId(theme.id);
-  const isKhemetLuxe = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const scrollRegionRef = React.useRef<HTMLDivElement | null>(null);
 
   const onClose = React.useCallback(() => setIsOpen(false), [setIsOpen]);
