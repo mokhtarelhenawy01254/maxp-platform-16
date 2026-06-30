@@ -63,6 +63,7 @@ export interface UseRoutingWorkspace {
   handleSessionSelect: (sessionId: string) => void;
   handleModeChange: (mode: RoutingMode) => void;
   toggleEmployee: (employeeId: string) => void;
+  handleSelectAll: (employeeIds: string[]) => void;
   handleSave: () => Promise<void>;
   handleUnassign: () => Promise<void>;
   handleSaveSettings: (settings: InboxSettings) => Promise<void>;
@@ -203,6 +204,16 @@ export const useRoutingWorkspace = (): UseRoutingWorkspace => {
       setSelectedEmployeeIds((current) => current.slice(0, 1));
     }
   }, [selectedEmployeeIds.length]);
+
+  const handleSelectAll = useCallback((employeeIds: string[]) => {
+    setFeedback(null);
+    setPreviewResult(null);
+    if (routingMode === 'NUMBER_OWNER') {
+      setSelectedEmployeeIds(employeeIds.length > 0 ? [employeeIds[0]] : []);
+    } else {
+      setSelectedEmployeeIds(employeeIds);
+    }
+  }, [routingMode]);
 
   const toggleEmployee = useCallback(
     (employeeId: string) => {
@@ -362,6 +373,7 @@ export const useRoutingWorkspace = (): UseRoutingWorkspace => {
     handleSessionSelect,
     handleModeChange,
     toggleEmployee,
+    handleSelectAll,
     handleSave,
     handleUnassign,
     handleSaveSettings,

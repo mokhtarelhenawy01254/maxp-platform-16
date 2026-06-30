@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Check } from 'lucide-react';
+import { Search, Check, X } from 'lucide-react';
 import type { Employee, RoutingMode } from '../types';
 
 interface EmployeePickerProps {
@@ -10,6 +10,7 @@ interface EmployeePickerProps {
   showInactive: boolean;
   onToggleInactive: (show: boolean) => void;
   onToggleEmployee: (employeeId: string) => void;
+  onSelectAll?: (employeeIds: string[]) => void;
 }
 
 const getInitials = (firstName = '', lastName = '') =>
@@ -72,8 +73,17 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('whatsappInbox.searchEmployees') as string}
-              className="w-full rounded-lg border border-border/50 bg-card py-1.5 text-sm text-foreground outline-none transition-all duration-200 focus:border-ring focus:ring-1 focus:ring-ring/20 ltr:pl-9 rtl:pr-9"
+              className="w-full rounded-lg border border-border/50 bg-card py-1.5 pr-8 text-sm text-foreground outline-none transition-all duration-200 focus:border-ring focus:ring-1 focus:ring-ring/20 ltr:pl-9 rtl:pr-9"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground ltr:right-2 rtl:left-2"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
           <label className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-xs text-muted-foreground transition-colors hover:text-foreground">
@@ -87,6 +97,27 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
           </label>
         </div>
       </div>
+
+      {onSelectAll && filteredEmployees.length > 0 && (
+        <div className="mt-3 flex items-center gap-2 border-b border-border/50 pb-3">
+          <button
+            type="button"
+            onClick={() => onSelectAll(filteredEmployees.map((e) => e.id))}
+            className="rounded-md bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-all hover:bg-primary/20"
+          >
+            {t('whatsappInbox.selectAll')}
+          </button>
+          {selectedEmployeeIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onSelectAll([])}
+              className="rounded-md bg-muted px-3 py-1 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/80"
+            >
+              {t('whatsappInbox.clearSelection')}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {filteredEmployees.length === 0 && (
