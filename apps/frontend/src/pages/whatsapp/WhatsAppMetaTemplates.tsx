@@ -103,6 +103,7 @@ const WhatsAppMetaTemplates: React.FC<{
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [viewTemplate, setViewTemplate] = useState<MetaTemplate | null>(null);
 
   const withCompanyConfig = useCallback(
     (config: ApiRequestConfig = {}) =>
@@ -214,12 +215,24 @@ const WhatsAppMetaTemplates: React.FC<{
         <div className="flex gap-2">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
             <SelectTrigger className="h-10 w-56 rounded-full bg-[color:var(--color-muted)]">
-              <SelectValue placeholder="اختر جلسة" />
+              <SelectValue placeholder="اختر جلسة">
+                {(value: string | null) => {
+                  if (!value) return null;
+                  const s = sessions.find((x) => x.id === value);
+                  if (!s) return value;
+                  const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
+                  return s.name && !isCuid ? s.name : s.phoneNumber || s.id;
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {sessions.map((s) => (
-                <SelectItem key={s.id} value={s.id}>{s.name || s.phoneNumber || s.id}</SelectItem>
-              ))}
+              {sessions.map((s) => {
+                const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
+                const displayName = (s.name && !isCuid) ? s.name : s.phoneNumber || s.id;
+                return (
+                  <SelectItem key={s.id} value={s.id}>{displayName}</SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={fetchTemplates} disabled={loading} className="rounded-full">
@@ -271,9 +284,14 @@ const WhatsAppMetaTemplates: React.FC<{
                       {t.language}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon-sm" className="text-red-500 dark:text-red-400" onClick={() => setDeleteConfirm(t.name)}>
-                        <Trash2 className="size-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon-sm" onClick={() => setViewTemplate(t)}>
+                          <FileText className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon-sm" className="text-red-500 dark:text-red-400" onClick={() => setDeleteConfirm(t.name)}>
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -355,6 +373,50 @@ const WhatsAppMetaTemplates: React.FC<{
             <Button onClick={handleCreate} disabled={sending} className="rounded-full">
               {sending ? "جاري الإنشاء..." : "إنشاء القالب"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewTemplate} onOpenChange={(o) => !o && setViewTemplate(null)}>
+        <DialogContent className="sm:rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>{viewTemplate?.name}</DialogTitle>
+            <DialogDescription>
+              تفاصيل قالب Meta API
+            </DialogDescription>
+          </DialogHeader>
+              {viewTemplate && (() => {
+                const StatusIcon = statusIcon[viewTemplate.status] || AlertTriangle;
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">الحالة</p>
+                        <Badge variant="outline" className={statusBadge[viewTemplate.status] || ""}>
+                          <StatusIcon className="ml-1 size-3.5 inline" />
+                          {viewTemplate.status}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">التصنيف</p>
+                        <p className="font-medium">{viewTemplate.category}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-[color:var(--color-muted-foreground)]">اللغة</p>
+                      <p className="font-medium">{viewTemplate.language}</p>
+                    </div>
+                    {viewTemplate.rejected_reason && (
+                      <div>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">سبب الرفض</p>
+                        <p className="font-medium text-red-500">{viewTemplate.rejected_reason}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewTemplate(null)} className="rounded-full">إغلاق</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

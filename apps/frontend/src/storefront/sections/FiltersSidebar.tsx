@@ -187,7 +187,7 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ settings }) => {
     storefrontSettings?.company?.currency ||
     'EGP';
   const isElegantLuxe = theme.id === 'elegant-luxe';
-  const isKhemetLuxe = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const usesThemeSpecificPriceRanges = isElegantLuxe || isKhemetLuxe;
   const priceRangeOptions = useMemo(
     (): SidebarPriceRangeOption[] =>

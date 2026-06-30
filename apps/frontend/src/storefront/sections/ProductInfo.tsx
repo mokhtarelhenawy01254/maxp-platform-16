@@ -1039,7 +1039,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       componentKey === PDP_CHECKOUT_SECTION_ID
     );
   });
-  const isKhemetLuxeTheme = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxeTheme = isKhemetLuxeThemeId(theme.id);
   const isKhemetInlineQuickOrderBuybox =
     isKhemetLuxeTheme && variant === 'elessi-care-buybox';
   const khemetInlineQuickOrderFallbackSettings =

@@ -97,8 +97,8 @@ describe('WhatsAppMetaTemplates', () => {
     expect(screen.getAllByText('MARKETING')).toHaveLength(2);
     expect(screen.getByText('UTILITY')).toBeInTheDocument();
 
-    expect(screen.getByText('رقم المبيعات')).toBeInTheDocument();
-    expect(screen.getByText('دعم العملاء')).toBeInTheDocument();
+    expect(screen.getAllByText('رقم المبيعات').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('دعم العملاء').length).toBeGreaterThanOrEqual(1);
   });
 
   test('shows fallback to phoneNumber when name is missing', async () => {
@@ -125,7 +125,7 @@ describe('WhatsAppMetaTemplates', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('201000000001')).toBeInTheDocument();
+      expect(screen.getAllByText('201000000001').length).toBeGreaterThanOrEqual(1);
     });
   });
 
