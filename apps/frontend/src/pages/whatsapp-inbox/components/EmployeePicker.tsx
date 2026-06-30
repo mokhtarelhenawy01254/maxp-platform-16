@@ -23,6 +23,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
   showInactive,
   onToggleInactive,
   onToggleEmployee,
+  onSelectAll,
 }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');

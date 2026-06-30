@@ -106,6 +106,8 @@
   "filterAll": "الكل",
   "noNumbersMatchFilter": "لا توجد أرقام مطابقة للبحث.",
   "noEmployeesMatch": "لا يوجد موظفون مطابقون للبحث.",
+  "selectAll": "تحديد الكل",
+  "clearSelection": "إلغاء التحديد",
   "chatsSuffix": "شات",
   "unsavedChanges": "يوجد تغييرات غير محفوظة",
   "workspaceConfiguredNumbers": "أرقام مهيأة",

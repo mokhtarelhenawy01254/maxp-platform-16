@@ -106,6 +106,8 @@
   "filterAll": "All",
   "noNumbersMatchFilter": "No numbers match your search.",
   "noEmployeesMatch": "No employees match your search.",
+  "selectAll": "Select all",
+  "clearSelection": "Clear selection",
   "chatsSuffix": "chats",
   "unsavedChanges": "You have unsaved changes",
   "workspaceConfiguredNumbers": "Configured numbers",
