@@ -295,13 +295,22 @@ class NumberAssignmentService {
       const activeSession = WhatsAppManager.getSession(session.id);
       const liveStatusMap = {
         CONNECTED: 'CONNECTED',
+        DISCONNECTED: 'DISCONNECTED',
         CONNECTING: 'CONNECTING',
         QR_PENDING: 'CONNECTING',
-        LOGGED_OUT: 'DISCONNECTED',
-        DISCONNECTED: 'DISCONNECTED'
+        LOGGED_OUT: 'DISCONNECTED'
       };
-      const resolvedStatus = activeSession
-        ? 'CONNECTED'
+      const inMemoryStatusMap = {
+        connected: 'CONNECTED',
+        connecting: 'CONNECTING',
+        reconnecting: 'CONNECTING',
+        qr_pending: 'CONNECTING',
+        disconnected: 'DISCONNECTED',
+        logged_out: 'DISCONNECTED',
+        authenticating: 'CONNECTING'
+      };
+      const resolvedStatus = activeSession?.status
+        ? (inMemoryStatusMap[String(activeSession.status).toLowerCase()] || 'CONNECTED')
         : (liveStatusMap[session.status] || 'DISCONNECTED');
 
       return {
