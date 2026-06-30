@@ -5,14 +5,15 @@
 
 ## Summary
 
-The WhatsApp inbox admin flow was simplified into two core experiences:
+The WhatsApp inbox admin flow was unified into a single workspace:
 
 1. ` /whatsapp-inbox `
-   - Main routing workspace for assigning WhatsApp numbers.
-2. ` /settings/inbox `
-   - Operational settings for the inbox.
+   - Unified **WhatsAppRoutingWorkspace** page combining routing assignment + inbox settings.
+   - Settings live in a slide-over panel — no separate `/settings/inbox` page.
+   - Old pages `WhatsAppNumberSettings.tsx` + `InboxSettingsPage.tsx` deleted.
 
-The legacy ` /notifications/inbox ` page now redirects to inbox settings to avoid duplicate configuration surfaces.
+The legacy ` /settings/inbox ` path now redirects to `/whatsapp-inbox`.
+The ` /notifications/inbox ` page redirects to the unified workspace.
 
 ## Supported Routing Modes
 
