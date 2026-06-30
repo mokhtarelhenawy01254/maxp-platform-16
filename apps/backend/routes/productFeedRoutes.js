@@ -29,11 +29,20 @@ function buildFeedXml(company, products, baseUrl) {
   for (const product of products) {
     const id = escapeXml(product.sku || product.id);
     const link = `${baseUrl}/product/${product.slug || product.id}`;
-    let firstImage = product.mainImage;
-    if (!firstImage && product.images) {
-      try { firstImage = JSON.parse(product.images)[0]; } catch {}
+    let images = [];
+    if (product.mainImage) images.push(product.mainImage);
+    if (product.images) {
+      try {
+        const parsed = JSON.parse(product.images);
+        if (Array.isArray(parsed)) {
+          for (const img of parsed) {
+            if (img && !images.includes(img)) images.push(img);
+          }
+        }
+      } catch {}
     }
-    firstImage = toAbsoluteUrl(firstImage, baseUrl);
+    const firstImage = images.length ? toAbsoluteUrl(images[0], baseUrl) : '';
+    const extraImages = images.slice(1, 11).map(u => toAbsoluteUrl(u, baseUrl));
     const availability = product.stock > 0 ? 'in_stock' : 'out_of_stock';
     const priceNum = parseFloat(product.price.toString());
     const price = priceNum.toFixed(2);
@@ -45,6 +54,9 @@ function buildFeedXml(company, products, baseUrl) {
     xml += `      <g:link>${link}</g:link>\n`;
     if (firstImage) {
       xml += `      <g:image_link>${escapeXml(firstImage)}</g:image_link>\n`;
+    }
+    if (extraImages.length) {
+      xml += `      <g:additional_image_link>${escapeXml(extraImages.join(','))}</g:additional_image_link>\n`;
     }
     xml += `      <g:availability>${availability}</g:availability>\n`;
     xml += `      <g:price>${price} ${currency}</g:price>\n`;
