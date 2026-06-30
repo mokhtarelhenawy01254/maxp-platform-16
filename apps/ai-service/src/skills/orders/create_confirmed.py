@@ -39,7 +39,7 @@ async def create_confirmed_order(params: CreateConfirmedOrderInput) -> dict:
 
 create_confirmed_order_skill = Skill(
     name="create_confirmed_order",
-    description="PLACE A CONFIRMED ORDER IMMEDIATELY. Use this when customer wants to buy — collect customer_name, customer_phone, product_name, and optionally address/details. This creates the order directly without needing merchant approval. Keywords: 'اطلب', 'اشتري', 'طلب', 'اوردر', 'شراء', 'هطلب', 'أطلب', 'طلب شراء', 'تمام', 'تأكيد'. Do NOT use create_draft_order unless merchant approval is explicitly needed.",
+    description="PLACE CONFIRMED ORDER NOW. Use when customer wants to buy — just collect customer_name, customer_phone, product_name + optional details. Creates order directly WITHOUT merchant approval. DO NOT use ask_merchant for variant availability — create the order and merchant will confirm during fulfillment. Keywords: 'اطلب', 'اشتري', 'طلب', 'اوردر', 'شراء', 'هطلب', 'أطلب', 'تمام', 'تأكيد'.",
     input_schema=CreateConfirmedOrderInput,
     handler=create_confirmed_order,
     internal_fields=["company_id"],

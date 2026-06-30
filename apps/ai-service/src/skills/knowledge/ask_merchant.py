@@ -21,7 +21,7 @@ async def ask_merchant(params: AskMerchantInput) -> dict:
 
 ask_merchant_skill = Skill(
     name="ask_merchant",
-    description="Ask the merchant for information when the AI cannot answer a customer's question. Use when you don't have enough information about pricing, policies, promotions, stock, or other merchant-specific knowledge. Keywords: merchant, تاجر, سؤال, استفسار, صاحب المتجر",
+    description="Ask the merchant only for truly custom merchant-specific questions (custom pricing, special promotions, custom orders, store hours changes). DO NOT use for product variant availability (size/color) if the product exists in the catalog — just create the order. DO NOT use for standard product info. Keywords: تاجر, سؤال خاص, استفسار خاص",
     input_schema=AskMerchantInput,
     handler=ask_merchant,
     internal_fields=["company_id"],
