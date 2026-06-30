@@ -16,6 +16,7 @@ from src.skills.orders.create_confirmed import create_confirmed_order_skill
 from src.skills.booking.info import booking_info_skill
 from src.skills.booking.slots import booking_slots_skill
 from src.skills.booking.status import booking_status_skill
+from src.skills.booking.packages import booking_packages_skill
 from src.skills.knowledge.ask_merchant import ask_merchant_skill
 
 
@@ -34,4 +35,5 @@ def register_all_skills() -> None:
     registry.register(booking_info_skill)
     registry.register(booking_slots_skill)
     registry.register(booking_status_skill)
+    registry.register(booking_packages_skill)
     registry.register(ask_merchant_skill)

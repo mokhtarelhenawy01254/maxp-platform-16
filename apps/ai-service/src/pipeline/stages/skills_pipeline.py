@@ -54,6 +54,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         ctx.final_reply = "عذراً، حدث خطأ في معالجة طلبك. الرجاء المحاولة مرة أخرى."
         return ctx
 
+    # 4b. Retry once on empty response (DeepSeek cold-start workaround)
+    if not provider_response.text and not provider_response.tool_calls:
+        logger.warning("skills_pipeline_empty_response_retrying")
+        provider_response = await _llm_call(ctx, system_prompt, skills)
+
     # 5. Handle tool calls
     if provider_response.tool_calls:
         logger.info("skills_pipeline_tool_calls", count=len(provider_response.tool_calls), skills=[tc.get("function", {}).get("name", "") for tc in provider_response.tool_calls])
