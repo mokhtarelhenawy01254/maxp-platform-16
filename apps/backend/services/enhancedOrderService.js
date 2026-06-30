@@ -757,6 +757,8 @@ class EnhancedOrderService {
       // metadata
       metadata: JSON.stringify({
         conversationId: data.conversationId,
+        source: data.source,
+        requestType: data.requestType || 'delivery',
         originalData: {
           productName: data.productName,
           productColor: data.productColor,

@@ -40,7 +40,7 @@ interface OrderSourceCardProps {
       email: string;
     };
     createdAt: string;
-    metadata?: Record<string, unknown>;
+    metadata?: { requestType?: string; source?: string; isGuestOrder?: boolean; [key: string]: unknown };
   };
 }
 
@@ -143,6 +143,19 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
 
   const channelInfo = getChannelInfo();
   const sourceTypeInfo = getSourceTypeInfo();
+
+  // Safely parse metadata since it could be a JSON string from backend
+  const parsedMetadata = React.useMemo(() => {
+    if (!order.metadata) return {};
+    if (typeof order.metadata === 'string') {
+      try {
+        return JSON.parse(order.metadata);
+      } catch (e) {
+        return {};
+      }
+    }
+    return order.metadata;
+  }, [order.metadata]);
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
@@ -272,12 +285,28 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
             <SparklesIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                نوع الطلب
+                تصنيف الطلب
               </div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {order.orderSource === "AFFILIATE_REFERRAL" && "🔗 إحالة مسوق"}
                 {order.orderSource === "AFFILIATE_DIRECT" &&
                   "👤 طلب مباشر من مسوق"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Request Type Badge */}
+        {parsedMetadata?.requestType && parsedMetadata.requestType !== "delivery" && (
+          <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
+            <SparklesIcon className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                نوع الطلب
+              </div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {parsedMetadata.requestType === "return" && "🔄 طلب مرتجع"}
+                {parsedMetadata.requestType === "exchange" && "🔀 طلب استبدال"}
               </div>
             </div>
           </div>

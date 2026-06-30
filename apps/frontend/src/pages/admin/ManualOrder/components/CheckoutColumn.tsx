@@ -168,6 +168,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   // Order Settings
   const [status, setStatus] = useState("PENDING"); // PENDING, CONFIRMED
   const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [requestType, setRequestType] = useState("delivery");
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -557,6 +558,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         conversationId: "manual",
         platform: "manual",
         source: "manual_entry",
+        requestType: requestType,
         // New fields for shipping and discount
         couponId: appliedCoupon?.id,
         couponCode: appliedCoupon?.code,
@@ -950,6 +952,31 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <option value="PENDING">جديد (PENDING)</option>
                 <option value="CONFIRMED">مؤكد (CONFIRMED)</option>
                 <option value="PROCESSING">جاري التجهيز</option>
+                <option value="RETURNED">مرتجع (RETURNED)</option>
+              </select>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                نوع الطلب
+              </label>
+              <select
+                value={requestType}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRequestType(val);
+                  if (val === "return") {
+                    setStatus("RETURNED");
+                  } else if (val === "exchange") {
+                    setStatus("PENDING"); // الاستبدال يبدأ كطلب جديد
+                  } else {
+                    setStatus("PENDING");
+                  }
+                }}
+                className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+              >
+                <option value="delivery">طلب تسليم (عادي)</option>
+                <option value="return">طلب مرتجع</option>
+                <option value="exchange">طلب استبدال</option>
               </select>
             </div>
           </div>
