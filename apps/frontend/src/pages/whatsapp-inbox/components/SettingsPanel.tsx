@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { InboxSettings } from '../types';
@@ -61,6 +61,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       setLocalSettings(settings);
     }
   }, [open, settings]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
 
   const workingDayLabels = useMemo(
     () => ({

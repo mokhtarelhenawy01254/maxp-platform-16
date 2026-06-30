@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Search, Wifi, WifiOff, Loader2, X } from 'lucide-react';
 import type { WorkspaceNumber } from '../types';
 
 interface NumberSidebarProps {
@@ -41,10 +41,11 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
   numbers,
   selectedSessionId,
   onSelect,
+  statusFilter,
+  onStatusFilterChange,
 }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONNECTED' | 'DISCONNECTED'>('ALL');
   const searchRef = useRef<HTMLInputElement>(null);
 
   const resolveConnectionLabel = (status: string) => {
@@ -87,8 +88,17 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('whatsappInbox.searchNumbers') as string}
-              className="w-full rounded-lg border border-border/50 bg-card py-2 text-sm text-foreground outline-none transition-all duration-200 focus:border-ring focus:ring-1 focus:ring-ring/20 ltr:pl-9 rtl:pr-9"
+              className="w-full rounded-lg border border-border/50 bg-card py-2 pr-8 text-sm text-foreground outline-none transition-all duration-200 focus:border-ring focus:ring-1 focus:ring-ring/20 ltr:pl-9 rtl:pr-9"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground ltr:right-2 rtl:left-2"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="flex gap-1.5">
@@ -96,7 +106,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
               <button
                 key={filter}
                 type="button"
-                onClick={() => setStatusFilter(filter)}
+                onClick={() => onStatusFilterChange(filter)}
                 className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200 ${
                   statusFilter === filter
                     ? 'bg-primary text-primary-foreground shadow-sm'

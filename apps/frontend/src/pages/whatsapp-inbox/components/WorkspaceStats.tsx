@@ -10,6 +10,7 @@ import type { WorkspaceStats as WorkspaceStatsType } from '../types';
 
 interface WorkspaceStatsProps {
   stats: WorkspaceStatsType;
+  onStatClick?: (key: string) => void;
 }
 
 const STAT_ICONS: Record<string, React.ElementType> = {
@@ -19,7 +20,7 @@ const STAT_ICONS: Record<string, React.ElementType> = {
   connected: Wifi,
 };
 
-const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats }) => {
+const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats, onStatClick }) => {
   const { t } = useTranslation();
 
   const items = [
@@ -50,9 +51,11 @@ const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats }) => {
       {items.map((item, index) => {
         const Icon = STAT_ICONS[item.key];
         return (
-          <div
+          <button
+            type="button"
             key={item.key}
-            className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+            onClick={() => onStatClick?.(item.key)}
+            className="group relative w-full overflow-hidden rounded-xl border border-border/50 bg-card p-4 text-start shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div className="absolute -right-3 -top-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 opacity-0 transition-all duration-300 group-hover:scale-150 group-hover:opacity-100" />
             <div className="flex items-center justify-between">
@@ -66,7 +69,7 @@ const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats }) => {
             <p className="mt-2 text-2xl font-bold text-foreground transition-all duration-300 group-hover:text-primary">
               {item.value}
             </p>
-          </div>
+          </button>
         );
       })}
     </div>
