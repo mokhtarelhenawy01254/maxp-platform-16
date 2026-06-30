@@ -24,6 +24,7 @@ import { STOREFRONT_PDP_CHECKOUT_VISIBILITY_EVENT } from "../utils/pdpCheckout";
 import { isMarketplaceThemePreview } from "../preview/previewContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart } from "lucide-react";
+import { getActiveStorePromotionFromCompany } from "../utils/storePromotion";
 
 // formatCountdownParts and formatCountdownText imported from ../utils/countdown
 
@@ -157,6 +158,10 @@ const GlobalConversionHost: React.FC = () => {
       params.has("previewTheme")
     );
   }, [isSoleaFemme, location.search]);
+  const storePromotion = useMemo(
+    () => getActiveStorePromotionFromCompany(settings?.company),
+    [settings],
+  );
 
   const modules =
     (conversionSettings["modules"] as ConversionSettingsSection | undefined) ||
@@ -819,6 +824,11 @@ const GlobalConversionHost: React.FC = () => {
 
   return (
     <>
+      {storePromotion ? (
+        <div className="w-full bg-rose-500/10 border-b border-rose-200 text-center text-sm font-medium py-2 px-4">
+          {storePromotion.title}
+        </div>
+      ) : null}
       {barPosition === "top" ? renderFreeShippingBar : null}
 
       {shouldRenderGlobalCountdown ? (
