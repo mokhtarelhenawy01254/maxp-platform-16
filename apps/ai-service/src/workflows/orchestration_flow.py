@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.base import BaseAgent, BaseAgentConfig
 from src.agents.ceo import create_ceo_agent, create_channel_agent
+from src.agents.loader import get_template
 from src.config import get_settings
 from src.db.models.agent import Agent as AgentModel
 from src.db.repo.agent_repo import AgentRepository
@@ -61,7 +62,9 @@ async def _sync_agent_config_from_db(agent: Any, db_agent: AgentModel, session: 
         config.key_id = key_id
 
 
-def _build_runtime_agent_from_db(db_agent: AgentModel, *, model: str | None = None) -> tuple[BaseAgent, list[str]]:
+def _build_runtime_agent_from_db(
+    db_agent: AgentModel, *, model: str | None = None, template_instructions: dict[str, str] | None = None
+) -> tuple[BaseAgent, list[str]]:
     tool_names: list[str] = []
     if db_agent.skills:
         if isinstance(db_agent.skills, list):
@@ -88,10 +91,10 @@ def _build_runtime_agent_from_db(db_agent: AgentModel, *, model: str | None = No
         tool_choice=db_config.get("toolChoice"),
         persona=db_agent.persona or {},
         instructions={
-            "soul": (db_agent.persona or {}).get("soulInstructions") or db_agent.soul or "",
-            "persona": (db_agent.persona or {}).get("personaInstructions") or "",
-            "agents": (db_agent.persona or {}).get("agentInstructions") or "",
-            "tools": (db_agent.persona or {}).get("toolsInstructions") or "",
+            "soul": (db_agent.persona or {}).get("soulInstructions") or db_agent.soul or (template_instructions or {}).get("soul", ""),
+            "persona": (db_agent.persona or {}).get("personaInstructions") or (template_instructions or {}).get("persona", ""),
+            "agents": (db_agent.persona or {}).get("agentInstructions") or (template_instructions or {}).get("agents", ""),
+            "tools": (db_agent.persona or {}).get("toolsInstructions") or (template_instructions or {}).get("tools", ""),
         },
         provider=db_config.get("provider") or None,
         key_id=db_config.get("keyId") or db_config.get("key_id") or None,
@@ -134,11 +137,27 @@ async def _resolve_channel_agent(
             if matches:
                 db_agent = matches[0]
                 resolved_model = await _resolve_agent_model(db_agent, session)
+                # Fetch template instructions (soul/persona) if agent has none
+                tmpl_instr = None
+                if db_agent.template_slug and not (db_agent.soul or (db_agent.persona or {}).get("soulInstructions")):
+                    try:
+                        tmpl = await get_template(db_agent.template_slug, session)
+                        if tmpl:
+                            tmpl_instr = {
+                                "soul": tmpl.instructions_soul or "",
+                                "persona": tmpl.instructions_persona or "",
+                                "agents": tmpl.instructions_agents or "",
+                                "tools": tmpl.instructions_tools or "",
+                            }
+                    except Exception:
+                        logger.warning("template_instructions_fetch_failed", template_slug=db_agent.template_slug)
                 runtime_agent = registry.get(company_id, db_agent.id)
                 if runtime_agent:
                     await _sync_agent_config_from_db(runtime_agent, db_agent, session)
                     return db_agent.id, runtime_agent, "db"
-                runtime_agent, tool_names = _build_runtime_agent_from_db(db_agent, model=resolved_model)
+                runtime_agent, tool_names = _build_runtime_agent_from_db(
+                    db_agent, model=resolved_model, template_instructions=tmpl_instr
+                )
                 registry.register(company_id, db_agent.id, runtime_agent, tool_names=tool_names)
                 logger.info(
                     "orchestration_db_channel_agent_loaded_into_registry",

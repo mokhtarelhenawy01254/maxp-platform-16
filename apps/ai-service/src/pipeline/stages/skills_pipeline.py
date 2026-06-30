@@ -42,8 +42,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         ctx.final_reply = "عذراً، لا توجد أدوات متاحة حالياً."
         return ctx
 
-    # 3. Build system prompt with agent instructions
-    system_prompt = ctx.system_prompt or _default_system_prompt()
+    # 3. Build system prompt with agent instructions (soul/persona from DB agent)
+    agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
+    system_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
 
     # 4. Single LLM call with skills as tools
     try:

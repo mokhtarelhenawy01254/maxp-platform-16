@@ -2688,39 +2688,39 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
               </span>
             ) : null}
 
-            <div className="overflow-hidden bg-white">
+            <div className="overflow-hidden bg-[#f8f7f6]">
               <div className="aspect-square overflow-hidden">
                 <StorefrontProductImage
                   candidates={imageCandidates}
                   alt={name}
                   loading={resolvedImageLoading}
                   fetchpriority={resolvedImageFetchPriority}
-                  requestedWidth={420}
+                  requestedWidth={520}
                   responsiveWidths={[240, 320, 420, 520]}
                   responsiveSizes="(max-width: 767px) 68vw, (max-width: 1279px) 28vw, 20vw"
-                  imageQuality={72}
+                  imageQuality={80}
                   width="520"
                   height="520"
-                  className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-[1.02]"
-                  fallback={renderImageFallback('bg-white')}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  fallback={renderImageFallback('bg-[#f8f7f6]')}
                 />
               </div>
             </div>
 
-            <div className="flex flex-1 flex-col items-center px-2 pb-1 pt-5 text-center">
-              <span className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#9d8a7b]">
-                {categoryLabel}
-              </span>
-              <h3 className="mt-2 line-clamp-2 font-heading text-[1.05rem] font-semibold leading-7 text-[#221a15]">
+            <div className="flex flex-1 flex-col px-4 pb-3 pt-4 text-start">
+              <h3 className="line-clamp-1 font-heading text-[0.95rem] font-bold leading-6 text-[#221a15]">
                 {name}
               </h3>
-              <div dir="ltr" className="mt-3 flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1 font-sans leading-tight">
+              <span className="mt-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-[#9d8a7b]">
+                {categoryLabel}
+              </span>
+              <div dir="ltr" className="mt-2 font-sans leading-tight">
                 {formattedComparePrice ? (
-                  <span className="shrink-0 text-sm text-[#b7a697] line-through">
+                  <span className="text-sm text-[#b7a697] line-through me-1.5">
                     {formattedComparePrice}
                   </span>
                 ) : null}
-                <span className="min-w-0 text-[1rem] font-semibold text-[#7b5a2f]">
+                <span className="text-[1rem] font-semibold text-[#7b5a2f]">
                   {formattedPrice}
                 </span>
               </div>
