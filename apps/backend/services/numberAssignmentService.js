@@ -297,7 +297,7 @@ class NumberAssignmentService {
         session,
         assignmentId: assignment?.id || null,
         isConfigured: Boolean(assignment?.isActive),
-        connectionStatus: assignment?.connectionStatus || session.status,
+        connectionStatus: session.status || assignment?.connectionStatus || 'DISCONNECTED',
         routingMode,
         distributionStrategy:
           assignment?.distributionStrategy || DISTRIBUTION_STRATEGIES.ROUND_ROBIN,

@@ -9,7 +9,13 @@ interface NumberSidebarProps {
   onSelect: (sessionId: string) => void;
 }
 
+const NORMALIZE_STATUS: Record<string, string> = {
+  QR_PENDING: 'CONNECTING',
+  LOGGED_OUT: 'DISCONNECTED',
+};
+
 const resolveConnectionClasses = (status: string): string => {
+  const s = NORMALIZE_STATUS[status] || status;
   const styles: Record<string, string> = {
     CONNECTED:
       'border-success/30 bg-success/10 text-success dark:border-success/40 dark:bg-success/20',
@@ -20,10 +26,7 @@ const resolveConnectionClasses = (status: string): string => {
     ERROR:
       'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-destructive/20',
   };
-  return (
-    styles[status] ||
-    'border-border bg-muted text-muted-foreground'
-  );
+  return styles[s] || 'border-border bg-muted text-muted-foreground';
 };
 
 const NumberSidebar: React.FC<NumberSidebarProps> = ({
@@ -36,13 +39,14 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONNECTED' | 'DISCONNECTED'>('ALL');
 
   const resolveConnectionLabel = (status: string) => {
+    const s = NORMALIZE_STATUS[status] || status;
     const labels: Record<string, string> = {
       CONNECTED: t('whatsappInbox.statusConnected'),
       DISCONNECTED: t('whatsappInbox.statusDisconnected'),
       CONNECTING: t('whatsappInbox.statusConnecting'),
       ERROR: t('whatsappInbox.statusError'),
     };
-    return labels[status] || status;
+    return labels[s] || s;
   };
 
   const filteredNumbers = useMemo(() => {
