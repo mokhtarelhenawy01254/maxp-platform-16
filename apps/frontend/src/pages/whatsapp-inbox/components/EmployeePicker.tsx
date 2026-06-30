@@ -94,8 +94,8 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
           const isSelected = selectedEmployeeIds.includes(employee.id);
           const selectedClasses =
             routingMode === 'NUMBER_OWNER'
-              ? 'border-emerald-300 bg-card shadow-sm dark:border-emerald-800'
-              : 'border-amber-300 bg-card shadow-sm dark:border-amber-800';
+              ? 'border-primary/40 bg-card shadow-sm dark:border-primary/60'
+              : 'border-secondary/40 bg-card shadow-sm dark:border-secondary/60';
 
           return (
             <button
@@ -139,7 +139,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
                 <span
                   className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-bold ${
                     isSelected
-                      ? 'border-emerald-500 bg-emerald-500 text-white'
+                      ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border text-muted-foreground'
                   }`}
                 >

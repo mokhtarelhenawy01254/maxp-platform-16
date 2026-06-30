@@ -133,7 +133,7 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <div className="flex items-center gap-2 text-warning">
                   <AlertTriangle className="size-4" />
                   <span className="text-sm font-medium">
                     {t('whatsappInbox.routingPreviewNoCandidate')}

@@ -292,7 +292,7 @@ describe('WhatsApp inbox admin pages', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(document.querySelector('.text-rose-800, .dark\\:text-rose-200')).toBeTruthy();
+      expect(document.querySelector('.text-destructive')).toBeTruthy();
     });
   });
 
@@ -323,7 +323,7 @@ describe('WhatsApp inbox admin pages', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(document.querySelector('.text-rose-800, .dark\\:text-rose-200')).toBeTruthy();
+      expect(document.querySelector('.text-destructive')).toBeTruthy();
     });
 
     expect(apiClient.put).not.toHaveBeenCalled();

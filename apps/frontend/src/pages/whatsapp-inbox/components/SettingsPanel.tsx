@@ -239,10 +239,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </h3>
 
             <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+              <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3 dark:border-success/40 dark:bg-success/20">
                 {t('whatsappInbox.settingsPrivacyRuleDirect')}
               </div>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
+              <div className="rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-3 dark:border-secondary/40 dark:bg-secondary/20">
                 {t('whatsappInbox.settingsPrivacyRuleRoundRobin')}
               </div>
             </div>

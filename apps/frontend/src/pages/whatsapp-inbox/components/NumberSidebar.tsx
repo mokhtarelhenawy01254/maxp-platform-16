@@ -12,17 +12,17 @@ interface NumberSidebarProps {
 const resolveConnectionClasses = (status: string): string => {
   const styles: Record<string, string> = {
     CONNECTED:
-      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300',
+      'border-success/30 bg-success/10 text-success dark:border-success/40 dark:bg-success/20',
     DISCONNECTED:
-      'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300',
+      'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-destructive/20',
     CONNECTING:
-      'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300',
+      'border-warning/30 bg-warning/10 text-warning dark:border-warning/40 dark:bg-warning/20',
     ERROR:
-      'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300',
+      'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-destructive/20',
   };
   return (
     styles[status] ||
-    'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+    'border-border bg-muted text-muted-foreground'
   );
 };
 
@@ -122,7 +122,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
               onClick={() => onSelect(number.sessionId)}
               className={`w-full rounded-lg border p-3 text-start transition ${
                 isSelected
-                  ? 'border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20'
+                  ? 'border-primary/30 bg-primary/10 shadow-sm dark:border-primary/50 dark:bg-primary/20'
                   : 'border-border/50 bg-card hover:border-border hover:bg-muted'
               }`}
             >

@@ -25,16 +25,16 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
       label: t('whatsappInbox.modeDirect'),
       description: t('whatsappInbox.modeDirectDescription'),
       activeClasses:
-        'border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20',
-      indicatorClasses: 'border-emerald-500 bg-[color:var(--color-card)]',
+        'border-primary/30 bg-primary/10 shadow-sm dark:border-primary/50 dark:bg-primary/20',
+      indicatorClasses: 'border-primary bg-[color:var(--color-card)]',
     },
     {
       value: 'ROUND_ROBIN',
       label: t('whatsappInbox.modeRoundRobin'),
       description: t('whatsappInbox.modeRoundRobinDescription'),
       activeClasses:
-        'border-amber-300 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-950/20',
-      indicatorClasses: 'border-amber-500 bg-[color:var(--color-card)]',
+        'border-secondary/30 bg-secondary/10 shadow-sm dark:border-secondary/50 dark:bg-secondary/20',
+      indicatorClasses: 'border-secondary bg-[color:var(--color-card)]',
     },
   ];
 

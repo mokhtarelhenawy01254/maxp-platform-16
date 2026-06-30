@@ -58,17 +58,17 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
   const resolveConnectionClasses = (status: string) => {
     const styles: Record<string, string> = {
       CONNECTED:
-        'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300',
+        'border-success/30 bg-success/10 text-success dark:border-success/40 dark:bg-success/20',
       DISCONNECTED:
-        'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300',
+        'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-destructive/20',
       CONNECTING:
-        'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300',
+        'border-warning/30 bg-warning/10 text-warning dark:border-warning/40 dark:bg-warning/20',
       ERROR:
-        'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300',
+        'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-destructive/20',
     };
     return (
       styles[status] ||
-      'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+      'border-border bg-muted text-muted-foreground'
     );
   };
 
@@ -103,8 +103,8 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
           <div
             className={`rounded-lg border px-4 py-3 text-sm shadow-sm ${
               feedback.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200'
-                : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200'
+                ? 'border-success/30 bg-success/10 text-success dark:border-success/40 dark:bg-success/20'
+                : 'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-destructive/20'
             }`}
           >
             <div className="flex items-center justify-between gap-2">
@@ -126,7 +126,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
               {t('whatsappInbox.workspaceTitle')}
             </h1>
             {dirty && (
-              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              <span className="text-xs font-medium text-warning">
                 {t('whatsappInbox.unsavedChanges')}
               </span>
             )}
