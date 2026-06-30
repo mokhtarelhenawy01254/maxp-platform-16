@@ -61,3 +61,23 @@
   1. Updated `getRoutingWorkspace` in `apps/backend/services/numberAssignmentService.js` to query `metadata` and filter out sessions with `isDeleted: true`.
 - **Files Modified**:
   - `apps/backend/services/numberAssignmentService.js`
+
+### [FIX] WhatsApp Session Dropdown showing CUID ID instead of Friendly Name
+- **Date**: 2026-07-01
+- **Description**: The WhatsApp Workspace select dropdown trigger rendered the raw CUID ID instead of the friendly name after choosing a session.
+- **Root Cause**:
+  1. Headless Select from `@base-ui/react` relies on mounted item text registrations to translate values to labels. Because the list is unmounted when closed and sessions load asynchronously, the trigger fallback displayed the raw ID.
+- **Resolution**:
+  1. Replaced the `SelectValue` component in `ChatSidebar.tsx` with a custom `span` that manually resolves the selected ID to `session.name` from the `sessionOptions` list.
+- **Files Modified**:
+  - `apps/frontend/src/pages/whatsapp/components/ChatSidebar.tsx`
+
+### [FIX] WhatsApp Workspace session list did not restrict access for moderators
+- **Date**: 2026-07-01
+- **Description**: Employees/moderators could see and select all WhatsApp sessions of the company in the `/whatsapp` dropdown menu, bypassing routing restrictions.
+- **Root Cause**:
+  1. The `/api/v1/whatsapp/sessions` endpoint returned all sessions for the company without verifying active number assignments for the authenticated user.
+- **Resolution**:
+  1. Updated `getSessions` in `apps/backend/controller/whatsappController.js` to filter the returned sessions using `getUserAccessibleSessionIds` for non-admin roles.
+- **Files Modified**:
+  - `apps/backend/controller/whatsappController.js`

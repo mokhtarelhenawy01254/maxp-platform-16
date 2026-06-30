@@ -501,7 +501,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <div className="mt-2 flex items-center gap-2">
             <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
               <SelectTrigger className="h-8 min-w-0 flex-1 rounded-xl bg-[var(--whatsapp-surface)] text-[11px]">
-                <SelectValue placeholder={t("whatsapp.sidebar.all")} />
+                <span className="truncate font-medium text-[color:var(--color-foreground)]">
+                  {resolvedSessionValue === "all"
+                    ? t("whatsapp.sidebar.all")
+                    : sessionOptions.find((s) => s.id === resolvedSessionValue)?.name || resolvedSessionValue}
+                </span>
               </SelectTrigger>
               <SelectContent align={i18n.dir() === "rtl" ? "start" : "end"}>
                 <SelectItem value="all">{t("whatsapp.sidebar.all")}</SelectItem>

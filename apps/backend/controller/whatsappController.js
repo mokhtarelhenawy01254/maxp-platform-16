@@ -503,9 +503,25 @@ async function createSessionWithPairingCode(req, res) {
  */
 async function getSessions(req, res) {
     try {
-        const { companyId } = req.user;
+        const { companyId, id: userId, role } = req.user;
+        const { normalizeRole } = require('../middleware/rbacMiddleware');
+        const userRole = normalizeRole(role);
+
         const sessions = await fetchSessionsWithLegacySchemaSupport(companyId);
-        const sessionsWithStatus = sessions.map(mapSessionForResponse);
+
+        let filteredSessions = sessions;
+        if (
+            userRole !== 'SUPER_ADMIN' &&
+            userRole !== 'COMPANY_ADMIN' &&
+            userRole !== 'TEAM_LEADER'
+        ) {
+            const { getUserAccessibleSessionIds } = require('../middleware/numberAccessGuard');
+            const accessibleSessions = await getUserAccessibleSessionIds(userId, companyId, getSharedPrismaClient());
+            const accessibleIds = new Set(accessibleSessions.map(s => s.id));
+            filteredSessions = sessions.filter(s => accessibleIds.has(s.id));
+        }
+
+        const sessionsWithStatus = filteredSessions.map(mapSessionForResponse);
 
         res.json({ sessions: sessionsWithStatus });
     } catch (error) {
