@@ -29,5 +29,4 @@ create_draft_order = Skill(
     input_schema=CreateDraftOrderInput,
     handler=create_draft_order,
     internal_fields=["company_id"],
-    keywords=["اطلب", "اشتري", "طلب", "اوردر", "شراء", "هطلب", "طلب شراء"],
 )
