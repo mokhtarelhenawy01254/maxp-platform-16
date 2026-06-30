@@ -16,6 +16,7 @@ import { trackStorefrontAppUsage } from "../utils/appUsageTracking";
 import { getProductVolumeDiscounts } from "../utils/volumeDiscounts";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import { isMarketplaceThemePreview } from "../preview/previewContext";
+import { isKhemetLuxeTheme } from "../utils/navigationGuards";
 
 interface CartUpsellHostProps {
   open: boolean;
@@ -102,7 +103,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
     settings?.storefront?.settings?.currency || settings?.company?.currency || "EGP";
   const prefersArabicCopy = theme.direction === "rtl";
   const isBiteRush = theme.id === "restaurant-demo";
-  const isKhemetLuxe = theme.id === "khemet-luxe-eg";
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isInline = layout === "inline";
   const isMarketplacePreview = isMarketplaceThemePreview(location.search);
   const isKhemetDrawer = isKhemetLuxe && !isInline;
@@ -419,7 +420,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
     const cardClassName = isBiteRush
       ? "rounded-[1.5rem] border border-[#f8c08c] bg-white/90 p-3 shadow-[0_18px_40px_-34px_rgba(247,115,22,0.3)]"
       : isKhemetLuxe
-        ? "rounded-[1.1rem] border border-[#e7ddd0] bg-[#fffaf4] p-3.5 shadow-[0_18px_48px_-42px_rgba(79,57,30,0.24)]"
+        ? "flex items-start gap-4 px-3 py-2"
       : isInline
         ? "rounded-[1.4rem] border border-border/70 bg-background/95 p-4 shadow-[0_22px_48px_-38px_rgba(15,23,42,0.35)]"
         : upsellStyle === "editorial"
@@ -431,7 +432,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
       isBiteRush
         ? "h-16 w-16 overflow-hidden rounded-[1rem] bg-[#fff1e2]"
         : isKhemetLuxe
-          ? "h-20 w-20 shrink-0 overflow-hidden rounded-[0.95rem] border border-[#eadfcf] bg-[#fbf5ed] p-1"
+          ? "h-24 w-24 shrink-0 overflow-hidden rounded-none bg-[#f8f7f6]"
         : isInline
           ? "h-20 w-20 overflow-hidden rounded-[1rem] border border-border/70 bg-muted"
           : upsellStyle === "compact"
@@ -529,7 +530,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
               imageQuality={72}
               width="64"
               height="64"
-              className={`h-full w-full ${isKhemetLuxe ? "object-contain" : "object-cover"}`}
+              className={`h-full w-full ${isKhemetLuxe ? "object-cover" : "object-cover"}`}
               fallback={
                 <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                   IMG
@@ -542,7 +543,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
             <span className={badgeClassName}>
               {label}
             </span>
-            <h4 className={`mt-2 truncate text-sm font-bold ${isBiteRush ? "text-[#171717]" : isKhemetLuxe ? "text-[#2d211e]" : "text-foreground"}`}>
+            <h4 className={`mt-1.5 truncate text-sm font-bold ${isBiteRush ? "text-[#171717]" : isKhemetLuxe ? "font-heading text-base text-[#221a15]" : "text-foreground"}`}>
               {product.name}
             </h4>
             <p
@@ -552,7 +553,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
             >
               {formatStorefrontCurrency(Number(product.price) || 0, currency)}
             </p>
-            {isInline ? (
+            {isInline && !isKhemetLuxe ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
                 {hasVariants
                   ? variantSelectionHint
