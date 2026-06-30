@@ -305,6 +305,12 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "womens-shoes",
     "أحذية حريمي",
   ),
+  "khemet-luxe-v2": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "womens-shoes",
+    "أحذية حريمي بريميم",
+  ),
   "perfume-eg": createThemeCategoryMeta(
     "beauty",
     "جمال وعناية",
@@ -557,6 +563,8 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "قالب حريمي بيّاع من أول شاشة: لوكات جاهزة، عروض كمية، وطلب سريع يخلي العميلة تحسم من غير تردد.",
   "khemet-luxe-eg":
     "بوتيك أحذية حريمي فاخر للسوق المصري بطابع تحريري واضح: صور أكبر، قصة قاهرة يدوية، ومسارات شراء أنيقة بدون زحمة كروت.",
+  "khemet-luxe-v2":
+    "نسخة بريميم 2026 من KHEMET LUXE: دليل إيجاد الحذاء المناسب، إثبات اجتماعي حي (عدد مبيعات + توصيل متوقع)، تكملات إطلالة (look-builder + bought-together)، back-in-stock و pre-order للكبسولات المحدودة، هيرو بفيديو، لوكبوك، تيك جريد، نوايا تسوق، وجورنال قصة الحرفة. أهداف الصفحة تحويل بدل ثقة.",
   "pc-hub-eg":
     "قالب كمبيوتر وإلكترونيات مصري جاهز للبيع: السعر والمواصفات والضمان ظاهرين، مع عروض وتقسيط يقرّبوا قرار الشراء.",
   "rose-boutique-eg":
@@ -651,6 +659,8 @@ const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "style-store-eg": "/assets/themes/style-store-eg/hero-banner.jpg",
   "men-shoes-eg": "/assets/themes/men-shoes-eg/preview.png",
   "khemet-luxe-eg":
+    "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+  "khemet-luxe-v2":
     "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
   "pc-hub-eg": "/assets/themes/pc-hub-eg/preview.svg",
   "rose-boutique-eg": "/assets/themes/rose-boutique-eg/preview.svg",
