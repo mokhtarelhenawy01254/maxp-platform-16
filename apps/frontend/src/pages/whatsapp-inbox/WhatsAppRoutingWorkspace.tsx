@@ -34,6 +34,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
     handleSessionSelect,
     handleModeChange,
     toggleEmployee,
+    handleSelectAll,
     handleSave,
     handleUnassign,
     handleSaveSettings,
@@ -44,6 +45,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
   const [showInactive, setShowInactive] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [unassignOpen, setUnassignOpen] = useState(false);
+  const [sidebarFilter, setSidebarFilter] = useState<'ALL' | 'CONNECTED' | 'DISCONNECTED'>('ALL');
 
   const resolveConnectionLabel = (status: string) => {
     const labels: Record<string, string> = {
@@ -79,6 +81,12 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
       timeStyle: 'short',
     });
   };
+
+  const handleStatClick = useCallback((key: string) => {
+    if (key === 'connected') {
+      setSidebarFilter((current) => (current === 'CONNECTED' ? 'ALL' : 'CONNECTED'));
+    }
+  }, []);
 
   const handlePreviewResult = useCallback(
     (result: typeof previewResult) => setPreviewResult(result),
@@ -165,13 +173,15 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
           </div>
         </div>
 
-        <WorkspaceStats stats={stats} />
+        <WorkspaceStats stats={stats} onStatClick={handleStatClick} />
 
         <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
           <NumberSidebar
             numbers={numbers}
             selectedSessionId={selectedSessionId}
             onSelect={handleSessionSelect}
+            statusFilter={sidebarFilter}
+            onStatusFilterChange={setSidebarFilter}
           />
 
           <section className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition-all duration-300">
@@ -227,6 +237,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
                     showInactive={showInactive}
                     onToggleInactive={setShowInactive}
                     onToggleEmployee={toggleEmployee}
+                    onSelectAll={handleSelectAll}
                   />
 
                   <EmployeeSummary

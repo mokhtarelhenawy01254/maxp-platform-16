@@ -24,3 +24,17 @@
 - **Files Modified**:
   - `apps/frontend/src/locales/ar/sections/projectBreakEven.json`
   - `apps/frontend/src/locales/en/sections/projectBreakEven.json`
+
+### [FIX] WhatsApp Inbox Displaying Unassigned/Inactive Sessions for Admins
+- **Date**: 2026-07-01
+- **Description**: The WhatsApp inbox page (`/whatsapp-inbox`) displayed unconfigured, draft, or disconnected sessions for admin roles, which differed from the settings page (which only showed configured assignments).
+- **Root Cause**:
+  1. For admin roles, the `getUserAccessibleSessionIds` helper in `numberAccessGuard.js` was querying all `whatsAppSession` records directly from the DB, bypassing `whatsAppNumberAssignment` entirely.
+  2. For `Harf Online`, this resulted in all 8 sessions (like `ww`, `22`, `Sales S5`, etc.) showing up in the inbox sidebar, even though only 2 (`Harf ACC` and `SalesApiss`) were active in the settings.
+  3. Furthermore, `NumberSidebar.tsx` was vulnerable to a frontend TypeError crash during search if a session's `phoneNumber` was `null` (which was true for 7 of Harf's sessions).
+- **Resolution**:
+  1. Modified `getUserAccessibleSessionIds` in `apps/backend/middleware/numberAccessGuard.js` to ensure even admin users only retrieve sessions linked to an active assignment (`isActive: true` on `whatsAppNumberAssignment`).
+  2. Updated `apps/frontend/src/pages/whatsapp-inbox/components/NumberSidebar.tsx` to handle `null` phone numbers safely by adding an empty string fallback before invoking `toLowerCase()`.
+- **Files Modified**:
+  - `apps/backend/middleware/numberAccessGuard.js`
+  - `apps/frontend/src/pages/whatsapp-inbox/components/NumberSidebar.tsx`

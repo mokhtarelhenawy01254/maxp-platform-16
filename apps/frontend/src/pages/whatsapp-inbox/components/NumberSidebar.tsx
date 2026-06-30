@@ -7,6 +7,8 @@ interface NumberSidebarProps {
   numbers: WorkspaceNumber[];
   selectedSessionId: string | null;
   onSelect: (sessionId: string) => void;
+  statusFilter: 'ALL' | 'CONNECTED' | 'DISCONNECTED';
+  onStatusFilterChange: (filter: 'ALL' | 'CONNECTED' | 'DISCONNECTED') => void;
 }
 
 const NORMALIZE_STATUS: Record<string, string> = {
@@ -64,7 +66,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
       if (!query.trim()) return true;
       const q = query.trim().toLowerCase();
       const name = (number.session.name || number.session.profileName || '').toLowerCase();
-      const phone = number.session.phoneNumber.toLowerCase();
+      const phone = (number.session.phoneNumber || '').toLowerCase();
       return name.includes(q) || phone.includes(q);
     });
   }, [numbers, query, statusFilter]);

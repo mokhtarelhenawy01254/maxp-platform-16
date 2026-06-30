@@ -6503,6 +6503,8 @@
     "privacySummaryFooter": "هذا العزل مطبق على القوائم، بيانات العميل، حالة المحادثة، والإشعارات اللحظية.",
     "showInactiveModerators": "عرض المشرفين غير النشطين",
     "inactiveLabel": "غير نشط",
+    "selectAll": "تحديد الكل",
+    "clearSelection": "إلغاء التحديد",
     "selectedEmployeesTitle": "الموظفون المختارون",
     "selectedEmployeesEmpty": "لم يتم اختيار أي موظف بعد.",
     "selectedEmployeesCount": "{{count}} موظف",

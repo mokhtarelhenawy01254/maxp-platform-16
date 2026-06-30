@@ -6434,6 +6434,8 @@
     "privacySummaryFooter": "This isolation applies to chat lists, customer details, chat status, and realtime notifications.",
     "showInactiveModerators": "Show inactive moderators",
     "inactiveLabel": "Inactive",
+    "selectAll": "Select All",
+    "clearSelection": "Clear Selection",
     "selectedEmployeesTitle": "Selected employees",
     "selectedEmployeesEmpty": "No employees are selected yet.",
     "selectedEmployeesCount": "{{count}} employees",

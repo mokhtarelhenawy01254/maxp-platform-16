@@ -192,17 +192,6 @@ const getUserAccessibleSessionIds = async (userId, companyId, prisma) => {
     )?.role
   );
 
-  if (
-    userRole === 'SUPER_ADMIN' ||
-    userRole === 'COMPANY_ADMIN' ||
-    userRole === 'TEAM_LEADER'
-  ) {
-    return prisma.whatsAppSession.findMany({
-      where: { companyId },
-      select: { id: true, phoneNumber: true, name: true, status: true }
-    });
-  }
-
   const assignments = await prisma.whatsAppNumberAssignment.findMany({
     where: {
       companyId,
@@ -222,6 +211,20 @@ const getUserAccessibleSessionIds = async (userId, companyId, prisma) => {
       }
     }
   });
+
+  if (
+    userRole === 'SUPER_ADMIN' ||
+    userRole === 'COMPANY_ADMIN' ||
+    userRole === 'TEAM_LEADER'
+  ) {
+    return Array.from(
+      new Map(
+        assignments
+          .filter((assignment) => assignment.session)
+          .map((assignment) => [assignment.session.id, assignment.session])
+      ).values()
+    );
+  }
 
   const allowedSessions = assignments.filter((assignment) =>
     canAccessSessionAssignment(assignment, userId)
