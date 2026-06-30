@@ -99,7 +99,11 @@ export default function ProjectBreakEvenCalculator() {
       <div className="space-y-1">
         <div className="flex justify-between text-sm">
           <span className="text-gray-700 dark:text-gray-300">{label}</span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{fmt(value)}{isPercent ? "%" : ` ${s}`}</span>
+          <span className="flex items-center gap-1">
+            <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
+              className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : s}</span>
+          </span>
         </div>
         <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
           className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
