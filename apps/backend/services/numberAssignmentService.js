@@ -276,7 +276,8 @@ class NumberAssignmentService {
           provider: true,
           profileName: true,
           lastConnectedAt: true,
-          updatedAt: true
+          updatedAt: true,
+          metadata: true
         },
         orderBy: { updatedAt: 'desc' }
       }),
@@ -284,9 +285,23 @@ class NumberAssignmentService {
       this.getAvailableModerators(companyId)
     ]);
 
+    // Filter out soft-deleted sessions to align with Settings page
+    const activeSessions = sessions.filter((s) => {
+      if (!s.metadata) return true;
+      try {
+        const meta = typeof s.metadata === 'string' ? JSON.parse(s.metadata) : s.metadata;
+        if (meta.isDeleted) {
+          return !!WhatsAppManager.getSession(s.id);
+        }
+        return true;
+      } catch {
+        return true;
+      }
+    });
+
     const assignmentMap = new Map(assignments.map((assignment) => [assignment.sessionId, assignment]));
 
-    const numbers = sessions.map((session) => {
+    const numbers = activeSessions.map((session) => {
       const assignment = assignmentMap.get(session.id) || null;
       const routingMembers = assignment?.routingUsers || [];
       const activeMembers = routingMembers.filter((member) => member.isActive);

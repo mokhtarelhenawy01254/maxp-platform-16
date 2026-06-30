@@ -50,3 +50,14 @@
   1. Updated `getRoutingWorkspace` in `apps/backend/services/numberAssignmentService.js` to explicitly resolve `META_CLOUD` sessions as `CONNECTED`.
 - **Files Modified**:
   - `apps/backend/services/numberAssignmentService.js`
+
+### [FIX] Soft-deleted WhatsApp Sessions Showing in Routing Workspace
+- **Date**: 2026-07-01
+- **Description**: Drafts or soft-deleted sessions (where `isDeleted: true` is in metadata) were showing up in the Routing Workspace page, whereas they were correctly hidden on the main WhatsApp Settings page.
+- **Root Cause**:
+  1. The Settings page API filters out sessions with `isDeleted: true` in their metadata.
+  2. The `getRoutingWorkspace` service query did not query or filter based on metadata, showing all 8 historical sessions (including drafts/deleted ones like `ww`, `22`, `Sales S5`, `sss`, `sales api`, `SalesApi`).
+- **Resolution**:
+  1. Updated `getRoutingWorkspace` in `apps/backend/services/numberAssignmentService.js` to query `metadata` and filter out sessions with `isDeleted: true`.
+- **Files Modified**:
+  - `apps/backend/services/numberAssignmentService.js`
