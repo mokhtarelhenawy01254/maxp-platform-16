@@ -25,8 +25,9 @@ async def create_draft_order(params: CreateDraftOrderInput) -> dict:
 
 create_draft_order = Skill(
     name="create_draft_order",
-    description="Create a new draft order. Use when customer wants to place an order, buy a product, or make a purchase.",
+    description="Create a new draft order for a customer who has decided to buy. Call AFTER using product_search to find the product. Use when customer says 'اطلب', 'اشتري', 'عايز', 'طلب', 'اوردر', 'شراء', 'هطلب', 'أطلب', 'طلب شراء'. Do NOT use for product inquiries or browsing — use product_search for that.",
     input_schema=CreateDraftOrderInput,
     handler=create_draft_order,
     internal_fields=["company_id"],
+    keywords=["اطلب", "اشتري", "طلب", "اوردر", "شراء", "هطلب", "طلب شراء"],
 )
