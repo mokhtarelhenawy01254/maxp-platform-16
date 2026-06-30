@@ -198,14 +198,12 @@ const ReturnSettingsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          {categories.length === 0 && (
-            <button
-              onClick={addDefaults}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition-colors"
-            >
-              <Sparkles size={18} /> اقتراحات ذكية
-            </button>
-          )}
+          <button
+            onClick={addDefaults}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition-colors"
+          >
+            <Sparkles size={18} /> اقتراحات ذكية
+          </button>
           <button
             onClick={() => {
               setEditingCategory(null);

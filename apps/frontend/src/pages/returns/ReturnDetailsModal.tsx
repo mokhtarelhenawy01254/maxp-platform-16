@@ -76,6 +76,18 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   };
 
   const handleSaveReview = async () => {
+    if (!status) {
+      toast.error("يرجى اختيار حالة الطلب");
+      return;
+    }
+    if (!responsibleParty) {
+      toast.error("يرجى تحديد الجهة المسؤولة");
+      return;
+    }
+    if (status === "REJECTED" && !rejectionReason.trim()) {
+      toast.error("يرجى كتابة سبب الرفض");
+      return;
+    }
     setSubmittingReview(true);
     try {
       await returnService.updateRequest(request.id, {
@@ -103,6 +115,8 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         notes: contactNotes,
       });
       toast.success("تم تسجيل المحاوله بنجاح");
+      setContactMethod("PHONE");
+      setContactResult("NO_ANSWER");
       setContactNotes("");
       fetchLogs();
     } catch (error) {

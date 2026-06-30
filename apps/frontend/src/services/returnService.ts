@@ -19,11 +19,19 @@ export interface ReturnReasonCategory {
   reasons?: ReturnReason[];
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface ReturnRequest {
   id: string;
   orderId: string;
   customerId: string;
-  reasonId: string;
+  reasonId?: string;
   status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
   adminNotes?: string;
   customerNotes?: string;
@@ -61,7 +69,14 @@ export const returnService = {
     orderId?: string;
     customerId?: string;
     isReviewed?: boolean;
-  }) => apiClient.get<ReturnRequest[]>("/returns/requests", { params }),
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) =>
+    apiClient.get<PaginatedResponse<ReturnRequest>>(
+      "/returns/requests",
+      { params },
+    ),
   createRequest: (data: any) => apiClient.post("/returns/requests", data),
   updateRequest: (id: string, data: any) =>
     apiClient.put(`/returns/requests/${id}`, data),

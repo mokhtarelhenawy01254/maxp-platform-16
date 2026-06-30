@@ -20,8 +20,14 @@ const ReturnManagementPage: React.FC = () => {
     null,
   );
 
-  // Filters
+  // Filters & Search
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -31,6 +37,7 @@ const ReturnManagementPage: React.FC = () => {
   const [newReturn, setNewReturn] = useState({
     orderNumber: "",
     reasonId: "",
+    refundAmount: "",
     customerNotes: "",
     adminNotes: "",
     responsibleParty: "OTHER" as "CUSTOMER" | "STORE" | "SHIPPING" | "OTHER",
@@ -51,12 +58,13 @@ const ReturnManagementPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [reqRes] = await Promise.all([
-        returnService.getRequests(
-          statusFilter ? { status: statusFilter } : undefined,
-        ),
-      ]);
-      setRequests(reqRes.data);
+      const params: Record<string, any> = { page, limit: 20 };
+      if (statusFilter) params.status = statusFilter;
+      if (searchTerm) params.search = searchTerm;
+      const reqRes = await returnService.getRequests(params);
+      setRequests(reqRes.data.data);
+      setTotal(reqRes.data.total);
+      setTotalPages(reqRes.data.totalPages);
     } catch (error) {
       toast.error("Failed to load data");
     } finally {
@@ -70,8 +78,6 @@ const ReturnManagementPage: React.FC = () => {
         returnService.getCategories(),
         returnService.getReasons(),
       ]);
-      console.log("📦 Categories:", catRes.data);
-      console.log("📋 Reasons:", reasonRes.data);
       setCategories(catRes.data);
       setReasons(reasonRes.data);
     } catch (error) {
@@ -80,9 +86,16 @@ const ReturnManagementPage: React.FC = () => {
   };
 
   useEffect(() => {
+    setPage(1);
+  }, [statusFilter, searchTerm]);
+
+  useEffect(() => {
     fetchData();
+  }, [statusFilter, searchTerm, page]);
+
+  useEffect(() => {
     fetchCategoriesAndReasons();
-  }, [statusFilter]);
+  }, []);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
@@ -175,12 +188,12 @@ const ReturnManagementPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 items-center">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
           <Filter size={18} />
-          <span className="text-sm font-medium">Filter by Status:</span>
+          <span className="text-sm font-medium">تصفية:</span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {["", "PENDING", "APPROVED", "REJECTED", "COMPLETED"].map(
             (status) => (
               <button
@@ -192,14 +205,22 @@ const ReturnManagementPage: React.FC = () => {
                     : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
-                {status || "All"}
+                {status === "" ? "الكل" : status === "PENDING" ? "قيد الانتظار" : status === "APPROVED" ? "تمت الموافقة" : status === "REJECTED" ? "مرفوض" : "مكتمل"}
               </button>
             ),
           )}
         </div>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="🔍 بحث برقم الطلب..."
+          className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg max-w-xs mr-auto"
+        />
         <button
           onClick={fetchData}
-          className="ml-auto text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+          className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+          title="تحديث"
         >
           <RefreshCw size={18} />
         </button>
@@ -289,12 +310,20 @@ const ReturnManagementPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {request.reason?.reason || "أخرى"}
-                    </div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500">
-                      {request.reason?.category?.name}
-                    </div>
+                    {request.reason ? (
+                      <>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {request.reason.reason}
+                        </div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                          {request.reason.category?.name}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 flex items-center gap-1 w-fit">
+                        <Clock size={12} /> معلق
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -395,6 +424,50 @@ const ReturnManagementPage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            إجمالي {total} — صفحة {page} من {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1 text-sm rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
+            >
+              السابق
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => Math.abs(p - page) <= 2 || p === 1 || p === totalPages)
+              .map((p, idx, arr) => (
+                <span key={p} className="flex items-center gap-1">
+                  {idx > 0 && arr[idx - 1] !== p - 1 && (
+                    <span className="px-1 text-gray-400">...</span>
+                  )}
+                  <button
+                    onClick={() => setPage(p)}
+                    className={`px-3 py-1 text-sm rounded-md ${
+                      page === p
+                        ? "bg-blue-600 text-white"
+                        : "border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                </span>
+              ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="px-3 py-1 text-sm rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
+            >
+              التالي
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create Return Modal */}
       {showCreateModal && (
@@ -518,6 +591,22 @@ const ReturnManagementPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Refund Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  المبلغ المسترد
+                </label>
+                <input
+                  type="number"
+                  value={newReturn.refundAmount}
+                  onChange={(e) =>
+                    setNewReturn({ ...newReturn, refundAmount: e.target.value })
+                  }
+                  placeholder="0.00"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
               {/* Customer Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -572,6 +661,7 @@ const ReturnManagementPage: React.FC = () => {
                       await returnService.createRequest({
                         orderNumber: newReturn.orderNumber,
                         reasonId: newReturn.reasonId,
+                        refundAmount: newReturn.refundAmount ? Number(newReturn.refundAmount) : undefined,
                         customerNotes: newReturn.customerNotes,
                         adminNotes: newReturn.adminNotes,
                         responsibleParty: newReturn.responsibleParty,
@@ -581,6 +671,7 @@ const ReturnManagementPage: React.FC = () => {
                       setNewReturn({
                         orderNumber: "",
                         reasonId: "",
+                        refundAmount: "",
                         customerNotes: "",
                         adminNotes: "",
                         responsibleParty: "OTHER",

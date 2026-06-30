@@ -146,36 +146,56 @@ exports.deleteReturnReason = async (req, res) => {
 // Return Requests
 exports.getReturnRequests = async (req, res) => {
     try {
-        const { status, orderId, customerId } = req.query;
+        const { status, orderId, customerId, isReviewed, search, page: pageStr, limit: limitStr } = req.query;
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
         const where = { companyId: effectiveCompanyId };
 
         if (status) where.status = status;
         if (orderId) where.orderId = orderId;
         if (customerId) where.customerId = customerId;
+        if (isReviewed !== undefined) where.isReviewed = isReviewed === 'true';
 
-        const requests = await getPrisma().returnRequest.findMany({
-            where,
-            include: {
-                customer: {
-                    select: { firstName: true, lastName: true, email: true, phone: true, customerRating: true, successScore: true }
+        if (search) {
+            const orders = await getPrisma().order.findMany({
+                where: {
+                    companyId: effectiveCompanyId,
+                    orderNumber: { contains: search }
                 },
-                order: {
-                    select: { orderNumber: true, total: true, currency: true }
-                },
-                returnReason: {
-                    include: {
-                        returnReasonCategory: true
+                select: { id: true }
+            });
+            where.orderId = { in: orders.map(o => o.id) };
+        }
+
+        const page = Math.max(1, parseInt(pageStr) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(limitStr) || 20));
+        const skip = (page - 1) * limit;
+
+        const [requests, total] = await Promise.all([
+            getPrisma().returnRequest.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    customer: {
+                        select: { firstName: true, lastName: true, email: true, phone: true, customerRating: true, successScore: true }
+                    },
+                    order: {
+                        select: { orderNumber: true, total: true, currency: true }
+                    },
+                    returnReason: {
+                        include: {
+                            returnReasonCategory: true
+                        }
+                    },
+                    assignedUser: {
+                        select: { firstName: true, lastName: true }
                     }
                 },
-                assignedUser: {
-                    select: { firstName: true, lastName: true }
-                }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
+                orderBy: { createdAt: 'desc' }
+            }),
+            getPrisma().returnRequest.count({ where })
+        ]);
 
-        // Map back to names expected by frontend
         const mappedRequests = requests.map(r => ({
             ...r,
             reason: r.returnReason ? {
@@ -184,7 +204,13 @@ exports.getReturnRequests = async (req, res) => {
             } : null
         }));
 
-        res.json(mappedRequests);
+        res.json({
+            data: mappedRequests,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        });
     } catch (error) {
         console.error('❌ [GET_REQUESTS] ERROR:', error.message);
         console.error(error.stack);
