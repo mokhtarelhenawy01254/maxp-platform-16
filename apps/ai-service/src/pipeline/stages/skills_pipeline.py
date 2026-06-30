@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 from typing import Any
 
 import structlog
@@ -106,6 +107,19 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     return ctx
 
 
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+
+def _unwrap_llm_client(client):
+    if hasattr(client, '_llm_client'):
+        return client._llm_client
+    return client
+
+
 async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> ProviderResponse:
     """Make the primary LLM call with skills as available tools."""
     messages = [
@@ -120,7 +134,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     messages.append({"role": "user", "content": ctx.message})
 
     # Get or create LLM client from context
-    client = ctx.llm_client
+    client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
         # ponytail: uses first available provider — refine for multi-tenant routing
         from src.llm.model_manager import model_manager
@@ -151,7 +165,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
 async def _raw_llm_call(ctx: PipelineContext, messages: list[dict]) -> ProviderResponse:
     """Make a follow-up LLM call without tools (for final reply synthesis)."""
-    client = ctx.llm_client
+    client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
         from src.llm.model_manager import model_manager
         from src.llm.client import LLMClient
@@ -181,9 +195,11 @@ def _build_followup_messages(ctx: PipelineContext, first_response: ProviderRespo
     # Original user message
     messages.append({"role": "user", "content": ctx.message})
 
-    # Assistant response (may have had tool calls)
-    assistant_content = first_response.text or ""
-    messages.append({"role": "assistant", "content": assistant_content})
+    # Assistant response with tool_calls (required by DeepSeek API)
+    assistant_msg = {"role": "assistant", "content": first_response.text or ""}
+    if first_response.tool_calls:
+        assistant_msg["tool_calls"] = first_response.tool_calls
+    messages.append(assistant_msg)
 
     # Tool results
     for item in executed:
@@ -192,17 +208,25 @@ def _build_followup_messages(ctx: PipelineContext, first_response: ProviderRespo
         result = item.get("result", {})
         error = item.get("error", "")
 
+        # Find the actual tool_call_id from the first_response
+        tc_id = tool_name
+        if first_response.tool_calls:
+            for tc in first_response.tool_calls:
+                if tc.get("function", {}).get("name") == tool_name:
+                    tc_id = tc.get("id", tool_name)
+                    break
+
         if status == "success":
             messages.append({
                 "role": "tool",
-                "tool_call_id": tool_name,
-                "content": json.dumps(result, ensure_ascii=False),
+                "tool_call_id": tc_id,
+                "content": json.dumps(result, ensure_ascii=False, cls=DecimalEncoder),
             })
         else:
             messages.append({
                 "role": "tool",
-                "tool_call_id": tool_name,
-                "content": json.dumps({"error": error or "Execution failed"}, ensure_ascii=False),
+                "tool_call_id": tc_id,
+                "content": json.dumps({"error": error or "Execution failed"}, ensure_ascii=False, cls=DecimalEncoder),
             })
 
     return messages
