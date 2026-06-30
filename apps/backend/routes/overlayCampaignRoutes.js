@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const overlayCampaignController = require('../controller/overlayCampaignController');
-const verifyToken = require('../middleware/authMiddleware');
+const verifyToken = require('../utils/verifyToken');
 
 router.use(verifyToken.authenticateToken);
 
