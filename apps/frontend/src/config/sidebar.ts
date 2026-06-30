@@ -822,6 +822,7 @@ export const getSidebarConfig = (
                 { to: '/advertising/facebook-ads', icon: MegaphoneIcon, label: t('sidebar.facebookAds'), hidden: false },
                 { to: '/advertising/facebook-ads/decision-reports', icon: ChartBarIcon, label: t('sidebar.facebookAdsReports'), hidden: false },
                 { to: '/advertising/facebook-ads/ad-library', icon: MagnifyingGlassIcon, label: 'مكتبة الإعلانات' },
+                { to: '/advertising/facebook-ads/overlay-campaigns', icon: SparklesIcon, label: t('sidebar.overlayCampaigns') },
                 { to: '/advertising/product-landing-pages', icon: ComputerDesktopIcon, label: 'صفحات هبوط المنتجات' },
                 { to: '/advertising/facebook-ads/tests', icon: BeakerIcon, label: t('sidebar.abTests') },
                 { to: '/advertising/facebook-ads/audiences', icon: UserGroupIcon, label: t('sidebar.audiences') },
