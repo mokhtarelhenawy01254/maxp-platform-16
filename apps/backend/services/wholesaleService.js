@@ -126,12 +126,10 @@ const wholesaleService = {
     const balanceAfter = type === 'PAYMENT' || type === 'CREDIT_NOTE'
       ? Number(balanceBefore) - Number(amount)
       : Number(balanceBefore) + Number(amount);
-    const [tx] = await prisma.$transaction([
-      prisma.wholesaleTransaction.create({
-        data: { wholesaleCustomerId, companyId, type, amount, balanceBefore, balanceAfter, referenceType, referenceId, notes },
-      }),
-      prisma.wholesaleCustomer.update({ where: { id: wholesaleCustomerId }, data: { currentBalance: balanceAfter } }),
-    ]);
+    const tx = await prisma.wholesaleTransaction.create({
+      data: { wholesaleCustomerId, companyId, type, amount, balanceBefore, balanceAfter, referenceType, referenceId, notes },
+    });
+    await prisma.wholesaleCustomer.update({ where: { id: wholesaleCustomerId }, data: { currentBalance: balanceAfter } });
     return tx;
   },
 

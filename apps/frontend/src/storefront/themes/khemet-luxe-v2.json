@@ -48,7 +48,11 @@
   },
   "preview": {
     "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
-    "colors": ["151 34% 16%", "41 45% 63%", "24 31% 97%"]
+    "colors": [
+      "151 34% 16%",
+      "41 45% 63%",
+      "24 31% 97%"
+    ]
   },
   "header": {
     "variant": "floating-dark",
@@ -60,10 +64,22 @@
     "showAccount": true,
     "showOrderTracking": true,
     "navigation": [
-      { "label": "كل الأحذية", "to": "/shop" },
-      { "label": "الكوتشيات", "to": "/shop?category=sneakers" },
-      { "label": "الفلات", "to": "/shop?category=flats" },
-      { "label": "العروض", "to": "/sale" }
+      {
+        "label": "كل الأحذية",
+        "to": "/shop"
+      },
+      {
+        "label": "الكوتشيات",
+        "to": "/shop?category=sneakers"
+      },
+      {
+        "label": "الفلات",
+        "to": "/shop?category=flats"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
     ]
   },
   "footer": {
@@ -71,8 +87,16 @@
     "description": "أحذية حريمي مصنوعة بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلي القرار أسرع.",
     "copyrightText": "© 2026 KHEMET LUXE. CRAFTED IN EGYPT.",
     "contactRows": [
-      { "label": "واتساب", "value": "+20 100 000 0000", "href": "https://wa.me/201000000000" },
-      { "label": "البريد", "value": "hello@khemetluxe.com", "href": "mailto:hello@khemetluxe.com" }
+      {
+        "label": "واتساب",
+        "value": "+20 100 000 0000",
+        "href": "https://wa.me/201000000000"
+      },
+      {
+        "label": "البريد",
+        "value": "hello@khemetluxe.com",
+        "href": "mailto:hello@khemetluxe.com"
+      }
     ],
     "socialLinks": {
       "instagram": "https://instagram.com",
@@ -83,25 +107,55 @@
       {
         "title": "الدار",
         "links": [
-          { "label": "قصة الصناعة", "to": "/collections" },
-          { "label": "الشحن والتوصيل", "to": "/shipping" },
-          { "label": "دليل المقاسات", "to": "/size-guide" },
-          { "label": "العناية بالجلد", "to": "/collections" }
+          {
+            "label": "قصة الصناعة",
+            "to": "/collections"
+          },
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "العناية بالجلد",
+            "to": "/collections"
+          }
         ]
       },
       {
         "title": "التسوق",
         "links": [
-          { "label": "كل الأحذية", "to": "/shop" },
-          { "label": "العروض الحصرية", "to": "/sale" },
-          { "label": "المجموعات", "to": "/collections" },
-          { "label": "الأكثر مبيعًا", "to": "/shop?sortBy=bestSelling" }
+          {
+            "label": "كل الأحذية",
+            "to": "/shop"
+          },
+          {
+            "label": "العروض الحصرية",
+            "to": "/sale"
+          },
+          {
+            "label": "المجموعات",
+            "to": "/collections"
+          },
+          {
+            "label": "الأكثر مبيعًا",
+            "to": "/shop?sortBy=bestSelling"
+          }
         ]
       }
     ],
     "legalLinks": [
-      { "label": "الخصوصية", "to": "/privacy" },
-      { "label": "الشروط والأحكام", "to": "/terms" }
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
     ]
   },
   "pages": {
@@ -131,9 +185,18 @@
             "backgroundImage": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=85&w=1920",
             "backgroundVideo": "https://cdn.coverr.co/videos/coverr-a-woman-trying-on-shoes-in-a-boutique-2586/1080p.mp4",
             "highlights": [
-              { "label": "شحن", "value": "داخل مصر خلال 48 ساعة" },
-              { "label": "خامة", "value": "جلد طبيعي 100%" },
-              { "label": "إصدار", "value": "كبسولات محدودة كل شهر" }
+              {
+                "label": "شحن",
+                "value": "داخل مصر خلال 48 ساعة"
+              },
+              {
+                "label": "خامة",
+                "value": "جلد طبيعي 100%"
+              },
+              {
+                "label": "إصدار",
+                "value": "كبسولات محدودة كل شهر"
+              }
             ],
             "panelTitle": "دار أحذية حريمي بطابع تحريري",
             "panelSubtitle": "اختيارات أقل، صور أقوى، وحسم أسرع من أول نظرة.",
@@ -211,10 +274,30 @@
             "title": "التفاصيل اللي بتفرق على المدى",
             "subtitle": "أربعة عناصر نركّز عليهم في كل موديل لأنهم بيحددوا العمر والراحة والحضور.",
             "items": [
-              { "icon": "layers", "label": "الجلد", "title": "جلد طبيعي مختار", "description": "ننتقي جلود مدبوغة بعناية تتحمل الاستخدام اليومي وتكسب لمعان مع الوقت." },
-              { "icon": "scissors", "label": "الحياكة", "title": "خياطة يدوية دقيقة", "description": "غرز محسوبة تمنع التفكك وتحافظ على تماسك الحذاء تحت الضغط." },
-              { "icon": "wind", "label": "التهوية", "title": "بطانة تتنفس", "description": "بطانة داخلية تسمح بمرور الهواء وتقلل التعرق خلال النهار الطويل." },
-              { "icon": "feather", "label": "الوزن", "title": "خفافة محسوبة", "description": "نوزّن الوزن بين المتانة والراحة عشان خطوتك تبقى أخف من أول لبسة." }
+              {
+                "icon": "layers",
+                "label": "الجلد",
+                "title": "جلد طبيعي مختار",
+                "description": "ننتقي جلود مدبوغة بعناية تتحمل الاستخدام اليومي وتكسب لمعان مع الوقت."
+              },
+              {
+                "icon": "scissors",
+                "label": "الحياكة",
+                "title": "خياطة يدوية دقيقة",
+                "description": "غرز محسوبة تمنع التفكك وتحافظ على تماسك الحذاء تحت الضغط."
+              },
+              {
+                "icon": "wind",
+                "label": "التهوية",
+                "title": "بطانة تتنفس",
+                "description": "بطانة داخلية تسمح بمرور الهواء وتقلل التعرق خلال النهار الطويل."
+              },
+              {
+                "icon": "feather",
+                "label": "الوزن",
+                "title": "خفافة محسوبة",
+                "description": "نوزّن الوزن بين المتانة والراحة عشان خطوتك تبقى أخف من أول لبسة."
+              }
             ]
           }
         },
@@ -283,9 +366,24 @@
             "badge": "جورنال الدار",
             "title": "قراءات تخدم قرارك قبل الشراء",
             "articles": [
-              { "title": "العناية بالجلد الطبيعي", "excerpt": "خمس خطوات تحافظ على لمعان الحذاء لسنوات.", "link": "/collections", "tag": "عناية" },
-              { "title": "كيف تختارين مقاسك بثقة", "excerpt": "دليل سريع لقياس القدم وتجنب الاستبدال.", "link": "/size-guide", "tag": "مقاسات" },
-              { "title": "قصة حرفة القاهرة", "excerpt": "من ورش الجلد في مصر القديمة لورش الكبسولات المعاصرة.", "link": "/collections", "tag": "حرفة" }
+              {
+                "title": "العناية بالجلد الطبيعي",
+                "excerpt": "خمس خطوات تحافظ على لمعان الحذاء لسنوات.",
+                "link": "/collections",
+                "tag": "عناية"
+              },
+              {
+                "title": "كيف تختارين مقاسك بثقة",
+                "excerpt": "دليل سريع لقياس القدم وتجنب الاستبدال.",
+                "link": "/size-guide",
+                "tag": "مقاسات"
+              },
+              {
+                "title": "قصة حرفة القاهرة",
+                "excerpt": "من ورش الجلد في مصر القديمة لورش الكبسولات المعاصرة.",
+                "link": "/collections",
+                "tag": "حرفة"
+              }
             ]
           }
         },
@@ -512,6 +610,16 @@
             "subtitle": "ستايلات قريبة في نفس الروح والخامة لو حابة تقارني بسرعة.",
             "limit": 6
           }
+        },
+        {
+          "type": "shoe-fit-finder",
+          "settings": {
+            "badge": "مش عارفة مقاسك؟",
+            "title": "وظبطي حذائك على مقاس يومك",
+            "subtitle": "اختاري إنتِ فين النهاردة، ونرشحلك الموديل الأنسب ليكِ — شغل، مشاوير، رياضة، أو مناسبة.",
+            "primaryCtaText": "ابدئي الاختبار",
+            "primaryCtaLink": "/shop"
+          }
         }
       ],
       "pageGoal": "conversion",
@@ -597,7 +705,10 @@
             "processingText": "جارٍ المعالجة...",
             "shippingPromptText": "اختاري المحافظة لحساب تكلفة الشحن.",
             "enterGovernorateText": "اختاري المحافظة",
-            "enabledMethods": ["cod", "card"],
+            "enabledMethods": [
+              "cod",
+              "card"
+            ],
             "codLabel": "الدفع عند الاستلام",
             "codDesc": "ادفعي نقدًا عند وصول طلبك",
             "cardLabel": "بطاقة الائتمان",

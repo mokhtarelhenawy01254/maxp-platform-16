@@ -78,7 +78,7 @@ const wholesaleController = {
   // Price List Assignment
   async assignPriceList(req, res) {
     try {
-      const data = await wholesaleService.assignPriceListToCustomer(req.body.customerId, req.body.priceListId, req.user.companyId);
+      const data = await wholesaleService.assignPriceListToCustomer(req.params.customerId || req.body.customerId, req.body.priceListId, req.user.companyId);
       res.json({ success: true, data });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   },

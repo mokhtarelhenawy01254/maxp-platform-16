@@ -421,7 +421,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "shoe-fit-finder": {
     label: "مساعد اختيار الحذاء",
     component: "shoe-fit-finder",
-    pages: ["home"],
+    pages: ["home", "pdp"],
     fields: [
       { key: "badge", label: "شارة القسم", type: "text", placeholder: "اختيار أسرع" },
       { key: "title", label: "عنوان القسم", type: "text", placeholder: "اختاري الحذاء حسب يومك" },
