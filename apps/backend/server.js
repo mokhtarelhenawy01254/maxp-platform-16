@@ -452,7 +452,7 @@ const captureRawJsonBody = (req, res, buf, encoding) => {
 };
 
 // Body Parsers & Security
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "15mb", verify: captureRawJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
