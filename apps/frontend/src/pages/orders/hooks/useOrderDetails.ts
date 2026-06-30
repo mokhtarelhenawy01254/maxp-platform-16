@@ -143,6 +143,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       { code: "REFUNDED", name: "مسترد", color: "#6B7280" },
       { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً", color: "#9CA3AF" },
       { code: "RETURNED", name: "مرتجع", color: "#DC2626" },
+      { code: "PARTIALLY_RETURNED", name: "مرتجع جزئي", color: "#F87171" },
       { code: "EXCHANGED", name: "استبدال", color: "#7C3AED" },
     ];
 
