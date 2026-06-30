@@ -5,78 +5,75 @@
 }
 
 /* ───────────────────────────────────────────────────────────────
-   Mobile De-boxing — KHEMET LUXE v2 (2026)
-   Remove card-in-card visual noise on <768px.
+   De-boxing — KHEMET LUXE v2 (2026)
+   Remove card-in-card visual noise at any screen width.
    Sections become edge-to-edge, content breathes without borders.
-   Desktop (≥768px) is untouched — each section keeps its own styling.
    ─────────────────────────────────────────────────────────────── */
 
-@media (max-width: 767px) {
-  /* 1. Page composer: kill vertical padding, let sections flow */
-  .storefront-page-composer {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  .storefront-page-composer.container {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
+/* 1. Page composer: kill vertical padding, let sections flow */
+.storefront-page-composer {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.storefront-page-composer.container {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
 
-  /* 2. Section wrappers: remove outer padding, full-bleed */
-  .storefront-page-composer > section,
-  .storefront-page-composer > div > section,
-  .storefront-page-composer > [class*="px-4"],
-  .storefront-page-composer > [class*="px-6"] {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
+/* 2. Section wrappers: remove outer padding, full-bleed */
+.storefront-page-composer > section,
+.storefront-page-composer > div > section,
+.storefront-page-composer > [class*="px-4"],
+.storefront-page-composer > [class*="px-6"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
 
-  /* 3. Inner cards: strip border + shadow + radius on mobile.
-     Target the common card patterns used across sections. */
-  .storefront-page-composer [class*="rounded-"]:not([class*="rounded-full"]):not([class*="rounded-\[999"]):not(input):not(button):not([role="button"]) {
-    border-radius: 0 !important;
-  }
-  .storefront-page-composer [class*="shadow-"]:not([class*="shadow-none"]):not(button):not([role="button"]):not([class*="fixed"]) {
-    box-shadow: none !important;
-  }
-  .storefront-page-composer [class*="border"]:not([class*="border-transparent"]):not(button):not([role="button"]):not(input):not([class*="fixed"]):not([class*="sticky"]) {
-    border-color: transparent !important;
-  }
+/* 3. Inner cards: strip border + shadow + radius.
+   Target the common card patterns used across sections. */
+.storefront-page-composer [class*="rounded-"]:not([class*="rounded-full"]):not([class*="rounded-\[999"]):not(input):not(button):not([role="button"]) {
+  border-radius: 0 !important;
+}
+.storefront-page-composer [class*="shadow-"]:not([class*="shadow-none"]):not(button):not([role="button"]):not([class*="fixed"]) {
+  box-shadow: none !important;
+}
+.storefront-page-composer [class*="border"]:not([class*="border-transparent"]):not(button):not([role="button"]):not(input):not([class*="fixed"]):not([class*="sticky"]) {
+  border-color: transparent !important;
+}
 
-  /* 4. Restore horizontal padding for TEXT content (so text doesn't hit edges).
-     Images and media stay full-bleed. */
-  .storefront-page-composer section [class*="container"],
-  .storefront-page-composer section .max-w- {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-  }
+/* 4. Restore horizontal padding for TEXT content (so text doesn't hit edges).
+   Images and media stay full-bleed. */
+.storefront-page-composer section [class*="container"],
+.storefront-page-composer section .max-w- {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
 
-  /* 5. Reduce vertical gaps between sections */
-  .storefront-page-composer > * + * {
-    margin-top: 1.75rem !important;
-  }
+/* 5. Reduce vertical gaps between sections */
+.storefront-page-composer > * + * {
+  margin-top: 1.75rem !important;
+}
 
-  /* 6. Product cards: edge-to-edge image, no card chrome */
-  .storefront-page-composer [class*="group"] [class*="rounded-"][class*="overflow-hidden"] {
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
+/* 6. Product cards: edge-to-edge image, no card chrome */
+.storefront-page-composer [class*="group"] [class*="rounded-"][class*="overflow-hidden"] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
 
-  /* 7. Gallery on PDP: full-bleed on mobile */
-  .storefront-page-composer [class*="grid"] > [class*="rounded-"]:first-child img,
-  .storefront-page-composer section img[class*="w-full"] {
-    border-radius: 0 !important;
-  }
+/* 7. Gallery on PDP: full-bleed */
+.storefront-page-composer [class*="grid"] > [class*="rounded-"]:first-child img,
+.storefront-page-composer section img[class*="w-full"] {
+  border-radius: 0 !important;
+}
 
-  /* 8. Conversion stack sections (sold-counter, viewer-counter, delivery-proof,
-     back-in-stock, pre-order): remove individual card wrappers, let them
-     stack as plain text lines */
-  .storefront-page-composer [class*="conversion"] [class*="rounded-"],
-  .storefront-page-composer [class*="conversion"] [class*="border-"] {
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding: 0.5rem 1rem !important;
-  }
+/* 8. Conversion stack sections (sold-counter, viewer-counter, delivery-proof,
+   back-in-stock, pre-order): remove individual card wrappers, let them
+   stack as plain text lines */
+.storefront-page-composer [class*="conversion"] [class*="rounded-"],
+.storefront-page-composer [class*="conversion"] [class*="border-"] {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.5rem 1rem !important;
 }
