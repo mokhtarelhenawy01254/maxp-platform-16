@@ -50,6 +50,8 @@
   "actionsColumn": "Actions",
   "unassigned": "Unassigned",
   "unassign": "Unassign",
+  "confirmUnassignTitle": "Unassign Number",
+  "confirmUnassignDescription": "Are you sure you want to unassign {{number}}?",
   "noAssignments": "No matching records are available right now.",
   "availableNumbers": "Available numbers",
   "availableNumbersDescription": "Ready-to-use numbers that are not assigned to a moderator yet.",

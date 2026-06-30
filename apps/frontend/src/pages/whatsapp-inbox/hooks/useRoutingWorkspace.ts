@@ -94,9 +94,11 @@ export const useRoutingWorkspace = (): UseRoutingWorkspace => {
       setFeedback(null);
 
       try {
-        const response = await apiClient.get(
-          '/api/v1/admin/whatsapp-numbers/workspace',
-        );
+        const response = await apiClient.get<{
+          numbers?: WorkspaceNumber[];
+          moderators?: Employee[];
+          stats?: WorkspaceStats;
+        }>('/api/v1/admin/whatsapp-numbers/workspace');
 
         const nextNumbers: WorkspaceNumber[] = response.data?.numbers || [];
         const nextEmployees: Employee[] = response.data?.moderators || [];
@@ -133,7 +135,10 @@ export const useRoutingWorkspace = (): UseRoutingWorkspace => {
 
   const loadSettings = useCallback(async () => {
     try {
-      const response = await apiClient.get('/api/v1/inbox-settings');
+      const response = await apiClient.get<{
+        success?: boolean;
+        settings?: Partial<InboxSettings>;
+      }>('/api/v1/inbox-settings');
       if (response.data?.success && response.data.settings) {
         setSettings({ ...DEFAULT_SETTINGS, ...response.data.settings });
       }
@@ -311,22 +316,22 @@ export const useRoutingWorkspace = (): UseRoutingWorkspace => {
       setFeedback(null);
 
       try {
-        const response = await apiClient.put(
-          '/api/v1/inbox-settings',
-          nextSettings,
-        );
-        if (response.data?.success) {
-          setSettings({ ...DEFAULT_SETTINGS, ...response.data.settings });
-          setFeedback({
-            type: 'success',
-            text: t('whatsappInbox.settingsSaved'),
-          });
-        }
-      } catch (error: unknown) {
-        const errorText =
-          (error as { response?: { data?: { error?: string } } })?.response
-            ?.data?.error || t('whatsappInbox.errorOccurred');
-        setFeedback({ type: 'error', text: errorText });
+      const response = await apiClient.put<{
+        success?: boolean;
+        settings?: Partial<InboxSettings>;
+      }>('/api/v1/inbox-settings', nextSettings);
+      if (response.data?.success) {
+        setSettings({ ...DEFAULT_SETTINGS, ...response.data.settings });
+        setFeedback({
+          type: 'success',
+          text: t('whatsappInbox.settingsSaved'),
+        });
+      }
+    } catch (error: unknown) {
+      const errorText =
+        (error as { response?: { data?: { error?: string } } })?.response
+          ?.data?.error || (t('whatsappInbox.errorOccurred') as string);
+      setFeedback({ type: 'error', text: errorText });
       } finally {
         setSettingsSaving(false);
       }

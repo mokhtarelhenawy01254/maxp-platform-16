@@ -382,9 +382,7 @@
           "settings": {
             "title": "كمّلي الإطلالة",
             "subtitle": "اضيفي جورب فاخر أو حامي جلد — ووفّري.",
-            "decisionMode": "primary",
-            "continueToFormLabel": "كمّلي البيانات",
-            "placement": "inline-buybox"
+            "continueToFormLabel": "كمّلي البيانات"
           }
         },
         {

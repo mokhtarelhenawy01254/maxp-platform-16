@@ -1149,3 +1149,38 @@ model ConversionEvent {
   @@index([productId, companyId])
   @@map("conversion_events")
 }
+
+/// حملة إضافة إطار (Overlay) على صور المنتجات لإعلانات الفيسبوك
+model OverlayCampaign {
+  id            String                  @id @default(cuid())
+  companyId     String
+  name          String
+  overlayImage  String                  @db.Text
+  status        String                  @default("DRAFT")
+  startAt       DateTime?
+  endAt         DateTime?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  company       Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products      OverlayCampaignProduct[]
+
+  @@index([companyId, status])
+  @@index([companyId, startAt, endAt])
+  @@map("overlay_campaigns")
+}
+
+/// منتجات حملة الإطار
+model OverlayCampaignProduct {
+  id          String           @id @default(cuid())
+  campaignId  String
+  productId   String
+  framedImage String?          @db.Text
+  createdAt   DateTime         @default(now())
+  campaign    OverlayCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, productId])
+  @@index([campaignId])
+  @@index([productId])
+  @@map("overlay_campaign_products")
+}

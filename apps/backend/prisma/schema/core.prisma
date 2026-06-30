@@ -276,7 +276,8 @@ model Company {
    wholesaleCustomers               WholesaleCustomer[]
    wholesaleTransactions            WholesaleTransaction[]
    wholesaleStatements              WholesaleStatement[]
-   wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
+    wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
+   overlayCampaigns                  OverlayCampaign[]
 
    @@index([businessSpecialtyId])
   @@map("companies")

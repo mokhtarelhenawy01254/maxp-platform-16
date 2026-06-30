@@ -62,6 +62,7 @@ const PUBLIC_STOREFRONT_SETTINGS_FIELDS = [
   'tiktokTrackAddToWishlist',
   'productPageShowCheckoutForm',
   'enabledPaymentMethods',
+  'hideUtilityBar',
   'createdAt',
   'updatedAt',
 ];

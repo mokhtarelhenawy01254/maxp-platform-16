@@ -48,7 +48,7 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
 
     const candidates = selectedEmployeeIds
       .map((id) => employeeLookup[id])
-      .filter(Boolean)
+      .filter((employee): employee is Employee => Boolean(employee))
       .filter((employee) => showInactive || employee.isActive !== false)
       .filter((employee) => employee.isActive);
 

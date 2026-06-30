@@ -223,6 +223,7 @@ const easyOrdersRoutes = require("./routes/easyOrdersRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const faqRoutes = require("./routes/faq");
 const facebookAdsRoutes = require("./routes/facebookAdsRoutes");
+const overlayCampaignRoutes = require("./routes/overlayCampaignRoutes");
 const facebookIntegrationRoutes = require("./routes/facebookIntegrationRoutes");
 const facebookOAuthRoutes = require("./routes/facebookOAuthRoutes");
 const footerSettingsRoutes = require("./routes/footerSettingsRoutes");
@@ -687,6 +688,7 @@ app.use("/api/v1/integrations", facebookIntegrationRoutes);
 app.use("/api/v1/facebook/oauth", facebookOAuthRoutes);
 app.use("/api/v1/facebook-oauth", facebookOAuthRoutes);
 app.use("/api/v1/admin/facebook-oauth", facebookOAuthRoutes);
+app.use("/api/v1/overlay-campaigns", overlayCampaignRoutes);
 app.use("/api/v1/google-sheets", googleSheetsRoutes);
 app.use("/api/v1/easy-orders", easyOrdersRoutes);
 app.use("/api/v1/proxy-image", proxyRoutes);
@@ -980,6 +982,14 @@ try {
   console.log("✅ [ORDER-CONFIRMATION-CRON] Order confirmation scheduler started (runs every 5 min)");
 } catch (error) {
   console.error("❌ [ORDER-CONFIRMATION-CRON] Failed to start order confirmation scheduler:", error);
+}
+
+// Start Overlay Campaign cron (expiry check)
+try {
+  const { start: startOverlayCron } = require("./cron/overlayCampaignCron");
+  startOverlayCron();
+} catch (error) {
+  console.error("❌ [OVERLAY-CRON] Failed to start:", error);
 }
 
 // Start Scheduled order auto-transition cron

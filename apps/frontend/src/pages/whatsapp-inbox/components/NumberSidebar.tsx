@@ -72,7 +72,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('whatsappInbox.searchNumbers')}
+              placeholder={t('whatsappInbox.searchNumbers') as string}
               className="w-full rounded-lg border border-border/50 bg-card py-2 text-sm text-foreground outline-none focus:border-ring ltr:pl-9 rtl:pr-9"
             />
           </div>

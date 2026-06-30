@@ -605,6 +605,8 @@ model StorefrontSettings {
   mobileBottomNavbarShowSearch     Boolean               @default(false)
   mobileBottomNavbarShowShop       Boolean               @default(true)
   mobileBottomNavbarShowWishlist   Boolean               @default(true)
+  // Utility Bar Settings
+  hideUtilityBar                    Boolean               @default(false)
   // Google Tag Manager Settings
   gtmEnabled                      Boolean               @default(false)
   gtmContainerId                  String?

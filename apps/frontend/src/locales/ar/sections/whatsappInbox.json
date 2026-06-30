@@ -50,6 +50,8 @@
   "actionsColumn": "الإجراءات",
   "unassigned": "غير مسند",
   "unassign": "إلغاء الإسناد",
+  "confirmUnassignTitle": "إلغاء إسناد الرقم",
+  "confirmUnassignDescription": "هل أنت متأكد من إلغاء إسناد الرقم {{number}}؟",
   "noAssignments": "لا توجد بيانات مطابقة حاليًا.",
   "availableNumbers": "الأرقام المتاحة للإسناد",
   "availableNumbersDescription": "الأرقام الجاهزة التي لم تُسند بعد إلى أي مشرف.",

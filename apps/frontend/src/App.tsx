@@ -439,6 +439,12 @@ const CreateCatalog = React.lazy(
 const CreateDynamicAd = React.lazy(
   () => import("./pages/advertising/CreateDynamicAd"),
 );
+const OverlayCampaigns = React.lazy(
+  () => import("./pages/advertising/OverlayCampaigns"),
+);
+const OverlayCampaignDetails = React.lazy(
+  () => import("./pages/advertising/OverlayCampaignDetails"),
+);
 const ABTestsManagement = React.lazy(
   () => import("./pages/advertising/ABTestsManagement"),
 );
@@ -2830,6 +2836,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CreateCatalog />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/overlay-campaigns"
+                  element={
+                    <Layout>
+                      <OverlayCampaigns />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/overlay-campaigns/:id"
+                  element={
+                    <Layout>
+                      <OverlayCampaignDetails />
                     </Layout>
                   }
                 />

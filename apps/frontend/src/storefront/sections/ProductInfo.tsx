@@ -1041,8 +1041,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     );
   });
   const isKhemetLuxeTheme = isKhemetLuxeThemeId(theme.id);
+  const isKhemetLuxeV2Theme = theme.id === 'khemet-luxe-v2';
   const isKhemetInlineQuickOrderBuybox =
-    isKhemetLuxeTheme && variant === 'elessi-care-buybox';
+    isKhemetLuxeTheme && variant === 'elessi-care-buybox' && !isKhemetLuxeV2Theme;
   const khemetInlineQuickOrderFallbackSettings =
     isKhemetInlineQuickOrderBuybox
       ? {
@@ -1414,7 +1415,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     };
   }, [checkoutPath, handleBuyNow, id, product]);
 
-  const shouldTrackStickyBuybox = variant === 'atelier-buybox' || !productPageCheckoutEnabled;
+  const shouldTrackStickyBuybox = variant === 'atelier-buybox' || variant === 'elessi-care-buybox' || !productPageCheckoutEnabled;
 
   useEffect(() => {
     if (!shouldTrackStickyBuybox) {
@@ -3847,7 +3848,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       });
     });
   }
-  async function handleShareAction(action: 'facebook' | 'twitter' | 'copy') {
+  async function handleShareAction(action: 'facebook' | 'twitter' | 'copy' | 'whatsapp') {
     if (typeof window === 'undefined') {
       return;
     }
@@ -3893,7 +3894,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     const shareTarget =
       action === 'facebook'
         ? `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`
-        : `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
+        : action === 'whatsapp'
+          ? `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`
+          : `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
 
     window.open(shareTarget, '_blank', 'noopener,noreferrer');
   }
@@ -4336,6 +4339,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         </span>
         <div className="flex items-center gap-2">
           {[
+            {
+              id: 'whatsapp' as const,
+              label: prefersArabicCopy ? 'مشاركة على واتساب' : 'Share on WhatsApp',
+              icon: MessageCircle,
+            },
             {
               id: 'facebook' as const,
               label: prefersArabicCopy ? 'مشاركة على فيسبوك' : 'Share on Facebook',
@@ -6994,18 +7002,21 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     ) : null;
     const elessiPersonalizationPanel =
       personalizationEnabled && personalizationFields.length > 0 ? (
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <span className="mt-1 inline-flex h-5 w-5 shrink-0 rounded-full border border-[#ead8ca] bg-white" />
-            <div className="space-y-1">
-              <p className="text-sm font-black text-[#2d211e]">{personalizationTitle}</p>
-              {personalizationSubtitle ? (
-                <p className="text-sm leading-6 text-[#6f5a54]">{personalizationSubtitle}</p>
-              ) : null}
+        <details className="group space-y-0 rounded-[0.6rem] border border-[#ead8ca] bg-white/60 overflow-hidden">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 select-none">
+            <div className="flex items-start gap-3">
+              <span className="mt-1 inline-flex h-5 w-5 shrink-0 rounded-full border border-[#ead8ca] bg-white group-open:bg-[#8f5c44] group-open:border-[#8f5c44] transition-colors" />
+              <div className="space-y-1">
+                <p className="text-sm font-black text-[#2d211e]">{personalizationTitle}</p>
+                {personalizationSubtitle ? (
+                  <p className="text-sm leading-6 text-[#6f5a54]">{personalizationSubtitle}</p>
+                ) : null}
+              </div>
             </div>
-          </div>
+            <svg className="h-4 w-4 shrink-0 text-[#8f5c44] transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </summary>
 
-          <div className="grid gap-3 sm:grid-cols-2 sm:ps-8">
+          <div className="grid gap-3 border-t border-[#efe0d4] p-4 sm:grid-cols-2">
             {personalizationFields.map((field) => (
               <label key={`elessi-personalization-${field.key}`} className="grid gap-1.5">
                 <span className="text-xs font-black uppercase tracking-[0.12em] text-[#8f5c44]">
@@ -7040,7 +7051,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               />
             </label>
           </div>
-        </div>
+        </details>
       ) : null;
     const hasElessiLowerDetails =
       Boolean(safeDescription) ||
@@ -7197,7 +7208,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                   onClick={() => handleQuickScroll(STOREFRONT_REVIEWS_SECTION_ID, 'start')}
                   className="inline-flex items-center justify-center rounded-full border border-[#ead8ca] bg-white px-4 py-2 text-xs font-black text-[#2d211e] transition-colors hover:border-[#d3b8a9] hover:bg-[#fff8f2]"
                 >
-                  {commonReviewCount > 0 ? `${reviewsTabLabel} (${commonReviewCount})` : reviewsTabLabel}
+                  {reviewsTabLabel}
                 </button>
                 <button
                   type="button"

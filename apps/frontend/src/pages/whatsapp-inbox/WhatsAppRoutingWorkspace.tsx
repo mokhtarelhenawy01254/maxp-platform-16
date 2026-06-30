@@ -1,5 +1,4 @@
 import React, { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Settings as SettingsIcon } from 'lucide-react';
 import { useRoutingWorkspace } from './hooks/useRoutingWorkspace';
@@ -14,7 +13,6 @@ import UnassignDialog from './components/UnassignDialog';
 const WhatsAppRoutingWorkspace: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === 'rtl';
-  const navigate = useNavigate();
 
   const {
     numbers,

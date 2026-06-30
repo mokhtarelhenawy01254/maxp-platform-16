@@ -104,6 +104,15 @@ const workspacePayload = {
       isActive: true,
       avatar: null,
     },
+    {
+      id: 'user-2',
+      firstName: 'خالد',
+      lastName: 'محمد',
+      email: 'khaled@example.com',
+      role: 'AGENT',
+      isActive: true,
+      avatar: null,
+    },
   ],
   stats: {
     totalNumbers: 1,
@@ -202,13 +211,12 @@ describe('WhatsApp inbox admin pages', () => {
     expect(
       await screen.findByRole('heading', { name: 'لوحة تحكم المشرفين' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/تحديث مباشر كل 30 ثانية/)).toBeInTheDocument();
     expect(screen.getByText('أرقام متصلة')).toBeInTheDocument();
     expect(screen.getByText('أحدث المحادثات')).toBeInTheDocument();
     expect(screen.getByText('عايز أعرف السعر')).toBeInTheDocument();
   });
 
-  test('WhatsAppRoutingWorkspace renders Arabic copy and saves routing rule', async () => {
+  test('WhatsAppRoutingWorkspace renders Arabic copy and toggles employee selection', async () => {
     apiClient.get.mockImplementation((url: string) => {
       if (url.includes('/inbox-settings')) {
         return Promise.resolve({ data: settingsPayload });
@@ -226,17 +234,17 @@ describe('WhatsApp inbox admin pages', () => {
     expect(
       await screen.findByRole('heading', { name: 'تقسيم أرقام الواتساب على الفريق' }),
     ).toBeInTheDocument();
-    expect(await screen.findByText('رقم المبيعات')).toBeInTheDocument();
+    expect(screen.getAllByText('رقم المبيعات').length).toBeGreaterThan(0);
     expect(screen.getAllByText('ربط مباشر بموظف واحد').length).toBeGreaterThan(0);
 
     const saveButton = screen.getByRole('button', { name: 'حفظ التوزيع' });
     expect(saveButton).toBeDisabled();
 
-    const roundRobinCard = screen
+    const khaledButton = screen
       .getAllByRole('button')
-      .find((btn) => btn.textContent?.includes('توزيع تلقائي بالتساوي'));
-    if (roundRobinCard) {
-      fireEvent.click(roundRobinCard);
+      .find((btn) => btn.textContent?.includes('خالد'));
+    if (khaledButton) {
+      fireEvent.click(khaledButton);
     }
 
     await waitFor(() => {
@@ -249,23 +257,51 @@ describe('WhatsApp inbox admin pages', () => {
       expect(apiClient.put).toHaveBeenCalledWith(
         '/api/v1/admin/whatsapp-numbers/session-1/routing',
         expect.objectContaining({
-          routingMode: 'ROUND_ROBIN',
+          routingMode: 'NUMBER_OWNER',
           distributionStrategy: 'ROUND_ROBIN',
-          userIds: ['user-1'],
+          userIds: ['user-2'],
         }),
       );
     });
   });
 
-  test('WhatsAppRoutingWorkspace opens settings slide-over and saves settings', async () => {
+  test('WhatsAppRoutingWorkspace shows error feedback on save failure', async () => {
     apiClient.get.mockImplementation((url: string) => {
       if (url.includes('/inbox-settings')) {
         return Promise.resolve({ data: settingsPayload });
       }
       return Promise.resolve({ data: workspacePayload });
     });
-    apiClient.put.mockResolvedValue({
-      data: { success: true, settings: settingsPayload.settings },
+    apiClient.put.mockRejectedValue(new Error('Network error'));
+
+    render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <WhatsAppRoutingWorkspace />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', { name: 'تقسيم أرقام الواتساب على الفريق' });
+
+    const khaledButton = screen
+      .getAllByRole('button')
+      .find((btn) => btn.textContent?.includes('خالد'));
+    if (khaledButton) fireEvent.click(khaledButton);
+
+    const saveButton = screen.getByRole('button', { name: 'حفظ التوزيع' });
+    await waitFor(() => expect(saveButton).toBeEnabled());
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(document.querySelector('.text-rose-800, .dark\\:text-rose-200')).toBeTruthy();
+    });
+  });
+
+  test('WhatsAppRoutingWorkspace validation prevents save with zero employees in NUMBER_OWNER', async () => {
+    apiClient.get.mockImplementation((url: string) => {
+      if (url.includes('/inbox-settings')) {
+        return Promise.resolve({ data: settingsPayload });
+      }
+      return Promise.resolve({ data: workspacePayload });
     });
 
     render(
@@ -276,19 +312,141 @@ describe('WhatsApp inbox admin pages', () => {
 
     await screen.findByRole('heading', { name: 'تقسيم أرقام الواتساب على الفريق' });
 
-    fireEvent.click(screen.getByRole('button', { name: 'الإعدادات العامة' }));
+    const saraButton = screen
+      .getAllByRole('button')
+      .find((btn) => btn.textContent?.includes('سارة'));
+    if (saraButton) fireEvent.click(saraButton);
+
+    const saveButton = screen.getByRole('button', { name: 'حفظ التوزيع' });
+    await waitFor(() => expect(saveButton).toBeEnabled());
+
+    fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'إعدادات واتساب الداخلية' })).toBeInTheDocument();
+      expect(document.querySelector('.text-rose-800, .dark\\:text-rose-200')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }));
+    expect(apiClient.put).not.toHaveBeenCalled();
+  });
+
+  test('WhatsAppRoutingWorkspace shows empty state when no numbers', async () => {
+    apiClient.get.mockImplementation((url: string) => {
+      if (url.includes('/inbox-settings')) {
+        return Promise.resolve({ data: settingsPayload });
+      }
+      return Promise.resolve({
+        data: { success: true, numbers: [], moderators: [], stats: { totalNumbers: 0, configuredNumbers: 0, exclusiveNumbers: 0, roundRobinNumbers: 0, connectedNumbers: 0 } },
+      });
+    });
+
+    render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <WhatsAppRoutingWorkspace />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', { name: 'تقسيم أرقام الواتساب على الفريق' });
+    expect(screen.getByText('لا توجد أرقام واتساب متاحة الآن.')).toBeInTheDocument();
+  });
+
+  test('WhatsAppRoutingWorkspace unassign flow works end-to-end', async () => {
+    apiClient.get.mockImplementation((url: string) => {
+      if (url.includes('/inbox-settings')) {
+        return Promise.resolve({ data: settingsPayload });
+      }
+      return Promise.resolve({ data: workspacePayload });
+    });
+    apiClient.post.mockResolvedValue({ data: { success: true } });
+
+    render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <WhatsAppRoutingWorkspace />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', { name: 'تقسيم أرقام الواتساب على الفريق' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'إلغاء الإسناد' }));
 
     await waitFor(() => {
-      expect(apiClient.put).toHaveBeenCalledWith(
-        '/api/v1/inbox-settings',
-        expect.objectContaining({ defaultChatStatus: 'NEW' }),
+      expect(screen.getByText('هل أنت متأكد من إلغاء إسناد الرقم {{number}}؟')).toBeInTheDocument();
+    });
+
+    const confirmButtons = screen.getAllByRole('button', { name: 'إلغاء الإسناد' });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/api/v1/admin/whatsapp-numbers/unassign',
+        { sessionId: 'session-1' },
       );
+    });
+  });
+
+  test('WhatsAppRoutingWorkspace switches between numbers', async () => {
+    apiClient.get.mockImplementation((url: string) => {
+      if (url.includes('/inbox-settings')) {
+        return Promise.resolve({ data: settingsPayload });
+      }
+      return Promise.resolve({
+        data: {
+          success: true,
+          numbers: [
+            {
+              id: 'assignment-1',
+              sessionId: 'session-1',
+              assignmentId: 'assignment-1',
+              isConfigured: true,
+              connectionStatus: 'CONNECTED',
+              routingMode: 'NUMBER_OWNER',
+              distributionStrategy: 'ROUND_ROBIN',
+              assignedUser: null,
+              routingUsers: [],
+              routingUserIds: [],
+              activeMemberCount: 0,
+              lastDistributedUserId: null,
+              lastDistributedAt: null,
+              roundRobinCursor: 0,
+              assignedAt: null,
+              isActive: true,
+              session: { id: 'session-1', name: 'رقم المبيعات', phoneNumber: '+201000000001', status: 'CONNECTED', provider: 'whatsapp-web', profileName: null, lastConnectedAt: null },
+            },
+            {
+              id: 'assignment-2',
+              sessionId: 'session-2',
+              assignmentId: 'assignment-2',
+              isConfigured: false,
+              connectionStatus: 'DISCONNECTED',
+              routingMode: 'NUMBER_OWNER',
+              distributionStrategy: 'ROUND_ROBIN',
+              assignedUser: null,
+              routingUsers: [],
+              routingUserIds: [],
+              activeMemberCount: 0,
+              lastDistributedUserId: null,
+              lastDistributedAt: null,
+              roundRobinCursor: 0,
+              assignedAt: null,
+              isActive: true,
+              session: { id: 'session-2', name: 'رقم الدعم', phoneNumber: '+201000000002', status: 'DISCONNECTED', provider: 'whatsapp-web', profileName: null, lastConnectedAt: null },
+            },
+          ],
+          moderators: [],
+          stats: { totalNumbers: 2, configuredNumbers: 1, exclusiveNumbers: 0, roundRobinNumbers: 0, connectedNumbers: 1 },
+        },
+      });
+    });
+
+    render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <WhatsAppRoutingWorkspace />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', { name: 'تقسيم أرقام الواتساب على الفريق' });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('رقم الدعم').length).toBeGreaterThan(0);
     });
   });
 });

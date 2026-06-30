@@ -66,7 +66,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('whatsappInbox.searchEmployees')}
+              placeholder={t('whatsappInbox.searchEmployees') as string}
               className="w-full rounded-lg border border-border/50 bg-card py-1.5 text-sm text-foreground outline-none focus:border-ring ltr:pl-9 rtl:pr-9"
             />
           </div>

@@ -376,6 +376,7 @@ model Product {
   whatsapp_notification_logs WhatsAppNotificationLog[]
   wholesalePriceListItems    WholesalePriceListItem[]
   wishlists                  Wishlist[]
+  overlayCampaignProducts    OverlayCampaignProduct[]
 
   showFakeStock              Boolean                   @default(false)
   
