@@ -22,8 +22,9 @@ class OrderRepository(BaseRepository):
             WHERE o."companyId" = :cid AND o."orderNumber" = :onum
             LIMIT 1
         """)
-        row = await self._session.execute(sql, {"cid": company_id, "onum": order_number})
-        return dict(row._mapping) if row.first() else None
+        result = await self._session.execute(sql, {"cid": company_id, "onum": order_number})
+        row = result.first()
+        return dict(row._mapping) if row else None
 
     async def get_order_items(self, order_id: str) -> list[dict[str, Any]]:
         sql = text("""
