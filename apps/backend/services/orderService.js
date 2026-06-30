@@ -1384,7 +1384,8 @@ class OrderService {
           status: 'PENDING',
           adminNotes: `تم إنشاء هذا الطلب تلقائياً عند تغيير حالة الطلب الأصلي إلى: ${status}`,
           responsibleParty: 'OTHER',
-          isReviewed: false
+          isReviewed: false,
+          refundAmount: order.total ? parseFloat(order.total) : undefined,
         }
       });
 

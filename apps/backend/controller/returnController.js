@@ -220,7 +220,7 @@ exports.getReturnRequests = async (req, res) => {
 
 exports.createReturnRequest = async (req, res) => {
     try {
-        const { orderId, orderNumber, orderItemId, customerId, reasonId, customerNotes, adminNotes, assignedTo, responsibleParty } = req.body;
+        const { orderId, orderNumber, orderItemId, customerId, reasonId, customerNotes, adminNotes, assignedTo, responsibleParty, refundAmount } = req.body;
 
         // Find order by orderNumber or orderId
         let order = null;
@@ -269,7 +269,8 @@ exports.createReturnRequest = async (req, res) => {
                 assignedTo,
                 responsibleParty: finalResponsibleParty || 'OTHER',
                 companyId: req.user.effectiveCompanyId || req.user.companyId,
-                status: 'PENDING'
+                status: 'PENDING',
+                refundAmount: refundAmount ? parseFloat(refundAmount) : undefined,
             }
         });
 

@@ -715,6 +715,17 @@ router.patch('/:id/status', async (req, res) => {
       }
     });
 
+    // 🔄 إنشاء طلب إرجاع تلقائياً إذا كانت الحالة الجديدة تشير إلى مرتجع
+    if (['REFUNDED', 'RETURNED', 'PARTIALLY_REFUNDED'].includes(status)) {
+      try {
+        const orderService = require('../services/orderService');
+        await orderService.autoCreateReturnRequest(updatedOrder, req.user?.id, status);
+        console.log(`✅ [RETURNS-AUTO] Return request created for order ${updatedOrder.orderNumber} via status change`);
+      } catch (returnError) {
+        console.error('❌ [RETURNS-AUTO] Failed to auto-create return request:', returnError.message);
+      }
+    }
+
     await enhancedOrderService.disconnect();
 
     res.json({

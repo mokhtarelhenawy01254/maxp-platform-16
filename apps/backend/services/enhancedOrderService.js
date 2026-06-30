@@ -348,6 +348,17 @@ class EnhancedOrderService {
         }
       }
 
+      // 🔄 إنشاء طلب إرجاع تلقائياً إذا كانت حالة الطلب تشير إلى مرتجع
+      if (!isDuplicate && ['REFUNDED', 'RETURNED', 'PARTIALLY_REFUNDED'].includes(order.status)) {
+        try {
+          const orderService = require('./orderService');
+          await orderService.autoCreateReturnRequest(order, data.createdBy, order.status);
+          console.log(`✅ [RETURNS-AUTO] Return request created for order ${order.orderNumber} during enhanced creation`);
+        } catch (returnError) {
+          console.error('❌ [RETURNS-AUTO] Failed to auto-create return request:', returnError.message);
+        }
+      }
+
       // تحويل الـ Decimal fields لـ numbers قبل الإرجاع
       const transformedOrder = this.transformOrderForResponse(order);
 
