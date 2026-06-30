@@ -53,7 +53,7 @@ async function generateFramedImage(originalUrl, overlayPath) {
 
   if (!fs.existsSync(originalPath)) return null;
 
-  ensureDir();
+  ensureDir(FRAMED_DIR);
   const filename = `${Date.now()}-${path.basename(originalPath)}`;
   const outputPath = path.join(FRAMED_DIR, filename);
 
@@ -131,11 +131,7 @@ class OverlayCampaignService {
     const campaign = await prisma.overlayCampaign.findUnique({ where: { id: campaignId } });
     if (!campaign) throw new Error('Campaign not found');
 
-    const overlayPath = campaign.overlayImage.startsWith('/')
-      ? path.join(__dirname, '..', campaign.overlayImage)
-      : campaign.overlayImage;
-
-    if (!fs.existsSync(overlayPath)) throw new Error('Overlay image not found');
+    const overlayPath = await resolveOverlayPath(campaign.overlayImage);
 
     const products = await prisma.overlayCampaignProduct.findMany({
       where: { campaignId },
