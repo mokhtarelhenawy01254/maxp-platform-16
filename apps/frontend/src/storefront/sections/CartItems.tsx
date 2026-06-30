@@ -558,6 +558,8 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
         ? 'mt-4 rounded-full bg-[linear-gradient(135deg,#1f1f1b_0%,#725523_55%,#d5ac58_100%)] px-6 py-3 font-black text-white shadow-[0_22px_60px_-36px_rgba(90,62,24,0.42)] transition-opacity hover:opacity-90'
       : isWomenFashionCart
         ? 'mt-4 rounded-full bg-[linear-gradient(135deg,#3d2a2f_0%,#8f4d41_100%)] px-6 py-3 font-black text-white shadow-[0_22px_60px_-36px_rgba(107,33,49,0.24)] transition-opacity hover:opacity-90'
+      : isWardrobeKhemet
+        ? 'mt-4 border-b-2 border-[#221a15] pb-0.5 text-sm font-bold text-[#221a15] transition-colors hover:border-[#7b5a2f] hover:text-[#7b5a2f]'
         : 'mt-4 rounded-[var(--radius)] bg-primary px-6 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90';
   const countBadgeClassName = isSproutRoom
     ? 'inline-flex w-fit rounded-full border border-[#d8e6d8] bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-[#43604b]'
