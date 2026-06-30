@@ -20,6 +20,7 @@ import { motion } from 'framer-motion';
 import { Truck, Timer } from 'lucide-react';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { isPharmacyThemeId } from '../utils/pharmacyThemes';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 
 interface CartItemsProps {
   section?: {
@@ -403,6 +404,8 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
   const isNatureCart = variant === 'nature-cart';
   const isCommandCart = variant === 'command-cart';
   const isWomenFashionCart = theme.id === 'women-fashion-eg' && variant === 'wardrobe-cart';
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
+  const isWardrobeKhemet = isKhemetLuxe && variant === 'wardrobe-cart';
   const hasServiceCartTone = isCommandCart || isMarketCart || isNatureCart || isButcherCart;
   const title = settings?.title || 'سلة التسوق';
   const subtitle =
@@ -464,6 +467,7 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
   const imageSizeClassName =
     isWomenFashionCart ? 'h-16 w-16' :
     variant === 'compact' ? 'h-16 w-16' :
+    isWardrobeKhemet ? 'h-28 w-28' :
     variant === 'command-cart' ? 'h-[5.25rem] w-[5.25rem]' :
     variant === 'market-basket' ? 'h-[4.75rem] w-[4.75rem]' :
     variant === 'nature-cart' ? 'h-[4.75rem] w-[4.75rem]' :
@@ -505,6 +509,8 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
       ? 'grid grid-cols-1 items-center gap-5 rounded-[1.8rem] border border-[#dbe3d4] bg-[linear-gradient(135deg,#ffffff_0%,#f3f7f0_100%)] px-4 py-5 shadow-[0_22px_60px_-48px_rgba(26,51,40,0.14)] md:grid-cols-[2fr_1fr_1fr_1fr_auto]'
     : isWomenFashionCart
       ? 'grid grid-cols-1 items-center gap-4 rounded-[1.45rem] border border-[#ead9d8] bg-white px-3.5 py-4 shadow-[0_18px_52px_-46px_rgba(107,33,49,0.12)] md:grid-cols-[2fr_1fr_1fr_1fr_auto]'
+    : isWardrobeKhemet
+      ? 'grid grid-cols-1 items-center gap-4 border-b border-border/50 px-3 py-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto]'
       : getRowClassName(variant);
   const imageWrapperClassName = isSproutRoom
     ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1rem] border border-[#d8e6d8] bg-[#f4f8f2] text-xs text-[#6b8a74]`
@@ -520,6 +526,8 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
         ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1.4rem] border border-[#ead8b1] bg-[linear-gradient(135deg,#fffaf0_0%,#fff1d8_100%)] text-xs text-[#6d5527]`
       : isWomenFashionCart
         ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1.1rem] border border-[#f1dfdc] bg-[#fff7f5] text-xs text-[#8b3d33]`
+      : isWardrobeKhemet
+        ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-none bg-[#f8f7f6] text-xs`
       : variant === 'wardrobe-cart'
         ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-[#f1dfdc] bg-[#fff7f5] text-xs text-[#8b3d33]`
         : `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius)] bg-muted text-xs text-muted-foreground`;
@@ -808,23 +816,23 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
 
             return (
             <div key={entry.key} className={rowClassName}>
-              <div className={`flex ${isWomenFashionCart ? 'items-start gap-3.5' : 'items-center gap-4'}`}>
+              <div className={`flex ${isWomenFashionCart ? 'items-start gap-3.5' : isWardrobeKhemet ? 'items-start gap-5' : 'items-center gap-4'}`}>
                 <div className={imageWrapperClassName}>
                   <StorefrontProductImage
                     candidates={getCartItemImageCandidates(entry.item)}
                     alt={itemName}
                     loading="lazy"
-                    width="80"
-                    height="80"
+                    width={isWardrobeKhemet ? "140" : "80"}
+                    height={isWardrobeKhemet ? "140" : "80"}
                     className="h-full w-full object-cover"
                     fallback="IMG"
                   />
                 </div>
-                <div className={isWomenFashionCart ? 'space-y-0.5' : undefined}>
+                <div className={isWomenFashionCart ? 'space-y-0.5' : isWardrobeKhemet ? 'space-y-1' : undefined}>
                   <h3
                     className={`font-heading text-sm text-foreground ${
                       isWomenFashionCart ? 'font-bold leading-5' : 'font-semibold'
-                    }`}
+                    } ${isWardrobeKhemet ? 'text-base font-bold leading-6' : ''}`}
                   >
                     {itemName}
                   </h3>
