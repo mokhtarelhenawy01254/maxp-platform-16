@@ -102,7 +102,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50">
       <div
-        className="flex h-full w-full max-w-lg flex-col overflow-y-auto bg-card shadow-xl"
+        className="flex h-full w-full max-w-lg flex-col overflow-y-auto bg-card shadow-xl animate-slide-in-right"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/50 bg-card px-5 py-4">

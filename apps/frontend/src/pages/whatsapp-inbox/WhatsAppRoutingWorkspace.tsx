@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, Settings as SettingsIcon } from 'lucide-react';
+import { RefreshCw, Settings as SettingsIcon, PhoneCall, Wifi, WifiOff, Loader2, CheckCircle2, AlertCircle, X, Save, Trash2 } from 'lucide-react';
 import { useRoutingWorkspace } from './hooks/useRoutingWorkspace';
 import NumberSidebar from './components/NumberSidebar';
 import WorkspaceStats from './components/WorkspaceStats';
@@ -87,34 +87,49 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="grid gap-4 lg:grid-cols-[320px,1fr]">
-          <div className="h-[540px] animate-pulse rounded-xl bg-muted" />
-          <div className="h-[540px] animate-pulse rounded-xl bg-muted" />
+      <div className="p-4 md:p-6 lg:p-8" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="mx-auto flex max-w-7xl flex-col gap-6">
+          <div className="h-8 w-72 animate-pulse rounded-lg bg-muted" />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 animate-pulse rounded-xl bg-muted" />
+            ))}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
+            <div className="h-[540px] animate-pulse rounded-xl bg-muted" />
+            <div className="h-[540px] animate-pulse rounded-xl bg-muted" />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="animate-fade-in p-4 md:p-6 lg:p-8" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         {feedback && (
           <div
-            className={`rounded-lg border px-4 py-3 text-sm shadow-sm ${
+            className={`rounded-lg border px-4 py-3 text-sm shadow-sm transition-all duration-300 ${
               feedback.type === 'success'
                 ? 'border-success/30 bg-success/10 text-success dark:border-success/40 dark:bg-success/20'
                 : 'border-destructive/30 bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-destructive/20'
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <span>{feedback.text}</span>
+              <div className="flex items-center gap-2">
+                {feedback.type === 'success' ? (
+                  <CheckCircle2 className="size-4" />
+                ) : (
+                  <AlertCircle className="size-4" />
+                )}
+                <span>{feedback.text}</span>
+              </div>
               <button
                 type="button"
                 onClick={clearFeedback}
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="rounded p-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                ✕
+                <X className="size-3.5" />
               </button>
             </div>
           </div>
@@ -126,7 +141,8 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
               {t('whatsappInbox.workspaceTitle')}
             </h1>
             {dirty && (
-              <span className="text-xs font-medium text-warning">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-warning animate-pulse-slow">
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-warning" />
                 {t('whatsappInbox.unsavedChanges')}
               </span>
             )}
@@ -158,16 +174,16 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
             onSelect={handleSessionSelect}
           />
 
-          <section className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
+          <section className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition-all duration-300">
             {!selectedNumber ? (
-              <div className="flex min-h-[400px] flex-col items-center justify-center px-6 text-center">
-                <div className="rounded-full bg-muted p-4 text-2xl text-muted-foreground">
-                  01
+              <div className="flex min-h-[400px] flex-col items-center justify-center px-6 text-center transition-all duration-300">
+                <div className="rounded-full bg-muted p-5 text-muted-foreground transition-all duration-300 hover:scale-105">
+                  <PhoneCall className="size-8" />
                 </div>
                 <h2 className="mt-4 text-xl font-bold text-foreground">
                   {t('whatsappInbox.workspaceEmptyTitle')}
                 </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 max-w-xs text-sm text-muted-foreground">
                   {t('whatsappInbox.workspaceEmptyDescription')}
                 </p>
               </div>
@@ -176,37 +192,29 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-bold text-foreground">
+                      <h2 className="text-xl font-bold text-foreground transition-colors duration-200">
                         {selectedNumber.session.name ||
                           selectedNumber.session.profileName ||
                           selectedNumber.session.phoneNumber}
                       </h2>
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${resolveConnectionClasses(selectedNumber.connectionStatus)}`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all duration-200 ${resolveConnectionClasses(selectedNumber.connectionStatus)}`}
                       >
+                        {selectedNumber.connectionStatus === 'CONNECTED' ? (
+                          <Wifi className="size-3" />
+                        ) : selectedNumber.connectionStatus === 'CONNECTING' ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          <WifiOff className="size-3" />
+                        )}
                         {resolveConnectionLabel(selectedNumber.connectionStatus)}
                       </span>
                     </div>
-                    <div className="text-sm text-muted-foreground" dir="ltr">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground" dir="ltr">
+                      <PhoneCall className="size-3.5" />
                       {selectedNumber.session.phoneNumber}
                     </div>
                   </div>
-
-                  {selectedNumber.lastDistributedAt && (
-                    <div className="rounded-lg border border-border/50 bg-muted px-3 py-3 text-sm">
-                      <p className="font-medium text-muted-foreground">
-                        {t('whatsappInbox.lastDistribution')}
-                      </p>
-                      <p className="mt-1 text-foreground">
-                        {selectedNumber.lastDistributedUserId
-                          ? `${employeeLookup[selectedNumber.lastDistributedUserId]?.firstName || ''} ${employeeLookup[selectedNumber.lastDistributedUserId]?.lastName || ''}`.trim()
-                          : t('whatsappInbox.notAvailable')}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {formatDateTime(selectedNumber.lastDistributedAt)}
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 <RoutingModeSelector mode={routingMode} onChange={handleModeChange} />
@@ -237,8 +245,9 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
                     type="button"
                     onClick={() => setUnassignOpen(true)}
                     disabled={saving || !selectedNumber.isConfigured}
-                    className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive transition-all duration-200 hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
+                    <Trash2 className="size-4" />
                     {t('whatsappInbox.unassign')}
                   </button>
 
@@ -246,11 +255,19 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
                     type="button"
                     onClick={handleSave}
                     disabled={saving || !dirty}
-                    className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {saving
-                      ? t('whatsappInbox.savingRouting')
-                      : t('whatsappInbox.saveRouting')}
+                    {saving ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        {t('whatsappInbox.savingRouting')}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="size-4" />
+                        {t('whatsappInbox.saveRouting')}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

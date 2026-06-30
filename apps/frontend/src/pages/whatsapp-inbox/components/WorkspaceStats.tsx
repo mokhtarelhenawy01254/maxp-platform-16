@@ -1,10 +1,23 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Phone,
+  UserCheck,
+  Shuffle,
+  Wifi,
+} from 'lucide-react';
 import type { WorkspaceStats as WorkspaceStatsType } from '../types';
 
 interface WorkspaceStatsProps {
   stats: WorkspaceStatsType;
 }
+
+const STAT_ICONS: Record<string, React.ElementType> = {
+  configured: Phone,
+  exclusive: UserCheck,
+  roundRobin: Shuffle,
+  connected: Wifi,
+};
 
 const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats }) => {
   const { t } = useTranslation();
@@ -34,19 +47,28 @@ const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats }) => {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {items.map((item) => (
-        <div
-          key={item.key}
-          className="rounded-xl border border-border/50 bg-card p-4 shadow-sm"
-        >
-          <p className="text-xs font-medium text-muted-foreground">
-            {item.label}
-          </p>
-          <p className="mt-2 text-2xl font-bold text-foreground">
-            {item.value}
-          </p>
-        </div>
-      ))}
+      {items.map((item, index) => {
+        const Icon = STAT_ICONS[item.key];
+        return (
+          <div
+            key={item.key}
+            className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <div className="absolute -right-3 -top-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 opacity-0 transition-all duration-300 group-hover:scale-150 group-hover:opacity-100" />
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                {item.label}
+              </p>
+              {Icon && (
+                <Icon className="size-4 text-muted-foreground/40 transition-all duration-300 group-hover:text-primary group-hover:opacity-80" />
+              )}
+            </div>
+            <p className="mt-2 text-2xl font-bold text-foreground transition-all duration-300 group-hover:text-primary">
+              {item.value}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 };

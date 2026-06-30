@@ -1,11 +1,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { UserCheck, Shuffle } from 'lucide-react';
 import type { RoutingMode } from '../types';
 
 interface RoutingModeSelectorProps {
   mode: RoutingMode;
   onChange: (mode: RoutingMode) => void;
 }
+
+const MODE_META: Record<RoutingMode, { icon: React.ElementType; color: string }> = {
+  NUMBER_OWNER: { icon: UserCheck, color: 'primary' },
+  ROUND_ROBIN: { icon: Shuffle, color: 'secondary' },
+};
 
 const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
   mode,
@@ -42,27 +48,50 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
     <div className="grid gap-3 md:grid-cols-2">
       {modes.map((option) => {
         const isActive = mode === option.value;
+        const Icon = MODE_META[option.value].icon;
+
         return (
           <button
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`rounded-lg border p-4 text-start transition ${
-              isActive ? option.activeClasses : 'border-border/50 bg-card hover:border-border'
+            className={`group relative rounded-lg border p-4 text-start transition-all duration-200 ${
+              isActive
+                ? option.activeClasses
+                : 'border-border/50 bg-card hover:border-border hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-foreground">
-                  {option.label}
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {option.description}
-                </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? option.value === 'NUMBER_OWNER'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-secondary/20 text-secondary'
+                      : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
+                  }`}
+                >
+                  <Icon className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">
+                    {option.label}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {option.description}
+                  </p>
+                </div>
               </div>
               <span
-                className={`h-4 w-4 shrink-0 rounded-full border-2 ${
-                  isActive ? option.indicatorClasses : 'border-border bg-transparent'
+                className={`mt-1 h-4 w-4 shrink-0 rounded-full border-2 transition-all duration-200 ${
+                  isActive
+                    ? `${option.indicatorClasses} ring-2 ring-offset-1 ${
+                        option.value === 'NUMBER_OWNER'
+                          ? 'ring-primary/30'
+                          : 'ring-secondary/30'
+                      }`
+                    : 'border-border bg-transparent'
                 }`}
               />
             </div>

@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search } from 'lucide-react';
+import { Search, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import type { WorkspaceNumber } from '../types';
 
 interface NumberSidebarProps {
@@ -29,6 +29,12 @@ const resolveConnectionClasses = (status: string): string => {
   return styles[s] || 'border-border bg-muted text-muted-foreground';
 };
 
+const STATUS_ICONS: Record<string, React.ElementType> = {
+  CONNECTED: Wifi,
+  DISCONNECTED: WifiOff,
+  CONNECTING: Loader2,
+};
+
 const NumberSidebar: React.FC<NumberSidebarProps> = ({
   numbers,
   selectedSessionId,
@@ -37,6 +43,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONNECTED' | 'DISCONNECTED'>('ALL');
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const resolveConnectionLabel = (status: string) => {
     const s = NORMALIZE_STATUS[status] || status;
@@ -63,7 +70,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
   }, [numbers, query, statusFilter]);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
+    <section className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition-all duration-300">
       <div className="border-b border-border/50 px-4 py-4">
         <h2 className="text-base font-semibold text-foreground">
           {t('whatsappInbox.workspaceNumbersTitle')}
@@ -71,13 +78,14 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
 
         <div className="mt-3 space-y-2">
           <div className="relative">
-            <Search className="absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground ltr:left-3 rtl:right-3" />
+            <Search className="pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-all duration-200 ltr:left-3 rtl:right-3 peer-focus-within:text-primary" />
             <input
+              ref={searchRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('whatsappInbox.searchNumbers') as string}
-              className="w-full rounded-lg border border-border/50 bg-card py-2 text-sm text-foreground outline-none focus:border-ring ltr:pl-9 rtl:pr-9"
+              className="w-full rounded-lg border border-border/50 bg-card py-2 text-sm text-foreground outline-none transition-all duration-200 focus:border-ring focus:ring-1 focus:ring-ring/20 ltr:pl-9 rtl:pr-9"
             />
           </div>
 
@@ -87,9 +95,9 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
                 key={filter}
                 type="button"
                 onClick={() => setStatusFilter(filter)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200 ${
                   statusFilter === filter
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 }`}
               >
@@ -106,7 +114,7 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
 
       <div className="max-h-[680px] space-y-2 overflow-y-auto p-3">
         {filteredNumbers.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground transition-all duration-200">
             {query || statusFilter !== 'ALL'
               ? t('whatsappInbox.noNumbersMatchFilter')
               : t('whatsappInbox.workspaceNoNumbers')}
@@ -119,19 +127,20 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
             number.session.name ||
             number.session.profileName ||
             number.session.phoneNumber;
+          const StatusIcon = STATUS_ICONS[NORMALIZE_STATUS[number.connectionStatus] || number.connectionStatus];
 
           return (
             <button
               key={number.sessionId}
               onClick={() => onSelect(number.sessionId)}
-              className={`w-full rounded-lg border p-3 text-start transition ${
+              className={`w-full rounded-lg border p-3 text-start transition-all duration-200 ${
                 isSelected
                   ? 'border-primary/30 bg-primary/10 shadow-sm dark:border-primary/50 dark:bg-primary/20'
-                  : 'border-border/50 bg-card hover:border-border hover:bg-muted'
+                  : 'border-border/50 bg-card hover:translate-x-0.5 hover:border-border hover:bg-muted'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">
                     {displayName}
                   </p>
@@ -141,8 +150,15 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
                 </div>
 
                 <span
-                  className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${resolveConnectionClasses(number.connectionStatus)}`}
+                  className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${resolveConnectionClasses(number.connectionStatus)}`}
                 >
+                  {StatusIcon && (
+                    <StatusIcon
+                      className={`size-3 ${
+                        number.connectionStatus === 'CONNECTING' ? 'animate-spin' : ''
+                      }`}
+                    />
+                  )}
                   {resolveConnectionLabel(number.connectionStatus)}
                 </span>
               </div>

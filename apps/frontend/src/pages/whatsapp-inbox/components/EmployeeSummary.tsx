@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Users } from 'lucide-react';
+import { AlertTriangle, Users, Clock } from 'lucide-react';
 import type { Employee, PreviewResult, RoutingMode, WorkspaceNumber } from '../types';
 
 interface EmployeeSummaryProps {
@@ -82,7 +82,7 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-border/50 bg-card p-4">
+      <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-200">
         <h3 className="text-base font-semibold text-foreground">
           {t('whatsappInbox.selectedEmployeesTitle')}
         </h3>
@@ -96,9 +96,9 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
             {selectedEmployees.map((employee) => (
               <span
                 key={employee.id}
-                className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground"
+                className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-all duration-200 hover:bg-muted/80"
               >
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-card text-[9px] font-bold text-primary">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-card text-[9px] font-bold text-primary shadow-sm">
                   {getInitials(employee.firstName, employee.lastName)}
                 </span>
                 <span>
@@ -111,7 +111,7 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
       </div>
 
       {routingMode === 'ROUND_ROBIN' && selectedEmployeeIds.length >= 2 && (
-        <div className="rounded-lg border border-border/50 bg-card p-4">
+        <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-200">
           <h3 className="text-base font-semibold text-foreground">
             {t('whatsappInbox.routingPreviewTitle')}
           </h3>
@@ -120,21 +120,27 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
           </p>
 
           {previewResult && (
-            <div className="mt-3 rounded-lg border border-border/50 bg-muted p-3">
+            <div className="mt-3 rounded-lg border border-secondary/30 bg-secondary/5 p-3 transition-all duration-200">
               {previewResult.nextUserId ? (
                 <div className="flex items-center gap-2">
-                  <Users className="size-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">
-                    {t('whatsappInbox.nextAssignmentWillGoTo', {
-                      name:
-                        `${employeeLookup[previewResult.nextUserId]?.firstName || ''} ${employeeLookup[previewResult.nextUserId]?.lastName || ''}`.trim() ||
-                        t('whatsappInbox.notAvailable'),
-                    })}
-                  </span>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20 text-secondary">
+                    <Users className="size-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-foreground">
+                      {t('whatsappInbox.nextAssignmentWillGoTo', {
+                        name:
+                          `${employeeLookup[previewResult.nextUserId]?.firstName || ''} ${employeeLookup[previewResult.nextUserId]?.lastName || ''}`.trim() ||
+                          t('whatsappInbox.notAvailable'),
+                      })}
+                    </span>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-warning">
-                  <AlertTriangle className="size-4" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20">
+                    <AlertTriangle className="size-4" />
+                  </div>
                   <span className="text-sm font-medium">
                     {t('whatsappInbox.routingPreviewNoCandidate')}
                   </span>
@@ -167,9 +173,10 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
 
           {lastDistributedUser && selectedNumber?.lastDistributedAt && (
             <div className="mt-3 border-t border-border/50 pt-3">
-              <p className="text-xs font-medium text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Clock className="size-3.5" />
                 {t('whatsappInbox.lastDistribution')}
-              </p>
+              </div>
               <p className="mt-1 text-sm text-foreground">
                 {lastDistributedUser.firstName} {lastDistributedUser.lastName}
               </p>

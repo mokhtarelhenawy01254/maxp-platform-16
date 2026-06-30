@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search } from 'lucide-react';
+import { Search, Check } from 'lucide-react';
 import type { Employee, RoutingMode } from '../types';
 
 interface EmployeePickerProps {
@@ -53,30 +53,35 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
   }, [employees, showInactive, query]);
 
   return (
-    <div className="rounded-lg border border-border/50 bg-muted/50 p-4">
+    <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all duration-200">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-base font-semibold text-foreground">
           {t('whatsappInbox.workspaceEmployeesTitle')}
+          {selectedEmployeeIds.length > 0 && (
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              ({selectedEmployeeIds.length})
+            </span>
+          )}
         </h3>
 
         <div className="flex items-center gap-3">
           <div className="relative flex-1 sm:w-48">
-            <Search className="absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground ltr:left-3 rtl:right-3" />
+            <Search className="pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-all duration-200 ltr:left-3 rtl:right-3" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('whatsappInbox.searchEmployees') as string}
-              className="w-full rounded-lg border border-border/50 bg-card py-1.5 text-sm text-foreground outline-none focus:border-ring ltr:pl-9 rtl:pr-9"
+              className="w-full rounded-lg border border-border/50 bg-card py-1.5 text-sm text-foreground outline-none transition-all duration-200 focus:border-ring focus:ring-1 focus:ring-ring/20 ltr:pl-9 rtl:pr-9"
             />
           </div>
 
-          <label className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">
+          <label className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-xs text-muted-foreground transition-colors hover:text-foreground">
             <input
               type="checkbox"
               checked={showInactive}
               onChange={(event) => onToggleInactive(event.target.checked)}
-              className="size-4 rounded border-border text-primary"
+              className="size-4 rounded border-border text-primary transition-all"
             />
             {t('whatsappInbox.showInactiveModerators')}
           </label>
@@ -92,29 +97,43 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 
         {filteredEmployees.map((employee) => {
           const isSelected = selectedEmployeeIds.includes(employee.id);
-          const selectedClasses =
-            routingMode === 'NUMBER_OWNER'
-              ? 'border-primary/40 bg-card shadow-sm dark:border-primary/60'
-              : 'border-secondary/40 bg-card shadow-sm dark:border-secondary/60';
+          const isOwnerMode = routingMode === 'NUMBER_OWNER';
 
           return (
             <button
               key={employee.id}
               type="button"
               onClick={() => onToggleEmployee(employee.id)}
-              className={`rounded-lg border p-3 text-start transition ${
-                isSelected ? selectedClasses : 'border-border/50 bg-card hover:border-border'
+              className={`group relative rounded-lg border p-3 text-start transition-all duration-200 ${
+                isSelected
+                  ? isOwnerMode
+                    ? 'border-primary/40 bg-card shadow-sm dark:border-primary/60'
+                    : 'border-secondary/40 bg-card shadow-sm dark:border-secondary/60'
+                  : 'border-border/50 bg-card hover:border-border hover:shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-200 ${
+                    isSelected
+                      ? isOwnerMode
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-secondary-foreground'
+                      : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
+                  }`}
+                >
                   {getInitials(employee.firstName, employee.lastName)}
+                  {isSelected && (
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-card shadow-sm">
+                      <Check className={`size-3 ${isOwnerMode ? 'text-primary' : 'text-secondary'}`} />
+                    </span>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
                     {employee.firstName} {employee.lastName}
                     {employee.isActive === false && (
-                      <span className="ml-1 rounded-full border border-border px-1.5 py-0 text-[10px] font-medium text-muted-foreground">
+                      <span className="inline-flex shrink-0 items-center rounded-full border border-border px-1.5 py-0 text-[10px] font-medium text-muted-foreground">
                         {t('whatsappInbox.inactiveLabel')}
                       </span>
                     )}
@@ -125,7 +144,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
                 </div>
               </div>
 
-              <div className="mt-2 flex items-center justify-between gap-2">
+              <div className="mt-2.5 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                     {resolveRoleLabel(employee.role)}
@@ -136,15 +155,6 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
                     </span>
                   )}
                 </div>
-                <span
-                  className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-bold ${
-                    isSelected
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border text-muted-foreground'
-                  }`}
-                >
-                  {isSelected ? '✓' : ''}
-                </span>
               </div>
             </button>
           );

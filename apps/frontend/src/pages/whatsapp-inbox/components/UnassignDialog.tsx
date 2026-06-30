@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle, Loader2, X } from 'lucide-react';
 import type { WorkspaceNumber } from '../types';
 
 interface UnassignDialogProps {
@@ -23,8 +24,21 @@ const UnassignDialog: React.FC<UnassignDialogProps> = ({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
-        <h3 className="text-lg font-semibold text-foreground">
+      <div className="w-full max-w-md animate-slide-up rounded-xl border border-border bg-card p-6 shadow-lg">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+            <AlertTriangle className="size-5 text-destructive" />
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+        <h3 className="mt-3 text-lg font-semibold text-foreground">
           {t('whatsappInbox.confirmUnassignTitle')}
         </h3>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -37,7 +51,7 @@ const UnassignDialog: React.FC<UnassignDialogProps> = ({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-all duration-200 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('whatsappInbox.cancel')}
           </button>
@@ -45,9 +59,16 @@ const UnassignDialog: React.FC<UnassignDialogProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={saving}
-            className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-all duration-200 hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? t('whatsappInbox.savingRouting') : t('whatsappInbox.unassign')}
+            {saving ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                {t('whatsappInbox.savingRouting')}
+              </>
+            ) : (
+              t('whatsappInbox.unassign')
+            )}
           </button>
         </div>
       </div>
