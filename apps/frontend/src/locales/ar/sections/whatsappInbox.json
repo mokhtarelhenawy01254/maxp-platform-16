@@ -130,6 +130,8 @@
   "privacySummaryDirect": "في الربط المباشر: الرقم كله يظهر لموظف واحد فقط، وباقي الفريق لا يرى أي شيء متعلق به.",
   "privacySummaryRoundRobin": "في التوزيع التلقائي: الرقم نفسه يمكن أن يخدمه أكثر من موظف، لكن كل شات جديد يتوزع على موظف واحد فقط، وباقي الموظفين لا يرونه.",
   "privacySummaryFooter": "هذا العزل مطبق على القوائم، بيانات العميل، حالة المحادثة، والإشعارات اللحظية.",
+  "showInactiveModerators": "عرض المشرفين غير النشطين",
+  "inactiveLabel": "غير نشط",
   "selectedEmployeesTitle": "الموظفون المختارون",
   "selectedEmployeesEmpty": "لم يتم اختيار أي موظف بعد.",
   "selectedEmployeesCount": "{{count}} موظف",
