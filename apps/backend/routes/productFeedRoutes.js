@@ -93,8 +93,9 @@ router.get('/', async (req, res) => {
       return res.status(404).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><error>Company not found</error>');
     }
 
+    const includeHidden = req.query.includeHidden === 'true';
     const products = await prisma.product.findMany({
-      where: { companyId: company.id, isActive: true, isHidden: false, deletedAt: null },
+      where: { companyId: company.id, isActive: true, deletedAt: null, ...(includeHidden ? {} : { isHidden: false }) },
       select: { id: true, name: true, description: true, sku: true, price: true, comparePrice: true, images: true, mainImage: true, stock: true, slug: true, category: { select: { name: true } } },
       take: 10000,
     });
@@ -121,8 +122,9 @@ router.get('/:catalogId.xml', async (req, res) => {
       return res.status(404).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><error>Catalog not found</error>');
     }
 
+    const includeHidden = req.query.includeHidden === 'true';
     const products = await prisma.product.findMany({
-      where: { companyId: catalog.companyId, isActive: true, isHidden: false, deletedAt: null },
+      where: { companyId: catalog.companyId, isActive: true, deletedAt: null, ...(includeHidden ? {} : { isHidden: false }) },
       select: { id: true, name: true, description: true, sku: true, price: true, comparePrice: true, images: true, mainImage: true, stock: true, slug: true, category: { select: { name: true } } },
       take: 10000,
     });

@@ -202,11 +202,7 @@ const resolvePdpCheckoutSections = (
 const resolvePdpCheckoutEnabled = (
   settings?: StorefrontSettings | null,
 ): boolean => {
-  if (settings?.productPageShowCheckoutForm === false) {
-    return false;
-  }
-
-  return hasPdpCheckoutSection(resolvePdpCheckoutSections(settings));
+  return settings?.productPageShowCheckoutForm !== false;
 };
 
 const applyPdpCheckoutVisibilityToStorefrontSettings = (

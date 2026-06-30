@@ -1319,7 +1319,6 @@ def _planned_tool_entries(execution_plan: dict[str, Any] | None) -> list[dict[st
 
 def _build_pipeline_trace(ctx: PipelineContext, model_selection: dict[str, Any] | None = None) -> dict[str, Any]:
     active_skill = _trace_attr(ctx, "active_skill_context")
-    plan = _trace_attr(ctx, "relevance_plan")
     planned_entries = _planned_tool_entries(_trace_attr(ctx, "execution_plan"))
     params_by_tool: dict[str, dict[str, Any]] = {}
     for planned in planned_entries:
@@ -1327,8 +1326,16 @@ def _build_pipeline_trace(ctx: PipelineContext, model_selection: dict[str, Any] 
         if native_name and isinstance(planned.get("params"), dict):
             params_by_tool[native_name] = planned["params"]
 
+    executed = _trace_attr(ctx, "executed_tools", []) or []
+    called_skills = []
+    for item in executed:
+        if not isinstance(item, dict):
+            continue
+        tool_name = str(item.get("tool") or item.get("name") or item.get("action_type") or "unknown")
+        called_skills.append({"name": tool_name, "status": item.get("status"), "error": item.get("error")})
+
     tool_executions: list[dict[str, Any]] = []
-    for item in _trace_attr(ctx, "executed_tools", []) or []:
+    for item in executed:
         if not isinstance(item, dict):
             continue
         tool_name = str(item.get("tool") or item.get("name") or item.get("action_type") or "unknown")
@@ -1346,27 +1353,21 @@ def _build_pipeline_trace(ctx: PipelineContext, model_selection: dict[str, Any] 
         })
 
     selection = model_selection if isinstance(model_selection, dict) else {}
+
+    primary = called_skills[0]["name"] if called_skills else None
+
     return {
         "activeSkill": active_skill,
         "intentClassification": {
-            "intent": _trace_attr(plan, "intent"),
-            "confidence": _trace_attr(plan, "confidence", 0),
-            "confidenceLevel": _trace_attr(plan, "confidenceLevel", ""),
-            "ambiguous": bool(_trace_attr(plan, "ambiguous", False)),
-            "blockedReason": _trace_attr(plan, "blockedReason"),
-            "clarificationQuestion": _trace_attr(plan, "clarificationQuestion"),
-            "slots": _trace_attr(plan, "slots", {}) or {},
-            "missingSlots": _trace_attr(plan, "missingSlots", []) or [],
-        } if plan else None,
+            "intent": primary or "general.chat",
+            "skills": called_skills,
+            "count": len(called_skills),
+        } if called_skills else None,
         "toolPlan": {
-            "intent": _trace_attr(plan, "intent"),
-            "primaryTool": _trace_attr(plan, "primaryTool"),
-            "allowedTools": _trace_attr(plan, "allowedTools", []) or [],
-            "reason": _trace_attr(plan, "reason", ""),
-            "blockedReason": _trace_attr(plan, "blockedReason"),
-            "selectionScore": _trace_attr(plan, "selectionScore"),
-            "ambiguous": bool(_trace_attr(plan, "ambiguous", False)),
-        } if plan else None,
+            "primaryTool": primary,
+            "skillsCalled": [s["name"] for s in called_skills],
+            "totalCalled": len(called_skills),
+        } if called_skills else None,
         "toolExecutions": tool_executions,
         "modelSelection": {
             "provider": selection.get("provider"),

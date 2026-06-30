@@ -12,6 +12,11 @@ from src.skills.support.complaint import support_complaint
 from src.skills.knowledge.search import knowledge_search
 from src.skills.shipping.rates import shipping_rates_skill
 from src.skills.orders.cancel import cancel_order_skill
+from src.skills.orders.create_confirmed import create_confirmed_order_skill
+from src.skills.booking.info import booking_info_skill
+from src.skills.booking.slots import booking_slots_skill
+from src.skills.booking.status import booking_status_skill
+from src.skills.knowledge.ask_merchant import ask_merchant_skill
 
 
 def register_all_skills() -> None:
@@ -25,3 +30,8 @@ def register_all_skills() -> None:
     registry.register(knowledge_search)
     registry.register(shipping_rates_skill)
     registry.register(cancel_order_skill)
+    registry.register(create_confirmed_order_skill)
+    registry.register(booking_info_skill)
+    registry.register(booking_slots_skill)
+    registry.register(booking_status_skill)
+    registry.register(ask_merchant_skill)

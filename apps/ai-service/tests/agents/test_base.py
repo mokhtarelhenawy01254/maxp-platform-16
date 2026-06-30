@@ -802,7 +802,7 @@ class TestProcessTask:
             result = await agent.process_task({"current_message": "check black shoes"})
 
         trace = result["result"]["pipeline_trace"]
-        assert trace["intentClassification"]["intent"] == "inventory.check"
+        assert trace["intentClassification"]["intent"] == "inventory_check"
         assert trace["toolPlan"]["primaryTool"] == "inventory_check"
         assert trace["toolExecutions"][0]["name"] == "inventory_check"
         assert trace["toolExecutions"][0]["params"] == {"product_name_or_sku": "black shoes"}

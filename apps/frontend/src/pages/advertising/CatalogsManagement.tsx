@@ -32,6 +32,7 @@ const CatalogsManagement: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [businessId, setBusinessId] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [includeHidden, setIncludeHidden] = useState(false);
 
   useEffect(() => {
     loadCatalogs();
@@ -224,13 +225,13 @@ const CatalogsManagement: React.FC = () => {
             <input
               type="text"
               readOnly
-              value={`https://${user.company.slug}.maxp.online/api/v1/public/products/feed/`}
+              value={`https://${user.company.slug}.maxp.online/api/v1/public/products/feed/${includeHidden ? '?includeHidden=true' : ''}`}
               className="flex-1 px-3 py-2 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg ltr text-left font-mono dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
               onClick={(e) => e.currentTarget.select()}
             />
             <button
               onClick={() => {
-                navigator.clipboard.writeText(`https://${user.company.slug}.maxp.online/api/v1/public/products/feed/`);
+                navigator.clipboard.writeText(`https://${user.company.slug}.maxp.online/api/v1/public/products/feed/${includeHidden ? '?includeHidden=true' : ''}`);
                 toast.success("تم نسخ الرابط");
               }}
               className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
@@ -239,6 +240,17 @@ const CatalogsManagement: React.FC = () => {
               نسخ
             </button>
           </div>
+          <label className="mt-3 flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeHidden}
+              onChange={(e) => setIncludeHidden(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              تضمين المنتجات المخفية في الفيد
+            </span>
+          </label>
         </div>
       )}
 
