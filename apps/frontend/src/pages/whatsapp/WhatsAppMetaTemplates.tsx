@@ -215,7 +215,15 @@ const WhatsAppMetaTemplates: React.FC<{
         <div className="flex gap-2">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
             <SelectTrigger className="h-10 w-56 rounded-full bg-[color:var(--color-muted)]">
-              <SelectValue placeholder="اختر جلسة" />
+              <SelectValue placeholder="اختر جلسة">
+                {(value: string | null) => {
+                  if (!value) return null;
+                  const s = sessions.find((x) => x.id === value);
+                  if (!s) return value;
+                  const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
+                  return s.name && !isCuid ? s.name : s.phoneNumber || s.id;
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {sessions.map((s) => {

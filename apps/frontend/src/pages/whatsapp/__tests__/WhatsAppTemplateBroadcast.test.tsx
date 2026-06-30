@@ -87,7 +87,7 @@ describe('WhatsAppTemplateBroadcast', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('رقم المبيعات')).toBeInTheDocument();
+      expect(screen.getAllByText('رقم المبيعات').length).toBeGreaterThanOrEqual(1);
     });
 
     const trigger = screen.getByText('اختر قالباً');
@@ -121,7 +121,7 @@ describe('WhatsAppTemplateBroadcast', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('201099999999')).toBeInTheDocument();
+      expect(screen.getAllByText('201099999999').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -218,7 +218,7 @@ describe('WhatsAppTemplateBroadcast', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Sales')).toBeInTheDocument();
+      expect(screen.getAllByText('Sales').length).toBeGreaterThanOrEqual(1);
     });
 
     const templateSelect = screen.getByText('اختر قالباً');
