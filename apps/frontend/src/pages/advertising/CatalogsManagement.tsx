@@ -4,7 +4,7 @@
  * صفحة إدارة Product Catalogs
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PlusIcon,
@@ -13,15 +13,20 @@ import {
   ArrowPathIcon,
   FolderIcon,
   ShoppingBagIcon,
+  LinkIcon,
+  ClipboardDocumentIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import {
   facebookAdsService,
   FacebookProductCatalog,
 } from "../../services/facebookAdsService";
+import { useAuth } from "../../hooks/useAuthSimple";
 
 const CatalogsManagement: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [catalogs, setCatalogs] = useState<FacebookProductCatalog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -204,6 +209,38 @@ const CatalogsManagement: React.FC = () => {
           </p>
         )}
       </div>
+
+      {/* Product Feed URL Section */}
+      {user?.company?.slug && (
+        <div className="rounded-3xl bg-white/70 p-6 backdrop-blur-xl border border-slate-200/60 shadow-sm dark:bg-slate-900/50 dark:border-slate-800/60">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <DocumentTextIcon className="w-5 h-5 text-indigo-600" />
+            Product Feed URL
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            استخدم هذا الرابط في Facebook Catalog أو أي منصة أخرى لاستيراد منتجات متجرك تلقائياً — مش محتاج تعمل كتالوج
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={`https://${user.company.slug}.maxp.online/api/v1/public/products/feed/`}
+              className="flex-1 px-3 py-2 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg ltr text-left font-mono dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+              onClick={(e) => e.currentTarget.select()}
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`https://${user.company.slug}.maxp.online/api/v1/public/products/feed/`);
+                toast.success("تم نسخ الرابط");
+              }}
+              className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              <ClipboardDocumentIcon className="w-4 h-4" />
+              نسخ
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Catalog List */}
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
