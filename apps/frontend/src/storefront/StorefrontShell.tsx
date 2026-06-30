@@ -53,6 +53,7 @@ import { useStorefrontProductRouteScrollReset } from "./hooks/useStorefrontProdu
 import { useStorefrontVisitTracking } from "./hooks/useStorefrontVisitTracking";
 import { captureStorefrontAttribution } from "./utils/orderAttribution";
 import { shouldStorefrontForceDocumentNavigation } from "./utils/navigationGuards";
+import { isKhemetLuxeTheme } from "./utils/navigationGuards";
 import { resolveCatalogCategoryBySlug } from "./utils/catalogCategories";
 import { resolveLegacyProductSlugAlias } from "./utils/productSlugAliases";
 import { createStorefrontThemeTextReplacer } from "./utils/runtimeBrandText";
@@ -431,7 +432,7 @@ const StorefrontHeader: React.FC<{
   const isClosetOs = theme.id === "closet-os";
   const isAtelierNova = theme.id === "atelier-nova";
   const isElegantLuxe = theme.id === "elegant-luxe";
-  const isKhemetLuxe = theme.id === "khemet-luxe-eg";
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
 
   const isPcHub = theme.id === "pc-hub-eg";
   const isFastlyTheme = theme.id === "fastly-eg";
@@ -7363,7 +7364,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     isProductImageLandingPage ||
     normalizedPath.endsWith("/checkout") ||
     normalizedPath.endsWith("/thank-you");
-  const isKhemetLuxe = theme.id === "khemet-luxe-eg";
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isKhemetLuxeInnerRoute =
     isKhemetLuxe &&
     normalizedPath !== "/" &&

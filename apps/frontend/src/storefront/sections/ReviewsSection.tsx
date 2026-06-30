@@ -342,7 +342,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ section, settings }) =>
       prefersArabicCopy,
     });
   const isZenOrganic = theme.id === 'zen-organic';
-  const isKhemetLuxeTheme = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxeTheme = isKhemetLuxeThemeId(theme.id);
   const isCompactVariant = sectionVariant === 'compact';
   const isVoiceNotesVariant = sectionVariant === 'voice-notes';
   const isScentNotesVariant = sectionVariant === 'scent-notes';

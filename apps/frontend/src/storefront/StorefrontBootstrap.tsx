@@ -16,6 +16,7 @@ import {
   type ProductsParams,
   type ProductsResponse,
 } from "./services/storefrontProducts";
+import { isKhemetLuxeTheme } from "./utils/navigationGuards";
 import {
   fetchStorefrontSettings,
   getStorefrontSettingsQueryKey,
@@ -141,7 +142,7 @@ const resolveCatalogPrefetchLimit = (
   pageKey: "shop" | "sale",
   settings?: StorefrontSettings | null,
 ): number => {
-  if (resolveThemeIdFromSettings(settings) === "khemet-luxe-eg") {
+  if (isKhemetLuxeTheme(resolveThemeIdFromSettings(settings))) {
     return pageKey === "shop" ? 48 : 12;
   }
 

@@ -162,6 +162,15 @@ const GlobalConversionHost: React.FC = () => {
     () => getActiveStorePromotionFromCompany(settings?.company),
     [settings],
   );
+  const promotionBannerText = useMemo(() => {
+    if (!storePromotion) return "";
+    const labels = (storePromotion.tiers || [])
+      .filter((t) => t.isActive !== false && t.label)
+      .map((t) => t.label);
+    const title = storePromotion.title?.trim();
+    if (title && labels.length > 0) return `${title} — ${labels.join(" • ")}`;
+    return title || labels.join(" • ") || "";
+  }, [storePromotion]);
 
   const modules =
     (conversionSettings["modules"] as ConversionSettingsSection | undefined) ||
@@ -824,9 +833,9 @@ const GlobalConversionHost: React.FC = () => {
 
   return (
     <>
-      {storePromotion ? (
+      {promotionBannerText ? (
         <div className="w-full bg-rose-500/10 border-b border-rose-200 text-center text-sm font-medium py-2 px-4">
-          {storePromotion.title}
+          {promotionBannerText}
         </div>
       ) : null}
       {barPosition === "top" ? renderFreeShippingBar : null}
