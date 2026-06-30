@@ -32,6 +32,7 @@ import {
   getNumericValue,
 } from "./components/settingsPageUtils";
 import { apiClient } from "../../services/apiClient";
+import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 
 const DEFAULT_FREE_SHIPPING_MESSAGE =
   "احصل على شحن مجاني عند الشراء بـ {amount} جنيه أو أكثر";
@@ -117,6 +118,9 @@ const PromotionSettings: React.FC = () => {
       flatShippingFee: 0,
     });
 
+  const [hideUtilityBar, setHideUtilityBar] = useState(false);
+  const [utilityBarSaving, setUtilityBarSaving] = useState(false);
+
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
@@ -137,6 +141,13 @@ const PromotionSettings: React.FC = () => {
           flatShippingEnabled: Boolean(data.flatShippingEnabled),
           flatShippingFee: getNumericValue(data.flatShippingFee),
         });
+      }
+
+      try {
+        const sfRes = await storefrontSettingsService.getSettings(undefined, { allowFallback: false });
+        setHideUtilityBar(sfRes.data.hideUtilityBar === true);
+      } catch {
+        // non-blocking
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -236,6 +247,18 @@ const PromotionSettings: React.FC = () => {
       setSaving(false);
     }
   }, [loadSettings]);
+
+  const handleToggleUtilityBar = useCallback(async (value: boolean) => {
+    setHideUtilityBar(value);
+    setUtilityBarSaving(true);
+    try {
+      await storefrontSettingsService.updateSettings({ hideUtilityBar: value });
+    } catch {
+      setHideUtilityBar(!value);
+    } finally {
+      setUtilityBarSaving(false);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -459,6 +482,32 @@ const PromotionSettings: React.FC = () => {
                     </p>
                   )}
                 </div>
+            </SettingsSection>
+
+            <SettingsSection
+              icon={Sparkles}
+              title="الشريط العلوي"
+              description="التحكم في الشريط الذي يظهر أعلى المتجر (ابدئي الطلب، الشحن المجاني، تبديل مقاس، تأكيد الطلب)."
+              accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
+            >
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-950">
+                      إخفاء الشريط العلوي
+                    </h3>
+                    <p className="text-sm leading-6 text-slate-500">
+                      إخفاء الشريط الذي يحتوي على روابط سريعة (ابدئي الطلب، تبديل مقاس خلال 14 يوم، تأكيد الطلب قبل التجهيز) من أعلى المتجر.
+                    </p>
+                  </div>
+                  <Switch
+                    aria-label="إخفاء الشريط العلوي"
+                    checked={hideUtilityBar}
+                    disabled={utilityBarSaving}
+                    onCheckedChange={(checked) => { void handleToggleUtilityBar(checked); }}
+                  />
+                </div>
+              </div>
             </SettingsSection>
 
             <div className="relative my-6">

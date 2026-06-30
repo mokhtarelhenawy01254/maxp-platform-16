@@ -517,7 +517,8 @@ const StorefrontHeader: React.FC<{
     "/shop",
     location.search,
   );
-  const khemetUtilityBar = isKhemetLuxe && !isMinimal ? (
+  const hideUtilityBar = settings?.storefront?.settings?.hideUtilityBar === true;
+  const khemetUtilityBar = isKhemetLuxe && !isMinimal && !hideUtilityBar ? (
     <div className="border-t border-[#efe6dc] bg-[#fffaf4]" dir="rtl">
       <div className="container px-0 md:px-6">
         <div className="flex min-h-10 items-center gap-3 overflow-x-auto px-4 py-2 text-[11px] text-[#5e5045] [scrollbar-width:none] md:min-h-11 md:justify-center md:gap-5 md:text-xs">

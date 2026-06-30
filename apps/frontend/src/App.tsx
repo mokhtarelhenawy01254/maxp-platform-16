@@ -104,11 +104,8 @@ const InboxChat = React.lazy(
 const ModeratorDashboard = React.lazy(
   () => import("./pages/whatsapp-inbox/ModeratorDashboard"),
 );
-const WhatsAppNumberSettings = React.lazy(
-  () => import("./pages/whatsapp-inbox/WhatsAppNumberSettings"),
-);
-const InboxSettingsPage = React.lazy(
-  () => import("./pages/whatsapp-inbox/InboxSettingsPage"),
+const WhatsAppRoutingWorkspace = React.lazy(
+  () => import("./pages/whatsapp-inbox/WhatsAppRoutingWorkspace"),
 );
 const InboxNotifications = React.lazy(
   () => import("./pages/whatsapp-inbox/InboxNotifications"),
@@ -2542,7 +2539,7 @@ const AppContent = () => {
                   path="/settings/whatsapp-numbers"
                   element={
                     <Layout>
-                      <WhatsAppNumberSettings />
+                      <WhatsAppRoutingWorkspace />
                     </Layout>
                   }
                 />
@@ -2552,11 +2549,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/settings/inbox"
-                  element={
-                    <Layout>
-                      <InboxSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/whatsapp-inbox" replace />}
                 />
                 <Route
                   path="/notifications/inbox"

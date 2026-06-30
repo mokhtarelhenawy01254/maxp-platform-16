@@ -5,20 +5,20 @@
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "151 34% 16%",
-      "primaryForeground": "42 61% 96%",
-      "secondary": "32 38% 92%",
-      "secondaryForeground": "21 18% 16%",
-      "accent": "41 45% 63%",
-      "accentForeground": "21 18% 16%",
-      "background": "24 31% 97%",
-      "foreground": "22 16% 12%",
-      "muted": "30 24% 90%",
-      "mutedForeground": "23 10% 38%",
-      "border": "30 22% 82%",
-      "card": "0 0% 100%",
-      "cardForeground": "22 16% 12%",
-      "ring": "151 34% 16%"
+      "primary": "151 28% 18%",
+      "primaryForeground": "40 10% 97%",
+      "secondary": "40 10% 94%",
+      "secondaryForeground": "40 10% 16%",
+      "accent": "41 30% 58%",
+      "accentForeground": "40 10% 16%",
+      "background": "40 6% 97%",
+      "foreground": "40 8% 12%",
+      "muted": "40 8% 90%",
+      "mutedForeground": "40 5% 38%",
+      "border": "40 10% 84%",
+      "card": "40 4% 99%",
+      "cardForeground": "40 8% 12%",
+      "ring": "151 28% 18%"
     },
     "typography": {
       "headingFont": "\"Noto Serif\", serif",
@@ -32,8 +32,8 @@
     },
     "productCard": {
       "borderRadius": "0.8rem",
-      "boxShadow": "0 22px 54px -42px rgba(39, 31, 24, 0.18)",
-      "hoverShadow": "0 28px 68px -40px rgba(39, 31, 24, 0.24)",
+      "boxShadow": "0 22px 54px -42px rgba(40, 8%, 12%, 0.14)",
+      "hoverShadow": "0 28px 68px -40px rgba(40, 8%, 12%, 0.20)",
       "badgeRadius": "999px",
       "buttonRadius": "999px",
       "surfaceOpacity": "1"
@@ -49,9 +49,9 @@
   "preview": {
     "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
     "colors": [
-      "151 34% 16%",
-      "41 45% 63%",
-      "24 31% 97%"
+      "151 28% 18%",
+      "41 30% 58%",
+      "40 6% 97%"
     ]
   },
   "header": {

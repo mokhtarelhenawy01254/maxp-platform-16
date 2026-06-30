@@ -122,6 +122,7 @@ const GlobalConversionHost: React.FC = () => {
   const subtotal = useCartStore((state) =>
     state.items.reduce((total, item) => total + item.price * item.quantity, 0),
   );
+  const cartItems = useCartStore((state) => state.items);
   const currency =
     settings?.storefront?.settings?.currency || settings?.company?.currency || "EGP";
   const conversionSettings = getStorefrontMarketplaceAppSettings(
@@ -171,6 +172,45 @@ const GlobalConversionHost: React.FC = () => {
     if (title && labels.length > 0) return `${title} — ${labels.join(" • ")}`;
     return title || labels.join(" • ") || "";
   }, [storePromotion]);
+
+  const cartQuantity = cartItems.reduce(
+    (sum, item) => sum + Math.max(1, Math.floor(item.quantity || 1)),
+    0,
+  );
+  const promotionProgress = useMemo(() => {
+    if (!storePromotion || !storePromotion.tiers || storePromotion.tiers.length === 0) return null;
+    const tiers = [...storePromotion.tiers]
+      .filter((t) => t.isActive !== false)
+      .sort((a, b) => a.minQuantity - b.minQuantity);
+    if (tiers.length === 0) return null;
+    const currentTier = [...tiers].reverse().find((t) => cartQuantity >= t.minQuantity) || null;
+    const nextTier = tiers.find((t) => t.minQuantity > cartQuantity) || null;
+    let progressPct = 100;
+    let remaining = 0;
+    let message = "";
+    if (nextTier) {
+      const prevMin = currentTier ? currentTier.minQuantity : 0;
+      const span = nextTier.minQuantity - prevMin;
+      const advanced = cartQuantity - prevMin;
+      progressPct = Math.min(100, Math.max(0, (advanced / span) * 100));
+      remaining = nextTier.minQuantity - cartQuantity;
+      const label = nextTier.label || `اقتربي من ${nextTier.minQuantity} قطعة`;
+      message = remaining === 1
+        ? `ضيفي قطعة كمان — ${label} 🎁`
+        : `ضيفي ${remaining} قطع كمان — ${label} 🎁`;
+    } else if (currentTier) {
+      progressPct = 100;
+      message = `🎉 مبروك! ${currentTier.label || "حصلتي على خصم"}`;
+    } else {
+      const firstTier = tiers[0];
+      progressPct = 0;
+      remaining = firstTier.minQuantity - cartQuantity;
+      message = cartQuantity === 0
+        ? `ابدئي التسوق — ${firstTier.label || "عروض بانتظارك"}`
+        : `ضيفي ${remaining} قطع كمان — ${firstTier.label || "عروض بانتظارك"}`;
+    }
+    return { progressPct, remaining, message, currentTier, nextTier };
+  }, [storePromotion, cartQuantity]);
 
   const modules =
     (conversionSettings["modules"] as ConversionSettingsSection | undefined) ||
@@ -833,9 +873,22 @@ const GlobalConversionHost: React.FC = () => {
 
   return (
     <>
-      {promotionBannerText ? (
-        <div className="w-full bg-rose-500/10 border-b border-rose-200 text-center text-sm font-medium py-2 px-4">
-          {promotionBannerText}
+      {promotionProgress ? (
+        <div className="w-full bg-gradient-to-r from-rose-500/15 to-pink-500/15 border-b border-rose-200">
+          <div className="mx-auto max-w-6xl px-4 py-2.5 md:px-6">
+            <div className="flex items-center justify-between gap-3 text-sm font-semibold text-rose-900">
+              <span className="truncate">{promotionProgress.message}</span>
+              <span className="shrink-0 rounded-full bg-rose-500/20 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                {cartQuantity} قطعة
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-rose-200/50">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-pink-500 transition-[width] duration-500"
+                style={{ width: `${promotionProgress.progressPct}%` }}
+              />
+            </div>
+          </div>
         </div>
       ) : null}
       {barPosition === "top" ? renderFreeShippingBar : null}

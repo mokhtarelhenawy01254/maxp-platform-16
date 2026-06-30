@@ -544,7 +544,6 @@ export const getSidebarConfig = (
                 },
                 { to: '/whatsapp-inbox', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
                 { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
-                { to: '/settings/inbox', icon: Cog6ToothIcon, label: t('sidebar.whatsappInboxSettings') },
                 { to: '/whatsapp/meta-templates', icon: GlobeAltIcon, label: t('sidebar.whatsappMetaTemplates') },
                 { to: '/whatsapp/template-broadcast', icon: MegaphoneIcon, label: t('sidebar.whatsappTemplateBroadcast') },
                 { to: '/whatsapp/analytics', icon: ChartBarIcon, label: t('sidebar.whatsappAnalytics') },
