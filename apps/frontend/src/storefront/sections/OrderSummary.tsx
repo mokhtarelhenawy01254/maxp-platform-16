@@ -14,6 +14,7 @@ import { useMinimumOrderSettings } from "../hooks/useMinimumOrderSettings";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { buildStorefrontPath } from "../utils/paths";
+import { isKhemetLuxeTheme } from "../utils/navigationGuards";
 import { getCartItemImageCandidates } from "../utils/productImages";
 import { calculateVolumeDiscountPricing } from "../utils/volumeDiscounts";
 import { storefrontApi } from "../../utils/storefrontApi";
@@ -324,7 +325,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   const isBiteRush = theme.id === "restaurant-demo";
   const isSproutRoom = theme.id === "elessi-sprout-room";
   const isWomenFashionSummary = theme.id === "women-fashion-eg";
-  const isKhemetLuxe = theme.id === "khemet-luxe-eg";
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const checkoutPath = buildStorefrontPath(
     location.pathname,
     "/checkout",

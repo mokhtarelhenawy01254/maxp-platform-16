@@ -7,6 +7,7 @@ import { useCartStore } from '../store/useCartStore';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { formatStorefrontCurrency } from '../utils/currency';
 import { buildStorefrontPath } from '../utils/paths';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 import { storefrontApi } from '../../utils/storefrontApi';
 import { useStorefrontFacebookTracking } from '../hooks/useStorefrontFacebookTracking';
 import { trackConversionSuiteUsage } from '../utils/conversionSuiteTracking';
@@ -194,7 +195,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   const isAirlume = theme.id === 'airlume-ai';
   const isZenOrganic = theme.id === 'zen-organic';
   const isBiteRush = theme.id === 'restaurant-demo';
-  const isKhemetLuxe = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const navigate = useNavigate();
   const location = useLocation();
   const [validationErrors, setValidationErrors] = useState<string[]>([]);

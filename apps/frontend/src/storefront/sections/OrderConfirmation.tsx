@@ -26,6 +26,7 @@ import {
 } from '../preview/marketplacePreviewOrder';
 import { resolvePreviewThemeId } from '../preview/previewContext';
 import { isPharmacyThemeId } from '../utils/pharmacyThemes';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 import {
   clearStoredPurchaseTracking,
   getStoredPurchaseTracking,
@@ -434,7 +435,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
   const isCafeDemo = theme.id === 'cafe-demo' || isMarketAftercare;
   const isPharmacy = isPharmacyThemeId(theme.id) || isNatureAftercare;
   const isPcHub = theme.id === 'pc-hub-eg' || isCommandAftercare;
-  const isKhemetLuxe = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isRoseBoutique =
     variant === 'boutique-aftercare' || theme.id === 'rose-boutique-eg';
   const isSoftThanks =

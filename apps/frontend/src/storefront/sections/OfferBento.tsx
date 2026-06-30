@@ -5,6 +5,7 @@ import { buildStorefrontPath } from '../utils/paths';
 import { buildVersionedStorefrontStaticAssetUrl } from '../utils/productImages';
 import StorefrontProductImage from '../components/StorefrontProductImage';
 import { getDefaultRegisteredVariantId, hasRegisteredVariant } from '../variants';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 
 interface OfferCard {
   label?: string;
@@ -146,7 +147,7 @@ const resolveOfferSignals = (
       : ['توصيل ساخن', 'رسالة أوضح', 'رفع متوسط الطلب'];
   }
 
-  if (themeId === 'khemet-luxe-eg') {
+  if (isKhemetLuxeTheme(themeId)) {
     if (
       content.includes('2+1') ||
       content.includes('الثالث') ||

@@ -22,6 +22,7 @@ import {
 } from '../../utils/shopPageStudioConfig';
 import { resolveSectionVariant } from '../variants';
 import { buildStorefrontPath } from '../utils/paths';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 
 interface ProductGridProps {
   section?: {
@@ -459,7 +460,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
   const isPerfumeEg = theme.id === 'perfume-eg';
   const isVelaFashion = theme.id === 'vela-fashion-eg';
   const isFastlyTheme = theme.id === 'fastly-eg';
-  const isKhemetLuxe = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const hasCustomShopStudio =
     isShopPage && hasShopStudioConfig(storefrontSettings?.storefront);
   const shopStudioConfig = hasCustomShopStudio

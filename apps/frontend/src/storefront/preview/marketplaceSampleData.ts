@@ -4395,6 +4395,12 @@ previewRecommendationIdsByTheme["khemet-luxe-eg"] = {
   boughtTogether: { ...KHEMET_LUXE_RECOMMENDATIONS.boughtTogether },
 };
 previewProductReviewsByTheme["khemet-luxe-eg"] = { ...KHEMET_LUXE_REVIEWS };
+previewProductsByTheme["khemet-luxe-v2"] = KHEMET_LUXE_PRODUCTS;
+previewRecommendationIdsByTheme["khemet-luxe-v2"] = {
+  related: { ...KHEMET_LUXE_RECOMMENDATIONS.related },
+  boughtTogether: { ...KHEMET_LUXE_RECOMMENDATIONS.boughtTogether },
+};
+previewProductReviewsByTheme["khemet-luxe-v2"] = { ...KHEMET_LUXE_REVIEWS };
 previewProductsByTheme["legacy-default-old"] = LEGACY_DEFAULT_OLD_PRODUCTS;
 previewRecommendationIdsByTheme["legacy-default-old"] = {
   related: { ...LEGACY_DEFAULT_OLD_RECOMMENDATIONS.related },

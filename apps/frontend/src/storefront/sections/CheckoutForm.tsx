@@ -4,6 +4,7 @@ import { useCheckoutStore } from '../store/useCheckoutStore';
 import { useCartStore } from '../store/useCartStore';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { buildStorefrontPath } from '../utils/paths';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 
 interface CheckoutFormProps {
   section?: {
@@ -148,7 +149,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
   const isAirlume = theme.id === 'airlume-ai';
   const isZenOrganic = theme.id === 'zen-organic';
   const isBiteRush = theme.id === 'restaurant-demo';
-  const isKhemetLuxe = theme.id === 'khemet-luxe-eg';
+  const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isMarketCheckout = variant === 'market-checkout';
   const isNatureCheckout = variant === 'nature-checkout';
   const isSoftFlow = variant === 'soft-flow';

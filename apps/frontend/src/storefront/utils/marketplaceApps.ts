@@ -17,6 +17,7 @@ const STYLE_STORE_PREVIEW_IDS = new Set([
   "hayah-modest-eg",
   "layali-edit-eg",
   "khemet-luxe-eg",
+  "khemet-luxe-v2",
   "legacy-default-old",
   "rihla-resort-eg",
 ]);
@@ -75,7 +76,9 @@ const resolveMarketplacePreviewFlags = (): MarketplacePreviewFlags => {
     isVelaFashionPreview: previewThemeId === "vela-fashion-eg",
     isPcHubPreview: previewThemeId === "pc-hub-eg",
     isRoseBoutiquePreview: previewThemeId === "rose-boutique-eg",
-    isKhemetPreview: previewThemeId === "khemet-luxe-eg",
+    isKhemetPreview:
+      previewThemeId === "khemet-luxe-eg" ||
+      previewThemeId === "khemet-luxe-v2",
     isStyleStorePreview: previewThemeId
       ? STYLE_STORE_PREVIEW_IDS.has(previewThemeId)
       : false,

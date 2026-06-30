@@ -11,6 +11,7 @@ import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { formatStorefrontCurrency } from '../utils/currency';
 import { sanitizeStorefrontHtml } from '../utils/html';
 import { buildStorefrontPath } from '../utils/paths';
+import { isKhemetLuxeTheme as isKhemetLuxeThemeId } from '../utils/navigationGuards';
 import {
   parseSizeGuideOverrides,
   parseSizeGuideRows,

@@ -5,6 +5,7 @@ import { useStorefrontTheme } from "../engine/ThemeProvider";
 import { resolvePreviewThemeId } from "../preview/previewContext";
 import { resolveActiveThemePreviewDataset } from "../preview/themePreviewData";
 import { buildStorefrontPath } from "../utils/paths";
+import { isKhemetLuxeTheme } from "../utils/navigationGuards";
 import {
   getDefaultRegisteredVariantId,
   hasRegisteredVariant,
@@ -211,7 +212,7 @@ export const shouldPreferRuntimeFeaturedCollections = ({
 }): boolean =>
   settingsPreferRuntimeCategories === true ||
   (settingsPreferRuntimeCategories !== false &&
-    themeId === "khemet-luxe-eg" &&
+    isKhemetLuxeTheme(themeId) &&
     variant === "gallery-columns");
 
 const normalizeMatchText = (value: string): string =>

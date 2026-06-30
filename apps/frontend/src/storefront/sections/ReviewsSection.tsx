@@ -21,6 +21,7 @@ import { resolveSectionVariant } from '../variants';
 import { sanitizeStorefrontHtml } from '../utils/html';
 import { useDeferredSectionActivation } from '../hooks/useDeferredSectionActivation';
 import { resolveSectionContentAlign } from '../utils/contentAlignment';
+import { isKhemetLuxeTheme as isKhemetLuxeThemeId } from '../utils/navigationGuards';
 
 const StarRating: React.FC<{ rating: number; size?: number }> = ({
   rating,

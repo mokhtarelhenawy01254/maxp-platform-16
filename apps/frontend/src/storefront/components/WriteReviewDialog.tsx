@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
 import { storefrontFetch } from "../../utils/storefrontApi";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
+import { isKhemetLuxeTheme } from "../utils/navigationGuards";
 
 interface WriteReviewDialogProps {
   open: boolean;
@@ -35,7 +36,7 @@ const WriteReviewDialog: React.FC<WriteReviewDialogProps> = ({
 }) => {
   const { theme } = useStorefrontTheme();
   const prefersArabicCopy = theme.direction === "rtl";
-  const isKhemetEgyptianCopy = theme.id === "khemet-luxe-eg";
+  const isKhemetEgyptianCopy = isKhemetLuxeTheme(theme.id);
   const [customerName, setCustomerName] = React.useState("");
   const [customerEmail, setCustomerEmail] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
