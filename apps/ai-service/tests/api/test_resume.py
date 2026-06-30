@@ -140,8 +140,9 @@ def test_resume_approve_flow(client, mock_session, valid_headers):
         scalar_one_or_none=MagicMock(return_value=approval)
     )
 
-    with patch("src.api.resume.execute_approved_action", new_callable=AsyncMock) as mock_exec:
-        mock_exec.return_value = {"status": "ok", "result": "discount applied"}
+    from src.services.approval_service import ApprovalService
+    with patch.object(ApprovalService, "approve", new_callable=AsyncMock) as mock_approve:
+        mock_approve.return_value = {"status": "completed", "draft_id": "draft_123"}
 
         resp = client.post(
             "/resume",
@@ -159,7 +160,7 @@ def test_resume_approve_flow(client, mock_session, valid_headers):
     assert data["status"] == "ok"
     assert "تمت الموافقة" in data["reply"]
     assert data["thread_id"] == "t1"
-    mock_exec.assert_awaited_once_with(draft_id="draft_123", session=mock_session)
+    mock_approve.assert_awaited_once_with(draft_id="draft_123", decided_by="merchant")
 
 
 def test_resume_approve_uses_sdk_workflow_before_manual_execution(client, mock_session, valid_headers):
@@ -169,10 +170,12 @@ def test_resume_approve_uses_sdk_workflow_before_manual_execution(client, mock_s
         scalar_one_or_none=MagicMock(return_value=approval)
     )
 
+    from src.services.approval_service import ApprovalService
     with (
         patch("src.api.resume.resume_sdk_approval_workflow", new_callable=AsyncMock) as sdk_resume,
-        patch("src.api.resume.execute_approved_action", new_callable=AsyncMock) as manual_exec,
+        patch.object(ApprovalService, "approve", new_callable=AsyncMock) as mock_approve,
     ):
+        mock_approve.return_value = {"status": "completed", "draft_id": "draft_123"}
         sdk_resume.return_value = MagicMock(final_reply="done")
 
         resp = client.post(
@@ -189,7 +192,7 @@ def test_resume_approve_uses_sdk_workflow_before_manual_execution(client, mock_s
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"
     sdk_resume.assert_awaited_once()
-    manual_exec.assert_not_awaited()
+    mock_approve.assert_awaited_once()
 
 
 def test_resume_approve_execution_failure(client, mock_session, valid_headers):
@@ -198,8 +201,9 @@ def test_resume_approve_execution_failure(client, mock_session, valid_headers):
         scalar_one_or_none=MagicMock(return_value=approval)
     )
 
-    with patch("src.api.resume.execute_approved_action", new_callable=AsyncMock) as mock_exec:
-        mock_exec.side_effect = Exception("MaxP API error")
+    from src.services.approval_service import ApprovalService
+    with patch.object(ApprovalService, "approve", new_callable=AsyncMock) as mock_approve:
+        mock_approve.return_value = {"status": "error", "draft_id": "draft_123"}
 
         resp = client.post(
             "/resume",

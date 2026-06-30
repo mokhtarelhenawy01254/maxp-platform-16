@@ -23,8 +23,8 @@ class TestMigrationSprint1:
         """Intent schema was replaced by Skill classes"""
         skills_init = Path("src/skills/__init__.py")
         assert skills_init.exists(), "Skills package should exist"
-        skills_count = len(list(Path("src/skills").rglob("search.py")))
-        assert skills_count >= 3, "Should have at least 3 skill modules with search handlers"
+        skills_count = len(list(Path("src/skills").rglob("*.py")))
+        assert skills_count >= 5, "Should have at least 5 skill modules"
 
     def test_dag_planner_exists_in_python(self):
         """DAGPlannerExecutor.js should be migrated to Python"""

@@ -41,8 +41,11 @@ import {
 interface Session {
   id: string;
   name?: string;
-  phoneNumber: string;
+  phoneNumber?: string;
+  provider?: string;
+  metaDisplayPhoneNumber?: string;
 }
+
 
 interface MetaTemplate {
   name: string;
@@ -166,9 +169,17 @@ const WhatsAppTemplateBroadcast: React.FC<{
                     <SelectValue placeholder="اختر جلسة" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sessions.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name || s.phoneNumber || s.id}</SelectItem>
-                    ))}
+                    {sessions.map((s) => {
+                      const isCuid = s.name && s.name.length === 25 && s.name.startsWith("c") && /^[a-z0-9]+$/.test(s.name);
+                      const isInvalidName = !s.name || s.name === s.id || isCuid;
+                      const phone = s.metaDisplayPhoneNumber || s.phoneNumber;
+                      const label = isInvalidName ? phone || s.id : s.name;
+                      return (
+                        <SelectItem key={s.id} value={s.id}>
+                          {label}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

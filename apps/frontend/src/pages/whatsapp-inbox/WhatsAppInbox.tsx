@@ -81,26 +81,43 @@ type ConversationsApiResponse = {
   };
 };
 
-type QueueFilter = '' | 'WAITING_QUEUE' | 'ASSIGNED_QUEUE' | 'PENDING_QUEUE' | 'CLOSED_QUEUE';
+type QueueFilter = '' | 'WAITING_QUEUE' | 'ASSIGNED_QUEUE' | 'PENDING_QUEUE' | 'CLOSED_QUEUE' | 'ESCALATED_QUEUE' | 'MISSED_QUEUE';
+
+interface WhatsAppInboxProps {
+  companyId?: string;
+  superAdminMode?: boolean;
+}
 
 const getSessionTone = (status: string) =>
   String(status || '').toUpperCase() === 'CONNECTED'
     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200'
     : 'bg-muted text-muted-foreground';
 
-const WhatsAppInbox: React.FC = () => {
+const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode = false }) => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const copy = useMemo(() => getWhatsAppInboxWorkspaceCopy(i18n.language), [i18n.language]);
 
-  const queueTabs = useMemo<Array<{ key: QueueFilter; label: string }>>(
+  const apiBase = useMemo(
+    () => (superAdminMode ? '/api/v1/admin/whatsapp-inbox' : '/api/v1/whatsapp-inbox'),
+    [superAdminMode],
+  );
+
+  const apiParams = useMemo(
+    () => (superAdminMode && companyId ? { params: { companyId } } : undefined),
+    [superAdminMode, companyId],
+  );
+
+  const queueTabs = useMemo<Array<{ key: QueueFilter; label: string; metricKey?: keyof QueueCounters }>>(
     () => [
-      { key: '', label: copy.inbox.queueTabs.all },
-      { key: 'WAITING_QUEUE', label: copy.inbox.queueTabs.waiting },
-      { key: 'ASSIGNED_QUEUE', label: copy.inbox.queueTabs.assigned },
-      { key: 'PENDING_QUEUE', label: copy.inbox.queueTabs.pending },
-      { key: 'CLOSED_QUEUE', label: copy.inbox.queueTabs.closed },
+      { key: '', label: copy.inbox.queueTabs.all, metricKey: 'total' },
+      { key: 'WAITING_QUEUE', label: copy.inbox.queueTabs.waiting, metricKey: 'waiting' },
+      { key: 'ASSIGNED_QUEUE', label: copy.inbox.queueTabs.assigned, metricKey: 'assigned' },
+      { key: 'PENDING_QUEUE', label: copy.inbox.queueTabs.pending, metricKey: 'pending' },
+      { key: 'CLOSED_QUEUE', label: copy.inbox.queueTabs.closed, metricKey: 'closed' },
+      { key: 'ESCALATED_QUEUE', label: copy.inbox.queueTabs.escalated, metricKey: 'escalated' },
+      { key: 'MISSED_QUEUE', label: copy.inbox.queueTabs.missed, metricKey: 'missedChats' },
     ],
     [copy],
   );
@@ -111,6 +128,7 @@ const WhatsAppInbox: React.FC = () => {
   const [queueCounters, setQueueCounters] = useState<QueueCounters | null>(null);
   const [moderatorPool, setModeratorPool] = useState<ModeratorPoolItem[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [queueFilter, setQueueFilter] = useState<QueueFilter>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +168,7 @@ const WhatsAppInbox: React.FC = () => {
 
   const loadSessions = useCallback(async () => {
     try {
-      const response = await apiClient.get<SessionsApiResponse>('/api/v1/whatsapp-inbox/sessions');
+      const response = await apiClient.get<SessionsApiResponse>(`${apiBase}/sessions`, apiParams);
       if (response.data?.success) {
         const nextSessions = response.data.sessions || [];
         setSessions(nextSessions);
@@ -163,7 +181,18 @@ const WhatsAppInbox: React.FC = () => {
       console.error('Failed to load WhatsApp sessions:', requestError);
       setError(loadSessionsError);
     }
-  }, [activeSession, loadSessionsError]);
+  }, [activeSession, apiBase, apiParams, loadSessionsError]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    void loadConversations();
+  }, [debouncedSearch, loadConversations]);
 
   const loadConversations = useCallback(async () => {
     if (!activeSession) {
@@ -174,15 +203,15 @@ const WhatsAppInbox: React.FC = () => {
     }
 
     try {
+      const params = {
+        limit: 100,
+        search: debouncedSearch || undefined,
+        queue: queueFilter || undefined,
+        ...(superAdminMode && companyId ? { companyId } : {}),
+      };
       const response = await apiClient.get<ConversationsApiResponse>(
-        `/api/v1/whatsapp-inbox/sessions/${activeSession}/conversations`,
-        {
-          params: {
-            limit: 100,
-            search: search || undefined,
-            queue: queueFilter || undefined,
-          },
-        },
+        `${apiBase}/sessions/${activeSession}/conversations`,
+        { params },
       );
 
       if (response.data?.success) {
@@ -195,7 +224,7 @@ const WhatsAppInbox: React.FC = () => {
       console.error('Failed to load WhatsApp inbox conversations:', requestError);
       setError(loadConversationsError);
     }
-  }, [activeSession, loadConversationsError, queueFilter, search]);
+  }, [activeSession, apiBase, companyId, debouncedSearch, loadConversationsError, queueFilter, superAdminMode]);
 
   useEffect(() => {
     setActiveSession(sessionId || null);
@@ -235,6 +264,36 @@ const WhatsAppInbox: React.FC = () => {
     };
   }, [loadConversations]);
 
+  const navigateToInbox = useCallback(
+    (nextSessionId: string) => {
+      if (superAdminMode && companyId) {
+        navigate(`/super-admin/whatsapp/companies/${companyId}/inbox/${nextSessionId}`);
+      } else {
+        navigate(`/whatsapp-inbox/${nextSessionId}`);
+      }
+    },
+    [companyId, navigate, superAdminMode],
+  );
+
+  const navigateToChat = useCallback(
+    (conversationId: string) => {
+      if (superAdminMode && companyId) {
+        navigate(`/super-admin/whatsapp/companies/${companyId}/chat/${conversationId}`);
+      } else {
+        navigate(`/whatsapp-chat/${conversationId}`);
+      }
+    },
+    [companyId, navigate, superAdminMode],
+  );
+
+  const navigateToDashboard = useCallback(() => {
+    if (superAdminMode && companyId) {
+      navigate(`/super-admin/whatsapp/companies/${companyId}/moderator-dashboard`);
+    } else {
+      navigate('/moderator-dashboard');
+    }
+  }, [companyId, navigate, superAdminMode]);
+
   const selectedSession = useMemo(
     () => sessions.find((item) => item.id === activeSession) || null,
     [sessions, activeSession],
@@ -246,6 +305,8 @@ const WhatsAppInbox: React.FC = () => {
       { label: copy.inbox.metrics.assigned, value: queueCounters?.assigned || 0 },
       { label: copy.inbox.metrics.pending, value: queueCounters?.pending || 0 },
       { label: copy.inbox.metrics.slaBreached, value: queueCounters?.slaBreached || 0 },
+      { label: copy.inbox.metrics.missed, value: queueCounters?.missedChats || 0 },
+      { label: copy.inbox.metrics.escalated, value: queueCounters?.escalated || 0 },
     ],
     [copy, queueCounters],
   );
@@ -344,7 +405,7 @@ const WhatsAppInbox: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setActiveSession(item.id);
-                      navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox/${item.id}` : `/whatsapp-inbox/${item.id}`);
+                      navigateToInbox(item.id);
                     }}
                     className={`min-w-[200px] rounded-lg border px-3 py-3 text-left transition ${
                       active
@@ -392,9 +453,7 @@ const WhatsAppInbox: React.FC = () => {
                   />
                   <button
                     type="button"
-                    onClick={() => {
-                      void loadConversations();
-                    }}
+                    onClick={() => loadConversations()}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                   >
                     {copy.inbox.refresh}
@@ -402,7 +461,7 @@ const WhatsAppInbox: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/moderator-dashboard` : '/moderator-dashboard')}
+                  onClick={() => navigateToDashboard()}
                   className="rounded-lg border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
                 >
                   {copy.inbox.openDashboard}
@@ -415,13 +474,24 @@ const WhatsAppInbox: React.FC = () => {
                     key={tab.key || 'all'}
                     type="button"
                     onClick={() => setQueueFilter(tab.key)}
-                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition ${
                       queueFilter === tab.key
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                   >
                     {tab.label}
+                    {tab.metricKey && (queueCounters?.[tab.metricKey] ?? 0) > 0 ? (
+                      <span
+                        className={`rounded-full px-1.5 py-0 text-[11px] font-semibold ${
+                          queueFilter === tab.key
+                            ? 'bg-primary-foreground/20 text-primary-foreground'
+                            : 'bg-background text-muted-foreground'
+                        }`}
+                      >
+                        {queueCounters?.[tab.metricKey]}
+                      </span>
+                    ) : null}
                   </button>
                 ))}
               </div>
@@ -445,7 +515,7 @@ const WhatsAppInbox: React.FC = () => {
                     <button
                       key={conversation.id}
                       type="button"
-                      onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/chat/${conversation.id}` : `/whatsapp-chat/${conversation.id}`)}
+                      onClick={() => navigateToChat(conversation.id)}
                       className="mb-2 w-full rounded-lg border border-border/50 bg-card p-3 text-left shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
                     >
                       <div className="flex items-start justify-between gap-2">

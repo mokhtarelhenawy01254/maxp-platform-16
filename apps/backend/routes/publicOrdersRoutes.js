@@ -31,6 +31,7 @@ const {
   applyVolumeDiscount,
   getVolumeDiscountsFromMetadata,
 } = require('../utils/volumeDiscountUtils');
+const { calculateDiscount: calcStorePromotionDiscount } = require('../utils/storePromotionUtils');
 const customerBlocklistService = require('../services/customerBlocklistService');
 
 /**
@@ -1360,6 +1361,30 @@ router.post('/', async (req, res) => {
           discountAmount = coupon.value;
         }
       }
+    }
+
+    // Store-wide promotion discount
+    const storePromotion = await prisma.storePromotion.findFirst({
+      where: {
+        companyId: company.id,
+        isActive: true,
+        AND: [
+          { OR: [{ startDate: null }, { startDate: { lte: new Date() } }] },
+          { OR: [{ endDate: null }, { endDate: { gte: new Date() } }] },
+        ],
+      },
+    });
+    if (storePromotion) {
+      const promoCartItems = cartItems.map(i => ({
+        productId: i.productId || i.id,
+        price: i.basePrice || i.price,
+        quantity: i.quantity,
+      }));
+      const { discount: promoDiscount } = calcStorePromotionDiscount({
+        cartItems: promoCartItems,
+        tiers: storePromotion.tiers,
+      });
+      discountAmount += promoDiscount;
     }
 
     const finalTotal = (Number(cartTotal) || 0) + (Number(shippingCost) || 0) - (Number(discountAmount) || 0);

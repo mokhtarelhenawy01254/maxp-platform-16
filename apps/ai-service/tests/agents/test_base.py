@@ -861,12 +861,7 @@ class TestProcessTask:
         async def fake_stage(ctx):
             return next(iter_ctx)
 
-        with patch("src.agents.base.resolve_intent", side_effect=fake_stage), \
-             patch("src.agents.base.route_to_tools", side_effect=fake_stage), \
-             patch("src.agents.base.execute_tools", side_effect=fake_stage), \
-             patch("src.agents.base.retrieve_knowledge", side_effect=fake_stage), \
-             patch("src.agents.base.retrieve_episodic_memory", side_effect=fake_stage), \
-             patch("src.agents.base.handle_fallback", side_effect=fake_stage), \
+        with patch("src.agents.base.process_with_skills", side_effect=fake_stage), \
              patch("src.agents.base.validate_reply", side_effect=fake_stage):
             events = []
             async for ev in agent.process_task_streamed({"current_message": "hi"}):

@@ -6422,7 +6422,19 @@
       "userNotFound": "The requested user could not be found.",
       "userRequired": "Please select a user first.",
       "usersLoad": "We could not load the users right now."
-    }
+    },
+    "inactiveLabel": "Inactive",
+    "showInactiveModerators": "Show inactive moderators",
+    "routingPreviewTitle": "Next assignment preview",
+    "routingPreviewDescription": "Run a simulation based on the current round-robin cursor.",
+    "simulateRouting": "Simulate",
+    "nextAssignmentWillGoTo": "Next chat will go to {{name}}",
+    "routingPreviewNoCandidate": "No eligible candidate found",
+    "routingPreviewCandidates": "{{count}} eligible candidates",
+    "routingPreviewSkippedOffline": "{{count}} skipped offline",
+    "routingPreviewSkippedCapacity": "{{count}} skipped over capacity",
+    "confirmUnassignTitle": "Unassign this number?",
+    "confirmUnassignDescription": "This will remove all routing rules from {{number}} and return it to the available pool."
   },
   "whatsappJourney": {
     "title": "Post-Purchase Message Journeys",

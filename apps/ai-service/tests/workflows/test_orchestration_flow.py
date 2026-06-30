@@ -259,7 +259,7 @@ async def test_orchestration_loads_db_channel_assignment_when_registry_is_missin
     monkeypatch.setattr("src.workflows.orchestration_flow.create_channel_agent", channel_agent_factory)
     monkeypatch.setattr(
         "src.workflows.orchestration_flow._build_runtime_agent_from_db",
-        lambda db_agent: (selected_agent, ["catalog_search"]),
+        lambda db_agent, **kwargs: (selected_agent, ["catalog_search"]),
     )
 
     result = await run_orchestration(

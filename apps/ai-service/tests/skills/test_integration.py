@@ -56,22 +56,23 @@ def test_resolve_skill_context_first_match_wins():
     mock_dir_b.is_dir.return_value = True
     mock_dir_b.name = "skill-b"
 
-    with (
-        patch("src.skills.integration._get_allowed_skill_dirs", return_value=[mock_dir_a, mock_dir_b]),
-        patch("src.skills.integration._skill_metadata_from_dir") as mock_meta,
-    ):
-        mock_meta.side_effect = [
+    with patch("src.skills.integration._get_skill_meta") as mock_get:
+        mock_get.side_effect = [
             {
                 "id": "skill-a",
                 "allowed_tools": ["tool_one"],
                 "requires_human_approval": True,
                 "max_tool_count": 1,
+                "instructions": "",
+                "name": "Skill A",
             },
             {
                 "id": "skill-b",
                 "allowed_tools": ["tool_two"],
                 "requires_human_approval": False,
                 "max_tool_count": 5,
+                "instructions": "",
+                "name": "Skill B",
             },
         ]
         ctx = resolve_skill_context({"tool_one"}, {"skill-a", "skill-b"})
@@ -121,19 +122,14 @@ def test_resolve_skill_context_requires_approval():
     with patch("src.skills.integration._get_allowed_skill_dirs", return_value=[]):
         pass
 
-    mock_dir = MagicMock(spec=Path)
-    mock_dir.is_dir.return_value = True
-    mock_dir.name = "approval-skill"
-
-    with (
-        patch("src.skills.integration._get_allowed_skill_dirs", return_value=[mock_dir]),
-        patch("src.skills.integration._skill_metadata_from_dir") as mock_meta,
-    ):
-        mock_meta.return_value = {
+    with patch("src.skills.integration._get_skill_meta") as mock_get:
+        mock_get.return_value = {
             "id": "approval-skill",
+            "name": "Approval Skill",
             "allowed_tools": ["write_tool"],
             "requires_human_approval": True,
             "max_tool_count": 3,
+            "instructions": "",
         }
         ctx = resolve_skill_context({"write_tool"}, {"approval-skill"})
 

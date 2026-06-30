@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { ShoppingBag } from 'lucide-react';
+import { FileIcon, ImageIcon, Music, Paperclip, ShoppingBag, Video } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import LinkifiedText from '../../components/common/LinkifiedText';
 import { formatQueueLabel } from './queuePresentation';
+import { getWhatsAppInboxWorkspaceCopy } from './workspaceCopy';
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 
@@ -93,10 +95,12 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const { conversationId } = useParams();
   const apiBase = superAdminMode ? '/api/v1/admin/whatsapp-inbox' : '/api/v1/whatsapp-inbox';
   const apiParams = useMemo(
-    () => superAdminMode && companyId ? { params: { companyId } } : undefined,
+    () => (superAdminMode && companyId ? { params: { companyId } } : undefined),
     [superAdminMode, companyId],
   );
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const copy = useMemo(() => getWhatsAppInboxWorkspaceCopy(i18n.language), [i18n.language]);
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
@@ -107,7 +111,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const [saving, setSaving] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
-  const [customerOrders, setCustomerOrders] = useState<any[]>([]);
+  const [customerOrders, setCustomerOrders] = useState<Array<{ id: string; orderNumber?: string; status?: string; createdAt?: string; items?: unknown[]; total?: number }>>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -120,6 +124,14 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     }
   }, []);
 
+  const navigateToInbox = useCallback(() => {
+    if (superAdminMode && companyId) {
+      navigate(`/super-admin/whatsapp/companies/${companyId}/inbox`);
+    } else {
+      navigate('/whatsapp-inbox');
+    }
+  }, [companyId, navigate, superAdminMode]);
+
   const loadConversation = useCallback(async () => {
     if (!conversationId) {
       return;
@@ -130,14 +142,15 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       if (response.data?.success) {
         setConversation(response.data.conversation);
       }
-    } catch (error: any) {
-      if (error?.response?.status === 403 || error?.response?.status === 404) {
-        navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox` : '/whatsapp-inbox');
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number } } | undefined;
+      if (axiosError?.response?.status === 403 || axiosError?.response?.status === 404) {
+        navigateToInbox();
       }
     } finally {
       setLoading(false);
     }
-  }, [conversationId, navigate, apiBase, apiParams, superAdminMode, companyId]);
+  }, [conversationId, navigateToInbox, apiBase, apiParams]);
 
   const fetchCustomerOrders = useCallback(async (customerId: string) => {
     if (!customerId) return;
@@ -211,6 +224,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         content: noteDraft,
         mentionUserIds: selectedMentionIds,
         requestAssistance,
+        isInternal: true,
       });
       setNoteDraft('');
       setSelectedMentionIds([]);
@@ -260,20 +274,75 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
     );
   };
 
-  const formatTime = (value: string) =>
-    new Intl.DateTimeFormat('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      day: '2-digit',
-      month: 'short',
-    }).format(new Date(value));
+  const formatTime = useCallback(
+    (value?: string | null) => {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat(copy.locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: 'short',
+      }).format(date);
+    },
+    [copy.locale],
+  );
 
-  const formatDate = (value: string) =>
-    new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }).format(new Date(value));
+  const formatDate = useCallback(
+    (value?: string | null) => {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat(copy.locale, {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(date);
+    },
+    [copy.locale],
+  );
+
+  const translateStatus = useCallback(
+    (status?: string) => {
+      const key = String(status || '').toUpperCase();
+      return copy.chat.status[key] || key;
+    },
+    [copy.chat?.status],
+  );
+
+  const mediaHint = useCallback((type?: string) => {
+    const key = String(type || '').toUpperCase();
+    const hints: Record<string, React.ReactNode> = {
+      IMAGE: <ImageIcon className="size-4" />,
+      VIDEO: <Video className="size-4" />,
+      AUDIO: <Music className="size-4" />,
+      DOCUMENT: <FileIcon className="size-4" />,
+      VOICE: <Music className="size-4" />,
+    };
+    return hints[key] || <Paperclip className="size-4" />;
+  }, []);
+
+  const renderMessageContent = useCallback(
+    (message: { type: string; content: string }) => {
+      const typeUpper = String(message.type || '').toUpperCase();
+      if (typeUpper === 'TEXT') {
+        return (
+          <LinkifiedText
+            text={message.content}
+            className="block whitespace-pre-wrap break-words text-sm leading-6"
+          />
+        );
+      }
+      return (
+        <div className="flex items-center gap-2 text-sm italic">
+          {mediaHint(typeUpper)}
+          <span>{copy.chat.mediaHint[typeUpper] || message.type}</span>
+        </div>
+      );
+    },
+    [copy.chat.mediaHint, mediaHint],
+  );
 
   const getOrderStatusTheme = (status?: string) => {
     const upper = (status || '').toUpperCase();
@@ -308,7 +377,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   if (!conversation) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-        Conversation not available
+        {copy.chat.notAvailable}
       </div>
     );
   }
@@ -319,16 +388,16 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         <header className="border-b border-border/50 bg-card px-4 py-3 md:px-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div className="flex items-start gap-2">
-              <button
-                type="button"
-                onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox` : '/whatsapp-inbox')}
-                className="rounded-md border border-border/50 bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted/80"
-              >
-                Back
-              </button>
+        <button
+          type="button"
+          onClick={() => navigateToInbox()}
+          className="rounded-md border border-border/50 bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted/80"
+        >
+          {copy.chat.back}
+        </button>
               <div>
-                  <div className="text-xs font-medium text-muted-foreground">Chat</div>
-                  <h1 className="mt-1 text-xl font-bold text-foreground">{conversation.customer.name}</h1>
+          <div className="text-xs font-medium text-muted-foreground">{copy.chat.chatLabel}</div>
+          <h1 className="mt-1 text-xl font-bold text-foreground">{conversation.customer.name}</h1>
                   <div className="text-sm text-muted-foreground">{conversation.customer.phone}</div>
               </div>
             </div>
@@ -355,32 +424,32 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
               >
                 <span className="text-xs font-bold px-1">Task</span>
               </button>
-              <select
-                value={conversation.status}
-                onChange={(event) => updateStatus(event.target.value)}
-                className="rounded-lg border border-border/50 bg-muted px-3 py-1.5 text-xs font-medium text-foreground outline-none"
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-              {conversation.customer.status === 'VIP' ? (
-                <span className="rounded-full bg-fuchsia-100 px-2.5 py-0.5 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
-                  VIP
-                </span>
-              ) : null}
-            </div>
+          <select
+            value={conversation.status}
+            onChange={(event) => updateStatus(event.target.value)}
+            className="rounded-lg border border-border/50 bg-muted px-3 py-1.5 text-xs font-medium text-foreground outline-none"
+          >
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {translateStatus(status)}
+              </option>
+            ))}
+          </select>
+          {conversation.customer.status === 'VIP' ? (
+            <span className="rounded-full bg-fuchsia-100 px-2.5 py-0.5 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
+              {copy.chat.vipBadge}
+            </span>
+          ) : null}
+        </div>
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span>Owner: {conversation.assignedUser ? `${conversation.assignedUser.firstName} ${conversation.assignedUser.lastName}`.trim() : 'Unassigned'}</span>
-            {conversation.flags.detectedLanguage ? <span>Language: {conversation.flags.detectedLanguage.toUpperCase()}</span> : null}
-            {conversation.flags.detectedCountry ? <span>Country: {conversation.flags.detectedCountry}</span> : null}
-            {conversation.flags.detectedDepartment ? <span>Dept: {conversation.flags.detectedDepartment}</span> : null}
-            {conversation.flags.ownerLock?.lockExpiresAt ? <span>Lock until: {formatTime(conversation.flags.ownerLock.lockExpiresAt)}</span> : null}
-            {conversation.flags.sla?.maxWaitingDeadlineAt ? <span>SLA deadline: {formatTime(conversation.flags.sla.maxWaitingDeadlineAt)}</span> : null}
+            <span>{copy.chat.owner}: {conversation.assignedUser ? `${conversation.assignedUser.firstName} ${conversation.assignedUser.lastName}`.trim() : copy.chat.unassigned}</span>
+            {conversation.flags.detectedLanguage ? <span>{copy.chat.language}: {conversation.flags.detectedLanguage.toUpperCase()}</span> : null}
+            {conversation.flags.detectedCountry ? <span>{copy.chat.country}: {conversation.flags.detectedCountry}</span> : null}
+            {conversation.flags.detectedDepartment ? <span>{copy.chat.department}: {conversation.flags.detectedDepartment}</span> : null}
+            {conversation.flags.ownerLock?.lockExpiresAt ? <span>{copy.chat.lockUntil}: {formatTime(conversation.flags.ownerLock.lockExpiresAt)}</span> : null}
+            {conversation.flags.sla?.maxWaitingDeadlineAt ? <span>{copy.chat.slaDeadline}: {formatTime(conversation.flags.sla.maxWaitingDeadlineAt)}</span> : null}
           </div>
         </header>
 
@@ -398,10 +467,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                     : 'rounded-br-sm bg-primary text-primary-foreground'
                 }`}
                 >
-                  <LinkifiedText
-                    text={message.content}
-                    className="block whitespace-pre-wrap break-words text-sm leading-6"
-                  />
+                  {renderMessageContent(message)}
                   <div className={`mt-1.5 text-[11px] ${message.isFromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/70'}`}>
                     {formatTime(message.createdAt)}
                   </div>
@@ -423,7 +489,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   sendMessage();
                 }
               }}
-              placeholder="Reply as the conversation owner..."
+              placeholder={copy.chat.replyPlaceholder}
               className="min-h-[80px] w-full resize-none bg-transparent px-1 py-1 text-sm text-foreground outline-none"
             />
             <div className="flex justify-end">
@@ -433,7 +499,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 disabled={saving || !draft.trim()}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Send Reply
+                {copy.chat.sendReply}
               </button>
             </div>
           </div>
@@ -443,7 +509,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       <aside className="min-h-0 overflow-y-auto border-l border-border/50 bg-card p-4 md:p-5">
         <div className="space-y-4">
           <section className="rounded-xl border border-border/50 bg-muted/50 p-4">
-            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tags</div>
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{copy.chat.tags.title}</div>
             <div className="mt-3 flex flex-wrap gap-2">
               {conversation.conversationTags.map((tag) => (
                 <span
@@ -462,7 +528,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
               <input
                 value={tagInput}
                 onChange={(event) => setTagInput(event.target.value)}
-                placeholder="Add tag"
+                placeholder={copy.chat.tags.addPlaceholder}
                 className="w-full rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
               />
               <button
@@ -470,24 +536,24 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 onClick={addTag}
                 className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
               >
-                Add
+                {copy.chat.tags.add}
               </button>
             </div>
           </section>
 
           {canTransfer ? (
             <section className="rounded-xl border border-border/50 bg-card p-4">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Transfer / Reassign</div>
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{copy.chat.transfer.title}</div>
               <div className="mt-3 space-y-2">
                 <select
                   value={transferTarget}
                   onChange={(event) => setTransferTarget(event.target.value)}
                   className="w-full rounded-lg border border-border/50 bg-muted px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                 >
-                  <option value="">Select moderator</option>
+                  <option value="">{copy.chat.transfer.selectPlaceholder}</option>
                   {conversation.availableModerators.map((moderator) => (
                     <option key={moderator.id} value={moderator.id}>
-                      {moderator.name} {moderator.online ? '• online' : '• offline'}
+                      {moderator.name} {moderator.online ? `• ${copy.chat.transfer.onlineBadge}` : `• ${copy.chat.transfer.offlineBadge}`}
                     </option>
                   ))}
                 </select>
@@ -497,21 +563,22 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   disabled={!transferTarget}
                   className="w-full rounded-lg bg-amber-400 px-3 py-2 text-sm font-medium text-slate-950 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-500 dark:text-slate-950"
                 >
-                  Transfer Chat
+                  {copy.chat.transfer.button}
                 </button>
               </div>
             </section>
           ) : null}
 
           <section className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Internal Collaboration</div>
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{copy.chat.collaboration.title}</div>
             <textarea
               value={noteDraft}
               onChange={(event) => setNoteDraft(event.target.value)}
-              placeholder="Internal note, handoff summary, or request assistance..."
+              placeholder={copy.chat.collaboration.placeholder}
               className="mt-3 min-h-[100px] w-full rounded-lg border border-border/50 bg-muted px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
             />
             <div className="mt-3 flex flex-wrap gap-2">
+              <div className="w-full text-xs font-medium text-muted-foreground">{copy.chat.collaboration.mentionTitle}</div>
               {conversation.availableModerators.map((moderator) => (
                 <button
                   key={moderator.id}
@@ -534,7 +601,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 disabled={!noteDraft.trim()}
                 className="rounded-lg border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Save Internal Note
+                {copy.chat.collaboration.saveNote}
               </button>
               <button
                 type="button"
@@ -542,7 +609,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 disabled={!noteDraft.trim()}
                 className="rounded-lg bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Request Assistance
+                {copy.chat.collaboration.requestAssistance}
               </button>
             </div>
           </section>
@@ -551,7 +618,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             <div className="flex items-center justify-between mb-4">
               <h3 className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
                 <ShoppingBag size={16} style={{ color: 'var(--color-muted-foreground)' }} />
-                سجل الطلبات
+                {copy.chat.orders.title}
               </h3>
               <div className="flex items-center gap-1">
                 <button
@@ -584,11 +651,11 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 style={{ color: 'var(--color-muted-foreground)' }}
               >
                 <ShoppingBag size={48} className="mx-auto mb-2 opacity-20" />
-                <p className="text-sm">لا توجد طلبات سابقة</p>
+                <p className="text-sm">{copy.chat.orders.empty}</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {customerOrders.map((order: any) => {
+                {customerOrders.map((order) => {
                   const theme = getOrderStatusTheme(order.status);
                   const itemsCount = order.items?.length || 0;
                   return (
@@ -615,7 +682,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                       </div>
                       <div className="flex items-center justify-between text-xs">
                         <span style={{ color: 'var(--color-muted-foreground)' }}>
-                          {itemsCount} {itemsCount === 1 ? 'قطعة' : 'قطع'}
+                          {itemsCount} {itemsCount === 1 ? copy.chat.orders.itemsOne : copy.chat.orders.itemsOther}
                         </span>
                         <span className="font-bold" style={{ color: 'var(--color-foreground)' }}>
                           {Number(order.total).toLocaleString()} ج.م
@@ -629,7 +696,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
           </section>
 
           <section className="rounded-xl border border-border/50 bg-muted/50 p-4">
-            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Internal Notes Timeline</div>
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{copy.chat.notes.title}</div>
             <div className="mt-4 space-y-3">
               {conversation.notes.map((note) => (
                 <div key={note.id} className="rounded-lg border border-border/50 bg-card p-3">
@@ -642,7 +709,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
               ))}
               {conversation.notes.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-                  No internal notes yet.
+                  {copy.chat.notes.empty}
                 </div>
               ) : null}
             </div>

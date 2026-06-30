@@ -7,9 +7,12 @@ import React, {
 } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
 
 // Alias for easier usage
 const api = apiClient;
+
+let _optimisticIdCounter = 0;
 
 // Media cache to avoid re-downloading the same media
 const mediaCache = new Map<
@@ -18,19 +21,23 @@ const mediaCache = new Map<
 >();
 const CACHE_MAX_AGE = 30 * 60 * 1000; // 30 minutes
 
-// Cleanup old cache entries periodically
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [key, value] of mediaCache.entries()) {
-      if (now - value.timestamp > CACHE_MAX_AGE) {
-        URL.revokeObjectURL(value.blobUrl);
-        mediaCache.delete(key);
+// Cleanup old cache entries periodically (singleton, runs once)
+let _cacheCleanupStarted = false;
+if (!_cacheCleanupStarted) {
+  _cacheCleanupStarted = true;
+  setInterval(
+    () => {
+      const now = Date.now();
+      for (const [key, value] of mediaCache.entries()) {
+        if (now - value.timestamp > CACHE_MAX_AGE) {
+          URL.revokeObjectURL(value.blobUrl);
+          mediaCache.delete(key);
+        }
       }
-    }
-  },
-  5 * 60 * 1000,
-); // Check every 5 minutes
+    },
+    5 * 60 * 1000,
+  );
+}
 import {
   PaperAirplaneIcon,
   ChatBubbleLeftRightIcon,
@@ -565,8 +572,9 @@ const TelegramUserbot: React.FC = () => {
       });
 
       // Optimistic update
+      const optimisticId = `optimistic-${++_optimisticIdCounter}`;
       const newMessage: Message = {
-        id: Date.now(),
+        id: optimisticId,
         text: messageText,
         date: Math.floor(Date.now() / 1000),
         senderId: "me",
@@ -607,8 +615,9 @@ const TelegramUserbot: React.FC = () => {
         },
       });
       // Optimistic Update (Text only placeholder)
+      const optimisticId = `optimistic-${++_optimisticIdCounter}`;
       const newMessage: Message = {
-        id: Date.now(),
+        id: optimisticId,
         text: `[File: ${file.name}]`,
         date: Math.floor(Date.now() / 1000),
         senderId: "me",
@@ -617,7 +626,7 @@ const TelegramUserbot: React.FC = () => {
       };
       setMessages((prev) => [...prev, newMessage]);
     } catch (err: any) {
-      alert("Failed to upload: " + err.message);
+      toast.error("Failed to upload: " + err.message);
     }
   };
 

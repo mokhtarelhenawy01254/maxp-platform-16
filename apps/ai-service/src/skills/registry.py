@@ -15,6 +15,9 @@ class SkillRegistry:
     def get(self, name: str) -> Skill | None:
         return self._skills.get(name)
 
+    def clear(self) -> None:
+        self._skills.clear()
+
     def get_all(self) -> list[Skill]:
         return list(self._skills.values())
 

@@ -144,7 +144,7 @@ const InboxSettingsPage: React.FC = () => {
   const toggleField = (key: keyof Settings) => {
     setSettings((current) => ({
       ...current,
-      [key]: !Boolean(current[key]),
+      [key]: !current[key],
     }) as Settings);
     setMessage(null);
   };

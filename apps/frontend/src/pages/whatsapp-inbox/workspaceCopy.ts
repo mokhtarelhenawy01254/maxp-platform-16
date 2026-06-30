@@ -28,6 +28,8 @@ type InboxWorkspaceCopy = {
       assigned: string;
       pending: string;
       slaBreached: string;
+      missed: string;
+      escalated: string;
     };
     searchPlaceholder: string;
     refresh: string;
@@ -38,6 +40,8 @@ type InboxWorkspaceCopy = {
       assigned: string;
       pending: string;
       closed: string;
+      escalated: string;
+      missed: string;
     };
     emptyStateTitle: string;
     emptyStateDescription: string;
@@ -46,6 +50,59 @@ type InboxWorkspaceCopy = {
     moderatorPoolTitle: string;
     moderatorPoolEmpty: string;
     statusFallback: string;
+  };
+  chat: {
+    back: string;
+    chatLabel: string;
+    owner: string;
+    language: string;
+    country: string;
+    department: string;
+    lockUntil: string;
+    slaDeadline: string;
+    replyPlaceholder: string;
+    sendReply: string;
+    mediaHint: {
+      IMAGE: string;
+      VIDEO: string;
+      AUDIO: string;
+      DOCUMENT: string;
+      VOICE: string;
+      default: string;
+    };
+    status: Record<string, string>;
+    tags: {
+      title: string;
+      addPlaceholder: string;
+      add: string;
+    };
+    transfer: {
+      title: string;
+      selectPlaceholder: string;
+      onlineBadge: string;
+      offlineBadge: string;
+      button: string;
+    };
+    collaboration: {
+      title: string;
+      placeholder: string;
+      mentionTitle: string;
+      saveNote: string;
+      requestAssistance: string;
+    };
+    orders: {
+      title: string;
+      empty: string;
+      itemsOne: string;
+      itemsOther: string;
+    };
+    notes: {
+      title: string;
+      empty: string;
+    };
+    vipBadge: string;
+    unassigned: string;
+    notAvailable: string;
   };
   notifications: {
     heroEyebrow: string;
@@ -212,6 +269,8 @@ const arabicCopy: InboxWorkspaceCopy = {
       assigned: 'المسندة والنشطة',
       pending: 'معلقة',
       slaBreached: 'خرق SLA',
+      missed: 'فائتة',
+      escalated: 'مصعدة',
     },
     searchPlaceholder: 'ابحث باسم العميل أو رقم الهاتف أو ملخص الرسالة',
     refresh: 'تحديث القائمة',
@@ -222,6 +281,8 @@ const arabicCopy: InboxWorkspaceCopy = {
       assigned: 'المسندة',
       pending: 'المعلقة',
       closed: 'المغلقة',
+      escalated: 'المصعدة',
+      missed: 'الفائتة',
     },
     emptyStateTitle: 'لا توجد محادثات ضمن هذا النطاق',
     emptyStateDescription: 'جرّب تغيير الـ queue أو مسح البحث الحالي لعرض محادثات أخرى.',
@@ -230,6 +291,68 @@ const arabicCopy: InboxWorkspaceCopy = {
     moderatorPoolTitle: 'سعة المودريتورز المباشرة',
     moderatorPoolEmpty: 'لا يوجد مودريتورز مؤهلون لهذا الرقم حاليًا.',
     statusFallback: 'غير محدد',
+  },
+  chat: {
+    back: 'رجوع',
+    chatLabel: 'المحادثة',
+    owner: 'المالك',
+    language: 'اللغة',
+    country: 'الدولة',
+    department: 'القسم',
+    lockUntil: 'القفل حتى',
+    slaDeadline: 'موعد SLA',
+    replyPlaceholder: 'رد كمالك المحادثة...',
+    sendReply: 'إرسال الرد',
+    mediaHint: {
+      IMAGE: 'صورة',
+      VIDEO: 'فيديو',
+      AUDIO: 'صوت',
+      DOCUMENT: 'ملف',
+      VOICE: 'رسالة صوتية',
+      default: 'ملف مرفق',
+    },
+    status: {
+      NEW: 'جديدة',
+      QUEUED: 'في الطابور',
+      ASSIGNED: 'مسندة',
+      ACTIVE: 'نشطة',
+      PENDING: 'معلقة',
+      WAITING_CUSTOMER: 'بانتظار العميل',
+      ESCALATED: 'مصعدة',
+      CLOSED: 'مغلقة',
+    },
+    tags: {
+      title: 'الوسوم',
+      addPlaceholder: 'أضف وسم',
+      add: 'إضافة',
+    },
+    transfer: {
+      title: 'التحويل / إعادة الإسناد',
+      selectPlaceholder: 'اختر مودريتور',
+      onlineBadge: 'متصل',
+      offlineBadge: 'غير متصل',
+      button: 'تحويل المحادثة',
+    },
+    collaboration: {
+      title: 'التعاون الداخلي',
+      placeholder: 'ملاحظة داخلية، ملخص تسليم، أو طلب مساعدة...',
+      mentionTitle: 'أشر إلى زميل',
+      saveNote: 'حفظ ملاحظة داخلية',
+      requestAssistance: 'طلب مساعدة',
+    },
+    orders: {
+      title: 'سجل الطلبات',
+      empty: 'لا توجد طلبات سابقة',
+      itemsOne: 'قطعة',
+      itemsOther: 'قطع',
+    },
+    notes: {
+      title: 'تسلسل الملاحظات الداخلية',
+      empty: 'لا توجد ملاحظات داخلية بعد.',
+    },
+    vipBadge: 'VIP',
+    unassigned: 'غير مسند',
+    notAvailable: 'المحادثة غير متاحة',
   },
   notifications: {
     heroEyebrow: 'تنبيهات الصندوق',
@@ -437,6 +560,8 @@ const englishCopy: InboxWorkspaceCopy = {
       assigned: 'Assigned & active',
       pending: 'Pending',
       slaBreached: 'SLA breached',
+      missed: 'Missed',
+      escalated: 'Escalated',
     },
     searchPlaceholder: 'Search by customer, phone number, or message preview',
     refresh: 'Refresh list',
@@ -447,6 +572,8 @@ const englishCopy: InboxWorkspaceCopy = {
       assigned: 'Assigned',
       pending: 'Pending',
       closed: 'Closed',
+      escalated: 'Escalated',
+      missed: 'Missed',
     },
     emptyStateTitle: 'No conversations match this scope',
     emptyStateDescription: 'Try changing the queue filter or clearing the current search to reveal more conversations.',
@@ -455,6 +582,68 @@ const englishCopy: InboxWorkspaceCopy = {
     moderatorPoolTitle: 'Live moderator capacity',
     moderatorPoolEmpty: 'No eligible moderators are available for this number right now.',
     statusFallback: 'Unspecified',
+  },
+  chat: {
+    back: 'Back',
+    chatLabel: 'Chat',
+    owner: 'Owner',
+    language: 'Language',
+    country: 'Country',
+    department: 'Department',
+    lockUntil: 'Lock until',
+    slaDeadline: 'SLA deadline',
+    replyPlaceholder: 'Reply as the conversation owner...',
+    sendReply: 'Send reply',
+    mediaHint: {
+      IMAGE: 'Image',
+      VIDEO: 'Video',
+      AUDIO: 'Audio',
+      DOCUMENT: 'Document',
+      VOICE: 'Voice message',
+      default: 'Attachment',
+    },
+    status: {
+      NEW: 'New',
+      QUEUED: 'Queued',
+      ASSIGNED: 'Assigned',
+      ACTIVE: 'Active',
+      PENDING: 'Pending',
+      WAITING_CUSTOMER: 'Waiting for customer',
+      ESCALATED: 'Escalated',
+      CLOSED: 'Closed',
+    },
+    tags: {
+      title: 'Tags',
+      addPlaceholder: 'Add tag',
+      add: 'Add',
+    },
+    transfer: {
+      title: 'Transfer / Reassign',
+      selectPlaceholder: 'Select moderator',
+      onlineBadge: 'online',
+      offlineBadge: 'offline',
+      button: 'Transfer chat',
+    },
+    collaboration: {
+      title: 'Internal collaboration',
+      placeholder: 'Internal note, handoff summary, or request assistance...',
+      mentionTitle: 'Mention a colleague',
+      saveNote: 'Save internal note',
+      requestAssistance: 'Request assistance',
+    },
+    orders: {
+      title: 'Order history',
+      empty: 'No previous orders',
+      itemsOne: 'item',
+      itemsOther: 'items',
+    },
+    notes: {
+      title: 'Internal notes timeline',
+      empty: 'No internal notes yet.',
+    },
+    vipBadge: 'VIP',
+    unassigned: 'Unassigned',
+    notAvailable: 'Conversation not available',
   },
   notifications: {
     heroEyebrow: 'Inbox alerts',

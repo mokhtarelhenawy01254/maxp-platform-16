@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../../services/apiClient';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle, Play, Users } from 'lucide-react';
 import { translateInboxApiError } from './errorTranslation';
 
 type RoutingMode = 'NUMBER_OWNER' | 'ROUND_ROBIN';
@@ -66,7 +67,7 @@ const WhatsAppNumberSettings: React.FC = () => {
   const isRtl = i18n.dir() === 'rtl';
 
   const [numbers, setNumbers] = useState<WorkspaceNumber[]>([]);
-  const [moderators, setModerators] = useState<Moderator[]>([]);
+  const [allModerators, setAllModerators] = useState<Moderator[]>([]);
   const [stats, setStats] = useState<WorkspaceStats>({
     totalNumbers: 0,
     configuredNumbers: 0,
@@ -85,6 +86,14 @@ const WhatsAppNumberSettings: React.FC = () => {
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
+  const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [previewResult, setPreviewResult] = useState<{
+    nextUserId: string | null;
+    candidateCount: number;
+    skippedOffline: number;
+    skippedOverCapacity: number;
+  } | null>(null);
 
   const loadWorkspace = useCallback(
     async (preferredSessionId?: string | null) => {
@@ -99,7 +108,7 @@ const WhatsAppNumberSettings: React.FC = () => {
         const nextModerators: Moderator[] = response.data?.moderators || [];
 
         setNumbers(nextNumbers);
-        setModerators(nextModerators);
+        setAllModerators(nextModerators);
         setStats(
           response.data?.stats || {
             totalNumbers: nextNumbers.length,
@@ -156,16 +165,29 @@ const WhatsAppNumberSettings: React.FC = () => {
 
     setRoutingMode(selectedNumber.routingMode);
     setSelectedUserIds(selectedNumber.routingUserIds);
-  }, [
-    selectedNumber?.routingMode,
-    selectedNumber?.routingUserIds,
-    selectedNumber?.sessionId,
-  ]);
+  }, [selectedNumber]);
+
+  const moderators = useMemo(
+    () =>
+      showInactive
+        ? allModerators
+        : allModerators.filter((moderator) => moderator.isActive !== false),
+    [allModerators, showInactive],
+  );
+
+  const moderatorLookup = useMemo(
+    () =>
+      allModerators.reduce<Record<string, Moderator>>((map, moderator) => {
+        map[moderator.id] = moderator;
+        return map;
+      }, {}),
+    [allModerators],
+  );
 
   const selectedUsers = useMemo(
     () =>
-      moderators.filter((moderator) => selectedUserIds.includes(moderator.id)),
-    [moderators, selectedUserIds],
+      allModerators.filter((moderator) => selectedUserIds.includes(moderator.id)),
+    [allModerators, selectedUserIds],
   );
 
   const lastDistributedUser = useMemo(() => {
@@ -173,12 +195,8 @@ const WhatsAppNumberSettings: React.FC = () => {
       return null;
     }
 
-    return (
-      moderators.find(
-        (moderator) => moderator.id === selectedNumber.lastDistributedUserId,
-      ) || null
-    );
-  }, [moderators, selectedNumber?.lastDistributedUserId]);
+    return moderatorLookup[selectedNumber.lastDistributedUserId] || null;
+  }, [moderatorLookup, selectedNumber?.lastDistributedUserId]);
 
   const resolveConnectionLabel = (status: string) => {
     const labels: Record<string, string> = {
@@ -240,6 +258,7 @@ const WhatsAppNumberSettings: React.FC = () => {
   const handleModeChange = (nextMode: RoutingMode) => {
     setRoutingMode(nextMode);
     setFeedback(null);
+    setPreviewResult(null);
 
     if (nextMode === 'NUMBER_OWNER' && selectedUserIds.length > 1) {
       setSelectedUserIds(selectedUserIds.slice(0, 1));
@@ -248,6 +267,7 @@ const WhatsAppNumberSettings: React.FC = () => {
 
   const toggleEmployee = (userId: string) => {
     setFeedback(null);
+    setPreviewResult(null);
 
     if (routingMode === 'NUMBER_OWNER') {
       setSelectedUserIds((current) =>
@@ -297,6 +317,7 @@ const WhatsAppNumberSettings: React.FC = () => {
         },
       );
 
+      setPreviewResult(null);
       setFeedback({
         type: 'success',
         text: t('whatsappInbox.routingSaved'),
@@ -330,6 +351,8 @@ const WhatsAppNumberSettings: React.FC = () => {
         sessionId: selectedNumber.sessionId,
       });
 
+      setConfirmUnassignOpen(false);
+      setPreviewResult(null);
       setFeedback({
         type: 'success',
         text: t('whatsappInbox.numberUnassigned'),
@@ -349,6 +372,47 @@ const WhatsAppNumberSettings: React.FC = () => {
       setSaving(false);
     }
   };
+
+  const simulateNextAssignment = useCallback(() => {
+    if (!selectedNumber || routingMode !== 'ROUND_ROBIN' || selectedUserIds.length < 2) {
+      setPreviewResult({
+        nextUserId: null,
+        candidateCount: 0,
+        skippedOffline: 0,
+        skippedOverCapacity: 0,
+      });
+      return;
+    }
+
+    const candidates = selectedUserIds
+      .map((id) => moderatorLookup[id])
+      .filter(Boolean)
+      .filter((moderator) => showInactive || moderator.isActive !== false);
+
+    const skippedOffline = 0;
+    const skippedOverCapacity = 0;
+    let nextUserId: string | null = null;
+
+    const activeCandidates = candidates.filter((moderator) => {
+      if (!moderator.isActive) {
+        return false;
+      }
+      return true;
+    });
+
+    if (activeCandidates.length > 0) {
+      const cursor = selectedNumber.roundRobinCursor || 0;
+      const picked = activeCandidates[cursor % activeCandidates.length];
+      nextUserId = picked?.id || null;
+    }
+
+    setPreviewResult({
+      nextUserId,
+      candidateCount: activeCandidates.length,
+      skippedOffline,
+      skippedOverCapacity,
+    });
+  }, [routingMode, selectedNumber, selectedUserIds, moderatorLookup, showInactive]);
 
   const workspaceSummary = [
     {
@@ -486,20 +550,25 @@ const WhatsAppNumberSettings: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        {number.isConfigured
-                          ? number.routingMode === 'NUMBER_OWNER'
-                            ? t('whatsappInbox.modeDirect')
-                            : t('whatsappInbox.modeRoundRobin')
-                          : t('whatsappInbox.modeNotConfigured')}
-                      </span>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        {t('whatsappInbox.selectedEmployeesCount', {
-                          count: number.routingUserIds.length,
-                        })}
-                      </span>
-                    </div>
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    {number.isConfigured
+                      ? number.routingMode === 'NUMBER_OWNER'
+                        ? t('whatsappInbox.modeDirect')
+                        : t('whatsappInbox.modeRoundRobin')
+                      : t('whatsappInbox.modeNotConfigured')}
+                  </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    {t('whatsappInbox.selectedEmployeesCount', {
+                      count: number.routingUserIds.length,
+                    })}
+                  </span>
+                  {!number.isActive && (
+                    <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      {t('whatsappInbox.inactiveLabel')}
+                    </span>
+                  )}
+                </div>
                   </button>
                 );
               })}
@@ -567,6 +636,9 @@ const WhatsAppNumberSettings: React.FC = () => {
                         <h3 className="text-base font-semibold text-foreground">
                           {t('whatsappInbox.modeDirect')}
                         </h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('whatsappInbox.modeDirectDescription')}
+                        </p>
                       </div>
                       <span
                         className={`h-4 w-4 shrink-0 rounded-full border-2 ${
@@ -592,6 +664,9 @@ const WhatsAppNumberSettings: React.FC = () => {
                         <h3 className="text-base font-semibold text-foreground">
                           {t('whatsappInbox.modeRoundRobin')}
                         </h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('whatsappInbox.modeRoundRobinDescription')}
+                        </p>
                       </div>
                       <span
                         className={`h-4 w-4 shrink-0 rounded-full border-2 ${
@@ -606,9 +681,23 @@ const WhatsAppNumberSettings: React.FC = () => {
 
                 <div className="grid gap-4 md:grid-cols-[1.4fr,0.9fr]">
                   <div className="rounded-lg border border-border/50 bg-muted/50 p-4">
-                    <h3 className="text-base font-semibold text-foreground">
-                      {t('whatsappInbox.workspaceEmployeesTitle')}
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-semibold text-foreground">
+                        {t('whatsappInbox.workspaceEmployeesTitle')}
+                      </h3>
+                      <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={showInactive}
+                          onChange={(event) => {
+                            setShowInactive(event.target.checked);
+                            setPreviewResult(null);
+                          }}
+                          className="size-4 rounded border-border text-primary"
+                        />
+                        {t('whatsappInbox.showInactiveModerators')}
+                      </label>
+                    </div>
 
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
                       {moderators.map((moderator) => {
@@ -635,12 +724,17 @@ const WhatsAppNumberSettings: React.FC = () => {
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-medium text-foreground">
-                                  {moderator.firstName} {moderator.lastName}
-                                </p>
-                                <p className="truncate text-xs text-muted-foreground">
-                                  {moderator.email}
-                                </p>
+                            <p className="truncate text-sm font-medium text-foreground">
+                              {moderator.firstName} {moderator.lastName}
+                              {moderator.isActive === false && (
+                                <span className="ml-1 rounded-full border border-border px-1.5 py-0 text-[10px] font-medium text-muted-foreground">
+                                  {t('whatsappInbox.inactiveLabel')}
+                                </span>
+                              )}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {moderator.email}
+                            </p>
                               </div>
                             </div>
 
@@ -692,13 +786,64 @@ const WhatsAppNumberSettings: React.FC = () => {
                         </div>
                       )}
                     </div>
+
+                    {routingMode === 'ROUND_ROBIN' && selectedUserIds.length >= 2 && (
+                      <div className="rounded-lg border border-border/50 bg-card p-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-semibold text-foreground">
+                            {t('whatsappInbox.routingPreviewTitle')}
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={simulateNextAssignment}
+                            disabled={saving}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted/80 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Play className="size-3.5" />
+                            {t('whatsappInbox.simulateRouting')}
+                          </button>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {t('whatsappInbox.routingPreviewDescription')}
+                        </p>
+                        {previewResult ? (
+                          <div className="mt-3 rounded-lg border border-border/50 bg-muted p-3">
+                            {previewResult.nextUserId ? (
+                              <div className="flex items-center gap-2">
+                                <Users className="size-4 text-primary" />
+                                <span className="text-sm font-medium text-foreground">
+                                  {t('whatsappInbox.nextAssignmentWillGoTo', {
+                                    name: `${moderatorLookup[previewResult.nextUserId]?.firstName || ''} ${moderatorLookup[previewResult.nextUserId]?.lastName || ''}`.trim() || t('whatsappInbox.notAvailable'),
+                                  })}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                <AlertTriangle className="size-4" />
+                                <span className="text-sm font-medium">
+                                  {t('whatsappInbox.routingPreviewNoCandidate')}
+                                </span>
+                              </div>
+                            )}
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                              <span>{t('whatsappInbox.routingPreviewCandidates', { count: previewResult.candidateCount })}</span>
+                              {previewResult.skippedOffline > 0 ? (
+                                <span>{t('whatsappInbox.routingPreviewSkippedOffline', { count: previewResult.skippedOffline })}</span>
+                              ) : null}
+                              {previewResult.skippedOverCapacity > 0 ? (
+                                <span>{t('whatsappInbox.routingPreviewSkippedCapacity', { count: previewResult.skippedOverCapacity })}</span>
+                              ) : null}
+                            </div>                          </div>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2 border-t border-border/50 pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <button
                     type="button"
-                    onClick={handleUnassign}
+                    onClick={() => setConfirmUnassignOpen(true)}
                     disabled={saving || !selectedNumber.isConfigured}
                     className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -715,6 +860,38 @@ const WhatsAppNumberSettings: React.FC = () => {
                       ? t('whatsappInbox.savingRouting')
                       : t('whatsappInbox.saveRouting')}
                   </button>
+                </div>
+              </div>
+            )}
+            {confirmUnassignOpen && selectedNumber && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t('whatsappInbox.confirmUnassignTitle')}
+                  </h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t('whatsappInbox.confirmUnassignDescription', {
+                      number: selectedNumber.session.name || selectedNumber.session.phoneNumber,
+                    })}
+                  </p>
+                  <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmUnassignOpen(false)}
+                      disabled={saving}
+                      className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t('whatsappInbox.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUnassign}
+                      disabled={saving}
+                      className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {saving ? t('whatsappInbox.savingRouting') : t('whatsappInbox.unassign')}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

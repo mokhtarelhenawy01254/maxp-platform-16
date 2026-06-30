@@ -10,6 +10,8 @@ from src.skills.orders.create_draft import create_draft_order
 from src.skills.support.refund import support_refund
 from src.skills.support.complaint import support_complaint
 from src.skills.knowledge.search import knowledge_search
+from src.skills.shipping.rates import shipping_rates_skill
+from src.skills.orders.cancel import cancel_order_skill
 
 
 def register_all_skills() -> None:
@@ -21,3 +23,5 @@ def register_all_skills() -> None:
     registry.register(support_refund)
     registry.register(support_complaint)
     registry.register(knowledge_search)
+    registry.register(shipping_rates_skill)
+    registry.register(cancel_order_skill)

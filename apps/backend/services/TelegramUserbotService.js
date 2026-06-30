@@ -224,12 +224,13 @@ class TelegramUserbotService {
     /**
      * Retrieves a stored session string from the database.
      */
-    async _getSession(userbotConfigId) {
+    async _getSession(userbotConfigId, companyId) {
         try {
             const config = await this.prisma.telegramConfig.findFirst({
                 where: {
                     id: userbotConfigId,
-                    type: 'USERBOT'
+                    type: 'USERBOT',
+                    ...(companyId ? { companyId } : {})
                 }
             });
 
@@ -308,7 +309,7 @@ class TelegramUserbotService {
             throw new Error("Userbot configuration not found or missing API credentials");
         }
 
-        const sessionString = await this._getSession(userbotConfigId);
+        const sessionString = await this._getSession(userbotConfigId, companyId);
         if (!sessionString || sessionString.trim() === '') {
             console.error(`❌ [_getClient] No session string found for ${userbotConfigId}`);
             throw new Error("Not logged in (No session found)");
