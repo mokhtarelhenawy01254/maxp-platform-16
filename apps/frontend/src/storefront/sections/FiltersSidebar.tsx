@@ -17,6 +17,7 @@ import {
   extractShopStudioConfig,
   hasShopStudioConfig,
 } from '../../utils/shopPageStudioConfig';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 
 interface FiltersSidebarProps {
   settings?: {
