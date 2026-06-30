@@ -27,7 +27,7 @@ function buildFeedXml(company, products, baseUrl) {
   xml += `    <description><![CDATA[Product feed for ${company.name}]]></description>\n`;
 
   for (const product of products) {
-    const id = escapeXml(product.sku || product.id);
+    const feedId = product.id;
     const link = `${baseUrl}/product/${product.slug || product.id}`;
     let images = [];
     if (product.mainImage) images.push(product.mainImage);
@@ -48,7 +48,10 @@ function buildFeedXml(company, products, baseUrl) {
     const price = priceNum.toFixed(2);
 
     xml += `    <item>\n`;
-    xml += `      <g:id>${id}</g:id>\n`;
+    xml += `      <g:id>${escapeXml(feedId)}</g:id>\n`;
+    if (product.sku) {
+      xml += `      <g:sku><![CDATA[${product.sku}]]></g:sku>\n`;
+    }
     xml += `      <g:title><![CDATA[${product.name}]]></g:title>\n`;
     xml += `      <g:description><![CDATA[${product.description || ''}]]></g:description>\n`;
     xml += `      <g:link>${link}</g:link>\n`;
