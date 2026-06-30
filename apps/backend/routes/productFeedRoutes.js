@@ -10,6 +10,13 @@ function escapeXml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
+function toAbsoluteUrl(url, baseUrl) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('//')) return 'https:' + url;
+  return baseUrl.replace(/\/$/, '') + '/' + url.replace(/^\//, '');
+}
+
 function buildFeedXml(company, products, baseUrl) {
   const currency = company.currency || 'EGP';
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -22,7 +29,11 @@ function buildFeedXml(company, products, baseUrl) {
   for (const product of products) {
     const id = escapeXml(product.sku || product.id);
     const link = `${baseUrl}/product/${product.slug || product.id}`;
-    const firstImage = product.mainImage || (product.images ? JSON.parse(product.images)[0] : '');
+    let firstImage = product.mainImage;
+    if (!firstImage && product.images) {
+      try { firstImage = JSON.parse(product.images)[0]; } catch {}
+    }
+    firstImage = toAbsoluteUrl(firstImage, baseUrl);
     const availability = product.stock > 0 ? 'in_stock' : 'out_of_stock';
     const priceNum = parseFloat(product.price.toString());
     const price = priceNum.toFixed(2);
@@ -32,7 +43,9 @@ function buildFeedXml(company, products, baseUrl) {
     xml += `      <g:title><![CDATA[${product.name}]]></g:title>\n`;
     xml += `      <g:description><![CDATA[${product.description || ''}]]></g:description>\n`;
     xml += `      <g:link>${link}</g:link>\n`;
-    xml += `      <g:image_link>${firstImage}</g:image_link>\n`;
+    if (firstImage) {
+      xml += `      <g:image_link>${escapeXml(firstImage)}</g:image_link>\n`;
+    }
     xml += `      <g:availability>${availability}</g:availability>\n`;
     xml += `      <g:price>${price} ${currency}</g:price>\n`;
     if (product.comparePrice) {
