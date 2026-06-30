@@ -15,7 +15,7 @@ class OrderRepository(BaseRepository):
         sql = text("""
             SELECT o.id, o."orderNumber", o.status, o."paymentStatus", o.total,
                    o."customerName", o."customerPhone", o."customerEmail",
-                   o."createdAt", o."confirmedAt", o."deliveredAt", o."updatedAt",
+                   o."createdAt", o."confirmedAt", o."updatedAt",
                    o."customerAddress", o.city, o.governorate, o.notes,
                    o."customerId"
             FROM orders o
