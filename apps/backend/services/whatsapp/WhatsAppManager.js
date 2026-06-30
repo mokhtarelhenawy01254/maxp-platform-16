@@ -3598,7 +3598,11 @@ async function onWhatsApp(sessionId, number) {
  */
 async function getBusinessProfile(sessionId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return null;
+        throw new Error('Session not found');
+    }
 
     try {
         const profile = await session.sock.getBusinessProfile(session.sock.user.id);
@@ -3752,7 +3756,11 @@ async function labelChat(sessionId, jid, labelId) {
  */
 async function getLabels(sessionId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return [];
+        throw new Error('Session not found');
+    }
 
     try {
         const labels = await session.sock.getLabels();
@@ -3856,7 +3864,11 @@ async function getStarredMessages(sessionId, jid) {
  */
 async function fetchBlocklist(sessionId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return [];
+        throw new Error('Session not found');
+    }
 
     try {
         const blocklist = await session.sock.fetchBlocklist();
@@ -3872,7 +3884,11 @@ async function fetchBlocklist(sessionId) {
  */
 async function fetchPrivacySettings(sessionId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return null;
+        throw new Error('Session not found');
+    }
 
     try {
         const settings = await session.sock.fetchPrivacySettings();
