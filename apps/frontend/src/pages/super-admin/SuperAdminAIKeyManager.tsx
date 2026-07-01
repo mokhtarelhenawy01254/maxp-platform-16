@@ -22,14 +22,20 @@ class KeyManagerErrorBoundary extends React.Component<{ children: React.ReactNod
   }
 }
 
+const PROVIDERS = [
+  "GOOGLE","DEEPSEEK","OPENAI","ANTHROPIC","HUGGINGFACE","OLLAMA","GROQ",
+  "OPENROUTER","NVIDIA","CEREBRAS","GITHUB","SAMBANOVA","MISTRAL",
+];
+
 const Inner = () => {
   const getAuthHeaders = React.useCallback(
     (extra: Record<string, string> = {}) => tokenManager.createAuthHeaders(extra), []
   );
-  const [providers, setProviders] = React.useState<any[]>([]);
+
+  const [providers, setProviders] = React.useState<any[]>(PROVIDERS.map(p => ({ name: p, display_name: p })));
   const [keys, setKeys] = React.useState<any[]>([]);
-  const [config, setConfig] = React.useState<any>(null);
-  const [dashboard, setDashboard] = React.useState<any>(null);
+  const [config, setConfig] = React.useState<Record<string, any>>({});
+  const [dashboard, setDashboard] = React.useState<Record<string, any>>({});
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -40,18 +46,24 @@ const Inner = () => {
       fetch(`${API_BASE}/config`, { headers }),
       fetch(`${API_BASE}/dashboard`, { headers }),
     ]).then(async ([provRes, keysRes, configRes, dashRes]) => {
-      if (provRes.ok) { const d = await provRes.json(); setProviders(d.data || d.providers || d || []); }
+      if (provRes.ok) { const d = await provRes.json(); setProviders(d.data || d.providers || d || PROVIDERS.map(p => ({name:p,display_name:p}))); }
       if (keysRes.ok) { const d = await keysRes.json(); setKeys(d.data || d.keys || d || []); }
-      if (configRes.ok) { const d = await configRes.json(); setConfig(d.data || d.config || d || null); }
-      if (dashRes.ok) { const d = await dashRes.json(); setDashboard(d.data || d.stats || d || null); }
+      if (configRes.ok) { const d = await configRes.json(); setConfig(d.data || d.config || d || {}); }
+      if (dashRes.ok) { const d = await dashRes.json(); setDashboard(d.data || d.stats || d || {}); }
     }).catch(() => {}).finally(() => setLoading(false));
   }, [getAuthHeaders]);
+
+  const filteredKeys = keys.filter((k) => true);
+  const providerOptions = providers.length > 0 ? providers : [];
 
   return React.createElement("div", { className: "p-4 max-w-[1440px] mx-auto space-y-4" },
     React.createElement("div", { className: "flex items-center justify-between" },
       React.createElement("h1", { className: "text-2xl font-bold" }, "AI Key Manager"),
     ),
     React.createElement("p", null, `P:${providers.length} K:${keys.length} C:${config?"ok":"no"} D:${dashboard?"ok":"no"} L:${loading}`),
+    React.createElement("div", null,
+      providerOptions.map((p: any) => React.createElement("span", { key: p.name, className: "inline-block px-2 py-1 bg-gray-100 rounded mr-1 text-sm" }, p.name)),
+    ),
   );
 };
 
