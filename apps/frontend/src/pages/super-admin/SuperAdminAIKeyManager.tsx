@@ -10,34 +10,28 @@ const SuperAdminAIKeyManager = () => {
   );
 
   const [providers, setProviders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [keys, setKeys] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchProviders = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     const headers = getAuthHeaders();
     try {
-      const res = await fetch(`${API_BASE}/providers`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setProviders(data);
-      }
+      const [provRes, keysRes] = await Promise.all([
+        fetch(`${API_BASE}/providers`, { headers }),
+        fetch(`${API_BASE}/keys`, { headers }),
+      ]);
+      if (provRes.ok) { const d = await provRes.json(); setProviders(d); }
+      if (keysRes.ok) { const d = await keysRes.json(); setKeys(d); }
     } catch {}
     setLoading(false);
   }, [getAuthHeaders]);
 
-  useEffect(() => { fetchProviders(); }, [fetchProviders]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   return React.createElement("div", { className: "p-4" },
-    React.createElement("h1", { className: "text-2xl font-bold" }, "AI Key Manager - className test"),
-    React.createElement("input", {
-      type: "text",
-      placeholder: "Search...",
-      value: search,
-      onChange: (e: any) => setSearch(e.target.value),
-      className: "border px-2 py-1 rounded",
-    }),
-    React.createElement("p", null, `Providers: ${providers.length}, Loading: ${loading}`),
+    React.createElement("h1", { className: "text-2xl font-bold" }, "AI Key Manager - 2 APIs + keys"),
+    React.createElement("p", null, `Providers: ${providers.length}, Keys: ${keys.length}, Loading: ${loading}`),
   );
 };
 
