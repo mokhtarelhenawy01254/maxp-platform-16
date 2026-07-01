@@ -124,7 +124,9 @@ async def seed(session) -> int:
 
 async def main() -> None:
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-    DATABASE_URL = "postgresql+asyncpg://appuser:0165676135@localhost:5432/maxp"
+    from src.config import get_settings
+    settings = get_settings()
+    DATABASE_URL = settings.database_url or "postgresql+asyncpg://appuser:0165676135@localhost:5432/maxp"
     engine = create_async_engine(DATABASE_URL, pool_size=5)
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
