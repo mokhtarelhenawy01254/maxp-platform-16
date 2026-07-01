@@ -1,44 +1,44 @@
 import React from "react";
 import tokenManager from "../../utils/tokenManager";
 
-class KeyManagerErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
-  state = { error: null };
-  static getDerivedStateFromError(error: Error) { return { error }; }
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("🔴 KMEB caught:", error.message, error.stack, info.componentStack);
-  }
-  render() {
-    if (this.state.error) {
-      return React.createElement("div", { className: "p-8" },
-        React.createElement("h2", { className: "text-xl font-bold text-red-600" }, "Error Caught"),
-        React.createElement("pre", { className: "mt-4 text-sm whitespace-pre-wrap max-w-full overflow-auto bg-gray-100 p-4 rounded" },
-          `Message: ${this.state.error.message}\n\nStack:\n${this.state.error.stack}`
-        )
-      );
-    }
-    return this.props.children;
-  }
-}
-
-const Inner = () => {
-  const getAuthHeaders = React.useCallback(
-    (extra: Record<string, string> = {}) => tokenManager.createAuthHeaders(extra), []
-  );
-
-  const [ok, setOk] = React.useState(false);
-  const [count, setCount] = React.useState(0);
-  React.useEffect(() => { setOk(true); setCount(c => c + 1); }, []);
-
-  return React.createElement("div", { className: "p-4" },
-    React.createElement("h1", { className: "text-2xl font-bold" }, "AI Key Manager"),
-    React.createElement("p", null, `Status: ${ok ? "✅ Working" : "⏳ Loading..."} (${count})`),
-    React.createElement("p", null, `Headers: ${getAuthHeaders() ? "ok" : "no"}`),
-  );
-};
+const API_BASE = "/api/v1/ai-admin";
 
 const SuperAdminAIKeyManager = () => {
-  return React.createElement(KeyManagerErrorBoundary, null,
-    React.createElement(Inner, null)
+  const [providers, setProviders] = React.useState<Record<string,any>[]>([]);
+  const [keys, setKeys] = React.useState<Record<string,any>[]>([]);
+  const [config, setConfig] = React.useState<Record<string,any>|null>(null);
+  const [dashboard, setDashboard] = React.useState<Record<string,any>|null>(null);
+  const [error, setError] = React.useState<string>("");
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const headers = tokenManager.createAuthHeaders();
+    setLoading(true);
+    Promise.all([
+      fetch(API_BASE + "/providers", { headers }),
+      fetch(API_BASE + "/keys", { headers }),
+      fetch(API_BASE + "/config", { headers }),
+      fetch(API_BASE + "/dashboard", { headers }),
+    ]).then(async ([a,b,c,d]) => {
+      try {
+        if (a.ok) { const d2 = await a.json(); setProviders(d2.data || d2.providers || d2 || []); }
+        if (b.ok) { const d2 = await b.json(); setKeys(d2.data || d2.keys || d2 || []); }
+        if (c.ok) { const d2 = await c.json(); setConfig(d2.data || d2.config || d2 || null); }
+        if (d.ok) { const d2 = await d.json(); setDashboard(d2.data || d2.stats || d2 || null); }
+      } catch(e: any) { setError(e?.message || "parse error"); }
+    }).catch((e: any) => setError(e?.message || "fetch error"))
+    .finally(() => setLoading(false));
+  }, []);
+
+  if (error) {
+    return React.createElement("div", { className: "p-4" },
+      React.createElement("p", { className: "text-red-600" }, "Error: " + error),
+    );
+  }
+
+  return React.createElement("div", { className: "p-4 max-w-[1440px] mx-auto" },
+    React.createElement("h1", { className: "text-2xl font-bold" }, "AI Key Manager"),
+    React.createElement("p", null, "Providers: " + providers.length + " Keys: " + keys.length + " Config: " + (config ? "yes" : "no") + " Dashboard: " + (dashboard ? "yes" : "no") + " Loading: " + (loading ? "yes" : "no")),
   );
 };
 
