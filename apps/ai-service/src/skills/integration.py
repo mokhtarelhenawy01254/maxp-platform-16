@@ -185,15 +185,22 @@ def resolve_skill_context(
     if not planned_tool_names or not agent_allowed_skills:
         return None
     planned_canonical = {canonical_tool_name(t) for t in planned_tool_names}
+    candidates: list[tuple[int, dict[str, Any]]] = []
     for meta in _iter_allowed_skills_meta(agent_allowed_skills):
         skill_tools = set(meta.get("allowed_tools", []))
-        if planned_canonical & skill_tools:
-            return {
-                "skill_id": meta["id"],
-                "requires_human_approval": meta["requires_human_approval"],
-                "max_tool_count": meta["max_tool_count"],
-            }
-    return None
+        overlap = len(planned_canonical & skill_tools)
+        if overlap:
+            candidates.append((overlap, meta))
+    if not candidates:
+        return None
+    # Largest overlap first; among ties, non-approval skills win
+    candidates.sort(key=lambda x: (-x[0], x[1]["requires_human_approval"]))
+    meta = candidates[0][1]
+    return {
+        "skill_id": meta["id"],
+        "requires_human_approval": meta["requires_human_approval"],
+        "max_tool_count": meta["max_tool_count"],
+    }
 
 
 def get_skills_block(allowed_skills: set[str] | None) -> str:
