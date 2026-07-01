@@ -27,6 +27,7 @@ def _discover_agents_root() -> Path:
         if p.exists():
             return p
     candidates = [
+        Path(__file__).resolve().parent.parent.parent / "backend2" / "agents",
         Path(__file__).resolve().parent.parent.parent / "backend" / "agents",
         Path(__file__).resolve().parent.parent.parent.parent / "apps" / "backend" / "agents",
     ]
