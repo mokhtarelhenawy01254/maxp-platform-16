@@ -11,6 +11,7 @@ from src.skills.registry import get_skill_registry
 from src.guardrails.input import INPUT_GUARDRAILS
 from src.pipeline.context import PipelineContext
 from src.llm.providers.base import ProviderResponse
+from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta
 
 logger = structlog.get_logger(__name__)
 
@@ -34,11 +35,21 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             logger.warning("input_guardrail_blocked", guardrail=guardrail.name, reason=result.reason)
             return ctx
 
-    # 2. Get skills
+    # 2. Get skills (filtered by agent's allowed_skills if present)
     registry = get_skill_registry()
     skills = registry.get_all()
+    if ctx.agent and hasattr(ctx.agent, 'allowed_skills') and ctx.agent.allowed_skills:
+        try:
+            allowed_names: set[str] = set()
+            for meta in _iter_skill_meta(set(ctx.agent.allowed_skills)):
+                allowed_names.update(t.lower() for t in meta.get("allowed_tools", []))
+            if allowed_names:
+                skills = [s for s in skills if s.name.lower() in allowed_names]
+                logger.info("skills_filtered_by_agent", agent=str(ctx.agent.name or ctx.agent.id), total=len(registry.get_all()), filtered=len(skills))
+        except Exception as e:
+            logger.warning("skills_filter_failed", error=str(e))
     if not skills:
-        logger.warning("no_skills_registered")
+        logger.warning("no_skills_available")
         ctx.final_reply = "عذراً، لا توجد أدوات متاحة حالياً."
         return ctx
 
