@@ -12,6 +12,7 @@ from src.llm.client import LLMClient, ProviderResponse
 from src.pipeline.context import PipelineContext
 from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta
 from src.skills.registry import get_skill_registry
+from src.tools.registry import ALL_TOOLS
 
 logger = structlog.get_logger(__name__)
 
@@ -100,6 +101,16 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
             skill = registry.get(func_name)
             if not skill:
+                # Fallback: try native tool definitions
+                tool = ALL_TOOLS.get(func_name)
+                if tool:
+                    try:
+                        validated = tool.input_model(**arguments)
+                        result = await tool.func(validated)
+                        return {"tool": func_name, "status": "success", "result": result}
+                    except Exception as e:
+                        logger.error("tool_execution_failed", name=func_name, error=str(e))
+                        return {"tool": func_name, "status": "error", "error": str(e)}
                 logger.warning("unknown_skill_called", name=func_name)
                 return {"tool": func_name, "status": "unknown"}
 
@@ -126,6 +137,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             logger.warning("skills_pipeline_json_parse_retry", errors=[r.get("error") for r in parse_errors])
             retry_messages = _build_followup_messages(ctx, provider_response, executed)
             tool_dicts = [s.to_openai_tool() for s in skills]
+            skill_names = {s.name.lower() for s in skills}
+            for tool_name in (getattr(ctx.agent, "allowed_tools", None) or []):
+                tn = tool_name.lower()
+                if tn not in skill_names and tn in ALL_TOOLS:
+                    tool_dicts.append(ALL_TOOLS[tn].to_json_schema_spec())
             retry_response = await _raw_llm_call(ctx, retry_messages, tools=tool_dicts)
             if retry_response.tool_calls:
                 retry_results = await asyncio.gather(*[_execute_one(tc) for tc in retry_response.tool_calls])
@@ -231,6 +247,13 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
                 logger.warning("vision_fallback_unavailable", error=str(e))
 
     tool_dicts = [s.to_openai_tool() for s in skills]
+
+    skill_names = {s.name.lower() for s in skills}
+    allowed = getattr(ctx.agent, "allowed_tools", None) or []
+    for tool_name in allowed:
+        tname = tool_name.lower()
+        if tname not in skill_names and tname in ALL_TOOLS:
+            tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
 
     return await client.generate(
         messages=messages,
