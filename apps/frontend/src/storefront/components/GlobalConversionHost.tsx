@@ -874,7 +874,7 @@ const GlobalConversionHost: React.FC = () => {
   return (
     <>
       {promotionProgress ? (
-          <div className="sticky top-0 z-[60] w-full bg-gradient-to-r from-rose-500/15 to-pink-500/15 border-b border-rose-200 shadow-sm">
+          <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-rose-500/15 to-pink-500/15 border-b border-rose-200 shadow-sm">
           <div className="mx-auto max-w-6xl px-4 py-2.5 md:px-6">
             <div className="flex items-center justify-between gap-3 text-sm font-semibold text-rose-900">
               <span className="truncate">{promotionProgress.message}</span>
