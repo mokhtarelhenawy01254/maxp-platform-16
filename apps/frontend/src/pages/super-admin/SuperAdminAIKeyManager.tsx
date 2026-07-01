@@ -125,10 +125,10 @@ const SuperAdminAIKeyManager = () => {
 
   const [showDashboard, setShowDashboard] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
-  const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+  const [expandedLogs, setExpandedLogs] = useState<string[]>([]);
   const [logsCache, setLogsCache] = useState<Record<string, LogEntry[]>>({});
-  const [loadingLogs, setLoadingLogs] = useState<Set<string>>(new Set());
-  const [testingKeys, setTestingKeys] = useState<Set<string>>(new Set());
+  const [loadingLogs, setLoadingLogs] = useState<string[]>([]);
+  const [testingKeys, setTestingKeys] = useState<string[]>([]);
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -201,7 +201,7 @@ const SuperAdminAIKeyManager = () => {
   };
 
   const handleTestKey = async (keyId: string) => {
-    setTestingKeys((prev) => new Set(prev).add(keyId));
+    setTestingKeys((prev) => [...prev, keyId]);
     try {
       const res = await fetch(`${API_BASE}/keys/${keyId}/test`, {
         method: "POST",
@@ -224,11 +224,7 @@ const SuperAdminAIKeyManager = () => {
       }
     } catch { /* ignore */ }
     finally {
-      setTestingKeys((prev) => {
-        const next = new Set(prev);
-        next.delete(keyId);
-        return next;
-      });
+      setTestingKeys((prev) => prev.filter((id) => id !== keyId));
     }
   };
 
@@ -246,13 +242,13 @@ const SuperAdminAIKeyManager = () => {
   };
 
   const toggleLogs = async (keyId: string) => {
-    const next = new Set(expandedLogs);
-    if (next.has(keyId)) {
-      next.delete(keyId);
+    const isExpanded = expandedLogs.includes(keyId);
+    if (isExpanded) {
+      setExpandedLogs((prev) => prev.filter((id) => id !== keyId));
     } else {
-      next.add(keyId);
+      setExpandedLogs((prev) => [...prev, keyId]);
       if (!logsCache[keyId]) {
-        setLoadingLogs((prev) => new Set(prev).add(keyId));
+        setLoadingLogs((prev) => [...prev, keyId]);
         try {
           const res = await fetch(`${API_BASE}/logs?key_id=${keyId}&limit=50`, {
             headers: getAuthHeaders(),
@@ -266,15 +262,10 @@ const SuperAdminAIKeyManager = () => {
           }
         } catch { /* ignore */ }
         finally {
-          setLoadingLogs((prev) => {
-            const n = new Set(prev);
-            n.delete(keyId);
-            return n;
-          });
+          setLoadingLogs((prev) => prev.filter((id) => id !== keyId));
         }
       }
     }
-    setExpandedLogs(next);
   };
 
   const handleAddKey = async () => {
@@ -658,10 +649,10 @@ const SuperAdminAIKeyManager = () => {
                               size="icon"
                               className="h-8 w-8"
                               onClick={() => handleTestKey(key.id)}
-                              disabled={testingKeys.has(key.id)}
+                              disabled={testingKeys.includes(key.id)}
                               title="Test key"
                             >
-                              {testingKeys.has(key.id) ? (
+                              {testingKeys.includes(key.id) ? (
                                 <LoadingSpinner size="sm" />
                               ) : (
                                 <FlaskConical className="h-4 w-4" />
@@ -706,7 +697,7 @@ const SuperAdminAIKeyManager = () => {
                       )}
 
                       {/* Logs row */}
-                      {expandedLogs.has(key.id) && (
+                      {expandedLogs.includes(key.id) && (
                         <TableRow className="bg-muted/20">
                           <TableCell colSpan={8} className="p-0">
                             <div className="px-4 py-3 border-t">
@@ -714,7 +705,7 @@ const SuperAdminAIKeyManager = () => {
                                 <Activity className="h-4 w-4 text-indigo-500" />
                                 <span className="text-sm font-medium">Logs for {key.name}</span>
                               </div>
-                              {loadingLogs.has(key.id) ? (
+                              {loadingLogs.includes(key.id) ? (
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                                   <LoadingSpinner size="sm" />
                                   Loading logs...
