@@ -11,6 +11,7 @@ const SuperAdminAIKeyManager = () => {
 
   const [providers, setProviders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
 
   const fetchProviders = useCallback(async () => {
     setLoading(true);
@@ -27,8 +28,15 @@ const SuperAdminAIKeyManager = () => {
 
   useEffect(() => { fetchProviders(); }, [fetchProviders]);
 
-  return React.createElement("div", null,
-    React.createElement("h1", null, "AI Key Manager - Single API"),
+  return React.createElement("div", { className: "p-4" },
+    React.createElement("h1", { className: "text-2xl font-bold" }, "AI Key Manager - className test"),
+    React.createElement("input", {
+      type: "text",
+      placeholder: "Search...",
+      value: search,
+      onChange: (e: any) => setSearch(e.target.value),
+      className: "border px-2 py-1 rounded",
+    }),
     React.createElement("p", null, `Providers: ${providers.length}, Loading: ${loading}`),
   );
 };
