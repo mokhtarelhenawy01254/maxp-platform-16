@@ -158,27 +158,18 @@ class OverlayCampaignService {
       }
     }
 
-    // Auto-sync to Facebook catalogs after applying overlays
+    // Auto-sync to Facebook catalogs in background (don't block response)
+    const productIds = products.map(p => p.productId);
     const catalogs = await prisma.facebookProductCatalog.findMany({
       where: { companyId, facebookCatalogId: { not: null } },
     });
-    const syncResults = [];
-    for (const catalog of catalogs) {
-      try {
-        const result = await syncProductsToFacebook(
-          catalog,
-          companyId,
-          products.map(p => p.productId),
-          false,
-        );
-        syncResults.push({ catalogId: catalog.id, name: catalog.name, ...result });
-      } catch (err) {
-        console.error(`[OVERLAY] Facebook sync failed for catalog ${catalog.id}:`, err.message);
-        syncResults.push({ catalogId: catalog.id, name: catalog.name, success: false, error: err.message });
-      }
+    if (catalogs.length > 0) {
+      syncProductsToFacebook(catalogs[0], companyId, productIds, false).catch(err =>
+        console.error(`[OVERLAY] Background sync failed:`, err.message)
+      );
     }
 
-    return { results, syncResults };
+    return { results };
   }
 
   async activateExpired() {

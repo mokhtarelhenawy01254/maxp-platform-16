@@ -91,19 +91,8 @@ const OverlayCampaigns: React.FC = () => {
     try {
       const { data } = await apiClient.post(`/overlay-campaigns/${id}/apply`);
       const results = data.data?.results || [];
-      const syncResults = data.data?.syncResults || [];
-      const syncSuccess = syncResults.filter((s: any) => s.success);
-      const syncFailed = syncResults.filter((s: any) => !s.success);
-
       toast.success(`تم تطبيق الإطار على ${results.length} منتج`);
-      if (syncSuccess.length > 0) {
-        toast.success(`تم التزامن التلقائي مع ${syncSuccess.length} كتالوج فيسبوك`);
-      }
-      if (syncFailed.length > 0) {
-        for (const s of syncFailed) {
-          toast.error(`فشل التزامن مع كتالوج "${s.name}": ${s.error || 'غير معروف'}`);
-        }
-      }
+      toast.success("جاري التزامن التلقائي مع كتالوج فيسبوك في الخلفية");
       load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل في التطبيق");
