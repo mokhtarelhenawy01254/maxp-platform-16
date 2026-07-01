@@ -451,24 +451,45 @@ exports.syncProducts = async (req, res) => {
       },
     });
 
+    // ponytail: fetch active overlay framed images for this company's products
+    const overlayMap = new Map();
+    try {
+      const activeOverlays = await getSharedPrismaClient().overlayCampaignProduct.findMany({
+        where: {
+          campaign: {
+            companyId: catalog.companyId,
+            status: { in: ['ACTIVE', 'SCHEDULED'] },
+          },
+          framedImage: { not: null },
+        },
+        select: { productId: true, framedImage: true },
+      });
+      for (const o of activeOverlays) overlayMap.set(o.productId, o.framedImage);
+    } catch {}
+
     // رفع المنتجات
     for (const product of products) {
       try {
-        // تحضير بيانات المنتج
+        // تحضير بيانات المنتج — استخدم framed image لو موجودة من حملة active
+        const originalImages = product.images ? JSON.parse(product.images) : [];
+        const framedImage = overlayMap.get(product.id);
+        const baseUrl = process.env.FRONTEND_URL || 'https://maxp.online';
+        const imageUrl = framedImage
+          ? `${baseUrl}${framedImage}`
+          : (originalImages[0] || null);
+
         const productData = {
           name: product.name,
           description: product.description || "",
-          imageUrl: product.images ? JSON.parse(product.images)[0] : null,
-          linkUrl: `${process.env.FRONTEND_URL || "https://yourstore.com"}/shop/${product.slug || product.id}`,
+          imageUrl,
+          linkUrl: `${baseUrl}/shop/${product.slug || product.id}`,
           brand: product.company?.name || "",
           category: product.category?.name || "",
           price: parseFloat(product.price),
           currency: product.company?.currency || "EGP",
           availability: product.stock > 0 ? "in stock" : "out of stock",
           retailerId: product.sku || product.id,
-          additionalImages: product.images
-            ? JSON.parse(product.images).slice(1, 4)
-            : [],
+          additionalImages: originalImages.slice(1, 4),
         };
 
         const result = await catalogService.uploadProduct(
