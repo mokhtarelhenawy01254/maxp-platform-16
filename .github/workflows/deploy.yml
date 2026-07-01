@@ -502,11 +502,28 @@ jobs:
               sudo mkdir -p /var/www/backend2/logs
               sudo chown -R $USER:$USER /var/www/backend2
               
-              # Restore .env strategy
-              if [ -f "/var/www/backend2/.env.production" ]; then
-                sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
-              elif [ -f "/tmp/backend_env_backup.env" ]; then
+              # Restore .env strategy: backup first (preserves real secrets), then fallback to template
+              if [ -f "/tmp/backend_env_backup.env" ]; then
                 sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
+              elif [ -f "/var/www/backend2/.env.production" ]; then
+                sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
+              fi
+
+              # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
+              # This ensures BackendClient tools (offers_list_active, etc.) can authenticate
+              AI_SVC_TOKEN=""
+              if [ -f "/var/www/ai-service/.env" ]; then
+                AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' /var/www/ai-service/.env | cut -d= -f2-)"
+                if [ -n "$AI_SVC_TOKEN" ]; then
+                  if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                    sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                  elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                    sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                  else
+                    echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
+                  fi
+                  echo "✅ Synced MAXP_SERVICE_TOKEN from ai-service to backend"
+                fi
               fi
 
                           # Restore uploads
@@ -536,11 +553,27 @@ jobs:
               sudo mkdir -p /var/www/backend2/logs
               sudo chown -R $USER:$USER /var/www/backend2
               
-              # Restore .env strategy
-              if [ -f "/var/www/backend2/.env.production" ]; then
-                sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
-              elif [ -f "/tmp/backend_env_backup.env" ]; then
+              # Restore .env strategy: backup first (preserves real secrets), then fallback to template
+              if [ -f "/tmp/backend_env_backup.env" ]; then
                 sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
+              elif [ -f "/var/www/backend2/.env.production" ]; then
+                sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
+              fi
+
+              # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
+              AI_SVC_TOKEN=""
+              if [ -f "/var/www/ai-service/.env" ]; then
+                AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' /var/www/ai-service/.env | cut -d= -f2-)"
+                if [ -n "$AI_SVC_TOKEN" ]; then
+                  if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                    sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                  elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                    sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                  else
+                    echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
+                  fi
+                  echo "✅ Synced MAXP_SERVICE_TOKEN from ai-service to backend"
+                fi
               fi
 
                           # Restore uploads
