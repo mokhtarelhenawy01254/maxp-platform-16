@@ -178,12 +178,11 @@ const SuperAdminAIKeyManager = () => {
       React.createElement(AlertCircle, { className: "h-4 w-4 shrink-0" }), error,
       React.createElement(Button, { variant: "ghost", size: "sm", className: "ml-auto h-6", onClick: () => setError(null) }, "Dismiss")
     ) : null,
-    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" },
-      ["Total Keys", dashboard?.total_keys ?? keys.length],
+    [["Total Keys", dashboard?.total_keys ?? keys.length],
       ["Active Keys", dashboard?.active_keys ?? keys.filter((k) => k.is_active).length],
       ["Requests Today", dashboard?.requests_today ?? "—"],
-      ["Success Rate", dashboard?.last_24h_success_rate != null ? `${(dashboard.last_24h_success_rate * 100).toFixed(1)}%` : "—"],
-    ).map(([label, value]) =>
+      ["Success Rate", dashboard?.last_24h_success_rate != null ? `${(dashboard.last_24h_success_rate * 100).toFixed(1)}%` : "—"]
+    ].map(([label, value]) =>
       React.createElement("div", { key: String(label), className: "rounded-xl border bg-card p-3" },
         React.createElement("p", { className: "text-xs text-muted-foreground" }, String(label)),
         React.createElement("p", { className: "text-xl font-bold mt-1" }, String(value))
