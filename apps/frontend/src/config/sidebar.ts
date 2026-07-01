@@ -679,6 +679,7 @@ export const getSidebarConfig = (
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
                 { to: '/settings/clarity', icon: ChartBarIcon, label: 'Microsoft Clarity' },
+                { to: '/offers-review', icon: ClipboardDocumentListIcon, label: 'مراجعة العروض' },
                 { to: '/coupons', icon: TicketIcon, label: t('sidebar.coupons') },
                 {
                     to: '/analytics/orders/coupons',

@@ -615,6 +615,7 @@ const WarehouseManagement = React.lazy(
   () => import("./pages/inventory/WarehouseManagement"),
 );
 const Coupons = React.lazy(() => import("./pages/coupons/Coupons"));
+const OffersReview = React.lazy(() => import("./pages/offers/OffersReview"));
 const Appointments = React.lazy(
   () => import("./pages/appointments/Appointments"),
 );
@@ -2573,10 +2574,18 @@ const AppContent = () => {
                   element={<Navigate to="/whatsapp-inbox" replace />}
                 />
                 <Route
-                  path="/notifications/inbox"
+                  path="/coupons"
                   element={
                     <Layout>
-                      <InboxNotifications />
+                      <Coupons />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/offers-review"
+                  element={
+                    <Layout>
+                      <OffersReview />
                     </Layout>
                   }
                 />
