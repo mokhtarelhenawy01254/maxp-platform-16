@@ -1,5 +1,18 @@
 # Backend Bugs Log
 
+### [IMPROVEMENT] Sales Rep V2 Agent Template — Structured Prompt Architecture
+- **Date**: 2026-07-02
+- **Description**: The original `sales-rep-agent` template had flat, unstructured prompts that caused the LLM to lose track of sales workflow steps during long conversations, forget critical rules (e.g., not inventing prices), and display raw technical error messages ("حصل عطل فني") to customers when tool calls failed.
+- **Resolution**: Created `sales-rep-v2-agent` with a segmented prompt architecture inspired by the `agency-agents` open-source project (123k ⭐):
+  1. **SOUL.md**: Added 6 structured sections — Identity & Vibe, Voice & Tone, Sales Workflow (5-step process), Critical Rules (Do's & Don'ts), Success Metrics, and Failure Protocol.
+  2. **TOOLS.md**: Categorized tools by priority (🔴 Essential → 🟡 Supporting → 🟢 Learning) with explicit "when to use / when NOT to use" instructions per tool.
+  3. **AGENTS.md**: Replaced flat rule list with structured Handoff Rules (when to escalate to support, human, or marketing agents).
+- **Files Added**:
+  - `apps/backend/agents/sales-rep-v2-agent/agent.json`
+  - `apps/backend/agents/sales-rep-v2-agent/SOUL.md`
+  - `apps/backend/agents/sales-rep-v2-agent/TOOLS.md`
+  - `apps/backend/agents/sales-rep-v2-agent/AGENTS.md`
+
 ### [FIX] DeepSeek V4 Flash Function Calling Instability (XML/DSML Leak & JSON Parsing Failures)
 - **Date**: 2026-07-01
 - **Description**: DeepSeek V4 Flash model showed tool-calling instability, sometimes outputting native XML tags (`<｜DSML｜tool_calls>`) inside text blocks, omitting parameters, or failing to match the expected JSON schema.

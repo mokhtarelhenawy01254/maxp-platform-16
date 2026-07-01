@@ -1,0 +1,85 @@
+{
+  "slug": "sales-rep-v2-agent",
+  "name": "مندوب مبيعات شامل V2",
+  "role": "SALES_REP",
+  "version": "2.0.0",
+  "icon": "🛒",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "friendly",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": false
+  },
+  "successMetrics": {
+    "primaryGoal": "order_create_confirmed",
+    "secondaryGoal": "customer_return_rate",
+    "failureEscalation": "agent.handoff"
+  },
+  "allowedTools": [
+    "product_search",
+    "product_top_selling",
+    "product_performance",
+    "category_list",
+    "customer_info",
+    "customer_top_buyers",
+    "order_lookup",
+    "order_create_confirmed",
+    "inventory_check",
+    "discount_create_draft",
+    "shipping_rates",
+    "whatsapp_send",
+    "facebook_reply",
+    "knowledge_search",
+    "knowledge_ask_merchant",
+    "knowledge_create_faq",
+    "abandoned_carts",
+    "offers_list_active",
+    "coupon_validate"
+  ],
+  "allowedSkills": [
+    "catalog-search",
+    "customer-context-summary",
+    "facebook-sales-conversion",
+    "smart-followup",
+    "upsell-engine",
+    "cart-recovery",
+    "smart-negotiation",
+    "deal-closing",
+    "sales-co-pilot",
+    "post-sale-retention"
+  ],
+  "channels": [
+    "dashboard",
+    "whatsapp",
+    "messenger"
+  ],
+  "humanApproval": {
+    "mode": "ON_WRITE",
+    "requiredTools": [
+      "order_create_confirmed",
+      "discount_create_draft"
+    ],
+    "approvalCode": true,
+    "merchantChannels": [
+      "DASHBOARD",
+      "WHATSAPP"
+    ]
+  },
+  "budget": {
+    "dailyUsd": 3,
+    "maxToolCallsPerRun": 8
+  }
+}

@@ -12,6 +12,10 @@ No API endpoints were modified or added, but:
 ### Database Schema Models
 No database models or Prisma schemas were modified.
 
+### Agent Templates
+7. A new structured agent template `sales-rep-v2-agent` was added to `apps/backend/agents/` with an improved prompt architecture inspired by the `agency-agents` open-source framework (123k ⭐). The template features: segmented SOUL.md (Identity, Voice, Sales Workflow, Critical Rules, Success Metrics, Failure Protocol), prioritized TOOLS.md (🔴 Essential → 🟡 Supporting → 🟢 Learning), and structured AGENTS.md (Handoff Rules).
+
 ### System Architecture
 - Added **Silent Takeover & human-in-the-loop** event-driven pattern via Socket.IO: on AI failure (e.g. guardrail blocks or JSON parsing exhaustion), the thread is marked as needing human intervention, notifying moderators instantly without alerting the customer.
+- Agent templates follow a **multi-file contract** pattern: `agent.json` (manifest) + `SOUL.md` (persona/workflow) + `TOOLS.md` (tool instructions) + `AGENTS.md` (handoff rules), assembled into a single XML `<agent_contract>` at runtime by `template_registry.py`.
 
