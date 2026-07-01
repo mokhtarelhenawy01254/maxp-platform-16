@@ -116,6 +116,7 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   REFUNDED
+  PARTIALLY_RETURNED
 }
 
 enum PaymentStatus {
