@@ -14,12 +14,26 @@ async def offers_list_active(company_id: str) -> dict[str, Any]:
         return {"coupons": [], "storePromotion": None, "promotionSettings": None}
 
     client = get_backend_client()
-    coupons = await client.get_coupons(company_id, is_active=True)
-    store_promotion = await client.get_store_promotion(company_id)
-    promotion_settings = await client.get_promotion_settings(company_id)
+    result: dict[str, Any] = {"coupons": [], "storePromotion": None, "promotionSettings": None}
+    errors: list[str] = []
+
+    for name, coro in [("coupons", client.get_coupons(company_id, is_active=True)),
+                         ("storePromotion", client.get_store_promotion(company_id)),
+                         ("promotionSettings", client.get_promotion_settings(company_id))]:
+        try:
+            result[name] = await coro
+        except RuntimeError as e:
+            msg = f"{name}: {e}"
+            errors.append(msg)
+            logger.error("offers_list_active_fetch_failed", error=msg)
+            result[name] = [] if name == "coupons" else None
+
+    coupons = result.get("coupons") or []
+    store_promotion = result.get("storePromotion")
+    promotion_settings = result.get("promotionSettings")
 
     return {
-        "coupons": coupons or [],
+        "coupons": coupons,
         "storePromotion": store_promotion,
         "promotionSettings": promotion_settings,
         "totalActiveCoupons": len(coupons) if coupons else 0,
@@ -27,6 +41,7 @@ async def offers_list_active(company_id: str) -> dict[str, Any]:
         "hasFreeShipping": (promotion_settings or {}).get("freeShippingEnabled", False),
         "freeShippingThreshold": (promotion_settings or {}).get("freeShippingThreshold", 0),
         "hasFlatShipping": (promotion_settings or {}).get("flatShippingEnabled", False),
+        "_errors": errors,
     }
 
 

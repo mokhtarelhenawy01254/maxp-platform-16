@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from decimal import Decimal
 from typing import Any
 
 import structlog
 
-from src.llm.client import LLMClient
-from src.skills.registry import get_skill_registry
 from src.guardrails.input import INPUT_GUARDRAILS
+from src.llm.client import LLMClient, ProviderResponse
 from src.pipeline.context import PipelineContext
-from src.llm.client import ProviderResponse
 from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta
+from src.skills.registry import get_skill_registry
 
 logger = structlog.get_logger(__name__)
 
@@ -32,20 +32,27 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 "violations": result.violations,
             }
             ctx.final_reply = "عذراً، لا يمكنني معالجة هذا الطلب."
-            logger.warning("input_guardrail_blocked", guardrail=guardrail.name, reason=result.reason)
+            logger.warning(
+                "input_guardrail_blocked", guardrail=guardrail.name, reason=result.reason
+            )
             return ctx
 
     # 2. Get skills (filtered by agent's allowed_skills if present)
     registry = get_skill_registry()
     skills = registry.get_all()
-    if ctx.agent and hasattr(ctx.agent, 'allowed_skills') and ctx.agent.allowed_skills:
+    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
         try:
             allowed_names: set[str] = set()
             for meta in _iter_skill_meta(set(ctx.agent.allowed_skills)):
                 allowed_names.update(t.lower() for t in meta.get("allowed_tools", []))
             if allowed_names:
                 skills = [s for s in skills if s.name.lower() in allowed_names]
-                logger.info("skills_filtered_by_agent", agent=str(ctx.agent.name or ctx.agent.id), total=len(registry.get_all()), filtered=len(skills))
+                logger.info(
+                    "skills_filtered_by_agent",
+                    agent=str(ctx.agent.name or ctx.agent.id),
+                    total=len(registry.get_all()),
+                    filtered=len(skills),
+                )
         except Exception as e:
             logger.warning("skills_filter_failed", error=str(e))
     if not skills:
@@ -72,9 +79,13 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
     # 5. Handle tool calls
     if provider_response.tool_calls:
-        logger.info("skills_pipeline_tool_calls", count=len(provider_response.tool_calls), skills=[tc.get("function", {}).get("name", "") for tc in provider_response.tool_calls])
-        executed = []
-        for tc in provider_response.tool_calls:
+        logger.info(
+            "skills_pipeline_tool_calls",
+            count=len(provider_response.tool_calls),
+            skills=[tc.get("function", {}).get("name", "") for tc in provider_response.tool_calls],
+        )
+
+        async def _execute_one(tc: dict) -> dict:
             func_name = tc.get("function", {}).get("name", "")
             arguments_str = tc.get("function", {}).get("arguments", "{}")
 
@@ -82,31 +93,55 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 try:
                     arguments = json.loads(arguments_str)
                 except json.JSONDecodeError:
-                    arguments = {}
+                    return {"tool": func_name, "status": "parse_error", "error": f"Invalid JSON: {arguments_str[:200]}"}
             else:
                 arguments = arguments_str
 
             skill = registry.get(func_name)
             if not skill:
                 logger.warning("unknown_skill_called", name=func_name)
-                executed.append({"tool": func_name, "status": "unknown"})
-                continue
+                return {"tool": func_name, "status": "unknown"}
+
+            if ctx.company_id and "company_id" not in arguments:
+                arguments = {**arguments, "company_id": ctx.company_id}
 
             try:
-                if ctx.company_id and "company_id" not in arguments:
-                    arguments["company_id"] = ctx.company_id
                 result = await skill.execute(**arguments)
-                executed.append({"tool": func_name, "status": "success", "result": result})
-                ctx.tool_evidence.append({"tool": func_name, "result": result})
+                return {"tool": func_name, "status": "success", "result": result}
             except Exception as e:
                 logger.error("skill_execution_failed", name=func_name, error=str(e))
-                executed.append({"tool": func_name, "status": "error", "error": str(e)})
+                return {"tool": func_name, "status": "error", "error": str(e)}
+
+        results = await asyncio.gather(*[_execute_one(tc) for tc in provider_response.tool_calls])
+        executed = []
+        for item in results:
+            executed.append(item)
+            if item["status"] == "success":
+                ctx.tool_evidence.append({"tool": item["tool"], "result": item["result"]})
+
+        # Self-correction: retry once on JSON parse errors
+        parse_errors = [r for r in results if r.get("status") == "parse_error"]
+        if parse_errors:
+            logger.warning("skills_pipeline_json_parse_retry", errors=[r.get("error") for r in parse_errors])
+            retry_messages = _build_followup_messages(ctx, provider_response, executed)
+            tool_dicts = [s.to_openai_tool() for s in skills]
+            retry_response = await _raw_llm_call(ctx, retry_messages, tools=tool_dicts)
+            if retry_response.tool_calls:
+                retry_results = await asyncio.gather(*[_execute_one(tc) for tc in retry_response.tool_calls])
+                ri = 0
+                for i, item in enumerate(executed):
+                    if ri >= len(retry_results):
+                        break
+                    if item.get("status") == "parse_error":
+                        executed[i] = retry_results[ri]
+                        if retry_results[ri]["status"] == "success":
+                            ctx.tool_evidence.append({"tool": retry_results[ri]["tool"], "result": retry_results[ri]["result"]})
+                        ri += 1
 
         ctx.executed_tools = executed
 
-        # If tools were executed, make a follow-up LLM call for the final reply
+        # Follow-up LLM call for the final reply
         if executed:
-            # Build follow-up messages with tool results
             followup_messages = _build_followup_messages(ctx, provider_response, executed)
             try:
                 final_response = await _raw_llm_call(ctx, followup_messages)
@@ -132,7 +167,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 
 def _unwrap_llm_client(client):
-    if hasattr(client, '_llm_client'):
+    if hasattr(client, "_llm_client"):
         return client._llm_client
     return client
 
@@ -160,10 +195,9 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
         from src.llm.model_manager import model_manager
+
         try:
-            routing = await model_manager.get_next_key(
-                "gemini-2.5-flash", ctx.company_id
-            )
+            routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
             client = LLMClient(
                 provider=routing.provider,
                 model=routing.model,
@@ -177,11 +211,13 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     # If message has images but current model doesn't support vision, switch to Gemini
     if has_images:
         from src.llm.model_capabilities import supports_vision
+
         client_model = getattr(client, "model", None)
         client_provider = getattr(client, "provider", None)
         if not supports_vision(client_model, client_provider):
             try:
                 from src.llm.model_manager import model_manager
+
                 routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
                 client = LLMClient(
                     provider=routing.provider,
@@ -202,15 +238,14 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     )
 
 
-async def _raw_llm_call(ctx: PipelineContext, messages: list[dict]) -> ProviderResponse:
-    """Make a follow-up LLM call without tools (for final reply synthesis)."""
+async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list | None = None) -> ProviderResponse:
+    """Make a follow-up LLM call (with or without tools)."""
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
-        from src.llm.model_manager import model_manager
         from src.llm.client import LLMClient
-        routing = await model_manager.get_next_key(
-            "gemini-2.5-flash", ctx.company_id
-        )
+        from src.llm.model_manager import model_manager
+
+        routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
         client = LLMClient(
             provider=routing.provider,
             model=routing.model,
@@ -220,12 +255,14 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict]) -> ProviderR
 
     return await client.generate(
         messages=messages,
-        tools=None,
+        tools=tools,
         temperature=0.3,
     )
 
 
-def _build_followup_messages(ctx: PipelineContext, first_response: ProviderResponse, executed: list[dict]) -> list[dict]:
+def _build_followup_messages(
+    ctx: PipelineContext, first_response: ProviderResponse, executed: list[dict]
+) -> list[dict]:
     """Build messages for the follow-up LLM call after tool execution."""
     messages = [
         {"role": "system", "content": ctx.system_prompt or _default_system_prompt()},
@@ -235,7 +272,10 @@ def _build_followup_messages(ctx: PipelineContext, first_response: ProviderRespo
     messages.append({"role": "user", "content": ctx.message})
 
     # Assistant response with tool_calls (required by DeepSeek API)
-    assistant_msg = {"role": "assistant", "content": "" if first_response.tool_calls else (first_response.text or "")}
+    assistant_msg = {
+        "role": "assistant",
+        "content": "" if first_response.tool_calls else (first_response.text or ""),
+    }
     if first_response.tool_calls:
         assistant_msg["tool_calls"] = first_response.tool_calls
     messages.append(assistant_msg)
@@ -250,17 +290,25 @@ def _build_followup_messages(ctx: PipelineContext, first_response: ProviderRespo
         tc_id = tool_calls[idx].get("id", f"call_{idx}") if idx < len(tool_calls) else f"call_{idx}"
 
         if status == "success":
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tc_id,
-                "content": json.dumps(result, ensure_ascii=False, cls=DecimalEncoder),
-            })
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tc_id,
+                    "content": json.dumps(result, ensure_ascii=False, cls=DecimalEncoder),
+                }
+            )
         else:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tc_id,
-                "content": json.dumps({"error": error or "Execution failed"}, ensure_ascii=False, cls=DecimalEncoder),
-            })
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tc_id,
+                    "content": json.dumps(
+                        {"error": error or "Execution failed"},
+                        ensure_ascii=False,
+                        cls=DecimalEncoder,
+                    ),
+                }
+            )
 
     return messages
 
