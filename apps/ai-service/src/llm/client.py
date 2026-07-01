@@ -285,6 +285,8 @@ class LLMClient:
 
         raw_tool_calls = message.tool_calls or []
         tool_calls = []
+        if raw_tool_calls:
+            text = ""
         for tc in raw_tool_calls:
             tool_calls.append({
                 "id": tc.id,

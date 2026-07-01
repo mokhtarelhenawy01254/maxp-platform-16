@@ -213,7 +213,7 @@ def _build_followup_messages(ctx: PipelineContext, first_response: ProviderRespo
     messages.append({"role": "user", "content": ctx.message})
 
     # Assistant response with tool_calls (required by DeepSeek API)
-    assistant_msg = {"role": "assistant", "content": first_response.text or ""}
+    assistant_msg = {"role": "assistant", "content": "" if first_response.tool_calls else (first_response.text or "")}
     if first_response.tool_calls:
         assistant_msg["tool_calls"] = first_response.tool_calls
     messages.append(assistant_msg)

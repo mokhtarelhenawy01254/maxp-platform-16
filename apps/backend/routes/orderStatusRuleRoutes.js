@@ -4,7 +4,7 @@ const verifyToken = require("../utils/verifyToken");
 const orderStatusRuleController = require("../controller/orderStatusRuleController");
 
 // Ensure token verification on all routes
-router.use(verifyToken);
+router.use(verifyToken.authenticateToken);
 
 // CRUD operations
 router.get("/", orderStatusRuleController.getRules);

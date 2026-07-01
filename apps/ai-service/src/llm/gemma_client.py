@@ -25,7 +25,6 @@ import structlog
 from src.llm.gemma_chat_template import (
     parse_tool_calls,
     render_tool_definitions,
-    strip_tool_blocks,
 )
 
 logger = structlog.get_logger(__name__)
@@ -258,7 +257,7 @@ class GemmaClient:
                     text_chunks.append(part["text"])
         full_text = "".join(text_chunks)
         tool_calls = parse_tool_calls(full_text)
-        visible_text = strip_tool_blocks(full_text) if tool_calls else full_text
+        visible_text = "" if tool_calls else full_text
         usage_meta = raw.get("usageMetadata", {}) or {}
         usage = {
             "promptTokenCount": int(usage_meta.get("promptTokenCount", 0) or 0),
