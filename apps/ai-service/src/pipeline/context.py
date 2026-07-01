@@ -57,6 +57,10 @@ class PipelineContext:
     repaired: bool = False
     early_return: dict[str, Any] | None = None
 
+    # Silent Escalation (2026 SOTA — suppress error messages, flag for human takeover)
+    escalation_requested: bool = False
+    escalation_reason: str = ""
+
     # Checkpoint tracking
     last_checkpoint_id: str | None = None
     resumed_from_checkpoint: bool = False

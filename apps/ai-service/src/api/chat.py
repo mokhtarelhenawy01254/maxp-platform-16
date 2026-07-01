@@ -40,11 +40,12 @@ class MerchantChatRequest(ChatRequest):
 
 
 class ChatResponse(BaseModel):
-    status: Literal["ok", "awaiting_approval", "error"]
+    status: Literal["ok", "awaiting_approval", "error", "escalated"]
     thread_id: str
     reply: str | None = None
     draft_id: str | None = None
     tool_calls: list[dict[str, Any]] = []
+    escalation: dict[str, Any] | None = None  # Silent escalation metadata
 
 
 def sanitize_model_reply(reply: Any) -> str:
@@ -172,6 +173,20 @@ async def chat(
         reply = sanitize_model_reply(outcome.get("reply", ""))
         tool_results = outcome.get("tool_results", [])
 
+        # Silent Escalation: AI failed, return escalated status with no reply
+        if outcome.get("escalation_requested"):
+            logger.warning(
+                "silent_escalation_triggered",
+                thread_id=thread_id,
+                reason=outcome.get("escalation_meta", {}).get("reason", "unknown"),
+            )
+            return ChatResponse(
+                status="escalated",
+                thread_id=thread_id,
+                reply=None,
+                escalation=outcome.get("escalation_meta"),
+            )
+
         # Build tool_calls summary for the response
         tool_calls = []
         for tr in tool_results:
@@ -209,10 +224,12 @@ async def chat(
         )
     except Exception as e:
         logger.error("chat failed", error=str(e), thread_id=thread_id)
+        # Silent Escalation on unhandled exception: never expose AI errors to customer
         return ChatResponse(
-            status="error",
+            status="escalated",
             thread_id=thread_id,
             reply=None,
+            escalation={"reason": f"unhandled_exception: {str(e)}", "channel": channel},
         )
 
 

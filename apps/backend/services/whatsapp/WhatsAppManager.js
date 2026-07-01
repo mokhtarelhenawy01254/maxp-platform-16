@@ -2071,6 +2071,22 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             channel: 'WHATSAPP',
                             memoryContext: null,
                         });
+
+                        // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
+                        if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+                            const { flagThreadForHumanTakeover } = require('../silentEscalationService');
+                            await flagThreadForHumanTakeover({
+                                companyId: syncedCustomer.companyId,
+                                conversationId: syncedConversation?.id,
+                                customerPhone: remoteJid,
+                                customerId: syncedCustomer.id,
+                                reason: result.escalation?.reason || 'ai_failure',
+                                customerMessage: messageContent.text,
+                                channel: 'WHATSAPP',
+                            });
+                            return;
+                        }
+
                         const replyText = result?.reply;
                         if (replyText) {
                             const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');

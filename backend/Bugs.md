@@ -1,5 +1,20 @@
 # Backend Bugs Log
 
+### [FIX] DeepSeek V4 Flash Function Calling Instability (XML/DSML Leak & JSON Parsing Failures)
+- **Date**: 2026-07-01
+- **Description**: DeepSeek V4 Flash model showed tool-calling instability, sometimes outputting native XML tags (`<｜DSML｜tool_calls>`) inside text blocks, omitting parameters, or failing to match the expected JSON schema.
+- **Root Cause**:
+  1. **Lax Tool Schemas**: Without strict schema constraints (`strict: true`), the model's token distribution drifted into raw text/DSML tags.
+  2. **Chat History Mismatch**: The model requires its thinking tokens (`reasoning_content`) to be passed back in subsequent history turns. If dropped, it loses context and defaults to native DSML formatting.
+- **Resolution**:
+  1. Modified `LLMClient` to automatically inject `"strict": true` into function definitions for OpenAI and DeepSeek providers.
+  2. Captured `reasoning_content` from OpenAI-compatible chat responses.
+  3. Modified `skills_pipeline.py` to preserve and forward `reasoning_content` in the assistant role history during follow-up tool execution turns.
+  4. Added explicit negative constraints to the fallback system prompt forbidding XML/DSML leakage.
+- **Files Modified**:
+  - `apps/ai-service/src/llm/client.py`
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
 ### [FIX] WhatsApp Session Dropdown Displayed Raw CUID for Meta Cloud
 - **Date**: 2026-06-30
 - **Description**: The WhatsApp Session dropdown in the template broadcast page displayed the raw database CUID instead of the friendly name or phone number for Meta Cloud sessions.
@@ -94,3 +109,56 @@
   3. When space is constrained, we collapse the secondary actions (Quick Order, Snooze, Copy Link, Notes, Delete) into a clean "More Actions" dropdown menu using the existing `MoreHorizontal` icon and custom classes (`business-dropdown-surface`, `business-dropdown-option`), while keeping critical actions inline (Mark as Done, Star/Priority, Profile Toggle).
 - **Files Modified**:
   - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx`
+
+### [FIX] Sequential Execution Latency in Skills Pipeline
+- **Date**: 2026-07-01
+- **Description**: The agent was executing multiple tool calls sequentially, leading to high latency when multiple tools were invoked.
+- **Root Cause**: The tool execution loop in `skills_pipeline.py` iterated and ran `await skill.execute` sequentially.
+- **Resolution**: Refactored the loop to execute tool calls concurrently using `asyncio.gather`.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
+### [FIX] Missing Tool Arguments JSON Parsing Failure in Skills Pipeline
+- **Date**: 2026-07-01
+- **Description**: If the LLM generated invalid JSON arguments, the system fell back to empty arguments `{}`, causing the tools to run with incomplete inputs.
+- **Root Cause**: A try-except block caught the JSONDecodeError and silenced it by setting `arguments = {}`.
+- **Resolution**: Implemented a self-correction mechanism that catches `parse_error`, informs the LLM of the syntax error, and retries the tool execution with corrected parameters.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
+### [FIX] Output Contract Validation Bypass in validate_reply
+- **Date**: 2026-07-01
+- **Description**: If the final response failed validation against the `AgentResponse` Pydantic model (or failed JSON parsing), the unvalidated raw text was returned to the user, bypassing the contract safety.
+- **Root Cause**: The except block in `validate_reply.py` fell back to `ctx.final_reply = reply`.
+- **Resolution**: Integrated Pydantic and JSON validation check within the main retry loop of `validate_reply.py`. Implemented an LLM self-correction reflection loop (`_correct_validation_error`) that catches the validation/parsing errors, sends them back to the LLM with the target schema description, and retries generation up to 2 times, returning a clean fallback message only on final exhaustion.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/validate_reply.py`
+
+### [FIX] Rigid Guardrail Output Blocking
+- **Date**: 2026-07-01
+- **Description**: When output guardrails were violated, the conversation was immediately blocked, causing a poor user experience.
+- **Root Cause**: An immediate early return with status `GUARDRAIL_BLOCKED` occurred upon any violation.
+- **Resolution**: Implemented a self-correction reflection loop that retries up to 2 times, prompt-injecting the violation details to let the LLM rephrase its answer safely.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/validate_reply.py`
+
+### [FIX] AI Fallback Error Message Leakage & Lack of Takeover (Silent Escalation)
+- **Date**: 2026-07-01
+- **Description**: When output validation, guardrails, or LLM execution failed completely, the system either sent a static Arabic error message to the customer (revealing it is an AI) or left the customer hanging without escalating to a human moderator.
+- **Root Cause**: Hardcoded fallback error messages in `validate_reply.py` and lack of human takeover routing on failure.
+- **Resolution**: 
+  1. Updated Python pipeline context and stages to suppress fallback text and return `status="escalated"` with `reply=None` and `escalation` metadata.
+  2. Created a Node.js `silentEscalationService` that logs silent escalation events in `ActivityLog` and emits `ai:escalation` Socket.IO events to the company workspace room.
+  3. Integrated escalation checks into all 5 channel handlers (WhatsAppInboundService, WhatsAppManager, TelegramBotService, Facebook auto-reply, Instagram auto-reply) to intercept failures, trigger human takeover, and prevent messages from sending to the customer.
+- **Files Modified**:
+  - `apps/ai-service/src/contracts/response_schema.py`
+  - `apps/ai-service/src/pipeline/context.py`
+  - `apps/ai-service/src/pipeline/stages/validate_reply.py`
+  - `apps/ai-service/src/workflows/orchestration_flow.py`
+  - `apps/ai-service/src/api/chat.py`
+  - `apps/ai-service/tests/unit/test_phase4.py`
+  - `apps/backend/services/silentEscalationService.js` [NEW]
+  - `apps/backend/services/whatsapp/WhatsAppInboundService.js`
+  - `apps/backend/services/whatsapp/WhatsAppManager.js`
+  - `apps/backend/services/TelegramBotService.js`
+  - `apps/backend/utils/allFunctions.js`

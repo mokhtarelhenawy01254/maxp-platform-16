@@ -289,6 +289,21 @@ async function saveIncomingMessage(payload) {
           memoryContext: null,
         });
 
+        // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
+        if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+          const { flagThreadForHumanTakeover } = require('../silentEscalationService');
+          await flagThreadForHumanTakeover({
+            companyId: syncedCustomer.companyId,
+            conversationId: syncedConversation?.id,
+            customerPhone: normalizedJid,
+            customerId: syncedCustomer.id,
+            reason: result.escalation?.reason || 'ai_failure',
+            customerMessage: content,
+            channel: 'WHATSAPP',
+          });
+          return;
+        }
+
         const replyText = result.reply;
         if (replyText) {
           await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, replyText, {

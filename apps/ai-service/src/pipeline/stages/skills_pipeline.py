@@ -62,7 +62,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
     # 3. Build system prompt with agent instructions (soul/persona from DB agent)
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
-    system_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
+    base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
+    system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
 
     # 4. Single LLM call with skills as tools
     try:
@@ -264,8 +265,11 @@ def _build_followup_messages(
     ctx: PipelineContext, first_response: ProviderResponse, executed: list[dict]
 ) -> list[dict]:
     """Build messages for the follow-up LLM call after tool execution."""
+    agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
+    base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
+    system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
     messages = [
-        {"role": "system", "content": ctx.system_prompt or _default_system_prompt()},
+        {"role": "system", "content": system_prompt},
     ]
 
     # Original user message
@@ -278,6 +282,9 @@ def _build_followup_messages(
     }
     if first_response.tool_calls:
         assistant_msg["tool_calls"] = first_response.tool_calls
+    reasoning = getattr(first_response, "reasoning_content", None)
+    if reasoning:
+        assistant_msg["reasoning_content"] = reasoning
     messages.append(assistant_msg)
 
     # Tool results — match by index to avoid duplicate tool_call_id when same skill is called twice
@@ -331,10 +338,18 @@ def get_agent_instructions(agent: Any) -> str:
     return ""
 
 
-def _default_system_prompt() -> str:
-    return """أنت مساعد ذكي لمنصة MaxP للتجارة الإلكترونية.
+def _technical_formatting_constraints() -> str:
+    return """تعليمات التنسيق واستدعاء الأدوات (هام جداً):
+1. يجب استدعاء الأدوات باستخدام صيغة tool_calls الرسمية للـ API فقط.
+2. يُمنع منعاً باتاً كتابة وسوم XML أو DSML مثل <｜DSML｜tool_calls> في الرد النصي للرسائل.
+3. لا تكتب كود JSON داخل علامات اقتباس برمجية (markdown code blocks) في ردك النصي لاستدعاء أداة.
+4. إذا قررت استدعاء أداة، يجب ألا تحتوي رسالتك النصية على أي ردود أو نصوص توضيحية — دع الرد النصي فارغاً تماماً واستخدم حقل tool_calls فقط."""
 
-تعليمات:
+
+def _default_system_prompt() -> str:
+    return """أنت مساعد خدمة عملاء ذكي للمتجر.
+
+تعليمات عامة:
 1. استخدم الأدوات المتاحة عندما يحتاج المستخدم إلى معلومات أو إجراءات محددة.
 2. إذا طلب المستخدم شيئاً خارج نطاق الأدوات المتاحة، أجب بقدرتك العامة.
 3. استخدم اللغة العربية (اللهجة المصرية) في الردود.

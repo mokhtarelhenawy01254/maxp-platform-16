@@ -61,6 +61,7 @@ class ProviderResponse:
     raw: Any = None
     cost: float | None = None
     finish_reason: str | None = None
+    reasoning_content: str | None = None
 
 _SAFE_TOOL_NAME_RE = re.compile(r"[^a-zA-Z0-9_-]")
 
@@ -280,14 +281,17 @@ class LLMClient:
             if not isinstance(params, dict):
                 params = {"type": "object"}
             params.setdefault("type", "object")
-            sanitized.append({
+            tool_def = {
                 "type": "function",
                 "function": {
                     "name": provider_name,
                     "description": str(func.get("description") or ""),
                     "parameters": params,
                 },
-            })
+            }
+            if self.provider in ("DEEPSEEK", "OPENAI"):
+                tool_def["function"]["strict"] = True
+            sanitized.append(tool_def)
         return sanitized
 
     async def _generate_openai_compat(
@@ -368,6 +372,10 @@ class LLMClient:
 
         usage = response.usage.model_dump() if response.usage else None
         finish_reason = choice.finish_reason
+        reasoning_content = (
+            getattr(message, "reasoning_content", None)
+            or (message.get("reasoning_content") if isinstance(message, dict) else None)
+        )
 
         return ProviderResponse(
             text=text,
@@ -377,6 +385,7 @@ class LLMClient:
             provider=self.provider,
             raw=response.model_dump(),
             finish_reason=finish_reason,
+            reasoning_content=reasoning_content,
         )
 
     def _build_response_format(self, output_schema: Any) -> dict[str, Any]:

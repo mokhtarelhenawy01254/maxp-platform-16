@@ -5,9 +5,13 @@ No API endpoints were modified or added, but:
 1. The backend query logic for `/api/v1/whatsapp-inbox/sessions` was updated inside `getUserAccessibleSessionIds` helper to restrict returned sessions to those with active assignments.
 2. The workspace query logic `/api/v1/admin/whatsapp-numbers/workspace` was updated inside `numberAssignmentService.js` to ensure Meta Cloud provider sessions resolve to `CONNECTED` and to filter out soft-deleted sessions (where `isDeleted: true` is in metadata) to align with the Settings page.
 3. The backend endpoint `/api/v1/whatsapp/sessions` (handled by `whatsappController.getSessions`) was updated to restrict returned sessions to only user-accessible sessions for non-admin roles (moderators/employees) using `getUserAccessibleSessionIds`.
+4. The AI Service agent pipeline stages (`skills_pipeline.py` and `validate_reply.py`) were modified to support concurrent tool execution, tool arguments self-correction, strict Pydantic contract fallbacks, and output guardrail self-correction. Additionally, `client.py` and `skills_pipeline.py` were enhanced to support strict tool schemas and capture/propagate `reasoning_content` to stabilize DeepSeek V4 Flash tool calling.
+5. The Python `/chat` endpoint (`api/chat.py`) was updated to support `status: "escalated"` with optional `escalation` metadata.
+6. A new `silentEscalationService.js` was introduced in the backend to manage Socket.IO events (`ai:escalation`) and DB `ActivityLog` creation for silent human handoffs.
 
 ### Database Schema Models
 No database models or Prisma schemas were modified.
 
 ### System Architecture
-No changes to the system architecture.
+- Added **Silent Takeover & human-in-the-loop** event-driven pattern via Socket.IO: on AI failure (e.g. guardrail blocks or JSON parsing exhaustion), the thread is marked as needing human intervention, notifying moderators instantly without alerting the customer.
+

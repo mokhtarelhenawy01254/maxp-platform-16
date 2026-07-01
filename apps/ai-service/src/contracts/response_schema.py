@@ -13,4 +13,5 @@ class AgentResponse(BaseModel):
     action_taken: str | None = None
     escalation_needed: bool = False
     escalation_reason: str | None = None
+    silent_escalation: bool = False  # When True, suppress reply and flag for human takeover
     metadata: dict[str, Any] = Field(default_factory=dict)

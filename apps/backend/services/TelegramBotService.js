@@ -451,6 +451,20 @@ class TelegramBotService {
                             channel: 'TELEGRAM',
                         });
 
+                        // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
+                        if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+                            const { flagThreadForHumanTakeover } = require('./silentEscalationService');
+                            await flagThreadForHumanTakeover({
+                                companyId,
+                                conversationId: conversation.id,
+                                customerId: customer.id,
+                                reason: result.escalation?.reason || 'ai_failure',
+                                customerMessage: content,
+                                channel: 'TELEGRAM',
+                            });
+                            return;
+                        }
+
                         const replyText = result.reply;
                         if (replyText && configId && telegramId) {
                             const bot = this.bots.get(configId);

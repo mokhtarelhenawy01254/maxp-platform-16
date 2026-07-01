@@ -2021,6 +2021,20 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               memoryContext
             });
 
+            // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
+            if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+              const { flagThreadForHumanTakeover } = require('../services/silentEscalationService');
+              await flagThreadForHumanTakeover({
+                companyId: customer.companyId,
+                conversationId: conversation.id,
+                customerId: customer.id,
+                reason: result.escalation?.reason || 'ai_failure',
+                customerMessage: aiCustomerContent,
+                channel: 'FACEBOOK',
+              });
+              return;
+            }
+
             const replyText = result.reply;
 
             if (replyText) {
@@ -2614,6 +2628,20 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
             channel: 'INSTAGRAM',
             memoryContext
           });
+
+          // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
+          if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+            const { flagThreadForHumanTakeover } = require('../services/silentEscalationService');
+            await flagThreadForHumanTakeover({
+              companyId: customer.companyId,
+              conversationId: conversation.id,
+              customerId: customer.id,
+              reason: result.escalation?.reason || 'ai_failure',
+              customerMessage: aiCustomerContent,
+              channel: 'INSTAGRAM',
+            });
+            return;
+          }
 
           const replyText = result.reply;
 

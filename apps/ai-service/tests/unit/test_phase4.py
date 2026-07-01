@@ -139,3 +139,30 @@ async def test_validate_reply_json_contract():
     assert updated_ctx.response_contract.confidence == 0.9
     assert updated_ctx.response_contract.action_taken == "order.confirm"
     assert updated_ctx.response_contract.metadata == {"test": "value"}
+
+
+@pytest.mark.anyio
+async def test_validate_reply_contract_failure_fallback():
+    """GIVEN: LLM returns structured JSON that fails AgentResponse validation
+       WHEN:  validate_reply runs
+       THEN:  should return safe default message, not raw broken text
+    """
+    ctx = PipelineContext(
+        message="test",
+        thread_id="th_24", company_id="co_test", customer_id="cu_1",
+    )
+    # Valid JSON but confidence out of bounds (1.2 > 1.0) — triggers AgentResponse ValidationError
+    ctx.llm_response = '{"reply": "hello", "confidence": 1.2}'
+    ctx.messages = []
+    ctx.tool_context = ""
+    mock_agent = MagicMock()
+    mock_agent.default_options = {}
+    ctx.agent = mock_agent
+
+    updated_ctx = await validate_reply(ctx)
+
+    assert updated_ctx.final_reply is None
+    assert updated_ctx.escalation_requested is True
+    assert "validation" in updated_ctx.escalation_reason
+
+    assert updated_ctx.response_contract is None

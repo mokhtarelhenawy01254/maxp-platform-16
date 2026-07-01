@@ -442,6 +442,12 @@ async def run_orchestration(
             "reply": final_ctx.final_reply or final_ctx.llm_response,
             "thread_id": thread_id,
             "tool_results": final_ctx.executed_tools,
+            "escalation_requested": final_ctx.escalation_requested,
+            "escalation_meta": {
+                "reason": final_ctx.escalation_reason,
+                "customer_message": message,
+                "channel": effective_channel,
+            } if final_ctx.escalation_requested else None,
         }
     except Exception as exc:
         logger.error("orchestration failed", error=str(exc), thread_id=thread_id)
