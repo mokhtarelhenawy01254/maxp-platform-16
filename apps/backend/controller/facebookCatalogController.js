@@ -79,6 +79,7 @@ async function syncProductsToFacebook(catalog, companyId, productIds = null, syn
     where,
     include: {
       category: true,
+      company: true,
       productVariants: true,
     },
   });

@@ -132,6 +132,12 @@ class OverlayCampaignService {
     const campaign = await prisma.overlayCampaign.findUnique({ where: { id: campaignId } });
     if (!campaign) throw new Error('Campaign not found');
 
+    // ponytail: update status to ACTIVE so overlayMap picks it up on sync
+    await prisma.overlayCampaign.update({
+      where: { id: campaignId },
+      data: { status: 'ACTIVE' },
+    });
+
     const overlayPath = await resolveOverlayPath(campaign.overlayImage);
 
     const products = await prisma.overlayCampaignProduct.findMany({
@@ -164,9 +170,14 @@ class OverlayCampaignService {
       where: { companyId, facebookCatalogId: { not: null } },
     });
     if (catalogs.length > 0) {
-      syncProductsToFacebook(catalogs[0], companyId, productIds, false).catch(err =>
-        console.error(`[OVERLAY] Background sync failed:`, err.message)
-      );
+      (async () => {
+        const result = await syncProductsToFacebook(catalogs[0], companyId, productIds, false);
+        if (!result.success) {
+          console.error(`[OVERLAY] Background sync error:`, result.error);
+        }
+      })().catch(err => console.error(`[OVERLAY] Background sync exception:`, err.message));
+    } else {
+      console.log(`[OVERLAY] No Facebook catalogs found for company ${companyId}, skipping sync`);
     }
 
     return { results };
