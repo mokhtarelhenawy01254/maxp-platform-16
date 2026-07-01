@@ -598,7 +598,6 @@ export const getSidebarConfig = (
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings') },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations') },
                 { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow') },
-                { to: '/roles', icon: KeyIcon, label: t('sidebar.rolesManagement') },
                 { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
@@ -886,6 +885,7 @@ export const getSidebarConfig = (
                 { to: '/users', icon: UserGroupIcon, label: t('sidebar.usersManagement') },
                 { to: '/settings/company', icon: Cog6ToothIcon, label: t('sidebar.companySettings') },
                 { to: '/company/activity', icon: ChartBarIcon, label: t('sidebar.companyActivity') },
+                { to: '/roles', icon: KeyIcon, label: t('sidebar.rolesManagement') },
             ]
         }] : []),
 
