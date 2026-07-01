@@ -20,7 +20,7 @@ import {
 } from "../../utils/companyApps";
 import EnhancedOrderModal from "../../components/orders/EnhancedOrderModal";
 import InvoiceModal from "../../components/orders/InvoiceModal";
-import OrderStatusAutoChangeModal from "../../components/orders/OrderStatusAutoChangeModal";
+
 import {
   ShoppingBagIcon,
   EyeIcon,
@@ -847,7 +847,7 @@ const Orders: React.FC = () => {
   const [orderStatuses, setOrderStatuses] = useState<OrderStatusDefinition[]>(
     DEFAULT_ORDER_STATUSES,
   );
-  const [showAutoChangeModal, setShowAutoChangeModal] = useState(false);
+
 
   const [paymentStatuses, setPaymentStatuses] = useState<OrderStatusDefinition[]>(
     DEFAULT_PAYMENT_STATUSES,
@@ -2463,27 +2463,7 @@ const Orders: React.FC = () => {
                 <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
                 <span className="sm:hidden">{t('orders.myWorkspace')}</span>
               </button>
-              {!isMerchant && (
-                <button
-                  onClick={() => handleFilterChange("status", "trash")}
-                  className={`inline-flex min-w-[126px] items-center justify-center rounded-[16px] px-4 py-2.5 text-sm font-semibold transition ${filters.status === "trash"
-                    ? "bg-white text-red-600 shadow-sm dark:bg-slate-800 dark:text-red-300"
-                    : "border border-slate-200/70 bg-white/70 text-slate-500 hover:text-slate-800 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-slate-100"
-                    }`}
-                >
-                  سلة المحذوفات
-                </button>
-              )}
-              {/* Auto Status Change Button */}
-              {!isMerchant && (
-                <button
-                  onClick={() => setShowAutoChangeModal(true)}
-                  className="inline-flex min-w-[126px] items-center justify-center gap-2 rounded-[16px] border border-slate-200/70 bg-white/70 px-4 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
-                >
-                  <BoltIcon className="h-4 w-4" />
-                  أتمتة الحالات
-                </button>
-              )}
+
               {!loading && (
                 <div className="hidden items-center gap-2 rounded-full border border-slate-200/70 bg-white/75 px-3 py-2 text-xs font-medium text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 lg:inline-flex">
                   <span>الظاهر</span>
@@ -3625,11 +3605,7 @@ const Orders: React.FC = () => {
         />
       )}
 
-      <OrderStatusAutoChangeModal
-        isOpen={showAutoChangeModal}
-        onClose={() => setShowAutoChangeModal(false)}
-        orderStatuses={orderStatuses}
-      />
+
     </div>
   );
 };

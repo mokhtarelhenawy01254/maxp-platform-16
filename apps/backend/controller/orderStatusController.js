@@ -21,8 +21,9 @@ const DEFAULT_ORDER_STATUSES = [
   { code: 'DUPLICATE_ORDER', name: 'طلب مكرر', nameEn: 'Duplicate Order', color: '#FBBF24', icon: 'AlertTriangle', sortOrder: 12, wooCommerceStatus: null },
   { code: 'RETURNED', name: 'مرتجع', nameEn: 'Returned', color: '#DC2626', icon: 'RotateCcw', sortOrder: 13, wooCommerceStatus: null },
   { code: 'PARTIALLY_RETURNED', name: 'مرتجع جزئي', nameEn: 'Partially Returned', color: '#F87171', icon: 'RotateCcw', sortOrder: 14, wooCommerceStatus: null },
-  { code: 'EXCHANGED', name: 'استبدال', nameEn: 'Exchanged', color: '#7C3AED', icon: 'ArrowLeftRight', sortOrder: 15, wooCommerceStatus: null },
-  { code: 'TRASH', name: 'سلة المحذوفات', nameEn: 'Trash', color: '#6B7280', icon: 'Trash2', sortOrder: 16, wooCommerceStatus: 'trash' }
+  { code: 'PARTIALLY_DELIVERED', name: 'تسليم جزئي', nameEn: 'Partially Delivered', color: '#FBBF24', icon: 'Package', sortOrder: 15, wooCommerceStatus: null },
+  { code: 'EXCHANGED', name: 'استبدال', nameEn: 'Exchanged', color: '#7C3AED', icon: 'ArrowLeftRight', sortOrder: 16, wooCommerceStatus: null },
+  { code: 'TRASH', name: 'سلة المحذوفات', nameEn: 'Trash', color: '#6B7280', icon: 'Trash2', sortOrder: 17, wooCommerceStatus: 'trash' }
 ];
 
 const DEFAULT_PAYMENT_STATUSES = [

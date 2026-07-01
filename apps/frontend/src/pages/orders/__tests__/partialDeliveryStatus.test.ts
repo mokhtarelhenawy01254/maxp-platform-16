@@ -1,9 +1,12 @@
 /**
- * Focused test: Verifies that partial delivery creates a returned order
- * with status "PARTIALLY_RETURNED", not "PENDING".
+ * Partial Delivery Status Verification:
  *
- * This test simulates the handlePartialDelivery logic found in
- * src/pages/orders/OrderDetails.tsx lines 434-487.
+ * Full flow in handlePartialDelivery (OrderDetails.tsx lines 434-487):
+ *   1. PUT /orders-new/simple/:orderNumber/items — update original order with delivered items only
+ *   2. updateStatus("PARTIALLY_DELIVERED", ...) — set original order to تسليم جزئي
+ *   3. POST /orders-new/simple — create new order for returned items with status PARTIALLY_RETURNED (مرتجع جزئي)
+ *
+ * This test verifies steps 1 & 3 by mocking apiClient.
  */
 
 jest.mock("../../../services/apiClient", () => ({

@@ -211,6 +211,10 @@ const StoreAnalyticsDashboard = React.lazy(
   () => import("./pages/Analytics/StoreAnalyticsDashboard"),
 );
 
+const OrderStatusAutomationPage = React.lazy(
+  () => import("./pages/orders/OrderStatusAutomationPage"),
+);
+
 const Categories = React.lazy(() => import("./pages/categories/Categories"));
 const CompetitorList = React.lazy(() => import("./pages/competitors/CompetitorList"));
 const CompetitorAdd = React.lazy(() => import("./pages/competitors/CompetitorAdd"));
@@ -3590,6 +3594,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <Orders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/automation"
+                  element={
+                    <Layout>
+                      <OrderStatusAutomationPage />
                     </Layout>
                   }
                 />

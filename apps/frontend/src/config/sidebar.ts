@@ -580,6 +580,7 @@ export const getSidebarConfig = (
                 { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders') },
                 { to: '/orders/workspace', icon: UserCircleIcon, label: t('sidebar.agentWorkspace') },
                 { to: '/orders/preparation', icon: BeakerIcon, label: t('sidebar.orderPreparation') },
+                { to: '/orders/automation', icon: BoltIcon, label: t('sidebar.orderAutomation', 'أتمتة الحالات') },
                 { to: '/orders/incomplete', icon: ExclamationTriangleIcon, label: t('sidebar.incompleteOrders') },
                 { to: '/pos', icon: CreditCardIcon, label: t('sidebar.pos') },
                 { to: '/orders/invoices', icon: DocumentTextIcon, label: t('sidebar.orderInvoices') },

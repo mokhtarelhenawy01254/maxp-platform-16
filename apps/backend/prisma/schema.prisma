@@ -2601,6 +2601,7 @@ enum OrderStatus {
   QUALITY_CHECK
   PACKAGED
   ON_HOLD_PREP
+  PARTIALLY_DELIVERED
 }
 
 enum PaymentStatus {
