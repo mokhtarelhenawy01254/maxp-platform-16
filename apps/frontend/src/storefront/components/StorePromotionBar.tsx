@@ -55,23 +55,20 @@ const StorePromotionBar: React.FC = () => {
   if (!promotionProgress) return null;
 
   return (
-    <>
-      <div className="h-[46px]" aria-hidden="true" />
-      <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)]">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:px-6">
-          <span className="truncate text-sm font-bold text-[#9f1239]">{promotionProgress.message}</span>
-          <span className="shrink-0 rounded-full bg-[#fce7f3] px-3 py-1 text-xs font-bold text-[#be123c] shadow-sm">
-            {cartQuantity} قطعة
-          </span>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#fecdd3]">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#e11d48] to-[#ec4899] transition-[width] duration-500"
-            style={{ width: `${promotionProgress.progressPct}%` }}
-          />
-        </div>
+    <div className="flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)]">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:px-6">
+        <span className="truncate text-sm font-bold text-[#9f1239]">{promotionProgress.message}</span>
+        <span className="shrink-0 rounded-full bg-[#fce7f3] px-3 py-1 text-xs font-bold text-[#be123c] shadow-sm">
+          {cartQuantity} قطعة
+        </span>
       </div>
-    </>
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#fecdd3]">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[#e11d48] to-[#ec4899] transition-[width] duration-500"
+          style={{ width: `${promotionProgress.progressPct}%` }}
+        />
+      </div>
+    </div>
   );
 };
 

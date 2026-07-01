@@ -8516,9 +8516,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       {showPreviewThemeBanner && previewThemeId ? (
         <StorefrontPreviewBanner previewThemeId={previewThemeId} />
       ) : null}
+      {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme ? <StorePromotionBar /> : null}
       {!isProductImageLandingPage && !isFastlyTheme && canRenderConversionHosts ? (
         <>
-          {!isElessiPackTheme ? <StorePromotionBar /> : null}
           <React.Suspense fallback={null}>
             {!isElessiPackTheme ? <GlobalConversionHost /> : null}
             <StickyAddToCartHost />
