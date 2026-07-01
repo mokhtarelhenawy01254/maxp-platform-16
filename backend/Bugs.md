@@ -81,3 +81,16 @@
   1. Updated `getSessions` in `apps/backend/controller/whatsappController.js` to filter the returned sessions using `getUserAccessibleSessionIds` for non-admin roles.
 - **Files Modified**:
   - `apps/backend/controller/whatsappController.js`
+
+### [FIX] Facebook Inbox layout squeezed on tablet and narrow viewports
+- **Date**: 2026-07-01
+- **Description**: The Facebook Inbox chat header actions overflowed and wrapped in a squeezed layout on tablets (e.g. iPad) and on desktop screens when the customer details panel was open.
+- **Root Cause**:
+  1. The chat header rendered all 8 action buttons inline when not on mobile, regardless of the actual space available.
+  2. In narrow viewports (like tablet or when the profile panel is open on desktop), the chat window column gets squeezed to less than 500px, causing the 8 action buttons in the header to wrap, overlap, and collide with the customer name/identity.
+- **Resolution**:
+  1. Introduced `showDesktopMoreMenu` state variable to toggle a secondary actions dropdown.
+  2. Defined `shouldCollapseActions = !isWideDesktop || showPinnedContextPanel` to identify when the viewport or column space is constrained.
+  3. When space is constrained, we collapse the secondary actions (Quick Order, Snooze, Copy Link, Notes, Delete) into a clean "More Actions" dropdown menu using the existing `MoreHorizontal` icon and custom classes (`business-dropdown-surface`, `business-dropdown-option`), while keeping critical actions inline (Mark as Done, Star/Priority, Profile Toggle).
+- **Files Modified**:
+  - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx`

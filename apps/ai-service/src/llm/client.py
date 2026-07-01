@@ -42,12 +42,25 @@ def _parse_dsml_tool_calls(text: str) -> list[dict]:
     except (json.JSONDecodeError, KeyError, TypeError):
         return []
 
+from dataclasses import dataclass, field
+
 import structlog
 
 from src.llm.model_capabilities import supports_vision
-from src.llm.providers.base import ProviderResponse
 
 logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class ProviderResponse:
+    text: str
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    usage: dict[str, Any] | None = None
+    model: str = ""
+    provider: str = ""
+    raw: Any = None
+    cost: float | None = None
+    finish_reason: str | None = None
 
 _SAFE_TOOL_NAME_RE = re.compile(r"[^a-zA-Z0-9_-]")
 

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.llm.providers.base import ProviderResponse
+from src.llm.client import ProviderResponse
 from src.pipeline.context import PipelineContext
 from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.skills.register_all import register_all_skills

@@ -5,8 +5,10 @@
   "description": "Find products and validate product facts.",
   "allowedTools": [
     "product_search",
-    "inventory_check"
+    "inventory_check",
+    "offers_list_active",
+    "coupon_validate"
   ],
   "requiresHumanApproval": false,
-  "maxToolCount": 2
+  "maxToolCount": 4
 }

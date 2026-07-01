@@ -10,7 +10,7 @@ from src.llm.client import LLMClient
 from src.skills.registry import get_skill_registry
 from src.guardrails.input import INPUT_GUARDRAILS
 from src.pipeline.context import PipelineContext
-from src.llm.providers.base import ProviderResponse
+from src.llm.client import ProviderResponse
 from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta
 
 logger = structlog.get_logger(__name__)

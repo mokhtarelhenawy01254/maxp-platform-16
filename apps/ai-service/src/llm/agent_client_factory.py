@@ -152,29 +152,6 @@ def build_agent_client(
     raise ValueError(f"cannot resolve model '{model}' synchronously; use async build_agent_client_async instead")
 
 
-def build_provider_client(
-    provider_type: str = "GOOGLE",
-    *,
-    model: str | None = None,
-    tools: list[Any] | None = None,
-    system_prompt: str | None = None,
-) -> Any:
-    if not model:
-        raise ValueError("model is required for LLM client creation")
-    if is_gemma_model(model):
-        settings = get_settings()
-        gemma = build_gemma_client(
-            api_key=settings.google_api_key,
-            model=model,
-            tools=tools,
-            system_prompt=system_prompt,
-        )
-        if gemma is not None:
-            logger.info("agent_client.provider_client", provider="gemma", model=model)
-            return gemma
-    raise RuntimeError("build_provider_client requires async provider resolution; use build_provider_client_async")
-
-
 async def build_agent_client_async(
     settings: Any,
     *,
@@ -237,6 +214,5 @@ __all__ = [
     "AgentClientAdapter",
     "build_agent_client",
     "build_agent_client_async",
-    "build_provider_client",
     "build_provider_client_async",
 ]

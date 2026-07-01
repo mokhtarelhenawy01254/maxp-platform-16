@@ -188,6 +188,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     },
   );
   const [showMobileActionMenu, setShowMobileActionMenu] = useState(false);
+  const [showDesktopMoreMenu, setShowDesktopMoreMenu] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 768 : false,
   );
@@ -1872,11 +1873,15 @@ const getApiError = (error: unknown): ApiErrorLike => {
     if (!selectedConversation || !isMobileViewport) {
       setShowMobileActionMenu(false);
     }
+    if (!selectedConversation) {
+      setShowDesktopMoreMenu(false);
+    }
   }, [isMobileViewport, selectedConversation]);
 
   const showPinnedContextPanel = Boolean(
     selectedConversation && isWideDesktop && showDesktopContextColumn,
   );
+  const shouldCollapseActions = !isWideDesktop || showPinnedContextPanel;
   const showProfileOverlay = Boolean(
     selectedConversation && showProfilePanel && !isWideDesktop,
   );
@@ -2209,6 +2214,131 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         >
                           <MoreHorizontal size={18} />
                         </button>
+                      </>
+                    ) : shouldCollapseActions ? (
+                      <>
+                        <ConversationActionsBar
+                          isPriority={selectedConversation.priority}
+                          onTogglePriority={handleTogglePriority}
+                          onMarkDone={handleMarkDone}
+                          disabled={updating}
+                        />
+
+                        <button
+                          onClick={handleOpenProfilePanel}
+                          className="business-icon-button rounded-xl transition-colors"
+                          data-tone={
+                            isProfilePanelActive ? "primary" : undefined
+                          }
+                          title={profilePanelToggleTitle}
+                          aria-label={profilePanelToggleTitle}
+                          aria-pressed={isProfilePanelActive}
+                        >
+                          {isProfilePanelActive ? (
+                            <PanelRightClose size={18} />
+                          ) : (
+                            <PanelRightOpen size={18} />
+                          )}
+                        </button>
+
+                        <div
+                          className="business-inbox-chat-separator h-6 w-px mx-1"
+                          style={{ background: "var(--business-muted-line)" }}
+                        ></div>
+
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowDesktopMoreMenu((current) => !current)}
+                            className="business-icon-button rounded-xl transition-colors"
+                            data-tone={showDesktopMoreMenu ? "primary" : undefined}
+                            title="المزيد من الإجراءات"
+                            aria-expanded={showDesktopMoreMenu}
+                          >
+                            <MoreHorizontal size={18} />
+                          </button>
+
+                          {showDesktopMoreMenu && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-20"
+                                onClick={() => setShowDesktopMoreMenu(false)}
+                                aria-label="إغلاق القائمة"
+                              />
+                              <div className="business-dropdown-surface absolute left-0 top-full z-30 mt-2 p-2 w-56 flex flex-col gap-1">
+                                <button
+                                  type="button"
+                                  className="business-dropdown-option"
+                                  onClick={() => {
+                                    setShowDesktopMoreMenu(false);
+                                    setShowQuickOrderModal(true);
+                                  }}
+                                >
+                                  <ShoppingCartIcon className="h-5 w-5" />
+                                  <span>إنشاء طلب سريع</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="business-dropdown-option"
+                                  onClick={() => {
+                                    handleCopyConversationLink(selectedConversation.id);
+                                    setShowDesktopMoreMenu(false);
+                                  }}
+                                >
+                                  {copiedLink ? (
+                                    <Check className="h-5 w-5" />
+                                  ) : (
+                                    <Copy className="h-5 w-5" />
+                                  )}
+                                  <span>
+                                    {copiedLink
+                                      ? String(t("sidebar.linkCopied"))
+                                      : String(t("sidebar.copyLink"))}
+                                  </span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="business-dropdown-option"
+                                  onClick={() => {
+                                    setShowDesktopMoreMenu(false);
+                                    handleToggleNotesPanel();
+                                  }}
+                                >
+                                  <StickyNote className="h-5 w-5" />
+                                  <span>{showNotes ? "إخفاء الملاحظات" : "عرض الملاحظات"}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="business-dropdown-option"
+                                  onClick={() => {
+                                    setShowDesktopMoreMenu(false);
+                                    setSnoozeModalOpen(true);
+                                  }}
+                                >
+                                  <ClockIcon className="h-5 w-5" />
+                                  <span>غفوة المحادثة</span>
+                                </button>
+
+                                <div className="h-px my-1" style={{ background: "var(--business-muted-line)" }} />
+
+                                <button
+                                  type="button"
+                                  className="business-dropdown-option"
+                                  style={{ color: "var(--business-danger)" }}
+                                  onClick={() => {
+                                    setShowDesktopMoreMenu(false);
+                                    handleDeleteConversation();
+                                  }}
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                  <span>حذف المحادثة</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </>
                     ) : (
                       <>

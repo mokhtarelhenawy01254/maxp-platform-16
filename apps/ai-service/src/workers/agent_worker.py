@@ -144,9 +144,12 @@ async def handle_memory_consolidation(job: dict[str, Any]) -> None:
             logger.info("no conversations to consolidate", company_id=company_id)
             return
 
-        from src.llm.providers import get_provider_factory
-        factory = get_provider_factory()
-        provider = await factory.get_active_provider()
+        from src.llm.client import LLMClient
+        from src.config import get_settings
+
+        settings = get_settings()
+        api_key = settings.google_api_key
+        provider = LLMClient(provider="GOOGLE", model="gemini-2.5-flash", api_key=api_key) if api_key else None
 
         for conv in conversations:
             conv_id, customer_id, _conv_company_id, metadata_raw, _updated_at = conv
@@ -213,7 +216,7 @@ Provide your output in valid JSON format only, matching this schema:
 }}
 Do not return any extra text, only the raw JSON."""
 
-                    response = await provider.generate_response(
+                    response = await provider.generate(
                         messages=[{"role": "user", "content": prompt}],
                         temperature=0.2,
                         max_tokens=500,
