@@ -80,6 +80,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
       name: name,
       price: typeof price === 'string' ? parseFloat(price) : price,
       basePrice: typeof price === 'string' ? parseFloat(price) : price,
+      comparePrice: typeof product.comparePrice === 'number' ? product.comparePrice : undefined,
       quantity: 1,
       imageUrl: primaryImage,
       volumeDiscounts: getProductVolumeDiscounts(product),

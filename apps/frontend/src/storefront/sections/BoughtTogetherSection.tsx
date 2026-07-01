@@ -769,6 +769,7 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
       name: item.name,
       price: recommendationPrice,
       basePrice: recommendationPrice,
+      comparePrice: typeof item.comparePrice === 'number' ? item.comparePrice : undefined,
       quantity: 1,
       imageUrl: getRecommendationImage(item),
       attributes: recommendationAttributes,
@@ -795,6 +796,7 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
           Number(currentPdpSelection?.unitPrice) ||
           Number(product.price) ||
           0,
+        comparePrice: typeof product.comparePrice === 'number' ? product.comparePrice : undefined,
         quantity: 1,
         imageUrl: currentPdpSelection?.imageUrl || getPrimaryProductImage(product),
         attributes: currentPdpSelection?.attributes || {},

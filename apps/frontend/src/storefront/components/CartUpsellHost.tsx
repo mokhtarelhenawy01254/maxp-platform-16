@@ -340,6 +340,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
         name: product.name,
         price: Number(product.price) || 0,
         basePrice: Number(product.price) || 0,
+        comparePrice: typeof product.comparePrice === 'number' ? product.comparePrice : undefined,
         quantity: 1,
         imageUrl: getPrimaryProductImage(product),
         volumeDiscounts: getProductVolumeDiscounts(product),

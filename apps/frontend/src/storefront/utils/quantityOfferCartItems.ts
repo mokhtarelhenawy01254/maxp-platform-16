@@ -93,6 +93,7 @@ export const buildQuantityOfferCartItems = ({
       name: product.name,
       price: quantityOfferSelection.unitPrice,
       basePrice,
+      comparePrice: typeof product.comparePrice === 'number' ? product.comparePrice : undefined,
       quantity: quantityOfferSelection.offerQuantity,
       imageUrl: getPrimaryProductImage(product),
       attributes: isSingleStandard ? {} : attributesLabel,
@@ -156,6 +157,7 @@ export const buildQuantityOfferCartItems = ({
       name: product.name,
       price: quantityOfferSelection.unitPrice,
       basePrice,
+      comparePrice: typeof selectedVariant.comparePrice === 'number' ? selectedVariant.comparePrice : (typeof product.comparePrice === 'number' ? product.comparePrice : undefined),
       quantity: 1,
       imageUrl:
         (selectedVariant.image as string) || getPrimaryProductImage(product),

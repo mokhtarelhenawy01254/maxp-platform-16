@@ -416,6 +416,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       name: product.name,
       price: activeUnitPrice,
       basePrice: activeSelection?.basePrice ?? activeUnitPrice,
+      comparePrice: typeof product.comparePrice === 'number' ? product.comparePrice : undefined,
       quantity,
       imageUrl: activeSelection?.imageUrl || product.imageUrl,
       attributes: activeAttributes,
@@ -433,6 +434,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     product.id,
     product.imageUrl,
     product.name,
+    product.comparePrice,
     quantity,
   ]);
 
