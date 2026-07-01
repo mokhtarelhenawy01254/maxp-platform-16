@@ -175,3 +175,21 @@
   - `apps/backend/services/whatsapp/WhatsAppManager.js`
   - `apps/backend/services/TelegramBotService.js`
   - `apps/backend/utils/allFunctions.js`
+
+### [FIX/IMPROVEMENT] Ready Agent Profiles Gaps Resolution & Merchant Editing Constraints
+- **Date**: 2026-07-02
+- **Description**: Gaps identified between the Super Admin agent profiles management and the merchant agent creation flow. Super admins could not set advanced SOUL configurations (welcome messages, language, escalation policies, custom instructions) for ready-to-use agents, nor could they define editing locks (read-only restrictions) to preserve core business logic for merchant agents.
+- **Root Cause**:
+  1. The Super Admin `ReadyProfile` schema in both frontend and backend lacked fields for locks (`lockIdentity`, `lockPersona`, `lockRules`, `lockCustomPrompt`) and advanced soul fields (`welcome`, `language`, `escalation`, `customPrompt`).
+  2. The Merchant `AgentProfilesPage` did not enforce these locks at the input field level, allowing merchants to edit restricted settings.
+  3. No seeding script existed to initialize DB settings for these ready agents upon clean setup.
+- **Resolution**:
+  1. Modified `apps/backend/routes/superAdminRoutes.js` (POST handler) to capture and save locks.
+  2. Modified `apps/frontend/src/pages/super-admin/SuperAdminAgentProfiles.tsx` to add toggles for locks and inputs for advanced soul fields under personalities.
+  3. Modified `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx` to pass locks/soul fields during quick-create and apply read-only locks to edit form inputs with visual lock indicators.
+  4. Created a DB seeding script `apps/backend/prisma/seed-quick-profiles.js` to pre-populate default agent profiles (including sales-rep-v2-agent) and their default lock profiles.
+- **Files Modified/Added**:
+  - `apps/backend/routes/superAdminRoutes.js`
+  - `apps/frontend/src/pages/super-admin/SuperAdminAgentProfiles.tsx`
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+  - `apps/backend/prisma/seed-quick-profiles.js` [NEW]

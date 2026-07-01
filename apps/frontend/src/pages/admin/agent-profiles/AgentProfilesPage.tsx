@@ -232,6 +232,10 @@ interface ReadyAgentPersonality {
   goal: string;
   tasks?: string;
   boundaries?: string;
+  welcome?: string;
+  language?: string;
+  escalation?: string;
+  customPrompt?: string;
 }
 
 interface ReadyAgent {
@@ -244,6 +248,10 @@ interface ReadyAgent {
   lucideIcon?: string | null;
   roleColor?: string | null;
   channels?: string[] | null;
+  lockIdentity?: boolean;
+  lockPersona?: boolean;
+  lockRules?: boolean;
+  lockCustomPrompt?: boolean;
 }
 
 const FALLBACK_READY_AGENTS: ReadyAgent[] = [
@@ -305,6 +313,11 @@ export default function AgentProfilesPage() {
 
   const [tab, setTab] = useState<Tab>("settings");
   const [profile, setProfile] = useState<AgentProfileResponse | null>(null);
+  const merchantLocks = (profile?.agent as any)?.config?.merchant_locks || {};
+  const isIdentityLocked = !!merchantLocks.lockIdentity;
+  const isPersonaLocked = !!merchantLocks.lockPersona;
+  const isRulesLocked = !!merchantLocks.lockRules;
+  const isCustomPromptLocked = !!merchantLocks.lockCustomPrompt;
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
@@ -627,6 +640,16 @@ export default function AgentProfilesPage() {
       soul_tone: quickPersonality.tone,
       soul_tasks: quickPersonality.tasks || "",
       soul_boundaries: quickPersonality.boundaries || "",
+      soul_welcome: quickPersonality.welcome || "",
+      soul_language: quickPersonality.language || "auto",
+      soul_escalation: quickPersonality.escalation || "knowledge_ask",
+      soul_custom: quickPersonality.customPrompt || "",
+      merchant_locks: {
+        lockIdentity: ready?.lockIdentity || false,
+        lockPersona: ready?.lockPersona || false,
+        lockRules: ready?.lockRules || false,
+        lockCustomPrompt: ready?.lockCustomPrompt || false,
+      }
     } : {};
     const soulContent = config.soul_persona ? buildSoulContent(config) : "";
     const data = await tryApiFetch<Record<string, unknown>>(
@@ -943,16 +966,17 @@ export default function AgentProfilesPage() {
                   <div className="flex flex-col items-center gap-1">
                     <div className="grid grid-cols-4 gap-0.5">
                       {AGENT_ICONS.map((icon) => (
-                        <button key={icon} type="button" onClick={() => { setDraftIcon(icon); if (!editing) setEditing(true); }}
+                        <button key={icon} type="button" onClick={() => { if (isIdentityLocked) return; setDraftIcon(icon); if (!editing) setEditing(true); }}
+                          disabled={isIdentityLocked}
                           className={`size-7 flex items-center justify-center rounded-md text-sm border transition-colors ${
                             draftIcon === icon
                               ? "border-primary bg-primary/10"
                               : "border hover:border-foreground/30"
-                          }`}
+                          } ${isIdentityLocked ? "opacity-50 cursor-not-allowed" : ""}`}
                         >{icon}</button>
                       ))}
                     </div>
-                    <span className="text-[10px] text-muted-foreground/60">{t("agentProfiles.icon.label")}</span>
+                    <span className="text-[10px] text-muted-foreground/60">{t("agentProfiles.icon.label")} {isIdentityLocked && "(🔒 مغلق)"}</span>
                   </div>
                 ) : (
                   <span className="text-2xl flex-shrink-0">{selectedAgent.icon || "🤖"}</span>
@@ -960,7 +984,10 @@ export default function AgentProfilesPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     {editing ? (
-                      <Input value={draftName} onChange={(e) => { setDraftName(e.target.value); if (!editing) setEditing(true); }} className="h-8 text-base font-bold lg:w-64" />
+                      <div className="flex items-center gap-1.5">
+                        <Input value={draftName} onChange={(e) => { setDraftName(e.target.value); if (!editing) setEditing(true); }} disabled={isIdentityLocked} className="h-8 text-base font-bold lg:w-64" />
+                        {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">🔒 مغلق</span>}
+                      </div>
                     ) : (
                       <h1 className="text-base font-bold text-foreground/90">{selectedAgent.name}</h1>
                     )}
@@ -1199,23 +1226,35 @@ export default function AgentProfilesPage() {
                     <div className="space-y-6">
                       {/* Agent Name */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.agentName")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.agentName")}
+                          {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Input value={draftName} onChange={(e) => { setDraftName(e.target.value) }}
+                          disabled={isIdentityLocked}
                           placeholder={t("agentProfiles.settings.agentNamePlaceholder")} className="h-8 text-sm" />
                       </div>
 
                       {/* Persona */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.persona")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.persona")}
+                          {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Input value={draftConfig.soul_persona || ""} onChange={(e) => handleSoulFieldChange("soul_persona", e.target.value)}
+                          disabled={isPersonaLocked}
                           placeholder={t("agentProfiles.settings.personaPlaceholder")} className="h-8 text-sm" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.personaHint")}</p>
                       </div>
 
                       {/* Goal */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.goal")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.goal")}
+                          {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Textarea value={draftConfig.soul_goal || ""} onChange={(e) => handleSoulFieldChange("soul_goal", e.target.value)}
+                          disabled={isPersonaLocked}
                           placeholder={t("agentProfiles.settings.goalPlaceholder")} className="text-sm min-h-[48px] resize-y" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.goalHint")}</p>
                       </div>
@@ -1224,7 +1263,10 @@ export default function AgentProfilesPage() {
 
                       {/* Tone */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.tone")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.tone")}
+                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg w-fit">
                           {[
                             { key: "friendly", label: t("agentProfiles.settings.toneFriendly") },
@@ -1233,11 +1275,12 @@ export default function AgentProfilesPage() {
                             { key: "detailed", label: t("agentProfiles.settings.toneDetailed") },
                           ].map((opt) => (
                             <button key={opt.key} type="button"
+                              disabled={isRulesLocked}
                               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
                                 (draftConfig.soul_tone || "friendly") === opt.key
-                                  ? "bg-background text-foreground shadow-sm"
+                                  ? "bg-background text-foreground shadow-sm animate-none"
                                   : "text-muted-foreground hover:text-foreground"
-                              }`}
+                              } ${isRulesLocked ? "opacity-50 cursor-not-allowed" : ""}`}
                               onClick={() => handleSoulFieldChange("soul_tone", opt.key)}
                             >{opt.label}</button>
                           ))}
@@ -1247,7 +1290,10 @@ export default function AgentProfilesPage() {
 
                       {/* Language */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.language")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.language")}
+                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg w-fit">
                           {[
                             { key: "auto", label: t("agentProfiles.settings.languageAuto") },
@@ -1255,11 +1301,12 @@ export default function AgentProfilesPage() {
                             { key: "en", label: t("agentProfiles.settings.languageEn") },
                           ].map((opt) => (
                             <button key={opt.key} type="button"
+                              disabled={isRulesLocked}
                               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
                                 (draftConfig.soul_language || "auto") === opt.key
                                   ? "bg-background text-foreground shadow-sm"
                                   : "text-muted-foreground hover:text-foreground"
-                              }`}
+                              } ${isRulesLocked ? "opacity-50 cursor-not-allowed" : ""}`}
                               onClick={() => handleSoulFieldChange("soul_language", opt.key)}
                             >{opt.label}</button>
                           ))}
@@ -1271,32 +1318,48 @@ export default function AgentProfilesPage() {
 
                       {/* Tasks */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.tasks")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.tasks")}
+                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Textarea value={draftConfig.soul_tasks || ""} onChange={(e) => handleSoulFieldChange("soul_tasks", e.target.value)}
+                          disabled={isRulesLocked}
                           placeholder={t("agentProfiles.settings.tasksPlaceholder")} className="text-sm min-h-[48px] resize-y" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.tasksHint")}</p>
                       </div>
 
                       {/* Boundaries */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.boundaries")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.boundaries")}
+                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Textarea value={draftConfig.soul_boundaries || ""} onChange={(e) => handleSoulFieldChange("soul_boundaries", e.target.value)}
+                          disabled={isRulesLocked}
                           placeholder={t("agentProfiles.settings.boundariesPlaceholder")} className="text-sm min-h-[48px] resize-y" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.boundariesHint")}</p>
                       </div>
 
                       {/* Welcome Message */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.welcome")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.welcome")}
+                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Input value={draftConfig.soul_welcome || ""} onChange={(e) => handleSoulFieldChange("soul_welcome", e.target.value)}
+                          disabled={isRulesLocked}
                           placeholder={t("agentProfiles.settings.welcomePlaceholder")} className="h-8 text-sm" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.welcomeHint")}</p>
                       </div>
 
                       {/* Escalation */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.escalation")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.escalation")}
+                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Select value={draftConfig.soul_escalation || "knowledge_ask"}
+                          disabled={isRulesLocked}
                           onValueChange={(v) => handleSoulFieldChange("soul_escalation", v)}>
                           <SelectTrigger className="h-8 text-sm">
                             <SelectValue />
@@ -1312,8 +1375,12 @@ export default function AgentProfilesPage() {
 
                       {/* إضافة تعليمات إضافية */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.customPrompt")}</label>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          {t("agentProfiles.settings.customPrompt")}
+                          {isCustomPromptLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
                         <Textarea value={draftConfig.soul_custom || ""} onChange={(e) => handleSoulFieldChange("soul_custom", e.target.value)}
+                          disabled={isCustomPromptLocked}
                           placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[48px] resize-y font-mono text-xs" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
                       </div>

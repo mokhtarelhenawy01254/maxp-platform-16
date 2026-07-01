@@ -2,6 +2,11 @@
 
 ## 2026-07-02 / 2026-03-09
 - **Sales Rep V2 Agent Template (NEW TEMPLATE)**: Created a new structured agent template `sales-rep-v2-agent` based on prompt engineering best practices from the `agency-agents` open-source project (123k ⭐). Key improvements: 5-step Sales Workflow (Discovery → Presentation → Objection Handling → Data Collection → Close), Critical Rules (Do's & Don'ts), Success Metrics, Failure Protocol (graceful degradation instead of "حصل عطل فني"), prioritized tool categorization (🔴→🟡→🟢), and structured Handoff Rules for multi-agent coordination.
+- **Ready Agent Profiles & Merchant Locks (NEW FEATURE/GAP RESOLUTION)**:
+  1. Resolved gaps in ready-to-use agents settings by adding advanced soul fields (welcome messages, language selections, and escalation strategies) to personalities.
+  2. Implemented field-level editing locks (`lockIdentity`, `lockPersona`, `lockRules`, `lockCustomPrompt`) to prevent merchant tampering with core prompt templates.
+  3. Integrated visual lock indicators (🔒) in merchant edit forms with dynamic read-only input behavior.
+  4. Added PostgreSQL seeding for automatic DB state preparation with optimized template configs.
 - **Documentation & Architecture Review**: Documented the multi-file agent template contract pattern (agent.json + SOUL.md + TOOLS.md + AGENTS.md → single XML agent_contract at runtime) and updated Structure.md with the agent templates architecture.
 
 ## 2026-07-01 / 2026-03-09

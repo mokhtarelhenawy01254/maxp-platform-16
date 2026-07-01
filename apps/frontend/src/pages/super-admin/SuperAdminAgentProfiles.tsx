@@ -33,6 +33,10 @@ interface Personality {
   goal: string;
   tasks?: string;
   boundaries?: string;
+  welcome?: string;
+  language?: string;
+  escalation?: string;
+  customPrompt?: string;
 }
 
 interface AgentTemplate {
@@ -59,6 +63,10 @@ interface ReadyProfile {
   lucideIcon?: string | null;
   roleColor?: string | null;
   channels?: string[] | null;
+  lockIdentity?: boolean;
+  lockPersona?: boolean;
+  lockRules?: boolean;
+  lockCustomPrompt?: boolean;
 }
 
 const TONES = [
@@ -96,6 +104,7 @@ const emptyProfile = (): ReadyProfile => ({
   slug: "", icon: "🤖", title: "", titleEn: "", category: "", categoryEn: "",
   desc: "", descEn: "", sortOrder: 0, isActive: true, personalities: [],
   templateSlug: null, lucideIcon: null, roleColor: null, channels: null,
+  lockIdentity: false, lockPersona: false, lockRules: false, lockCustomPrompt: false,
 });
 
 const SuperAdminAgentProfiles: React.FC = () => {
@@ -153,7 +162,11 @@ const SuperAdminAgentProfiles: React.FC = () => {
     const id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     setEditProfile((p) => ({
       ...p,
-      personalities: [...p.personalities, { id, name: "", desc: "", tone: "friendly", persona: "", goal: "", tasks: "", boundaries: "" }],
+      personalities: [...p.personalities, {
+        id, name: "", desc: "", tone: "friendly", persona: "", goal: "",
+        tasks: "", boundaries: "", welcome: "", language: "auto",
+        escalation: "knowledge_ask", customPrompt: ""
+      }],
     }));
   };
 
@@ -476,8 +489,48 @@ const SuperAdminAgentProfiles: React.FC = () => {
                     </div>
                     <Textarea value={pers.tasks || ""} onChange={(e) => updatePersonality(pers.id, "tasks", e.target.value)} className="text-xs min-h-[50px]" placeholder="المهام الأساسية (مثال: يعرض المنتجات، ينشئ الطلبات، يتابع الشحنات)" />
                     <Textarea value={pers.boundaries || ""} onChange={(e) => updatePersonality(pers.id, "boundaries", e.target.value)} className="text-xs min-h-[50px]" placeholder="الحدود (مثال: ما يقدم خصومات غير مصرح بها، ما يضغط على العميل)" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input value={pers.welcome || ""} onChange={(e) => updatePersonality(pers.id, "welcome", e.target.value)} className="h-8 text-sm" placeholder="رسالة الترحيب الافتراضية" />
+                      <select value={pers.language || "auto"} onChange={(e) => updatePersonality(pers.id, "language", e.target.value)}
+                        className="h-8 rounded-lg border border-input bg-background px-2 text-xs">
+                        <option value="auto">لغة تلقائية (عربي/إنجليزي)</option>
+                        <option value="ar">العربية</option>
+                        <option value="en">English</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <select value={pers.escalation || "knowledge_ask"} onChange={(e) => updatePersonality(pers.id, "escalation", e.target.value)}
+                        className="h-8 rounded-lg border border-input bg-background px-2 text-xs w-full">
+                        <option value="knowledge_ask">عند عدم المعرفة: يسألني عبر لوحة التحكم</option>
+                        <option value="escalate_human">عند عدم المعرفة: يحول المحادثة لبشر</option>
+                        <option value="apologize">عند عدم المعرفة: يعتذر ويطلب التواصل مع الدعم</option>
+                      </select>
+                    </div>
+                    <Textarea value={pers.customPrompt || ""} onChange={(e) => updatePersonality(pers.id, "customPrompt", e.target.value)} className="text-xs min-h-[50px] font-mono" placeholder="تعليمات إضافية مخصصة للشخصية" />
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="border-t pt-3 space-y-2">
+              <label className="text-xs font-bold text-muted-foreground block mb-1">🔒 صلاحيات التاجر (التحكم في الأقفال)</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
+                  <Switch checked={editProfile.lockIdentity || false} onCheckedChange={(v) => setEditProfile((p) => ({ ...p, lockIdentity: v }))} />
+                  <span className="text-xs text-muted-foreground">قفل الاسم والأيقونة</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={editProfile.lockPersona || false} onCheckedChange={(v) => setEditProfile((p) => ({ ...p, lockPersona: v }))} />
+                  <span className="text-xs text-muted-foreground">قفل الشخصية والهدف</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={editProfile.lockRules || false} onCheckedChange={(v) => setEditProfile((p) => ({ ...p, lockRules: v }))} />
+                  <span className="text-xs text-muted-foreground">قفل المهام والحدود والتصعيد</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={editProfile.lockCustomPrompt || false} onCheckedChange={(v) => setEditProfile((p) => ({ ...p, lockCustomPrompt: v }))} />
+                  <span className="text-xs text-muted-foreground">قفل التعليمات الإضافية</span>
+                </div>
               </div>
             </div>
 
