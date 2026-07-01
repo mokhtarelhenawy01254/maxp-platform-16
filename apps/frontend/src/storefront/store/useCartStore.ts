@@ -56,6 +56,7 @@ export interface CartItem {
   name: string;
   price: number;
   basePrice?: number;
+  comparePrice?: number;
   quantity: number;
   imageUrl?: string;
   attributes?: Record<string, string>; // e.g., { Color: "Red", Size: "M" }

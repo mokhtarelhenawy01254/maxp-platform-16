@@ -203,6 +203,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       name,
       price: typeof price === 'string' ? parseFloat(price) : price,
       basePrice: typeof price === 'string' ? parseFloat(price) : price,
+      comparePrice: typeof numericComparePrice === 'number' ? numericComparePrice : undefined,
       quantity: 1,
       imageUrl: getPrimaryProductImage(product),
       volumeDiscounts: getProductVolumeDiscounts(product),

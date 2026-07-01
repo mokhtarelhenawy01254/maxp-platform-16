@@ -24,7 +24,7 @@ import { STOREFRONT_PDP_CHECKOUT_VISIBILITY_EVENT } from "../utils/pdpCheckout";
 import { isMarketplaceThemePreview } from "../preview/previewContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart } from "lucide-react";
-import { getActiveStorePromotionFromCompany } from "../utils/storePromotion";
+// ponytail: promotion bar extracted to StorePromotionBar.tsx (eager import)
 
 // formatCountdownParts and formatCountdownText imported from ../utils/countdown
 
@@ -159,58 +159,8 @@ const GlobalConversionHost: React.FC = () => {
       params.has("previewTheme")
     );
   }, [isSoleaFemme, location.search]);
-  const storePromotion = useMemo(
-    () => getActiveStorePromotionFromCompany(settings?.company),
-    [settings],
-  );
-  const promotionBannerText = useMemo(() => {
-    if (!storePromotion) return "";
-    const labels = (storePromotion.tiers || [])
-      .filter((t) => t.isActive !== false && t.label)
-      .map((t) => t.label);
-    const title = storePromotion.title?.trim();
-    if (title && labels.length > 0) return `${title} — ${labels.join(" • ")}`;
-    return title || labels.join(" • ") || "";
-  }, [storePromotion]);
-
-  const cartQuantity = cartItems.reduce(
-    (sum, item) => sum + Math.max(1, Math.floor(item.quantity || 1)),
-    0,
-  );
-  const promotionProgress = useMemo(() => {
-    if (!storePromotion || !storePromotion.tiers || storePromotion.tiers.length === 0) return null;
-    const tiers = [...storePromotion.tiers]
-      .filter((t) => t.isActive !== false)
-      .sort((a, b) => a.minQuantity - b.minQuantity);
-    if (tiers.length === 0) return null;
-    const currentTier = [...tiers].reverse().find((t) => cartQuantity >= t.minQuantity) || null;
-    const nextTier = tiers.find((t) => t.minQuantity > cartQuantity) || null;
-    let progressPct = 100;
-    let remaining = 0;
-    let message = "";
-    if (nextTier) {
-      const prevMin = currentTier ? currentTier.minQuantity : 0;
-      const span = nextTier.minQuantity - prevMin;
-      const advanced = cartQuantity - prevMin;
-      progressPct = Math.min(100, Math.max(0, (advanced / span) * 100));
-      remaining = nextTier.minQuantity - cartQuantity;
-      const label = nextTier.label || `اقتربي من ${nextTier.minQuantity} قطعة`;
-      message = remaining === 1
-        ? `ضيفي قطعة كمان — ${label} 🎁`
-        : `ضيفي ${remaining} قطع كمان — ${label} 🎁`;
-    } else if (currentTier) {
-      progressPct = 100;
-      message = `🎉 مبروك! ${currentTier.label || "حصلتي على خصم"}`;
-    } else {
-      const firstTier = tiers[0];
-      progressPct = 0;
-      remaining = firstTier.minQuantity - cartQuantity;
-      message = cartQuantity === 0
-        ? `ابدئي التسوق — ${firstTier.label || "عروض بانتظارك"}`
-        : `ضيفي ${remaining} قطع كمان — ${firstTier.label || "عروض بانتظارك"}`;
-    }
-    return { progressPct, remaining, message, currentTier, nextTier };
-  }, [storePromotion, cartQuantity]);
+  // ponytail: promotion bar extracted to StorePromotionBar.tsx (eager import, no lazy delay)
+  // add when: need promotion data inside conversion host logic
 
   const modules =
     (conversionSettings["modules"] as ConversionSettingsSection | undefined) ||
@@ -873,25 +823,6 @@ const GlobalConversionHost: React.FC = () => {
 
   return (
     <>
-      {promotionProgress ? (
-        <>
-          <div className="h-[46px]" aria-hidden="true" />
-          <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)]">
-            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:px-6">
-              <span className="truncate text-sm font-bold text-[#9f1239]">{promotionProgress.message}</span>
-              <span className="shrink-0 rounded-full bg-[#fce7f3] px-3 py-1 text-xs font-bold text-[#be123c] shadow-sm">
-                {cartQuantity} قطعة
-              </span>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#fecdd3]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#e11d48] to-[#ec4899] transition-[width] duration-500"
-                style={{ width: `${promotionProgress.progressPct}%` }}
-              />
-            </div>
-          </div>
-        </>
-      ) : null}
       {barPosition === "top" ? renderFreeShippingBar : null}
 
       {shouldRenderGlobalCountdown ? (

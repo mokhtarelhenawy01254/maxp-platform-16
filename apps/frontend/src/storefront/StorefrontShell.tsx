@@ -75,6 +75,7 @@ import { useProduct } from "./hooks/useProduct";
 const GlobalConversionHost = React.lazy(
   () => import("./components/GlobalConversionHost"),
 );
+import StorePromotionBar from "./components/StorePromotionBar";
 const StickyAddToCartHost = React.lazy(
   () => import("./components/StickyAddToCartHost"),
 );
@@ -8516,10 +8517,13 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <StorefrontPreviewBanner previewThemeId={previewThemeId} />
       ) : null}
       {!isProductImageLandingPage && !isFastlyTheme && canRenderConversionHosts ? (
-        <React.Suspense fallback={null}>
-          {!isElessiPackTheme ? <GlobalConversionHost /> : null}
-          <StickyAddToCartHost />
-        </React.Suspense>
+        <>
+          {!isElessiPackTheme ? <StorePromotionBar /> : null}
+          <React.Suspense fallback={null}>
+            {!isElessiPackTheme ? <GlobalConversionHost /> : null}
+            <StickyAddToCartHost />
+          </React.Suspense>
+        </>
       ) : null}
 
       <main className="flex-1">

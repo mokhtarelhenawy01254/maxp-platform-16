@@ -1299,6 +1299,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         name: product.name,
         price: isButcherAtelier ? unitPrice * butcherWeight : unitPrice,
         basePrice: unitPrice,
+        comparePrice: typeof activeComparePrice === 'number' ? activeComparePrice : undefined,
         quantity: isButcherAtelier ? 1 : quantity,
         imageUrl: selectedPrimaryImage,
         attributes: finalAttributes,
