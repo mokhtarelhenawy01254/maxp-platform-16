@@ -108,6 +108,7 @@ const DevTaskForm: React.FC = () => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<Attachment[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [imageBlobUrls, setImageBlobUrls] = useState<Record<string, string>>({});
   const checklistInputRef = React.useRef<HTMLInputElement>(null);
 
   // New Features State
@@ -166,6 +167,49 @@ const DevTaskForm: React.FC = () => {
       fetchTask();
     }
   }, [id]);
+
+  useEffect(() => {
+    let createdUrls: string[] = [];
+
+    const loadImages = async () => {
+      const token = getAccessToken();
+      if (!token) return;
+
+      const urls: Record<string, string> = {};
+
+      for (const file of existingImages) {
+        try {
+          const imageUrl =
+            file.fileUrl || `/uploads/dev-tasks/${file.fileName}`;
+          const response = await fetch(imageUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            urls[file.id] = objectUrl;
+            createdUrls.push(objectUrl);
+          }
+        } catch (error) {
+          console.error("Error loading image:", error);
+        }
+      }
+
+      setImageBlobUrls(urls);
+    };
+
+    if (existingImages.length > 0) {
+      loadImages();
+    }
+
+    return () => {
+      createdUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [existingImages]);
 
   const fetchInitialData = async () => {
     try {
@@ -513,11 +557,17 @@ const DevTaskForm: React.FC = () => {
                   {/* Existing images */}
                   {existingImages.map((img) => (
                     <div key={img.id} className="relative group">
-                      <img
-                        src={img.fileUrl || `/uploads/dev-tasks/${img.fileName}`}
-                        alt={img.originalName || "Task image"}
-                        className="w-full h-32 object-cover rounded-lg border-2 border-indigo-300 dark:border-indigo-600"
-                      />
+                      {imageBlobUrls[img.id] ? (
+                        <img
+                          src={imageBlobUrls[img.id]}
+                          alt={img.originalName || "Task image"}
+                          className="w-full h-32 object-cover rounded-lg border-2 border-indigo-300 dark:border-indigo-600"
+                        />
+                      ) : (
+                        <div className="w-full h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center rounded-lg border-2 border-indigo-300 dark:border-indigo-600">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeExistingImage(img.id)}
