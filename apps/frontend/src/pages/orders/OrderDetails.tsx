@@ -251,11 +251,11 @@ const OrderDetails: React.FC = () => {
     }, 0);
 
     const shipping =
-      typeof editForm.shipping === "number"
+      typeof editForm.shipping === "number" && !isNaN(editForm.shipping)
         ? editForm.shipping
         : parseFloat(editForm.shipping) || 0;
     const tax =
-      typeof editForm.tax === "number"
+      typeof editForm.tax === "number" && !isNaN(editForm.tax)
         ? editForm.tax
         : parseFloat(editForm.tax) || 0;
     const total = subtotal + shipping + tax;
@@ -440,9 +440,12 @@ const OrderDetails: React.FC = () => {
         (sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1),
         0,
       );
-      await apiClient.patch(`/orders-new/simple/${order.orderNumber}`, {
+      await apiClient.put(`/orders-new/simple/${order.orderNumber}/items`, {
         items: deliveredItems,
         subtotal: deliveredSubtotal,
+        tax: order.tax || 0,
+        shipping: order.shipping || 0,
+        total: deliveredSubtotal + parseFloat(String(order.tax || 0)) + parseFloat(String(order.shipping || 0)),
       });
       await updateStatus("PARTIALLY_RETURNED", "تسليم جزئي للطلب");
 

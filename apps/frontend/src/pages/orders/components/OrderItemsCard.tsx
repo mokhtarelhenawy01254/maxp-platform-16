@@ -853,7 +853,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
               {isEditing && onShippingChange ? (
                 <input
                   type="number"
-                  value={totals.shipping}
+                  value={isNaN(totals.shipping) ? 0 : totals.shipping}
                   onChange={(e) =>
                     onShippingChange(parseFloat(e.target.value) || 0)
                   }
@@ -871,7 +871,7 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
               {isEditing && onTaxChange ? (
                 <input
                   type="number"
-                  value={totals.tax}
+                  value={isNaN(totals.tax) ? 0 : totals.tax}
                   onChange={(e) => onTaxChange(parseFloat(e.target.value) || 0)}
                   className="w-24 px-2 py-1 text-right text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
                   min="0"
