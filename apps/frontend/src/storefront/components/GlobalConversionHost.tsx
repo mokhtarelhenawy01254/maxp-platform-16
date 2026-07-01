@@ -874,22 +874,23 @@ const GlobalConversionHost: React.FC = () => {
   return (
     <>
       {promotionProgress ? (
-          <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-rose-500/15 to-pink-500/15 border-b border-rose-200 shadow-sm">
-          <div className="mx-auto max-w-6xl px-4 py-2.5 md:px-6">
-            <div className="flex items-center justify-between gap-3 text-sm font-semibold text-rose-900">
-              <span className="truncate">{promotionProgress.message}</span>
-              <span className="shrink-0 rounded-full bg-rose-500/20 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+        <>
+          <div className="h-[53px]" aria-hidden="true" />
+          <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)]">
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:px-6">
+              <span className="truncate text-sm font-bold text-[#9f1239]">{promotionProgress.message}</span>
+              <span className="shrink-0 rounded-full bg-[#fce7f3] px-3 py-1 text-xs font-bold text-[#be123c] shadow-sm">
                 {cartQuantity} قطعة
               </span>
             </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-rose-200/50">
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#fecdd3]">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-pink-500 transition-[width] duration-500"
+                className="h-full rounded-full bg-gradient-to-r from-[#e11d48] to-[#ec4899] transition-[width] duration-500"
                 style={{ width: `${promotionProgress.progressPct}%` }}
               />
             </div>
           </div>
-        </div>
+        </>
       ) : null}
       {barPosition === "top" ? renderFreeShippingBar : null}
 
