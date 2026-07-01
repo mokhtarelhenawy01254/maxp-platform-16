@@ -46,7 +46,14 @@ def _try_parse_json_object(text: str) -> dict[str, Any] | None:
 async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     reply = ctx.llm_response or ""
 
-    # Guardrails check
+    # Strip internal tags BEFORE guardrails so properly-closed tags don't trigger blocking
+    reply = re.sub(r"<thought\b[^>]*>.*?</thought>", "", reply, flags=re.IGNORECASE | re.DOTALL)
+    reply = re.sub(r"</?thought\b[^>]*>", "", reply, flags=re.IGNORECASE)
+    reply = re.sub(r"<function\b[^>]*>.*?</function>", "", reply, flags=re.IGNORECASE | re.DOTALL)
+    reply = re.sub(r"</?function\b[^>]*>", "", reply, flags=re.IGNORECASE)
+    reply = reply.strip()
+
+    # Guardrails check on CLEANED reply
     for guardrail in OUTPUT_GUARDRAILS:
         result = await guardrail.validate(ctx, reply)
         if not result.allowed:
@@ -58,11 +65,6 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 },
             }
             return ctx
-
-    # Strip internal thought tags (like <thought>...</thought>)
-    reply = re.sub(r"<thought\b[^>]*>.*?</thought>", "", reply, flags=re.IGNORECASE | re.DOTALL)
-    reply = re.sub(r"</?thought\b[^>]*>", "", reply, flags=re.IGNORECASE)
-    reply = reply.strip()
 
     # --- SOTA 2026: Output Contract Validation ---
     try:
