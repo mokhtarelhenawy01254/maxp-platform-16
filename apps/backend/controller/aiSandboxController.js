@@ -1781,6 +1781,19 @@ async function listSandboxTools(req, res) {
   }
 }
 
+async function saveAgentFiles(req, res) {
+  try {
+    const companyId = req.user?.companyId || req.companyId;
+    const { agentId } = req.params;
+    const data = req.body;
+    const result = await aiServiceAdminClient.saveAgentFiles(agentId, companyId, data);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[AI-SANDBOX] saveAgentFiles error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 async function listRuns(req, res) {
   try {
     const companyId = req.user?.companyId || req.companyId;
@@ -1905,6 +1918,7 @@ module.exports = {
   evaluateResponse,
   exportSession,
   listSandboxTools,
+  saveAgentFiles,
   listRuns,
   getRun,
   resumeRun,

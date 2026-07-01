@@ -15,6 +15,7 @@ const {
   evaluateResponse,
   exportSession,
   listSandboxTools,
+  saveAgentFiles,
   listRuns,
   getRun,
   resumeRun,
@@ -27,6 +28,7 @@ router.get('/agents', listAgents);
 router.get('/agents/:agentId/profile', getAgentProfile);
 router.get('/models', listModels);
 router.get('/tools', listSandboxTools);
+router.put('/agents/:agentId/files', saveAgentFiles);
 router.get('/sessions', listSessions);
 router.get('/sessions/:sessionId', getSession);
 router.post('/sessions', createSession);

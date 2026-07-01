@@ -204,6 +204,11 @@ async function getAgentFiles(agentId, companyId) {
   return request('GET', `/admin/agents/${encodeURIComponent(agentId)}/files?company_id=${encodeURIComponent(companyId)}`);
 }
 
+async function saveAgentFiles(agentId, companyId, data) {
+  const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+  return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}/files${qs}`, data);
+}
+
 async function updateAgent(agentId, companyId, data) {
   const body = normalizeAgentPayload(data);
   return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`, body);
@@ -333,6 +338,7 @@ module.exports = {
   archiveAgent,
   deleteAgentPermanently,
   getAgentFiles,
+  saveAgentFiles,
   updateAgent,
   getProductEmbeddingStatus,
   triggerProductEmbeddingSync,
