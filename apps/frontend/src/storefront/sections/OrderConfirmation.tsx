@@ -473,6 +473,8 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
         total: directPurchaseTracking.total,
         finalTotal: directPurchaseTracking.total,
         items: directPurchaseTracking.items,
+        storePromotionDiscount: directPurchaseTracking.storePromotionDiscount,
+        storePromotionLabel: directPurchaseTracking.storePromotionLabel,
       };
     }
 

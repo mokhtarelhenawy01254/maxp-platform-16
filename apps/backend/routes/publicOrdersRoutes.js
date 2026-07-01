@@ -2342,7 +2342,7 @@ router.post('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: order,
+      data: { ...order, storePromotionDiscount: promoDiscount, storePromotionLabel: promoLabel },
       duplicate: isDuplicateOrder,
       message: isDuplicateOrder ? 'تم تسجيل الطلب المكرر' : 'تم إنشاء الطلب بنجاح'
     });

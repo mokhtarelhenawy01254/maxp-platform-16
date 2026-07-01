@@ -22,6 +22,8 @@ export interface StorefrontPurchaseTrackingState {
   eventId?: string;
   orderNumber: string;
   total: number;
+  storePromotionDiscount?: number;
+  storePromotionLabel?: string;
   phone?: string;
   customerName?: string;
   paymentMethod?: string;

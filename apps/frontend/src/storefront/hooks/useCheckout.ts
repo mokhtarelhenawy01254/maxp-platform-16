@@ -245,6 +245,8 @@ export const useCheckout = () => {
               responseData.total ??
               payload.total,
           ),
+          storePromotionDiscount: responseData.storePromotionDiscount,
+          storePromotionLabel: responseData.storePromotionLabel,
           phone: data.phone,
           customerName: data.customerName,
           paymentMethod: data.paymentMethod,
