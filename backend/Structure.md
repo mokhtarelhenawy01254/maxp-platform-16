@@ -17,7 +17,9 @@ No database models or Prisma schemas were modified.
 
 ### Ready Agent Profiles & Merchant Locks
 8. Added ready agent profiles manager endpoints in `superAdminRoutes.js` (`POST /agents/quick-profiles`) supporting merchant constraint flags (`lockIdentity`, `lockPersona`, `lockRules`, `lockCustomPrompt`).
-9. Implemented database seeding file `apps/backend/prisma/seed-quick-profiles.js` to automatically populate ready agents config with multi-level locks (e.g. locking sales workflow / rules on default sales & support templates).
+9. Implemented database seeding file `apps/backend/prisma/seed-quick-profiles.js` to populate default templates.
+10. Added `spawnReadyAgentsService.js` to automatically provision active profiles for new merchant registrations/subscriptions.
+11. Hardened the Super Admin page (`SuperAdminAgentProfiles.tsx`) with personality field validations, auto-slug generation, synced channels, and profile cloning.
 
 ### System Architecture
 - Added **Silent Takeover & human-in-the-loop** event-driven pattern via Socket.IO: on AI failure (e.g. guardrail blocks or JSON parsing exhaustion), the thread is marked as needing human intervention, notifying moderators instantly without alerting the customer.

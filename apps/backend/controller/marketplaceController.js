@@ -5,8 +5,8 @@ const path = require('path');
 const { marketplaceCatalogService } = require('../services/catalog/marketplaceCatalogService');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
-const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require('../utils/getDefaultAgentTemplate');
+const { spawnAllReadyAgents } = require('../services/spawnReadyAgentsService');
 
 // Legacy storefront template engine has been removed from runtime.
 const PLATFORM_ENGINE_VERSION = 'removed';
@@ -1890,16 +1890,9 @@ exports.subscribeToBundle = async (req, res) => {
         }
       });
       try {
-        const agentCfg = await buildDefaultAgentConfig();
-        await aiServiceAdminClient.spawnAgent({
-          companyId,
-          templateSlug: agentCfg.templateSlug,
-          name: agentCfg.name,
-          icon: agentCfg.icon,
-          config: agentCfg.config,
-        });
+        await spawnAllReadyAgents(companyId);
       } catch (e) {
-        console.warn('[BUNDLE-SUBSCRIBE] Auto-create agent skipped (non-blocking):', e.message);
+        console.warn('[BUNDLE-SUBSCRIBE] Auto-create ready agents skipped (non-blocking):', e.message);
       }
       return res.json({ success: true, message: "تم تفعيل باقة AI + Inbox بنجاح" });
     }

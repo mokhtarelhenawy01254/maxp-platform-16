@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { Bot, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Search, GripVertical, X } from "lucide-react";
+import { Bot, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Search, GripVertical, X, Copy } from "lucide-react";
 
 const CATEGORIES = [
   { ar: "المبيعات", en: "Sales" },
@@ -96,8 +96,10 @@ const ROLE_COLOR_OPTIONS = [
 const CHANNEL_OPTIONS = [
   { value: 'whatsapp', label: 'واتساب' },
   { value: 'facebook', label: 'فيسبوك' },
+  { value: 'instagram', label: 'انستغرام' },
+  { value: 'telegram', label: 'تيليجرام' },
+  { value: 'web', label: 'دردشة الموقع' },
   { value: 'dashboard', label: 'لوحة التحكم' },
-  { value: 'phone', label: 'هاتف' },
 ];
 
 const emptyProfile = (): ReadyProfile => ({
@@ -158,6 +160,17 @@ const SuperAdminAgentProfiles: React.FC = () => {
     setEditOpen(true);
   };
 
+  const handleClone = (p: ReadyProfile) => {
+    setIsNew(true);
+    const cloned = JSON.parse(JSON.stringify(p)) as ReadyProfile;
+    cloned.slug = `${cloned.slug}-clone`;
+    cloned.title = `${cloned.title} (نسخة)`;
+    if (cloned.titleEn) cloned.titleEn = `${cloned.titleEn} (Clone)`;
+    setEditProfile(cloned);
+    setSaveErr(null);
+    setEditOpen(true);
+  };
+
   const addPersonality = () => {
     const id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     setEditProfile((p) => ({
@@ -189,6 +202,16 @@ const SuperAdminAgentProfiles: React.FC = () => {
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(editProfile.slug)) {
       setSaveErr("slug: أحرف صغيرة وشرطات فقط");
       return;
+    }
+    if (editProfile.personalities.length === 0) {
+      setSaveErr("يجب إضافة شخصية واحدة على الأقل للوكيل");
+      return;
+    }
+    for (const pers of editProfile.personalities) {
+      if (!pers.name.trim() || !pers.persona.trim() || !pers.goal.trim()) {
+        setSaveErr(`الشخصية "${pers.name || 'غير المسماة'}" يجب أن تحتوي على اسم وشخصية وهدف`);
+        return;
+      }
     }
     setSaving(true);
     setSaveErr(null);
@@ -319,8 +342,9 @@ const SuperAdminAgentProfiles: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(p)}><Pencil className="size-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => setDeleteTarget(p)}><Trash2 className="size-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="size-8" onClick={() => handleClone(p)} title="نسخ الوكيل الجاهز"><Copy className="size-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(p)} title="تعديل"><Pencil className="size-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => setDeleteTarget(p)} title="حذف"><Trash2 className="size-3.5" /></Button>
                 </div>
               </div>
             ); })
@@ -332,7 +356,7 @@ const SuperAdminAgentProfiles: React.FC = () => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(o) => { if (!o && !saving) setEditOpen(false); }}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{isNew ? "إضافة وكيل جاهز" : "تعديل الوكيل"}</DialogTitle></DialogHeader>
           {saveErr && <Alert variant="destructive"><AlertDescription>{saveErr}</AlertDescription></Alert>}
           <div className="space-y-4">
@@ -342,7 +366,7 @@ const SuperAdminAgentProfiles: React.FC = () => {
                 <Input value={editProfile.slug}
                   onChange={(e) => setEditProfile((p) => ({ ...p, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") }))}
                   disabled={!isNew} className="h-9 text-sm" placeholder="sales-agent" />
-                <p className="text-[10px] text-muted-foreground">أحرف إنجليزية صغيرة وشرطات فقط</p>
+                <p className="text-[10px] text-muted-foreground">أحرف إنجليزية صغيرة وشرطات فقط (يتم توليده تلقائياً من العنوان الإنجليزي)</p>
               </div>
               <div className="flex-shrink-0">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">الأيقونة</label>
@@ -369,11 +393,28 @@ const SuperAdminAgentProfiles: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">العنوان (عربي) *</label>
-                <Input value={editProfile.title} onChange={(e) => setEditProfile((p) => ({ ...p, title: e.target.value }))} className="h-9 text-sm" placeholder="مندوب مبيعات شامل" />
+                <Input value={editProfile.title} 
+                  onChange={(e) => {
+                    const title = e.target.value;
+                    setEditProfile((p) => {
+                      const next: ReadyProfile = { ...p, title };
+                      // If titleEn is empty, fallback to transliterate/generate slug or let user set it.
+                      return next;
+                    });
+                  }} 
+                  className="h-9 text-sm" placeholder="مندوب مبيعات شامل" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">العنوان (إنجليزي)</label>
-                <Input value={editProfile.titleEn || ""} onChange={(e) => setEditProfile((p) => ({ ...p, titleEn: e.target.value }))} className="h-9 text-sm" placeholder="Sales Agent" />
+                <Input value={editProfile.titleEn || ""} 
+                  onChange={(e) => {
+                    const titleEn = e.target.value;
+                    setEditProfile((p) => {
+                      const generatedSlug = titleEn.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                      return { ...p, titleEn, slug: isNew ? generatedSlug : p.slug };
+                    });
+                  }} 
+                  className="h-9 text-sm" placeholder="Sales Agent" />
               </div>
             </div>
 

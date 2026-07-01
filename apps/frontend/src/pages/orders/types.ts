@@ -76,6 +76,7 @@ export interface OrderDetailsType {
   paymentMethod: string;
   items: OrderItem[];
   subtotal: number;
+  discount: number;
   tax: number;
   shipping: number;
   total: number;

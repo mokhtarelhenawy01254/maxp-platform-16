@@ -7,6 +7,8 @@
   2. Implemented field-level editing locks (`lockIdentity`, `lockPersona`, `lockRules`, `lockCustomPrompt`) to prevent merchant tampering with core prompt templates.
   3. Integrated visual lock indicators (🔒) in merchant edit forms with dynamic read-only input behavior.
   4. Added PostgreSQL seeding for automatic DB state preparation with optimized template configs.
+  5. Implemented `spawnReadyAgentsService.js` to automatically provision and configure all active ready profiles for new company activations (free and paid bundles) instead of requiring manual creation.
+  6. Hardened the Super Admin profiles editor page with personality field validation, synced channels, auto-slug generation, and profile cloning/duplication.
 - **Documentation & Architecture Review**: Documented the multi-file agent template contract pattern (agent.json + SOUL.md + TOOLS.md + AGENTS.md → single XML agent_contract at runtime) and updated Structure.md with the agent templates architecture.
 
 ## 2026-07-01 / 2026-03-09

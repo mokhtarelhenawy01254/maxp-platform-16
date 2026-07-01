@@ -188,8 +188,20 @@
   2. Modified `apps/frontend/src/pages/super-admin/SuperAdminAgentProfiles.tsx` to add toggles for locks and inputs for advanced soul fields under personalities.
   3. Modified `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx` to pass locks/soul fields during quick-create and apply read-only locks to edit form inputs with visual lock indicators.
   4. Created a DB seeding script `apps/backend/prisma/seed-quick-profiles.js` to pre-populate default agent profiles (including sales-rep-v2-agent) and their default lock profiles.
-- **Files Modified/Added**:
-  - `apps/backend/routes/superAdminRoutes.js`
-  - `apps/frontend/src/pages/super-admin/SuperAdminAgentProfiles.tsx`
-  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
   - `apps/backend/prisma/seed-quick-profiles.js` [NEW]
+
+### [FIX/IMPROVEMENT] Automatic Default Agent Provisioning & Super Admin UX Hardening
+- **Date**: 2026-07-02
+- **Description**: Merchants had to manually spawn ready agents from the templates page upon subscription. Also, the Super Admin profiles form lacked input validation for personalities (allowing empty configs), supported incomplete channel options, had manual slug creation, and lacked a clone feature for existing agents.
+- **Root Cause**:
+  1. Subscription activation controllers (`platformSubscriptionController.js` and `marketplaceController.js`) only spawned a single `support-agent` instance, leaving the rest of the ready agents unprovisioned.
+  2. The Super Admin page lacked validation rules on nested personality fields, missed channels (`instagram`, `telegram`, `web`), and had a small/crowded layout container.
+- **Resolution**:
+  1. Created `spawnReadyAgentsService.js` to read all active ready profiles from database, auto-generate their default configs, and deploy (spawn + configure) them automatically on subscription.
+  2. Integrated `spawnAllReadyAgents` helper in subscription activation routes.
+  3. Added personality validations in Super Admin form, synced missing channels, enlarged form container to `3xl`, auto-generated slugs from English titles, and implemented a **Clone** button to duplicate profiles.
+- **Files Modified/Added**:
+  - `apps/backend/services/spawnReadyAgentsService.js` [NEW]
+  - `apps/backend/controller/platformSubscriptionController.js`
+  - `apps/backend/controller/marketplaceController.js`
+  - `apps/frontend/src/pages/super-admin/SuperAdminAgentProfiles.tsx`

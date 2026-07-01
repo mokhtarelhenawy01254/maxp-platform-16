@@ -304,6 +304,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         const parsedSubtotal =
           parseFloat(simpleOrder.subtotal ?? simpleOrder.baseTotal ?? simpleOrder.total) || 0;
         const parsedTax = parseFloat(simpleOrder.tax) || 0;
+        const parsedDiscount = parseFloat(simpleOrder.discount) || 0;
         const parsedFinalTotal =
           parseFloat(simpleOrder.finalTotal ?? simpleOrder.total) || 0;
         const directShipping =
@@ -313,9 +314,9 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             ? directShipping
             : Math.max(0, parsedFinalTotal - parsedSubtotal - parsedTax);
         const resolvedTotal =
-          parsedFinalTotal > parsedSubtotal || resolvedShipping > 0
-            ? Math.max(parsedFinalTotal, parsedSubtotal + resolvedShipping + parsedTax)
-            : parsedSubtotal + parsedTax;
+          parsedFinalTotal > 0
+            ? parsedFinalTotal
+            : Math.max(0, parsedSubtotal + resolvedShipping + parsedTax - parsedDiscount);
 
         const enhancedOrder: OrderDetailsType = {
           ...simpleOrder,
@@ -450,6 +451,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             };
           }),
           subtotal: parsedSubtotal,
+          discount: parsedDiscount,
           tax: parsedTax,
           shipping: resolvedShipping,
           total: resolvedTotal,
