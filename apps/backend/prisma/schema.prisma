@@ -2162,6 +2162,7 @@ model Company {
   moderatorDashboardCaches        ModeratorDashboardCache[]
   inboxSettings                   InboxSettings?
   followUp                        FollowUp?
+  orderStatusAutoChangeRules      OrderStatusAutoChangeRule[]
 
   @@index([businessSpecialtyId])
   @@map("companies")
@@ -12465,6 +12466,22 @@ model WorkReportSubmissionValue {
   @@index([submissionId])
   @@index([fieldId])
   @@map("work_report_submission_values")
+}
+
+model OrderStatusAutoChangeRule {
+  id         String   @id @default(cuid())
+  companyId  String
+  fromStatus String
+  toStatus   String
+  waitTime   Int
+  timeUnit   String   // 'Minutes', 'Hours', 'Days'
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("order_status_auto_change_rules")
 }
 
 model AppExplanation {

@@ -254,6 +254,7 @@ const scheduledOrderRoutes = require("./routes/scheduledOrderRoutes");
 const orderConfirmationRoutes = require("./routes/orderConfirmationRoutes");
 const ownerRoutes = require("./routes/ownerRoutes");
 const orderStatusRoutes = require("./routes/orderStatusRoutes");
+const orderStatusRuleRoutes = require("./routes/orderStatusRuleRoutes");
 const bulkOrdersRoutes = require("./routes/bulkOrders");
 const wholesaleRoutes = require("./routes/wholesaleRoutes");
 const pageEngagementRoutes = require("./routes/pageEngagementRoutes");
@@ -622,6 +623,7 @@ app.use("/api/v1/orders-workflow", orderWorkflowRoutes);
 app.use("/api/v1/order-confirmation", orderConfirmationRoutes);
 
 app.use("/api/v1/order-status", orderStatusRoutes);
+app.use("/api/v1/order-status-rules", orderStatusRuleRoutes);
 app.use("/api/v1/order-invoices", orderInvoiceRoutes);
 app.use("/api/v1/order-invoice-settings", orderInvoiceSettingsRoutes);
 app.use("/api/v1/order-settings", orderSettingsRoutes);
@@ -1000,6 +1002,16 @@ try {
 } catch (error) {
   console.error("❌ [SCHEDULED-ORDER-CRON] Failed to start scheduled order cron:", error);
 }
+
+// Start Order Status Auto-Change cron (rule-based)
+try {
+  const { startOrderStatusAutoChangeCron } = require("./cron/orderStatusAutoChangeCron");
+  startOrderStatusAutoChangeCron();
+  console.log("✅ [ORDER-STATUS-AUTO-CHANGE-CRON] Order status auto-change cron started (runs every 1 min)");
+} catch (error) {
+  console.error("❌ [ORDER-STATUS-AUTO-CHANGE-CRON] Failed to start order status auto-change cron:", error);
+}
+
 
 // AI Provider Health Check — delegated to Python ai-service
 try {
