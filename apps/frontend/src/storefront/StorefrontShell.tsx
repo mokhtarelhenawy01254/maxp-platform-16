@@ -425,7 +425,7 @@ const StorefrontHeader: React.FC<{
   const location = useLocation();
   const navigate = useNavigate();
   const setIsOpen = useCartStore((s) => s.setIsOpen);
-  const getTotalItems = useCartStore((s) => s.getTotalItems);
+  const totalItems = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
   const isSoleaFemme = theme.id === "solea-femme";
   const isIntruderNft = theme.id === "intruder-nft";
   const isBiteRush = theme.id === "restaurant-demo";
@@ -474,7 +474,7 @@ const StorefrontHeader: React.FC<{
     search: location.search,
   };
 
-  const totalItems = getTotalItems();
+
 
   // Resolve display name: storefront settings storeName → company name → theme name (fallback)
   const displayStoreName =
