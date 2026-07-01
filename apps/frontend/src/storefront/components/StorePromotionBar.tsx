@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { useCartStore } from "../store/useCartStore";
 import { getActiveStorePromotionFromCompany } from "../utils/storePromotion";
@@ -6,11 +7,22 @@ import { getActiveStorePromotionFromCompany } from "../utils/storePromotion";
 const StorePromotionBar: React.FC = () => {
   const { settings } = useStorefrontSettings();
   const cartItems = useCartStore((state) => state.items);
+  const location = useLocation();
 
   const storePromotion = useMemo(
     () => getActiveStorePromotionFromCompany(settings?.company),
     [settings],
   );
+
+  const showBar = useMemo(() => {
+    if (!storePromotion || storePromotion.barVisible === false) return false;
+    if (storePromotion.barPages === "all") return true;
+    const path = location.pathname;
+    if (storePromotion.barPages === "shop" && path.startsWith("/shop")) return true;
+    if (storePromotion.barPages === "product" && path.startsWith("/product")) return true;
+    if (storePromotion.barPages === "checkout" && path.startsWith("/checkout")) return true;
+    return false;
+  }, [storePromotion, location]);
 
   const cartQuantity = cartItems.reduce(
     (sum, item) => sum + Math.max(1, Math.floor(item.quantity || 1)),
@@ -52,10 +64,10 @@ const StorePromotionBar: React.FC = () => {
     return { progressPct, remaining, message, currentTier, nextTier };
   }, [storePromotion, cartQuantity]);
 
-  if (!promotionProgress) return null;
+  if (!promotionProgress || !showBar) return null;
 
   return (
-    <div className="flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)]">
+    <div className={`flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)] ${storePromotion?.barSticky ? 'sticky top-0 z-[60]' : ''}`}>
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:px-6">
         <span className="truncate text-sm font-bold text-[#9f1239]">{promotionProgress.message}</span>
         <span className="shrink-0 rounded-full bg-[#fce7f3] px-3 py-1 text-xs font-bold text-[#be123c] shadow-sm">

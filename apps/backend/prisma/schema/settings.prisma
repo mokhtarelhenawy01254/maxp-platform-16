@@ -333,6 +333,9 @@ model StorePromotion {
   disableOtherDiscounts Boolean   @default(false)
   startDate             DateTime?
   endDate               DateTime?
+  barVisible            Boolean   @default(true)
+  barSticky             Boolean   @default(false)
+  barPages              String    @default("all")
   createdAt             DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)

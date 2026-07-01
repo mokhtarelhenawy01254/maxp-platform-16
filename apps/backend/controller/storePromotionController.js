@@ -60,7 +60,7 @@ exports.upsertPromotion = async (req, res) => {
     if (!companyId) {
       return res.status(400).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
-    const { isActive, title, tiers, disableOtherDiscounts, startDate, endDate } = req.body;
+    const { isActive, title, tiers, disableOtherDiscounts, startDate, endDate, barVisible, barSticky, barPages } = req.body;
     const validatedTiers = parseTiers(tiers);
     if (isActive && validatedTiers.length === 0) {
       return res.status(400).json({
@@ -83,6 +83,9 @@ exports.upsertPromotion = async (req, res) => {
           title: String(title || ''),
           tiers: JSON.stringify(validatedTiers),
           disableOtherDiscounts: Boolean(disableOtherDiscounts),
+          barVisible: barVisible !== false,
+          barSticky: Boolean(barSticky),
+          barPages: String(barPages || 'all'),
           startDate: startDate ? new Date(startDate) : null,
           endDate: endDate ? new Date(endDate) : null,
         },
@@ -91,6 +94,9 @@ exports.upsertPromotion = async (req, res) => {
           title: String(title || ''),
           tiers: JSON.stringify(validatedTiers),
           disableOtherDiscounts: Boolean(disableOtherDiscounts),
+          barVisible: barVisible !== false,
+          barSticky: Boolean(barSticky),
+          barPages: String(barPages || 'all'),
           startDate: startDate ? new Date(startDate) : null,
           endDate: endDate ? new Date(endDate) : null,
         },

@@ -2,7 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Calendar,
+  Eye,
+  EyeOff,
   Gift,
+  Layout,
+  PanelTop,
   Plus,
   RefreshCcw,
   Save,
@@ -57,6 +61,9 @@ interface StorePromotion {
   disableOtherDiscounts: boolean;
   startDate: string;
   endDate: string;
+  barVisible: boolean;
+  barSticky: boolean;
+  barPages: string;
 }
 
 const DEFAULT_TIERS: PromotionTier[] = [
@@ -66,6 +73,7 @@ const DEFAULT_TIERS: PromotionTier[] = [
 
 const defaultPromotion = (): StorePromotion => ({
   isActive: false, title: "عروض المتجر", tiers: [], disableOtherDiscounts: false, startDate: "", endDate: "",
+  barVisible: true, barSticky: false, barPages: "all",
 });
 
 const typeOptions = [
@@ -99,6 +107,9 @@ export default function StorePromotionSettings() {
           disableOtherDiscounts: d.disableOtherDiscounts ?? false,
           startDate: d.startDate ? d.startDate.slice(0, 16) : "",
           endDate: d.endDate ? d.endDate.slice(0, 16) : "",
+          barVisible: d.barVisible !== false,
+          barSticky: d.barSticky ?? false,
+          barPages: d.barPages || "all",
         });
       }
     } catch (error) {
@@ -121,6 +132,9 @@ export default function StorePromotionSettings() {
         disableOtherDiscounts: promotion.disableOtherDiscounts,
         startDate: promotion.startDate || null,
         endDate: promotion.endDate || null,
+        barVisible: promotion.barVisible,
+        barSticky: promotion.barSticky,
+        barPages: promotion.barPages,
       });
       setMessage({ type: "success", text: "تم حفظ العرض بنجاح" });
     } catch (error) {
@@ -269,6 +283,52 @@ export default function StorePromotionSettings() {
               <Label>إلى</Label>
               <Input type="datetime-local" value={promotion.endDate}
                 onChange={e => setPromotion(p => ({ ...p, endDate: e.target.value }))} />
+            </div>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          icon={PanelTop}
+          title="إعدادات شريط العرض"
+          description="تحكم في ظهور وسلوك الشريط فوق المتجر"
+          accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>إظهار الشريط</Label>
+                <p className="text-sm text-muted-foreground">عرض شريط التقدم والإشعارات للعملاء</p>
+              </div>
+              <Switch
+                checked={promotion.barVisible}
+                onCheckedChange={checked => setPromotion(p => ({ ...p, barVisible: checked }))}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>تثبيت الشريط</Label>
+                <p className="text-sm text-muted-foreground">يبقى ثابت في أعلى الصفحة عند التمرير</p>
+              </div>
+              <Switch
+                checked={promotion.barSticky}
+                onCheckedChange={checked => setPromotion(p => ({ ...p, barSticky: checked }))}
+              />
+            </div>
+            <Separator />
+            <div className="space-y-2">
+              <Label>الصفحات</Label>
+              <p className="text-sm text-muted-foreground">الصفحات اللي يظهر فيها الشريط</p>
+              <Select value={promotion.barPages}
+                onValueChange={val => setPromotion(p => ({ ...p, barPages: val }))}>
+                <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الصفحات</SelectItem>
+                  <SelectItem value="shop">المتجر فقط</SelectItem>
+                  <SelectItem value="product">صفحات المنتج فقط</SelectItem>
+                  <SelectItem value="checkout">الدفع فقط</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </SettingsSection>

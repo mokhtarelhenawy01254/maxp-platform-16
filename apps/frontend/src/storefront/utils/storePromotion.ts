@@ -22,6 +22,9 @@ interface StorePromotion {
   disableOtherDiscounts?: boolean;
   startDate?: string | null;
   endDate?: string | null;
+  barVisible?: boolean;
+  barSticky?: boolean;
+  barPages?: string;
 }
 
 interface DiscountResult {
@@ -177,6 +180,9 @@ export const getActiveStorePromotionFromCompany = (
     disableOtherDiscounts: p.disableOtherDiscounts === true,
     startDate: p.startDate ? String(p.startDate) : null,
     endDate: p.endDate ? String(p.endDate) : null,
+    barVisible: p.barVisible !== false,
+    barSticky: p.barSticky === true,
+    barPages: typeof p.barPages === 'string' ? p.barPages : 'all',
   };
 };
 // ponytail: no product exclusions, no category filter
