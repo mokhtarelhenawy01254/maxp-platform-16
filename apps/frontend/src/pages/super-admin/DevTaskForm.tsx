@@ -13,6 +13,7 @@ import {
   PhotoIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import { Attachment } from "../../types/tasks";
 
 interface Project {
   id: string;
@@ -105,6 +106,8 @@ const DevTaskForm: React.FC = () => {
   const [checklistItems, setChecklistItems] = useState<string[]>([]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<Attachment[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const checklistInputRef = React.useRef<HTMLInputElement>(null);
 
   // New Features State
@@ -258,6 +261,11 @@ const DevTaskForm: React.FC = () => {
               : [],
           }));
         }
+
+        // Set Existing Images (Attachments)
+        if (task.attachments && Array.isArray(task.attachments)) {
+          setExistingImages(task.attachments);
+        }
       } else {
         setError(data.error || "فشل في جلب المهمة");
       }
@@ -361,6 +369,23 @@ const DevTaskForm: React.FC = () => {
           );
         }
 
+        // Delete marked images
+        if (imagesToDelete.length > 0) {
+          await Promise.all(
+            imagesToDelete.map((attachmentId) =>
+              fetch(
+                buildApiUrl(
+                  `super-admin/dev/tasks/attachments/${attachmentId}`,
+                ),
+                {
+                  method: "DELETE",
+                  headers: getAuthHeaders(),
+                },
+              ),
+            ),
+          );
+        }
+
         navigate("/super-admin/dev-tasks");
       } else {
         setError(data.error || "فشل في حفظ المهمة");
@@ -398,7 +423,7 @@ const DevTaskForm: React.FC = () => {
     }
 
     // Check total count
-    if (selectedImages.length + validFiles.length > 10) {
+    if (existingImages.length + selectedImages.length + validFiles.length > 10) {
       setError("الحد الأقصى 10 صور");
       return;
     }
@@ -419,6 +444,11 @@ const DevTaskForm: React.FC = () => {
   const removeImage = (index: number) => {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (attachmentId: string) => {
+    setImagesToDelete((prev) => [...prev, attachmentId]);
+    setExistingImages((prev) => prev.filter((img) => img.id !== attachmentId));
   };
 
   if (loading) {
@@ -474,14 +504,35 @@ const DevTaskForm: React.FC = () => {
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <PhotoIcon className="h-5 w-5 inline-block ml-2" />
-              إضافة صور ({selectedImages.length}/10)
+              إضافة صور ({existingImages.length + selectedImages.length}/10)
             </label>
             <div className="space-y-3">
               {/* Image Previews Grid */}
-              {imagePreviews.length > 0 && (
+              {(existingImages.length > 0 || imagePreviews.length > 0) && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                  {/* Existing images */}
+                  {existingImages.map((img) => (
+                    <div key={img.id} className="relative group">
+                      <img
+                        src={img.fileUrl || `/uploads/dev-tasks/${img.fileName}`}
+                        alt={img.originalName || "Task image"}
+                        className="w-full h-32 object-cover rounded-lg border-2 border-indigo-300 dark:border-indigo-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(img.id)}
+                        className="absolute top-1 left-1 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                      <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+                        {(img.fileSize / 1024 / 1024).toFixed(1)} MB
+                      </div>
+                    </div>
+                  ))}
+                  {/* New image previews */}
                   {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
+                    <div key={`new-${index}`} className="relative group">
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
@@ -508,7 +559,7 @@ const DevTaskForm: React.FC = () => {
               )}
 
               {/* Upload Area */}
-              {selectedImages.length < 10 && (
+              {existingImages.length + selectedImages.length < 10 && (
                 <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl cursor-pointer bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 transition-all">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <PhotoIcon className="h-10 w-10 text-indigo-600 dark:text-indigo-400 mb-2" />

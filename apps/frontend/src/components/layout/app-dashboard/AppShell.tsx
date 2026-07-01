@@ -118,7 +118,45 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
   const appName = app.displayName ?? String(t(app.nameKey));
 
   const handleBack = () => {
-    navigate('/apps');
+    const normalizedCurrent = normalizePathname(location.pathname);
+
+    let parentPath: string | null = null;
+
+    for (const section of appSections) {
+      for (const item of section.items) {
+        if (item.hidden || item.external) continue;
+        const itemPath = normalizePathname(item.to);
+
+        if (normalizedCurrent === itemPath) {
+          parentPath = null;
+          break;
+        }
+
+        if (normalizedCurrent.startsWith(itemPath + '/')) {
+          parentPath = itemPath;
+          break;
+        }
+
+        if (item.children) {
+          for (const child of item.children) {
+            if (child.hidden) continue;
+            const childPath = normalizePathname(child.to);
+            if (normalizedCurrent.startsWith(childPath + '/') || normalizedCurrent === childPath) {
+              parentPath = itemPath;
+              break;
+            }
+          }
+          if (parentPath) break;
+        }
+      }
+      if (parentPath !== null) break;
+    }
+
+    if (parentPath) {
+      navigate(parentPath);
+    } else {
+      navigate('/apps');
+    }
   };
 
   return (

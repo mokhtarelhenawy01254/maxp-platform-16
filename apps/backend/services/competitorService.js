@@ -45,6 +45,14 @@ class CompetitorService {
         },
         ads: { orderBy: { lastSeen: 'desc' }, take: 20 },
         reports: { orderBy: { generatedAt: 'desc' }, take: 10 },
+        activityImages: { orderBy: { sortOrder: 'asc' }, select: { imageUrl: true } },
+        featureImages: { orderBy: { sortOrder: 'asc' }, select: { imageUrl: true } },
+        mediaNotes: { orderBy: { createdAt: 'desc' }, select: { note: true } },
+        comparisons: { orderBy: { sortOrder: 'asc' } },
+        devIdeas: {
+          orderBy: { sortOrder: 'asc' },
+          include: { images: { orderBy: { sortOrder: 'asc' }, select: { imageUrl: true } } },
+        },
         _count: { select: { products: true, ads: true, reports: true } },
       },
     });
@@ -52,7 +60,7 @@ class CompetitorService {
   }
 
   static async create(companyId, data) {
-    const { name, url, platform, logo, description, notes, activityType, location, targetMarket, foundedYear, employeeCount, strengths, weaknesses, socialProfiles, status } = data;
+    const { name, url, platform, logo, description, notes, activityType, location, targetMarket, foundedYear, employeeCount, strengths, weaknesses, socialProfiles, status, founderName, founderLink, country, city, monthlyPrice, yearlyPrice, pricingNotes, trafficSource, activityImages, featureImages, mediaNotes, comparisons, devIdeas } = data;
     const slug = data.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     // Transaction to create competitor and related social profiles
     const createdCompetitor = await getSharedPrismaClient().$transaction(async (tx) => {
@@ -74,6 +82,14 @@ class CompetitorService {
           weaknesses,
           status: status || 'NEW',
           companyId,
+          founderName,
+          founderLink,
+          country,
+          city,
+          monthlyPrice: monthlyPrice ? parseFloat(monthlyPrice) : null,
+          yearlyPrice: yearlyPrice ? parseFloat(yearlyPrice) : null,
+          pricingNotes,
+          trafficSource,
         },
       });
 
@@ -86,6 +102,76 @@ class CompetitorService {
                 profileUrl: p.url,
                 competitorId: comp.id,
                 companyId,
+              },
+            })
+          )
+        );
+      }
+
+      if (activityImages && Array.isArray(activityImages) && activityImages.length) {
+        await Promise.all(
+          activityImages.map((url, i) =>
+            tx.competitorActivityImage.create({
+              data: { competitorId: comp.id, imageUrl: url, sortOrder: i },
+            })
+          )
+        );
+      }
+
+      if (featureImages && Array.isArray(featureImages) && featureImages.length) {
+        await Promise.all(
+          featureImages.map((url, i) =>
+            tx.competitorFeatureImage.create({
+              data: { competitorId: comp.id, imageUrl: url, sortOrder: i },
+            })
+          )
+        );
+      }
+
+      if (mediaNotes && Array.isArray(mediaNotes) && mediaNotes.length) {
+        await Promise.all(
+          mediaNotes.map((note) =>
+            tx.competitorMediaNote.create({
+              data: { competitorId: comp.id, note: typeof note === 'string' ? note : note.text || note.note || '' },
+            })
+          )
+        );
+      }
+
+      if (comparisons && Array.isArray(comparisons) && comparisons.length) {
+        await Promise.all(
+          comparisons.map((c, i) =>
+            tx.competitorComparison.create({
+              data: {
+                competitorId: comp.id,
+                featureName: c.featureName || '',
+                competitorDescription: c.competitorDescription || c.competitorDesc || null,
+                ourDescription: c.ourDescription || c.ourDesc || null,
+                easiestToUse: c.easiestToUse || c.easierToUse || null,
+                stronger: c.stronger || null,
+                notes: c.notes || null,
+                sortOrder: i,
+              },
+            })
+          )
+        );
+      }
+
+      if (devIdeas && Array.isArray(devIdeas) && devIdeas.length) {
+        await Promise.all(
+          devIdeas.map((idea, i) =>
+            tx.competitorDevIdea.create({
+              data: {
+                competitorId: comp.id,
+                title: idea.title || '',
+                description: idea.description || null,
+                sortOrder: i,
+                images: {
+                  create: (idea.images || []).map((url, j) => ({
+                    imageUrl: url,
+                    sortOrder: j,
+                  })),
+                },
               },
             })
           )
@@ -123,6 +209,14 @@ class CompetitorService {
           weaknesses: data.weaknesses,
           isActive: data.isActive,
           status: data.status,
+          founderName: data.founderName,
+          founderLink: data.founderLink,
+          country: data.country,
+          city: data.city,
+          monthlyPrice: data.monthlyPrice ? parseFloat(data.monthlyPrice) : null,
+          yearlyPrice: data.yearlyPrice ? parseFloat(data.yearlyPrice) : null,
+          pricingNotes: data.pricingNotes,
+          trafficSource: data.trafficSource,
         },
       });
 
@@ -137,6 +231,92 @@ class CompetitorService {
                   profileUrl: p.url,
                   competitorId: id,
                   companyId,
+                },
+              })
+            )
+          );
+        }
+      }
+
+      // Media analysis data – delete & re-create for simplicity
+      if (data.activityImages !== undefined) {
+        await tx.competitorActivityImage.deleteMany({ where: { competitorId: id } });
+        if (Array.isArray(data.activityImages) && data.activityImages.length) {
+          await Promise.all(
+            data.activityImages.map((url, i) =>
+              tx.competitorActivityImage.create({
+                data: { competitorId: id, imageUrl: url, sortOrder: i },
+              })
+            )
+          );
+        }
+      }
+
+      if (data.featureImages !== undefined) {
+        await tx.competitorFeatureImage.deleteMany({ where: { competitorId: id } });
+        if (Array.isArray(data.featureImages) && data.featureImages.length) {
+          await Promise.all(
+            data.featureImages.map((url, i) =>
+              tx.competitorFeatureImage.create({
+                data: { competitorId: id, imageUrl: url, sortOrder: i },
+              })
+            )
+          );
+        }
+      }
+
+      if (data.mediaNotes !== undefined) {
+        await tx.competitorMediaNote.deleteMany({ where: { competitorId: id } });
+        if (Array.isArray(data.mediaNotes) && data.mediaNotes.length) {
+          await Promise.all(
+            data.mediaNotes.map((note) =>
+              tx.competitorMediaNote.create({
+                data: { competitorId: id, note: typeof note === 'string' ? note : note.text || note.note || '' },
+              })
+            )
+          );
+        }
+      }
+
+      if (data.comparisons !== undefined) {
+        await tx.competitorComparison.deleteMany({ where: { competitorId: id } });
+        if (Array.isArray(data.comparisons) && data.comparisons.length) {
+          await Promise.all(
+            data.comparisons.map((c, i) =>
+              tx.competitorComparison.create({
+                data: {
+                  competitorId: id,
+                  featureName: c.featureName || '',
+                  competitorDescription: c.competitorDescription || c.competitorDesc || null,
+                  ourDescription: c.ourDescription || c.ourDesc || null,
+                  easiestToUse: c.easiestToUse || c.easierToUse || null,
+                  stronger: c.stronger || null,
+                  notes: c.notes || null,
+                  sortOrder: i,
+                },
+              })
+            )
+          );
+        }
+      }
+
+      if (data.devIdeas !== undefined) {
+        await tx.competitorDevIdea.deleteMany({ where: { competitorId: id } });
+        if (Array.isArray(data.devIdeas) && data.devIdeas.length) {
+          await Promise.all(
+            data.devIdeas.map((idea, i) =>
+              tx.competitorDevIdea.create({
+                data: {
+                  competitorId: id,
+                  title: idea.title || '',
+                  description: idea.description || null,
+                  sortOrder: i,
+                  images: {
+                    create: (idea.images || []).map((url, j) => ({
+                      imageUrl: url,
+                      sortOrder: j,
+                    })),
+                  },
                 },
               })
             )

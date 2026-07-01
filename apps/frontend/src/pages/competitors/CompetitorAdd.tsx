@@ -48,8 +48,6 @@ const toBase64 = (file: File): Promise<string> =>
 interface SocialProfile {
   platform: string;
   url: string;
-  username: string;
-  password: string;
 }
 
 interface MediaNoteItem {
@@ -103,7 +101,7 @@ const CompetitorAdd: React.FC = () => {
   });
 
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>(
-    SOCIAL_PLATFORMS.map(p => ({ platform: p.key, url: '', username: '', password: '' }))
+    SOCIAL_PLATFORMS.map(p => ({ platform: p.key, url: '' }))
   );
 
   const [activityImages, setActivityImages] = useState<ImageItem[]>([]);
@@ -146,16 +144,33 @@ const CompetitorAdd: React.FC = () => {
           const merged = SOCIAL_PLATFORMS.map(p => {
             const existing = c.socialProfiles.find((sp: Record<string, unknown>) => sp.platform === p.key);
             return existing
-              ? { platform: p.key, url: existing.url || '', username: existing.username || '', password: existing.password || '' }
-              : { platform: p.key, url: '', username: '', password: '' };
+              ? { platform: p.key, url: (existing.profileUrl as string) || (existing.url as string) || '' }
+              : { platform: p.key, url: '' };
           });
           setSocialProfiles(merged);
         }
-        if (c.activityImages) setActivityImages(c.activityImages.map((img: string) => ({ id: genId(), data: img })));
-        if (c.featureImages) setFeatureImages(c.featureImages.map((img: string) => ({ id: genId(), data: img })));
-        if (c.mediaNotes) setMediaNotes(c.mediaNotes.map((n: string, i: number) => ({ id: genId(), text: n })));
-        if (c.comparisons) setComparisons(c.comparisons);
-        if (c.devIdeas) setDevIdeas(c.devIdeas);
+        if (c.activityImages) setActivityImages(c.activityImages.map((img: { imageUrl: string }) => ({ id: genId(), data: img.imageUrl })));
+        if (c.featureImages) setFeatureImages(c.featureImages.map((img: { imageUrl: string }) => ({ id: genId(), data: img.imageUrl })));
+        if (c.mediaNotes) setMediaNotes(c.mediaNotes.map((n: { note: string }) => ({ id: genId(), text: n.note })));
+        if (c.comparisons) {
+          setComparisons(c.comparisons.map((cmp: Record<string, unknown>) => ({
+            id: genId(),
+            featureName: (cmp.featureName as string) || '',
+            competitorDesc: (cmp.competitorDescription as string) || (cmp.competitorDesc as string) || '',
+            ourDesc: (cmp.ourDescription as string) || (cmp.ourDesc as string) || '',
+            easierToUse: (cmp.easiestToUse as string) || (cmp.easierToUse as string) || '',
+            stronger: (cmp.stronger as string) || '',
+            notes: (cmp.notes as string) || '',
+          })));
+        }
+        if (c.devIdeas) {
+          setDevIdeas(c.devIdeas.map((idea: Record<string, unknown>) => ({
+            id: genId(),
+            title: (idea.title as string) || '',
+            description: (idea.description as string) || '',
+            images: ((idea.images as { imageUrl: string }[]) || []).map((img) => img.imageUrl),
+          })));
+        }
       }
     }).catch(() => {
       toast.error(t('common.error'));
@@ -296,7 +311,7 @@ const CompetitorAdd: React.FC = () => {
     const payload: Record<string, unknown> = {
       ...formData,
       url: formData.websiteUrl,
-      socialProfiles: socialProfiles.filter(sp => sp.url || sp.username),
+      socialProfiles: socialProfiles.filter(sp => sp.url),
       activityImages: activityImages.map(img => img.data),
       featureImages: featureImages.map(img => img.data),
       mediaNotes: mediaNotes.map(n => n.text),
@@ -556,30 +571,7 @@ const CompetitorAdd: React.FC = () => {
                           placeholder={t('competitors.socialUrlPlaceholder')}
                           size="sm"
                         />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">{t('competitors.social.username') || 'اسم المستخدم/البريد'}</Label>
-                          <Input
-                            value={sp.username}
-                            onChange={e => handleSocialChange(i, 'username', e.target.value)}
-                            placeholder={t('competitors.socialUsernamePlaceholder')}
-                            size="sm"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">{t('competitors.social.password') || 'كلمة المرور'}</Label>
-                          <div className="relative">
-                            <Input
-                              type="password"
-                              value={sp.password}
-                              onChange={e => handleSocialChange(i, 'password', e.target.value)}
-                              placeholder={t('competitors.socialPasswordPlaceholder')}
-                              size="sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                       </div>
                     </div>
                   )}
                 </div>

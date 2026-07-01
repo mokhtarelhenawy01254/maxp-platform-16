@@ -49,6 +49,19 @@ exports.create = async (req, res) => {
       weaknesses,
       socialProfiles,
       status,
+      founderName,
+      founderLink,
+      country,
+      city,
+      monthlyPrice,
+      yearlyPrice,
+      pricingNotes,
+      trafficSource,
+      activityImages,
+      featureImages,
+      mediaNotes,
+      comparisons,
+      devIdeas,
     } = req.body;
 
     // Validate required fields
@@ -76,53 +89,16 @@ exports.create = async (req, res) => {
       }
     }
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
-    const comp = await getPrisma().competitor.create({
-      data: {
-        name,
-        slug,
-        url,
-        platform: platform || 'manual',
-        logo,
-        description,
-        notes,
-        activityType,
-        location,
-        targetMarket,
-        foundedYear: foundedYear ? parseInt(foundedYear) : undefined,
-        employeeCount,
-        strengths,
-        weaknesses,
-        status: status || 'NEW',
-        companyId,
-      },
+    const createdCompetitor = await CompetitorService.create(companyId, {
+      name, url, platform, logo, description, notes,
+      activityType, location, targetMarket,
+      foundedYear, employeeCount, strengths, weaknesses,
+      socialProfiles, status,
+      founderName, founderLink, country, city,
+      monthlyPrice, yearlyPrice, pricingNotes, trafficSource,
+      activityImages, featureImages, mediaNotes, comparisons, devIdeas,
     });
-
-    if (socialProfiles && socialProfiles.length) {
-      try {
-        await Promise.all(
-          socialProfiles.map((p) =>
-            getPrisma().competitorSocialProfile.create({
-              data: {
-                platform: p.platform,
-                profileUrl: p.url,
-                competitorId: comp.id,
-                companyId,
-              },
-            })
-          )
-        );
-      } catch (socialError) {
-        console.error('Error creating social profiles (competitor still created):', socialError);
-      }
-    }
-
-    const createdCompetitor = await getPrisma().competitor.findUnique({
-      where: { id: comp.id },
-      include: { socialProfiles: true },
-    });
-
+    if (!createdCompetitor) return res.status(500).json({ success: false, error: t('competitor.create_failed') });
     res.status(201).json({ success: true, data: createdCompetitor });
   } catch (error) {
     console.error('Error creating competitor:', error);
