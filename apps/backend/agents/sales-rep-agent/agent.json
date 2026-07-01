@@ -40,7 +40,9 @@
     "knowledge_search",
     "knowledge_ask_merchant",
     "knowledge_create_faq",
-    "abandoned_carts"
+    "abandoned_carts",
+    "offers_list_active",
+    "coupon_validate"
   ],
   "allowedSkills": [
     "catalog-search",
