@@ -1411,7 +1411,15 @@ export default function AgentProfilesPage() {
                   const channels = rawChannels.length > 0 ? rawChannels.map((k) => ({ key: k, label: CHANNEL_LABELS[k] || k })) : (AGENT_CARD_CHANNELS[a.slug] || []);
                   const IconComp = (a.lucideIcon ? LUCIDE_ICON_MAP[a.lucideIcon] : undefined) || AGENT_CARD_ICON[a.slug];
                   return (
-                    <button key={a.slug} type="button" onClick={() => { setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
+                    <button key={a.slug} type="button" onClick={() => {
+                      const firstPers = a.personalities?.[0] || null;
+                      setQuickSlug(a.slug);
+                      setQuickIcon(a.icon);
+                      setQuickTitle(a.title);
+                      setQuickName(firstPers ? `${a.title} (${firstPers.name})` : a.title);
+                      setQuickPersonality(firstPers);
+                      setQuickOpen(true);
+                    }}
                       className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-right shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
                     >
                       <div className="h-20 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${roleColor}, color-mix(in srgb, ${roleColor} 70%, black 30%))` }}>
@@ -1681,7 +1689,16 @@ export default function AgentProfilesPage() {
                 const channels = rawChannels.length > 0 ? rawChannels.map((k) => ({ key: k, label: CHANNEL_LABELS[k] || k })) : (AGENT_CARD_CHANNELS[a.slug] || []);
                 const IconComp = (a.lucideIcon ? LUCIDE_ICON_MAP[a.lucideIcon] : undefined) || AGENT_CARD_ICON[a.slug];
                 return (
-                  <button key={a.slug} type="button" onClick={() => { setReadySelectorOpen(false); setQuickSlug(a.slug); setQuickIcon(a.icon); setQuickTitle(a.title); setQuickName(''); setQuickPersonality(null); setQuickOpen(true); }}
+                  <button key={a.slug} type="button" onClick={() => {
+                    const firstPers = a.personalities?.[0] || null;
+                    setReadySelectorOpen(false);
+                    setQuickSlug(a.slug);
+                    setQuickIcon(a.icon);
+                    setQuickTitle(a.title);
+                    setQuickName(firstPers ? `${a.title} (${firstPers.name})` : a.title);
+                    setQuickPersonality(firstPers);
+                    setQuickOpen(true);
+                  }}
                     className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-right shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
                   >
                     <div className="h-16 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${roleColor}, color-mix(in srgb, ${roleColor} 70%, black 30%))` }}>
@@ -1720,15 +1737,15 @@ export default function AgentProfilesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <span className="text-xl">{quickIcon}</span>
-              {quickTitle} — اختر الشخصية
+              {quickTitle} — تفعيل الوكيل
             </DialogTitle>
           </DialogHeader>
           <div className="py-3 space-y-4">
-            <p className="text-sm text-muted-foreground/70">الوكيل جاهز — اختر شخصيته واسمه</p>
+            <p className="text-sm text-muted-foreground/70">الوكيل جاهز بالكامل — اضغط تأكيد مباشرة أو غيّر الشخصية والاسم إن أردت</p>
 
             {/* Personality selection */}
             {readyProfiles.find((a) => a.slug === quickSlug)?.personalities.map((p) => (
-              <button key={p.id} type="button" onClick={() => { setQuickPersonality(p); if (!quickName) setQuickName(`${quickTitle} (${p.name})`); }}
+              <button key={p.id} type="button" onClick={() => { setQuickPersonality(p); setQuickName(`${quickTitle} (${p.name})`); }}
                 className={`w-full text-right p-3 rounded-xl border transition-all ${
                   quickPersonality?.id === p.id
                     ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 shadow-sm'
@@ -1740,19 +1757,17 @@ export default function AgentProfilesPage() {
               </button>
             ))}
 
-            {/* Name input (only after personality selected) */}
-            {quickPersonality && (
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">اسم الوكيل</label>
-                <Input value={quickName} onChange={(e) => setQuickName(e.target.value)} placeholder="أدخل اسم الوكيل" className="h-9 text-sm" autoFocus />
-              </div>
-            )}
+            {/* Name input - always visible and pre-filled */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">اسم الوكيل</label>
+              <Input value={quickName} onChange={(e) => setQuickName(e.target.value)} placeholder="أدخل اسم الوكيل" className="h-9 text-sm" />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setQuickOpen(false); setQuickName(''); setQuickPersonality(null); }} disabled={quickCreating} className="h-8 text-xs">إلغاء</Button>
             <Button onClick={handleQuickCreate} disabled={quickCreating || !quickName.trim() || !quickPersonality} className="h-8 text-xs">
               {quickCreating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-              {quickCreating ? 'جارٍ الإنشاء...' : 'تأكيد'}
+              {quickCreating ? 'جارٍ التفعيل...' : '✨ تفعيل الآن'}
             </Button>
           </DialogFooter>
         </DialogContent>

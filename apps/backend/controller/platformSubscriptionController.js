@@ -5,8 +5,8 @@ const {
 const WhatsAppNotificationService = require("../services/whatsapp/WhatsAppNotificationService");
 const KashierService = require("../services/kashierService");
 const { marketplaceCatalogService } = require("../services/catalog/marketplaceCatalogService");
+const aiServiceAdminClient = require("../services/aiServiceAdminClient");
 const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require("../utils/getDefaultAgentTemplate");
-const { spawnAllReadyAgents } = require("../services/spawnReadyAgentsService");
 
 const getNextBillingDate = () => {
   const nextBillingDate = new Date();
@@ -355,9 +355,16 @@ exports.lpActivate = async (req, res) => {
     });
 
     try {
-      await spawnAllReadyAgents(companyId);
+      const agentCfg = await buildDefaultAgentConfig();
+      await aiServiceAdminClient.spawnAgent({
+        companyId,
+        templateSlug: agentCfg.templateSlug,
+        name: agentCfg.name,
+        icon: agentCfg.icon,
+        config: agentCfg.config,
+      });
     } catch (e) {
-      console.warn('[LP-ACTIVATE] Auto-create ready agents skipped (non-blocking):', e.message);
+      console.warn('[LP-ACTIVATE] Auto-create agent skipped (non-blocking):', e.message);
     }
 
     res.json({ success: true, message: 'تم تفعيل الباقة مجاناً', data: { trialDays: 7 } });
@@ -549,9 +556,16 @@ exports.handleWebhook = async (req, res) => {
       if (isDirectCheckout) {
         (async () => {
           try {
-            await spawnAllReadyAgents(billingRecord.companyId);
+            const agentCfg = await buildDefaultAgentConfig();
+            await aiServiceAdminClient.spawnAgent({
+              companyId: billingRecord.companyId,
+              templateSlug: agentCfg.templateSlug,
+              name: agentCfg.name,
+              icon: agentCfg.icon,
+              config: agentCfg.config,
+            });
           } catch (e) {
-            console.warn('[BILLING-WEBHOOK] Auto-create ready agents skipped (non-blocking):', e.message);
+            console.warn('[BILLING-WEBHOOK] Auto-create agent skipped (non-blocking):', e.message);
           }
         })();
       }
