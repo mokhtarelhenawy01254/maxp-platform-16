@@ -59,6 +59,187 @@ async function getCompanyBusinessId(companyId) {
 }
 
 /**
+ * دالة مشتركة: رفع المنتجات إلى Facebook Catalog (تُستخدم من الـ Controller والـ Service)
+ */
+async function syncProductsToFacebook(catalog, companyId, productIds = null, syncAll = false) {
+  const accessToken = await getCompanyAdsAccessToken(companyId);
+  if (!accessToken) {
+    return {
+      success: false,
+      error: "Facebook Access Token not found",
+    };
+  }
+
+  // جلب المنتجات من النظام
+  const where = syncAll
+    ? { companyId, isActive: true }
+    : { companyId, id: { in: productIds || [] }, isActive: true };
+
+  const products = await getSharedPrismaClient().product.findMany({
+    where,
+    include: {
+      category: true,
+      productVariants: true,
+    },
+  });
+
+  if (products.length === 0) {
+    return {
+      success: false,
+      error: "No products found to sync",
+    };
+  }
+
+  const catalogId = catalog.id;
+  const catalogService = new FacebookCatalogService(accessToken);
+  let successCount = 0;
+  let failCount = 0;
+  const errors = [];
+
+  // تحديث حالة Sync
+  await getSharedPrismaClient().facebookProductCatalog.update({
+    where: { id: catalogId },
+    data: {
+      lastSyncStatus: "IN_PROGRESS",
+      lastSyncAt: new Date(),
+    },
+  });
+
+  // ponytail: fetch active overlay framed images for this company's products
+  const overlayMap = new Map();
+  try {
+    const activeOverlays = await getSharedPrismaClient().overlayCampaignProduct.findMany({
+      where: {
+        campaign: {
+          companyId: catalog.companyId,
+          status: { in: ['ACTIVE', 'SCHEDULED'] },
+        },
+        framedImage: { not: null },
+      },
+      select: { productId: true, framedImage: true },
+    });
+    for (const o of activeOverlays) overlayMap.set(o.productId, o.framedImage);
+  } catch {}
+
+  // رفع المنتجات
+  for (const product of products) {
+    try {
+      // تحضير بيانات المنتج — استخدم framed image لو موجودة من حملة active
+      const originalImages = product.images ? JSON.parse(product.images) : [];
+      const framedImage = overlayMap.get(product.id);
+      const baseUrl = process.env.FRONTEND_URL || 'https://maxp.online';
+      const imageUrl = framedImage
+        ? `${baseUrl}${framedImage}`
+        : (originalImages[0] || null);
+
+      const productData = {
+        name: product.name,
+        description: product.description || "",
+        imageUrl,
+        linkUrl: `${baseUrl}/shop/${product.slug || product.id}`,
+        brand: product.company?.name || "",
+        category: product.category?.name || "",
+        price: parseFloat(product.price),
+        currency: product.company?.currency || "EGP",
+        availability: product.stock > 0 ? "in stock" : "out of stock",
+        retailerId: product.sku || product.id,
+        additionalImages: originalImages.slice(1, 4),
+      };
+
+      const result = await catalogService.uploadProduct(
+        catalog.facebookCatalogId,
+        productData,
+      );
+
+      if (result.success) {
+        // حفظ/تحديث في قاعدة البيانات
+        const existing =
+          await getSharedPrismaClient().facebookCatalogProduct.findFirst({
+            where: {
+              catalogId,
+              productId: product.id,
+            },
+          });
+
+        if (existing) {
+          await getSharedPrismaClient().facebookCatalogProduct.update({
+            where: { id: existing.id },
+            data: {
+              facebookProductId: result.productId,
+              syncStatus: "SYNCED",
+              lastSyncedAt: new Date(),
+              price: product.price,
+              availability: product.stock > 0 ? "in stock" : "out of stock",
+              inventory: product.stock,
+            },
+          });
+        } else {
+          await getSharedPrismaClient().facebookCatalogProduct.create({
+            data: {
+              catalogId,
+              productId: product.id,
+              name: product.name,
+              description: product.description,
+              brand: product.company?.name || "",
+              category: product.category?.name || "",
+              sku: product.sku,
+              price: product.price,
+              currency: product.company?.currency || "EGP",
+              availability: product.stock > 0 ? "in stock" : "out of stock",
+              inventory: product.stock,
+              imageUrl: product.images ? JSON.parse(product.images)[0] : null,
+              linkUrl: `${process.env.FRONTEND_URL || "https://yourstore.com"}/shop/${product.slug || product.id}`,
+              facebookProductId: result.productId,
+              syncStatus: "SYNCED",
+              lastSyncedAt: new Date(),
+            },
+          });
+        }
+
+        successCount++;
+      } else {
+        failCount++;
+        errors.push({
+          productId: product.id,
+          productName: product.name,
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      failCount++;
+      errors.push({
+        productId: product.id,
+        productName: product.name,
+        error: error.message,
+      });
+    }
+  }
+
+  // تحديث حالة Sync
+  await getSharedPrismaClient().facebookProductCatalog.update({
+    where: { id: catalogId },
+    data: {
+      lastSyncStatus: failCount === 0 ? "SUCCESS" : "FAILED",
+      lastSyncAt: new Date(),
+      syncedProducts: successCount,
+      totalProducts: products.length,
+    },
+  });
+
+  return {
+    success: true,
+    data: {
+      total: products.length,
+      successful: successCount,
+      failed: failCount,
+      errors: errors.slice(0, 10), // أول 10 أخطاء فقط
+    },
+  };
+}
+
+module.exports.syncProductsToFacebook = syncProductsToFacebook;
+
+/**
  * ============================================
  * Catalog Controllers
  * ============================================
@@ -409,193 +590,10 @@ exports.syncProducts = async (req, res) => {
       });
     }
 
-    const accessToken = await getCompanyAdsAccessToken(companyId);
-    if (!accessToken) {
-      return res.status(400).json({
-        success: false,
-        error: "Facebook Access Token not found",
-      });
-    }
-
-    // جلب المنتجات من النظام
-    const where = syncAll
-      ? { companyId, isActive: true }
-      : { companyId, id: { in: productIds || [] }, isActive: true };
-
-    const products = await getSharedPrismaClient().product.findMany({
-      where,
-      include: {
-        category: true,
-        productVariants: true,
-      },
-    });
-
-    if (products.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "No products found to sync",
-      });
-    }
-
-    const catalogService = new FacebookCatalogService(accessToken);
-    let successCount = 0;
-    let failCount = 0;
-    const errors = [];
-
-    // تحديث حالة Sync
-    await getSharedPrismaClient().facebookProductCatalog.update({
-      where: { id: catalogId },
-      data: {
-        lastSyncStatus: "IN_PROGRESS",
-        lastSyncAt: new Date(),
-      },
-    });
-
-    // ponytail: fetch active overlay framed images for this company's products
-    const overlayMap = new Map();
-    try {
-      const activeOverlays = await getSharedPrismaClient().overlayCampaignProduct.findMany({
-        where: {
-          campaign: {
-            companyId: catalog.companyId,
-            status: { in: ['ACTIVE', 'SCHEDULED'] },
-          },
-          framedImage: { not: null },
-        },
-        select: { productId: true, framedImage: true },
-      });
-      for (const o of activeOverlays) overlayMap.set(o.productId, o.framedImage);
-    } catch {}
-
-    // رفع المنتجات
-    for (const product of products) {
-      try {
-        // تحضير بيانات المنتج — استخدم framed image لو موجودة من حملة active
-        const originalImages = product.images ? JSON.parse(product.images) : [];
-        const framedImage = overlayMap.get(product.id);
-        const baseUrl = process.env.FRONTEND_URL || 'https://maxp.online';
-        const imageUrl = framedImage
-          ? `${baseUrl}${framedImage}`
-          : (originalImages[0] || null);
-
-        const productData = {
-          name: product.name,
-          description: product.description || "",
-          imageUrl,
-          linkUrl: `${baseUrl}/shop/${product.slug || product.id}`,
-          brand: product.company?.name || "",
-          category: product.category?.name || "",
-          price: parseFloat(product.price),
-          currency: product.company?.currency || "EGP",
-          availability: product.stock > 0 ? "in stock" : "out of stock",
-          retailerId: product.sku || product.id,
-          additionalImages: originalImages.slice(1, 4),
-        };
-
-        const result = await catalogService.uploadProduct(
-          catalog.facebookCatalogId,
-          productData,
-        );
-
-        if (result.success) {
-          // حفظ/تحديث في قاعدة البيانات
-          const existing =
-            await getSharedPrismaClient().facebookCatalogProduct.findFirst({
-              where: {
-                catalogId,
-                productId: product.id,
-              },
-            });
-
-          if (existing) {
-            await getSharedPrismaClient().facebookCatalogProduct.update({
-              where: { id: existing.id },
-              data: {
-                facebookProductId: result.productId,
-                syncStatus: "SYNCED",
-                lastSyncedAt: new Date(),
-                price: product.price,
-                availability: product.stock > 0 ? "in stock" : "out of stock",
-                inventory: product.stock,
-              },
-            });
-          } else {
-            await getSharedPrismaClient().facebookCatalogProduct.create({
-              data: {
-                catalogId,
-                productId: product.id,
-                name: product.name,
-                description: product.description,
-                brand: product.company?.name || "",
-                category: product.category?.name || "",
-                sku: product.sku,
-                price: product.price,
-                currency: product.company?.currency || "EGP",
-                availability: product.stock > 0 ? "in stock" : "out of stock",
-                inventory: product.stock,
-                imageUrl: product.images ? JSON.parse(product.images)[0] : null,
-                linkUrl: `${process.env.FRONTEND_URL || "https://yourstore.com"}/shop/${product.slug || product.id}`,
-                facebookProductId: result.productId,
-                syncStatus: "SYNCED",
-                lastSyncedAt: new Date(),
-              },
-            });
-          }
-
-          successCount++;
-        } else {
-          failCount++;
-          errors.push({
-            productId: product.id,
-            productName: product.name,
-            error: result.error,
-          });
-        }
-      } catch (error) {
-        failCount++;
-        errors.push({
-          productId: product.id,
-          productName: product.name,
-          error: error.message,
-        });
-      }
-    }
-
-    // تحديث حالة Sync
-    await getSharedPrismaClient().facebookProductCatalog.update({
-      where: { id: catalogId },
-      data: {
-        lastSyncStatus: failCount === 0 ? "SUCCESS" : "FAILED",
-        lastSyncAt: new Date(),
-        syncedProducts: successCount,
-        totalProducts: products.length,
-      },
-    });
-
-    res.json({
-      success: true,
-      data: {
-        total: products.length,
-        successful: successCount,
-        failed: failCount,
-        errors: errors.slice(0, 10), // أول 10 أخطاء فقط
-      },
-    });
+    const result = await syncProductsToFacebook(catalog, companyId, productIds, syncAll);
+    return res.json(result);
   } catch (error) {
     console.error("❌ Error syncing products:", error);
-
-    // تحديث حالة Sync
-    try {
-      await getSharedPrismaClient().facebookProductCatalog.update({
-        where: { id: req.params.catalogId },
-        data: {
-          lastSyncStatus: "FAILED",
-        },
-      });
-    } catch (e) {
-      console.error("Error updating sync status:", e);
-    }
-
     res.status(500).json({
       success: false,
       error: error.message || "Failed to sync products",

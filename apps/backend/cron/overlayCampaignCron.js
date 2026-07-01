@@ -20,6 +20,11 @@ const start = () => {
       if (expired.length) {
         console.log(`✅ [OVERLAY-CRON] Expired ${expired.length} campaigns`);
       }
+
+      const activated = await overlayCampaignService.activateScheduled();
+      if (activated.length) {
+        console.log(`✅ [OVERLAY-CRON] Activated ${activated.length} scheduled campaigns and synced to Facebook`);
+      }
     } catch (error) {
       console.error('❌ [OVERLAY-CRON] Error:', error);
     } finally {

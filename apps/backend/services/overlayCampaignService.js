@@ -4,6 +4,7 @@ const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { syncProductsToFacebook } = require('../controller/facebookCatalogController');
 
 const FRAMED_DIR = path.join(__dirname, '..', 'uploads', 'products', 'framed');
 
@@ -157,7 +158,27 @@ class OverlayCampaignService {
       }
     }
 
-    return results;
+    // Auto-sync to Facebook catalogs after applying overlays
+    const catalogs = await prisma.facebookProductCatalog.findMany({
+      where: { companyId, facebookCatalogId: { not: null } },
+    });
+    const syncResults = [];
+    for (const catalog of catalogs) {
+      try {
+        const result = await syncProductsToFacebook(
+          catalog,
+          companyId,
+          products.map(p => p.productId),
+          false,
+        );
+        syncResults.push({ catalogId: catalog.id, name: catalog.name, ...result });
+      } catch (err) {
+        console.error(`[OVERLAY] Facebook sync failed for catalog ${catalog.id}:`, err.message);
+        syncResults.push({ catalogId: catalog.id, name: catalog.name, success: false, error: err.message });
+      }
+    }
+
+    return { results, syncResults };
   }
 
   async activateExpired() {
@@ -176,6 +197,69 @@ class OverlayCampaignService {
       });
     }
     return campaigns.map(c => c.id);
+  }
+
+  async activateScheduled() {
+    const prisma = getSharedPrismaClient();
+    const now = new Date();
+    const campaigns = await prisma.overlayCampaign.findMany({
+      where: {
+        status: 'SCHEDULED',
+        startAt: { lte: now },
+      },
+      include: { products: { include: { product: true } } },
+    });
+
+    const activated = [];
+    for (const campaign of campaigns) {
+      try {
+        // Mark as ACTIVE
+        await prisma.overlayCampaign.update({
+          where: { id: campaign.id },
+          data: { status: 'ACTIVE' },
+        });
+
+        // Re-apply overlay
+        const overlayPath = await resolveOverlayPath(campaign.overlayImage);
+        for (const cp of campaign.products) {
+          try {
+            const images = JSON.parse(cp.product.images || '[]');
+            if (!images.length) continue;
+            const framedUrl = await generateFramedImage(images[0], overlayPath);
+            if (!framedUrl) continue;
+            await prisma.overlayCampaignProduct.update({
+              where: { id: cp.id },
+              data: { framedImage: framedUrl },
+            });
+          } catch (err) {
+            console.error(`[OVERLAY-ACTIVATE] Product ${cp.productId} failed:`, err.message);
+          }
+        }
+
+        // Auto-sync to Facebook catalogs
+        const catalogs = await prisma.facebookProductCatalog.findMany({
+          where: { companyId: campaign.companyId, facebookCatalogId: { not: null } },
+        });
+        for (const catalog of catalogs) {
+          try {
+            await syncProductsToFacebook(
+              catalog,
+              campaign.companyId,
+              campaign.products.map(p => p.productId),
+              false,
+            );
+          } catch (err) {
+            console.error(`[OVERLAY-ACTIVATE] Facebook sync failed for catalog ${catalog.id}:`, err.message);
+          }
+        }
+
+        activated.push(campaign.id);
+      } catch (err) {
+        console.error(`[OVERLAY-ACTIVATE] Campaign ${campaign.id} activation failed:`, err.message);
+      }
+    }
+
+    return activated;
   }
 }
 
