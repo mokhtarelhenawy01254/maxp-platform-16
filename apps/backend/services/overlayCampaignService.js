@@ -138,49 +138,47 @@ class OverlayCampaignService {
       data: { status: 'ACTIVE' },
     });
 
-    const overlayPath = await resolveOverlayPath(campaign.overlayImage);
-
-    const products = await prisma.overlayCampaignProduct.findMany({
-      where: { campaignId },
-      include: { product: true },
-    });
-
-    const results = [];
-    for (const cp of products) {
+    // Generate framed images + sync to Facebook in background
+    (async () => {
       try {
-        const images = JSON.parse(cp.product.images || '[]');
-        if (!images.length) continue;
-
-        const framedUrl = await generateFramedImage(images[0], overlayPath);
-        if (!framedUrl) continue;
-
-        await prisma.overlayCampaignProduct.update({
-          where: { id: cp.id },
-          data: { framedImage: framedUrl },
+        const overlayPath = await resolveOverlayPath(campaign.overlayImage);
+        const products = await prisma.overlayCampaignProduct.findMany({
+          where: { campaignId },
+          include: { product: true },
         });
-        results.push({ productId: cp.productId, framedUrl });
-      } catch (err) {
-        console.error(`[OVERLAY] Failed for product ${cp.productId}:`, err.message);
-      }
-    }
 
-    // Auto-sync to Facebook catalogs in background (don't block response)
-    const productIds = products.map(p => p.productId);
-    const catalogs = await prisma.facebookProductCatalog.findMany({
-      where: { companyId, facebookCatalogId: { not: null } },
-    });
-    if (catalogs.length > 0) {
-      (async () => {
-        const result = await syncProductsToFacebook(catalogs[0], companyId, productIds, false);
-        if (!result.success) {
-          console.error(`[OVERLAY] Background sync error:`, result.error);
+        for (const cp of products) {
+          try {
+            const images = JSON.parse(cp.product.images || '[]');
+            if (!images.length) continue;
+            const framedUrl = await generateFramedImage(images[0], overlayPath);
+            if (!framedUrl) continue;
+            await prisma.overlayCampaignProduct.update({
+              where: { id: cp.id },
+              data: { framedImage: framedUrl },
+            });
+          } catch (err) {
+            console.error(`[OVERLAY] Failed for product ${cp.productId}:`, err.message);
+          }
         }
-      })().catch(err => console.error(`[OVERLAY] Background sync exception:`, err.message));
-    } else {
-      console.log(`[OVERLAY] No Facebook catalogs found for company ${companyId}, skipping sync`);
-    }
 
-    return { results };
+        // Sync to Facebook catalogs
+        const catalogs = await prisma.facebookProductCatalog.findMany({
+          where: { companyId, facebookCatalogId: { not: null } },
+        });
+        if (catalogs.length > 0) {
+          const productIds = products.map(p => p.productId);
+          const result = await syncProductsToFacebook(catalogs[0], companyId, productIds, false);
+          if (!result.success) {
+            console.error(`[OVERLAY] Background sync error:`, result.error);
+          }
+        }
+      } catch (err) {
+        console.error(`[OVERLAY] Background processing error:`, err.message);
+      }
+    })();
+
+    return { processing: true };
   }
 
   async activateExpired() {

@@ -90,10 +90,12 @@ const OverlayCampaigns: React.FC = () => {
   const handleApply = async (id: string) => {
     try {
       const { data } = await apiClient.post(`/overlay-campaigns/${id}/apply`);
-      const results = data.data?.results || [];
-      toast.success(`تم تطبيق الإطار على ${results.length} منتج`);
-      toast.success("جاري التزامن التلقائي مع كتالوج فيسبوك في الخلفية");
-      load();
+      if (data.data?.processing) {
+        toast.success("جاري تطبيق الإطارات والتزامن مع فيسبوك في الخلفية");
+      } else {
+        toast.success(`تم تطبيق الإطار على ${data.data?.results?.length || 0} منتج`);
+      }
+      setTimeout(() => load(), 2000);
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "فشل في التطبيق");
     }
