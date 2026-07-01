@@ -266,9 +266,11 @@ export const useCheckout = () => {
           ...responseData,
           purchaseTracking,
         });
-        clearCart();
-        resetCheckout();
-        toast.success('Order placed successfully!');
+        setTimeout(() => {
+          clearCart();
+          resetCheckout();
+          toast.success('Order placed successfully!');
+        }, 0);
       } else {
         toast.error(response.message || 'Failed to place order.');
       }
