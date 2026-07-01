@@ -1,5 +1,5 @@
 const { safeQuery, initializeSharedDatabase } = require('../services/sharedDatabase');
-const { calculateDiscount } = require('../utils/storePromotionUtils');
+const { calculateDiscount, parseTiers } = require('../utils/storePromotionUtils');
 
 function isPrismaConnectionError(error) {
   const msg = String(error?.message || '');
@@ -61,6 +61,19 @@ exports.upsertPromotion = async (req, res) => {
       return res.status(400).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
     const { isActive, title, tiers, disableOtherDiscounts, startDate, endDate } = req.body;
+    const validatedTiers = parseTiers(tiers);
+    if (isActive && validatedTiers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'لا يمكن تفعيل عرض بدون مستويات خصم صحيحة',
+      });
+    }
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية',
+      });
+    }
     const promotion = await safePromotionQuery(
       (p) => p.storePromotion.upsert({
         where: { companyId },
@@ -68,7 +81,7 @@ exports.upsertPromotion = async (req, res) => {
           companyId,
           isActive: Boolean(isActive),
           title: String(title || ''),
-          tiers: typeof tiers === 'string' ? tiers : JSON.stringify(tiers || []),
+          tiers: JSON.stringify(validatedTiers),
           disableOtherDiscounts: Boolean(disableOtherDiscounts),
           startDate: startDate ? new Date(startDate) : null,
           endDate: endDate ? new Date(endDate) : null,
@@ -76,7 +89,7 @@ exports.upsertPromotion = async (req, res) => {
         update: {
           isActive: Boolean(isActive),
           title: String(title || ''),
-          tiers: typeof tiers === 'string' ? tiers : JSON.stringify(tiers || []),
+          tiers: JSON.stringify(validatedTiers),
           disableOtherDiscounts: Boolean(disableOtherDiscounts),
           startDate: startDate ? new Date(startDate) : null,
           endDate: endDate ? new Date(endDate) : null,

@@ -875,7 +875,7 @@ const GlobalConversionHost: React.FC = () => {
     <>
       {promotionProgress ? (
         <>
-          <div className="h-[53px]" aria-hidden="true" />
+          <div className="h-[46px]" aria-hidden="true" />
           <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)]">
             <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:px-6">
               <span className="truncate text-sm font-bold text-[#9f1239]">{promotionProgress.message}</span>

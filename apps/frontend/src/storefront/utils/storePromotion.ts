@@ -149,6 +149,9 @@ export const getActiveStorePromotionFromCompany = (
   if (!rawPromotion || typeof rawPromotion !== "object") return null;
   const p = rawPromotion as Record<string, unknown>;
   if (p.isActive !== true) return null;
+  const now = Date.now();
+  if (p.startDate && new Date(p.startDate).getTime() > now) return null;
+  if (p.endDate && new Date(p.endDate).getTime() < now) return null;
   let tiers: PromotionTier[] = [];
   if (typeof p.tiers === "string") {
     try {

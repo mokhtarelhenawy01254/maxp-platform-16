@@ -1375,6 +1375,9 @@ router.post('/', async (req, res) => {
       },
     });
     if (storePromotion) {
+      if (storePromotion.disableOtherDiscounts) {
+        discountAmount = 0;
+      }
       const promoCartItems = cartItems.map(i => ({
         productId: i.productId || i.id,
         price: i.basePrice || i.price,

@@ -357,12 +357,14 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     isSameAmount(Number(appliedCoupon.orderAmount || 0), subtotal)
       ? appliedCoupon
       : null;
-  const couponDiscount = Number(activeCoupon?.discountAmount || 0);
   const storePromotion = getActiveStorePromotionFromCompany(
     storefrontSettings?.company,
   );
   const { discount: storePromotionDiscount, tier: storePromotionTier } =
     calculateStorePromotionDiscount(items, storePromotion);
+  const couponDiscount = storePromotion?.disableOtherDiscounts
+    ? 0
+    : Number(activeCoupon?.discountAmount || 0);
 
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
     storefrontSettings,
@@ -411,7 +413,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
       : 0;
 
   const showTrustRow = parseBooleanSetting(sectionSettings?.showTrustRow, true);
-  const showCouponField = parseBooleanSetting(
+  const showCouponField = !storePromotion?.disableOtherDiscounts && parseBooleanSetting(
     sectionSettings?.showCouponField,
     true,
   );
