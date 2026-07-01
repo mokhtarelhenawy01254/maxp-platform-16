@@ -781,20 +781,12 @@ const SuperAdminServerUsage = React.lazy(
   () => import("./pages/super-admin/SuperAdminServerUsage"),
 );
 const SalaryUpdates = React.lazy(() => import("./pages/hr/SalaryUpdates"));
-const SuperAdminAIProviders = React.lazy(
-  () => import("./pages/super-admin/SuperAdminAIProviders"),
-); // New Page
-const SuperAdminAIProviderPriority = React.lazy(
-  () => import("./pages/super-admin/SuperAdminAIProviderPriority"),
-);
-const SuperAdminAIProviderLogs = React.lazy(
-  () => import("./pages/super-admin/SuperAdminAIProviderLogs"),
-);
-const SuperAdminAIKeyDetails = React.lazy(
-  () => import("./pages/super-admin/SuperAdminAIKeyDetails"),
-);
+
 const SuperAdminAIPlayground = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIPlayground"),
+);
+const SuperAdminAIKeyManager = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIKeyManager"),
 );
 const SuperAdminAIChatPage = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIChatPage"),
@@ -1838,39 +1830,10 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/ai-providers"
+              path="/super-admin/ai-key-manager"
               element={
                 <Layout fullWidth>
-                  <SuperAdminAIProviders />
-                </Layout>
-              }
-            />{" "}
-            {/* New Route */}
-            <Route
-              path="/super-admin/ai-providers/provider-priority"
-              element={
-                <Layout fullWidth>
-                  <SuperAdminAIProviderPriority />
-                </Layout>
-              }
-            />
-            <Route
-              path="/ai-providers/logs"
-              element={<Navigate to={`/super-admin/ai-providers/logs${window.location.search}`} replace />}
-            />
-            <Route
-              path="/super-admin/ai-providers/logs"
-              element={
-                <Layout fullWidth>
-                  <SuperAdminAIProviderLogs />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/ai-providers/keys/:id"
-              element={
-                <Layout fullWidth>
-                  <SuperAdminAIKeyDetails />
+                  <SuperAdminAIKeyManager />
                 </Layout>
               }
             />

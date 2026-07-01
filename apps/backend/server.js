@@ -219,6 +219,7 @@ const aiSandboxRoutes = require("./routes/aiSandboxRoutes");
 const agentConfigRoutes = require("./routes/agentConfigRoutes");
 // const agentServiceBridgeRoutes = require("./routes/agentServiceBridgeRoutes");
 const aiServiceAgentProxy = require("./routes/aiServiceAgentProxy");
+const aiAdminProxyRoute = require("./routes/aiAdminProxyRoute");
 const easyOrdersRoutes = require("./routes/easyOrdersRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const faqRoutes = require("./routes/faq");
@@ -724,6 +725,7 @@ app.use("/api/v1/ai-sandbox", aiSandboxRoutes);
 app.use("/api/v1/ai/agent-config", agentConfigRoutes);
 // app.use("/api/v1/ai-bridge", agentServiceBridgeRoutes); // REMOVED: catalog-mcp now calls Python directly
 app.use("/api/v1/proxy/ai-service", aiServiceAgentProxy);
+app.use("/api/v1/ai-admin", aiAdminProxyRoute);
 app.use("/api/v1/admin/lp-pages", require("./routes/lpAdminRoutes").adminRouter);
 app.use("/api/v1/proxy", proxyRoutes);
 

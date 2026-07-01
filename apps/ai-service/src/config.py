@@ -30,6 +30,12 @@ class Settings(BaseSettings):
         description="Sensitive: MaxP service auth token",
     )
 
+    jwt_secret: str = Field(
+        default="",
+        repr=False,
+        description="JWT secret for verifying super admin tokens from frontend",
+    )
+
     anthropic_api_key: str | None = Field(
         default=None,
         repr=False,

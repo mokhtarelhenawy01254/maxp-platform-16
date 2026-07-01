@@ -1,14 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const superAdminController = require("../controller/superAdminController");
-const superAdminAiController = require("../controller/superAdminAiController");
 const devTaskIntegrationController = require("../controller/devTaskIntegrationController");
 const storePagesController = require("../controller/storePagesController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const aiServiceAdminClient = require("../services/aiServiceAdminClient");
 const { TOOLS } = { TOOLS: {} };
 const { t } = require("../services/i18n");
-const { clearCache, clearAgentCache } = { clearCache: async () => {}, clearAgentCache: async () => {} };
 const {
   authenticateToken,
   requireSuperAdmin,
@@ -224,160 +222,6 @@ router.get(
 router.post(
   "/dev/tasks/:taskId/checklists",
   superAdminController.createDevTaskChecklist,
-);
-
-// AI Provider Management
-router.get(
-  "/ai/config",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getGlobalAIConfig,
-);
-router.post(
-  "/ai/config",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.updateGlobalAIConfig,
-);
-router.get(
-  "/ai/provider-priority",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getProviderPriority,
-);
-router.get(
-  "/ai/provider-dashboard",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getProviderDashboard,
-);
-router.post(
-  "/ai/provider-priority",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.updateProviderPriority,
-);
-router.get(
-  "/ai/keys",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getAllAIKeys,
-);
-router.post(
-  "/ai/keys",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.addNewAIKey,
-);
-router.post(
-  "/ai/routing-preview",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.previewAIRouting,
-);
-router.get(
-  "/ai/provider-logs",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getProviderLogs,
-);
-router.delete(
-  "/ai/preferred-key/:provider",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.clearPreferredAIKey,
-);
-// Bulk operations MUST come BEFORE routes with :id to avoid matching conflicts
-router.post(
-  "/ai/keys/bulk-delete",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.bulkDeleteAIKeys,
-);
-router.post(
-  "/ai/keys/bulk-update-status",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.bulkUpdateKeysActiveStatus,
-);
-// Individual key operations
-router.get(
-  "/ai/keys/:id/details",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getAIKeyDetails,
-);
-router.get(
-  "/ai/keys/:id/logs",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getAIKeyProviderLogs,
-);
-router.post(
-  "/ai/keys/:id/test",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.testAIKey,
-);
-router.post(
-  "/ai/keys/:id/test-chat",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.testAIKeyChat,
-);
-router.post(
-  "/ai/keys/:id/preferred",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.setPreferredAIKey,
-);
-router.delete(
-  "/ai/keys/:id",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.deleteAIKey,
-);
-router.patch(
-  "/ai/keys/:id/active-status",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.updateKeyActiveStatus,
-);
-router.post(
-  "/ai/keys/:id/active-model",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.updateKeyActiveModel,
-);
-router.get(
-  "/ai/ollama/models",
-  checkPermission("canAccessSettings"),
-  superAdminAiController.getOllamaModels,
-);
-router.get(
-    "/ai/openrouter/models",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.getOpenRouterModels,
-);
-router.post(
-    "/ai/playground/chat",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.playgroundChat,
-);
-router.get(
-    "/ai/playground/chat/stream",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.playgroundChatStream,
-);
-router.get(
-    "/ai/embedding/models",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.getEmbeddingModels,
-);
-router.post(
-    "/ai/embedding/test",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.testEmbeddingKey,
-);
-router.get(
-    "/ai/product-embeddings/status",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.getProductEmbeddingStatus,
-);
-router.post(
-    "/ai/product-embeddings/sync",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.triggerProductEmbeddingSync,
-);
-router.get(
-    "/ai/knowledge-embeddings/status",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.getKnowledgeEmbeddingStatus,
-);
-router.post(
-    "/ai/knowledge-embeddings/sync",
-    checkPermission("canAccessSettings"),
-    superAdminAiController.triggerKnowledgeEmbeddingSync,
 );
 
 const {
@@ -1104,5 +948,59 @@ router.post('/dev/evaluations/compare', superAdminController.compareEvaluations)
 
 // 🔍 Global Search - super admin only
 router.get("/global-search", superAdminController.globalSearch);
+
+// 🧩 AI Embedding Status & Sync — proxied to ai-service admin API
+router.get(
+  "/ai/product-embeddings/status",
+  checkPermission("canAccessSettings"),
+  async (req, res) => {
+    try {
+      const result = await aiServiceAdminClient.getProductEmbeddingStatus(req.query.company_id);
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      console.error("[SA] product-embeddings status error:", error.message);
+      return res.status(502).json({ success: false, error: error.message });
+    }
+  },
+);
+router.post(
+  "/ai/product-embeddings/sync",
+  checkPermission("canAccessSettings"),
+  async (req, res) => {
+    try {
+      const result = await aiServiceAdminClient.triggerProductEmbeddingSync(req.body.company_id);
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      console.error("[SA] product-embeddings sync error:", error.message);
+      return res.status(502).json({ success: false, error: error.message });
+    }
+  },
+);
+router.get(
+  "/ai/knowledge-embeddings/status",
+  checkPermission("canAccessSettings"),
+  async (req, res) => {
+    try {
+      const result = await aiServiceAdminClient.getKnowledgeEmbeddingStatus(req.query.company_id);
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      console.error("[SA] knowledge-embeddings status error:", error.message);
+      return res.status(502).json({ success: false, error: error.message });
+    }
+  },
+);
+router.post(
+  "/ai/knowledge-embeddings/sync",
+  checkPermission("canAccessSettings"),
+  async (req, res) => {
+    try {
+      const result = await aiServiceAdminClient.triggerKnowledgeEmbeddingSync(req.body.company_id);
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      console.error("[SA] knowledge-embeddings sync error:", error.message);
+      return res.status(502).json({ success: false, error: error.message });
+    }
+  },
+);
 
 module.exports = router;

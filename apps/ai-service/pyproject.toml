@@ -37,6 +37,7 @@ dependencies = [
     "telethon>=1.35",
     "aiogram>=3.0",
     "agent-framework==1.8.1",
+    "pyjwt>=2.9",
 ]
 
 [project.optional-dependencies]

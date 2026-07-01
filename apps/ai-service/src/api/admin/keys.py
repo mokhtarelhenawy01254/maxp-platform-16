@@ -32,6 +32,7 @@ from src.db.models import (
     ProviderLog,
 )
 from src.db.session import get_session
+from src.api.admin.auth import verify_admin_jwt
 from src.llm.client import OPENAI_COMPAT_PROVIDERS, LLMClient
 
 logger = structlog.get_logger(__name__)
@@ -77,7 +78,10 @@ def _to_read(key: AiKey) -> AiKeyRead:
 
 
 @router.get("/providers", response_model=list[ProviderRead])
-async def list_providers(session: SessionDep) -> list[ProviderRead]:
+async def list_providers(
+    session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> list[ProviderRead]:
     result = await session.execute(
         select(Provider).where(Provider.is_active.is_(True)).order_by(Provider.name)
     )
@@ -91,6 +95,7 @@ async def list_keys(
     company_id: str | None = None,
     is_active: bool | None = None,
     limit: int = Query(default=100, ge=1, le=500),
+    admin: dict | None = Depends(verify_admin_jwt),
 ) -> list[AiKeyRead]:
     stmt = select(AiKey).order_by(AiKey.provider, AiKey.priority, AiKey.created_at)
     if provider:
@@ -105,7 +110,11 @@ async def list_keys(
 
 
 @router.post("/keys", response_model=AiKeyRead, status_code=status.HTTP_201_CREATED)
-async def create_key(payload: AiKeyCreate, session: SessionDep) -> AiKeyRead:
+async def create_key(
+    payload: AiKeyCreate,
+    session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> AiKeyRead:
     provider = await session.get(Provider, payload.provider)
     if not provider:
         raise HTTPException(status_code=400, detail=f"Unknown provider: {payload.provider}")
@@ -154,7 +163,11 @@ async def create_key(payload: AiKeyCreate, session: SessionDep) -> AiKeyRead:
 
 
 @router.get("/keys/{key_id}", response_model=AiKeyRead)
-async def get_key(key_id: str, session: SessionDep) -> AiKeyRead:
+async def get_key(
+    key_id: str,
+    session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> AiKeyRead:
     key = await session.get(AiKey, key_id)
     if not key:
         raise HTTPException(status_code=404, detail="Key not found")
@@ -166,6 +179,7 @@ async def update_key(
     key_id: str,
     payload: AiKeyUpdate,
     session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
 ) -> AiKeyRead:
     key = await session.get(AiKey, key_id)
     if not key:
@@ -198,7 +212,11 @@ async def update_key(
 
 
 @router.delete("/keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_key(key_id: str, session: SessionDep) -> None:
+async def delete_key(
+    key_id: str,
+    session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> None:
     key = await session.get(AiKey, key_id)
     if not key:
         raise HTTPException(status_code=404, detail="Key not found")
@@ -213,6 +231,7 @@ async def set_key_status(
     key_id: str,
     payload: AiKeyStatusUpdate,
     session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
 ) -> AiKeyRead:
     key = await session.get(AiKey, key_id)
     if not key:
@@ -225,7 +244,11 @@ async def set_key_status(
 
 
 @router.post("/keys/{key_id}/test", response_model=AiKeyTestResult)
-async def test_key(key_id: str, session: SessionDep) -> AiKeyTestResult:
+async def test_key(
+    key_id: str,
+    session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> AiKeyTestResult:
     key = await session.get(AiKey, key_id)
     if not key:
         raise HTTPException(status_code=404, detail="Key not found")
@@ -283,6 +306,7 @@ async def test_key(key_id: str, session: SessionDep) -> AiKeyTestResult:
 async def set_provider_priority(
     payload: ProviderPriorityUpdate,
     session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
 ) -> GlobalConfigRead:
     result = await session.execute(select(GlobalAiConfig).limit(1))
     config = result.scalar_one_or_none()
@@ -303,7 +327,10 @@ async def set_provider_priority(
 
 
 @router.get("/config", response_model=GlobalConfigRead)
-async def get_global_config(session: SessionDep) -> GlobalConfigRead:
+async def get_global_config(
+    session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> GlobalConfigRead:
     result = await session.execute(select(GlobalAiConfig).limit(1))
     config = result.scalar_one_or_none()
     if not config:
@@ -318,6 +345,7 @@ async def get_global_config(session: SessionDep) -> GlobalConfigRead:
 async def update_global_config(
     payload: GlobalConfigUpdate,
     session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
 ) -> GlobalConfigRead:
     result = await session.execute(select(GlobalAiConfig).limit(1))
     config = result.scalar_one_or_none()
@@ -335,7 +363,10 @@ async def update_global_config(
 
 
 @router.get("/dashboard", response_model=DashboardStats)
-async def get_dashboard(session: SessionDep) -> DashboardStats:
+async def get_dashboard(
+    session: SessionDep,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> DashboardStats:
     from datetime import datetime, timedelta
 
     keys_result = await session.execute(select(AiKey))
@@ -388,6 +419,7 @@ async def list_logs(
     key_id: str | None = None,
     status: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
+    admin: dict | None = Depends(verify_admin_jwt),
 ) -> list[LogEntry]:
     stmt = select(ProviderLog).order_by(ProviderLog.created_at.desc())
     if provider:
@@ -443,7 +475,10 @@ class KeyTestResponse(BaseModel):
 
 
 @router.post("/test", response_model=KeyTestResponse)
-async def test_key_raw(body: KeyTestRequest) -> KeyTestResponse:
+async def test_key_raw(
+    body: KeyTestRequest,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> KeyTestResponse:
     """Test a raw provider API key by sending a simple completion request. Used by super admin dashboard."""
     try:
         client = _build_test_client(body.provider, body.api_key, body.model)
@@ -490,7 +525,10 @@ class KeyHealthRequest(BaseModel):
 
 
 @router.post("/health", response_model=list[KeyTestResponse])
-async def health_check_keys(body: KeyHealthRequest) -> list[KeyTestResponse]:
+async def health_check_keys(
+    body: KeyHealthRequest,
+    admin: dict | None = Depends(verify_admin_jwt),
+) -> list[KeyTestResponse]:
     """Batch health check for multiple raw API keys."""
 
     async def _test_one(entry: dict) -> KeyTestResponse:
