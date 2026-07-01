@@ -192,7 +192,11 @@ exports.calculateDiscount = async (req, res) => {
     if (!promotion) {
       return res.status(200).json({ success: true, data: { discount: 0, discountDetails: [], tier: null, totalQuantity: 0 } });
     }
-    const result = calculateDiscount({ cartItems, tiers: promotion.tiers });
+    const result = calculateDiscount({
+      cartItems,
+      tiers: promotion.tiers,
+      disableOtherDiscounts: promotion.disableOtherDiscounts,
+    });
     return res.status(200).json({ success: true, data: result });
   } catch (error) {
     console.error('❌ [STORE-PROMOTION] Error calculating:', error);

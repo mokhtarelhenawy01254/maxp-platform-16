@@ -45,7 +45,13 @@ const getApplicableTier = (tiers, cartQuantity) => {
   return candidates.sort((a, b) => b.minQuantity - a.minQuantity)[0];
 };
 
-const calculateDiscount = ({ cartItems, tiers }) => {
+const isItemOnSale = (item) => {
+  const comparePrice = toFiniteNumber(item.comparePrice, 0);
+  const price = toFiniteNumber(item.price, 0);
+  return comparePrice > price && comparePrice > 0;
+};
+
+const calculateDiscount = ({ cartItems, tiers, disableOtherDiscounts = false }) => {
   const parsedTiers = parseTiers(tiers);
   if (parsedTiers.length === 0) return { discount: 0, items: [], tier: null };
 
@@ -55,6 +61,7 @@ const calculateDiscount = ({ cartItems, tiers }) => {
 
   const allUnitPrices = [];
   for (const item of cartItems) {
+    if (disableOtherDiscounts && isItemOnSale(item)) continue;
     const qty = Math.max(1, Math.floor(toFiniteNumber(item.quantity, 1)));
     const price = Math.max(0, toFiniteNumber(item.price, 0));
     for (let i = 0; i < qty; i++) {
@@ -90,6 +97,4 @@ const calculateDiscount = ({ cartItems, tiers }) => {
   };
 };
 
-// ponytail: no product exclusions, no stack-with-coupon logic, no customer-segment filter
-// add when: stores need to exclude discounted items or prioritize coupon vs promotion
-module.exports = { calculateDiscount, parseTiers, getApplicableTier };
+module.exports = { calculateDiscount, parseTiers, getApplicableTier, isItemOnSale };

@@ -1219,6 +1219,9 @@ router.post('/', async (req, res) => {
 
       item.basePrice = trustedUnitPrice;
       item.price = volumePricing.effectiveUnitPrice;
+      item.comparePrice = selectedVariant
+        ? Number(selectedVariant.comparePrice || product.comparePrice || 0)
+        : Number(product.comparePrice || 0);
       item.name = item.name || product.name;
       if (affiliatePricingSnapshot) {
         item.affiliatePricing = affiliatePricingSnapshot;
@@ -1381,11 +1384,13 @@ router.post('/', async (req, res) => {
       const promoCartItems = cartItems.map(i => ({
         productId: i.productId || i.id,
         price: i.basePrice || i.price,
+        comparePrice: i.comparePrice || 0,
         quantity: i.quantity,
       }));
       const { discount: promoDiscount } = calcStorePromotionDiscount({
         cartItems: promoCartItems,
         tiers: storePromotion.tiers,
+        disableOtherDiscounts: storePromotion.disableOtherDiscounts,
       });
       discountAmount += promoDiscount;
     }

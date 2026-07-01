@@ -1,4 +1,4 @@
-const { calculateDiscount, parseTiers, getApplicableTier } = require("../../utils/storePromotionUtils");
+const { calculateDiscount, parseTiers, getApplicableTier, isItemOnSale } = require("../../utils/storePromotionUtils");
 
 describe("storePromotionUtils", () => {
   describe("parseTiers", () => {
@@ -131,6 +131,38 @@ describe("storePromotionUtils", () => {
     test("handles empty tiers", () => {
       const r = calculateDiscount({ cartItems: [{ productId: "a", price: 100, quantity: 5 }], tiers: [] });
       expect(r.discount).toBe(0);
+    });
+
+    test("disableOtherDiscounts skips sale items from discount", () => {
+      const r = calculateDiscount({
+        cartItems: [
+          { productId: "sale", price: 100, comparePrice: 200, quantity: 2 },
+          { productId: "full", price: 300, quantity: 1 },
+        ],
+        tiers,
+        disableOtherDiscounts: true,
+      });
+      expect(r.tier.minQuantity).toBe(3);
+      expect(r.discount).toBe(300);
+    });
+
+    test("disableOtherDiscounts=false applies discount to sale items too", () => {
+      const r = calculateDiscount({
+        cartItems: [
+          { productId: "sale", price: 100, comparePrice: 200, quantity: 2 },
+          { productId: "full", price: 300, quantity: 1 },
+        ],
+        tiers,
+        disableOtherDiscounts: false,
+      });
+      expect(r.discount).toBe(100);
+    });
+
+    test("isItemOnSale detects comparePrice > price", () => {
+      expect(isItemOnSale({ price: 100, comparePrice: 200 })).toBe(true);
+      expect(isItemOnSale({ price: 100, comparePrice: 100 })).toBe(false);
+      expect(isItemOnSale({ price: 100, comparePrice: 0 })).toBe(false);
+      expect(isItemOnSale({ price: 100 })).toBe(false);
     });
   });
 });

@@ -3,6 +3,7 @@ interface CartItem {
   id?: string;
   quantity: number;
   price: number;
+  comparePrice?: number;
 }
 
 interface PromotionTier {
@@ -67,6 +68,12 @@ const getApplicableTier = (
   return candidates.sort((a, b) => b.minQuantity - a.minQuantity)[0];
 };
 
+const isItemOnSale = (item: CartItem): boolean => {
+  const comparePrice = toFiniteNumber(item.comparePrice, 0);
+  const price = toFiniteNumber(item.price, 0);
+  return comparePrice > price && comparePrice > 0;
+};
+
 export const calculateStorePromotionDiscount = (
   cartItems: CartItem[],
   promotion: StorePromotion | null,
@@ -97,6 +104,7 @@ export const calculateStorePromotionDiscount = (
 
   const allUnitPrices: { productId: string; price: number }[] = [];
   for (const item of cartItems) {
+    if (promotion.disableOtherDiscounts && isItemOnSale(item)) continue;
     const qty = Math.max(1, Math.floor(toFiniteNumber(item.quantity, 1)));
     const price = Math.max(0, toFiniteNumber(item.price, 0));
     const pid = item.productId || item.id || "unknown";
