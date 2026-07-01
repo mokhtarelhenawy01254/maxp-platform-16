@@ -467,8 +467,8 @@ const OrderDetails: React.FC = () => {
           shipping: order.shipping || 0,
           tax: order.tax || 0,
           currency: order.currency,
-          notes: `مرتجع من الطلب ${order.orderNumber}`,
-          status: "PENDING",
+           notes: `مرتجع من الطلب ${order.orderNumber}`,
+          status: "PARTIALLY_RETURNED",
           paymentMethod: order.paymentMethod,
           paymentStatus: order.paymentStatus,
         });
