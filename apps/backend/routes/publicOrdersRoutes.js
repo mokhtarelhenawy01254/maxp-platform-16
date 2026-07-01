@@ -1367,6 +1367,8 @@ router.post('/', async (req, res) => {
     }
 
     // Store-wide promotion discount
+    let promoDiscount = 0;
+    let promoLabel = '';
     const storePromotion = await prisma.storePromotion.findFirst({
       where: {
         companyId: company.id,
@@ -1387,11 +1389,13 @@ router.post('/', async (req, res) => {
         comparePrice: i.comparePrice || 0,
         quantity: i.quantity,
       }));
-      const { discount: promoDiscount } = calcStorePromotionDiscount({
+      const result = calcStorePromotionDiscount({
         cartItems: promoCartItems,
         tiers: storePromotion.tiers,
         disableOtherDiscounts: storePromotion.disableOtherDiscounts,
       });
+      promoDiscount = result.discount;
+      promoLabel = result.tier?.label || storePromotion.title || 'عرض الكمية';
       discountAmount += promoDiscount;
     }
 
@@ -2022,6 +2026,9 @@ router.post('/', async (req, res) => {
       if (freeShippingMetadata) {
         regularOrderMetadata.freeShipping = freeShippingMetadata;
       }
+      if (promoDiscount > 0) {
+        regularOrderMetadata.storePromotion = { discount: promoDiscount, label: promoLabel };
+      }
       if (order.id && Object.keys(regularOrderMetadata).length > 0) {
         regularOrderMetadata.guestOrderId = order.id;
       }
@@ -2516,6 +2523,21 @@ router.get('/track', async (req, res) => {
         ? updatedOrder.shippingAddress?.governorate
         : 'string format'
     });
+
+    // استخراج خصم عروض المتجر من metadata
+    let storePromotionDiscount = 0;
+    let storePromotionLabel = '';
+    if (updatedOrder.metadata) {
+      try {
+        const meta = typeof updatedOrder.metadata === 'string' ? JSON.parse(updatedOrder.metadata) : updatedOrder.metadata;
+        if (meta?.storePromotion) {
+          storePromotionDiscount = Number(meta.storePromotion.discount) || 0;
+          storePromotionLabel = meta.storePromotion.label || '';
+        }
+      } catch (e) { /* ignore */ }
+    }
+    updatedOrder.storePromotionDiscount = storePromotionDiscount;
+    updatedOrder.storePromotionLabel = storePromotionLabel;
 
     res.json({ success: true, data: updatedOrder });
   } catch (error) {

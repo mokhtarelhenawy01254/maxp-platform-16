@@ -72,6 +72,8 @@ interface TrackedOrderSummary {
   finalTotal?: number;
   shippingAddress?: unknown;
   items?: PurchaseTrackingItem[];
+  storePromotionDiscount?: number;
+  storePromotionLabel?: string;
 }
 
 interface OrderConfirmationProps {
@@ -1673,6 +1675,16 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
                         {getPaymentMethodText(effectiveTrackedOrder.paymentMethod, prefersArabicCopy)}
                         </div>
                       </div>
+                      {effectiveTrackedOrder.storePromotionDiscount ? (
+                        <div className={nestedCardClassName}>
+                          <div className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                            {effectiveTrackedOrder.storePromotionLabel || (prefersArabicCopy ? 'خصم الكمية' : 'Qty discount')}
+                          </div>
+                          <div className="mt-2 text-sm font-semibold text-green-600">
+                            -{formatStorefrontCurrency(effectiveTrackedOrder.storePromotionDiscount, currency)}
+                          </div>
+                        </div>
+                      ) : null}
                       <div className={nestedCardClassName}>
                         <div className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                           {prefersArabicCopy ? 'إجمالي الطلب' : 'Order total'}
