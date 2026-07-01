@@ -512,18 +512,24 @@ jobs:
               # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
               # This ensures BackendClient tools (offers_list_active, etc.) can authenticate
               AI_SVC_TOKEN=""
-              if [ -f "/var/www/ai-service/.env" ]; then
-                AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' /var/www/ai-service/.env | cut -d= -f2-)"
-                if [ -n "$AI_SVC_TOKEN" ]; then
-                  if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
-                    sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
-                  elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
-                    sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
-                  else
-                    echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
-                  fi
-                  echo "✅ Synced MAXP_SERVICE_TOKEN from ai-service to backend"
+              for ENV_PATH in /var/www/ai-service/.env /opt/maxp-ai-service/.env /opt/maxp-ai-service/.env.production; do
+                if [ -f "$ENV_PATH" ]; then
+                  AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+                  [ -z "$AI_SVC_TOKEN" ] && AI_SVC_TOKEN="$(grep -m1 '^SERVICE_AUTH_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+                  [ -n "$AI_SVC_TOKEN" ] && echo "📋 Found token in $ENV_PATH" && break
                 fi
+              done
+              if [ -n "$AI_SVC_TOKEN" ]; then
+                if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                  sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                  sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                else
+                  echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
+                fi
+                echo "✅ Synced token from ai-service to backend"
+              else
+                echo "⚠️ Could not find token in any ai-service .env — tools may fail to auth"
               fi
 
                           # Restore uploads
@@ -562,18 +568,24 @@ jobs:
 
               # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
               AI_SVC_TOKEN=""
-              if [ -f "/var/www/ai-service/.env" ]; then
-                AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' /var/www/ai-service/.env | cut -d= -f2-)"
-                if [ -n "$AI_SVC_TOKEN" ]; then
-                  if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
-                    sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
-                  elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
-                    sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
-                  else
-                    echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
-                  fi
-                  echo "✅ Synced MAXP_SERVICE_TOKEN from ai-service to backend"
+              for ENV_PATH in /var/www/ai-service/.env /opt/maxp-ai-service/.env /opt/maxp-ai-service/.env.production; do
+                if [ -f "$ENV_PATH" ]; then
+                  AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+                  [ -z "$AI_SVC_TOKEN" ] && AI_SVC_TOKEN="$(grep -m1 '^SERVICE_AUTH_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+                  [ -n "$AI_SVC_TOKEN" ] && echo "📋 Found token in $ENV_PATH" && break
                 fi
+              done
+              if [ -n "$AI_SVC_TOKEN" ]; then
+                if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                  sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
+                  sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+                else
+                  echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
+                fi
+                echo "✅ Synced token from ai-service to backend"
+              else
+                echo "⚠️ Could not find token in any ai-service .env — tools may fail to auth"
               fi
 
                           # Restore uploads
