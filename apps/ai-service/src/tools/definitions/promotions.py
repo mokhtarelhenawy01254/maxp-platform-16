@@ -34,14 +34,14 @@ async def coupon_validate(input_data: CouponValidateInput) -> dict[str, Any]:
 
 offers_list_active_tool = FunctionTool(
     name="offers_list_active",
-    description="List all active offers and promotions for the store: coupons, store-wide promotions (buy-X-get-Y), free shipping settings, and flat shipping settings.",
+    description="Arabic: اعرض كل العروض والتخفيضات الشغالة في المتجر: عروض المتجر الشاملة (اشتر X وخد Y)، الكوبونات، الشحن المجاني. استخدمها لما العميل يسأل عن العروض أو التخفيضات النشطة.",
     func=offers_list_active,
     input_model=OffersListActiveInput,
 )
 
 coupon_validate_tool = FunctionTool(
     name="coupon_validate",
-    description="Validate a coupon code: check expiry, usage limits, min order amount, and calculate the discount amount.",
+    description="Arabic: اختبر كود خصم محدد: هل الكود لسه شغال؟ الحد الأدنى للطلب؟ استخدامات متبقية؟ قيمة الخصم؟ استخدمها لما العميل يطلب كود خصم أو عايز يتأكد من صلاحية كود.",
     func=coupon_validate,
     input_model=CouponValidateInput,
 )
