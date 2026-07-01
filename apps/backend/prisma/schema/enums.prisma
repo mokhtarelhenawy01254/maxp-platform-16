@@ -89,8 +89,9 @@ enum MessageType {
     PREPARING
     READY
     QUALITY_CHECK
-    PACKAGED
-    ON_HOLD_PREP
+  PACKAGED
+  ON_HOLD_PREP
+  PARTIALLY_DELIVERED
 }
 
 enum PaymentStatus {

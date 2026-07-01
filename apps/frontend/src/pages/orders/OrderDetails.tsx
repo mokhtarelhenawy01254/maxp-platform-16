@@ -447,7 +447,7 @@ const OrderDetails: React.FC = () => {
         shipping: order.shipping || 0,
         total: deliveredSubtotal + parseFloat(String(order.tax || 0)) + parseFloat(String(order.shipping || 0)),
       });
-      await updateStatus("PARTIALLY_RETURNED", "تسليم جزئي للطلب");
+      await updateStatus("PARTIALLY_DELIVERED", "تسليم جزئي للطلب");
 
       // Step 2: If there are returned items, create a new order for them
       if (returnedItems.length > 0) {
