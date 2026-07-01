@@ -138,6 +138,8 @@ roles:
     - knowledge_ask_merchant
     - knowledge_create_faq
     - abandoned_carts
+    - offers_list_active
+    - coupon_validate
 
   MEDICAL_CENTER:
     - booking_info

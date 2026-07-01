@@ -91,6 +91,8 @@ ADVANCED_TOOL_NAMES: set[str] = {
 
 READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "category_list",
+    "offers_list_active",
+    "coupon_validate",
 }
 
 WRITE_TOOL_NAMES: set[str] = {
@@ -189,6 +191,10 @@ agent_handoff_to_tool = ALL_TOOLS.get("agent_handoff_to")
 audit_read_tool = ALL_TOOLS.get("audit_read")
 hr_attendance_today_tool = ALL_TOOLS.get("hr_attendance_today")
 unlock_advanced_tools_tool = ALL_TOOLS.get("unlock_advanced_tools")
+# Promotion / Offer tools
+offers_list_active_tool = ALL_TOOLS.get("offers_list_active")
+coupon_validate_tool = ALL_TOOLS.get("coupon_validate")
+
 # Smart Seller tools
 lead_score_tool = ALL_TOOLS.get("lead_score")
 abandoned_carts_tool = ALL_TOOLS.get("abandoned_carts")
@@ -274,6 +280,10 @@ from src.tools.definitions.smart_seller import (  # noqa: E402 F401
     FollowupSuggestionsInput,
     DealParamsInput,
     PurchasePredictionInput,
+)
+from src.tools.definitions.promotions import (  # noqa: E402 F401
+    OffersListActiveInput,
+    CouponValidateInput,
 )
 
 # -- Role-based access -------------------------------------------------------

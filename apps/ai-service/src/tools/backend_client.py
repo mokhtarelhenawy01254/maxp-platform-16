@@ -453,6 +453,45 @@ class BackendClient:
             json_body={"status": "cancelled", **body},
         )
 
+    # ── Coupon / Promotion APIs ──
+
+    async def get_coupons(
+        self, company_id: str, is_active: bool = True
+    ) -> list[dict[str, Any]]:
+        result = await self._request("GET", "/api/v1/coupons", params={
+            "isActive": str(is_active).lower(), "companyId": company_id,
+        })
+        data = result.get("data", result.get("coupons", []))
+        return data if isinstance(data, list) else []
+
+    async def get_store_promotion(
+        self, company_id: str
+    ) -> dict[str, Any] | None:
+        try:
+            result = await self._request("GET", "/api/v1/store-promotions", params={"companyId": company_id})
+            data = result.get("data", {})
+            return data if isinstance(data, dict) else None
+        except RuntimeError:
+            return None
+
+    async def get_promotion_settings(
+        self, company_id: str
+    ) -> dict[str, Any] | None:
+        try:
+            result = await self._request("GET", "/api/v1/promotion-settings", params={"companyId": company_id})
+            data = result.get("data", {})
+            return data if isinstance(data, dict) else None
+        except RuntimeError:
+            return None
+
+    async def validate_coupon(
+        self, company_id: str, code: str, order_amount: str = "0", customer_id: str | None = None
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {"code": code, "orderAmount": order_amount, "companyId": company_id}
+        if customer_id:
+            body["customerId"] = customer_id
+        return await self._request("POST", "/api/v1/coupons/validate", json_body=body)
+
     async def get_booking_appointment_details(
         self, company_id: str, appointment_id: str
     ) -> dict[str, Any] | None:
