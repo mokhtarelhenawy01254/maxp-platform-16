@@ -18,6 +18,9 @@ from src.skills.booking.slots import booking_slots_skill
 from src.skills.booking.status import booking_status_skill
 from src.skills.booking.packages import booking_packages_skill
 from src.skills.knowledge.ask_merchant import ask_merchant_skill
+from src.skills.products.inventory import inventory_check
+from src.skills.customer.info import customer_info
+from src.skills.facebook.reply import facebook_reply
 
 
 def register_all_skills() -> None:
@@ -37,3 +40,6 @@ def register_all_skills() -> None:
     registry.register(booking_status_skill)
     registry.register(booking_packages_skill)
     registry.register(ask_merchant_skill)
+    registry.register(inventory_check)
+    registry.register(customer_info)
+    registry.register(facebook_reply)

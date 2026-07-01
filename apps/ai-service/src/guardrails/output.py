@@ -22,7 +22,7 @@ class OutputGuardrail(BaseGuardrail):
 
 
 async def _no_internal_syntax_check(context, text):
-    if "CALL_TOOL:" in text or "InternalID:" in text:
+    if "CALL_TOOL:" in text or "InternalID:" in text or "<function" in text:
         return False, "Internal tool syntax leaked into reply"
     return True, None
 

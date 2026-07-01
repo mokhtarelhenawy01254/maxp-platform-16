@@ -31,10 +31,10 @@ type NavItem = {
 
 const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
   const location = useLocation();
-  const { getTotalItems, isOpen: isCartOpen, setIsOpen: setCartOpen } = useCartStore();
+  const { isOpen: isCartOpen, setIsOpen: setCartOpen } = useCartStore();
   const { theme } = useStorefrontTheme();
 
-  const totalCartItems = getTotalItems();
+  const totalCartItems = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
   const isBiteRush = theme.id === 'restaurant-demo';
   const isCafeDemo = theme.id === 'cafe-demo';
   const isWomenFashion = theme.id === 'women-fashion-eg';
