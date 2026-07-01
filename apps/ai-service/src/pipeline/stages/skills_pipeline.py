@@ -148,12 +148,17 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         role = "assistant" if msg.get("role") == "assistant" else "user"
         messages.append({"role": role, "content": msg.get("content", "")})
 
-    messages.append({"role": "user", "content": ctx.message})
+    # Build user message — multipart if attachments present
+    has_images = bool(ctx.attachments)
+    if has_images:
+        user_content: Any = [{"type": "text", "text": ctx.message}] + list(ctx.attachments)
+    else:
+        user_content = ctx.message
+    messages.append({"role": "user", "content": user_content})
 
     # Get or create LLM client from context
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
-        # ponytail: uses first available provider — refine for multi-tenant routing
         from src.llm.model_manager import model_manager
         try:
             routing = await model_manager.get_next_key(
@@ -169,8 +174,25 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             logger.error("no_llm_client_available", error=str(e))
             raise
 
-    # Attachments (vision)
-    has_images = bool(ctx.attachments)
+    # If message has images but current model doesn't support vision, switch to Gemini
+    if has_images:
+        from src.llm.model_capabilities import supports_vision
+        client_model = getattr(client, "model", None)
+        client_provider = getattr(client, "provider", None)
+        if not supports_vision(client_model, client_provider):
+            try:
+                from src.llm.model_manager import model_manager
+                routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
+                client = LLMClient(
+                    provider=routing.provider,
+                    model=routing.model,
+                    api_key=routing.api_key,
+                    base_url=routing.base_url,
+                )
+                logger.info("vision_fallback_to_gemini", original_model=client_model)
+            except Exception as e:
+                logger.warning("vision_fallback_unavailable", error=str(e))
+
     tool_dicts = [s.to_openai_tool() for s in skills]
 
     return await client.generate(

@@ -32,6 +32,7 @@ class ChatRequest(BaseModel):
     thread_id: str | None = None
     channel: str | None = None
     memory_context: dict[str, Any] | None = None
+    attachments: list[dict[str, Any]] | None = None
 
 
 class MerchantChatRequest(ChatRequest):
@@ -165,6 +166,7 @@ async def chat(
             channel=channel,
             memory_context=body.memory_context,
             conversation_id=body.thread_id,
+            attachments=body.attachments or [],
         )
 
         reply = sanitize_model_reply(outcome.get("reply", ""))

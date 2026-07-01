@@ -200,6 +200,7 @@ async def run_orchestration(
     channel: str | None = None,
     memory_context: dict[str, Any] | None = None,
     conversation_id: str | None = None,
+    attachments: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
     effective_channel = channel or ("merchant" if is_merchant else "chat")
@@ -387,6 +388,7 @@ async def run_orchestration(
             conversation_id=conversation_id,
             external_memory_context=external_context,
             llm_client=client,
+            attachments=attachments or [],
         )
 
         pipeline_stages = [

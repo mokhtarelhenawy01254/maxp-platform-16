@@ -6,6 +6,42 @@ import time
 import uuid
 from typing import Any
 
+# DeepSeek DSML tool-call format: <｜｜DSML｜｜tool_calls>...<｜｜DSML｜｜tool_calls>
+# Handles both fullwidth ｜ (U+FF5C) and regular | variants.
+_DSML_RE = re.compile(
+    r"<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>(.*?)<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>",
+    re.DOTALL,
+)
+
+
+def _parse_dsml_tool_calls(text: str) -> list[dict]:
+    """Extract tool calls from DeepSeek DSML text format."""
+    m = _DSML_RE.search(text)
+    if not m:
+        return []
+    try:
+        raw = json.loads(m.group(1).strip())
+        if not isinstance(raw, list):
+            return []
+        result = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            func = item.get("function") or {}
+            if not func.get("name"):
+                continue
+            result.append({
+                "id": item.get("id") or f"dsml_{uuid.uuid4().hex[:8]}",
+                "type": "function",
+                "function": {
+                    "name": func.get("name", ""),
+                    "arguments": func.get("arguments", "{}"),
+                },
+            })
+        return result
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return []
+
 import structlog
 
 from src.llm.model_capabilities import supports_vision
@@ -284,18 +320,38 @@ class LLMClient:
         text = message.content or ""
 
         raw_tool_calls = message.tool_calls or []
+
+        # DeepSeek sometimes returns tool calls as DSML text instead of structured JSON
+        if not raw_tool_calls and text and self.provider == "DEEPSEEK":
+            dsml_calls = _parse_dsml_tool_calls(text)
+            if dsml_calls:
+                logger.info("dsml_tool_calls_parsed", count=len(dsml_calls))
+                raw_tool_calls = dsml_calls
+                text = ""
+
         tool_calls = []
         if raw_tool_calls:
             text = ""
         for tc in raw_tool_calls:
-            tool_calls.append({
-                "id": tc.id,
-                "type": tc.type,
-                "function": {
-                    "name": tc.function.name,
-                    "arguments": tc.function.arguments,
-                },
-            })
+            if isinstance(tc, dict):
+                func = tc.get("function", {})
+                tool_calls.append({
+                    "id": tc.get("id", ""),
+                    "type": tc.get("type", "function"),
+                    "function": {
+                        "name": func.get("name", ""),
+                        "arguments": func.get("arguments", "{}"),
+                    },
+                })
+            else:
+                tool_calls.append({
+                    "id": tc.id,
+                    "type": tc.type,
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                })
 
         usage = response.usage.model_dump() if response.usage else None
         finish_reason = choice.finish_reason
