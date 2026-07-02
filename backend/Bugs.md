@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [FIX] AI Sandbox Empty Reply (`AI_SANDBOX_EMPTY_REPLY`)
+- **Date**: 2026-07-02
+- **Description**: The AI Agent Sandbox under `/admin/ai-hub?tab=sandbox` intermittently returned empty replies causing `AI_SANDBOX_EMPTY_REPLY` errors downstream.
+- **Root Cause**: 
+  1. An undefined variable `has_images` in `skills_pipeline.py` (referenced inside `_llm_call`) caused a `NameError` crash which was intercepted silently, returning an empty string reply fallback to the Node backend instead of forwarding the error code.
+  2. The pipeline execution path for direct responses fell back to setting `ctx.final_reply` directly from `provider_response.text` without validation. If the LLM returned empty text after retries (e.g. during rate limits or cold-start timeouts), this empty string was returned to the Node backend, which registered it as an empty assistant response and triggered `AI_SANDBOX_EMPTY_REPLY`.
+- **Resolution**:
+  1. Defined the `has_images` flag properly using `bool(ctx.attachments)` in `_llm_call`.
+  2. Implemented a robust Arabic fallback message ("عذراً، لم أتمكن من معالجة طلبك...") if the LLM fails to return any text response even after retries, avoiding empty string returns.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
 ### [FIX] DeepSeek DSML XML Tool Call Leak & Parsing Failures
 - **Date**: 2026-07-02
 - **Description**: DeepSeek V4 models generated XML-like DSML tool calling tags (e.g. `<DSML | | invoke name="inventory_check" | | >...`) inside plain text responses, which leaked to the customer in chat sessions instead of executing the tools.

@@ -169,8 +169,14 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 ctx.final_reply = "تم تنفيذ طلبك."
     else:
         # Direct reply (no tool call — general chat)
-        ctx.final_reply = provider_response.text or ""
-        ctx.llm_response = provider_response.text or ""
+        if provider_response.text:
+            ctx.final_reply = provider_response.text
+            ctx.llm_response = provider_response.text
+        else:
+            # LLM returned empty text with no tool calls — even after retry
+            logger.warning("skills_pipeline_empty_reply_no_tools")
+            ctx.final_reply = "عذراً، لم أتمكن من معالجة طلبك. الرجاء المحاولة مرة أخرى."
+            ctx.llm_response = ""
 
     ctx.llm_result = provider_response
     return ctx
@@ -223,6 +229,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             raise
 
     # If message has images but current model doesn't support vision, switch to Gemini
+    has_images = bool(ctx.attachments)
     if has_images:
         from src.llm.model_capabilities import supports_vision
 
