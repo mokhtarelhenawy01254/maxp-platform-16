@@ -11,11 +11,13 @@ import { PRODUCT_WORKFLOW_STATUSES } from "../utils/workflow";
 interface ProductsStatsProps {
   products: Product[];
   totalItems: number;
+  publishedCount?: number;
 }
 
 const ProductsStats: React.FC<ProductsStatsProps> = ({
   products,
   totalItems,
+  publishedCount: apiPublishedCount,
 }) => {
   const lowStockCount = products.filter(
     (p) => getStockStatus(p) === "low-stock",
@@ -23,7 +25,7 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
   const outOfStockCount = products.filter(
     (p) => getStockStatus(p) === "out-of-stock",
   ).length;
-  const publishedCount = products.filter(
+  const publishedCount = apiPublishedCount ?? products.filter(
     (p) => p.workflow.status === PRODUCT_WORKFLOW_STATUSES.PUBLISHED,
   ).length;
 

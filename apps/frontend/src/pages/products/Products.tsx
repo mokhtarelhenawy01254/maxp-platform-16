@@ -45,6 +45,7 @@ const Products: React.FC = () => {
     currentPage,
     itemsPerPage,
     totalItems,
+    publishedCount,
     sortField,
     sortDirection,
     selectedProducts,
@@ -244,6 +245,7 @@ const Products: React.FC = () => {
       <ProductsStats
         products={products}
         totalItems={totalItems}
+        publishedCount={publishedCount}
       />
 
       {canSelectProducts && (

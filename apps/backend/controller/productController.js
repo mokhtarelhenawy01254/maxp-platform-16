@@ -580,6 +580,13 @@ const getAllProducts = async (req, res) => {
       );
     }
 
+    // Get storefront-published count (isActive=true + isHidden=false)
+    const publishedCount = await safeQuery(() =>
+      getSharedPrismaClient().product.count({
+        where: { companyId, deletedAt: null, isActive: true, isHidden: false }
+      })
+    );
+
     // Get platform margin settings for calculations
     const affiliateSettings = await safeQuery(() =>
       getSharedPrismaClient().affiliateSetting.findUnique({
@@ -741,6 +748,7 @@ const getAllProducts = async (req, res) => {
         total: total,
         totalPages: Math.ceil(total / limit)
       },
+      publishedCount,
       companyId: companyId,
       message: `تم جلب ${products.length} منتج للشركة`
     });

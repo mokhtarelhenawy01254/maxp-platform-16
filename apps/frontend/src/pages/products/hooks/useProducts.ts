@@ -89,6 +89,7 @@ export const useProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [publishedCount, setPublishedCount] = useState(0);
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>("createdAt");
@@ -255,6 +256,7 @@ export const useProducts = () => {
         const transformed = data.data.map((p: any) => transformProduct(p));
         setProducts(transformed);
         setTotalItems(data.pagination?.total || transformed.length);
+        setPublishedCount(data.publishedCount ?? 0);
       } else {
         setError("فشل في تحميل المنتجات");
       }
@@ -617,6 +619,7 @@ export const useProducts = () => {
     currentPage,
     itemsPerPage,
     totalItems,
+    publishedCount,
     sortField,
     sortDirection,
     selectedProducts,
