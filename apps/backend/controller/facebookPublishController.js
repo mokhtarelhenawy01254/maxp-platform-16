@@ -2,7 +2,6 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 
-
 const createPost = async (req, res) => {
     try {
         const user = req.user;
@@ -106,21 +105,14 @@ const createPost = async (req, res) => {
                 });
 
             } catch (error) {
+                const fbError = error?.response?.data?.error;
+                const errorMsg = fbError?.error_user_msg || fbError?.error_user_title || fbError?.message || error?.message || 'An unknown error occurred';
+                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbMessage: fbError?.message, fbUserMsg: fbError?.error_user_msg, fbCode: fbError?.code, fbSubcode: fbError?.error_subcode }));
                 results.push({
                     pageId: page.pageId,
                     pageName: page.pageName,
                     success: false,
-                    error: JSON.stringify({
-                        hasResp: !!error?.response,
-                        status: error?.response?.status,
-                        data: error?.response?.data,
-                        msg: error?.message,
-                        code: error?.code,
-                        ctor: error?.constructor?.name,
-                        type: typeof error,
-                        isAxios: error?.isAxiosError,
-                        isError: error instanceof Error,
-                    }),
+                    error: errorMsg,
                 });
             }
         }
