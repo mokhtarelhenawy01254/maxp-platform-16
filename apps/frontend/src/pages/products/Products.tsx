@@ -66,6 +66,7 @@ const Products: React.FC = () => {
     handleSort,
     handleSelectAll,
     handleSelectProduct,
+    handleBulkVisibility,
     handleBulkDelete,
     clearSelection,
     resetFilters,
@@ -92,6 +93,15 @@ const Products: React.FC = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onBulkVisibility = async (isHidden: boolean) => {
+    try {
+      const count = await handleBulkVisibility(isHidden);
+      if (count) toast.success(`تم ${isHidden ? 'إخفاء' : 'إظهار'} ${count} منتج بنجاح`);
+    } catch (err) {
+      toast.error(`حدث خطأ أثناء ${isHidden ? 'الإخفاء' : 'الإظهار'}`);
+    }
+  };
 
   const onBulkDelete = async () => {
     try {
@@ -241,6 +251,8 @@ const Products: React.FC = () => {
           selectedCount={selectedProducts.size}
           onDelete={onBulkDelete}
           onClear={clearSelection}
+          onHide={() => onBulkVisibility(true)}
+          onUnhide={() => onBulkVisibility(false)}
         />
       )}
 

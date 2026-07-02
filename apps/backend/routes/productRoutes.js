@@ -52,6 +52,7 @@ const upload = multer({
 router.get('/', verifyToken.authenticateToken, productController.getAllProducts);
 router.post('/', verifyToken.authenticateToken, productController.createProduct);
 router.delete('/bulk/delete', verifyToken.authenticateToken, productController.deleteAllProducts);
+router.patch('/bulk/visibility', verifyToken.authenticateToken, productController.bulkUpdateVisibility);
 router.get('/categories', verifyToken.authenticateToken, productController.getCategory);
 router.post('/categories', verifyToken.authenticateToken, upload.single('image'), productController.createNewCategory);
 router.put('/categories/:id', verifyToken.authenticateToken, upload.single('image'), productController.updateCategory);

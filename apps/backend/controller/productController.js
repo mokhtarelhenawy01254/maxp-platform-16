@@ -3793,6 +3793,31 @@ function cosineSimilarity(vecA, vecB) {
   return denom === 0 ? 0 : dot / denom;
 }
 
+const bulkUpdateVisibility = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const { productIds, isHidden } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات مطلوبة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const result = await prisma.product.updateMany({
+      where: { id: { in: productIds }, companyId },
+      data: { isHidden: Boolean(isHidden) },
+    });
+
+    res.json({ success: true, data: { count: result.count } });
+  } catch (err) {
+    console.error('Bulk visibility update error:', err);
+    res.status(500).json({ success: false, message: 'فشل في تحديث رؤية المنتجات' });
+  }
+};
+
 module.exports = {
   getAllProducts,
   getCategory,
@@ -3804,6 +3829,7 @@ module.exports = {
   updateProductWorkflow,
   deleteSingleProduct,
   deleteAllProducts,
+  bulkUpdateVisibility,
   createProduct,
   duplicateProduct,
   deleteImageFromOneProduct,

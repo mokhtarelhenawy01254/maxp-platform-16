@@ -378,6 +378,30 @@ export const useProducts = () => {
     setSelectAll(paginatedProducts.length > 0 && next.size === paginatedProducts.length);
   };
 
+  const handleBulkVisibility = async (isHidden: boolean) => {
+    if (selectedProducts.size === 0) return;
+    const actionLabel = isHidden ? 'إخفاء' : 'إظهار';
+    if (!confirm(`هل أنت متأكد من ${actionLabel} ${selectedProducts.size} منتج؟`)) return;
+    try {
+      const r = await apiClient.patch('products/bulk/visibility', {
+        productIds: Array.from(selectedProducts),
+        isHidden,
+      });
+      if (r.status === 200 && r.data.success) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            selectedProducts.has(p.id) ? { ...p, isHidden } : p,
+          ),
+        );
+        clearSelection();
+        return r.data.data.count;
+      }
+    } catch (err) {
+      console.error('Bulk visibility error:', err);
+      throw err;
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (selectedProducts.size === 0) return;
     if (!confirm(`هل أنت متأكد من حذف ${selectedProducts.size} منتج؟`)) return;
@@ -614,6 +638,7 @@ export const useProducts = () => {
     handleSort,
     handleSelectAll,
     handleSelectProduct,
+    handleBulkVisibility,
     handleBulkDelete,
     clearSelection,
     resetFilters,

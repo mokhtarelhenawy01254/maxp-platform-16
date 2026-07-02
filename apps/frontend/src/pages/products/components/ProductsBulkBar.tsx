@@ -2,18 +2,24 @@ import React from "react";
 import {
   TrashIcon,
   XMarkIcon,
+  EyeSlashIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 
 interface ProductsBulkBarProps {
   selectedCount: number;
   onDelete: () => void;
   onClear: () => void;
+  onHide: () => void;
+  onUnhide: () => void;
 }
 
 const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
   selectedCount,
   onDelete,
   onClear,
+  onHide,
+  onUnhide,
 }) => {
   if (selectedCount === 0) return null;
 
@@ -23,6 +29,20 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
         تم تحديد {selectedCount} منتج
       </span>
       <div className="flex items-center space-x-3 space-x-reverse">
+        <button
+          onClick={onHide}
+          className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm"
+        >
+          <EyeSlashIcon className="h-4 w-4 ml-1" />
+          إخفاء
+        </button>
+        <button
+          onClick={onUnhide}
+          className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+        >
+          <EyeIcon className="h-4 w-4 ml-1" />
+          إظهار
+        </button>
         <button
           onClick={onDelete}
           className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm"
