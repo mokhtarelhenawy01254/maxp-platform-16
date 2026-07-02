@@ -1,6 +1,7 @@
 # Team Sync Updates
 
 ## 2026-07-02 / 2026-03-09
+- **Multimodal Image Pipeline Fix (FIX)**: Fixed a structural bug in `skills_pipeline.py` where customer image attachments were being passed as raw objects to the LLM instead of being formatted as OpenAI/Gemini compatible `image_url` parts via `build_user_content`. This resolved the issue where vision-capable models (like Gemini 2.5 Flash) could not see or recognize images sent in the chat.
 - **Sales Rep V2 Agent Template (NEW TEMPLATE)**: Created a new structured agent template `sales-rep-v2-agent` based on prompt engineering best practices from the `agency-agents` open-source project (123k ⭐). Key improvements: 5-step Sales Workflow (Discovery → Presentation → Objection Handling → Data Collection → Close), Critical Rules (Do's & Don'ts), Success Metrics, Failure Protocol (graceful degradation instead of "حصل عطل فني"), prioritized tool categorization (🔴→🟡→🟢), and structured Handoff Rules for multi-agent coordination.
 - **Ready Agent Profiles & Merchant Locks (NEW FEATURE/GAP RESOLUTION)**:
   1. Resolved gaps in ready-to-use agents settings by adding advanced soul fields (welcome messages, language selections, and escalation strategies) to personalities.

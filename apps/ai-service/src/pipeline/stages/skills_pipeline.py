@@ -201,11 +201,8 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         messages.append({"role": role, "content": msg.get("content", "")})
 
     # Build user message — multipart if attachments present
-    has_images = bool(ctx.attachments)
-    if has_images:
-        user_content: Any = [{"type": "text", "text": ctx.message}] + list(ctx.attachments)
-    else:
-        user_content = ctx.message
+    from src.context.multimodal import build_user_content
+    user_content = build_user_content(ctx.message, ctx.attachments)
     messages.append({"role": "user", "content": user_content})
 
     # Get or create LLM client from context

@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [FIX] Broken Multimodal Image Pipeline for AI Agents (Raw Attachment Object Leak to LLM)
+- **Date**: 2026-07-02
+- **Description**: AI Agents were unable to recognize or see image attachments sent by customers. Even when using multimodal models (like Gemini 2.5 Flash), agents would reply "I cannot see the image" or ask the customer to describe it.
+- **Root Cause**: In the primary LLM pipeline stage (`skills_pipeline.py`), the message assembler was appending raw attachment objects `list(ctx.attachments)` directly to the multipart user content instead of formatting them as OpenAI-compatible `image_url` parts using `build_user_content` from `src.context.multimodal`. This caused the LLM providers (Google, OpenAI) to ignore the invalid attachment payloads completely.
+- **Resolution**: Refactored the user content assembly in `skills_pipeline.py` to import and call `build_user_content(ctx.message, ctx.attachments)` from `src.context.multimodal`, ensuring all images are correctly structured into standard `image_url` components before sending the request to the LLM client.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
 ### [IMPROVEMENT] Sales Rep V2 Agent Template — Structured Prompt Architecture
 - **Date**: 2026-07-02
 - **Description**: The original `sales-rep-agent` template had flat, unstructured prompts that caused the LLM to lose track of sales workflow steps during long conversations, forget critical rules (e.g., not inventing prices), and display raw technical error messages ("حصل عطل فني") to customers when tool calls failed.
