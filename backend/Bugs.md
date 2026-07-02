@@ -1,5 +1,18 @@
 # Backend Bugs Log
 
+### [FIX] DeepSeek DSML XML Tool Call Leak & Parsing Failures
+- **Date**: 2026-07-02
+- **Description**: DeepSeek V4 models generated XML-like DSML tool calling tags (e.g. `<DSML | | invoke name="inventory_check" | | >...`) inside plain text responses, which leaked to the customer in chat sessions instead of executing the tools.
+- **Root Cause**: The python `_parse_dsml_tool_calls` parser in `LLMClient` assumed the content inside DeepSeek DSML tags was a JSON array, failing to match the native XML-like DSML tags outputted by DeepSeek V4 models. Additionally, the parser was only triggered when the provider was exactly `"DEEPSEEK"`, failing to intercept DSML output when DeepSeek models were invoked via other providers (like OpenRouter or SambaNova).
+- **Resolution**:
+  1. Updated the regexes in `apps/ai-service/src/llm/client.py` to correctly parse standard and spaced XML-like DSML invoke and parameter tags, extracting parameters and auto-detecting types.
+  2. Maintained the legacy JSON-based DSML parser as a fallback.
+  3. Expanded the trigger condition in `_generate_openai_compat` to check for DSML formatting when the model contains "deepseek" or when text explicitly contains DSML markup.
+  4. Added unit tests covering spaced XML patterns, type conversions, and legacy fallbacks.
+- **Files Modified**:
+  - `apps/ai-service/src/llm/client.py`
+  - `apps/ai-service/tests/llm/test_deepseek_stabilization.py`
+
 ### [FIX] Broken Multimodal Image Pipeline for AI Agents (Raw Attachment Object Leak to LLM)
 - **Date**: 2026-07-02
 - **Description**: AI Agents were unable to recognize or see image attachments sent by customers. Even when using multimodal models (like Gemini 2.5 Flash), agents would reply "I cannot see the image" or ask the customer to describe it.

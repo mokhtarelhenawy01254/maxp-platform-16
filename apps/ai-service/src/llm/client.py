@@ -6,17 +6,97 @@ import time
 import uuid
 from typing import Any
 
-# DeepSeek DSML tool-call format: <｜｜DSML｜｜tool_calls>...<｜｜DSML｜｜tool_calls>
-# Handles both fullwidth ｜ (U+FF5C) and regular | variants.
-_DSML_RE = re.compile(
+# DeepSeek DSML tool-call format.
+# Standard XML format:
+# <｜DSML｜tool_calls>
+#     <｜DSML｜invoke name="TOOL_NAME">
+#         <｜DSML｜parameter name="PARAMETER_NAME" string="true|false">PARAMETER_VALUE</｜DSML｜parameter>
+#     </｜DSML｜invoke>
+# </｜DSML｜tool_calls>
+# Handles standard fullwidth ｜ (U+FF5C), regular | variants, and loose spaces.
+
+# Regex to capture invoke blocks. Handles varying spaces and pipe characters.
+_DSML_INVOKE_RE = re.compile(
+    r"<[｜| \t]*DSML[｜| \t]*invoke\s+name=(?P<quote>['\"])(?P<name>[a-zA-Z0-9_-]+)(?P=quote)[｜| \t]*>(?P<content>.*?)<[｜| \t/]*DSML[｜| \t]*invoke[｜| \t/]*>",
+    re.DOTALL
+)
+
+# Regex to capture parameters inside invoke block.
+_DSML_PARAM_RE = re.compile(
+    r"<[｜| \t]*DSML[｜| \t]*parameter\s+name=(?P<quote>['\"])(?P<param_name>[a-zA-Z0-9_-]+)(?P=quote)(?:\s+string=(?P<s_quote>['\"])(?P<is_string>true|false)(?P=s_quote))?[｜| \t]*>(?P<param_value>.*?)<[｜| \t/]*DSML[｜| \t]*parameter[｜| \t/]*>",
+    re.DOTALL
+)
+
+# Legacy JSON-in-DSML format fallback regex
+_DSML_JSON_RE = re.compile(
     r"<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>(.*?)<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>",
     re.DOTALL,
 )
 
 
+def _parse_param_value(val_str: str, is_string: str | None) -> Any:
+    """Parse parameter value string into correct Python type."""
+    val_str = val_str.strip()
+    if is_string == "true":
+        return val_str
+    if is_string == "false":
+        if val_str.lower() == "true":
+            return True
+        if val_str.lower() == "false":
+            return False
+        if val_str.lower() in ("null", "none"):
+            return None
+        try:
+            if "." in val_str:
+                return float(val_str)
+            return int(val_str)
+        except ValueError:
+            return val_str
+            
+    # Auto-detect type if string attribute is missing
+    if val_str.lower() == "true":
+        return True
+    if val_str.lower() == "false":
+        return False
+    if val_str.lower() in ("null", "none"):
+        return None
+    try:
+        if "." in val_str:
+            return float(val_str)
+        return int(val_str)
+    except ValueError:
+        return val_str
+
+
 def _parse_dsml_tool_calls(text: str) -> list[dict]:
-    """Extract tool calls from DeepSeek DSML text format."""
-    m = _DSML_RE.search(text)
+    """Extract tool calls from DeepSeek DSML format (both XML-like and legacy JSON configurations)."""
+    # 1. Try parsing XML-like format first
+    xml_calls = []
+    for match in _DSML_INVOKE_RE.finditer(text):
+        name = match.group("name")
+        content = match.group("content")
+        
+        arguments = {}
+        for p_match in _DSML_PARAM_RE.finditer(content):
+            p_name = p_match.group("param_name")
+            p_val = p_match.group("param_value")
+            is_str = p_match.group("is_string")
+            arguments[p_name] = _parse_param_value(p_val, is_str)
+            
+        xml_calls.append({
+            "id": f"dsml_{uuid.uuid4().hex[:8]}",
+            "type": "function",
+            "function": {
+                "name": name,
+                "arguments": json.dumps(arguments, ensure_ascii=False)
+            }
+        })
+        
+    if xml_calls:
+        return xml_calls
+
+    # 2. Fallback to legacy JSON format
+    m = _DSML_JSON_RE.search(text)
     if not m:
         return []
     try:
@@ -35,7 +115,7 @@ def _parse_dsml_tool_calls(text: str) -> list[dict]:
                 "type": "function",
                 "function": {
                     "name": func.get("name", ""),
-                    "arguments": func.get("arguments", "{}"),
+                    "arguments": func.get("arguments") if isinstance(func.get("arguments"), str) else json.dumps(func.get("arguments") or {}, ensure_ascii=False) if func.get("arguments") is not None else "{}",
                 },
             })
         return result
@@ -339,7 +419,7 @@ class LLMClient:
         raw_tool_calls = message.tool_calls or []
 
         # DeepSeek sometimes returns tool calls as DSML text instead of structured JSON
-        if not raw_tool_calls and text and self.provider == "DEEPSEEK":
+        if not raw_tool_calls and text and (self.provider == "DEEPSEEK" or "deepseek" in self.model.lower() or "<" in text and "DSML" in text):
             dsml_calls = _parse_dsml_tool_calls(text)
             if dsml_calls:
                 logger.info("dsml_tool_calls_parsed", count=len(dsml_calls))
