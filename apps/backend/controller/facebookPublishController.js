@@ -106,26 +106,22 @@ const createPost = async (req, res) => {
                 });
 
             } catch (error) {
-                try {
-                    const fbData = error?.response?.data;
-                    const fbError = fbData?.error;
-                    console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, msg: error?.message, code: error?.code, ctor: error?.constructor?.name }));
-                    const errorMsg = fbError?.message || fbError?.error_user_msg || error?.message || (error?.code != null ? JSON.stringify(error.code) : '') || 'An unknown error occurred';
-                    results.push({
-                        pageId: page.pageId,
-                        pageName: page.pageName,
-                        success: false,
-                        error: errorMsg,
-                    });
-                } catch (innerError) {
-                    console.error('❌ [FACEBOOK-PUBLISH] Fatal error in catch block:', innerError?.message);
-                    results.push({
-                        pageId: page.pageId,
-                        pageName: page.pageName,
-                        success: false,
-                        error: 'Internal error: ' + (innerError?.message || 'catch handler failed'),
-                    });
-                }
+                results.push({
+                    pageId: page.pageId,
+                    pageName: page.pageName,
+                    success: false,
+                    error: JSON.stringify({
+                        hasResp: !!error?.response,
+                        status: error?.response?.status,
+                        data: error?.response?.data,
+                        msg: error?.message,
+                        code: error?.code,
+                        ctor: error?.constructor?.name,
+                        type: typeof error,
+                        isAxios: error?.isAxiosError,
+                        isError: error instanceof Error,
+                    }),
+                });
             }
         }
 
