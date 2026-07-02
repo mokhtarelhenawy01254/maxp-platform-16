@@ -166,12 +166,12 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         if executed:
             followup_messages = _build_followup_messages(ctx, provider_response, executed)
             try:
-                final_response = await _raw_llm_call(ctx, followup_messages)
-                ctx.final_reply = final_response.text or "تم تنفيذ طلبك."
+                final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+                ctx.final_reply = final_response.text or _format_tool_results(executed)
                 ctx.llm_response = final_response.text or ""
             except Exception as e:
                 logger.error("skills_pipeline_followup_failed", error=str(e))
-                ctx.final_reply = "تم تنفيذ طلبك."
+                ctx.final_reply = _format_tool_results(executed)
     else:
         # Direct reply (no tool call — general chat)
         if provider_response.text:
@@ -273,7 +273,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     )
 
 
-async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list | None = None) -> ProviderResponse:
+async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list | None = None, tool_choice: str | None = "auto") -> ProviderResponse:
     """Make a follow-up LLM call (with or without tools)."""
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
@@ -289,11 +289,49 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
             base_url=routing.base_url,
         )
 
+    # Build tool definitions so DeepSeek can understand tool_call history
+    tool_dicts = tools or _build_tool_dicts(ctx)
+
     return await client.generate(
         messages=messages,
-        tools=tools,
+        tools=tool_dicts,
         temperature=0.3,
+        tool_choice=tool_choice,
     )
+
+
+def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
+    from src.skills.integration import ALL_TOOLS
+    tool_dicts = []
+    used_names = set()
+    allowed = getattr(ctx.agent, "allowed_tools", None) or []
+    for tool_name in allowed:
+        tname = tool_name.lower()
+        if tname in ALL_TOOLS:
+            tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
+            used_names.add(tname)
+    return tool_dicts
+
+
+def _format_tool_results(executed: list[dict]) -> str:
+    parts = []
+    for item in executed:
+        name = item.get("tool", "")
+        status = item.get("status", "unknown")
+        result = item.get("result", {})
+        if status == "success" and isinstance(result, dict):
+            count = result.get("count") or result.get("total")
+            products = result.get("products") or result.get("items") or []
+            if isinstance(products, list) and len(products) > 0:
+                names = [p.get("productName") or p.get("name") or "" for p in products[:5]]
+                parts.append(f"{name}: {', '.join(filter(None, names))}{'...' if len(products) > 5 else ''}")
+            elif count is not None and int(count) == 0:
+                parts.append(f"لا توجد نتائج لـ {name}")
+            else:
+                parts.append(f"تم تنفيذ {name}")
+        elif status == "error":
+            parts.append(f"حدث خطأ في {name}")
+    return "\n".join(parts) if parts else "تم تنفيذ طلبك."
 
 
 def _build_followup_messages(
