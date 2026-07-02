@@ -57,6 +57,7 @@ interface OrderItemsCardProps {
     subtotal: number;
     shipping: number;
     tax: number;
+    discount: number;
     total: number;
   };
   onAddItem: () => void;
@@ -882,6 +883,14 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                 </span>
               )}
             </div>
+            {totals.discount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">الخصم:</span>
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  -{formatPrice(totals.discount)}
+                </span>
+              </div>
+            )}
             <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
               <div className="flex justify-between">
                 <span className="text-base font-bold text-gray-900 dark:text-gray-100">

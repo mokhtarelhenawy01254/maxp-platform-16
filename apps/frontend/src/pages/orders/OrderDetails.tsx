@@ -236,11 +236,13 @@ const OrderDetails: React.FC = () => {
       const subtotal = order?.subtotal || 0;
       const shipping = order?.shipping || 0;
       const tax = order?.tax || 0;
+      const discount = order?.discount || 0;
       return {
         subtotal,
         shipping,
         tax,
-        total: subtotal + shipping + tax, // ✅ Force consistent calculation
+        discount,
+        total: subtotal + shipping + tax - discount,
       };
     }
 
@@ -258,9 +260,10 @@ const OrderDetails: React.FC = () => {
       typeof editForm.tax === "number" && !isNaN(editForm.tax)
         ? editForm.tax
         : parseFloat(editForm.tax) || 0;
-    const total = subtotal + shipping + tax;
+    const discount = order?.discount || 0;
+    const total = subtotal + shipping + tax - discount;
 
-    return { subtotal, shipping, tax, total };
+    return { subtotal, shipping, tax, discount, total };
   }, [isEditing, editForm.items, editForm.shipping, editForm.tax, order]);
 
   // Handlers
