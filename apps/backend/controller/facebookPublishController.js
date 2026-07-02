@@ -1,7 +1,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
-const { ensureValidFacebookPageAccessToken } = require('../utils/facebookPageTokenUtils');
+
 
 const createPost = async (req, res) => {
     try {
@@ -38,31 +38,7 @@ const createPost = async (req, res) => {
 
         for (const page of pages) {
             try {
-                const t0 = Date.now();
-                const tokenResult = await ensureValidFacebookPageAccessToken({
-                    companyId: user.companyId,
-                    pageId: page.pageId,
-                    pageAccessToken: page.pageAccessToken,
-                    allowRefresh: true,
-                });
-                const t1 = Date.now();
-                console.log(`[FACEBOOK-PUBLISH-DEBUG] Token validation for ${page.pageName}: ok=${tokenResult.ok}, source=${tokenResult.source}, took=${t1-t0}ms`);
-
-                if (!tokenResult.ok) {
-                    const fbErr = tokenResult.validation?.error;
-                    console.error(`❌ [FACEBOOK-PUBLISH] Token invalid for ${page.pageName}:`, JSON.stringify({ reason: tokenResult.reason, refreshReason: tokenResult.refresh?.reason, message: fbErr?.message }));
-                    results.push({
-                        pageId: page.pageId,
-                        pageName: page.pageName,
-                        success: false,
-                        error: fbErr?.message || `Token invalid: ${tokenResult.reason || 'unknown'} (refresh: ${tokenResult.refresh?.reason || 'none'})`,
-                    });
-                    continue;
-                }
-
-                console.log(`[FACEBOOK-PUBLISH-DEBUG] Token valid for ${page.pageName}, proceeding to post`);
-
-                const pageAccessToken = tokenResult.pageAccessToken;
+                const pageAccessToken = page.pageAccessToken;
                 let payload = { access_token: pageAccessToken };
 
                 if (scheduledTime) {
@@ -130,17 +106,26 @@ const createPost = async (req, res) => {
                 });
 
             } catch (error) {
-                const fbData = error.response?.data;
-                const fbError = fbData?.error;
-                let errorDetails;
-                try { errorDetails = JSON.stringify({ m: error.message, c: error.code, s: !!error.stack }); } catch(e) { errorDetails = 'error serialization failed'; }
-                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, message: error.message, stack: error?.stack?.substring(0,200), code: error.code, details: errorDetails }));
-                results.push({
-                    pageId: page.pageId,
-                    pageName: page.pageName,
-                    success: false,
-                    error: fbError?.message || fbError?.error_user_msg || error.message || error.code || (fbData ? JSON.stringify(fbData).substring(0,200) : '') || 'An unknown error occurred',
-                });
+                try {
+                    const fbData = error?.response?.data;
+                    const fbError = fbData?.error;
+                    console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, msg: error?.message, code: error?.code, ctor: error?.constructor?.name }));
+                    const errorMsg = fbError?.message || fbError?.error_user_msg || error?.message || (error?.code != null ? JSON.stringify(error.code) : '') || 'An unknown error occurred';
+                    results.push({
+                        pageId: page.pageId,
+                        pageName: page.pageName,
+                        success: false,
+                        error: errorMsg,
+                    });
+                } catch (innerError) {
+                    console.error('❌ [FACEBOOK-PUBLISH] Fatal error in catch block:', innerError?.message);
+                    results.push({
+                        pageId: page.pageId,
+                        pageName: page.pageName,
+                        success: false,
+                        error: 'Internal error: ' + (innerError?.message || 'catch handler failed'),
+                    });
+                }
             }
         }
 
