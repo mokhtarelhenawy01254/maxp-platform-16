@@ -1,0 +1,50 @@
+name: Run seed-quick-profiles on server
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type YES to confirm seeding 5 premium human agent profiles'
+        required: true
+        default: 'YES'
+        type: string
+
+jobs:
+  seed-profiles:
+    name: Seed premium human agent profiles on production
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.confirm == 'YES' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Upload seed script to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          source: apps/backend/prisma/seed-quick-profiles.js
+          target: /var/www/backend2/prisma/
+          strip_components: 3
+          overwrite: true
+
+      - name: Execute seed script on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /var/www/backend2
+            echo "📍 Current dir: $(pwd)"
+            echo "📄 Seed script:"
+            ls -la prisma/seed-quick-profiles.js
+            echo "🚀 Running seed-quick-profiles.js..."
+            node prisma/seed-quick-profiles.js
+            echo "✅ Done!"
