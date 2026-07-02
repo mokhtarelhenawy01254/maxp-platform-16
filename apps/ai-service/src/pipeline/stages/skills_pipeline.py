@@ -167,6 +167,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             followup_messages = _build_followup_messages(ctx, provider_response, executed)
             try:
                 final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+                if not final_response.text:
+                    logger.warning("skills_pipeline_followup_empty_retrying")
+                    final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="auto")
                 ctx.final_reply = final_response.text or _format_tool_results(executed)
                 ctx.llm_response = final_response.text or ""
             except Exception as e:
@@ -314,24 +317,40 @@ def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
 
 
 def _format_tool_results(executed: list[dict]) -> str:
+    messages_by_name = {
+        "product_top_selling": "لا توجد بيانات مبيعات متاحة حالياً.",
+        "product_search": "لم يتم العثور على منتجات تطابق بحثك.",
+        "category_list": "لا توجد تصنيفات متاحة حالياً.",
+        "inventory_check": "لا توجد بيانات مخزون متاحة.",
+        "order_lookup": "لم يتم العثور على طلبات تطابق بحثك.",
+        "customer_info": "لا توجد بيانات للعميل.",
+        "offers_list_active": "لا توجد عروض نشطة حالياً.",
+        "shipping_rates": "لا توجد خيارات شحن متاحة حالياً.",
+        "followup_suggestions": "لا توجد متابعات مقترحة حالياً.",
+        "lead_score": "لا توجد نتائج تقييم عملاء متاحة.",
+    }
     parts = []
     for item in executed:
         name = item.get("tool", "")
         status = item.get("status", "unknown")
         result = item.get("result", {})
         if status == "success" and isinstance(result, dict):
+            code = result.get("code", "")
+            if code == "MISSING_COMPANY":
+                parts.append("عذراً، لم يتم تحديد حساب المتجر. يرجى المحاولة من داخل حساب المتجر.")
+                continue
             count = result.get("count") or result.get("total")
             products = result.get("products") or result.get("items") or []
             if isinstance(products, list) and len(products) > 0:
                 names = [p.get("productName") or p.get("name") or "" for p in products[:5]]
-                parts.append(f"{name}: {', '.join(filter(None, names))}{'...' if len(products) > 5 else ''}")
+                parts.append(f"{', '.join(filter(None, names))}{'...' if len(products) > 5 else ''}")
             elif count is not None and int(count) == 0:
-                parts.append(f"لا توجد نتائج لـ {name}")
+                parts.append(messages_by_name.get(name, f"لا توجد نتائج متاحة حالياً."))
             else:
-                parts.append(f"تم تنفيذ {name}")
+                parts.append(messages_by_name.get(name, f"تم تنفيذ {name}"))
         elif status == "error":
-            parts.append(f"حدث خطأ في {name}")
-    return "\n".join(parts) if parts else "تم تنفيذ طلبك."
+            parts.append(f"حدث خطأ أثناء تنفيذ الطلب. الرجاء المحاولة مرة أخرى.")
+    return "\n".join(parts) if parts else "عذراً، لم أتمكن من معالجة طلبك."
 
 
 def _build_followup_messages(
