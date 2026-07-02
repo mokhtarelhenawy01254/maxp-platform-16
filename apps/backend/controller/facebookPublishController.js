@@ -132,15 +132,14 @@ const createPost = async (req, res) => {
             } catch (error) {
                 const fbData = error.response?.data;
                 const fbError = fbData?.error;
-                const errorKeys = Object.keys(error);
-                const errorProps = {};
-                for (const k of errorKeys) errorProps[k] = String(error[k]);
-                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, message: error.message, stack: error.stack, code: error.code, allKeys: errorKeys, errorProps, fullError: String(error), constructor: error.constructor?.name }));
+                let errorDetails;
+                try { errorDetails = JSON.stringify({ m: error.message, c: error.code, s: !!error.stack }); } catch(e) { errorDetails = 'error serialization failed'; }
+                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, message: error.message, stack: error?.stack?.substring(0,200), code: error.code, details: errorDetails }));
                 results.push({
                     pageId: page.pageId,
                     pageName: page.pageName,
                     success: false,
-                    error: fbError?.message || fbError?.error_user_msg || error.message || error.code || JSON.stringify(fbData) || JSON.stringify(errorProps) || 'An unknown error occurred',
+                    error: fbError?.message || fbError?.error_user_msg || error.message || error.code || (fbData ? JSON.stringify(fbData).substring(0,200) : '') || 'An unknown error occurred',
                 });
             }
         }
