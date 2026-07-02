@@ -326,7 +326,7 @@ const PreparationQueue: React.FC = () => {
     preparationOrders.forEach((order) => {
       const effectiveShortageDetails =
         shortageHoldDrafts[order.orderNumber] || order.shortageHoldDetails;
-      const owner = effectiveShortageDetails.owner.trim();
+      const owner = effectiveShortageDetails?.owner?.trim();
       if (owner) {
         uniqueOwners.add(owner);
       }

@@ -4,7 +4,6 @@ import { TrashIcon, ClockIcon, ArrowRightIcon, PlusIcon } from "@heroicons/react
 import { BoltIcon } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Helmet } from "react-helmet-async";
 
 interface OrderStatusDefinition {
   code: string;
@@ -150,11 +149,12 @@ export default function OrderStatusAutomationPage() {
     return `${waitTime || 0} ${unitMap[timeUnit] || timeUnit}`;
   };
 
+  useEffect(() => {
+    document.title = `أتمتة الحالات | ${t("common.maxp")}`;
+  }, [t]);
+
   return (
     <div className="flex h-full flex-col p-4 md:p-6 lg:p-8 max-w-5xl mx-auto w-full">
-      <Helmet>
-        <title>{`أتمتة الحالات | ${t("common.maxp")}`}</title>
-      </Helmet>
 
       {/* Page Header */}
       <div className="mb-8 flex items-center justify-between">
