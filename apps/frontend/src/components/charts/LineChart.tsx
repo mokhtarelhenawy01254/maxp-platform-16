@@ -7,8 +7,8 @@ import {
     CartesianGrid,
     Tooltip,
     Legend,
-    ResponsiveContainer,
 } from 'recharts';
+import DeferredResponsiveContainer from '../ui/DeferredResponsiveContainer';
 
 interface LineChartProps {
     data: any[];
@@ -32,7 +32,7 @@ const LineChart: React.FC<LineChartProps> = ({
     showGrid = true,
 }) => {
     return (
-        <ResponsiveContainer width="100%" height={height}>
+        <DeferredResponsiveContainer width="100%" height={height}>
             <RechartsLineChart
                 data={data}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -55,7 +55,7 @@ const LineChart: React.FC<LineChartProps> = ({
                     />
                 ))}
             </RechartsLineChart>
-        </ResponsiveContainer>
+        </DeferredResponsiveContainer>
     );
 };
 

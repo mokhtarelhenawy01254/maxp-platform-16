@@ -7,8 +7,8 @@ import {
     CartesianGrid,
     Tooltip,
     Legend,
-    ResponsiveContainer,
 } from 'recharts';
+import DeferredResponsiveContainer from '../ui/DeferredResponsiveContainer';
 
 interface BarChartProps {
     data: any[];
@@ -34,7 +34,7 @@ const BarChart: React.FC<BarChartProps> = ({
     layout = 'horizontal',
 }) => {
     return (
-        <ResponsiveContainer width="100%" height={height}>
+        <DeferredResponsiveContainer width="100%" height={height}>
             <RechartsBarChart
                 data={data}
                 layout={layout}
@@ -63,7 +63,7 @@ const BarChart: React.FC<BarChartProps> = ({
                     />
                 ))}
             </RechartsBarChart>
-        </ResponsiveContainer>
+        </DeferredResponsiveContainer>
     );
 };
 

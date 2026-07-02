@@ -5,8 +5,8 @@ import {
     Cell,
     Tooltip,
     Legend,
-    ResponsiveContainer,
 } from 'recharts';
+import DeferredResponsiveContainer from '../ui/DeferredResponsiveContainer';
 
 interface PieChartProps {
     data: {
@@ -32,7 +32,7 @@ const PieChart: React.FC<PieChartProps> = ({
     };
 
     return (
-        <ResponsiveContainer width="100%" height={height}>
+        <DeferredResponsiveContainer width="100%" height={height}>
             <RechartsPieChart>
                 <Pie
                     data={data}
@@ -51,7 +51,7 @@ const PieChart: React.FC<PieChartProps> = ({
                 <Tooltip />
                 {showLegend && <Legend />}
             </RechartsPieChart>
-        </ResponsiveContainer>
+        </DeferredResponsiveContainer>
     );
 };
 
