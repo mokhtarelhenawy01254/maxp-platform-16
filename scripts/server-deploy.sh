@@ -45,9 +45,11 @@ echo "✅ Frontend built"
 # ── 3. Sync frontend dist ────────────────────────────────────
 echo "📂 Syncing frontend..."
 sudo mkdir -p "$FRONTEND_DIST"
-sudo rsync -a --exclude 'index.html' "$REPO_DIR/apps/frontend/dist/" "$FRONTEND_DIST/"
-sudo cp "$REPO_DIR/apps/frontend/dist/index.html" "$FRONTEND_DIST/index.html"
-sudo rsync -a --delete --exclude 'index.html' "$REPO_DIR/apps/frontend/dist/" "$FRONTEND_DIST/"
+sudo rsync -a "$REPO_DIR/apps/frontend/dist/" "$FRONTEND_DIST/"
+# Clean up stale hashed assets older than 7 days.
+# Without this grace window, cached index.html in user browsers
+# would request old hashed chunks that --delete removes mid-flight.
+sudo find "$FRONTEND_DIST/assets" -type f -mtime +7 -delete 2>/dev/null || true
 sudo chown -R "$(whoami):$(whoami)" "$FRONTEND_DIST"
 echo "✅ Frontend synced"
 
