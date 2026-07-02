@@ -108,8 +108,9 @@ export default function OrderStatusAutomationPage() {
         setForm({ fromStatus: "", toStatus: "", waitTime: "30", timeUnit: "Minutes" });
         toast.success("تم إنشاء القاعدة بنجاح");
       } else {
-        console.error("Invalid response from server. res.data:", res.data);
-        throw new Error("Invalid response");
+        const payloadStr = JSON.stringify(res.data, null, 2);
+        console.error("Invalid response from server. res.data:", payloadStr);
+        throw new Error(`Invalid response: ${payloadStr}`);
       }
     } catch (err: any) {
       console.error("Failed to create rule", err);
