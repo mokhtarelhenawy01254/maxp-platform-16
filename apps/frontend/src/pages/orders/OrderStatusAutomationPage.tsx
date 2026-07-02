@@ -55,7 +55,7 @@ export default function OrderStatusAutomationPage() {
   // Fetch store statuses
   const fetchStatuses = useCallback(async () => {
     try {
-      const res = await apiClient.get("/orders-new/statuses");
+      const res = await apiClient.get("/order-status");
       if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
         setStatuses(res.data.data);
       }
@@ -108,11 +108,12 @@ export default function OrderStatusAutomationPage() {
         setForm({ fromStatus: "", toStatus: "", waitTime: "30", timeUnit: "Minutes" });
         toast.success("تم إنشاء القاعدة بنجاح");
       } else {
+        console.error("Invalid response from server. res.data:", res.data);
         throw new Error("Invalid response");
       }
     } catch (err: any) {
       console.error("Failed to create rule", err);
-      toast.error(err?.response?.data?.message || "حدث خطأ أثناء إنشاء القاعدة");
+      toast.error(err?.response?.data?.message || err?.message || "حدث خطأ أثناء إنشاء القاعدة");
     } finally {
       setSaving(false);
     }
