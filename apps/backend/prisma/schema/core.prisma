@@ -278,6 +278,7 @@ model Company {
    wholesaleStatements              WholesaleStatement[]
     wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
    overlayCampaigns                  OverlayCampaign[]
+   orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
 
    @@index([businessSpecialtyId])
   @@map("companies")

@@ -633,3 +633,20 @@ model OrderAssignment {
   @@index([assignedTo])
   @@map("order_assignments")
 }
+
+model OrderStatusAutoChangeRule {
+  id         String   @id @default(cuid())
+  companyId  String
+  fromStatus String
+  toStatus   String
+  waitTime   Int
+  timeUnit   String   // 'Minutes', 'Hours', 'Days'
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("order_status_auto_change_rules")
+}
+

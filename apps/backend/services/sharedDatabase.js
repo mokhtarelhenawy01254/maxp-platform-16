@@ -546,7 +546,12 @@ function createDeferredPrismaProxy() {
             return async (...args) => {
               await guaranteeConnection();
               const model = sharedPrismaInstance[prop];
-              const value = model?.[method];
+              
+              if (!model) {
+                throw new Error(`Model '${prop}' does not exist on Prisma client. Did you forget to run prisma generate?`);
+              }
+
+              const value = model[method];
               if (typeof value !== 'function') {
                 return value;
               }

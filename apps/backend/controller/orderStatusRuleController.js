@@ -37,6 +37,8 @@ exports.createRule = async (req, res) => {
       },
     });
 
+    console.log("Created rule in Prisma:", JSON.stringify(rule, null, 2));
+
     res.status(201).json({ success: true, data: rule });
   } catch (error) {
     console.error("Error creating status rule:", error);
