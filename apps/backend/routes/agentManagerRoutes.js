@@ -402,15 +402,19 @@ router.get('/agents', async (req, res) => {
   }
 });
 
-// PUT /agents/:id — update agent channels via Prisma (direct, no Python dependency)
+// PUT /agents/:id — update agent fields via ai-service
 router.put('/agents/:id', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
-    // 2026: delegate to ai-service API for agent updates
-    const allowedChannels = req.body?.allowedChannels;
-    if (allowedChannels !== undefined) {
-      await aiServiceAdminClient.updateAgent(req.params.id, companyId, { allowedChannels });
+    const agentUpdateData = {};
+    if (req.body?.allowedChannels !== undefined) agentUpdateData.allowedChannels = req.body.allowedChannels;
+    if (req.body?.model !== undefined) agentUpdateData.model = req.body.model;
+    if (req.body?.name !== undefined) agentUpdateData.name = req.body.name;
+    if (req.body?.icon !== undefined) agentUpdateData.icon = req.body.icon;
+    if (req.body?.description !== undefined) agentUpdateData.description = req.body.description;
+    if (Object.keys(agentUpdateData).length > 0) {
+      await aiServiceAdminClient.updateAgent(req.params.id, companyId, agentUpdateData);
     }
     return res.json({ success: true });
   } catch (error) {
