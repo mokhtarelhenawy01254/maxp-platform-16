@@ -4081,7 +4081,8 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
       shippingAddress,
       notes,
       governorate,
-      address
+      address,
+      status
     } = req.body;
 
     if (!companyId) {
@@ -4151,6 +4152,9 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
 
       // ملاحظات
       notes: notes || '',
+
+      // الحالة
+      status: status || undefined,
 
       // معلومات الاستخراج
       extractionMethod: 'manual_order_modal',

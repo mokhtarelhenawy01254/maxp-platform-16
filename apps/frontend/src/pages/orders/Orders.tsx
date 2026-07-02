@@ -402,6 +402,7 @@ const DEFAULT_ORDER_STATUSES: OrderStatusDefinition[] = [
   { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً", color: "#9CA3AF" },
   { code: "RETURNED", name: "مرتجع", color: "#DC2626" },
   { code: "PARTIALLY_RETURNED", name: "مرتجع جزئي", color: "#F87171" },
+  { code: "PARTIALLY_DELIVERED", name: "تسليم جزئي", color: "#FBBF24" },
   { code: "EXCHANGED", name: "استبدال", color: "#7C3AED" },
   { code: "TRASH", name: "سلة المحذوفات", color: "#6B7280" },
 ];
@@ -1939,6 +1940,16 @@ const Orders: React.FC = () => {
         return t("orders.cancelled");
       case "DUPLICATE_ORDER":
         return t("orders.duplicate");
+      case "PARTIALLY_RETURNED":
+        return "مرتجع جزئي";
+      case "PARTIALLY_DELIVERED":
+        return "تسليم جزئي";
+      case "RETURNED":
+        return "مرتجع";
+      case "REFUNDED":
+        return "مسترد";
+      case "PARTIALLY_REFUNDED":
+        return "مسترد جزئياً";
       case "TRASH":
       case "TRASH_ORDER":
         return "سلة المحذوفات";

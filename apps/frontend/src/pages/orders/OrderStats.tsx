@@ -142,7 +142,7 @@ const OrderStats: React.FC = () => {
   };
 
   const getStatusText = (status: string) => {
-    const statusKey = `orders.status.${status}`;
+    const statusKey = `orders.status.${status.toLowerCase()}`;
     return t(statusKey, { defaultValue: status });
   };
 

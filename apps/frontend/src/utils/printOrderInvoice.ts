@@ -148,6 +148,10 @@ const getStatusLabel = (status?: string) => {
     DUPLICATE_ORDER: "طلب مكرر",
     REFUNDED: "مسترد",
     PARTIALLY_REFUNDED: "مسترد جزئياً",
+    RETURNED: "مرتجع",
+    PARTIALLY_RETURNED: "مرتجع جزئي",
+    PARTIALLY_DELIVERED: "تسليم جزئي",
+    EXCHANGED: "استبدال",
     FAILED: "فشل",
   };
 

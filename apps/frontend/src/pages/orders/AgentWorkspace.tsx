@@ -60,11 +60,34 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   SHIPPED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   DELIVERED: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
+  RETURNED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  PARTIALLY_RETURNED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+  PARTIALLY_DELIVERED: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+  REFUNDED: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  PARTIALLY_REFUNDED: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  DUPLICATE_ORDER: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
 };
 
 function getNormalizedStatus(status: string | null | undefined): string {
   return String(status || 'PENDING').toUpperCase();
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'قيد الانتظار',
+  CONFIRMED: 'مؤكد',
+  PROCESSING: 'قيد التجهيز',
+  CANCELLED: 'ملغي',
+  SHIPPED: 'تم الشحن',
+  DELIVERED: 'تم التسليم',
+  RETURNED: 'مرتجع',
+  PARTIALLY_RETURNED: 'مرتجع جزئي',
+  PARTIALLY_DELIVERED: 'تسليم جزئي',
+  REFUNDED: 'مسترد',
+  PARTIALLY_REFUNDED: 'مسترد جزئياً',
+  DUPLICATE_ORDER: 'طلب مكرر',
+  EXCHANGED: 'استبدال',
+  ON_HOLD: 'معلق',
+};
 
 function normalizeWorkspaceTab(value: string | null): FilterTab {
   return WORKSPACE_TAB_KEYS.includes(value as FilterTab)
@@ -753,7 +776,9 @@ const AgentWorkspace: React.FC = () => {
               const statusTranslationKey = `orders.${statusKey.toLowerCase()}`;
               const translatedStatus = t(statusTranslationKey);
               const statusLabel =
-                translatedStatus === statusTranslationKey ? statusKey : translatedStatus;
+                translatedStatus !== statusTranslationKey
+                  ? translatedStatus
+                  : STATUS_LABELS[statusKey] || statusKey;
               const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
               const orderItemsSummary = summarizeOrderDocumentItems(order.items);
 

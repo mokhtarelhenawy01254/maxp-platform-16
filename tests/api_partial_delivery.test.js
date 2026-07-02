@@ -43,6 +43,7 @@ async function apiCreateOrder(items, status = 'PENDING', notes = '') {
     customerPhone: '01000000001',
     city: 'Cairo',
     address: 'Test St',
+    status: status || undefined,
   }, { headers: headers(), validateStatus: () => true });
 
   console.log(`📦 Create order: ${res.status}`, res.data?.success ? 'OK' : JSON.stringify(res.data).slice(0, 200));
@@ -186,10 +187,11 @@ async function main() {
     const retOrder = await apiCreateOrder(returnedItems, 'PARTIALLY_RETURNED', `مرتجع من ${origNumber}`);
     const retNumber = retOrder.orderNumber;
     
-    // Force status to PARTIALLY_RETURNED if not set
+    // Verify the API set the status correctly
     const retFromDb = await getOrderFromDB(retNumber);
+    console.log(`  API returned order ${retNumber}: status="${retFromDb?.status}"`);
     if (retFromDb && retFromDb.status !== 'PARTIALLY_RETURNED') {
-      console.log('  Setting returned order to PARTIALLY_RETURNED...');
+      console.log('  API did not set status, applying DB fallback...');
       await dbUpdateStatus(retNumber, 'PARTIALLY_RETURNED');
     }
 
