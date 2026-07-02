@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useVisualTheme } from "../../contexts/VisualThemeContext";
 import i18n from "../../i18n";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
-import SuperAdminSidebar, { menuGroups, drawerWidth, collapsedDrawerWidth } from "./SuperAdminSidebar";
+import SuperAdminSidebar, { getMenuGroups, drawerWidth, collapsedDrawerWidth } from "./SuperAdminSidebar";
 import SuperAdminHeader from "./SuperAdminHeader";
 import { matchesSuperAdminNavigationPath } from "./layoutMode";
 
@@ -46,7 +46,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children, fullWidth
   );
 
   const cw = isCollapsed ? collapsedDrawerWidth : drawerWidth;
-  const title = menuGroups.find((g) => g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path, location.search)))?.title || t("superAdmin.controlPanel");
+  const title = getMenuGroups(t).find((g) => g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path, location.search)))?.title || t("superAdmin.controlPanel");
 
   return (
     <div className="flex h-screen overflow-hidden bg-background" dir={i18n.dir()} data-theme={currentTheme.id}>

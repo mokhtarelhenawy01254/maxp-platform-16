@@ -70,7 +70,6 @@ import {
     HeartIcon,
 } from '@heroicons/react/24/outline';
 
-import i18n from '../i18n';
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 

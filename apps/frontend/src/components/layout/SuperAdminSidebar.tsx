@@ -21,86 +21,86 @@ interface SuperAdminSidebarProps {
   user: { firstName?: string | null; lastName?: string | null; email?: string | null } | null;
 }
 
-export const menuGroups = [
-  { title: i18n.t("superAdmin.sidebar.home"), icon: <LayoutDashboard className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.dashboard"), icon: <LayoutDashboard className="size-5" />, path: "/super-admin/dashboard" },
+export const getMenuGroups = (t: (key: string) => string) => [
+  { title: t("superAdmin.sidebar.home"), icon: <LayoutDashboard className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.dashboard"), icon: <LayoutDashboard className="size-5" />, path: "/super-admin/dashboard" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.companies"), icon: <Building2 className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.companies"), icon: <Building2 className="size-5" />, path: "/super-admin/companies-v2" },
-    { text: i18n.t("superAdmin.sidebar.companyReports"), icon: <BarChart3 className="size-5" />, path: "/super-admin/companies-reports" },
+  { title: t("superAdmin.sidebar.companies"), icon: <Building2 className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.companies"), icon: <Building2 className="size-5" />, path: "/super-admin/companies-v2" },
+    { text: t("superAdmin.sidebar.companyReports"), icon: <BarChart3 className="size-5" />, path: "/super-admin/companies-reports" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.whatsappPlatform"), icon: <MessageSquare className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.whatsappOverview"), icon: <MessageSquare className="size-5" />, path: "/super-admin/whatsapp" },
-    { text: i18n.t("superAdmin.sidebar.whatsappCompanies"), icon: <Building2 className="size-5" />, path: "/super-admin/whatsapp/companies" },
-    { text: i18n.t("superAdmin.sidebar.whatsappAutomations"), icon: <Sliders className="size-5" />, path: "/super-admin/whatsapp/automations" },
-    { text: i18n.t("superAdmin.sidebar.whatsappLogs"), icon: <History className="size-5" />, path: "/super-admin/whatsapp/logs" },
+  { title: t("superAdmin.sidebar.whatsappPlatform"), icon: <MessageSquare className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.whatsappOverview"), icon: <MessageSquare className="size-5" />, path: "/super-admin/whatsapp" },
+    { text: t("superAdmin.sidebar.whatsappCompanies"), icon: <Building2 className="size-5" />, path: "/super-admin/whatsapp/companies" },
+    { text: t("superAdmin.sidebar.whatsappAutomations"), icon: <Sliders className="size-5" />, path: "/super-admin/whatsapp/automations" },
+    { text: t("superAdmin.sidebar.whatsappLogs"), icon: <History className="size-5" />, path: "/super-admin/whatsapp/logs" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.subscriptionsBilling"), icon: <Briefcase className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.walletManagement"), icon: <Wallet className="size-5" />, path: "/super-admin/wallet-management" },
-    { text: i18n.t("superAdmin.sidebar.pendingReceipts"), icon: <BarChart3 className="size-5" />, path: "/super-admin/pending-receipts" },
-    { text: i18n.t("superAdmin.sidebar.marketplaceManagement"), icon: <Globe className="size-5" />, path: "/super-admin/marketplace-management" },
-    { text: i18n.t("superAdmin.sidebar.marketplaceCoverage"), icon: <Shield className="size-5" />, path: "/super-admin/marketplace-coverage" },
-    { text: i18n.t("superAdmin.sidebar.storefrontThemes"), icon: <Palette className="size-5" />, path: "/super-admin/storefront-themes" },
-    { text: i18n.t("superAdmin.sidebar.customerInvoices"), icon: <BarChart3 className="size-5" />, path: "/super-admin/invoices" },
-    { text: i18n.t("superAdmin.sidebar.customerPayments"), icon: <DollarSign className="size-5" />, path: "/super-admin/payments" },
-    { text: i18n.t("superAdmin.sidebar.revenueAnalytics"), icon: <BarChart3 className="size-5" />, path: "/super-admin/billing-overview" },
-    { text: i18n.t("superAdmin.sidebar.signupCoupons"), icon: <Tag className="size-5" />, path: "/super-admin/platform-signup-coupons" },
+  { title: t("superAdmin.sidebar.subscriptionsBilling"), icon: <Briefcase className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.walletManagement"), icon: <Wallet className="size-5" />, path: "/super-admin/wallet-management" },
+    { text: t("superAdmin.sidebar.pendingReceipts"), icon: <BarChart3 className="size-5" />, path: "/super-admin/pending-receipts" },
+    { text: t("superAdmin.sidebar.marketplaceManagement"), icon: <Globe className="size-5" />, path: "/super-admin/marketplace-management" },
+    { text: t("superAdmin.sidebar.marketplaceCoverage"), icon: <Shield className="size-5" />, path: "/super-admin/marketplace-coverage" },
+    { text: t("superAdmin.sidebar.storefrontThemes"), icon: <Palette className="size-5" />, path: "/super-admin/storefront-themes" },
+    { text: t("superAdmin.sidebar.customerInvoices"), icon: <BarChart3 className="size-5" />, path: "/super-admin/invoices" },
+    { text: t("superAdmin.sidebar.customerPayments"), icon: <DollarSign className="size-5" />, path: "/super-admin/payments" },
+    { text: t("superAdmin.sidebar.revenueAnalytics"), icon: <BarChart3 className="size-5" />, path: "/super-admin/billing-overview" },
+    { text: t("superAdmin.sidebar.signupCoupons"), icon: <Tag className="size-5" />, path: "/super-admin/platform-signup-coupons" },
   ]},
-  { title: i18n.t("superAdmin.evaluation.aiModels"), icon: <Brain className="size-5" />, items: [
+  { title: t("superAdmin.evaluation.aiModels"), icon: <Brain className="size-5" />, items: [
     { text: "AI Keys (New)", icon: <Key className="size-4" />, path: "/super-admin/ai-key-manager" },
     { text: "AI Playground", icon: <Play className="size-4" />, path: "/super-admin/ai-playground" },
-    { text: i18n.t("superAdmin.evaluation.aiTemplates"), icon: <Layers className="size-4" />, path: "/super-admin/ai-templates" },
+    { text: t("superAdmin.evaluation.aiTemplates"), icon: <Layers className="size-4" />, path: "/super-admin/ai-templates" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },
     { text: "AI Hub (اختبار)", icon: <Activity className="size-4" />, path: "/super-admin/ai-hub-test" },
     { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/super-admin/ai-hub?tab=skills" },
     { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/super-admin/ai-hub?tab=tools" },
     { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/super-admin/ai-hub?tab=rag" },
     { text: "محادثات AI", icon: <MessageSquare className="size-4" />, path: "/super-admin/ai-chat" },
-    { text: i18n.t("superAdmin.evaluation.agentProfiles"), icon: <Bot className="size-4" />, path: "/super-admin/agent-profiles" },
+    { text: t("superAdmin.evaluation.agentProfiles"), icon: <Bot className="size-4" />, path: "/super-admin/agent-profiles" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.monitoring"), icon: <Activity className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.queueMonitor"), icon: <Activity className="size-5" />, path: "/super-admin/queue-monitor" },
-    { text: i18n.t("superAdmin.sidebar.serverUsage"), icon: <HardDrive className="size-5" />, path: "/super-admin/server-usage" },
+  { title: t("superAdmin.sidebar.monitoring"), icon: <Activity className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.queueMonitor"), icon: <Activity className="size-5" />, path: "/super-admin/queue-monitor" },
+    { text: t("superAdmin.sidebar.serverUsage"), icon: <HardDrive className="size-5" />, path: "/super-admin/server-usage" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.systemAdmin"), icon: <Sliders className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.systemSettings"), icon: <Settings className="size-5" />, path: "/super-admin/system-management" },
-    { text: i18n.t("superAdmin.sidebar.appExplanations"), icon: <Globe className="size-5" />, path: "/super-admin/app-explanations" },
-    { text: i18n.t("superAdmin.sidebar.facebookOAuth"), icon: <Facebook className="size-5" />, path: "/super-admin/facebook-oauth" },
-    { text: i18n.t("superAdmin.sidebar.metaPixel"), icon: <Facebook className="size-5" />, path: "/super-admin/platform-site-meta-pixel" },
-    { text: i18n.t("superAdmin.sidebar.homepageTemplates"), icon: <Globe className="size-5" />, path: "/super-admin/homepage-templates" },
+  { title: t("superAdmin.sidebar.systemAdmin"), icon: <Sliders className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.systemSettings"), icon: <Settings className="size-5" />, path: "/super-admin/system-management" },
+    { text: t("superAdmin.sidebar.appExplanations"), icon: <Globe className="size-5" />, path: "/super-admin/app-explanations" },
+    { text: t("superAdmin.sidebar.facebookOAuth"), icon: <Facebook className="size-5" />, path: "/super-admin/facebook-oauth" },
+    { text: t("superAdmin.sidebar.metaPixel"), icon: <Facebook className="size-5" />, path: "/super-admin/platform-site-meta-pixel" },
+    { text: t("superAdmin.sidebar.homepageTemplates"), icon: <Globe className="size-5" />, path: "/super-admin/homepage-templates" },
     { text: "صفحات اللاندينغ /lp", icon: <Globe className="size-5" />, path: "/super-admin/landing-pages" },
-    { text: i18n.t("superAdmin.sidebar.productDesigns"), icon: <Palette className="size-5" />, path: "/super-admin/product-designs" },
-    { text: i18n.t("superAdmin.sidebar.staffAccess"), icon: <Briefcase className="size-5" />, path: "/super-admin/staff-access" },
-    { text: i18n.t("superAdmin.sidebar.superAdminUsers"), icon: <Shield className="size-5" />, path: "/super-admin/users" },
-    { text: i18n.t("superAdmin.sidebar.partners"), icon: <Users className="size-5" />, path: "/super-admin/partner-management" },
+    { text: t("superAdmin.sidebar.productDesigns"), icon: <Palette className="size-5" />, path: "/super-admin/product-designs" },
+    { text: t("superAdmin.sidebar.staffAccess"), icon: <Briefcase className="size-5" />, path: "/super-admin/staff-access" },
+    { text: t("superAdmin.sidebar.superAdminUsers"), icon: <Shield className="size-5" />, path: "/super-admin/users" },
+    { text: t("superAdmin.sidebar.partners"), icon: <Users className="size-5" />, path: "/super-admin/partner-management" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.marketingLinks"), icon: <Tag className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.marketingLinksCenter"), icon: <Globe className="size-5" />, path: "/super-admin/marketing-links" },
+  { title: t("superAdmin.sidebar.marketingLinks"), icon: <Tag className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.marketingLinksCenter"), icon: <Globe className="size-5" />, path: "/super-admin/marketing-links" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.support"), icon: <Headphones className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.supportManagement"), icon: <Headphones className="size-5" />, path: "/admin/support" },
-    { text: i18n.t("superAdmin.sidebar.allTickets"), icon: <Ticket className="size-5" />, path: "/admin/support" },
+  { title: t("superAdmin.sidebar.support"), icon: <Headphones className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.supportManagement"), icon: <Headphones className="size-5" />, path: "/admin/support" },
+    { text: t("superAdmin.sidebar.allTickets"), icon: <Ticket className="size-5" />, path: "/admin/support" },
   ]},
-  { title: i18n.t("superAdmin.sidebar.devManagement"), icon: <Wrench className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.okrs"), icon: <Trophy className="size-5" />, path: "/super-admin/dev-goals" },
-    { text: i18n.t("superAdmin.sidebar.goalAlignment"), icon: <GitBranch className="size-5" />, path: "/super-admin/dev-goals/alignment" },
-    { text: i18n.t("superAdmin.sidebar.leaderboard"), icon: <Trophy className="size-5" />, path: "/super-admin/dev-leaderboard" },
-    { text: i18n.t("superAdmin.evaluation.sidebar"), icon: <BarChart3 className="size-5" />, path: "/super-admin/dev-evaluations" },
-    { text: i18n.t("superAdmin.sidebar.projectMap"), icon: <GitBranch className="size-5" />, path: "/super-admin/project-map" },
-    { text: i18n.t("superAdmin.sidebar.dataImport"), icon: <Download className="size-5" />, path: "/super-admin/db-migration" },
-    { text: i18n.t("superAdmin.sidebar.devDashboard"), icon: <LayoutDashboard className="size-5" />, path: "/super-admin/dev-dashboard" },
-    { text: i18n.t("superAdmin.sidebar.tasks"), icon: <BarChart3 className="size-5" />, path: "/super-admin/dev-tasks" },
+  { title: t("superAdmin.sidebar.devManagement"), icon: <Wrench className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.okrs"), icon: <Trophy className="size-5" />, path: "/super-admin/dev-goals" },
+    { text: t("superAdmin.sidebar.goalAlignment"), icon: <GitBranch className="size-5" />, path: "/super-admin/dev-goals/alignment" },
+    { text: t("superAdmin.sidebar.leaderboard"), icon: <Trophy className="size-5" />, path: "/super-admin/dev-leaderboard" },
+    { text: t("superAdmin.evaluation.sidebar"), icon: <BarChart3 className="size-5" />, path: "/super-admin/dev-evaluations" },
+    { text: t("superAdmin.sidebar.projectMap"), icon: <GitBranch className="size-5" />, path: "/super-admin/project-map" },
+    { text: t("superAdmin.sidebar.dataImport"), icon: <Download className="size-5" />, path: "/super-admin/db-migration" },
+    { text: t("superAdmin.sidebar.devDashboard"), icon: <LayoutDashboard className="size-5" />, path: "/super-admin/dev-dashboard" },
+    { text: t("superAdmin.sidebar.tasks"), icon: <BarChart3 className="size-5" />, path: "/super-admin/dev-tasks" },
     { text: "Kanban Board", icon: <LayoutDashboard className="size-5" />, path: "/super-admin/dev-kanban" },
-    { text: i18n.t("superAdmin.sidebar.activeTimers"), icon: <Clock className="size-5" />, path: "/super-admin/active-timers" },
-    { text: i18n.t("superAdmin.sidebar.timerDashboard"), icon: <Play className="size-5" />, path: "/super-admin/timer-dashboard" },
-    { text: i18n.t("superAdmin.sidebar.timeTracking"), icon: <History className="size-5" />, path: "/super-admin/time-tracking" },
-    { text: i18n.t("superAdmin.sidebar.systemMonitoring"), icon: <Activity className="size-5" />, path: "/super-admin/system-monitoring" },
-    { text: i18n.t("superAdmin.sidebar.devProjects"), icon: <Code2 className="size-5" />, path: "/super-admin/dev-projects" },
-    { text: i18n.t("superAdmin.sidebar.devTeam"), icon: <Users className="size-5" />, path: "/super-admin/dev/team" },
-    { text: i18n.t("superAdmin.sidebar.releases"), icon: <Rocket className="size-5" />, path: "/super-admin/dev-releases" },
-    { text: i18n.t("superAdmin.sidebar.escalations"), icon: <Clock className="size-5" />, path: "/super-admin/dev/escalations" },
-    { text: i18n.t("superAdmin.sidebar.taskSettings"), icon: <Settings className="size-5" />, path: "/super-admin/dev-settings" },
-    { text: i18n.t("superAdmin.sidebar.taskApiKeys"), icon: <Key className="size-5" />, path: "/super-admin/dev-task-integrations" },
+    { text: t("superAdmin.sidebar.activeTimers"), icon: <Clock className="size-5" />, path: "/super-admin/active-timers" },
+    { text: t("superAdmin.sidebar.timerDashboard"), icon: <Play className="size-5" />, path: "/super-admin/timer-dashboard" },
+    { text: t("superAdmin.sidebar.timeTracking"), icon: <History className="size-5" />, path: "/super-admin/time-tracking" },
+    { text: t("superAdmin.sidebar.systemMonitoring"), icon: <Activity className="size-5" />, path: "/super-admin/system-monitoring" },
+    { text: t("superAdmin.sidebar.devProjects"), icon: <Code2 className="size-5" />, path: "/super-admin/dev-projects" },
+    { text: t("superAdmin.sidebar.devTeam"), icon: <Users className="size-5" />, path: "/super-admin/dev/team" },
+    { text: t("superAdmin.sidebar.releases"), icon: <Rocket className="size-5" />, path: "/super-admin/dev-releases" },
+    { text: t("superAdmin.sidebar.escalations"), icon: <Clock className="size-5" />, path: "/super-admin/dev/escalations" },
+    { text: t("superAdmin.sidebar.taskSettings"), icon: <Settings className="size-5" />, path: "/super-admin/dev-settings" },
+    { text: t("superAdmin.sidebar.taskApiKeys"), icon: <Key className="size-5" />, path: "/super-admin/dev-task-integrations" },
   ]},
 ];
 
@@ -128,7 +128,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ mobileOpen, setMo
       </div>
 
       <div className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
-        {menuGroups.map((g) => {
+        {getMenuGroups(i18n.t.bind(i18n)).map((g) => {
           const isOpen = openGroups[g.title];
           const active = g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path, location.search));
           return (
