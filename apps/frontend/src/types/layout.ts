@@ -62,5 +62,6 @@ export interface SidebarManagementData {
 export interface UserSidebarSettings {
   enabled: boolean;
   sections: Record<string, SidebarSectionSettings>;
+  sidebarLayout?: SidebarLayoutType | null;
   updatedAt?: string;
 }

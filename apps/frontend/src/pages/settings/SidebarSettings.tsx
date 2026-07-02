@@ -19,7 +19,7 @@ import { Switch } from "../../components/ui/switch";
 import { getSidebarConfig } from "../../config/sidebar";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useSidebarSettings } from "../../contexts/SidebarSettingsContext";
-import type { SidebarItem, SidebarItemSettings, SidebarSection, SidebarSectionSettings, SidebarManagementData } from "../../types/layout";
+import type { SidebarItem, SidebarItemSettings, SidebarLayoutType, SidebarSection, SidebarSectionSettings, SidebarManagementData } from "../../types/layout";
 
 const ALL_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER", "AGENT", "AFFILIATE", "MERCHANT", "CUSTOMER"];
 
@@ -207,7 +207,7 @@ function CurrencyIcon({ className }: { className?: string }) {
 const SidebarSettings: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { settings, isLoading, updateSettings, refreshSettings } = useSidebarSettings();
+  const { settings, isLoading, updateSettings, refreshSettings, userLayout, setUserLayout } = useSidebarSettings();
   const [localSections, setLocalSections] = useState<Record<string, SidebarSectionSettings>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -534,6 +534,51 @@ const SidebarSettings: React.FC = () => {
             <ArrowPathIcon className="h-3.5 w-3.5" />
             تحديث
           </button>
+        </div>
+      </div>
+
+      {/* Per-user layout picker */}
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-gray-100">
+          <PaintBrushIcon className="h-4 w-4 text-indigo-500" />
+          شكل القائمة الجانبية (إعداد شخصي)
+        </h3>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {([
+            { id: "classic" as const, label: "كلاسيك", desc: "قائمة جانبية موسعة" },
+            { id: "three-tier" as const, label: "ثلاثي", desc: "رتل + لوحة + قائمة" },
+            { id: "horizontal" as const, label: "أفقي", desc: "شريط علوي" },
+            { id: "floating" as const, label: "عائم", desc: "بطاقة عائمة" },
+            { id: "minimal" as const, label: "مصغر", desc: "أيقونات فقط" },
+          ]).map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => setUserLayout(userLayout === opt.id ? null : opt.id)}
+              className={`relative rounded-lg border-2 p-3 text-right transition ${
+                userLayout === opt.id
+                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+              }`}
+            >
+              <div className={`text-xs font-semibold ${userLayout === opt.id ? "text-indigo-700 dark:text-indigo-300" : "text-gray-900 dark:text-gray-100"}`}>
+                {opt.label}
+              </div>
+              <div className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
+                {opt.desc}
+              </div>
+              {userLayout === opt.id && (
+                <CheckCircleIcon className="absolute left-1.5 top-1.5 h-3.5 w-3.5 text-indigo-500" />
+              )}
+            </button>
+          ))}
+          {userLayout && (
+            <button
+              onClick={() => setUserLayout(null)}
+              className="col-span-full mt-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              إلغاء التخصيص والعودة لإعداد الشركة
+            </button>
+          )}
         </div>
       </div>
 

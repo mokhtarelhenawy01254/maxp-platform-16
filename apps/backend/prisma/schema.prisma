@@ -2245,6 +2245,7 @@ model User {
   hireDate                                          DateTime?
   positionId                                        String?
   timezone                                          String                     @default("Asia/Riyadh")
+  settings                                          String?
   enableAutoDeduction                               Boolean                    @default(true)
   lateDeductionRate                                 Decimal?                   @db.Decimal(10, 2)
   maxDailyLateMinutes                               Int?                       @default(10)

@@ -1,6 +1,6 @@
 # Sidebar Management System
 
-**Date**: 2026-05-24 (Updated 2026-05-24 v2)
+**Date**: 2026-05-24 (Updated 2026-07-02 v3)
 **Type**: Feature Implementation + Enhancement
 **Scope**: Full-stack — Backend API + Frontend Settings UI + Dynamic Config Engine + Per-User Overlay
 
@@ -78,7 +78,52 @@ Settings Page          SidebarSettingsContext       config/sidebar.ts         La
 GET  /api/v1/settings/sidebar      →  { success, data: { layout, settings } }
 PUT  /api/v1/settings/sidebar      →  Body: { settings: { sections: {...} } }
 
-# Per-user settings (future server-side persistence)
+# Per-user settings (legacy, kept for backwards compat)
 GET  /api/v1/settings/user-sidebar →  { success, data: { enabled, sections } }
 PUT  /api/v1/settings/user-sidebar →  Body: { settings: { enabled, sections } }
+
+## v3 Enhancements (2026-07-02)
+
+1. **Per-User Sidebar Layout**: Each user can now choose their preferred sidebar layout (classic, three-tier, horizontal, floating, minimal) from Settings → Sidebar Settings. This overrides the company-level `sidebarLayout` setting.
+2. **User Settings JSON Field**: Added `User.settings` (TEXT/JSON) column to persist per-user preferences server-side. First stored preference: `sidebarLayout`.
+3. **Sync Architecture**: User preferences are cached in localStorage for instant load and synced to the server in the background (`GET/PUT /user/settings`).
+
+### Architecture (v3)
+
+```
+User selects layout in SidebarSettings.tsx
+    │
+    ├─► localStorage (instant cache)
+    │
+    └─► PUT /api/v1/user/settings  { settings: { sidebarLayout: "minimal" } }
+            │
+            └─► User.settings JSON column in DB
+                    │
+Layout.tsx reads:
+    userLayout (from context/userSettings)
+        → company.sidebarLayout
+            → "three-tier" (default)
+```
+
+### New Backend API
+
+```
+# User-level settings (persisted in User.settings JSON)
+GET  /api/v1/user/settings      →  { success, data: { sidebarLayout } }
+PUT  /api/v1/user/settings      →  Body: { settings: { sidebarLayout: "minimal" } }
+```
+
+### Files Changed / Added (v3)
+
+| File | Type | Description |
+|------|------|-------------|
+| `prisma/schema/core.prisma` | Modified | Added `settings String?` to User model |
+| `prisma/schema.prisma` | Modified | Added `settings String?` to User model |
+| `prisma/verify_schema/core.prisma` | Modified | Added `settings String?` to User model |
+| `backend/routes/userSettingsRoutes.js` | New | `GET/PUT /api/v1/user/settings` — read/write User.settings JSON |
+| `backend/server.js` | Modified | Wired `/api/v1/user/settings` routes |
+| `frontend/src/types/layout.ts` | Modified | Added `sidebarLayout` to `UserSidebarSettings` |
+| `frontend/src/contexts/SidebarSettingsContext.tsx` | Modified | Added `userLayout` state, `setUserLayout()` method, API sync |
+| `frontend/src/components/layout/Layout.tsx` | Modified | Priority: userLayout → company.sidebarLayout → default |
+| `frontend/src/pages/settings/SidebarSettings.tsx` | Modified | Added per-user layout picker UI with 5 options |
 ```

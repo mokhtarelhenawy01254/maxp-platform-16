@@ -148,8 +148,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
   const shouldRemovePadding =
     fullWidth || location.pathname.startsWith("/profile");
-  const currentLayout =
-    (user?.company?.sidebarLayout as SidebarLayoutType) || "three-tier";
+  const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);
+  const currentLayout = resolvedUserLayout || "three-tier";
   const companyScopeKey = user?.companyId || user?.company?.id || "no-company";
   const isHorizontalLayout = currentLayout === "horizontal";
   const isMerchantUser = user?.role === "MERCHANT";
@@ -259,7 +259,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     });
   }, []);
 
-  const { settings: sidebarSettings, userSettings } = useSidebarSettings();
+  const { settings: sidebarSettings, userSettings, userLayout } = useSidebarSettings();
 
   const menuSections = useMemo(() => {
     if (!isI18nReady || useSuperAdminShell) {

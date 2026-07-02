@@ -780,6 +780,7 @@ app.use("/api/v1/hr/lateness", require("./routes/latenessRoutes"));
 
 // Platform Settings & Core
 app.use("/api/v1/settings", settingsRoutes);
+app.use("/api/v1/user/settings", require("./routes/userSettingsRoutes"));
 app.use("/api/v1/smart-replies", smartRepliesRoutes);
 app.use("/api/v1/companies", companyRoutes);
 app.use("/api/v1/permissions", require("./routes/permissionRoutes"));

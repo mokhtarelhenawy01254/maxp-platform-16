@@ -1,8 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { apiClient } from "../services/apiClient";
-import type { SidebarManagementData, UserSidebarSettings } from "../types/layout";
+import type { SidebarLayoutType, SidebarManagementData, UserSidebarSettings } from "../types/layout";
 
 const USER_SIDEBAR_KEY = "user-sidebar-settings";
+
+interface UserAppSettings {
+  sidebarLayout: SidebarLayoutType | null;
+  updatedAt?: string;
+}
 
 interface SidebarSettingsContextType {
   settings: SidebarManagementData | null;
@@ -15,17 +20,20 @@ interface SidebarSettingsContextType {
   toggleUserItem: (sectionId: string, itemId: string) => void;
   toggleUserSection: (sectionId: string) => void;
   resetUserSettings: () => void;
+  userLayout: SidebarLayoutType | null;
+  setUserLayout: (layout: SidebarLayoutType | null) => Promise<void>;
 }
 
 const defaultUserSettings: UserSidebarSettings = {
   enabled: false,
   sections: {},
+  sidebarLayout: null,
 };
 
 function loadUserSettings(): UserSidebarSettings {
   try {
     const raw = localStorage.getItem(USER_SIDEBAR_KEY);
-    return raw ? JSON.parse(raw) : defaultUserSettings;
+    return raw ? { ...defaultUserSettings, ...JSON.parse(raw) } : defaultUserSettings;
   } catch {
     return defaultUserSettings;
   }
@@ -50,6 +58,8 @@ const SidebarSettingsContext = createContext<SidebarSettingsContextType>({
   toggleUserItem: () => {},
   toggleUserSection: () => {},
   resetUserSettings: () => {},
+  userLayout: null,
+  setUserLayout: async () => {},
 });
 
 export const useSidebarSettings = () => useContext(SidebarSettingsContext);
@@ -65,6 +75,29 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
     setUserSettings(loadUserSettings());
   }, []);
 
+  // Sync user layout preference from server on mount
+  useEffect(() => {
+    const syncUserLayout = async () => {
+      try {
+        const res = await apiClient.get<{ success: boolean; data: UserAppSettings }>(
+          "/user/settings",
+          { _skipErrorToast: true } as Record<string, unknown>,
+        );
+        if (res.data?.success && res.data?.data) {
+          const serverLayout = res.data.data.sidebarLayout;
+          setUserSettings((prev) => {
+            const next = { ...prev, sidebarLayout: serverLayout ?? prev.sidebarLayout };
+            saveUserSettings(next);
+            return next;
+          });
+        }
+      } catch {
+        // Server may be unavailable — keep localStorage cache
+      }
+    };
+    syncUserLayout();
+  }, []);
+
   const refreshSettings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -77,7 +110,6 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
         setSettings(res.data.data.settings as unknown as SidebarManagementData);
       }
     } catch (err: unknown) {
-      // 403 is expected for SUPER_ADMIN users who have no company context
       const status =
         typeof err === "object" &&
         err !== null &&
@@ -85,9 +117,8 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
         typeof (err as { response?: { status?: number } }).response === "object"
           ? (err as { response?: { status?: number } }).response?.status
           : undefined;
-      // 401 is expected during initial load before token is set (apiClient retries automatically)
       if (status !== 403 && status !== 401) {
-        const msg = err instanceof Error ? err.message : "فشل تحميل إعدادات القائمة الجانبية"; // no-arabic-check
+        const msg = err instanceof Error ? err.message : "فشل تحميل إعدادات القائمة الجانبية";
         setError(msg);
       }
     } finally {
@@ -177,6 +208,22 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
   const resetUserSettings = useCallback(() => {
     setUserSettings(defaultUserSettings);
     saveUserSettings(defaultUserSettings);
+    // Also reset on server
+    apiClient.put("/user/settings", { settings: { sidebarLayout: null } }).catch(() => {});
+  }, []);
+
+  const setUserLayout = useCallback(async (layout: SidebarLayoutType | null) => {
+    setUserSettings((prev) => {
+      const next = { ...prev, sidebarLayout: layout, updatedAt: new Date().toISOString() };
+      saveUserSettings(next);
+      return next;
+    });
+    // Sync to server
+    try {
+      await apiClient.put("/user/settings", { settings: { sidebarLayout: layout } });
+    } catch {
+      // Silent fail — localStorage has the latest value
+    }
   }, []);
 
   const contextValue = useMemo(() => ({
@@ -190,7 +237,9 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
     toggleUserItem,
     toggleUserSection,
     resetUserSettings,
-  }), [settings, isLoading, error, updateSettings, refreshSettings, userSettings, setUserEnabled, toggleUserItem, toggleUserSection, resetUserSettings]);
+    userLayout: userSettings.sidebarLayout ?? null,
+    setUserLayout,
+  }), [settings, isLoading, error, updateSettings, refreshSettings, userSettings, setUserEnabled, toggleUserItem, toggleUserSection, resetUserSettings, setUserLayout]);
 
   useEffect(() => {
     refreshSettings();
