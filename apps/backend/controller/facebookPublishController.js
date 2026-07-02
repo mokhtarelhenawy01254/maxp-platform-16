@@ -47,12 +47,12 @@ const createPost = async (req, res) => {
 
                 if (!tokenResult.ok) {
                     const fbErr = tokenResult.validation?.error;
-                    console.error(`❌ [FACEBOOK-PUBLISH] Token invalid for ${page.pageName}:`, fbErr?.message || tokenResult);
+                    console.error(`❌ [FACEBOOK-PUBLISH] Token invalid for ${page.pageName}:`, JSON.stringify({ reason: tokenResult.reason, refreshReason: tokenResult.refresh?.reason, message: fbErr?.message }));
                     results.push({
                         pageId: page.pageId,
                         pageName: page.pageName,
                         success: false,
-                        error: fbErr?.message || 'Page access token is invalid or expired',
+                        error: fbErr?.message || `Token invalid: ${tokenResult.reason || 'unknown'} (refresh: ${tokenResult.refresh?.reason || 'none'})`,
                     });
                     continue;
                 }
@@ -127,12 +127,12 @@ const createPost = async (req, res) => {
             } catch (error) {
                 const fbData = error.response?.data;
                 const fbError = fbData?.error;
-                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify(fbData || error.message));
+                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, message: error.message, stack: error.stack, code: error.code }));
                 results.push({
                     pageId: page.pageId,
                     pageName: page.pageName,
                     success: false,
-                    error: fbError?.message || fbError?.error_user_msg || error.message || 'An unknown error occurred',
+                    error: fbError?.message || fbError?.error_user_msg || error.message || error.code || JSON.stringify(fbData) || 'An unknown error occurred',
                 });
             }
         }
