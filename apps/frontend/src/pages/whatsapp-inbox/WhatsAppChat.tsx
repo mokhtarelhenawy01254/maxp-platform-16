@@ -471,6 +471,11 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   <div className={`mt-1.5 text-[11px] ${message.isFromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/70'}`}>
                     {formatTime(message.createdAt)}
                   </div>
+                  {!message.isFromCustomer && message.user ? (
+                    <div className="mt-0.5 text-[10px] text-primary-foreground/50 text-right">
+                      {`${message.user.firstName} ${message.user.lastName}`.trim()}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
