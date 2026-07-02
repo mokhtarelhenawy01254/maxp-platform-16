@@ -512,8 +512,7 @@ export default defineConfig(({ mode }) => {
               if (normalizedId.includes('/src/pages/customers/')) return 'route-customers';
               if (normalizedId.includes('/src/pages/advertising/')) return 'route-advertising';
               if (normalizedId.includes('/src/pages/affiliates/')) return 'route-affiliates';
-if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manager';
-              if (normalizedId.includes('/src/pages/super-admin/')) return 'route-super-admin';
+if (normalizedId.includes('/src/pages/super-admin/')) return 'route-super-admin';
               if (normalizedId.includes('/src/pages/settings/')) return 'route-settings';
               if (normalizedId.includes('/src/pages/whatsapp/')) return 'route-whatsapp';
               if (normalizedId.includes('/src/pages/facebook-inbox/') || normalizedId.includes('/src/pages/instagram-inbox/') || normalizedId.includes('/src/pages/unified-inbox/')) return 'route-inbox';
