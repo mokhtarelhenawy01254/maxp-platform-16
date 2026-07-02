@@ -54,7 +54,8 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict]) -> str:
     if not client:
         from src.llm.model_manager import model_manager
 
-        routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash"
+        routing = await model_manager.get_next_key(agent_model, ctx.company_id)
         client = LLMClient(
             provider=routing.provider,
             model=routing.model,
@@ -130,6 +131,11 @@ async def _correct_validation_error(
 async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     reply = ctx.llm_response or ""
     reply = _strip_internal_tags(reply)
+
+    # If no LLM response and a final_reply is already set (e.g., from skills_pipeline error),
+    # skip validation to avoid overwriting the error message
+    if not reply and ctx.final_reply:
+        return ctx
 
     validated = None
     for attempt in range(MAX_OUTPUT_RETRIES + 1):
@@ -235,7 +241,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
             system_prompt=ctx.system_prompt,
             messages=ctx.messages,
             tool_context=ctx.tool_context,
-            model_name=(ctx.agent.default_options.get("model") if ctx.agent else None)
+            model_name=(ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else None)
             or "gemini-2.5-flash",
             original_history_tokens=getattr(ctx, "original_history_tokens", 0),
             compressed_history_tokens=getattr(ctx, "compressed_history_tokens", 0),

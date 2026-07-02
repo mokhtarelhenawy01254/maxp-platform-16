@@ -10,6 +10,7 @@ import structlog
 from src.guardrails.input import INPUT_GUARDRAILS
 from src.llm.client import LLMClient, ProviderResponse
 from src.pipeline.context import PipelineContext
+from src.pipeline.provider_errors import provider_error_result
 from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta
 from src.skills.registry import get_skill_registry
 from src.tools.registry import ALL_TOOLS
@@ -71,7 +72,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         provider_response = await _llm_call(ctx, system_prompt, skills)
     except Exception as e:
         logger.error("skills_pipeline_llm_failed", error=str(e))
-        ctx.final_reply = "عذراً، حدث خطأ في معالجة طلبك. الرجاء المحاولة مرة أخرى."
+        error_details = provider_error_result(e)
+        if error_details.get("error_code") == "LLM_RATE_LIMITED":
+            ctx.final_reply = "عذراً، واجهت خدمة الذكاء الاصطناعي ضغطاً في الاستخدام حالياً. الرجاء المحاولة بعد قليل."
+        else:
+            ctx.final_reply = "عذراً، حدث خطأ في معالجة طلبك. الرجاء المحاولة مرة أخرى."
         return ctx
 
     # 4b. Retry once on empty response (DeepSeek cold-start workaround)
@@ -216,8 +221,9 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     if not client:
         from src.llm.model_manager import model_manager
 
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash"
         try:
-            routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
+            routing = await model_manager.get_next_key(agent_model, ctx.company_id)
             client = LLMClient(
                 provider=routing.provider,
                 model=routing.model,
@@ -239,14 +245,15 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             try:
                 from src.llm.model_manager import model_manager
 
-                routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
+                vision_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash"
+                routing = await model_manager.get_next_key(vision_model, ctx.company_id)
                 client = LLMClient(
                     provider=routing.provider,
                     model=routing.model,
                     api_key=routing.api_key,
                     base_url=routing.base_url,
                 )
-                logger.info("vision_fallback_to_gemini", original_model=client_model)
+                logger.info("vision_fallback_switched", original_model=client_model, new_model=vision_model)
             except Exception as e:
                 logger.warning("vision_fallback_unavailable", error=str(e))
 
@@ -273,7 +280,8 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         from src.llm.client import LLMClient
         from src.llm.model_manager import model_manager
 
-        routing = await model_manager.get_next_key("gemini-2.5-flash", ctx.company_id)
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash"
+        routing = await model_manager.get_next_key(agent_model, ctx.company_id)
         client = LLMClient(
             provider=routing.provider,
             model=routing.model,
