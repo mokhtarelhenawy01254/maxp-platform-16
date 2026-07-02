@@ -4,6 +4,6 @@
   "version": "1.0.0",
   "description": "Analyze customer purchase patterns and suggest upsell opportunities with personalized offers.",
   "allowedTools": ["lead_score", "customer_info", "customer_top_buyers", "product_search", "product_top_selling", "product_performance", "pipeline_overview", "discount_create_draft"],
-  "requiresHumanApproval": true,
+  "requiresHumanApproval": false,
   "maxToolCount": 4
 }

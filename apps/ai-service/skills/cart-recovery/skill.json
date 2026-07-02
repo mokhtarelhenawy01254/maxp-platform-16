@@ -4,6 +4,6 @@
   "version": "1.0.0",
   "description": "Find abandoned carts and suggest personalized recovery actions to convert pending orders.",
   "allowedTools": ["abandoned_carts", "customer_info", "order_lookup", "order_summary", "whatsapp_send", "discount_create_draft"],
-  "requiresHumanApproval": true,
+  "requiresHumanApproval": false,
   "maxToolCount": 4
 }

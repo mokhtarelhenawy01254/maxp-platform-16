@@ -4,32 +4,33 @@ Capabilities requested by the user.
 
 ---
 
-## [FEAT-20260425-001] local-codex-skill-pack
+## [FEAT-20260702-001] automated_knowledge_updates
 
-**Logged**: 2026-04-25T17:13:01.1613994+03:00
-**Priority**: medium
+**Logged**: 2026-07-02T12:00:00Z
+**Priority**: high
 **Status**: resolved
-**Area**: config
+**Area**: docs
 
 ### Requested Capability
-Install a named skill pack for self-improvement, UI generation, e-commerce building, prompt optimization, and data plus feedback analysis.
+Keep the AI's knowledge about AI frameworks, models, and techniques updated beyond its training cutoff.
 
 ### User Context
-The user asked to make these capabilities available directly in Codex as reusable skills for future sessions.
+User is building MaxP Agentic AI platform. Needs accurate, current information about:
+- Latest LLM models (GPT-5.x, Claude 5, Gemini, etc.)
+- Agent frameworks (OpenAI Agents SDK, MCP, LangGraph, etc.)
+- Best practices for agent architecture in 2025-2026
 
 ### Complexity Estimate
 medium
 
 ### Suggested Implementation
-Create or install discoverable skills under `C:\Users\shrou\.codex\skills`, reuse the repo storefront skill for e-commerce work, and scaffold concise local skills for the other requested capabilities.
-
-### Metadata
-- Frequency: first_time
-- Related Features: self-improving, ui-generator, e-commerce-builder, prompt-optimizer, data-feedback
+- Create `ai-knowledge-base.md` with structured, up-to-date AI knowledge
+- Set up Fresh Research Protocol that forces web research before claims
+- Schedule weekly automated research via Windows Task Scheduler
+- Source tracking in `source-map.md` with verification dates and confidence levels
 
 ### Resolution
-- **Resolved**: 2026-04-25T17:13:01.1613994+03:00
-- **Commit/PR**: local workspace only
-- **Notes**: Installed the five requested skills under `C:\Users\shrou\.codex\skills`; restart Codex to load them into skill discovery.
+- **Resolved**: 2026-07-02T12:00:00Z
+- **Notes**: All implemented. See `ai-knowledge-base.md`, AGENTS.md Knowledge Update Protocol, and `ai-knowledge-refresh-weekly` scheduled task.
 
 ---

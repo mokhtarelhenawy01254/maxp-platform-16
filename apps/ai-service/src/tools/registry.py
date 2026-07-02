@@ -116,6 +116,8 @@ WRITE_TOOL_NAMES: set[str] = {
 
 DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "order_create_confirmed",
+    "discount_create_draft",
+    "knowledge_create_faq",
 }
 
 

@@ -1,16 +1,11 @@
 # User Preferences
 
 ## Language
-- User speaks Arabic (Egyptian dialect) and English
-- Prefers Arabic (Egyptian dialect) for casual communication
-- Project supports Arabic/English bilingual UI
-- DO NOT use Gulf (Khaleeji) dialect; use Egyptian Arabic when speaking Arabic
+- Arabic for conversation, English for code/technical output
 
-## Communication
-- Concise, direct answers preferred
-- Project named "maxp-platform"
+## Conventions
+- Follow project conventions in `.agents/skills/maxp-knowledge/references/conventions.md`
+- Ponytail mode active by default — lazy, minimal, no over-engineering
 
-## Setup
-- Working directory: `H:\maxp-platform`
-- Platform: Windows (win32)
-- Shell: PowerShell 7+
+## Preferences
+(Add as discovered)

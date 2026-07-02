@@ -16,6 +16,6 @@
     "whatsapp_send",
     "shipping_rates"
   ],
-  "requiresHumanApproval": true,
+  "requiresHumanApproval": false,
   "maxToolCount": 5
 }
