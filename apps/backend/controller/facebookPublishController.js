@@ -38,12 +38,15 @@ const createPost = async (req, res) => {
 
         for (const page of pages) {
             try {
+                const t0 = Date.now();
                 const tokenResult = await ensureValidFacebookPageAccessToken({
                     companyId: user.companyId,
                     pageId: page.pageId,
                     pageAccessToken: page.pageAccessToken,
                     allowRefresh: true,
                 });
+                const t1 = Date.now();
+                console.log(`[FACEBOOK-PUBLISH-DEBUG] Token validation for ${page.pageName}: ok=${tokenResult.ok}, source=${tokenResult.source}, took=${t1-t0}ms`);
 
                 if (!tokenResult.ok) {
                     const fbErr = tokenResult.validation?.error;
@@ -56,6 +59,8 @@ const createPost = async (req, res) => {
                     });
                     continue;
                 }
+
+                console.log(`[FACEBOOK-PUBLISH-DEBUG] Token valid for ${page.pageName}, proceeding to post`);
 
                 const pageAccessToken = tokenResult.pageAccessToken;
                 let payload = { access_token: pageAccessToken };
@@ -127,12 +132,15 @@ const createPost = async (req, res) => {
             } catch (error) {
                 const fbData = error.response?.data;
                 const fbError = fbData?.error;
-                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, message: error.message, stack: error.stack, code: error.code }));
+                const errorKeys = Object.keys(error);
+                const errorProps = {};
+                for (const k of errorKeys) errorProps[k] = String(error[k]);
+                console.error(`❌ [FACEBOOK-PUBLISH] Error posting to ${page.pageName}:`, JSON.stringify({ fbData, message: error.message, stack: error.stack, code: error.code, allKeys: errorKeys, errorProps, fullError: String(error), constructor: error.constructor?.name }));
                 results.push({
                     pageId: page.pageId,
                     pageName: page.pageName,
                     success: false,
-                    error: fbError?.message || fbError?.error_user_msg || error.message || error.code || JSON.stringify(fbData) || 'An unknown error occurred',
+                    error: fbError?.message || fbError?.error_user_msg || error.message || error.code || JSON.stringify(fbData) || JSON.stringify(errorProps) || 'An unknown error occurred',
                 });
             }
         }
