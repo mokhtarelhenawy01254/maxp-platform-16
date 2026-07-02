@@ -93,6 +93,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [isOrderSearchOpen, setIsOrderSearchOpen] = useState(false);
 
+  const { settings: sidebarSettings, userSettings, userLayout } = useSidebarSettings();
+
   const getCompanySettings = () => {
     const settings = user?.company?.settings;
     if (!settings) return {};
@@ -258,8 +260,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       className: "h-5 w-5",
     });
   }, []);
-
-  const { settings: sidebarSettings, userSettings, userLayout } = useSidebarSettings();
 
   const menuSections = useMemo(() => {
     if (!isI18nReady || useSuperAdminShell) {
