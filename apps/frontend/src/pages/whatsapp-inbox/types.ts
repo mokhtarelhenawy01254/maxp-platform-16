@@ -1,4 +1,4 @@
-export type RoutingMode = 'NUMBER_OWNER' | 'ROUND_ROBIN';
+export type RoutingMode = 'NUMBER_OWNER' | 'ROUND_ROBIN' | 'SHARED_INBOX';
 
 export type DistributionStrategy = 'ROUND_ROBIN';
 
@@ -48,6 +48,7 @@ export interface WorkspaceStats {
   configuredNumbers: number;
   exclusiveNumbers: number;
   roundRobinNumbers: number;
+  sharedInboxNumbers: number;
   connectedNumbers: number;
 }
 

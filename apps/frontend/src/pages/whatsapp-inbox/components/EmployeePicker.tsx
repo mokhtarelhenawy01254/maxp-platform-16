@@ -54,14 +54,23 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-foreground">
-          {t('whatsappInbox.workspaceEmployeesTitle')}
-          {selectedEmployeeIds.length > 0 && (
-            <span className="ml-1 text-xs font-normal text-muted-foreground">
-              ({selectedEmployeeIds.length})
-            </span>
-          )}
-        </h3>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            {t('whatsappInbox.workspaceEmployeesTitle')}
+            {selectedEmployeeIds.length > 0 && (
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                ({selectedEmployeeIds.length})
+              </span>
+            )}
+          </h3>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {routingMode === 'NUMBER_OWNER'
+              ? t('whatsappInbox.workspaceEmployeesDirectHint')
+              : routingMode === 'SHARED_INBOX'
+                ? t('whatsappInbox.workspaceEmployeesSharedInboxHint')
+                : t('whatsappInbox.workspaceEmployeesRoundRobinHint')}
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 size-3 -translate-y-1/2 text-muted-foreground ltr:left-2 rtl:right-2" />
@@ -124,8 +133,10 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 
         {filteredEmployees.map((employee) => {
           const isSelected = selectedEmployeeIds.includes(employee.id);
-          const isOwner = routingMode === 'NUMBER_OWNER';
-          const accent = isOwner ? 'primary' : 'secondary';
+          const accent =
+            routingMode === 'NUMBER_OWNER' ? 'primary' :
+            routingMode === 'SHARED_INBOX' ? 'tertiary' :
+            'secondary';
 
           return (
             <button

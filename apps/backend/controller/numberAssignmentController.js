@@ -64,7 +64,8 @@ exports.saveRoutingRule = async (req, res) => {
 
     if (
       routingMode !== ROUTING_MODES.NUMBER_OWNER &&
-      routingMode !== ROUTING_MODES.ROUND_ROBIN
+      routingMode !== ROUTING_MODES.ROUND_ROBIN &&
+      routingMode !== ROUTING_MODES.SHARED_INBOX
     ) {
       return res.status(400).json({ error: 'Invalid routing mode' });
     }

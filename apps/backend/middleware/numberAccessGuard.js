@@ -175,6 +175,12 @@ const conversationAccessGuard = async (req, res, next) => {
       });
     }
 
+    if (
+      routingMode === ROUTING_MODES.SHARED_INBOX
+    ) {
+      return next();
+    }
+
     next();
   } catch (error) {
     console.error('[ConversationAccessGuard] Error:', error.message);

@@ -48,6 +48,10 @@ class NumberAssignmentService {
       throw new Error('ROUND_ROBIN mode requires at least two employees.');
     }
 
+    if (routingMode === ROUTING_MODES.SHARED_INBOX && normalizedUserIds.length < 1) {
+      throw new Error('SHARED_INBOX mode requires at least one employee.');
+    }
+
     const session = await prisma.whatsAppSession.findFirst({
       where: { id: sessionId, companyId },
       select: { id: true }
@@ -364,6 +368,9 @@ class NumberAssignmentService {
         roundRobinNumbers: numbers.filter(
           (number) => number.isConfigured && number.routingMode === ROUTING_MODES.ROUND_ROBIN
         ).length,
+        sharedInboxNumbers: numbers.filter(
+          (number) => number.isConfigured && number.routingMode === ROUTING_MODES.SHARED_INBOX
+        ).length,
         connectedNumbers: numbers.filter(
           (number) => number.connectionStatus === 'CONNECTED'
         ).length
@@ -478,7 +485,7 @@ class NumberAssignmentService {
         if (!entry.isConfigured) return false;
 
         const allowedIds =
-          entry.routingMode === ROUTING_MODES.ROUND_ROBIN
+          entry.routingMode === ROUTING_MODES.ROUND_ROBIN || entry.routingMode === ROUTING_MODES.SHARED_INBOX
             ? entry.routingUserIds
             : entry.assignedUser
               ? [entry.assignedUser.id]

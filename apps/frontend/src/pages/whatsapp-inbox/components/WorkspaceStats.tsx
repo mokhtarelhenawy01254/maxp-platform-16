@@ -27,6 +27,11 @@ const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats, onStatClick }) =
       value: stats.roundRobinNumbers,
     },
     {
+      key: 'sharedInbox',
+      label: t('whatsappInbox.workspaceSharedInboxNumbers'),
+      value: stats.sharedInboxNumbers || 0,
+    },
+    {
       key: 'connected',
       label: t('whatsappInbox.workspaceConnectedNumbers'),
       value: stats.connectedNumbers,

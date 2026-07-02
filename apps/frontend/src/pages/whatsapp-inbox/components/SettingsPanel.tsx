@@ -254,6 +254,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <div className="rounded-lg border border-secondary/30 bg-secondary/10 px-4 py-3 dark:border-secondary/40 dark:bg-secondary/20">
                 {t('whatsappInbox.settingsPrivacyRuleRoundRobin')}
               </div>
+              <div className="rounded-lg border border-tertiary/30 bg-tertiary/10 px-4 py-3 dark:border-tertiary/40 dark:bg-tertiary/20">
+                {t('whatsappInbox.settingsPrivacyRuleSharedInbox')}
+              </div>
             </div>
           </section>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { UserCheck, Shuffle } from 'lucide-react';
+import { UserCheck, Shuffle, Eye } from 'lucide-react';
 import type { RoutingMode } from '../types';
 
 interface RoutingModeSelectorProps {
@@ -11,6 +11,7 @@ interface RoutingModeSelectorProps {
 const MODE_META: Record<RoutingMode, { icon: React.ElementType; color: string }> = {
   NUMBER_OWNER: { icon: UserCheck, color: 'primary' },
   ROUND_ROBIN: { icon: Shuffle, color: 'secondary' },
+  SHARED_INBOX: { icon: Eye, color: 'tertiary' },
 };
 
 const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
@@ -42,10 +43,18 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
         'border-secondary/30 bg-secondary/10 shadow-sm dark:border-secondary/50 dark:bg-secondary/20',
       indicatorClasses: 'border-secondary bg-[color:var(--color-card)]',
     },
+    {
+      value: 'SHARED_INBOX',
+      label: t('whatsappInbox.modeSharedInbox'),
+      description: t('whatsappInbox.modeSharedInboxDescription'),
+      activeClasses:
+        'border-tertiary/30 bg-tertiary/10 shadow-sm dark:border-tertiary/50 dark:bg-tertiary/20',
+      indicatorClasses: 'border-tertiary bg-[color:var(--color-card)]',
+    },
   ];
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-3">
       {modes.map((option) => {
         const isActive = mode === option.value;
         const Icon = MODE_META[option.value].icon;
@@ -68,7 +77,9 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
                     isActive
                       ? option.value === 'NUMBER_OWNER'
                         ? 'bg-primary/20 text-primary'
-                        : 'bg-secondary/20 text-secondary'
+                        : option.value === 'ROUND_ROBIN'
+                          ? 'bg-secondary/20 text-secondary'
+                          : 'bg-tertiary/20 text-tertiary'
                       : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
                   }`}
                 >
@@ -85,12 +96,14 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
               </div>
               <span
                 className={`mt-1 h-4 w-4 shrink-0 rounded-full border-2 transition-all duration-200 ${
-                  isActive
-                    ? `${option.indicatorClasses} ring-2 ring-offset-1 ${
-                        option.value === 'NUMBER_OWNER'
-                          ? 'ring-primary/30'
-                          : 'ring-secondary/30'
-                      }`
+                    isActive
+                      ? `${option.indicatorClasses} ring-2 ring-offset-1 ${
+                          option.value === 'NUMBER_OWNER'
+                            ? 'ring-primary/30'
+                            : option.value === 'ROUND_ROBIN'
+                              ? 'ring-secondary/30'
+                              : 'ring-tertiary/30'
+                        }`
                     : 'border-border bg-transparent'
                 }`}
               />

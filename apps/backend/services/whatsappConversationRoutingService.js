@@ -2,7 +2,8 @@ const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const ROUTING_MODES = {
   NUMBER_OWNER: 'NUMBER_OWNER',
-  ROUND_ROBIN: 'ROUND_ROBIN'
+  ROUND_ROBIN: 'ROUND_ROBIN',
+  SHARED_INBOX: 'SHARED_INBOX'
 };
 
 const DISTRIBUTION_STRATEGIES = {
@@ -42,7 +43,9 @@ const serializeRoutingUserIds = (userIds = []) =>
 const normalizeRoutingMode = (value) =>
   value === ROUTING_MODES.ROUND_ROBIN
     ? ROUTING_MODES.ROUND_ROBIN
-    : ROUTING_MODES.NUMBER_OWNER;
+    : value === ROUTING_MODES.SHARED_INBOX
+      ? ROUTING_MODES.SHARED_INBOX
+      : ROUTING_MODES.NUMBER_OWNER;
 
 const normalizeDistributionStrategy = (value) =>
   value === DISTRIBUTION_STRATEGIES.ROUND_ROBIN
@@ -72,7 +75,7 @@ const getAssignmentRoutingUserIds = (assignment) => {
   const mode = normalizeRoutingMode(assignment.routingMode);
   const configuredUserIds = parseRoutingUserIds(assignment.routingUserIds);
 
-  if (mode === ROUTING_MODES.ROUND_ROBIN) {
+  if (mode === ROUTING_MODES.ROUND_ROBIN || mode === ROUTING_MODES.SHARED_INBOX) {
     return configuredUserIds;
   }
 
@@ -160,7 +163,7 @@ async function resolveConversationAssignee({
     };
   }
 
-  if (routingMode === ROUTING_MODES.NUMBER_OWNER) {
+  if (routingMode === ROUTING_MODES.NUMBER_OWNER || routingMode === ROUTING_MODES.SHARED_INBOX) {
     return {
       assignedUserId: availableUserIds[0],
       routingMode,

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Users } from 'lucide-react';
+import { AlertTriangle, Eye, Users } from 'lucide-react';
 import type { Employee, PreviewResult, RoutingMode, WorkspaceNumber } from '../types';
 
 interface EmployeeSummaryProps {
@@ -87,6 +87,22 @@ const EmployeeSummary: React.FC<EmployeeSummaryProps> = ({
           </div>
         )}
       </div>
+
+      {routingMode === 'SHARED_INBOX' && selectedEmployeeIds.length >= 1 && (
+        <div className="rounded-md border border-tertiary/30 bg-tertiary/5 p-3">
+          <h3 className="text-xs font-semibold text-foreground">
+            {t('whatsappInbox.privacySummarySharedInbox')}
+          </h3>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-tertiary/20 text-tertiary">
+              <Eye className="size-3" />
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {t('whatsappInbox.selectedEmployeesCount', { count: selectedEmployeeIds.length })}
+            </span>
+          </div>
+        </div>
+      )}
 
       {routingMode === 'ROUND_ROBIN' && selectedEmployeeIds.length >= 2 && (
         <div className="rounded-md border border-secondary/30 bg-secondary/5 p-3">

@@ -39,6 +39,7 @@ const EMPTY_STATS: WorkspaceStats = {
   configuredNumbers: 0,
   exclusiveNumbers: 0,
   roundRobinNumbers: 0,
+  sharedInboxNumbers: 0,
   connectedNumbers: 0,
 };
 
@@ -251,6 +252,14 @@ export const useRoutingWorkspace = (): UseRoutingWorkspace => {
       setFeedback({
         type: 'error',
         text: t('whatsappInbox.errors.roundRobinRequiresTwoEmployees'),
+      });
+      return;
+    }
+
+    if (routingMode === 'SHARED_INBOX' && selectedEmployeeIds.length < 1) {
+      setFeedback({
+        type: 'error',
+        text: t('whatsappInbox.errors.directModeRequiresOneEmployee'),
       });
       return;
     }

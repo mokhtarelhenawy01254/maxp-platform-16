@@ -468,8 +468,9 @@ class WhatsAppInboxService {
     const routingMode = normalizeRoutingMode(sessionAssignment?.routingMode);
 
     if (
-      routingMode === ROUTING_MODES.NUMBER_OWNER &&
-      routingUserIds.includes(userId)
+      routingUserIds.includes(userId) &&
+      (routingMode === ROUTING_MODES.NUMBER_OWNER ||
+       routingMode === ROUTING_MODES.SHARED_INBOX)
     ) {
       return {};
     }

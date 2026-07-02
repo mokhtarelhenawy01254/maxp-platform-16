@@ -15,6 +15,7 @@ const {
   serializeSettingsPayload
 } = require('./whatsappInboxSettingsService');
 const { normalizeRole } = require('../middleware/rbacMiddleware');
+const { parseRoutingUserIds, normalizeRoutingMode, ROUTING_MODES } = require('./whatsappConversationRoutingService');
 
 const ROUTING_STRATEGIES = {
   ROUND_ROBIN: 'ROUND_ROBIN',
@@ -515,6 +516,37 @@ class WhatsAppAssignmentEngineService {
           teamId: assignment.team?.id || null,
           isTeamLeader: member.isTeamLeader
         });
+      }
+    }
+
+    const routingMode = normalizeRoutingMode(assignment.routingMode);
+    if (poolById.size === 0 && (routingMode === ROUTING_MODES.SHARED_INBOX || routingMode === ROUTING_MODES.ROUND_ROBIN)) {
+      const routingIds = parseRoutingUserIds(assignment.routingUserIds);
+      if (routingIds.length > 0) {
+        const routingUsers = await tx.user.findMany({
+          where: {
+            id: { in: routingIds },
+            isActive: true,
+            companyId
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            isActive: true,
+            availability: true,
+            timezone: true,
+            department: true,
+            skills: true
+          }
+        });
+        for (const user of routingUsers) {
+          const normalizedRole = normalizeRole(user.role);
+          if (normalizedRole === 'MODERATOR' || normalizedRole === 'TEAM_LEADER') {
+            poolById.set(user.id, { user, teamId: null });
+          }
+        }
       }
     }
 

@@ -138,6 +138,8 @@ html *::after {
   --color-primary-foreground: #ffffff;
   --color-secondary: #22c7c9;
   --color-secondary-foreground: #04101d;
+  --color-tertiary: #8b5cf6;
+  --color-tertiary-foreground: #ffffff;
   --color-background: #f4f8fc;
   --color-foreground: #0f1b2d;
   --color-muted: #dce6f1;
