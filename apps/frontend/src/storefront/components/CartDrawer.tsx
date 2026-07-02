@@ -7,6 +7,10 @@ import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { useMinimumOrderSettings } from '../hooks/useMinimumOrderSettings';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { formatStorefrontCurrency } from '../utils/currency';
+import {
+  getActiveStorePromotionFromCompany,
+  calculateStorePromotionDiscount,
+} from '../utils/storePromotion';
 import { Link, useLocation } from 'react-router-dom';
 import { buildStorefrontPath } from '../utils/paths';
 import StorefrontProductImage from './StorefrontProductImage';
@@ -106,6 +110,9 @@ const CartDrawer: React.FC = () => {
   }, [isOpen, items.length]);
 
   const subtotal = getSubtotal();
+  const storePromotion = getActiveStorePromotionFromCompany(settings?.company);
+  const { discount: storePromotionDiscount, tier: storePromotionTier } =
+    calculateStorePromotionDiscount(items, storePromotion);
   const displayEntries = React.useMemo(() => getCartDisplayEntries(items), [items]);
   const checkoutPath = buildStorefrontPath(location.pathname, '/checkout', location.search);
   const shopPath = buildStorefrontPath(location.pathname, '/shop', location.search);
@@ -787,6 +794,14 @@ const CartDrawer: React.FC = () => {
                 {formatStorefrontCurrency(subtotal, currency)}
               </span>
             </div>
+            {storePromotionDiscount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-green-700 dark:text-green-400 font-medium">{storePromotionTier?.label || 'عرض الكمية'}</span>
+                <span className="text-green-700 dark:text-green-400 font-semibold">
+                  -{formatStorefrontCurrency(storePromotionDiscount, currency)}
+                </span>
+              </div>
+            )}
             {khemetShippingHint ? (
               <p className="text-xs leading-5 text-[#7b6d58]">
                 {khemetShippingHint}
@@ -801,7 +816,7 @@ const CartDrawer: React.FC = () => {
             >
               {minimumOrder.blocked
                 ? `${theme.direction === 'rtl' ? 'متبقي' : 'Remaining'} ${formatStorefrontCurrency(minimumOrder.remaining, currency)}`
-                : `${checkoutLabel} — ${formatStorefrontCurrency(subtotal, currency)}`}
+                : `${checkoutLabel} — ${formatStorefrontCurrency(Math.max(0, subtotal - storePromotionDiscount), currency)}`}
             </Button>
             <button
               onClick={onClose}
