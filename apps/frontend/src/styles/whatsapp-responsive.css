@@ -438,3 +438,30 @@
   scrollbar-gutter: stable;
 }
 
+/* ── 23. Emoji Picker Bottom Sheet Drawer on Mobile ── */
+@media (max-width: 640px) {
+  .whatsapp-emoji-picker {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 350px !important;
+    border-radius: 1.5rem 1.5rem 0 0 !important;
+    z-index: 50 !important;
+    margin-bottom: 0 !important;
+    animation: wa-tray-up 250ms cubic-bezier(0.2, 0, 0, 1) !important;
+    background-color: var(--color-card) !important;
+    border-top: 1px solid var(--shell-control-border) !important;
+  }
+  
+  .whatsapp-emoji-picker .EmojiPickerReact {
+    width: 100% !important;
+    height: 100% !important;
+    --epr-picker-border-radius: 0px !important;
+    border: none !important;
+    background-color: transparent !important;
+  }
+}
+

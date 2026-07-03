@@ -11,6 +11,8 @@
   1. Leveraged `:has()` CSS selector on `.app-shell-content` to dynamically eliminate wrapper padding.
   2. Added dedicated `whatsapp-responsive.css` file providing View Transitions API configurations, horizontal-scrolling filter flex containers, safe-area bottom buffers, and slide-up tools tray panels.
   3. Wrapped panel switches with React touch gestures and CSS-native transition triggers.
+  4. Redesigned the absolute-positioned emoji picker to act as a full-width bottom sheet drawer on mobile viewports (< 640px) with touch-outside dismissal.
+  5. Fixed hardcoded white backgrounds in `AudioRecorder.tsx` to use themed surface variables, enabling full dark mode styling support.
 - **Files Modified**:
   - `apps/frontend/src/styles/index.css`
   - `apps/frontend/src/styles/whatsapp-responsive.css`
@@ -18,6 +20,8 @@
   - `apps/frontend/src/pages/whatsapp/components/ChatSidebar.tsx`
   - `apps/frontend/src/pages/whatsapp/components/ChatWindow.tsx`
   - `apps/frontend/src/pages/whatsapp/components/MessageBubble.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/AudioRecorder.tsx`
+
 
 ### [FIX] WhatsApp Inbox Auto-Assignment & Reassignment Engine Hardening
 - **Date**: 2026-07-03

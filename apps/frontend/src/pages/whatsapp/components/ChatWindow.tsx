@@ -311,11 +311,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : (
           <div className="relative flex flex-wrap items-end gap-2">
             {showEmojiPicker ? (
-              <div className="whatsapp-emoji-picker absolute bottom-full left-0 z-20 mb-3 overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] shadow-lg">
-                <EmojiPicker
-                  onEmojiClick={(data) => setNewMessage(newMessage + data.emoji)}
-                />
-              </div>
+              <>
+                <div className="wa-rich-tools-backdrop sm:hidden" onClick={() => setShowEmojiPicker(false)} />
+                <div className="whatsapp-emoji-picker absolute bottom-full left-0 z-20 mb-3 overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] shadow-lg">
+                  <EmojiPicker
+                    onEmojiClick={(data) => setNewMessage(newMessage + data.emoji)}
+                  />
+                </div>
+              </>
             ) : null}
 
             <div className="order-1 flex shrink-0 items-center gap-1">

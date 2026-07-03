@@ -63,7 +63,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   };
 
   return (
-    <div className="flex w-full items-center gap-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-white/80 px-3 py-2 shadow-md">
+    <div className="flex w-full items-center gap-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-3 py-2 shadow-md">
       <Button
         variant="ghost"
         size="icon-sm"
