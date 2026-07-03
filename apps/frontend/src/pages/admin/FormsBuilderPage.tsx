@@ -452,7 +452,7 @@ const FormsBuilderPage: React.FC = () => {
                           <button onClick={() => { setEditForm(form); setShowModal(true); }} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="تعديل"><FileText size={16} /></button>
                           <button onClick={() => setSubmissionsFormId(form.id)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="الردود"><Users size={16} /></button>
                           <button onClick={() => setAnalyticsFormId(form.id)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="التحليلات"><BarChart3 size={16} /></button>
-                          <a href={`/forms/${form.slug}`} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="عرض"><ExternalLink size={16} /></a>
+                          <a href={`/forms/${form.slug}${user?.companyId ? `?companyId=${user.companyId}` : ""}`} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="عرض"><ExternalLink size={16} /></a>
                           <button onClick={() => handleDelete(form)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-500" title="حذف"><Trash2 size={16} /></button>
                         </div>
                       </td>
