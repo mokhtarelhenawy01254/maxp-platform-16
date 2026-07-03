@@ -198,7 +198,7 @@ async function sendText(sessionId, to, text, options = {}) {
                 isAIResponse: options.isAIResponse || false,
                 aiConfidence: options.aiConfidence,
                 metadata: options.metadata
-            }, { companyId: dbSession?.companyId });
+            }, { companyId: dbSession?.companyId, senderId: options.senderId });
 
             await ensureMetaContact(sessionId, jid, { isOutgoing: true });
             return savedMessage;
@@ -251,7 +251,7 @@ async function sendText(sessionId, to, text, options = {}) {
             isAIResponse: options.isAIResponse || false,
             aiConfidence: options.aiConfidence,
             metadata: options.metadata
-        }, { companyId: session.companyId });
+        }, { companyId: session.companyId, senderId: options.senderId });
 
         // تحديث جهة الاتصال
         await WhatsAppManager.updateContact(sessionId, jid, { pushName: undefined }, session.sock, { isOutgoing: true });
