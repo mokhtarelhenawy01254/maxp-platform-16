@@ -80,7 +80,7 @@ type SidebarCompany = {
     name?: string | null;
     plan?: string | null;
     sidebarLayout?: string | null;
-    settings?: string | null;
+    aiToolsEnabled?: boolean;
 };
 
 type SidebarUser = {
@@ -266,10 +266,7 @@ export const getSidebarConfig = (
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
     }
 
-    const companySettings: Record<string, unknown> = (() => {
-        try { return currentCompany?.settings ? JSON.parse(currentCompany.settings) : {}; } catch { return {}; }
-    })();
-    const isFeatureEnabled = (key: string) => companySettings[key] === true;
+    const isFeatureEnabled = (key: string) => currentCompany?.aiToolsEnabled === true;
 
     const isAppActive = (slug: string) => {
         // ponytail: isSuperCompany removed — app visibility now purely per activeApps
