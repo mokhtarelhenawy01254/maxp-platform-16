@@ -491,17 +491,8 @@ export const getSidebarConfig = (
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
                 { to: '/admin/ai-hub?tab=routing', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.channelRouting') },
-            ]
-        }] : []),
-
-        // AI Skills & Tools (عند تفعيل aiToolsEnabled)
-        ...(isFeatureEnabled('aiToolsEnabled') ? [{
-            id: 'ai-skills-tools',
-            title: t('sidebar.aiOperatorSection'),
-            icon: SparklesIcon,
-            items: [
-                { to: '/admin/ai-hub?tab=skills', icon: SwatchIcon, label: t('sidebar.aiAgentSkills') },
-                { to: '/admin/ai-hub?tab=tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools') },
+                { to: '/admin/ai-hub?tab=skills', icon: SwatchIcon, label: t('sidebar.aiAgentSkills'), hidden: !isFeatureEnabled('aiToolsEnabled') },
+                { to: '/admin/ai-hub?tab=tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools'), hidden: !isFeatureEnabled('aiToolsEnabled') },
             ]
         }] : []),
 
