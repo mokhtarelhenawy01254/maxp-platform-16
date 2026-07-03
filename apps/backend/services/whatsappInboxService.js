@@ -124,7 +124,7 @@ class WhatsAppInboxService {
       where: { id: conversationId },
       include: {
         customer: true,
-        assignedUser: {
+        user: {
           select: { id: true, firstName: true, lastName: true, avatar: true, department: true, skills: true }
         },
         messages: {
