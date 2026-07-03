@@ -6,28 +6,7 @@
    Touch Feedback, and mobile-native patterns.
    ============================================================ */
 
-/* ── 1. Layout Integration — Remove AppShell padding for WhatsApp ── */
-.app-shell-content:has(.whatsapp-workspace-root) {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-
-.app-shell-content:has(.whatsapp-workspace-root) > * {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-shell-content:has(.whatsapp-workspace-root) > .whatsapp-workspace-root {
-  height: 100%;
-  min-height: 0;
-  flex: 1;
-}
-
-/* ── 2. Root Container — Full Height ── */
+/* ── 1. Root Container — Full Height ── */
 .whatsapp-workspace-root {
   display: flex;
   flex-direction: column;
@@ -416,14 +395,29 @@
   }
 }
 
-/* ── 20. Mobile: hide sidebar when chat is open, hide app-shell header ── */
-@media (max-width: 1279px) {
-  .wa-panel-sidebar.max-xl\:hidden {
+/* ── 20. Mobile: hide sidebar when chat is open, hide app-shell header, remove main padding ── */
+@media (max-width: 1023px) {
+  .wa-panel-sidebar.max-lg\:hidden {
     display: none !important;
   }
 
-  .app-shell-root:has(.whatsapp-workspace-root .wa-panel-sidebar.max-xl\:hidden) .app-shell-header {
+  /* Hide app-shell header when WhatsApp chat is active on mobile */
+  body.wa-mobile-chat-active header.business-shell-header {
     display: none !important;
+  }
+
+  /* Remove main content padding for WhatsApp edge-to-edge on mobile */
+  body.wa-mobile-chat-active main.business-shell-main {
+    padding: 0 !important;
+    overflow-y: hidden !important;
+  }
+
+  /* Strip card styles from inner workspace div when full-screen on mobile */
+  body.wa-mobile-chat-active .whatsapp-workspace-root > div:not(.wa-panel-sidebar):not(.wa-panel-chat) {
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background-color: var(--color-background) !important;
   }
 }
 
@@ -465,6 +459,13 @@
     --epr-picker-border-radius: 0px !important;
     border: none !important;
     background-color: transparent !important;
+  }
+}
+
+/* ── 25. Desktop: stronger divider between sidebar and chat panels ── */
+@media (min-width: 1024px) {
+  .wa-panel-sidebar {
+    border-right: 1px solid color-mix(in srgb, var(--shell-control-border) 100%, transparent) !important;
   }
 }
 
