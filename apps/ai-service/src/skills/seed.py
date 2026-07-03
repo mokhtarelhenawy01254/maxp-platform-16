@@ -45,10 +45,14 @@ async def seed_skills(session: AsyncSession) -> list[Skill]:
         )
         record = existing.scalar_one_or_none()
 
+        raw_triggers = config.get("triggerPhrases", [])
+        trigger_str = ",".join(raw_triggers) if isinstance(raw_triggers, list) else ""
+
         if record:
             record.name = config.get("displayName", skill_id)
             record.version = config.get("version", "1.0.0")
             record.description = config.get("description", "")
+            record.trigger_phrases = trigger_str
             record.instructions = instructions
             record.allowed_tools = config.get("allowedTools", [])
             record.requires_human_approval = bool(config.get("requiresHumanApproval", False))
@@ -61,7 +65,7 @@ async def seed_skills(session: AsyncSession) -> list[Skill]:
                 name=config.get("displayName", skill_id),
                 version=config.get("version", "1.0.0"),
                 description=config.get("description", ""),
-                trigger_phrases="",
+                trigger_phrases=trigger_str,
                 instructions=instructions,
                 allowed_tools=config.get("allowedTools", []),
                 channels=[],

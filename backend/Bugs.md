@@ -1,5 +1,18 @@
 # Backend Bugs Log
 
+### [FIX] Vite Dynamic Chunk Load 404 Failure & Frontend Cache Inconsistency
+- **Date**: 2026-07-03
+- **Description**: Navigating between lazy-loaded routes (like Settings or Admin) after a production deployment resulted in a crash with `TypeError: Failed to fetch dynamically imported module`.
+- **Root Cause**:
+  1. The root `ErrorBoundary` (`LazyErrorBoundary` inside `AdminAppBootstrap.tsx`) was loaded lazily using `React.lazy`. When a new deployment deleted old hashed assets, attempts to load the error boundary itself failed with 404 errors, causing the application to crash completely without executing any recovery logic.
+  2. The production Nginx configuration file `nginx_configs/maxp.online.conf` was missing cache-control header overrides for the main React Single Page Application (SPA) entrypoint. This allowed the browser or intermediate CDNs to cache `index.html`, making it request stale, deleted chunk names instead of the newly deployed ones.
+- **Resolution**:
+  1. Refactored `apps/frontend/src/bootstrap/AdminAppBootstrap.tsx` to statically import `ErrorBoundary` and removed the lazy `LazyErrorBoundary` wrapper, ensuring the error recovery system is always loaded and capable of catching module loading failures.
+  2. Modified `nginx_configs/maxp.online.conf` to add explicit no-cache headers (`Cache-Control "no-cache, no-store, must-revalidate"`, `Pragma "no-cache"`, `Expires "0"`) to both the React frontend and wildcard storefront routing server blocks, matching `mokhtarelhenawy.online.conf`.
+- **Files Modified**:
+  - `apps/frontend/src/bootstrap/AdminAppBootstrap.tsx`
+  - `nginx_configs/maxp.online.conf`
+
 ### [UI/UX] WhatsApp Inbox Double Scrolling & Mobile UX Alignment
 - **Date**: 2026-07-03
 - **Description**: Squeezed layouts on mobile, double scrolling caused by layout wrapper parent padding, and lack of mobile UX animations/safe-areas in `/whatsapp`.

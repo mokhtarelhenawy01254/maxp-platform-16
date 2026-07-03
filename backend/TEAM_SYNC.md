@@ -17,6 +17,9 @@
   4. Secured the background interval against concurrent execution across PM2 cluster instances using PostgreSQL distributed advisory locks (`pg_try_advisory_lock`).
   5. Added Jest unit tests to verify reassignment cooldown and SLA timeout behaviors.
   6. Fixed a candidate pool building bug that prioritized direct `assignedUser` (number owner) over configured `routingUserIds` in Round Robin / Shared Inbox modes, ensuring correct distribution to employee agents.
+- **Vite Chunk Load Recovery & Nginx Cache Control (FIX)**: Fixed frontend crashes on navigation after deployment where old chunks failed to fetch (404):
+  1. Refactored `AdminAppBootstrap.tsx` to import `ErrorBoundary` statically instead of dynamically with `React.lazy`, ensuring the recovery mechanism is always active and doesn't fail to load itself when old chunks are deleted.
+  2. Configured both `location /` blocks in `nginx_configs/maxp.online.conf` with Cache-Control headers (`no-cache, no-store, must-revalidate`, `Pragma "no-cache"`, `Expires "0"`) to prevent the browser from caching `index.html` and force it to fetch updated assets.
 
 ## 2026-07-02 / 2026-03-09
 - **AI Agent Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors on the sandbox testing tab (`/admin/ai-hub?tab=sandbox`). Resolved a `NameError` crash in `skills_pipeline.py` caused by an undefined `has_images` variable reference inside `_llm_call`, and implemented a fallback Arabic response when the LLM returns an empty message after multiple retries (due to provider timeouts or rate limits), preventing empty replies from reaching downstream backend pipelines.
