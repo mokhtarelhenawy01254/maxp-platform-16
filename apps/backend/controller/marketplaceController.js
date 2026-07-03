@@ -417,6 +417,21 @@ async function ensureDbAppBySlug(slug, options = {}) {
     if (isLegacyTemplateCategory(dbApp.category)) return null;
     if (onlyActive && !dbApp.isActive) return null;
     if (onlyPublic && !dbApp.isPublic) return null;
+    if (getMarketplaceCatalogSource() !== 'db') {
+      const catalogApp = await marketplaceCatalogService.getAppBySlug(normalizedSlug, { onlyActive, onlyPublic });
+      if (catalogApp && !isLegacyTemplateCategory(catalogApp.category)) {
+        const catalogRequired = normalizeStringArray(catalogApp.requiredApps);
+        const dbRequired = normalizeStringArray(dbApp.requiredApps);
+        if (JSON.stringify(catalogRequired) !== JSON.stringify(dbRequired)) {
+          return executeWithRetry(async () => {
+            return await getSharedPrismaClient().marketplaceApp.update({
+              where: { id: dbApp.id },
+              data: { requiredApps: catalogRequired, updatedAt: new Date() }
+            });
+          });
+        }
+      }
+    }
     return dbApp;
   }
 
