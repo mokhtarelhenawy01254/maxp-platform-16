@@ -1315,6 +1315,16 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
                 remoteJid
             });
 
+            if (savedMessage.senderId) {
+                const senderUser = await getSharedPrismaClient().user.findUnique({
+                    where: { id: savedMessage.senderId },
+                    select: { firstName: true, lastName: true }
+                });
+                if (senderUser) {
+                    savedMessage.senderName = `${senderUser.firstName} ${senderUser.lastName}`.trim();
+                }
+            }
+
             emitToAudience(io, {
                 companyId,
                 userIds: audience.userIds,
