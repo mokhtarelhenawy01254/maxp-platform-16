@@ -9,6 +9,7 @@
   5. Implemented container `:has(.whatsapp-workspace-root)` overrides in `index.css` to dynamically strip out dashboard container paddings and double scrolls.
   6. Added dark-mode theme compatibility to `AudioRecorder.tsx` by replacing hardcoded white backgrounds with themed surface variables.
   7. Redesigned the `EmojiPicker` on mobile screens to act as a full-width bottom sheet drawer with smooth slide-up animations and touch-outside dismissal support.
+  8. Integrated touch swipe gestures (`Swipe-to-Archive`) on conversation cards inside the chat list sidebar on mobile screens with spring physics, auto-closing behaviors, and full RTL layout directions.
 - **WhatsApp Inbox Auto-Assignment & Reassignment Hardening (FIX)**: Fixed bugs in the WhatsApp auto-routing and reassignment sweep mechanism:
   1. Unified incoming webhook sync `WhatsAppSyncService` to delegate all auto-assignments to the advanced `WhatsAppAssignmentEngineService`, ensuring online checks, capacity limits, working hours, and advisory locks are respected.
   2. Resolved the infinite 60-second reassignment loop (ping-pong) by adding a 5-minute cooldown period and making the SLA response timeout window start relative to `lastAssignedAt` if the agent was assigned after the message.

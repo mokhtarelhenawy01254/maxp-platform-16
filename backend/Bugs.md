@@ -13,6 +13,7 @@
   3. Wrapped panel switches with React touch gestures and CSS-native transition triggers.
   4. Redesigned the absolute-positioned emoji picker to act as a full-width bottom sheet drawer on mobile viewports (< 640px) with touch-outside dismissal.
   5. Fixed hardcoded white backgrounds in `AudioRecorder.tsx` to use themed surface variables, enabling full dark mode styling support.
+  6. Implemented touch swipe-to-action handlers (`Swipe-to-Archive`) on conversation items in `ChatSidebar.tsx` to mimic mobile app actions.
 - **Files Modified**:
   - `apps/frontend/src/styles/index.css`
   - `apps/frontend/src/styles/whatsapp-responsive.css`

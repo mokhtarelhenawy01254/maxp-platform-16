@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
@@ -234,6 +234,70 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     mouseY: number;
     contact: Contact;
   } | null>(null);
+
+  // Swipe-to-action states for mobile
+  const [swipedContactId, setSwipedContactId] = useState<string | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const swipeTouchStartRef = useRef<number>(0);
+  const swipeTouchStartYRef = useRef<number>(0);
+  const isSwipingRef = useRef<boolean>(false);
+
+  const handleSwipeTouchStart = (e: React.TouchEvent, contactId: string) => {
+    swipeTouchStartRef.current = e.touches[0].clientX;
+    swipeTouchStartYRef.current = e.touches[0].clientY;
+    isSwipingRef.current = true;
+  };
+
+  const handleSwipeTouchMove = (e: React.TouchEvent, contactId: string) => {
+    if (!isSwipingRef.current) return;
+    const diffX = e.touches[0].clientX - swipeTouchStartRef.current;
+    const diffY = Math.abs(e.touches[0].clientY - swipeTouchStartYRef.current);
+    
+    // If scrolling vertically, do not swipe
+    if (diffY > 30 && Math.abs(diffX) < 10) {
+      isSwipingRef.current = false;
+      setSwipeOffset(0);
+      setSwipedContactId(null);
+      return;
+    }
+
+    const isRtl = document.documentElement.dir === 'rtl';
+    const limit = 80;
+    
+    if (isRtl) {
+      if (diffX > 0) {
+        setSwipedContactId(contactId);
+        setSwipeOffset(Math.min(limit, diffX));
+      }
+    } else {
+      if (diffX < 0) {
+        setSwipedContactId(contactId);
+        setSwipeOffset(Math.max(-limit, diffX));
+      }
+    }
+  };
+
+  const handleSwipeTouchEnd = (e: React.TouchEvent, contact: Contact) => {
+    isSwipingRef.current = false;
+    const isRtl = document.documentElement.dir === 'rtl';
+    const threshold = 40;
+    
+    if (isRtl) {
+      if (swipeOffset > threshold) {
+        setSwipeOffset(80);
+      } else {
+        setSwipeOffset(0);
+        setSwipedContactId(null);
+      }
+    } else {
+      if (swipeOffset < -threshold) {
+        setSwipeOffset(-80);
+      } else {
+        setSwipeOffset(0);
+        setSwipedContactId(null);
+      }
+    }
+  };
 
   const sessionOptions = useMemo(
     () => sessions.filter((session) => session.id !== "all"),
@@ -674,90 +738,129 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             {filteredConversations.map((contact) => {
               const contactName = getContactName(contact);
               const isSelected = selectedContact?.id === contact.id;
+              const isSwiped = swipedContactId === contact.id;
 
               return (
-                <button
-                  key={contact.id}
-                  type="button"
-                  onClick={() => onSelectContact(contact)}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    setContextMenu({
-                      mouseX: event.clientX + 2,
-                      mouseY: event.clientY - 6,
-                      contact,
-                    });
-                  }}
-                  className={cn(
-                    "wa-conversation-item min-h-[4rem] w-full rounded-2xl border px-3 py-2 text-start sm:min-h-[4.5rem] sm:py-2.5",
-                    isSelected
-                      ? "border-[color:var(--color-primary)] bg-primary/10"
-                      : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] hover:bg-[var(--whatsapp-surface-hover)]",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar>
-                      <AvatarImage src={contact.profilePicUrl || undefined} />
-                      <AvatarFallback className="bg-primary/8 text-xs font-semibold text-[color:var(--color-primary)]">
-                        {getContactInitials(contactName)}
-                      </AvatarFallback>
-                    </Avatar>
+                <div key={contact.id} className="relative overflow-hidden rounded-2xl">
+                  {/* Action panel underneath */}
+                  <div
+                    className={cn(
+                      "absolute inset-y-0 flex items-center px-4 transition-opacity duration-150",
+                      document.documentElement.dir === "rtl" ? "left-0 bg-primary/20 text-[color:var(--color-primary)] rounded-l-2xl" : "right-0 bg-primary/20 text-[color:var(--color-primary)] rounded-r-2xl",
+                      isSwiped ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
+                    style={{ width: '80px' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onArchiveChat(contact);
+                        setSwipedContactId(null);
+                        setSwipeOffset(0);
+                      }}
+                      className="flex h-full w-full flex-col items-center justify-center gap-1 text-xs font-semibold"
+                    >
+                      <Archive className="size-4" />
+                      <span>{contact.isArchived ? "إلغاء" : "أرشفة"}</span>
+                    </button>
+                  </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p
-                              className={cn(
-                                "truncate text-sm text-[color:var(--color-foreground)]",
-                                contact.unreadCount > 0 && "font-semibold",
-                              )}
-                            >
-                              {contactName}
-                            </p>
-                            {contact.isGroup ? (
-                              <Badge
-                                variant="outline"
-                                className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-1.5 text-[9px] uppercase text-[color:var(--color-muted-foreground)]"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (swipedContactId === contact.id) {
+                        setSwipedContactId(null);
+                        setSwipeOffset(0);
+                      } else {
+                        onSelectContact(contact);
+                      }
+                    }}
+                    onTouchStart={(e) => handleSwipeTouchStart(e, contact.id)}
+                    onTouchMove={(e) => handleSwipeTouchMove(e, contact.id)}
+                    onTouchEnd={(e) => handleSwipeTouchEnd(e, contact)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      setContextMenu({
+                        mouseX: event.clientX + 2,
+                        mouseY: event.clientY - 6,
+                        contact,
+                      });
+                    }}
+                    className={cn(
+                      "wa-conversation-item min-h-[4rem] w-full rounded-2xl border px-3 py-2 text-start transition-all duration-150 sm:min-h-[4.5rem] sm:py-2.5",
+                      isSelected
+                        ? "border-[color:var(--color-primary)] bg-primary/10"
+                        : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] hover:bg-[var(--whatsapp-surface-hover)]",
+                    )}
+                    style={{
+                      transform: isSwiped ? `translateX(${swipeOffset}px)` : 'translateX(0px)',
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar>
+                        <AvatarImage src={contact.profilePicUrl || undefined} />
+                        <AvatarFallback className="bg-primary/8 text-xs font-semibold text-[color:var(--color-primary)]">
+                          {getContactInitials(contactName)}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p
+                                className={cn(
+                                  "truncate text-sm text-[color:var(--color-foreground)]",
+                                  contact.unreadCount > 0 && "font-semibold",
+                                )}
                               >
-                                G
-                              </Badge>
+                                {contactName}
+                              </p>
+                              {contact.isGroup ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-1.5 text-[9px] uppercase text-[color:var(--color-muted-foreground)]"
+                                >
+                                  G
+                                </Badge>
+                              ) : null}
+                            </div>
+                          </div>
+                          <p
+                            className={cn(
+                              "shrink-0 text-[11px]",
+                              contact.unreadCount > 0
+                                ? "font-medium text-[color:var(--color-primary)]"
+                                : "text-[color:var(--color-muted-foreground)]",
+                            )}
+                          >
+                            {formatTime(contact.lastMessageAt)}
+                          </p>
+                        </div>
+
+                        <div className="mt-1 flex items-center justify-between gap-2">
+                          <p className="line-clamp-1 text-sm leading-5 text-[color:var(--color-muted-foreground)]">
+                            {getLastMessagePreview(contact)}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {contact.isPinned ? (
+                              <Pin className="size-3 text-[color:var(--color-muted-foreground)]" />
+                            ) : null}
+                            {contact.isMuted ? (
+                              <VolumeX className="size-3 text-[color:var(--color-muted-foreground)]" />
+                            ) : null}
+                            {contact.unreadCount > 0 ? (
+                              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--color-primary)] px-1 py-0.5 text-[10px] font-semibold text-white">
+                                {contact.unreadCount}
+                              </span>
                             ) : null}
                           </div>
                         </div>
-                        <p
-                          className={cn(
-                            "shrink-0 text-[11px]",
-                            contact.unreadCount > 0
-                              ? "font-medium text-[color:var(--color-primary)]"
-                              : "text-[color:var(--color-muted-foreground)]",
-                          )}
-                        >
-                          {formatTime(contact.lastMessageAt)}
-                        </p>
-                      </div>
-
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <p className="line-clamp-1 text-sm leading-5 text-[color:var(--color-muted-foreground)]">
-                          {getLastMessagePreview(contact)}
-                        </p>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          {contact.isPinned ? (
-                            <Pin className="size-3 text-[color:var(--color-muted-foreground)]" />
-                          ) : null}
-                          {contact.isMuted ? (
-                            <VolumeX className="size-3 text-[color:var(--color-muted-foreground)]" />
-                          ) : null}
-                          {contact.unreadCount > 0 ? (
-                            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--color-primary)] px-1 py-0.5 text-[10px] font-semibold text-white">
-                              {contact.unreadCount}
-                            </span>
-                          ) : null}
-                        </div>
                       </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                </div>
               );
             })}
 
