@@ -292,7 +292,7 @@ export default function EducationManagementPage() {
     totalPackages: packages.filter(p => p.isActive).length,
     totalStudents: students.filter(s => s.isActive).length,
     totalTeachers: teachers.filter(t => t.isActive).length,
-    activeEnrollments: enrollments.filter(e => e.isActive && e.remainingHours > 0).length,
+    activeEnrollments: enrollments.filter(e => e.remainingHours > 0).length,
     sessionsToday: sessions.filter(s => s.scheduledAt?.startsWith(today)).length,
     totalSessions: sessions.filter(s => s.status === "CONFIRMED").length,
     scheduledSessions: sessions.filter(s => s.status === "SCHEDULED").length,
@@ -505,8 +505,8 @@ export default function EducationManagementPage() {
                     </td>
                     <td className={CELL_CLS}>{e.amountPaid || 0} ج.م</td>
                     <td className={CELL_CLS}>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${e.paymentStatus === "PAID" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : e.paymentStatus === "PARTIAL" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}`}>
-                        {e.paymentStatus === "PAID" ? "مدفوع" : e.paymentStatus === "PARTIAL" ? "جزئي" : "معلق"}
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${["COMPLETED","PAID"].includes(e.paymentStatus) ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : e.paymentStatus === "PENDING" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}`}>
+                        {["COMPLETED","PAID"].includes(e.paymentStatus) ? "مدفوع" : "معلق"}
                       </span>
                     </td>
                     <td className={CELL_CLS}>
@@ -904,7 +904,7 @@ function EnrollmentModal({ enrollment, students, packages, teachers, subjects, o
 }) {
   const [form, setForm] = useState({
     studentId: "", packageId: "", teacherId: "", amountPaid: 0,
-    paymentStatus: "PENDING", expiresAt: "", ...enrollment,
+    paymentStatus: enrollment?.paymentStatus === "PAID" ? "COMPLETED" : (enrollment?.paymentStatus || "PENDING"), expiresAt: "",
   });
   const selectedPackage = packages.find(p => p.id === form.packageId);
   const filteredTeachers = selectedPackage
@@ -951,8 +951,7 @@ function EnrollmentModal({ enrollment, students, packages, teachers, subjects, o
             <div><label className="block text-sm font-medium mb-1">حالة الدفع</label>
               <select className={INPUT_CLS} value={form.paymentStatus} onChange={e => setForm({ ...form, paymentStatus: e.target.value })}>
                 <option value="PENDING">معلق</option>
-                <option value="PAID">مدفوع</option>
-                <option value="PARTIAL">جزئي</option>
+                <option value="COMPLETED">مدفوع</option>
               </select>
             </div>
           </div>

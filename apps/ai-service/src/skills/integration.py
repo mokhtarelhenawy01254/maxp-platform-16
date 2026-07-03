@@ -70,12 +70,15 @@ async def preload_skills_from_db(session: Any) -> None:
     _db_skills_cache.clear()
     for skill in skills:
         allowed = skill.allowed_tools or []
+        raw_triggers = skill.trigger_phrases or ""
+        trigger_list = [t.strip() for t in raw_triggers.split(",") if t.strip()] if raw_triggers else []
         _db_skills_cache[skill.id] = {
             "id": skill.id,
             "name": skill.name,
             "description": skill.description or "",
             "instructions": skill.content or skill.instructions or "",
             "allowed_tools": [canonical_tool_name(t) for t in allowed],
+            "trigger_phrases": trigger_list,
             "requires_human_approval": bool(skill.requires_human_approval),
             "max_tool_count": int(skill.max_tool_count or 0),
         }
@@ -138,12 +141,14 @@ def _skill_metadata_from_dir(skill_dir: Path) -> dict[str, Any] | None:
         _cache_set(_skill_meta_cache, skill_id, None)
         return None
     raw_tools = config.get("allowedTools", [])
+    raw_triggers = config.get("triggerPhrases", [])
     meta = {
         "id": config.get("id", skill_dir.name),
         "name": config.get("displayName", skill_dir.name),
         "description": config.get("description", ""),
         "instructions": content,
         "allowed_tools": [canonical_tool_name(t) for t in raw_tools],
+        "trigger_phrases": raw_triggers if isinstance(raw_triggers, list) else [],
         "requires_human_approval": bool(config.get("requiresHumanApproval", False)),
         "max_tool_count": int(config.get("maxToolCount", 0) or 0),
     }
@@ -211,6 +216,9 @@ def get_skills_block(allowed_skills: set[str] | None) -> str:
         lines.append(f'<skill id="{meta["id"]}">')
         lines.append(f'<name>{meta["name"]}</name>')
         lines.append(f'<description>{meta["description"]}</description>')
+        triggers = meta.get("trigger_phrases", [])
+        if triggers:
+            lines.append(f'<trigger_phrases>{" | ".join(triggers[:10])}</trigger_phrases>')
         allowed = meta.get("allowed_tools", [])
         if allowed:
             lines.append(f'<allowed_tools>{" ".join(allowed)}</allowed_tools>')

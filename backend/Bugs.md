@@ -1,5 +1,40 @@
 # Backend Bugs Log
 
+### [FIX] Company Role Resolution & Sidebar Disappearance on Page Refresh
+- **Date**: 2026-07-03
+- **Description**: Company accounts (like OWNER or COMPANY_ADMIN) would lose access to all sidebar items (showing only one or two basic sections) after a page refresh.
+- **Root Cause**:
+  1. During page refresh, `/auth/me` hydrates the user session. It correctly resolved the primary company's role key initially.
+  2. However, it subsequently looped through all user-associated companies (`user.userCompanies`). When processing the currently active company, it unconditionally overwrote `currentActiveRole` with `uc.role`.
+  3. `uc.role` is the default database enum column (which defaults to `AGENT`), while the custom role assignment is stored in `uc.roleRef?.key` (e.g. `OWNER`, `COMPANY_ADMIN`).
+  4. This role downgrade to `AGENT` on the frontend caused the sidebar gating logic in `sidebar.ts` to strictly restrict access based on explicit permission lists instead of providing implicit admin/owner access, collapsing the sidebar.
+- **Resolution**:
+  1. Updated `/auth/login`, `/auth/me`, `/auth/companies`, and `/auth/switch-company` in `apps/backend/controller/authController.js` to select and include the `roleRef` relation inside `userCompanies`.
+  2. Updated the active role and company list mapping logic to always prefer the custom role key (`uc.roleRef?.key || uc.role`) to preserve the correct administrative role context during page loads and company switches.
+- **Files Modified**:
+  - `apps/backend/controller/authController.js`
+
+### [FIX] catalog-search Skill & Prompt Architecture Hardening
+- **Date**: 2026-07-03
+- **Description**: The `catalog-search` skill had a weak, single-line description, lacked trigger phrases, omitted visual search and advanced filters from its instructions, and the seeding script completely ignored `triggerPhrases` from `skill.json`, causing agent catalog lookup failures.
+- **Root Cause**:
+  1. The skill description (`"Find products and validate product facts."`) was too generic for 2026 LLM planning models to accurately select it under progressive disclosure protocols.
+  2. The `SKILL.md` instruction file lacked documentation for advanced `product_search` parameters (`image_bytes`, `image_url`, `product_size`, `product_color`, `references_previous_product`), preventing the agent from utilizing them.
+  3. No failure handling logic existed for cases with 0 search results, API timeouts, or low similarity scores.
+  4. The python seeding script (`seed.py`) hardcoded `trigger_phrases=""`, ignoring filesystem definitions.
+- **Resolution**:
+  1. Rewrote `apps/ai-service/skills/catalog-search/skill.json` to feature a comprehensive, scenario-based description, added 20 localized trigger phrases, expanded allowed tools, and raised the max tool count to 6.
+  2. Overhauled `SKILL.md` to document all parameters, added a complete decision tree, result formatting guidelines, and alternative recommendation loops.
+  3. Added interactive few-shot chat transcripts in `examples/conversations.md`.
+  4. Updated `seed.py` to parse `triggerPhrases` from `skill.json` and persist them as a comma-separated list to the database's `trigger_phrases` column.
+  5. Refactored `integration.py` to load and cache `trigger_phrases` across DB and filesystem paths, and dynamically inject them into the system prompt's `<trigger_phrases>` XML block.
+- **Files Modified**:
+  - `apps/ai-service/skills/catalog-search/skill.json`
+  - `apps/ai-service/skills/catalog-search/SKILL.md`
+  - `apps/ai-service/skills/catalog-search/examples/conversations.md`
+  - `apps/ai-service/src/skills/seed.py`
+  - `apps/ai-service/src/skills/integration.py`
+
 ### [FIX] Vite Dynamic Chunk Load 404 Failure & Frontend Cache Inconsistency
 - **Date**: 2026-07-03
 - **Description**: Navigating between lazy-loaded routes (like Settings or Admin) after a production deployment resulted in a crash with `TypeError: Failed to fetch dynamically imported module`.
