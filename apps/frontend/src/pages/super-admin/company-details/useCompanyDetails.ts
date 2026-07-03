@@ -100,6 +100,8 @@ interface UseCompanyDetailsReturn {
   handleCancelSubscription: () => Promise<void>; handleRetryPayment: () => Promise<void>;
   companyTickets: TicketListItem[]; ticketsLoading: boolean;
   companyActivities: ActivityEntry[]; activitiesLoading: boolean;
+  toggleFeatureLoading: boolean;
+  handleToggleFeature: (feature: string, enabled: boolean) => Promise<void>;
 }
 
 export function useCompanyDetails(): UseCompanyDetailsReturn {
@@ -153,6 +155,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [bundleAction, setBundleAction] = useState("");
   const [appAction, setAppAction] = useState("");
   const [installAllLoading, setInstallAllLoading] = useState(false);
+  const [toggleFeatureLoading, setToggleFeatureLoading] = useState(false);
 
   const ownerUser = useMemo(
     () => companyUsers.find((user) => user.role === "OWNER") || companyUsers.find((user) => user.role === "COMPANY_ADMIN") || null,
@@ -407,6 +410,24 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
 
   // ponytail: resolvedPlanCatalog and currentPlanType removed — plan tiers deleted
 
+  const handleToggleFeature = async (feature: string, enabled: boolean): Promise<void> => {
+    if (!companyId) return;
+    setToggleFeatureLoading(true);
+    try {
+      const response: any = await apiClient.put(`/admin/companies/${companyId}/features`, { feature, enabled });
+      if (response.data?.success) {
+        toast.success(`تم ${enabled ? "تفعيل" : "إيقاف"} الخاصية بنجاح`);
+        await refreshCompanyWorkspace({ background: true });
+      } else {
+        toast.error(response.data?.message || "فشل في تغيير الخاصية");
+      }
+    } catch (nextError) {
+      toast.error(extractErrorMessage(nextError, "فشل في تغيير الخاصية"));
+    } finally {
+      setToggleFeatureLoading(false);
+    }
+  };
+
   void catalogPlans; void setPlanAction; // suppress unused — ponytail remnants
 
   const companyInstalledAppsBySlug = useMemo(() => {
@@ -532,5 +553,6 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     handleCancelSubscription, handleRetryPayment,
     companyTickets, ticketsLoading,
     companyActivities, activitiesLoading,
+    toggleFeatureLoading, handleToggleFeature,
   };
 }

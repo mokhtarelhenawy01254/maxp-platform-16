@@ -1,8 +1,9 @@
-import { CheckCircle2, Loader2, Package, Sparkles, Layers, Zap } from "lucide-react";
+import { CheckCircle2, Cog, Loader2, Package, Sparkles, Layers, Zap } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
+import { Switch } from "../../../components/ui/switch";
 import { EmptyState } from "./EmptyState";
 import { formatCurrency } from "./helpers";
 
@@ -82,6 +83,7 @@ function BundleItemRow({ bundle, onSubscribe, action }: { bundle: ActivationItem
 export function CompanyActivationCenter({
   orderedCatalogApps, resolvedBundles, appAction, bundleAction, installAllLoading, activationLoading, activationError,
   handleInstallApp, handleSubscribeBundle, handleActivateAllTools,
+  company, handleToggleFeature, toggleFeatureLoading,
 }: {
   orderedCatalogApps: ActivationItem[];
   resolvedBundles: ActivationItem[];
@@ -90,8 +92,15 @@ export function CompanyActivationCenter({
   handleInstallApp: (app: ActivationItem) => void;
   handleSubscribeBundle: (slug: string) => void;
   handleActivateAllTools: () => void;
+  company: any;
+  handleToggleFeature: (feature: string, enabled: boolean) => void;
+  toggleFeatureLoading: boolean;
 }) {
   const uninstalledCount = orderedCatalogApps.filter((a) => !a.isInstalled).length;
+  const aiToolsEnabled = (() => {
+    if (!company?.settings) return false;
+    try { const s = JSON.parse(company.settings); return s.aiToolsEnabled === true; } catch { return false; }
+  })();
 
   return (
     <Card className="rounded-2xl border" id="company-activation-center">
@@ -111,6 +120,25 @@ export function CompanyActivationCenter({
         {activationError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/30 dark:text-rose-300">{activationError}</div>
         ) : null}
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Cog className="size-4 text-muted-foreground" />
+            <h4 className="text-sm font-black text-foreground">خاصيات إضافية</h4>
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between gap-4 py-3">
+            <div className="space-y-0.5">
+              <p className="text-sm font-bold text-foreground">أدوات الذكاء الاصطناعي</p>
+              <p className="text-xs text-muted-foreground">السماح للشركة باستخدام أدوات AI المخصصة (AI Skills & AI Tools)</p>
+            </div>
+            <Switch
+              checked={aiToolsEnabled}
+              onCheckedChange={(checked) => handleToggleFeature("aiToolsEnabled", checked)}
+              disabled={toggleFeatureLoading}
+            />
+          </div>
+        </div>
 
         {activationLoading ? (
           <div className="flex items-center justify-center py-12">

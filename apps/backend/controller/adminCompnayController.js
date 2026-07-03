@@ -2068,6 +2068,38 @@ const addEmployeeToCompany = async (req, res) => {
     }
 };
 
+const toggleCompanyFeature = async (req, res) => {
+    try {
+        const { companyId } = req.params;
+        const { feature, enabled } = req.body;
+
+        if (!feature) {
+            return res.status(400).json({ success: false, message: 'feature is required' });
+        }
+
+        const company = await getSharedPrismaClient().company.findUnique({
+            where: { id: companyId }
+        });
+
+        if (!company) {
+            return res.status(404).json({ success: false, message: 'الشركة غير موجودة' });
+        }
+
+        const currentSettings = company.settings ? JSON.parse(company.settings) : {};
+        currentSettings[feature] = enabled;
+
+        await getSharedPrismaClient().company.update({
+            where: { id: companyId },
+            data: { settings: JSON.stringify(currentSettings) }
+        });
+
+        return res.json({ success: true, settings: currentSettings });
+    } catch (error) {
+        console.error('Error toggling company feature:', error);
+        return res.status(500).json({ success: false, message: 'حدث خطأ', error: error.message });
+    }
+};
+
 module.exports = {
     getAllCompanies,
     getCompanyDetails,
@@ -2083,5 +2115,6 @@ module.exports = {
     bulkDeleteCompanies,
     bulkUpdateCompanyStatus,
     forceTransferOwnership,
-    addEmployeeToCompany
+    addEmployeeToCompany,
+    toggleCompanyFeature
 };

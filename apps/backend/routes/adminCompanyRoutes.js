@@ -47,4 +47,7 @@ router.post('/:companyId/employees', verifyToken.authenticateToken, verifyToken.
 // Delete user from company
 router.delete('/:companyId/users/:userId', verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.deleteUser);
 
+// Toggle company feature flag (e.g. aiToolsEnabled)
+router.put('/:companyId/features', verifyToken.authenticateToken, verifyToken.requireSuperAdmin, adminCompnayController.toggleCompanyFeature);
+
 module.exports = router;

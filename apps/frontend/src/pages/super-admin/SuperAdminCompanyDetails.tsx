@@ -46,6 +46,7 @@ const SuperAdminCompanyDetails = () => {
     handleCancelSubscription, handleRetryPayment,
     companyTickets, ticketsLoading,
     companyActivities, activitiesLoading,
+    toggleFeatureLoading, handleToggleFeature,
     editOpen, setEditOpen, editSaving, editForm, setEditForm, editErrors, handleSaveCompany,
     transferOpen, transferLoading, changeOwnerTargetUserId, setChangeOwnerTargetUserId, handleTransferOwnership,
     addEmployeeOpen, setAddEmployeeOpen, employeeLoading, addEmployeeForm, setAddEmployeeForm,
@@ -179,6 +180,7 @@ const SuperAdminCompanyDetails = () => {
               installAllLoading={installAllLoading} activationLoading={activationLoading} activationError={activationError}
               handleInstallApp={handleInstallApp} handleSubscribeBundle={handleSubscribeBundle}
               handleActivateAllTools={handleActivateAllTools} appNameBySlug={appNameBySlug}
+              company={company} handleToggleFeature={handleToggleFeature} toggleFeatureLoading={toggleFeatureLoading}
             />
           </TabsContent>
 
