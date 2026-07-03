@@ -1,5 +1,18 @@
 # Backend Bugs Log
 
+### [FIX] category_list Tool Formatting Mismatch in Skills Pipeline
+- **Date**: 2026-07-04
+- **Description**: Asking the AI agent to list categories returned "لا توجد تصنيفات متاحة حالياً" (No categories available) even when categories were defined in the database.
+- **Root Cause**:
+  1. The `category_list` tool correctly fetched categories and returned a payload containing `{"found": true, "count": X, "categories": [...]}`.
+  2. However, the `_format_tool_results` formatter in `skills_pipeline.py` only looked for `"products"` or `"items"` lists to display.
+  3. When `categories` was returned, it found no products/items, and fell back to printing the default "no results available" or fallback message, masking the actual category list.
+- **Resolution**:
+  1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to check for the presence of a `"categories"` array.
+  2. If found, it formats and displays the names of the categories (e.g., category name) instead of falling back to the "no categories available" message.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
 ### [FIX] Permissions Consistency Mismatch & Mismapped DOMAIN_PERMISSIONS (Sidebar collapse on refresh)
 - **Date**: 2026-07-03
 - **Description**: Users with custom permissions (such as `AGENT` accounts with specific roles like in `Harf Online`) would see a full sidebar initially on login, but the sidebar would collapse or lose sections like the inbox/Facebook/WhatsApp after a page refresh.

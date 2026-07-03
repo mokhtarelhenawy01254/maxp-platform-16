@@ -41,8 +41,9 @@ The fix adds two fallbacks:
 | `abandoned_carts` | (none) |
 | `coupon_validate` | (none) |
 
-## Error Handling
+## Error Handling / Result Formatting
 
 - Missing tools return `{"tool": func_name, "status": "unknown"}` from the fallback path
 - JSON parse errors trigger a retry with cleaned function name
 - Parallel tool calls may hang if the backend has long-running queries
+- Formatting results (`_format_tool_results`) dynamically parses output lists from catalog searches (`products`, `items`) and category queries (`categories`), extracting correct labels (`productName`, `category`) based on the active tool.

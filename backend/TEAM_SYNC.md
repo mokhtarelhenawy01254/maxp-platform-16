@@ -1,5 +1,11 @@
 # Team Sync Updates
 
+## 2026-07-04 / 2026-03-09
+- **category_list Tool Formatting Mismatch Fix (FIX)**: Fixed a bug where requesting categories from the agent returned "لا توجد تصنيفات متاحة حالياً" (No categories available) even when categories were defined:
+  1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to correctly identify and process the `"categories"` key returned by the `category_list` tool.
+  2. Extracted and formatted category names to display nicely in the agent's summary instead of falling back to the default "no results" message.
+  3. Updated `apps/ai-service/docs/skills-pipeline-architecture.md` to document the category result formatting behavior.
+
 ## 2026-07-03 / 2026-03-09
 - **Company Role Resolution & Sidebar Fix (FIX)**: Fixed a critical bug where company accounts (OWNER, COMPANY_ADMIN) would lose sidebar access after page refresh, showing only 1–2 items instead of the full menu:
   1. Updated `/auth/login`, `/auth/me`, `/auth/companies`, and `/auth/switch-company` in `authController.js` to include the `roleRef` relation in `userCompanies` queries.

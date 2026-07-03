@@ -343,9 +343,13 @@ def _format_tool_results(executed: list[dict]) -> str:
                 continue
             count = result.get("count") or result.get("total")
             products = result.get("products") or result.get("items") or []
+            categories = result.get("categories") or []
             if isinstance(products, list) and len(products) > 0:
                 names = [p.get("productName") or p.get("name") or "" for p in products[:5]]
                 parts.append(f"{', '.join(filter(None, names))}{'...' if len(products) > 5 else ''}")
+            elif isinstance(categories, list) and len(categories) > 0:
+                names = [c.get("category") or "" for c in categories[:5]]
+                parts.append(f"{', '.join(filter(None, names))}{'...' if len(categories) > 5 else ''}")
             elif count is not None and int(count) == 0:
                 parts.append(messages_by_name.get(name, f"لا توجد نتائج متاحة حالياً."))
             else:

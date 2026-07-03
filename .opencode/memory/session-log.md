@@ -42,3 +42,15 @@
   - Updated ai-knowledge-base.md with AGENTS.md Protocol + Claude Code Memory sections
   - Conclusion: MaxP system is 90%+ aligned; opportunities: nested AGENTS.md, auto memory, hooks
 - Next: Use this system going forward; update files after every session. User can trigger research with "ابحث عن X"
+
+## 2026-07-04 — category_list formatting mismatch fix (Complete)
+- Goal: Fix "لا توجد تصنيفات متاحة حالياً" showing up when client asks for categories despite databases having them.
+- Done:
+  - Identified the root cause in `skills_pipeline.py`'s result formatter which only looked for `"products"` or `"items"` keys.
+  - Modified `_format_tool_results` to look for and format the `"categories"` key returned by the `category_list` tool.
+  - Created a new unit test suite `apps/ai-service/tests/pipeline/test_skills_pipeline.py` testing formatting.
+  - Ran the tests successfully using `uv run pytest` (3 passed).
+  - Staged changes and verified document compliance with `node scripts/verify-docs.js`.
+  - Updated `backend/Bugs.md`, `backend/Structure.md`, `backend/TEAM_SYNC.md`, and `apps/ai-service/docs/skills-pipeline-architecture.md`.
+- Decisions: Keep output formatting aligned with the specific fields returned by our AI tools.
+- Next: Monitor client interaction logs to ensure other tool results format correctly.
