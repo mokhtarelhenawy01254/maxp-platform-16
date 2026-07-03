@@ -321,9 +321,24 @@ class WhatsAppAssignmentEngineService {
       return null;
     }
 
-    const elapsedMinutes = conversation.lastMessageAt
-      ? Math.max(0, (Date.now() - new Date(conversation.lastMessageAt).getTime()) / 60000)
-      : 0;
+    const inboxRouting = metadata.inboxRouting || {};
+    const lastAssignedAt = inboxRouting.lastAssignedAt;
+
+    // Cooldown check: prevent reassigning if the conversation was assigned less than 5 minutes ago
+    if (lastAssignedAt) {
+      const msSinceLastAssignment = Date.now() - new Date(lastAssignedAt).getTime();
+      const cooldownMs = 5 * 60 * 1000;
+      if (msSinceLastAssignment < cooldownMs) {
+        return null;
+      }
+    }
+
+    // Smart SLA baseTime check: newly assigned agents get their full timeout window starting from assignment
+    const baseTime = (lastAssignedAt && new Date(lastAssignedAt) > new Date(conversation.lastMessageAt))
+      ? new Date(lastAssignedAt)
+      : new Date(conversation.lastMessageAt);
+
+    const elapsedMinutes = baseTime ? Math.max(0, (Date.now() - baseTime.getTime()) / 60000) : 0;
     const user = await prisma.user.findUnique({
       where: { id: assignedUserId },
       select: {
@@ -380,30 +395,69 @@ class WhatsAppAssignmentEngineService {
     }
 
     this.isSweepRunning = true;
-    try {
-      const prisma = getSharedPrismaClient();
-      const candidates = await prisma.conversation.findMany({
-        where: {
-          channel: 'WHATSAPP',
-          status: { in: ['ASSIGNED', 'ACTIVE', 'PENDING', 'WAITING_CUSTOMER', 'QUEUED'] }
-        },
-        select: {
-          id: true,
-          companyId: true
-        },
-        take: 100
-      });
+    const prisma = getSharedPrismaClient();
+    const lockKey = 7777777; // Fixed lock key for global sweep
 
-      for (const candidate of candidates) {
-        try {
-          await this.evaluateConversationForReassignment({
-            companyId: candidate.companyId,
-            conversationId: candidate.id
-          });
-        } catch (error) {
-          console.error('[InboxReassignment] Failed to evaluate conversation:', candidate.id, error.message);
-        }
+    try {
+      const lockAcquired = await prisma.$queryRaw`SELECT pg_try_advisory_lock(${lockKey}) as acquired`;
+      const acquired = lockAcquired[0]?.acquired;
+      if (!acquired) {
+        this.isSweepRunning = false;
+        return;
       }
+
+      try {
+        const activeAssignments = await prisma.whatsAppNumberAssignment.findMany({
+          where: { isActive: true },
+          select: { companyId: true },
+          distinct: ['companyId']
+        });
+
+        const companyIds = activeAssignments.map((a) => a.companyId);
+
+        for (const companyId of companyIds) {
+          try {
+            const settings = await getNormalizedSettings(companyId, prisma);
+            if (!settings.reassignmentConfig?.enabled) {
+              continue;
+            }
+
+            const candidates = await prisma.conversation.findMany({
+              where: {
+                companyId,
+                channel: 'WHATSAPP',
+                status: { in: ['NEW', 'QUEUED', 'ASSIGNED', 'ACTIVE', 'PENDING', 'WAITING_CUSTOMER', 'ESCALATED'] },
+                OR: [
+                  { lastMessageIsFromCustomer: true },
+                  { status: { in: ['NEW', 'QUEUED'] } }
+                ]
+              },
+              select: {
+                id: true,
+                companyId: true
+              },
+              take: 50
+            });
+
+            for (const candidate of candidates) {
+              try {
+                await this.evaluateConversationForReassignment({
+                  companyId: candidate.companyId,
+                  conversationId: candidate.id
+                });
+              } catch (error) {
+                console.error('[InboxReassignment] Failed to evaluate conversation:', candidate.id, error.message);
+              }
+            }
+          } catch (companyError) {
+            console.error(`[InboxReassignment] Failed to sweep company ${companyId}:`, companyError.message);
+          }
+        }
+      } finally {
+        await prisma.$queryRaw`SELECT pg_advisory_unlock(${lockKey})`;
+      }
+    } catch (lockError) {
+      console.error('[InboxReassignment] Error acquiring/releasing advisory lock:', lockError.message);
     } finally {
       this.isSweepRunning = false;
     }

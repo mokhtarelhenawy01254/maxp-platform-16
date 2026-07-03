@@ -1,5 +1,13 @@
 # Team Sync Updates
 
+## 2026-07-03 / 2026-03-09
+- **WhatsApp Inbox Auto-Assignment & Reassignment Hardening (FIX)**: Fixed bugs in the WhatsApp auto-routing and reassignment sweep mechanism:
+  1. Unified incoming webhook sync `WhatsAppSyncService` to delegate all auto-assignments to the advanced `WhatsAppAssignmentEngineService`, ensuring online checks, capacity limits, working hours, and advisory locks are respected.
+  2. Resolved the infinite 60-second reassignment loop (ping-pong) by adding a 5-minute cooldown period and making the SLA response timeout window start relative to `lastAssignedAt` if the agent was assigned after the message.
+  3. Optimized the background sweep query to dynamically query active company assignments and filter by pending customer messages, cutting full table scan DB overhead.
+  4. Secured the background interval against concurrent execution across PM2 cluster instances using PostgreSQL distributed advisory locks (`pg_try_advisory_lock`).
+  5. Added Jest unit tests to verify reassignment cooldown and SLA timeout behaviors.
+
 ## 2026-07-02 / 2026-03-09
 - **AI Agent Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors on the sandbox testing tab (`/admin/ai-hub?tab=sandbox`). Resolved a `NameError` crash in `skills_pipeline.py` caused by an undefined `has_images` variable reference inside `_llm_call`, and implemented a fallback Arabic response when the LLM returns an empty message after multiple retries (due to provider timeouts or rate limits), preventing empty replies from reaching downstream backend pipelines.
 - **DeepSeek DSML XML Tool Call Parsing (FIX)**: Fixed the bug where DeepSeek V4 models generated XML-like DSML tool calling markup inside plain text responses, which leaked to customers in chat sessions. Replaced the JSON-based DSML parser in `client.py` with a robust regex parser that correctly extracts tool calls and parameter values from spaced or standard XML DSML markup, performs automatic type coercion, and falls back to JSON-in-DSML legacy structures. Trigger conditions were also expanded to intercept DSML format leaks across alternative providers hosting DeepSeek models (e.g., OpenRouter, SambaNova).

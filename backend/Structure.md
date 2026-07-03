@@ -24,4 +24,7 @@ No database models or Prisma schemas were modified.
 ### System Architecture
 - Added **Silent Takeover & human-in-the-loop** event-driven pattern via Socket.IO: on AI failure (e.g. guardrail blocks or JSON parsing exhaustion), the thread is marked as needing human intervention, notifying moderators instantly without alerting the customer.
 - Agent templates follow a **multi-file contract** pattern: `agent.json` (manifest) + `SOUL.md` (persona/workflow) + `TOOLS.md` (tool instructions) + `AGENTS.md` (handoff rules), assembled into a single XML `<agent_contract>` at runtime by `template_registry.py`.
+- Unified **WhatsApp Auto-Assignment**: Unified incoming webhook message sync and background sweeps under a single advanced `WhatsAppAssignmentEngineService`, ensuring all incoming chats respect online status, workload capacity, working hours, and transactional locks.
+- **Distributed Sweep Coordination**: Background monitor sweeps utilize PostgreSQL session-level advisory locks (`pg_try_advisory_lock`) to coordinate single-instance execution across PM2 cluster nodes.
+- **Assignment-Relative SLA Cooldown**: Implemented a 5-minute cooldown and assignment-relative SLA timeout calculation based on `lastAssignedAt` to eliminate 60-second reassignment ping-pong loops between moderators.
 

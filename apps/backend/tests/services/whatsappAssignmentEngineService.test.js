@@ -274,4 +274,106 @@ describe('whatsappAssignmentEngineService', () => {
 
     reassignSpy.mockRestore();
   });
+
+  test('reassignment is skipped if the conversation is within the 5-minute cooldown period', async () => {
+    const reassignSpy = jest
+      .spyOn(whatsappAssignmentEngineService, 'assignConversationToBestModerator')
+      .mockResolvedValue({ assignedUserId: 'moderator-2' });
+
+    getNormalizedSettings.mockResolvedValue(buildSettings({
+      reassignmentConfig: {
+        enabled: true,
+        timeoutMinutes: 5,
+        reassignOnOffline: true,
+        reassignOutsideWorkingHours: false,
+        reassignOnCapacityReached: false,
+      },
+    }));
+
+    socketService.isUserOnline.mockReturnValue(false);
+    mockPrisma.conversation.findUnique.mockResolvedValue({
+      id: 'conversation-1',
+      companyId: 'company-1',
+      status: 'ASSIGNED',
+      assignedUserId: 'moderator-1',
+      lastMessageAt: new Date(Date.now() - 10 * 60000).toISOString(),
+      lastMessageIsFromCustomer: true,
+      metadata: JSON.stringify({
+        sessionId: 'session-1',
+        inboxRouting: {
+          lastAssignedAt: new Date(Date.now() - 2 * 60000).toISOString(), // Assigned 2 mins ago (inside cooldown)
+        },
+      }),
+      customer: {
+        id: 'customer-1',
+        phone: '201000000000',
+        status: 'STANDARD',
+        firstName: 'سارة',
+        lastName: 'علي',
+      },
+    });
+
+    const result = await whatsappAssignmentEngineService.evaluateConversationForReassignment({
+      companyId: 'company-1',
+      conversationId: 'conversation-1',
+    });
+
+    expect(result).toBeNull();
+    expect(reassignSpy).not.toHaveBeenCalled();
+
+    reassignSpy.mockRestore();
+  });
+
+  test('newly assigned agent gets the full timeout window starting from lastAssignedAt', async () => {
+    const reassignSpy = jest
+      .spyOn(whatsappAssignmentEngineService, 'assignConversationToBestModerator')
+      .mockResolvedValue({ assignedUserId: 'moderator-2' });
+
+    getNormalizedSettings.mockResolvedValue(buildSettings({
+      reassignmentConfig: {
+        enabled: true,
+        timeoutMinutes: 10,
+        reassignOnOffline: false,
+        reassignOutsideWorkingHours: false,
+        reassignOnCapacityReached: false,
+      },
+    }));
+
+    mockPrisma.conversation.findUnique.mockResolvedValue({
+      id: 'conversation-1',
+      companyId: 'company-1',
+      status: 'ASSIGNED',
+      assignedUserId: 'moderator-1',
+      lastMessageAt: new Date(Date.now() - 20 * 60000).toISOString(), // Customer message was 20 mins ago
+      lastMessageIsFromCustomer: true,
+      metadata: JSON.stringify({
+        sessionId: 'session-1',
+        inboxRouting: {
+          lastAssignedAt: new Date(Date.now() - 6 * 60000).toISOString(), // Assigned 6 mins ago (greater than 5 mins cooldown, but less than 10 mins timeout)
+        },
+      }),
+      customer: {
+        id: 'customer-1',
+        phone: '201000000000',
+        status: 'STANDARD',
+      },
+    });
+
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'moderator-1',
+      timezone: 'Africa/Cairo',
+      availability: null,
+    });
+
+    const result = await whatsappAssignmentEngineService.evaluateConversationForReassignment({
+      companyId: 'company-1',
+      conversationId: 'conversation-1',
+    });
+
+    // Should NOT trigger reassignment because 6 minutes since assignment is less than the 10-minute timeout limit
+    expect(result).toBeNull();
+    expect(reassignSpy).not.toHaveBeenCalled();
+
+    reassignSpy.mockRestore();
+  });
 });

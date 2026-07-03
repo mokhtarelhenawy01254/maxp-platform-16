@@ -9,6 +9,7 @@ const {
 const {
   resolveConversationAssignee
 } = require('../whatsappConversationRoutingService');
+const whatsappAssignmentEngineService = require('../whatsappAssignmentEngineService');
 
 const escapeMetadataValue = (value) =>
   String(value || '')
@@ -89,20 +90,8 @@ const WhatsAppSyncService = {
     });
 
     if (!conversation) {
-      const routing = sessionId
-        ? await resolveConversationAssignee({
-            prisma,
-            companyId,
-            sessionId,
-            existingAssignedUserId: null
-          })
-        : {
-            assignedUserId: null,
-            routingMode: null
-          };
-      const assignedUserId = routing.assignedUserId || null;
-      const nextStatus = assignedUserId ? 'ASSIGNED' : settings.defaultChatStatus || 'NEW';
-      const queueKey = assignedUserId ? 'ASSIGNED_QUEUE' : 'WAITING_QUEUE';
+      const nextStatus = settings.defaultChatStatus || 'NEW';
+      const queueKey = 'WAITING_QUEUE';
 
       conversation = await prisma.conversation.create({
         data: {
@@ -111,7 +100,7 @@ const WhatsAppSyncService = {
           channel: 'WHATSAPP',
           status: nextStatus,
           subject: options.subject || 'WhatsApp Conversation',
-          assignedUserId,
+          assignedUserId: null,
           lastMessageAt: new Date(),
           unreadCount: 0,
           metadata: buildConversationMetadata(null, {
@@ -121,13 +110,13 @@ const WhatsAppSyncService = {
             inboxRouting: {
               sessionId,
               queueKey,
-              assignmentStrategy: routing.routingMode || null
+              assignmentStrategy: null
             },
             ownership: {
               sessionId,
-              currentOwnerId: assignedUserId,
-              lockActive: Boolean(assignedUserId),
-              lockedAt: assignedUserId ? new Date().toISOString() : null
+              currentOwnerId: null,
+              lockActive: false,
+              lockedAt: null
             }
           })
         }
@@ -199,22 +188,28 @@ const WhatsAppSyncService = {
         }
       });
 
-      let nextAssignedUserId = conversation.assignedUserId || null;
-      if (isIncoming && sessionId && !nextAssignedUserId) {
-        const routing = await resolveConversationAssignee({
-          prisma,
-          companyId,
-          sessionId,
-          existingAssignedUserId: null
-        });
-        nextAssignedUserId = routing.assignedUserId || null;
+      let activeConversation = conversation;
+      if (isIncoming && sessionId && !conversation.assignedUserId) {
+        try {
+          const result = await whatsappAssignmentEngineService.assignConversationToBestModerator({
+            companyId,
+            conversationId: conversation.id,
+            sessionId,
+            force: false,
+            reason: 'inbound_message'
+          });
+          activeConversation = result.conversation;
+        } catch (assignError) {
+          console.error('❌ [WhatsAppSyncService] Auto assignment failed:', assignError.message);
+        }
       }
 
+      const nextAssignedUserId = activeConversation.assignedUserId || null;
       const nextStatus = isIncoming
-        ? (nextAssignedUserId ? 'ASSIGNED' : 'NEW')
+        ? (nextAssignedUserId ? 'ASSIGNED' : activeConversation.status || 'NEW')
         : 'ACTIVE';
 
-      const metadata = buildConversationMetadata(conversation.metadata, {
+      const metadata = buildConversationMetadata(activeConversation.metadata, {
         whatsappSessionId: sessionId,
         sessionId,
         remoteJid,
@@ -233,9 +228,9 @@ const WhatsAppSyncService = {
       });
 
       const updatedConversation = await prisma.conversation.update({
-        where: { id: conversation.id },
+        where: { id: activeConversation.id },
         data: {
-          assignedUserId: nextAssignedUserId || undefined,
+          assignedUserId: nextAssignedUserId,
           status: nextStatus,
           lastMessageAt: messageData.timestamp || new Date(),
           lastMessagePreview: this.truncatePreview(messageData.content, messageData.type),
