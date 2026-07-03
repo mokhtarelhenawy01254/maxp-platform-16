@@ -2,18 +2,24 @@
 
 ### API Endpoints
 No API endpoints were modified or added, but:
-1. The backend query logic for `/api/v1/whatsapp-inbox/sessions` was updated inside `getUserAccessibleSessionIds` helper to restrict returned sessions to those with active assignments.
-2. The workspace query logic `/api/v1/admin/whatsapp-numbers/workspace` was updated inside `numberAssignmentService.js` to ensure Meta Cloud provider sessions resolve to `CONNECTED` and to filter out soft-deleted sessions (where `isDeleted: true` is in metadata) to align with the Settings page.
-3. The backend endpoint `/api/v1/whatsapp/sessions` (handled by `whatsappController.getSessions`) was updated to restrict returned sessions to only user-accessible sessions for non-admin roles (moderators/employees) using `getUserAccessibleSessionIds`.
-4. The AI Service agent pipeline stages (`skills_pipeline.py` and `validate_reply.py`) were modified to support concurrent tool execution, tool arguments self-correction, strict Pydantic contract fallbacks, and output guardrail self-correction. Additionally, `client.py` and `skills_pipeline.py` were enhanced to support strict tool schemas, capture/propagate `reasoning_content` to stabilize DeepSeek V4 Flash tool calling, and parse XML-like DSML tool calling markup natively to prevent raw protocol leaks in chat sessions. Finally, `skills_pipeline.py` was refactored to use `build_user_content` from `src.context.multimodal`, fixing the customer image attachment pipeline for vision-capable models (like Gemini 2.5 Flash), and resolved empty reply crashes causing `AI_SANDBOX_EMPTY_REPLY` downstream.
-5. The Python `/chat` endpoint (`api/chat.py`) was updated to support `status: "escalated"` with optional `escalation` metadata.
-6. A new `silentEscalationService.js` was introduced in the backend to manage Socket.IO events (`ai:escalation`) and DB `ActivityLog` creation for silent human handoffs.
+1. The backend authentication endpoints `/auth/login`, `/auth/me`, `/auth/companies` (handled by `getUserCompanies`), and `/auth/switch-company/:companyId` were updated to select and include the `roleRef` relation inside `userCompanies` queries, ensuring that role resolution prefers custom/assigned role keys (`uc.roleRef?.key || uc.role`) over the database default enum (`AGENT`), preserving administrative and owner access on page reload or switch.
+2. The backend query logic for `/api/v1/whatsapp-inbox/sessions` was updated inside `getUserAccessibleSessionIds` helper to restrict returned sessions to those with active assignments.
+3. The workspace query logic `/api/v1/admin/whatsapp-numbers/workspace` was updated inside `numberAssignmentService.js` to ensure Meta Cloud provider sessions resolve to `CONNECTED` and to filter out soft-deleted sessions (where `isDeleted: true` is in metadata) to align with the Settings page.
+4. The backend endpoint `/api/v1/whatsapp/sessions` (handled by `whatsappController.getSessions`) was updated to restrict returned sessions to only user-accessible sessions for non-admin roles (moderators/employees) using `getUserAccessibleSessionIds`.
+5. The AI Service agent pipeline stages (`skills_pipeline.py` and `validate_reply.py`) were modified to support concurrent tool execution, tool arguments self-correction, strict Pydantic contract fallbacks, and output guardrail self-correction. Additionally, `client.py` and `skills_pipeline.py` were enhanced to support strict tool schemas, capture/propagate `reasoning_content` to stabilize DeepSeek V4 Flash tool calling, and parse XML-like DSML tool calling markup natively to prevent raw protocol leaks in chat sessions. Finally, `skills_pipeline.py` was refactored to use `build_user_content` from `src.context.multimodal`, fixing the customer image attachment pipeline for vision-capable models (like Gemini 2.5 Flash), and resolved empty reply crashes causing `AI_SANDBOX_EMPTY_REPLY` downstream.
+6. The Python `/chat` endpoint (`api/chat.py`) was updated to support `status: "escalated"` with optional `escalation` metadata.
+7. A new `silentEscalationService.js` was introduced in the backend to manage Socket.IO events (`ai:escalation`) and DB `ActivityLog` creation for silent human handoffs.
 
 ### Database Schema Models
-No database models or Prisma schemas were modified.
+No database models or Prisma schemas were modified. However, the database seeding script for the `ai.skills` table (`seed.py`) was corrected to map `triggerPhrases` from `skill.json` to the database column `trigger_phrases`, enabling SQL intent routing.
 
-### Agent Templates
+### Agent Templates & Declarative Skills
 7. A new structured agent template `sales-rep-v2-agent` was added to `apps/backend/agents/` with an improved prompt architecture inspired by the `agency-agents` open-source framework (123k ⭐). The template features: segmented SOUL.md (Identity, Voice, Sales Workflow, Critical Rules, Success Metrics, Failure Protocol), prioritized TOOLS.md (🔴 Essential → 🟡 Supporting → 🟢 Learning), and structured AGENTS.md (Handoff Rules).
+8. The `catalog-search` declarative skill was completely redesigned and standardized for 2026 progressive disclosure:
+   - **`skill.json`**: Upgraded description to support contextual matching, added 20 localized trigger phrases, expanded allowed tools, and raised the max tool count limit.
+   - **`SKILL.md`**: Added a comprehensive decision tree, explicit parameter documentation (for visual search and size/color attributes), failure handling paths, and output templates.
+   - **`conversations.md`**: Created new few-shot interactive dialog examples to steer the agent's behavior.
+   - **`integration.py` & `seed.py`**: Enabled caching and prompt injection of trigger phrases inside the system prompt's `<skill>` XML blocks, resolving intent routing gaps.
 
 ### Ready Agent Profiles & Merchant Locks
 8. Added ready agent profiles manager endpoints in `superAdminRoutes.js` (`POST /agents/quick-profiles`) supporting merchant constraint flags (`lockIdentity`, `lockPersona`, `lockRules`, `lockCustomPrompt`).

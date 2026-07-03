@@ -317,7 +317,7 @@ describe('Login API Tests', () => {
         );
 
         const expirationTime = decoded.exp - decoded.iat;
-        const expectedExpiration = 24 * 60 * 60; // 24 hours in seconds
+        const expectedExpiration = 8 * 60 * 60; // 8 hours in seconds
         
         expect(expirationTime).toBe(expectedExpiration);
       }

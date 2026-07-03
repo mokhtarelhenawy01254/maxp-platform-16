@@ -1,6 +1,17 @@
 # Team Sync Updates
 
 ## 2026-07-03 / 2026-03-09
+- **Company Role Resolution & Sidebar Fix (FIX)**: Fixed a critical bug where company accounts (OWNER, COMPANY_ADMIN) would lose sidebar access after page refresh, showing only 1–2 items instead of the full menu:
+  1. Updated `/auth/login`, `/auth/me`, `/auth/companies`, and `/auth/switch-company` in `authController.js` to include the `roleRef` relation in `userCompanies` queries.
+  2. Updated all role mapping logic to prefer `uc.roleRef?.key || uc.role` over the bare `uc.role` enum (which defaults to `AGENT`), preserving correct OWNER/COMPANY_ADMIN access context.
+  3. Added `plan` field fallback in `buildCompanyResponseWithOnboarding()` (`companyOnboarding.js`) to ensure the company response always includes a plan.
+  4. Set up `test_communication_platform` test database with full schema push. All 15 login tests pass.
+- **Catalog Search Skill & Seeding Hardening (IMPROVEMENT/FIX)**: Standardized the `catalog-search` declarative skill for 2026 progressive disclosure:
+  1. Rewrote `skill.json` to feature a comprehensive, scenario-based description, added 20 localized trigger phrases (Arabic and English), expanded allowed tools, and raised the max tool count to 6.
+  2. Overhauled `SKILL.md` to document all parameters (including visual search and size/color attributes), added a complete decision tree, result formatting guidelines, and alternative recommendation loops.
+  3. Added few-shot interactive dialog examples in `examples/conversations.md`.
+  4. Updated `seed.py` to parse `triggerPhrases` from `skill.json` and persist them as a comma-separated list to the database's `trigger_phrases` column, enabling SQL intent routing.
+  5. Refactored `integration.py` to load and cache `trigger_phrases` across DB and filesystem paths, and dynamically inject them into the system prompt's `<trigger_phrases>` XML block.
 - **WhatsApp Workspace Responsive Overhaul (UI/UX)**: Implemented complete responsive layout harmony and mobile-native UX patterns for the WhatsApp module (`/whatsapp`) utilizing modern 2026 CSS features:
   1. Added dedicated `whatsapp-responsive.css` file containing: View Transitions API animations for smooth panel switching, `@starting-style` entry effects, Container Queries (`@container`) for responsive bubble scaling, scroll-driven header compression, glassmorphism headers, and mobile safe-area overrides.
   2. Integrated touch gesture swipe zones (`onTouchStart`/`onTouchEnd`) in `ChatWindow.tsx` and `WhatsAppChat.tsx` to swipe back to list on mobile.

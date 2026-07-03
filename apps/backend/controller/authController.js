@@ -564,6 +564,9 @@ const login = async (req, res) => {
           userCompanies: {
             where: { isActive: true },
             include: {
+              roleRef: {
+                select: { key: true, name: true }
+              },
               company: {
                 select: {
                   id: true,
@@ -735,7 +738,7 @@ const login = async (req, res) => {
     // Helper to find role in a specific company
     const findRoleInCompany = (cid) => {
       const assoc = user.userCompanies?.find(uc => uc.companyId === cid);
-      return assoc ? assoc.role : user.role;
+      return assoc?.roleRef?.key || (assoc ? assoc.role : user.role);
     };
 
     // Add main company first
@@ -743,6 +746,7 @@ const login = async (req, res) => {
       const roleInPrimary = findRoleInCompany(user.companyId);
       const activeApps = user.company.installedApps?.map(ca => ca.app.slug) || [];
       const responseCompany = buildCompanyResponseWithOnboarding(user.company, user);
+      user.company = responseCompany;
       companiesMap.set(user.companyId, {
         ...responseCompany,
         activeApps,
@@ -764,7 +768,7 @@ const login = async (req, res) => {
             companiesMap.set(uc.companyId, {
               ...responseCompany,
               activeApps,
-              role: uc.role,
+              role: uc.roleRef?.key || uc.role,
               isDefault: uc.isDefault,
               isCurrent: uc.companyId === user.companyId
             });
@@ -995,7 +999,7 @@ const me = async (req, res) => {
           companiesMap.set(uc.companyId, {
             ...responseCompany,
             activeApps,
-            role: uc.role,
+            role: uc.roleRef?.key || uc.role,
             isDefault: uc.isDefault,
             isCurrent: uc.companyId === decoded.companyId
           });
@@ -1004,7 +1008,7 @@ const me = async (req, res) => {
 
         // If this secondary company is the current one, update active role
         if (uc.companyId === decoded.companyId) {
-          currentActiveRole = uc.role;
+          currentActiveRole = uc.roleRef?.key || uc.role;
         }
       }
     }
@@ -1504,6 +1508,9 @@ const getUserCompanies = async (req, res) => {
         isActive: true
       },
       include: {
+        roleRef: {
+          select: { key: true, name: true }
+        },
         company: {
           select: {
             id: true,
@@ -1561,7 +1568,7 @@ const getUserCompanies = async (req, res) => {
     const companyIds = new Set(userCompanies.map(uc => uc.companyId));
     const companies = userCompanies.map(uc => ({
       ...buildCompanyResponseWithOnboarding(uc.company, { phone: '' }),
-      role: uc.role,
+      role: uc.roleRef?.key || uc.role,
       isDefault: uc.isDefault,
       joinedAt: uc.joinedAt
     }));
@@ -1644,6 +1651,9 @@ const switchCompany = async (req, res) => {
         userCompanies: {
           where: { isActive: true },
           include: {
+            roleRef: {
+              select: { key: true, name: true }
+            },
             company: {
               select: {
                 id: true,
@@ -1685,12 +1695,17 @@ const switchCompany = async (req, res) => {
             userId: userId,
             companyId: companyId
           }
+        },
+        include: {
+          roleRef: {
+            select: { key: true, name: true }
+          }
         }
       });
 
       if (userCompany && userCompany.isActive) {
         hasAccess = true;
-        userRole = userCompany.role;
+        userRole = userCompany.roleRef?.key || userCompany.role;
       }
     }
 
@@ -1780,7 +1795,7 @@ const switchCompany = async (req, res) => {
       });
 
       if (mainCompany) {
-        const mainRole = user.userCompanies?.find(uc => uc.companyId === user.companyId)?.role || user.role;
+        const mainRole = user.userCompanies?.find(uc => uc.companyId === user.companyId)?.roleRef?.key || user.userCompanies?.find(uc => uc.companyId === user.companyId)?.role || user.role;
         companiesMap.set(user.companyId, {
           ...mainCompany,
           role: mainRole,
@@ -1797,7 +1812,7 @@ const switchCompany = async (req, res) => {
           if (!companiesMap.has(uc.companyId)) {
             companiesMap.set(uc.companyId, {
               ...uc.company,
-              role: uc.role,
+              role: uc.roleRef?.key || uc.role,
               isDefault: uc.isDefault,
               isCurrent: uc.companyId === companyId
             });

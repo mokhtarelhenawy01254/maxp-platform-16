@@ -15,6 +15,7 @@ const buildCompanyResponseWithOnboarding = (company) => {
   if (!company || typeof company !== "object") return company;
   const nextCompany = { ...company };
   delete nextCompany.settings;
+  nextCompany.plan = company.plan || company.platformSubscription?.plan || 'basic';
   return nextCompany;
 };
 
