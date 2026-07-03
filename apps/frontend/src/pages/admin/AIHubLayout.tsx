@@ -9,9 +9,13 @@ import { buildApiUrl } from "../../utils/urlHelper";
 
 const AIAgentSandboxPage = React.lazy(() => import("./ai-agent-sandbox/AIAgentSandboxPage"));
 import ChannelRoutingPage from "./ChannelRoutingPage";
+import AgentSkillsPage from "./AgentSkillsPage";
+import AgentToolsPage from "./AgentToolsPage";
 
 const TABS = [
   { key: "sandbox", label: "المساعد الذكي" },
+  { key: "skills", label: "مهارات الوكلاء" },
+  { key: "tools", label: "أدوات الوكلاء" },
   { key: "routing", label: "توجيه القنوات" },
   { key: "test", label: "اختبار", superOnly: true },
 ] as const;
@@ -180,6 +184,8 @@ export default function AIHubLayout() {
           </div>
         }>
           {currentTab === "sandbox" && <AIAgentSandboxPage />}
+          {currentTab === "skills" && <div className="h-full overflow-y-auto"><AgentSkillsPage /></div>}
+          {currentTab === "tools" && <div className="h-full overflow-y-auto"><AgentToolsPage /></div>}
           {currentTab === "routing" && <div className="h-full overflow-y-auto"><ChannelRoutingPage /></div>}
           {currentTab === "test" && selectedCompanyId
             ? <div className="h-full overflow-y-auto"><AgentTestTab key={selectedCompanyId} companyId={selectedCompanyId} /></div>
