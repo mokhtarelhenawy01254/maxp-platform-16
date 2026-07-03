@@ -5081,6 +5081,12 @@ const resolveStorefrontPageLayout = (
   fallback: StorefrontPageLayout = "stack",
 ): StorefrontPageLayout => pageConfig?.layoutHint || fallback;
 
+const renderSectionFrame = ({ element, index }: { element: React.ReactNode; index: number }) => (
+  <div className={index > 0 ? 'mt-12' : ''}>
+    {element}
+  </div>
+);
+
 const DynamicStorefrontPage: React.FC = () => {
   const { theme } = useStorefrontTheme();
   const { settings, isLoading: settingsLoading } = useStorefrontSettings();
@@ -5164,9 +5170,10 @@ const DynamicStorefrontPage: React.FC = () => {
       pageConfig={pageConfig}
       layout={resolveStorefrontPageLayout(pageConfig)}
       runtimeText={runtimeText}
+      renderSectionFrame={renderSectionFrame}
     />
-  );
 };
+
 
 const prettifyCollectionSlug = (slug: string, isRtl: boolean): string => {
   const normalized = slug.trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
@@ -5616,9 +5623,10 @@ const CollectionCategoryPage: React.FC = () => {
       pageConfig={pageConfig}
       layout={resolveStorefrontPageLayout(pageConfig)}
       runtimeText={runtimeText}
+      renderSectionFrame={renderSectionFrame}
     />
-  );
 };
+
 
 const StorefrontPreviewBanner: React.FC<{ previewThemeId: string }> = ({
   previewThemeId,
@@ -7954,6 +7962,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       pageConfig={theme.pages.home}
       layout={resolveStorefrontPageLayout(theme.pages.home)}
       runtimeText={runtimeText}
+      renderSectionFrame={renderSectionFrame}
     />
   );
   const shopPageElement = (
@@ -8079,6 +8088,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           shopLayoutFallback,
         )}
         runtimeText={runtimeText}
+        renderSectionFrame={renderSectionFrame}
       />
     </div>
   );
@@ -8233,6 +8243,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         pageConfig={theme.pages.pdp}
         layout={resolveStorefrontPageLayout(theme.pages.pdp, "product-detail")}
         runtimeText={runtimeText}
+        renderSectionFrame={renderSectionFrame}
       />
     </div>
   );
@@ -8323,6 +8334,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         pageConfig={theme.pages.cart}
         layout={resolveStorefrontPageLayout(theme.pages.cart, "sidebar-right")}
         runtimeText={runtimeText}
+        renderSectionFrame={renderSectionFrame}
       />
     </div>
   );
@@ -8360,6 +8372,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         )}
         prioritizeSidebarOnMobile={isKhemetLuxe}
         runtimeText={runtimeText}
+        renderSectionFrame={renderSectionFrame}
       />
     </div>
   );
@@ -8371,6 +8384,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       }
       layout={resolveStorefrontPageLayout(theme.pages["thank-you"], "stack")}
       runtimeText={runtimeText}
+      renderSectionFrame={renderSectionFrame}
     />
   );
   const registrationPageElement = (
@@ -8381,6 +8395,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       }
       layout={resolveStorefrontPageLayout(theme.pages["registration"], "stack")}
       runtimeText={runtimeText}
+      renderSectionFrame={renderSectionFrame}
     />
   );
   const notFoundElement = (
