@@ -816,16 +816,37 @@ async function disconnectSession(req, res) {
  */
 async function getConversations(req, res) {
     try {
-        const { companyId } = req.user;
+        const { companyId, id: userId, role } = req.user;
         const { sessionId, page = 1, limit = 50, search, category, archived } = req.query;
+        const { normalizeRole } = require('../middleware/rbacMiddleware');
+        const userRole = normalizeRole(role);
 
-        // تحسين: استخدام Promise.all لجلب الجلسات والعدد الكلي إذا أمكن، لكن هنا نحتاج الجلسات أولاً لبناء الاستعلام
-        const sessionIds = (sessionId && sessionId !== 'all')
-            ? [sessionId]
-            : (await getSharedPrismaClient().whatsAppSession.findMany({
-                where: { companyId },
-                select: { id: true }
-            })).map(s => s.id);
+        let sessionIds = [];
+        if (
+            userRole === 'SUPER_ADMIN' ||
+            userRole === 'COMPANY_ADMIN' ||
+            userRole === 'TEAM_LEADER'
+        ) {
+            sessionIds = (sessionId && sessionId !== 'all')
+                ? [sessionId]
+                : (await getSharedPrismaClient().whatsAppSession.findMany({
+                    where: { companyId },
+                    select: { id: true }
+                })).map(s => s.id);
+        } else {
+            const { getUserAccessibleSessionIds } = require('../middleware/numberAccessGuard');
+            const accessibleSessions = await getUserAccessibleSessionIds(userId, companyId, getSharedPrismaClient());
+            const accessibleIds = accessibleSessions.map(s => s.id);
+
+            if (sessionId && sessionId !== 'all') {
+                if (!accessibleIds.includes(sessionId)) {
+                    return res.status(403).json({ error: 'ليس لديك صلاحية للوصول إلى هذا الرقم' });
+                }
+                sessionIds = [sessionId];
+            } else {
+                sessionIds = accessibleIds;
+            }
+        }
 
         const where = {
             sessionId: { in: sessionIds },
@@ -956,7 +977,7 @@ async function getConversations(req, res) {
  */
 async function getMessages(req, res) {
     try {
-        const { companyId } = req.user;
+        const { companyId, id: userId, role } = req.user;
         const { jid } = req.params;
         const { sessionId, page = 1, limit = 50 } = req.query;
 
@@ -982,6 +1003,22 @@ async function getMessages(req, res) {
             });
             if (!session) {
                 return res.status(404).json({ error: 'الجلسة غير موجودة' });
+            }
+        }
+
+        // Check user session access permission
+        const { normalizeRole } = require('../middleware/rbacMiddleware');
+        const userRole = normalizeRole(role);
+        if (
+            userRole !== 'SUPER_ADMIN' &&
+            userRole !== 'COMPANY_ADMIN' &&
+            userRole !== 'TEAM_LEADER'
+        ) {
+            const { getUserAccessibleSessionIds } = require('../middleware/numberAccessGuard');
+            const accessibleSessions = await getUserAccessibleSessionIds(userId, companyId, getSharedPrismaClient());
+            const accessibleIds = accessibleSessions.map(s => s.id);
+            if (!accessibleIds.includes(targetSessionId)) {
+                return res.status(403).json({ error: 'ليس لديك صلاحية للوصول إلى هذا الرقم' });
             }
         }
 

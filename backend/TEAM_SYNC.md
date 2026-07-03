@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-04 / 2026-03-09
+- **WhatsApp Inbox Permission Distribution Fix (FIX)**: Fixed a bug where moderators/agents could see conversations, read messages, and receive real-time updates for WhatsApp numbers they are not assigned to:
+  1. Updated `getConversations` and `getMessages` in `apps/backend/controller/whatsappController.js` to validate and filter session IDs using `getUserAccessibleSessionIds` for non-admin accounts.
+  2. Refactored `getConversationAudience` in `apps/backend/services/whatsappRealtimeAudienceService.js` to build a precise list of authorized users (admins, leaders, assigned agents, and team/routing pool members).
+  3. Set `fallbackToCompany` default to `false` in `emitToAudience` to restrict socket message events delivery only to authorized users.
+  4. Added backend unit tests in `apps/backend/tests/services/whatsappRealtimeAudienceService.test.js` to secure and verify role/session isolation.
 - **category_list Tool Formatting Mismatch Fix (FIX)**: Fixed a bug where requesting categories from the agent returned "لا توجد تصنيفات متاحة حالياً" (No categories available) even when categories were defined:
   1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to correctly identify and process the `"categories"` key returned by the `category_list` tool.
   2. Extracted and formatted category names to display nicely in the agent's summary instead of falling back to the default "no results" message.

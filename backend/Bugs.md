@@ -1,5 +1,23 @@
 # Backend Bugs Log
 
+### [FIX] WhatsApp Inbox Permission Distribution Gap (Unauthorized Message Leak)
+- **Date**: 2026-07-04
+- **Description**: Moderators or agents who are not assigned to specific WhatsApp numbers could still view their messages, chats, and get real-time socket updates.
+- **Root Cause**:
+  1. The REST API `/whatsapp/conversations` retrieved all session IDs for the company without filtering them according to user-level access permissions.
+  2. The `/whatsapp/conversations/:jid/messages` endpoint had no validation to verify if the requesting user has access to the target session.
+  3. The Socket.IO real-time audience resolver returned only the assigned agent (or first routing agent) for unassigned chats. If that agent was offline or empty, the broadcast fell back to the company-wide channel (`company_${companyId}`), transmitting messages and updates to all online users.
+- **Resolution**:
+  1. Updated `getConversations` and `getMessages` inside `whatsappController.js` to filter and validate session IDs using the `getUserAccessibleSessionIds` helper for non-admin users.
+  2. Overhauled `getConversationAudience` in `whatsappRealtimeAudienceService.js` to return all authorized users (admins, leaders, assigned agents, and all configured team members/routing agents).
+  3. Set `fallbackToCompany` default to `false` in `emitToAudience` to prevent silent company-wide broadcast leaks of message events.
+  4. Added Jest unit tests under `tests/services/whatsappRealtimeAudienceService.test.js` to verify audience isolation.
+- **Files Modified**:
+  - `apps/backend/controller/whatsappController.js`
+  - `apps/backend/services/whatsappRealtimeAudienceService.js`
+- **Files Added**:
+  - `apps/backend/tests/services/whatsappRealtimeAudienceService.test.js`
+
 ### [FIX] category_list Tool Formatting Mismatch in Skills Pipeline
 - **Date**: 2026-07-04
 - **Description**: Asking the AI agent to list categories returned "لا توجد تصنيفات متاحة حالياً" (No categories available) even when categories were defined in the database.

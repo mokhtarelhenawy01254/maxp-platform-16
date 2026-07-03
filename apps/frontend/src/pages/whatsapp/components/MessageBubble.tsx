@@ -69,7 +69,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
     highlighted,
   }) => {
     const { t } = useTranslation();
-    const senderName = !message.fromMe && message.senderName ? message.senderName : null;
+    const senderName = message.fromMe && message.senderName ? message.senderName : null;
 
     const getDateSeparatorText = (timestamp: string) => {
       const date = new Date(timestamp);

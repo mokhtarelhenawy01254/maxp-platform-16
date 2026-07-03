@@ -31,7 +31,7 @@ async function getConversationAudience({
 }) {
   const prisma = getSharedPrismaClient();
 
-  const [conversation, assignment] = await Promise.all([
+  const [conversation, assignment, users] = await Promise.all([
     conversationId
       ? prisma.conversation.findFirst({
           where: {
@@ -67,27 +67,57 @@ async function getConversationAudience({
           select: {
             assignedUserId: true,
             routingMode: true,
-            routingUserIds: true
+            routingUserIds: true,
+            team: {
+              select: {
+                members: {
+                  where: { isActive: true },
+                  select: { userId: true }
+                }
+              }
+            }
           }
         })
-      : null
+      : null,
+    prisma.user.findMany({
+      where: { companyId, isActive: true },
+      select: { id: true, role: true }
+    })
   ]);
 
   const audience = new Set();
 
-  if (conversation?.assignedUserId) {
-    audience.add(conversation.assignedUserId);
-  } else if (assignment) {
+  // 1. Add all admins and team leaders of the company to the audience
+  const { normalizeRole } = require('../middleware/rbacMiddleware');
+  users.forEach((user) => {
+    const role = normalizeRole(user.role);
+    if (role === 'SUPER_ADMIN' || role === 'COMPANY_ADMIN' || role === 'TEAM_LEADER') {
+      audience.add(user.id);
+    }
+  });
+
+  // 2. Add agents based on routing assignment and conversation assignment state
+  if (assignment) {
     const routingMode = normalizeRoutingMode(assignment.routingMode);
     const routingUserIds = getAssignmentRoutingUserIds(assignment);
+    const teamUserIds = assignment.team?.members?.map((m) => m.userId).filter(Boolean) || [];
 
-    if (
-      routingMode === ROUTING_MODES.NUMBER_OWNER &&
-      assignment.assignedUserId
-    ) {
-      audience.add(assignment.assignedUserId);
-    } else if (routingUserIds.length > 0) {
-      audience.add(routingUserIds[0]);
+    if (conversation?.assignedUserId) {
+      if (routingMode === ROUTING_MODES.SHARED_INBOX) {
+        // Shared Inbox: all agents in assignment pool can see and access
+        routingUserIds.forEach(id => audience.add(id));
+        teamUserIds.forEach(id => audience.add(id));
+        if (assignment.assignedUserId) audience.add(assignment.assignedUserId);
+        audience.add(conversation.assignedUserId);
+      } else {
+        // Round Robin or Number Owner: only the assigned agent has access
+        audience.add(conversation.assignedUserId);
+      }
+    } else {
+      // Unassigned: all agents in assignment pool can see and access
+      routingUserIds.forEach(id => audience.add(id));
+      teamUserIds.forEach(id => audience.add(id));
+      if (assignment.assignedUserId) audience.add(assignment.assignedUserId);
     }
   }
 
@@ -121,7 +151,7 @@ function emitToAudience(
     userIds,
     eventName,
     payload,
-    fallbackToCompany = true
+    fallbackToCompany = false
   }
 ) {
   const deliveredToUsers = emitToUsers(io, userIds, eventName, payload);
