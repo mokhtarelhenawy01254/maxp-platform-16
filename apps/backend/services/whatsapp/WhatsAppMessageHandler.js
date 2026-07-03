@@ -1012,8 +1012,22 @@ async function getMessages(sessionId, remoteJid, options = {}) {
 
         const total = await getSharedPrismaClient().whatsAppMessage.count({ where });
 
+        const senderIds = [...new Set(messages.filter(m => m.fromMe && m.senderId).map(m => m.senderId))];
+        const senders = senderIds.length > 0
+            ? await getSharedPrismaClient().user.findMany({
+                where: { id: { in: senderIds } },
+                select: { id: true, firstName: true, lastName: true }
+              })
+            : [];
+        const senderMap = Object.fromEntries(senders.map(u => [u.id, [u.firstName, u.lastName].filter(Boolean).join(' ')]));
+
+        const enriched = messages.map(m => ({
+            ...m,
+            senderName: m.fromMe && m.senderId ? (senderMap[m.senderId] || null) : null
+        }));
+
         return {
-            messages: messages.reverse(),
+            messages: enriched.reverse(),
             pagination: {
                 page,
                 limit,
