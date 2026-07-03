@@ -5172,6 +5172,7 @@ const DynamicStorefrontPage: React.FC = () => {
       runtimeText={runtimeText}
       renderSectionFrame={renderSectionFrame}
     />
+  );
 };
 
 
@@ -5625,6 +5626,7 @@ const CollectionCategoryPage: React.FC = () => {
       runtimeText={runtimeText}
       renderSectionFrame={renderSectionFrame}
     />
+  );
 };
 
 
