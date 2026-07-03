@@ -1283,7 +1283,7 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
                         mediaMimeType: data.mediaMimeType,
                         mediaFileName: data.mediaFileName,
                         timestamp: new Date(),
-                        senderId: options.senderId // Pass if available
+                        senderId: data.metadata?.senderId || options.senderId
                     },
                     false // isIncoming = false
                 );
