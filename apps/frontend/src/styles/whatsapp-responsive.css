@@ -397,7 +397,8 @@
 
 /* ── 20. Mobile: hide sidebar when chat is open, hide app-shell header, remove main padding ── */
 @media (max-width: 1023px) {
-  .wa-panel-sidebar.max-lg\:hidden {
+  .wa-panel-sidebar.max-lg\:hidden,
+  .wa-panel-chat.max-lg\:hidden {
     display: none !important;
   }
 
