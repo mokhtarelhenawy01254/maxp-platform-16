@@ -429,6 +429,66 @@ class BackendClient:
         result = await self._request("GET", "/api/v1/booking/appointments/available-slots", params=params)
         return result.get("data", [])
 
+    # ── Education APIs ──
+
+    async def get_education_subjects(self, company_id: str) -> list[dict[str, Any]]:
+        result = await self._request("GET", "/api/v1/education/subjects", params={"companyId": company_id})
+        return result.get("data", [])
+
+    async def get_education_packages(self, company_id: str, subject_id: str | None = None) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"companyId": company_id}
+        if subject_id:
+            params["subjectId"] = subject_id
+        result = await self._request("GET", "/api/v1/education/packages", params=params)
+        return result.get("data", [])
+
+    async def get_education_package(self, company_id: str, package_id: str) -> dict[str, Any] | None:
+        try:
+            result = await self._request("GET", f"/api/v1/education/packages/{package_id}", params={"companyId": company_id})
+            return result.get("data")
+        except RuntimeError:
+            return None
+
+    async def get_education_teachers(self, company_id: str) -> list[dict[str, Any]]:
+        result = await self._request("GET", "/api/v1/education/teachers", params={"companyId": company_id})
+        return result.get("data", [])
+
+    async def get_education_students(self, company_id: str, customer_id: str | None = None) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"companyId": company_id}
+        if customer_id:
+            params["customerId"] = customer_id
+        result = await self._request("GET", "/api/v1/education/students", params=params)
+        return result.get("data", [])
+
+    async def create_education_student(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/education/students", json_body={**data, "companyId": company_id})
+
+    async def create_education_enrollment(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/education/enrollments", json_body={**data, "companyId": company_id})
+
+    async def get_education_enrollment(self, company_id: str, enrollment_id: str) -> dict[str, Any]:
+        try:
+            result = await self._request("GET", f"/api/v1/education/enrollments/{enrollment_id}", params={"companyId": company_id})
+            return result.get("data", {})
+        except RuntimeError:
+            return {}
+
+    async def create_education_session(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/education/sessions", json_body={**data, "companyId": company_id})
+
+    async def get_education_sessions(self, company_id: str, student_id: str, status: str = "") -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"companyId": company_id, "studentId": student_id}
+        if status:
+            params["status"] = status
+        result = await self._request("GET", "/api/v1/education/sessions", params=params)
+        return result.get("data", [])
+
+    async def cancel_education_session(self, company_id: str, session_id: str) -> dict[str, Any]:
+        return await self._request("PUT", f"/api/v1/education/sessions/{session_id}/cancel", json_body={"companyId": company_id})
+
+    async def create_customer(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/customers", json_body={**data, "companyId": company_id})
+
     async def create_booking_appointment(
         self, company_id: str, data: dict[str, Any]
     ) -> dict[str, Any]:

@@ -149,4 +149,13 @@ roles:
     - agent_handoff_to
     - knowledge_search
 
+  EDUCATION_CENTER:
+    - education_info
+    - education_enroll
+    - education_schedule_session
+    - education_sessions
+    - education_cancel_session
+    - agent_handoff_to
+    - knowledge_search
+
   CEO: []

@@ -40,9 +40,11 @@ model Customer {
   whatsapp_notification_logs     WhatsAppNotificationLog[]
   customerJourneys               CustomerJourney[]
   wholesaleCustomerPriceLists    WholesaleCustomerPriceList[]
-  wholesaleCustomer              WholesaleCustomer?
+   wholesaleCustomer              WholesaleCustomer?
+    educationStudents               EducationStudent[]
+    formSubmissions                 FormSubmission[]
 
-  @@unique([facebookId, companyId])
+    @@unique([facebookId, companyId])
   @@unique([instagramId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])

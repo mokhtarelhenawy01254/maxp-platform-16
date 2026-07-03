@@ -1,0 +1,46 @@
+/// Forms module - Form definitions (user creates forms in dashboard)
+model FormDefinition {
+  id            String   @id @default(cuid())
+  companyId     String
+  title         String
+  slug          String
+  description   String?
+  fields        Json     /// [{id, type, label, required, placeholder, options}]
+  pixelId       String?  /// Facebook Pixel ID
+  pixelToken    String?  /// Facebook Pixel Access Token
+  thankYouTitle String?  @default("شكراً لك!")
+  thankYouBody  String?  @default("سيتم التواصل معك قريباً")
+  submitLabel   String?  @default("إرسال")
+  isActive      Boolean  @default(true)
+  viewCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  submissions FormSubmission[]
+
+  @@unique([companyId, slug])
+  @@index([companyId])
+  @@index([slug])
+  @@map("form_definitions")
+}
+
+/// Forms module - Form submissions (lead data)
+model FormSubmission {
+  id         String   @id @default(cuid())
+  formId     String
+  companyId  String
+  data       Json     /// {fieldId: value}
+  customerId String?  /// Linked customer (auto-created on submission)
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  company    Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  form       FormDefinition @relation(fields: [formId], references: [id], onDelete: Cascade)
+  customer   Customer?      @relation(fields: [customerId], references: [id])
+
+  @@index([formId])
+  @@index([companyId])
+  @@index([createdAt])
+  @@map("form_submissions")
+}

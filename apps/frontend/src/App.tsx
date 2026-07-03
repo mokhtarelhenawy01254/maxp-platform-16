@@ -838,6 +838,18 @@ const AgentProfilesPage = React.lazy(
 const BookingManagementPage = React.lazy(
   () => import("./pages/admin/BookingManagementPage"),
 );
+const EducationManagementPage = React.lazy(
+  () => import("./pages/admin/EducationManagementPage"),
+);
+const EducationFunnelPage = React.lazy(
+  () => import("./pages/admin/EducationFunnelPage"),
+);
+const FormsBuilderPage = React.lazy(
+  () => import("./pages/admin/FormsBuilderPage"),
+);
+const PublicFormPage = React.lazy(
+  () => import("./pages/public/PublicFormPage"),
+);
 const SuperAdminFacebookOAuth = React.lazy(
   () => import("./pages/SuperAdminFacebookOAuth"),
 );
@@ -1517,6 +1529,7 @@ const AppContent = () => {
             
             <Route path="/app-explanations" element={<AppExplanationsPage />} />
             <Route path="/book/:slug" element={<BookAppointmentPage />} />
+            <Route path="/forms/:slug" element={<PublicFormPage />} />
             <Route path="/faq" element={faqRouteElement} />
             <Route path="/support/faq" element={faqRouteElement} />
             {/* Public Storefront Routes - No Authentication Required */}
@@ -6195,6 +6208,30 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <BookingManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/funnel"
+                  element={
+                    <Layout fullWidth>
+                      <EducationFunnelPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/*"
+                  element={
+                    <Layout fullWidth>
+                      <EducationManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/forms"
+                  element={
+                    <Layout fullWidth>
+                      <FormsBuilderPage />
                     </Layout>
                   }
                 />

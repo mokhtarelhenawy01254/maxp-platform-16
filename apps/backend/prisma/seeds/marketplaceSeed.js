@@ -1086,6 +1086,38 @@ async function seedMarketplace() {
         "isPopular": false,
         "category": "FINANCE",
         "trialDays": 0
+      },
+      {
+        "slug": "education-app",
+        "name": "نظام إدارة المراكز التعليمية",
+        "description": "نظام شامل لإدارة المراكز التعليمية: المواد، الباقات، الطلاب، المدرسين، الحصص، والتسجيلات. مع ربط ولي الأمر كعميل في CRM.",
+        "icon": "🎓",
+        "monthlyPrice": 199,
+        "yearlyPrice": 1990,
+        "pricingModel": "SUBSCRIPTION",
+        "features": "[\"إدارة المواد الدراسية\",\"باقات الساعات والجلسات\",\"تسجيل الطلاب\",\"إدارة المدرسين وأسعار الساعة\",\"جدولة الحصص\",\"تأكيد الحصص وخصم الساعات\",\"ربط ولي الأمر CRM\",\"تقارير الأداء\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": true,
+        "isPopular": false,
+        "category": "PRODUCTIVITY",
+        "trialDays": 14
+      },
+      {
+        "slug": "forms-app",
+        "name": "نماذج التسجيل الذكية",
+        "description": "بناء نماذج تسجيل احترافية مع ربط Facebook Pixel. تحويل الزوار إلى عملاء Leads مباشرة في CRM مع تحليلات الزوار ونسبة التحويل.",
+        "icon": "📋",
+        "monthlyPrice": 99,
+        "yearlyPrice": 990,
+        "pricingModel": "SUBSCRIPTION",
+        "features": "[\"بناء نماذج مخصصة (سحب وإفلات)\",\"ربط Facebook Pixel\",\"رابط عام للتسجيل\",\"تحويل تلقائي إلى عميل Lead\",\"تحليلات الزوار ونسبة التحويل\",\"إدارة الردود والتسجيلات\",\"تصدير البيانات\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": false,
+        "isPopular": false,
+        "category": "PRODUCTIVITY",
+        "trialDays": 14
       }
 
     ];

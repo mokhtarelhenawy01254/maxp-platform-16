@@ -61,6 +61,7 @@ import {
     TrophyIcon,
     ArrowsRightLeftIcon,
     AcademicCapIcon,
+    BookOpenIcon,
     LightBulbIcon,
     LinkIcon,
     NoSymbolIcon,
@@ -957,7 +958,35 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 8️⃣ إدارة المهام
+        // 7️⃣.7️⃣ النظام التعليمي
+        {
+            id: 'education',
+            title: t('sidebar.educationModule'),
+            icon: AcademicCapIcon,
+            hidden: !isAppActive('education-app'),
+            items: [
+                { to: '/admin/education/dashboard', icon: ChartBarIcon, label: t('sidebar.educationDashboard') },
+                { to: '/admin/education/subjects', icon: BookOpenIcon, label: t('sidebar.educationSubjects') },
+                { to: '/admin/education/packages', icon: GiftIcon, label: t('sidebar.educationPackages') },
+                { to: '/admin/education/students', icon: UserGroupIcon, label: t('sidebar.educationStudents') },
+                { to: '/admin/education/teachers', icon: UsersIcon, label: t('sidebar.educationTeachers') },
+                { to: '/admin/education/sessions', icon: ClockIcon, label: t('sidebar.educationSessions') },
+                { to: '/admin/education/funnel', icon: MegaphoneIcon, label: t('sidebar.educationFunnel') },
+            ]
+        },
+
+        // 8️⃣ نماذج التسجيل
+        {
+            id: 'forms',
+            title: t('sidebar.formsBuilder'),
+            icon: DocumentTextIcon,
+            hidden: !isAppActive('forms-app'),
+            items: [
+                { to: '/admin/forms', icon: DocumentTextIcon, label: t('sidebar.forms') },
+            ]
+        },
+
+        // 9️⃣ إدارة المهام
         {
             id: 'tasks',
             title: t('sidebar.tasksWorkspace'),

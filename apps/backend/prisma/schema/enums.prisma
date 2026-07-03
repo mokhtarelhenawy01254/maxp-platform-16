@@ -1961,3 +1961,11 @@ enum DevGoalConfidence {
 
   @@map("dev_goal_confidence")
 }
+
+enum EducationSessionStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+
+  @@map("education_session_status")
+}
