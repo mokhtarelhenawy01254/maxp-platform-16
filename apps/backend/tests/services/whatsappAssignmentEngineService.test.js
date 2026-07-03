@@ -376,4 +376,49 @@ describe('whatsappAssignmentEngineService', () => {
 
     reassignSpy.mockRestore();
   });
+
+  test('_buildCandidatePool prioritizes routingUserIds in ROUND_ROBIN mode even if assignedUser exists', async () => {
+    const mockTx = {
+      whatsAppNumberAssignment: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'assign-1',
+          companyId: 'company-1',
+          sessionId: 'session-1',
+          routingMode: 'ROUND_ROBIN',
+          routingUserIds: JSON.stringify(['user-1', 'user-2']),
+          assignedUserId: 'owner-id',
+          assignedUser: { id: 'owner-id', role: 'MODERATOR', isActive: true },
+          teamId: null,
+          team: null,
+        }),
+      },
+      user: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'user-1', firstName: 'Employee One', role: 'MODERATOR', isActive: true },
+          { id: 'user-2', firstName: 'Employee Two', role: 'MODERATOR', isActive: true },
+        ]),
+      },
+      conversation: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+
+    const workloadsSpy = jest
+      .spyOn(whatsappAssignmentEngineService, '_loadWorkloads')
+      .mockResolvedValue(new Map());
+
+    const pool = await whatsappAssignmentEngineService._buildCandidatePool(
+      mockTx,
+      'company-1',
+      'session-1',
+      buildSettings()
+    );
+
+    const userIds = pool.map(candidate => candidate.user.id);
+    expect(userIds).toContain('user-1');
+    expect(userIds).toContain('user-2');
+    expect(userIds).not.toContain('owner-id');
+
+    workloadsSpy.mockRestore();
+  });
 });

@@ -546,35 +546,9 @@ class WhatsAppAssignmentEngineService {
     }
 
     const poolById = new Map();
-
-    if (assignment.assignedUser?.isActive) {
-      poolById.set(assignment.assignedUser.id, {
-        user: assignment.assignedUser,
-        teamId: assignment.teamId || null
-      });
-    }
-
-    for (const member of assignment.team?.members || []) {
-      if (!member.user?.isActive) {
-        continue;
-      }
-
-      const normalizedRole = normalizeRole(member.user.role);
-      if (normalizedRole !== 'MODERATOR' && normalizedRole !== 'TEAM_LEADER') {
-        continue;
-      }
-
-      if (!poolById.has(member.user.id)) {
-        poolById.set(member.user.id, {
-          user: member.user,
-          teamId: assignment.team?.id || null,
-          isTeamLeader: member.isTeamLeader
-        });
-      }
-    }
-
     const routingMode = normalizeRoutingMode(assignment.routingMode);
-    if (poolById.size === 0 && (routingMode === ROUTING_MODES.SHARED_INBOX || routingMode === ROUTING_MODES.ROUND_ROBIN)) {
+
+    if (routingMode === ROUTING_MODES.SHARED_INBOX || routingMode === ROUTING_MODES.ROUND_ROBIN) {
       const routingIds = parseRoutingUserIds(assignment.routingUserIds);
       if (routingIds.length > 0) {
         const routingUsers = await tx.user.findMany({
@@ -598,8 +572,36 @@ class WhatsAppAssignmentEngineService {
         for (const user of routingUsers) {
           const normalizedRole = normalizeRole(user.role);
           if (normalizedRole === 'MODERATOR' || normalizedRole === 'TEAM_LEADER') {
-            poolById.set(user.id, { user, teamId: null });
+            poolById.set(user.id, { user, teamId: assignment.teamId || null });
           }
+        }
+      }
+    }
+
+    if (poolById.size === 0) {
+      if (assignment.assignedUser?.isActive) {
+        poolById.set(assignment.assignedUser.id, {
+          user: assignment.assignedUser,
+          teamId: assignment.teamId || null
+        });
+      }
+
+      for (const member of assignment.team?.members || []) {
+        if (!member.user?.isActive) {
+          continue;
+        }
+
+        const normalizedRole = normalizeRole(member.user.role);
+        if (normalizedRole !== 'MODERATOR' && normalizedRole !== 'TEAM_LEADER') {
+          continue;
+        }
+
+        if (!poolById.has(member.user.id)) {
+          poolById.set(member.user.id, {
+            user: member.user,
+            teamId: assignment.team?.id || null,
+            isTeamLeader: member.isTeamLeader
+          });
         }
       }
     }

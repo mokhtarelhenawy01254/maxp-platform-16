@@ -8,6 +8,7 @@
   2. The reassignment sweep calculated agent timeout using the customer's message timestamp rather than the agent's actual assignment timestamp (`lastAssignedAt`), causing newly assigned agents to instantly time out and trigger an infinite ping-pong loop between moderators.
   3. The sweep query fetched the top 100 open conversations across all companies indiscriminately without checking settings or tenant-level config, causing database scaling issues.
   4. The background interval scheduler ran concurrently on all PM2 cluster processes, causing duplicate reassignment sweeps and database lock contentions.
+  5. In Round Robin and Shared Inbox modes, candidate pool building prioritized the number owner/assignedUser over `routingUserIds` (configured employees) when `assignedUserId` was populated, completely locking out employees from receiving chats.
 - **Resolution**:
   1. Unified the incoming sync pipeline in `WhatsAppSyncService.js` to call `assignConversationToBestModerator` from the advanced `WhatsAppAssignmentEngineService`.
   2. Added a 5-minute cooldown period using `lastAssignedAt` in `evaluateConversationForReassignment` to stop the ping-pong loop.
@@ -15,6 +16,7 @@
   4. Optimized the sweep query to fetch active company assignments, check their settings, and query only open conversations with pending customer messages, grouped by `companyId`.
   5. Implemented a session-level distributed advisory lock (`pg_try_advisory_lock`) in PostgreSQL to coordinate background sweeps across PM2 cluster instances safely.
   6. Added corresponding unit tests in `whatsappAssignmentEngineService.test.js` to prevent regressions.
+  7. Corrected `_buildCandidatePool` in `whatsappAssignmentEngineService.js` to prioritize configured `routingUserIds` for Round Robin/Shared Inbox modes even if `assignedUser` exists.
 - **Files Modified**:
   - `apps/backend/services/whatsapp/WhatsAppSyncService.js`
   - `apps/backend/services/whatsappAssignmentEngineService.js`
