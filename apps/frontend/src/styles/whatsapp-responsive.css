@@ -422,13 +422,15 @@
     display: none !important;
   }
 
-  .business-shell-header:has(~ .business-shell-main .whatsapp-workspace-root .wa-panel-sidebar.max-xl\:hidden) {
+  /* Hide app-shell header when WhatsApp chat is active on mobile */
+  body.wa-mobile-chat-active header.business-shell-header {
     display: none !important;
   }
 
   /* Remove main content padding for WhatsApp edge-to-edge on mobile */
-  main.business-shell-main:has(.whatsapp-workspace-root) {
+  body.wa-mobile-chat-active main.business-shell-main {
     padding: 0 !important;
+    overflow-y: hidden !important;
   }
 }
 
@@ -470,13 +472,6 @@
     --epr-picker-border-radius: 0px !important;
     border: none !important;
     background-color: transparent !important;
-  }
-}
-
-/* ── 24. Mobile: prevent overflow on main when WhatsApp is active ── */
-@media (max-width: 1279px) {
-  main.business-shell-main:has(.whatsapp-workspace-root) {
-    overflow-y: hidden !important;
   }
 }
 

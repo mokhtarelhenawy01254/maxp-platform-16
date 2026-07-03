@@ -278,6 +278,24 @@ const WhatsAppChatContent: React.FC = () => {
     }
   }, []);
 
+  // — Mobile layout: hide app-shell header + remove padding when chat is open —
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1279px)');
+    const apply = () => {
+      if (mq.matches && selectedContact) {
+        document.body.classList.add('wa-mobile-chat-active');
+      } else {
+        document.body.classList.remove('wa-mobile-chat-active');
+      }
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => {
+      mq.removeEventListener('change', apply);
+      document.body.classList.remove('wa-mobile-chat-active');
+    };
+  }, [selectedContact]);
+
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [selectedContactForLabel, setSelectedContactForLabel] = useState<Contact | null>(null);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
