@@ -1222,6 +1222,7 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
             isAIResponse: data.isAIResponse || false,
             aiConfidence: data.aiConfidence,
             metadata,
+            senderId: options.senderId || null,
             updatedAt: new Date()
         },
         create: {
@@ -1242,6 +1243,7 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
             isAIResponse: data.isAIResponse || false,
             aiConfidence: data.aiConfidence,
             metadata,
+            senderId: options.senderId || null,
             updatedAt: new Date()
         }
     });
