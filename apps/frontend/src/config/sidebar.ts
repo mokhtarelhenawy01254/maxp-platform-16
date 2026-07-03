@@ -80,6 +80,7 @@ type SidebarCompany = {
     name?: string | null;
     plan?: string | null;
     sidebarLayout?: string | null;
+    settings?: string | null;
 };
 
 type SidebarUser = {
@@ -264,6 +265,11 @@ export const getSidebarConfig = (
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps Count:', activeApps?.length);
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
     }
+
+    const companySettings: Record<string, unknown> = (() => {
+        try { return currentCompany?.settings ? JSON.parse(currentCompany.settings) : {}; } catch { return {}; }
+    })();
+    const isFeatureEnabled = (key: string) => companySettings[key] === true;
 
     const isAppActive = (slug: string) => {
         // ponytail: isSuperCompany removed — app visibility now purely per activeApps
@@ -488,6 +494,17 @@ export const getSidebarConfig = (
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
                 { to: '/admin/ai-hub?tab=routing', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.channelRouting') },
+            ]
+        }] : []),
+
+        // AI Skills & Tools (عند تفعيل aiToolsEnabled)
+        ...(isFeatureEnabled('aiToolsEnabled') ? [{
+            id: 'ai-skills-tools',
+            title: t('sidebar.aiOperatorSection'),
+            icon: SparklesIcon,
+            items: [
+                { to: '/admin/ai-hub?tab=skills', icon: SwatchIcon, label: t('sidebar.aiAgentSkills') },
+                { to: '/admin/ai-hub?tab=tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools') },
             ]
         }] : []),
 
