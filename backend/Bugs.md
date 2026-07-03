@@ -1,5 +1,21 @@
 # Backend Bugs Log
 
+### [FIX] Permissions Consistency Mismatch & Mismapped DOMAIN_PERMISSIONS (Sidebar collapse on refresh)
+- **Date**: 2026-07-03
+- **Description**: Users with custom permissions (such as `AGENT` accounts with specific roles like in `Harf Online`) would see a full sidebar initially on login, but the sidebar would collapse or lose sections like the inbox/Facebook/WhatsApp after a page refresh.
+- **Root Cause**:
+  1. **Permissions Load Mismatch**: The login (`/auth/login`) and switch company (`/auth/switch-company`) endpoints did not load the user's granular permissions from the database. Consequently, the user's `permissions` array was returned as `undefined`. On the frontend, this triggered the fallback check `user.permissions.length === 0`, causing the app to temporarily grant visibility to all sidebar sections. However, the session hydration endpoint (`/auth/me`) correctly queried the database for permissions, populating the `permissions` array on refresh and causing the sidebar to collapse to only match explicit permissions.
+  2. **Typo in DOMAIN_PERMISSIONS**: The frontend's `sidebar.ts` mapped unified messaging sections to the permission key `conversations.view`. However, the database seeds and backend permissions only featured `inbox.view` (along with `inbox.view.own`, `inbox.view.team`, `inbox.view.all`, `inbox.send`). This typo prevented any user with database-defined inbox permissions from accessing the inbox sections once their permissions list was populated.
+  3. **Mismatched company object**: On login, `user.company` returned the raw Prisma model (which did not have the company `role` attribute), causing a property mismatch with `/auth/me`.
+- **Resolution**:
+  1. Updated `/auth/login` and `/auth/switch-company` in `apps/backend/controller/authController.js` to load user permissions via `permissionService.getUserPermissions` and return them consistently in the JSON payloads.
+  2. Overrode the `company` object returned in `/auth/login` and `/auth/switch-company` responses with the context-aware selected company (retrieved from `companiesMap`), ensuring it consistently includes the `role` and `activeApps` fields.
+  3. Updated `DOMAIN_PERMISSIONS` in `apps/frontend/src/config/sidebar.ts` to map messaging sections to the database-canonical `inbox.view` (and its variants) instead of the legacy `conversations.view`.
+  4. Added database-canonical finance permissions (`finance.invoices`, `finance.payments`) to the `'procurement'` section, and `notifications.view` to the `'notifications'` section in `DOMAIN_PERMISSIONS`.
+- **Files Modified**:
+  - `apps/backend/controller/authController.js`
+  - `apps/frontend/src/config/sidebar.ts`
+
 ### [FIX] Company Role Resolution & Sidebar Disappearance on Page Refresh
 - **Date**: 2026-07-03
 - **Description**: Company accounts (like OWNER or COMPANY_ADMIN) would lose access to all sidebar items (showing only one or two basic sections) after a page refresh.

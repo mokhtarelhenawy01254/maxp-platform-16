@@ -6,6 +6,8 @@
   2. Updated all role mapping logic to prefer `uc.roleRef?.key || uc.role` over the bare `uc.role` enum (which defaults to `AGENT`), preserving correct OWNER/COMPANY_ADMIN access context.
   3. Added `plan` field fallback in `buildCompanyResponseWithOnboarding()` (`companyOnboarding.js`) to ensure the company response always includes a plan.
   4. Set up `test_communication_platform` test database with full schema push. All 15 login tests pass.
+  5. Resolved a critical permissions mismatch where `/auth/login` and `/auth/switch-company` did not load user permissions, causing the frontend to show all sidebar sections initially (due to fallback on empty permissions list) but collapse them upon page refresh (since `/auth/me` does load permissions). Permissions are now consistently loaded in all three auth endpoints.
+  6. Aligned frontend `sidebar.ts` `DOMAIN_PERMISSIONS` keys with actual backend database values (changing legacy `conversations.view` to the database-seeded `inbox.view`, adding database-canonical `finance.invoices`/`finance.payments` to `procurement`, and `notifications.view` to `notifications`), securing consistent sidebar items visibility on reload.
 - **Catalog Search Skill & Seeding Hardening (IMPROVEMENT/FIX)**: Standardized the `catalog-search` declarative skill for 2026 progressive disclosure:
   1. Rewrote `skill.json` to feature a comprehensive, scenario-based description, added 20 localized trigger phrases (Arabic and English), expanded allowed tools, and raised the max tool count to 6.
   2. Overhauled `SKILL.md` to document all parameters (including visual search and size/color attributes), added a complete decision tree, result formatting guidelines, and alternative recommendation loops.
