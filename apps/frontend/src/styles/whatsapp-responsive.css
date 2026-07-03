@@ -6,28 +6,7 @@
    Touch Feedback, and mobile-native patterns.
    ============================================================ */
 
-/* ── 1. Layout Integration — Remove AppShell padding for WhatsApp ── */
-.app-shell-content:has(.whatsapp-workspace-root) {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-
-.app-shell-content:has(.whatsapp-workspace-root) > * {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-shell-content:has(.whatsapp-workspace-root) > .whatsapp-workspace-root {
-  height: 100%;
-  min-height: 0;
-  flex: 1;
-}
-
-/* ── 2. Root Container — Full Height ── */
+/* ── 1. Root Container — Full Height ── */
 .whatsapp-workspace-root {
   display: flex;
   flex-direction: column;
@@ -431,6 +410,14 @@
   body.wa-mobile-chat-active main.business-shell-main {
     padding: 0 !important;
     overflow-y: hidden !important;
+  }
+
+  /* Strip card styles from inner workspace div when full-screen on mobile */
+  body.wa-mobile-chat-active .whatsapp-workspace-root > div:not(.wa-panel-sidebar):not(.wa-panel-chat) {
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background-color: var(--color-background) !important;
   }
 }
 
