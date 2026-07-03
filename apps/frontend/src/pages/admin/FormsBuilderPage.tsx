@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Plus, FileText, Eye, BarChart3, Copy, Trash2, Loader2, Users, MousePointerClick, TrendingUp, ExternalLink, X } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import { useAuth } from "../../hooks/useAuthSimple";
 
 interface FormField {
   id: string;
@@ -327,6 +328,7 @@ function AnalyticsModal({ formId, onClose }: { formId: string; onClose: () => vo
 }
 
 const FormsBuilderPage: React.FC = () => {
+  const { user } = useAuth();
   const [forms, setForms] = useState<FormDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -359,7 +361,8 @@ const FormsBuilderPage: React.FC = () => {
   };
 
   const copyPublicUrl = (slug: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/forms/${slug}`);
+    const cid = user?.companyId ? `?companyId=${user.companyId}` : "";
+    navigator.clipboard.writeText(`${window.location.origin}/forms/${slug}${cid}`);
     toast.success("تم نسخ الرابط");
   };
 

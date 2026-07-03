@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Loader2, CheckCircle } from "lucide-react";
 
 interface FormField {
@@ -24,6 +24,8 @@ interface PublicForm {
 
 const PublicFormPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const companyId = searchParams.get("companyId");
   const [form, setForm] = useState<PublicForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,7 +38,8 @@ const PublicFormPage: React.FC = () => {
     if (!slug) return;
     (async () => {
       try {
-        const res = await fetch(`/api/v1/public/forms/${slug}`);
+        const params = companyId ? `?companyId=${companyId}` : "";
+        const res = await fetch(`/api/v1/public/forms/${slug}${params}`);
         const json = await res.json();
         if (!json.success) throw new Error(json.error || "Form not found");
         setForm(json.data);
@@ -86,7 +89,8 @@ const PublicFormPage: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/v1/public/forms/${slug}/submit`, {
+      const params = companyId ? `?companyId=${companyId}` : "";
+      const res = await fetch(`/api/v1/public/forms/${slug}/submit${params}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data: values }),

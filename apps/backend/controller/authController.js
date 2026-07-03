@@ -786,6 +786,17 @@ const login = async (req, res) => {
       role: currentActiveRole,
     });
 
+    // Load user permissions for frontend consistency on login
+    let permissions = [];
+    try {
+      const permissionService = require('../services/permissionService');
+      permissions = await permissionService.getUserPermissions(user.id, user.companyId);
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[LOGIN] Could not load permissions:', e.message);
+      }
+    }
+
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -801,6 +812,8 @@ const login = async (req, res) => {
         user: {
           ...userWithoutSensitive,
           role: currentActiveRole,
+          permissions,
+          company: companiesMap.get(user.companyId) || user.company,
           affiliate: affiliateProfile,
           companies: Array.from(companiesMap.values()),
           hasMultipleCompanies: companiesMap.size > 1
@@ -1828,6 +1841,17 @@ const switchCompany = async (req, res) => {
       }
     }
 
+    // Load user permissions for frontend consistency on company switch
+    let permissions = [];
+    try {
+      const permissionService = require('../services/permissionService');
+      permissions = await permissionService.getUserPermissions(user.id, companyId);
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[SWITCH] Could not load permissions:', e.message);
+      }
+    }
+
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -1842,8 +1866,9 @@ const switchCompany = async (req, res) => {
       data: {
         token: newToken,
         refreshToken: newRefreshToken,
-        company: targetCompany,
+        company: companiesMap.get(companyId) || targetCompany,
         role: userRole,
+        permissions,
         companies: Array.from(companiesMap.values()),
         hasMultipleCompanies: companiesMap.size > 1,
         expiresIn: '8h'

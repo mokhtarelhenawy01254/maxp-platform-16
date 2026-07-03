@@ -163,19 +163,19 @@ const mergeSectionOverrides = (
 
 const DOMAIN_PERMISSIONS: Record<string, string[]> = {
     'main': ['dashboard.view'],
-    'unified-inbox-section': ['conversations.view', 'facebook.view', 'instagram.view', 'whatsapp.view', 'telegram.view'],
-    'facebook': ['conversations.view', 'facebook.view'],
-    'instagram': ['conversations.view', 'instagram.view'],
-    'whatsapp': ['whatsapp.view', 'conversations.view'],
-    'telegram': ['telegram.view', 'conversations.view'],
+    'unified-inbox-section': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'facebook.view', 'instagram.view', 'whatsapp.view', 'telegram.view'],
+    'facebook': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'facebook.view'],
+    'instagram': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'instagram.view'],
+    'whatsapp': ['whatsapp.view', 'inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view'],
+    'telegram': ['telegram.view', 'inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view'],
     'orders': ['orders.view'],
     'customers': ['customers.view'],
     'marketplace': ['settings.view'],
     'company': ['settings.view', 'users.view', 'roles.view'],
     'products': ['products.view'],
-    'procurement': ['finance.view'],
+    'procurement': ['finance.view', 'finance.invoices', 'finance.payments'],
     'analytics': ['reports.view'],
-    'notifications': ['settings.view']
+    'notifications': ['settings.view', 'notifications.view']
 };
 
 const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId: string): boolean => {
