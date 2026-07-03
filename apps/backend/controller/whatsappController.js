@@ -1021,7 +1021,8 @@ async function sendMessage(req, res) {
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
 
         const message = await WhatsAppMessageHandler.sendText(targetSessionId, to, text, {
-            quotedMessageId
+            quotedMessageId,
+            senderId: req.body.userId || req.user?.userId
         });
 
         res.json({ success: true, message });
