@@ -119,7 +119,7 @@ function TemplateMetric({
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  value: number;
+  value: number | string;
   colorClass: string;
 }) {
   return (
@@ -667,21 +667,21 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       <TemplateMetric
                         icon={Send}
                         label={i18n.language === "ar" ? "مرسل" : "Sent"}
-                        value={template.sentCount || 0}
+                        value={template.sentCount != null && template.sentCount > 0 ? template.sentCount : "—"}
                         colorClass="text-[color:var(--color-muted-foreground)]"
                       />
                       <Separator orientation="vertical" className="mx-1" />
                       <TemplateMetric
                         icon={CheckCircle}
                         label={i18n.language === "ar" ? "مستلم" : "Delivered"}
-                        value={template.deliveredCount || 0}
+                        value={template.deliveredCount != null && template.deliveredCount > 0 ? template.deliveredCount : "—"}
                         colorClass="text-emerald-600 dark:text-emerald-400"
                       />
                       <Separator orientation="vertical" className="mx-1" />
                       <TemplateMetric
                         icon={Eye}
                         label={i18n.language === "ar" ? "مقروء" : "Read"}
-                        value={template.readCount || 0}
+                        value={template.readCount != null && template.readCount > 0 ? template.readCount : "—"}
                         colorClass="text-sky-600 dark:text-sky-400"
                       />
                     </div>

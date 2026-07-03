@@ -357,7 +357,9 @@ const WhatsAppChatContent: React.FC = () => {
     isLoading: loadingConversations,
     isFetchingNextPage: isLoadingMoreConversations,
     fetchNextPage: fetchNextConversationsPage,
-    hasNextPage: hasMoreConversations
+    hasNextPage: hasMoreConversations,
+    isError: conversationsError,
+    refetch: refetchConversations,
   } = useWhatsAppConversations(selectedSession || 'all', 30);
 
   const conversations = useMemo(() => {
@@ -374,7 +376,9 @@ const WhatsAppChatContent: React.FC = () => {
     data: messagesData,
     isLoading: loadingMessages,
     fetchNextPage: fetchNextMessagesPage,
-    hasNextPage: hasMoreMessages
+    hasNextPage: hasMoreMessages,
+    isError: messagesError,
+    refetch: refetchMessages,
   } = useWhatsAppMessages(selectedContact?.jid || null, targetSessionId);
 
   const messages = useMemo(() => {
@@ -1824,6 +1828,8 @@ const WhatsAppChatContent: React.FC = () => {
         onMuteChat={handleMuteChat}
         onMarkAsRead={handleMarkUnread}
         onLoadMore={fetchNextConversationsPage}
+        conversationsError={conversationsError}
+        onRetryConversations={() => refetchConversations()}
         onAddStatus={() => setStatusDialogOpen(true)}
         onOpenBroadcast={() => setBroadcastDialogOpen(true)}
         onOpenCheckNumber={() => setCheckNumberDialogOpen(true)}
@@ -1887,6 +1893,8 @@ const WhatsAppChatContent: React.FC = () => {
         onTouchStart={handleChatTouchStart}
         onTouchEnd={handleChatTouchEnd}
         fileInputRef={fileInputRef}
+        messagesError={messagesError}
+        onRetryMessages={() => refetchMessages()}
       />
       </div>
 

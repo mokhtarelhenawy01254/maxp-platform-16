@@ -69,7 +69,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
     highlighted,
   }) => {
     const { t } = useTranslation();
-    const senderName = message.fromMe && message.senderName ? message.senderName : null;
+    const senderName = !message.fromMe && message.senderName ? message.senderName : null;
 
     const getDateSeparatorText = (timestamp: string) => {
       const date = new Date(timestamp);
@@ -99,12 +99,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
           case "IMAGE":
             return (
               <div className="space-y-3">
-                <img
-                  src={fullMediaUrl}
-                  alt="Message media"
-                  className="max-h-[14rem] max-w-full rounded-xl object-cover sm:max-h-[20rem]"
-                  onClick={() => window.open(fullMediaUrl, "_blank")}
-                />
+                <a href={fullMediaUrl} target="_blank" rel="noreferrer">
+                  <img
+                    src={fullMediaUrl}
+                    alt="Message media"
+                    loading="lazy"
+                    className="max-h-[14rem] max-w-full rounded-xl object-cover sm:max-h-[20rem]"
+                  />
+                </a>
                 {message.content ? (
                   <LinkifiedText
                     text={message.content}
@@ -149,6 +151,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                   href={fullMediaUrl}
                   target="_blank"
                   rel="noreferrer"
+                  download
                   className="inline-flex size-9 items-center justify-center rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
                 >
                   <Download className="size-4" />
@@ -262,6 +265,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                   e.stopPropagation();
                   onQuotedMessageClick?.(message.quotedMessageId!);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    onQuotedMessageClick?.(message.quotedMessageId!);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
                 title={t("whatsapp.window.goToMessage") || "Go to message"}
               >
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-primary)]">

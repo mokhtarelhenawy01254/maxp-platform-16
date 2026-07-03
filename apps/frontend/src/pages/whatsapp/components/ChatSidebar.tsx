@@ -3,6 +3,7 @@ import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import {
+  AlertTriangle,
   Archive,
   ArchiveRestore,
   Ban,
@@ -14,6 +15,7 @@ import {
   MessageSquarePlus,
   MoreVertical,
   Pin,
+  RefreshCw,
   Search,
   Shield,
   Store,
@@ -102,6 +104,8 @@ interface ChatSidebarProps {
   onOpenBroadcast: () => void;
   onOpenCheckNumber: () => void;
   onOpenLabels: () => void;
+  conversationsError?: boolean;
+  onRetryConversations?: () => void;
 }
 
 type SidebarFilter = "all" | "unread" | "groups" | "statuses";
@@ -224,6 +228,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onOpenBroadcast,
   onOpenCheckNumber,
   onOpenLabels,
+  conversationsError,
+  onRetryConversations,
 }) => {
   const { t, i18n } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -601,6 +607,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder={t("whatsapp.sidebar.searchPlaceholder")}
+            aria-label={t("whatsapp.sidebar.searchPlaceholder")}
             className="whatsapp-search-input h-9 rounded-xl bg-[var(--whatsapp-surface)] ps-9 pe-10 text-xs"
           />
           <Button
@@ -724,6 +731,26 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </article>
               ))
             )}
+          </div>
+        ) : conversationsError ? (
+          <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
+            <AlertTriangle className="mb-4 size-10 text-rose-500" />
+            <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+              {t("whatsapp.dialogs.error")}
+            </p>
+            <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
+              {t("whatsapp.window.selectChat")}
+            </p>
+            {onRetryConversations ? (
+              <Button
+                variant="outline"
+                className="mt-4 rounded-full border-[color:var(--shell-control-border)]"
+                onClick={onRetryConversations}
+              >
+                <RefreshCw className="size-4 ml-2" />
+                {t("conversations.retry")}
+              </Button>
+            ) : null}
           </div>
         ) : isLoadingConversations && filteredConversations.length === 0 ? (
           renderLoadingRows()
@@ -884,6 +911,21 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <div
             className="fixed z-50 w-56 rounded-3xl border border-[color:var(--shell-overlay-border)] bg-[var(--shell-overlay-bg)] p-1.5 shadow-[var(--shell-overlay-shadow)] ring-1 ring-[color:var(--shell-overlay-edge)]"
             style={{ left: menuLeft, top: menuTop }}
+            role="menu"
+            onKeyDown={(e) => {
+              const buttons = e.currentTarget.querySelectorAll('button');
+              const current = document.activeElement;
+              const currentIdx = Array.from(buttons).indexOf(current as HTMLButtonElement);
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = buttons[currentIdx + 1] || buttons[0];
+                (next as HTMLButtonElement)?.focus();
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = buttons[currentIdx - 1] || buttons[buttons.length - 1];
+                (prev as HTMLButtonElement)?.focus();
+              }
+            }}
           >
             <button
               type="button"

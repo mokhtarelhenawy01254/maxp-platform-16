@@ -500,12 +500,18 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
               })}
             </div>
           ) : (
-            <Alert className="rounded-xl border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]">
-              <AlertTitle>{t("whatsappAnalytics.charts.byCategory")}</AlertTitle>
-              <AlertDescription>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-6 py-12 text-center">
+              <BarChart3 className="mb-3 size-8 text-[color:var(--color-muted-foreground)]" />
+              <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+                {t("whatsappAnalytics.charts.byCategory")}
+              </p>
+              <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
                 {t("whatsappAnalytics.charts.noData")}
-              </AlertDescription>
-            </Alert>
+              </p>
+              <p className="mt-3 text-xs text-[color:var(--color-muted-foreground)]">
+                {summaryHint}
+              </p>
+            </div>
           )}
         </WhatsAppSurfaceCard>
 
@@ -549,12 +555,18 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
               })}
             </div>
           ) : (
-            <Alert className="rounded-xl border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]">
-              <AlertTitle>{t("whatsappAnalytics.charts.topEvents")}</AlertTitle>
-              <AlertDescription>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-6 py-12 text-center">
+              <BarChart3 className="mb-3 size-8 text-[color:var(--color-muted-foreground)]" />
+              <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
+                {t("whatsappAnalytics.charts.topEvents")}
+              </p>
+              <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
                 {t("whatsappAnalytics.charts.noData")}
-              </AlertDescription>
-            </Alert>
+              </p>
+              <p className="mt-3 text-xs text-[color:var(--color-muted-foreground)]">
+                {summaryHint}
+              </p>
+            </div>
           )}
         </WhatsAppSurfaceCard>
       </div>
