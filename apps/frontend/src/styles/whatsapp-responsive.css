@@ -415,3 +415,26 @@
     animation: none !important;
   }
 }
+
+/* ── 20. Double Header Prevention on Mobile/Tablet ── */
+@media (max-width: 1279px) {
+  /* When a chat window is open, hide the main AppShell header to maximize height */
+  .app-shell-root:has(.whatsapp-workspace-root .wa-panel-sidebar.max-xl\:hidden) .app-shell-header {
+    display: none !important;
+  }
+}
+
+/* ── 21. iOS Zoom Prevention (Font size >= 16px on focus) ── */
+@media (max-width: 768px) {
+  .wa-auto-textarea,
+  .wa-glass-search-bar input {
+    font-size: 16px !important;
+  }
+}
+
+/* ── 22. Scrollbar Gutter Stabilization (Prevent layout shift) ── */
+.wa-messages-scroll,
+.wa-slim-scroll {
+  scrollbar-gutter: stable;
+}
+
