@@ -109,6 +109,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 # Fallback: try native tool definitions
                 tool = ALL_TOOLS.get(func_name)
                 if tool:
+                    if ctx.company_id and "company_id" not in arguments:
+                        arguments = {**arguments, "company_id": ctx.company_id}
                     try:
                         validated = tool.input_model(**arguments)
                         result = await tool.func(validated)
