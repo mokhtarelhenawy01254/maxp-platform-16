@@ -104,7 +104,7 @@ async def _download_image_url(url: str, max_bytes: int = 5 * 1024 * 1024) -> tup
 
 
 class ProductSearchInput(BaseModel):
-    query: str = Field(default="", description="Product name, SKU, or keyword to search for. Leave empty or set list_all=true to browse the full catalog.")
+    query: str = Field(description="Product name, SKU, or keyword to search for. Set to empty string or use list_all=true to browse the full catalog.")
     list_all: bool = Field(default=False, description="Set to true to return ALL available products without filtering. Use when the customer asks to see all products or the full catalog.")
     limit: int = Field(default=5, description="Maximum number of results. Default 5. Use 20+ when list_all is true.")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
