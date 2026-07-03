@@ -231,6 +231,17 @@
           }
         },
         {
+          "type": "shoe-fit-finder",
+          "settings": {
+            "badge": "إختاري الصح",
+            "title": "الحذاء اللي يناسب يومك",
+            "subtitle": "مش كل الأيام زي بعضها — ومش كل الأحذية مناسبة لكل يوم. اختاري حسب نشاطك.",
+            "primaryCtaText": "تسوقي كل الأحذية",
+            "primaryCtaLink": "/shop",
+            "routes": "جري ومشي|سنيكرز رياضي|نعل مبطن وسهل للحركة.|https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=600||/shop?category=sneakers\nطلعات خفيفة|فلات وباليرينا|خفة وأناقة تناسب المشاوير.|https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=600||/shop?category=flats\nسهرات وزيارات|كعب عالي ومطفي|لما المناسبة تستحق إطلالة مختلفة.|https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=600||/shop?category=heels"
+          }
+        },
+        {
           "type": "featured-products",
           "variant": "boutique-rail",
           "settings": {
@@ -345,6 +356,17 @@
           "variant": "elessi-showroom"
         },
         {
+          "type": "shoe-fit-finder",
+          "settings": {
+            "badge": "اختيار أسرع",
+            "title": "اختاري الحذاء حسب يومك",
+            "subtitle": "مشي كتير ولا طلعة خفيفة؟ اختاري النوع اللي يناسب إيقاع يومك.",
+            "primaryCtaText": "شاهدي كل الأحذية",
+            "primaryCtaLink": "/shop",
+            "routes": "جري ومشي|كوتشي رياضي|سنيكرز كاجوال لكل يوم.|https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=600||/shop?category=sneakers\nطلعات خفيفة|باليرينا وفلات|أناقة بدون تعب للمشاوير اليومية.|https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=600||/shop?category=flats\nسهرة وزيارة|كعب ومطفي|خطوط أنعم وخامات أهدأ للمناسبات.|https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=600||/shop?category=heels"
+          }
+        },
+        {
           "type": "product-info",
           "variant": "elessi-care-buybox",
           "settings": {
@@ -372,8 +394,16 @@
           "variant": "seamless",
           "settings": {
             "title": "",
-            "soldCounterMessage": "اتطلب {count} قطعة في آخر ٣٠ يوم • {count} شخصة بتشوف الحذاء دلوقتي • توصيل متوقع ٢-٥ يوليو",
+            "soldCounterMessage": "اتطلب {count} قطعة في آخر ٣٠ يوم",
             "soldCounterStyle": "minimal",
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "delivery-proof",
+          "settings": {
+            "estimatedDeliveryLabel": "موعد الوصول المتوقع",
+            "estimatedDeliveryStyle": "pill",
             "contentAlign": "start"
           }
         },
@@ -394,6 +424,40 @@
           }
         },
         {
+          "type": "pdp-checkout",
+          "settings": {
+            "badgeText": "جهزي طلبك",
+            "title": "بيانات الشحن",
+            "subtitle": "اكتبي بياناتك عشان نأكد الطلب ونتواصل معاكي.",
+            "formVariant": "compact",
+            "placement": "after-description",
+            "surfaceMode": "standalone",
+            "paymentVariant": "minimal"
+          }
+        },
+        {
+          "type": "back-in-stock",
+          "settings": {
+            "title": "نبهيني لما يتوفر",
+            "subtitle": "المقاس دا نفد بسرعة. سيبيلنا إيميلك ونبعتلك أول ما يتوفر.",
+            "backInStockTitle": "نبيهيني عندما يتوفر",
+            "backInStockDescription": "اكتبي إيميلك عشان نكلمك أول ما المقاس يرجع",
+            "backInStockSuccessMessage": "هنبعتلك إيميل أول ما يتوفر",
+            "backInStockStyle": "inline",
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "pre-order",
+          "settings": {
+            "title": "اطلبي قبل النزول",
+            "subtitle": "الكبسولة الجديدة تقدر تحجزيها دلوقتي وتوصلك أول يوم نزول.",
+            "preOrderLabel": "احجزي الآن",
+            "preOrderStyle": "pulse",
+            "contentAlign": "start"
+          }
+        },
+        {
           "type": "reviews",
           "variant": "elessi-story-grid",
           "settings": {
@@ -405,7 +469,7 @@
             "emptyText": "كوني أول واحدة تشارك رأيك.",
             "verifiedLabel": "شراء موثق",
             "reviewsLabel": "تقييمات",
-            "reviewLimit": 4,
+            "reviewLimit": 6,
             "showMediaFeed": true
           }
         },
@@ -415,7 +479,7 @@
           "settings": {
             "title": "ممكن يعجبك كمان",
             "subtitle": "نفس الروح والخامة.",
-            "limit": 4
+            "limit": 6
           }
         }
       ],
@@ -446,6 +510,7 @@
             "couponPlaceholder": "كود الخصم",
             "couponButtonText": "تطبيق",
             "checkoutButtonText": "إتمام الشراء",
+            "showFreeShippingProgress": true,
             "assuranceTitle": "يشملك مع الطلب",
             "assuranceItems": [
               "تغليف محترم يحافظ على الحذاء لحد ما تستلميه",
