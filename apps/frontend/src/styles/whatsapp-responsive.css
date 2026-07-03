@@ -416,14 +416,19 @@
   }
 }
 
-/* ── 20. Mobile: hide sidebar when chat is open, hide app-shell header ── */
+/* ── 20. Mobile: hide sidebar when chat is open, hide app-shell header, remove main padding ── */
 @media (max-width: 1279px) {
   .wa-panel-sidebar.max-xl\:hidden {
     display: none !important;
   }
 
-  .app-shell-root:has(.whatsapp-workspace-root .wa-panel-sidebar.max-xl\:hidden) .app-shell-header {
+  .business-shell-header:has(~ .business-shell-main .whatsapp-workspace-root .wa-panel-sidebar.max-xl\:hidden) {
     display: none !important;
+  }
+
+  /* Remove main content padding for WhatsApp edge-to-edge on mobile */
+  main.business-shell-main:has(.whatsapp-workspace-root) {
+    padding: 0 !important;
   }
 }
 
@@ -465,6 +470,20 @@
     --epr-picker-border-radius: 0px !important;
     border: none !important;
     background-color: transparent !important;
+  }
+}
+
+/* ── 24. Mobile: prevent overflow on main when WhatsApp is active ── */
+@media (max-width: 1279px) {
+  main.business-shell-main:has(.whatsapp-workspace-root) {
+    overflow-y: hidden !important;
+  }
+}
+
+/* ── 25. Desktop: stronger divider between sidebar and chat panels ── */
+@media (min-width: 1280px) {
+  .wa-panel-sidebar {
+    border-right: 1px solid color-mix(in srgb, var(--shell-control-border) 100%, transparent) !important;
   }
 }
 
