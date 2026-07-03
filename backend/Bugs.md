@@ -1,5 +1,24 @@
 # Backend Bugs Log
 
+### [UI/UX] WhatsApp Inbox Double Scrolling & Mobile UX Alignment
+- **Date**: 2026-07-03
+- **Description**: Squeezed layouts on mobile, double scrolling caused by layout wrapper parent padding, and lack of mobile UX animations/safe-areas in `/whatsapp`.
+- **Root Cause**:
+  1. The main dashboard app shell layout has fixed container padding and overflow, causing double scrollbars on workspace panels.
+  2. View switching between sidebar and conversation window was instant with no transitions.
+  3. Rich tool actions squeezed on mobile screens, leading to button layout broken wrap.
+- **Resolution**:
+  1. Leveraged `:has()` CSS selector on `.app-shell-content` to dynamically eliminate wrapper padding.
+  2. Added dedicated `whatsapp-responsive.css` file providing View Transitions API configurations, horizontal-scrolling filter flex containers, safe-area bottom buffers, and slide-up tools tray panels.
+  3. Wrapped panel switches with React touch gestures and CSS-native transition triggers.
+- **Files Modified**:
+  - `apps/frontend/src/styles/index.css`
+  - `apps/frontend/src/styles/whatsapp-responsive.css`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/ChatSidebar.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/ChatWindow.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/MessageBubble.tsx`
+
 ### [FIX] WhatsApp Inbox Auto-Assignment & Reassignment Engine Hardening
 - **Date**: 2026-07-03
 - **Description**: The WhatsApp inbox suffered from auto-assignment inconsistency, infinite reassignment loops (ping-pong), high database overhead, and duplicate background tasks in cluster environments.

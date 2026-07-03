@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-03 / 2026-03-09
+- **WhatsApp Workspace Responsive Overhaul (UI/UX)**: Implemented complete responsive layout harmony and mobile-native UX patterns for the WhatsApp module (`/whatsapp`) utilizing modern 2026 CSS features:
+  1. Added dedicated `whatsapp-responsive.css` file containing: View Transitions API animations for smooth panel switching, `@starting-style` entry effects, Container Queries (`@container`) for responsive bubble scaling, scroll-driven header compression, glassmorphism headers, and mobile safe-area overrides.
+  2. Integrated touch gesture swipe zones (`onTouchStart`/`onTouchEnd`) in `ChatWindow.tsx` and `WhatsAppChat.tsx` to swipe back to list on mobile.
+  3. Replaced fixed grid layout with horizontal scrolling flex strip for filter pills on mobile with larger touch targets.
+  4. Added a slide-up tray modal overlay (`wa-rich-tools-tray`) for chat input tools on mobile screens.
+  5. Implemented container `:has(.whatsapp-workspace-root)` overrides in `index.css` to dynamically strip out dashboard container paddings and double scrolls.
 - **WhatsApp Inbox Auto-Assignment & Reassignment Hardening (FIX)**: Fixed bugs in the WhatsApp auto-routing and reassignment sweep mechanism:
   1. Unified incoming webhook sync `WhatsAppSyncService` to delegate all auto-assignments to the advanced `WhatsAppAssignmentEngineService`, ensuring online checks, capacity limits, working hours, and advisory locks are respected.
   2. Resolved the infinite 60-second reassignment loop (ping-pong) by adding a 5-minute cooldown period and making the SLA response timeout window start relative to `lastAssignedAt` if the agent was assigned after the message.

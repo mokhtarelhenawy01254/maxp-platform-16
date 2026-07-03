@@ -1,0 +1,417 @@
+/* ============================================================
+   WhatsApp Workspace — Responsive & Mobile-Native Styles (2026)
+   ============================================================
+   Applies: View Transitions, @starting-style, Container Queries,
+   Scroll-Driven Animations, Glassmorphism, Safe-Area Insets,
+   Touch Feedback, and mobile-native patterns.
+   ============================================================ */
+
+/* ── 1. Layout Integration — Remove AppShell padding for WhatsApp ── */
+.app-shell-content:has(.whatsapp-workspace-root) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.app-shell-content:has(.whatsapp-workspace-root) > * {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell-content:has(.whatsapp-workspace-root) > .whatsapp-workspace-root {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+/* ── 2. Root Container — Full Height ── */
+.whatsapp-workspace-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: wa-root;
+}
+
+/* ── 3. View Transitions — Sidebar ↔ Chat ── */
+.wa-panel-sidebar {
+  view-transition-name: wa-sidebar;
+}
+
+.wa-panel-chat {
+  view-transition-name: wa-chat;
+}
+
+::view-transition-old(wa-sidebar) {
+  animation: wa-slide-out-start 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-new(wa-sidebar) {
+  animation: wa-slide-in-start 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-old(wa-chat) {
+  animation: wa-slide-out-end 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-new(wa-chat) {
+  animation: wa-slide-in-end 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[dir="rtl"] ::view-transition-old(wa-sidebar) {
+  animation-name: wa-slide-out-end;
+}
+[dir="rtl"] ::view-transition-new(wa-sidebar) {
+  animation-name: wa-slide-in-end;
+}
+[dir="rtl"] ::view-transition-old(wa-chat) {
+  animation-name: wa-slide-out-start;
+}
+[dir="rtl"] ::view-transition-new(wa-chat) {
+  animation-name: wa-slide-in-start;
+}
+
+@keyframes wa-slide-out-start {
+  to { opacity: 0; transform: translateX(-30px); }
+}
+@keyframes wa-slide-in-start {
+  from { opacity: 0; transform: translateX(-30px); }
+}
+@keyframes wa-slide-out-end {
+  to { opacity: 0; transform: translateX(30px); }
+}
+@keyframes wa-slide-in-end {
+  from { opacity: 0; transform: translateX(30px); }
+}
+
+/* ── 4. Glassmorphism Headers ── */
+.wa-glass-header {
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  background-color: color-mix(in srgb, var(--color-muted) 78%, transparent) !important;
+}
+
+.dark .wa-glass-header {
+  background-color: color-mix(in srgb, var(--color-muted) 65%, transparent) !important;
+}
+
+/* ── 5. Sticky Glassmorphism Search ── */
+.wa-glass-search-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  background-color: color-mix(in srgb, var(--app-panel-bg, var(--color-background)) 82%, transparent);
+}
+
+.dark .wa-glass-search-bar {
+  background-color: color-mix(in srgb, var(--app-panel-bg, var(--color-background)) 72%, transparent);
+}
+
+/* ── 6. Touch Feedback — Conversation Items ── */
+.wa-conversation-item {
+  transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 150ms ease,
+              border-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.wa-conversation-item:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .wa-conversation-item:active {
+    transform: none;
+  }
+}
+
+/* ── 7. @starting-style — List Item Entry Animation ── */
+@media (prefers-reduced-motion: no-preference) {
+  .wa-conversation-item {
+    animation: wa-item-enter 280ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @supports (selector(:has(*))) {
+    @starting-style {
+      .wa-conversation-item {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+  }
+
+  @keyframes wa-item-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ── 8. Filter Pills — Horizontal Scroll on Mobile ── */
+.wa-filter-strip {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 2px;
+}
+
+.wa-filter-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.wa-filter-strip > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* ── 9. Safe-Area Insets ── */
+.wa-safe-bottom {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.wa-input-bar {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── 10. Overscroll Contain — Messages Area ── */
+.wa-messages-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ── 11. Container Queries — Message Bubbles ── */
+.wa-messages-container {
+  container-type: inline-size;
+  container-name: wa-messages;
+}
+
+.wa-bubble {
+  max-width: 85%;
+  transition: transform 100ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@container wa-messages (min-width: 640px) {
+  .wa-bubble {
+    max-width: 72%;
+  }
+}
+
+@container wa-messages (min-width: 1024px) {
+  .wa-bubble {
+    max-width: 62%;
+  }
+}
+
+/* Bubble press feedback (touch only) */
+@media (hover: none) {
+  .wa-bubble:active {
+    transform: scale(0.985);
+  }
+}
+
+/* ── 12. @starting-style — New Message Entry ── */
+@media (prefers-reduced-motion: no-preference) {
+  .wa-bubble-enter {
+    animation: wa-bubble-appear 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes wa-bubble-appear {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+/* ── 13. Scroll-Driven Header Compression ── */
+@supports (animation-timeline: scroll()) {
+  .wa-scroll-header {
+    animation: wa-header-compress linear both;
+    animation-timeline: scroll(nearest block);
+    animation-range: 0px 80px;
+  }
+
+  @keyframes wa-header-compress {
+    from {
+      padding-block: 0.625rem;
+    }
+    to {
+      padding-block: 0.375rem;
+    }
+  }
+}
+
+/* ── 14. Mobile-Specific Overrides ── */
+@media (max-width: 640px) {
+  /* Compact sidebar header */
+  .wa-sidebar-header-compact .wa-sidebar-status-text {
+    display: none;
+  }
+  
+  .wa-sidebar-header-compact .wa-sidebar-profile-avatar {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  /* Rich tools tray */
+  .wa-rich-tools-tray {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    border-radius: 1.25rem 1.25rem 0 0;
+    padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    background-color: var(--color-card);
+    border-top: 1px solid var(--shell-control-border);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(0);
+    animation: wa-tray-up 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .dark .wa-rich-tools-tray {
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  @keyframes wa-tray-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .wa-rich-tools-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.25);
+    animation: wa-fade-in 180ms ease;
+  }
+
+  @keyframes wa-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Auto-grow textarea */
+  .wa-auto-textarea {
+    min-height: 2.5rem;
+    max-height: 7.5rem;
+    overflow-y: auto;
+    resize: none;
+    field-sizing: content;
+  }
+
+  /* Message images */
+  .wa-bubble img,
+  .wa-bubble video {
+    max-height: 14rem;
+  }
+}
+
+/* ── 15. Tablet Overrides ── */
+@media (min-width: 641px) and (max-width: 1279px) {
+  .wa-bubble img,
+  .wa-bubble video {
+    max-height: 18rem;
+  }
+}
+
+/* ── 16. Swipe Gesture Visual Feedback ── */
+.wa-swipe-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 3rem;
+  border-radius: 2px;
+  background-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+}
+
+.wa-swipe-indicator--visible {
+  opacity: 1;
+}
+
+[dir="ltr"] .wa-swipe-indicator { left: 4px; }
+[dir="rtl"] .wa-swipe-indicator { right: 4px; }
+
+/* ── 17. Highlight animation for quoted message jump ── */
+.wa-highlight {
+  animation: wa-highlight-pulse 1.5s ease-out;
+}
+
+@keyframes wa-highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 40%, transparent);
+  }
+  40% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ── 18. Slim Scrollbars for WhatsApp ── */
+.wa-slim-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 30%, transparent) transparent;
+}
+
+.wa-slim-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.wa-slim-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wa-slim-scroll::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 30%, transparent);
+  border-radius: 9999px;
+}
+
+/* ── 19. Reduced Motion — Disable All Animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .wa-conversation-item,
+  .wa-bubble-enter,
+  .wa-rich-tools-tray,
+  .wa-rich-tools-backdrop,
+  .wa-highlight {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

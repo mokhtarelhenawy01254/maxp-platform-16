@@ -102,7 +102,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 <img
                   src={fullMediaUrl}
                   alt="Message media"
-                  className="max-h-[20rem] max-w-full rounded-xl object-cover"
+                  className="max-h-[14rem] max-w-full rounded-xl object-cover sm:max-h-[20rem]"
                   onClick={() => window.open(fullMediaUrl, "_blank")}
                 />
                 {message.content ? (
@@ -119,7 +119,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 <video
                   src={fullMediaUrl}
                   controls
-                  className="max-h-[20rem] max-w-full rounded-xl"
+                  className="max-h-[14rem] max-w-full rounded-xl sm:max-h-[20rem]"
                 />
                 {message.content ? (
                   <LinkifiedText
@@ -130,7 +130,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               </div>
             );
           case "AUDIO":
-            return <audio src={fullMediaUrl} controls className="min-w-[14rem] max-w-full" />;
+            return <audio src={fullMediaUrl} controls className="min-w-[12rem] max-w-full sm:min-w-[14rem]" />;
           case "DOCUMENT":
             return (
               <div className="flex min-w-[14rem] items-center gap-3 rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-3">
@@ -240,7 +240,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         >
           <div
             className={cn(
-              "min-w-[7rem] max-w-[78%] cursor-context-menu rounded-2xl px-4 py-3 shadow-sm",
+              "wa-bubble wa-bubble-enter min-w-[7rem] cursor-context-menu rounded-2xl px-3 py-2.5 shadow-sm sm:px-4 sm:py-3",
               "border border-transparent",
               message.fromMe
               ? "rounded-tr-[6px] bg-[#d9fdd3] dark:bg-[var(--whatsapp-message-outgoing)]"

@@ -3,7 +3,7 @@
  * صفحة دردشة WhatsApp
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from 'react';
 import {
   AlertCircle,
   Ban,
@@ -245,6 +245,38 @@ const WhatsAppChatContent: React.FC = () => {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const pendingScrollMessageIdRef = useRef<string | null>(null);
   const isSearchingForMessageRef = useRef(false);
+
+  // — Swipe gesture handler for mobile back navigation —
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const handleChatTouchStart = useCallback((e: ReactTouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, time: Date.now() };
+  }, []);
+  const handleChatTouchEnd = useCallback((e: ReactTouchEvent) => {
+    if (!touchStartRef.current || !selectedContact) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
+    const elapsed = Date.now() - touchStartRef.current.time;
+    // Only trigger on horizontal swipe (>80px), not vertical, within 400ms
+    const isRtl = document.documentElement.dir === 'rtl';
+    const isSwipeBack = isRtl ? deltaX < -80 : deltaX > 80;
+    if (deltaY < 50 && elapsed < 400 && isSwipeBack) {
+      if (typeof document.startViewTransition === 'function') {
+        document.startViewTransition(() => setSelectedContact(null));
+      } else {
+        setSelectedContact(null);
+      }
+    }
+    touchStartRef.current = null;
+  }, [selectedContact]);
+
+  // — View-transition-wrapped contact selection —
+  const selectContactWithTransition = useCallback((contact: Contact | null) => {
+    if (typeof document.startViewTransition === 'function' && window.innerWidth < 1280) {
+      document.startViewTransition(() => setSelectedContact(contact));
+    } else {
+      setSelectedContact(contact);
+    }
+  }, []);
 
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [selectedContactForLabel, setSelectedContactForLabel] = useState<Contact | null>(null);
@@ -1759,13 +1791,15 @@ const WhatsAppChatContent: React.FC = () => {
   const selectedContactPhoneLabel = formatContactPhoneNumber(selectedContactPhoneNumber);
   const selectedContactPhoneHref = getContactPhoneHref(selectedContactPhoneNumber);
 
+
+
   return (
-    <div className="whatsapp-theme-transition flex h-[calc(100dvh-6rem)] min-h-[34rem] flex-col overflow-hidden sm:h-[calc(100dvh-7rem)] sm:min-h-[38rem] lg:h-[calc(100dvh-7.5rem)] lg:min-h-[40rem]">
+    <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
-      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-lg xl:flex-row">
+      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-lg sm:rounded-2xl xl:flex-row">
       {/* Sidebar */}
       <ChatSidebar
-        className={cn(selectedContact && "max-xl:hidden")}
+        className={cn("wa-panel-sidebar", selectedContact && "max-xl:hidden")}
         sessions={sessions}
         conversations={conversations}
         statuses={statuses}
@@ -1777,7 +1811,7 @@ const WhatsAppChatContent: React.FC = () => {
         hasMoreConversations={hasMoreConversations}
         isLoadingStatuses={loadingStatuses}
         onSelectSession={setSelectedSession}
-        onSelectContact={setSelectedContact}
+        onSelectContact={selectContactWithTransition}
         onOpenProfile={() => setProfileDialogOpen(true)}
         onOpenNewChat={() => setCheckNumberDialogOpen(true)}
         onOpenNewGroup={() => setCreateGroupDialogOpen(true)}
@@ -1797,7 +1831,7 @@ const WhatsAppChatContent: React.FC = () => {
       />
 
       <ChatWindow
-        className={cn(!selectedContact && "max-xl:hidden")}
+        className={cn("wa-panel-chat", !selectedContact && "max-xl:hidden")}
         selectedContact={selectedContact}
         messages={visibleMessages}
         loadingMessages={loadingMessages}
@@ -1843,7 +1877,15 @@ const WhatsAppChatContent: React.FC = () => {
         onOpenLocation={() => setLocationDialogOpen(true)}
         onOpenOrder={() => setShowQuickOrderModal(true)}
         onOpenTasks={() => setShowQuickCreateTaskModal(true)}
-        onBackToList={() => setSelectedContact(null)}
+        onBackToList={() => {
+          if (typeof document.startViewTransition === 'function') {
+            document.startViewTransition(() => setSelectedContact(null));
+          } else {
+            setSelectedContact(null);
+          }
+        }}
+        onTouchStart={handleChatTouchStart}
+        onTouchEnd={handleChatTouchEnd}
         fileInputRef={fileInputRef}
       />
       </div>

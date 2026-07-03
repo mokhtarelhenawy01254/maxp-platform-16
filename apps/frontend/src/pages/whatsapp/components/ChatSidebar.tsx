@@ -147,7 +147,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-6 min-w-0 items-center justify-center gap-1 rounded-full border px-1.5 text-[10px] font-medium transition-colors",
+        "inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-full border px-2.5 text-[11px] font-medium transition-colors sm:h-6 sm:px-1.5 sm:text-[10px]",
         active
           ? "border-[color:var(--color-primary)] bg-primary/10 text-[color:var(--color-primary)]"
           : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)] hover:text-[color:var(--color-foreground)]",
@@ -376,11 +376,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <aside
       dir={i18n.dir()}
       className={cn(
-        "whatsapp-theme-transition relative flex h-full min-h-[34rem] max-h-none max-xl:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] xl:min-h-0 xl:w-[390px] xl:min-w-[360px] xl:border-b-0 xl:border-r",
+        "whatsapp-theme-transition relative flex h-full max-h-none max-xl:w-full min-w-0 shrink-0 flex-col overflow-hidden border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_82%,transparent)] bg-[var(--app-panel-bg)] xl:min-h-0 xl:w-[390px] xl:min-w-[360px] xl:border-b-0 xl:border-r",
         className,
       )}
     >
-      <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-2 py-2">
+      <div className="wa-sidebar-header-compact border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-2 py-1.5 sm:py-2">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -407,7 +407,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   الأرشيف
                 </Badge>
               ) : null}
-              <p className="mt-0.5 truncate text-[11px] text-[color:var(--color-muted-foreground)]">
+              <p className="wa-sidebar-status-text mt-0.5 hidden truncate text-[11px] text-[color:var(--color-muted-foreground)] sm:block">
                 {currentUserProfile?.status ||
                   "صندوق تشغيل موحد للجلسات والمحادثات المباشرة."}
               </p>
@@ -530,7 +530,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         ) : null}
       </div>
 
-      <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-2">
+      <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-1.5 sm:py-2">
         <div className="relative">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
           <Input
@@ -559,7 +559,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </Button>
         </div>
 
-        <div className="mt-2 grid grid-cols-5 gap-1">
+        <div className="wa-filter-strip mt-1.5 sm:mt-2">
           <FilterPill
             active={filterType === "all" && !showArchived}
             label={t("whatsapp.sidebar.all")}
@@ -594,7 +594,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2" onScroll={handleScroll}>
+      <div className="wa-slim-scroll wa-safe-bottom min-h-0 flex-1 overflow-y-auto px-2 py-1.5 sm:py-2" onScroll={handleScroll}>
         {filterType === "statuses" ? (
           <div className="space-y-3">
             <button
@@ -689,7 +689,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     });
                   }}
                   className={cn(
-                    "min-h-[4.5rem] w-full rounded-2xl border px-3 py-2.5 text-start transition-all",
+                    "wa-conversation-item min-h-[4rem] w-full rounded-2xl border px-3 py-2 text-start sm:min-h-[4.5rem] sm:py-2.5",
                     isSelected
                       ? "border-[color:var(--color-primary)] bg-primary/10"
                       : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] hover:bg-[var(--whatsapp-surface-hover)]",

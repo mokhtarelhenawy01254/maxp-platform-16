@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, type TouchEvent as ReactTouchEvent } from "react";
 import { useTranslation } from "react-i18next";
 import EmojiPicker from "emoji-picker-react";
 import { VirtualItem } from "@tanstack/react-virtual";
@@ -68,6 +68,8 @@ interface ChatWindowProps {
   onOpenOrder: () => void;
   onOpenTasks?: () => void;
   onBackToList?: () => void;
+  onTouchStart?: (e: ReactTouchEvent) => void;
+  onTouchEnd?: (e: ReactTouchEvent) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
   onQuotedMessageClick?: (quotedMessageId: string) => void;
   highlightedMessageId?: string | null;
@@ -111,6 +113,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onOpenOrder,
   onOpenTasks,
   onBackToList,
+  onTouchStart,
+  onTouchEnd,
   fileInputRef,
   onQuotedMessageClick,
   highlightedMessageId,
@@ -149,8 +153,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         "whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[var(--app-panel-bg)]",
         className,
       )}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-muted)] px-4 py-2.5">
+      <div className="wa-glass-header flex items-center justify-between gap-3 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-3 py-2 sm:px-4 sm:py-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
           {onBackToList ? (
             <Button
@@ -214,7 +220,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       <div
         ref={messagesContainerRef}
-        className="whatsapp-messages-area relative min-h-0 flex-1 overflow-auto px-4 py-4"
+        className="wa-messages-scroll wa-messages-container wa-slim-scroll whatsapp-messages-area relative min-h-0 flex-1 overflow-auto px-2 py-3 sm:px-4 sm:py-4"
         style={backgroundStyle}
       >
         {loadingMessages && messages.length === 0 ? (
@@ -268,7 +274,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : null}
       </div>
 
-      <div className="border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3">
+      <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3">
         {replyingTo ? (
           <div className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-2">
             <div className="min-w-0 space-y-1">
@@ -350,7 +356,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
 
             {showRichTools ? (
-              <div className="order-3 flex w-full flex-wrap items-center gap-1 sm:order-2 sm:w-auto">
+              <>
+                {/* Mobile: bottom tray */}
+                <div className="wa-rich-tools-backdrop sm:hidden" onClick={() => setShowRichTools(false)} />
+                <div className="wa-rich-tools-tray sm:order-2 sm:static sm:inset-auto sm:z-auto sm:w-auto sm:animate-none sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:shadow-none">
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-1">
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -416,7 +426,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     <ClipboardList className="size-4" />
                   </Button>
                 )}
-              </div>
+                  </div>
+                </div>
+              </>
             ) : null}
 
             <input type="file" ref={fileInputRef} hidden onChange={onFileUpload} />
@@ -425,7 +437,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               value={newMessage}
               onChange={(event) => setNewMessage(event.target.value)}
               placeholder={t("whatsapp.window.inputPlaceholder")}
-              className="order-2 min-h-[2.75rem] min-w-[14rem] flex-1 resize-none rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-input-bg)] px-3 py-2.5 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3"
+              className="wa-auto-textarea order-2 min-h-[2.5rem] min-w-[10rem] flex-1 resize-none rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-input-bg)] px-3 py-2 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3 sm:min-h-[2.75rem] sm:min-w-[14rem] sm:py-2.5"
               rows={1}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
