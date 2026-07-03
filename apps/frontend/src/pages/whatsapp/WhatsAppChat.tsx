@@ -280,7 +280,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   // — Mobile layout: hide app-shell header + remove padding when chat is open —
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1279px)');
+    const mq = window.matchMedia('(max-width: 1023px)');
     const apply = () => {
       if (mq.matches && selectedContact) {
         document.body.classList.add('wa-mobile-chat-active');
@@ -1818,10 +1818,10 @@ const WhatsAppChatContent: React.FC = () => {
   return (
     <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
-      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-lg sm:rounded-2xl xl:flex-row">
+      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-lg sm:rounded-2xl lg:flex-row">
       {/* Sidebar */}
       <ChatSidebar
-        className={cn("wa-panel-sidebar", selectedContact && "max-xl:hidden")}
+        className={cn("wa-panel-sidebar", selectedContact && "max-lg:hidden")}
         sessions={sessions}
         conversations={conversations}
         statuses={statuses}
@@ -1855,7 +1855,7 @@ const WhatsAppChatContent: React.FC = () => {
       />
 
       <ChatWindow
-        className={cn("wa-panel-chat", !selectedContact && "max-xl:hidden")}
+        className={cn("wa-panel-chat", !selectedContact && "max-lg:hidden")}
         selectedContact={selectedContact}
         messages={visibleMessages}
         loadingMessages={loadingMessages}

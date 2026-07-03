@@ -171,7 +171,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <Button
               variant="outline"
               size="icon-sm"
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)] xl:hidden"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)] lg:hidden"
               onClick={onBackToList}
               title={t("whatsapp.sidebar.all")}
             >
