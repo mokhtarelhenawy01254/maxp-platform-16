@@ -104,7 +104,7 @@ async def _download_image_url(url: str, max_bytes: int = 5 * 1024 * 1024) -> tup
 
 
 class ProductSearchInput(BaseModel):
-    query: str = Field(description="Product name, SKU, or keyword to search for. Set to empty string or use list_all=true to browse the full catalog.")
+    query: str = Field(default="", description="Product name, SKU, or keyword to search for. Leave empty or set list_all=true to browse the full catalog.")
     list_all: bool = Field(default=False, description="Set to true to return ALL available products without filtering. Use when the customer asks to see all products or the full catalog.")
     limit: int = Field(default=5, description="Maximum number of results. Default 5. Use 20+ when list_all is true.")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
@@ -213,6 +213,13 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
                     return {"results": cat_products, "count": catalog.get("count", len(cat_products)), "listAll": True, "searchType": "text"}
             products = vec_results
             return {"results": products, "count": len(products), "listAll": False, "searchType": "semantic"}
+        # Vector search returned nothing (no embeddings seeded) → return full catalog
+        catalog = await product_tools.search_products(
+            input_data.company_id or "", "", limit=50, use_vector=False,
+        )
+        cat_products = catalog.get("products", [])
+        if cat_products:
+            return {"results": cat_products, "count": catalog.get("count", len(cat_products)), "listAll": True, "searchType": "fallback"}
 
     return {"results": products, "count": result.get("count", 0), "listAll": input_data.list_all, "searchType": "text"}
 
