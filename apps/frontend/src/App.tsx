@@ -517,6 +517,9 @@ const PrintMultipleInvoices = React.lazy(
 );
 const OrderDetails = React.lazy(() => import("./pages/orders/OrderDetails"));
 const OrderStats = React.lazy(() => import("./pages/orders/OrderStats"));
+const QuickStatusChange = React.lazy(
+  () => import("./pages/orders/QuickStatusChange"),
+);
 const OrdersAnalytics = React.lazy(
   () => import("./pages/orders/OrdersAnalytics"),
 );
@@ -3657,6 +3660,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <BulkOrders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/quick-status"
+                  element={
+                    <Layout>
+                      <QuickStatusChange />
                     </Layout>
                   }
                 />

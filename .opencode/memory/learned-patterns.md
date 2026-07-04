@@ -1,12 +1,7 @@
-# Learned Patterns & Discoveries
+## Late Cancellation — Dynamic Statuses (2026-07-04)
 
-<!-- Format:
-## Pattern Name
-- Context: When this applies
-- Pattern: What to do
-- Why: Why it works
-
-## Feature Toggles as JSON in Company Settings
-- Context: Adding boolean feature flags that vary per company (multi-tenant SaaS)
-- Pattern: Store feature flags as a `features` JSON object inside `company.settings`. Frontend uses `<Switch>` in `CompanyActivationCenter` → calls `PUT /api/v1/companies/:companyId/features`. Backend merges the features key into `company.settings` and returns the updated value.
-- Why: No Prisma schema migration per feature flag; JSON fields are flexible and the data volume is tiny; Switch component + dedicated endpoint keeps concerns clean-->
+- `LateCancellationSettings.tsx` had a hardcoded `PREPARATION_STATUSES` array that didn't match actual company statuses
+- Fixed by fetching from `GET /api/v1/order-status?statusType=order` + `?statusType=preparation`
+- Terminal statuses excluded: CANCELLED, PENDING_CANCELLATION, TRASH, DRAFT, DUPLICATE_ORDER, RETURNED, REFUNDED, EXCHANGED, etc.
+- Company settings (late cancellation config) stored in `company.settings` JSON field, accessed via `PUT /api/v1/order-settings` (requires `order-invoicing` app access)
+- Order statuses fetched from `GET /api/v1/order-status` (requires `order-core` app access)

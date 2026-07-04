@@ -600,6 +600,7 @@ export const getSidebarConfig = (
                 { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies') },
                 { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews') },
                 { to: '/orders/bulk', icon: QueueListIcon, label: t('sidebar.bulkOrders', 'Bulk Orders') },
+                { to: '/orders/quick-status', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.quickStatusChange') },
                 { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings') },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations') },
