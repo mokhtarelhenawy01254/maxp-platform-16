@@ -11,7 +11,8 @@
   2. Wrapped single product response dictionaries (e.g. from `inventory_check`) in a list to format product details correctly instead of printing "No stock data available".
   3. Added robust formatting mapping for `offers_list_active` and `coupon_validate` tools to properly describe active promotions/coupons.
   4. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to inspect the `tool_calls` in assistant messages and serialize dictionary arguments to JSON strings, preventing DeepSeek API 400 Bad Request/Validation failures in follow-up chat completions.
-  5. Added comprehensive unit tests in `apps/ai-service/tests/pipeline/test_skills_pipeline.py` to verify the new formatting behaviors.
+  5. Updated `_generate_openai_compat` in `apps/ai-service/src/llm/client.py` to omit the `tools` and `tool_choice` parameters entirely if `tool_choice == "none"`, forcing DeepSeek models to naturally generate plain text and avoiding validation errors.
+  6. Added comprehensive unit tests in `apps/ai-service/tests/pipeline/test_skills_pipeline.py` to verify the new formatting behaviors.
 - **category_list Tool Formatting Mismatch Fix (FIX)**: Fixed a bug where requesting categories from the agent returned "لا توجد تصنيفات متاحة حالياً" (No categories available) even when categories were defined:
   1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to correctly identify and process the `"categories"` key returned by the `category_list` tool.
   2. Extracted and formatted category names to display nicely in the agent's summary instead of falling back to the default "no results" message.

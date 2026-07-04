@@ -14,15 +14,17 @@
 - **Files Modified**:
   - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
 
-### [FIX] DeepSeek Tool Call dictionary Arguments API Failure (400 Bad Request)
+### [FIX] DeepSeek Tool Call dictionary Arguments & tool_choice="none" API Failures (400 Bad Request)
 - **Date**: 2026-07-04
 - **Description**: Follow-up chat completion calls with tool histories failed or returned empty text on DeepSeek-compatible models, forcing the pipeline to fall back to dry text results.
 - **Root Cause**:
   1. DeepSeek and compatible OpenAI-like APIs require the `arguments` field in `tool_calls` (inside assistant messages) to be a JSON string.
   2. When the tool call history has dictionary-type arguments (common in runtime storage or history retrieval), passing them back in the chat context causes the API to fail with a validation/400 error.
+  3. Additionally, passing the `tools` list when `tool_choice="none"` is enforced triggers API errors or empty completions on certain DeepSeek providers.
 - **Resolution**:
   1. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to inspect tool call objects.
   2. If the `arguments` field is a Python `dict`, it is serialized to a JSON string using `json.dumps(..., ensure_ascii=False)`.
+  3. Modified `_generate_openai_compat` to omit the `tools` and `tool_choice` parameters entirely if `tool_choice == "none"`, forcing the model to generate plain text naturally without any validation/format errors.
 - **Files Modified**:
   - `apps/ai-service/src/llm/client.py`
 

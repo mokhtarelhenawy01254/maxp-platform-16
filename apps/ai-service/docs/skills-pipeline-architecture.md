@@ -48,4 +48,5 @@ The fix adds two fallbacks:
 - Parallel tool calls may hang if the backend has long-running queries
 - Formatting results (`_format_tool_results`) dynamically parses output lists from catalog searches (`products`, `items`, `results`), category queries (`categories`), single product dictionaries (`productName`), and active offers or coupons. Correct labels and statuses are extracted based on the active tool, ensuring friendly fallback states if follow-up LLM calls fail.
 - Message normalization (`_normalize_openai_messages` in `client.py`) automatically serializes Python dictionary arguments within tool calls to JSON strings to maintain compatibility with DeepSeek and standard OpenAI-compatible API schemas.
+- In `_generate_openai_compat`, if `tool_choice` is set to `"none"`, the `tools` parameter is omitted entirely from the chat completion payload, avoiding provider-level tool definition processing errors.
 
