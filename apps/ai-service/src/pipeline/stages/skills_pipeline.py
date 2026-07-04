@@ -65,6 +65,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     # 3. Build system prompt with agent instructions (soul/persona from DB agent)
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
+    ctx.system_prompt = base_prompt
     system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
 
     # Inject full skill instructions (SKILL.md) into system prompt
@@ -191,7 +192,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         else:
             # LLM returned empty text with no tool calls — even after retry
             logger.warning("skills_pipeline_empty_reply_no_tools")
-            ctx.final_reply = "عذراً، لم أتمكن من معالجة طلبك. الرجاء المحاولة مرة أخرى."
+            ctx.final_reply = ""
             ctx.llm_response = ""
 
     ctx.llm_result = provider_response
@@ -312,7 +313,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 
 
 def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
-    from src.skills.integration import ALL_TOOLS
+    from src.tools.registry import ALL_TOOLS
     tool_dicts = []
     used_names = set()
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
@@ -325,18 +326,6 @@ def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
 
 
 def _format_tool_results(executed: list[dict]) -> str:
-    messages_by_name = {
-        "product_top_selling": "لا توجد بيانات مبيعات متاحة حالياً.",
-        "product_search": "لم يتم العثور على منتجات تطابق بحثك.",
-        "category_list": "لا توجد تصنيفات متاحة حالياً.",
-        "inventory_check": "لا توجد بيانات مخزون متاحة.",
-        "order_lookup": "لم يتم العثور على طلبات تطابق بحثك.",
-        "customer_info": "لا توجد بيانات للعميل.",
-        "offers_list_active": "لا توجد عروض نشطة حالياً.",
-        "shipping_rates": "لا توجد خيارات شحن متاحة حالياً.",
-        "followup_suggestions": "لا توجد متابعات مقترحة حالياً.",
-        "lead_score": "لا توجد نتائج تقييم عملاء متاحة.",
-    }
     parts = []
     for item in executed:
         name = item.get("tool", "")
@@ -345,7 +334,6 @@ def _format_tool_results(executed: list[dict]) -> str:
         if status == "success" and isinstance(result, dict):
             code = result.get("code", "")
             if code == "MISSING_COMPANY":
-                parts.append("عذراً، لم يتم تحديد حساب المتجر. يرجى المحاولة من داخل حساب المتجر.")
                 continue
 
             products = result.get("products") or result.get("items") or result.get("results") or []
@@ -372,8 +360,6 @@ def _format_tool_results(executed: list[dict]) -> str:
                     active_parts.append("شحن مجاني")
                 if active_parts:
                     parts.append(f"العروض المتاحة: {', '.join(active_parts)}")
-                else:
-                    parts.append(messages_by_name.get(name, "لا توجد عروض نشطة حالياً."))
             elif name == "coupon_validate":
                 if result.get("valid"):
                     parts.append(f"الكوبون {result.get('code')} صالح (خصم بقيمة {result.get('discountAmount')})")
@@ -383,23 +369,13 @@ def _format_tool_results(executed: list[dict]) -> str:
                 if result.get("found") or result.get("order"):
                     order = result.get("order") or result
                     parts.append(f"الطلب #{order.get('id') or order.get('number')} حالته: {order.get('status')}")
-                else:
-                    parts.append(messages_by_name.get(name, "لم يتم العثور على طلب."))
             elif name == "customer_info":
                 if result.get("found") or result.get("customer"):
                     cust = result.get("customer") or result
                     parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
-                else:
-                    parts.append(messages_by_name.get(name, "لا توجد بيانات للعميل."))
-            else:
-                count = result.get("count") or result.get("total")
-                if count is not None and int(count) == 0:
-                    parts.append(messages_by_name.get(name, f"لا توجد نتائج متاحة حالياً."))
-                else:
-                    parts.append(messages_by_name.get(name, f"تم تنفيذ {name}"))
         elif status == "error":
-            parts.append(f"حدث خطأ أثناء تنفيذ الطلب. الرجاء المحاولة مرة أخرى.")
-    return "\n".join(parts) if parts else "عذراً، لم أتمكن من معالجة طلبك."
+            continue
+    return "\n".join(parts) if parts else ""
 
 
 def _build_followup_messages(

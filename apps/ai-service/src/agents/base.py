@@ -1233,14 +1233,9 @@ class BaseAgent:
         reply = ctx.final_reply or early_result.get("reply", "")
 
         executed = ctx.executed_tools or []
-        # ponytail: model returned no reply text but tools ran — show execution summary
+        # ponytail: model returned no reply text but tools ran — pass tool data for validation upstream
         if not reply and executed:
-            names = [
-                (t.get("name") if isinstance(t, dict) else str(t))
-                for t in executed
-            ]
-            names = [n for n in names if n]
-            reply = "✅ تم بنجاح: " + ", ".join(names) + "." if names else ""
+            pass  # let upstream handle empty reply instead of fabricating one
         pipeline_trace = _build_pipeline_trace(ctx, self._last_model_selection)
         return {
             "agent_id": self.id,

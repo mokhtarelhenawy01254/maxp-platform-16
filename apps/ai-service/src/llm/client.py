@@ -360,6 +360,9 @@ class LLMClient:
             tool_call_id = _message_value(msg, "tool_call_id")
             if tool_call_id:
                 m["tool_call_id"] = tool_call_id
+            reasoning_content = _message_value(msg, "reasoning_content") or _message_value(msg, "reasoning")
+            if reasoning_content:
+                m["reasoning_content"] = reasoning_content
             normalized.append(m)
         return normalized
 

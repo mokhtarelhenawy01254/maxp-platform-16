@@ -1,5 +1,21 @@
 # Backend Bugs Log
 
+### [FIX] DeepSeek reasoning_content Stripped in OpenAI Messages Serialization (400 Bad Request)
+- **Date**: 2026-07-04
+- **Description**: The Sandbox and chat pipeline fell back to raw formatted tool results instead of returning the agent's natural friendly Arabic persona response.
+- **Root Cause**:
+  1. DeepSeek-R1 (or models using thinking/reasoning modes) return a `reasoning_content` field containing the reasoning steps in their choice response.
+  2. The DeepSeek API requires that when continuing a conversation, any assistant message that contained reasoning steps MUST include `reasoning_content` when sent back to the API.
+  3. However, `_normalize_openai_messages` in `client.py` stripped all custom attributes (including `reasoning_content` and `reasoning`), causing the follow-up completion call to fail with a `400 BadRequestError: 'reasoning_content' in the thinking mode must be passed back to the API`.
+  4. This API failure caused the pipeline follow-up turn to fall back directly to `_format_tool_results` formatting, dumping a raw comma-separated list of items into the chat instead of Yasmine's Egyptian Arabic persona response.
+- **Resolution**:
+  1. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to preserve `reasoning_content` and `reasoning` keys in the serialized messages payload.
+  2. Fixed an `ImportError` in `skills_pipeline.py` where `ALL_TOOLS` was incorrectly imported from `src.skills.integration` instead of `src.tools.registry`.
+  3. Set `ctx.system_prompt` inside `skills_pipeline.py` to ensure it is returned in `compiled_system_prompt` in the sandbox logs for easy inspection.
+- **Files Modified**:
+  - `apps/ai-service/src/llm/client.py`
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
 ### [FIX] Product Search (results key) & Single Product Mismatch in Skills Pipeline
 - **Date**: 2026-07-04
 - **Description**: AI agents (like Yasmine) returned dry, automated messages such as "لم يتم العثور على منتجات تطابق بحثك" or "لا توجد بيانات مخزون متاحة" even when search or inventory checks succeeded and found products.
