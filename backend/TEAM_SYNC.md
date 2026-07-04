@@ -5,6 +5,7 @@
   1. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to preserve `reasoning_content` and `reasoning` keys in the serialized assistant messages array. This satisfies DeepSeek's validation requirement that assistant messages carrying reasoning steps must pass them back in consecutive turns, resolving the 400 Bad Request API errors.
   2. Fixed an `ImportError` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` where `ALL_TOOLS` was incorrectly imported from `src.skills.integration` instead of `src.tools.registry`.
   3. Cached the system prompt inside `ctx.system_prompt` during execution so that `compiled_system_prompt` is returned correctly in sandbox trace logs for easier debugging.
+  4. Mapped `compiled_system_prompt` from the Python response to `result.compiledSystemPrompt` inside `runSelectedAgentInPython` in `aiSandboxController.js` to ensure system prompt visualization in the Sandbox UI.
 - **WhatsApp Inbox Permission Distribution Fix (FIX)**: Fixed a bug where moderators/agents could see conversations, read messages, and receive real-time updates for WhatsApp numbers they are not assigned to:
   1. Updated `getConversations` and `getMessages` in `apps/backend/controller/whatsappController.js` to validate and filter session IDs using `getUserAccessibleSessionIds` for non-admin accounts.
   2. Refactored `getConversationAudience` in `apps/backend/services/whatsappRealtimeAudienceService.js` to build a precise list of authorized users (admins, leaders, assigned agents, and team/routing pool members).

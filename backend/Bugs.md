@@ -12,9 +12,11 @@
   1. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to preserve `reasoning_content` and `reasoning` keys in the serialized messages payload.
   2. Fixed an `ImportError` in `skills_pipeline.py` where `ALL_TOOLS` was incorrectly imported from `src.skills.integration` instead of `src.tools.registry`.
   3. Set `ctx.system_prompt` inside `skills_pipeline.py` to ensure it is returned in `compiled_system_prompt` in the sandbox logs for easy inspection.
+  4. Mapped `compiled_system_prompt` from Python API response to `result.compiledSystemPrompt` inside `runSelectedAgentInPython` in `aiSandboxController.js` to ensure it displays correctly in the frontend.
 - **Files Modified**:
   - `apps/ai-service/src/llm/client.py`
   - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+  - `apps/backend/controller/aiSandboxController.js`
 
 ### [FIX] Product Search (results key) & Single Product Mismatch in Skills Pipeline
 - **Date**: 2026-07-04

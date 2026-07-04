@@ -259,6 +259,7 @@ async function runSelectedAgentInPython({
       pipelineTrace: data.pipeline_trace && typeof data.pipeline_trace === 'object'
         ? data.pipeline_trace
         : null,
+      compiledSystemPrompt: data.compiled_system_prompt || null,
     },
     modelSelection: data.model_selection || null,
     usageMetadata: data.usage_metadata || data.usage || null,

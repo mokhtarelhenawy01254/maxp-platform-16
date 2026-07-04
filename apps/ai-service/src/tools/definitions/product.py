@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import ipaddress
+import logging
 import socket
 from datetime import datetime, timedelta
 from typing import Any
@@ -161,6 +162,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     limit = max(input_data.limit, 50) if input_data.list_all else min(input_data.limit, 20)
     decoded_image: bytes | None = None
     image_mime_type = input_data.mime_type
+    logging.warning("[PS_DEBUG] company_id=%s query=%s list_all=%s limit=%s", input_data.company_id, query, input_data.list_all, limit)
     if input_data.use_vector and not input_data.list_all:
         if input_data.image_bytes:
             try:
@@ -193,6 +195,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
         references_previous_product=input_data.references_previous_product,
     )
     products = result.get("products", [])
+    logging.warning("[PS_DEBUG] search_products returned %d products, result keys=%s", len(products), list(result.keys()))
 
     # Final fallback: if query returned no products, return the full catalog
     if not products:
@@ -200,6 +203,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
             input_data.company_id or "", "", limit=50, use_vector=False,
         )
         cat_products = catalog.get("products", [])
+        logging.warning("[PS_DEBUG] fallback: catalog returned %d products, keys=%s", len(cat_products), list(catalog.keys()))
         if cat_products:
             return {"results": cat_products, "count": catalog.get("count", len(cat_products)), "listAll": True, "searchType": "fallback"}
 
