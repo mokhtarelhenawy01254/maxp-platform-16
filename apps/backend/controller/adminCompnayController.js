@@ -667,6 +667,11 @@ const getCompanyDetails = async (req, res) => {
                         createdAt: 'desc',
                     },
                 }),
+                prisma.companyApp.findMany({
+                    where: { companyId },
+                    include: { app: true },
+                    orderBy: { createdAt: 'desc' },
+                }),
                 prisma.appUsageLog.aggregate({
                     where: {
                         companyApp: { companyId },
