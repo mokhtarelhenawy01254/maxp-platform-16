@@ -11,7 +11,7 @@ from src.guardrails.input import INPUT_GUARDRAILS
 from src.llm.client import LLMClient, ProviderResponse
 from src.pipeline.context import PipelineContext
 from src.pipeline.provider_errors import provider_error_result
-from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta
+from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta, get_skills_block
 from src.skills.registry import get_skill_registry
 from src.tools.registry import ALL_TOOLS
 
@@ -66,6 +66,12 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
     system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
+
+    # Inject full skill instructions (SKILL.md) into system prompt
+    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+        skills_block = get_skills_block(ctx.agent.allowed_skills)
+        if skills_block:
+            system_prompt += f"\n\n{skills_block}"
 
     # 4. Single LLM call with skills as tools
     try:
