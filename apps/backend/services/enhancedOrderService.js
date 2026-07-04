@@ -2169,69 +2169,63 @@ class EnhancedOrderService {
         };
       }
 
-      let whereClause = {
-        id: orderId,
-        companyId: companyId // ✅ SECURITY: Ensure company isolation
+      const include = {
+        orderItems: {
+          include: {
+            product: true
+          }
+        },
+        customer: true,
+        conversation: true,
+        statusHistory: {
+          orderBy: {
+            createdAt: 'desc'
+          }
+        },
+        orderNotes: {
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }
       };
 
-      // If it looks like an order number, search by orderNumber
+      let order;
+
+      // If it looks like an order number (ORD-xxx), search by orderNumber
       if (orderId && orderId.startsWith('ORD-')) {
         whereClause = {
           orderNumber: orderId,
-          companyId: companyId // ✅ SECURITY: Ensure company isolation
+          companyId: companyId
         };
-      }
-
-      console.log('🔍 [ENHANCED-ORDER] Fetching order with criteria:', whereClause);
-
-      // Use findFirst instead of findUnique when searching by orderNumber
-      let order;
-      if (whereClause.orderNumber) {
+        console.log('🔍 [ENHANCED-ORDER] Searching by orderNumber:', whereClause);
         order = await this.getPrisma().order.findFirst({
           where: whereClause,
-          include: {
-            orderItems: {
-              include: {
-                product: true
-              }
-            },
-            customer: true,
-            conversation: true,
-            statusHistory: {
-              orderBy: {
-                createdAt: 'desc'
-              }
-            },
-            orderNotes: {
-              orderBy: {
-                createdAt: 'desc'
-              }
-            }
-          }
+          include
         });
       } else {
+        // Try by cuid/id first
+        let whereClause = {
+          id: orderId,
+          companyId: companyId
+        };
+        console.log('🔍 [ENHANCED-ORDER] Searching by id:', whereClause);
         order = await this.getPrisma().order.findUnique({
           where: whereClause,
-          include: {
-            orderItems: {
-              include: {
-                product: true
-              }
-            },
-            customer: true,
-            conversation: true,
-            statusHistory: {
-              orderBy: {
-                createdAt: 'desc'
-              }
-            },
-            orderNotes: {
-              orderBy: {
-                createdAt: 'desc'
-              }
-            }
-          }
+          include
         });
+
+        // Fallback: also try by orderNumber for non-ORD codes
+        if (!order) {
+          whereClause = {
+            orderNumber: orderId,
+            companyId: companyId
+          };
+          console.log('🔍 [ENHANCED-ORDER] Fallback to orderNumber:', whereClause);
+          order = await this.getPrisma().order.findFirst({
+            where: whereClause,
+            include
+          });
+        }
       }
 
       // Log if found in Order table

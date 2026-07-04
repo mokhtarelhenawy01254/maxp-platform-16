@@ -151,9 +151,15 @@ router.post('/change-status', async (req, res) => {
             return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
         }
 
-        const targetStatus = await orderWorkflowService.findStatusByCode(companyId, statusId) || await getSharedPrismaClient().orderStatusDefinition.findUnique({
+        const VALID_STATUSES = ['PENDING','CONFIRMED','SCHEDULED','READY_FOR_PROCESSING','PROCESSING','SHIPPED','DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED','RETURNED','PARTIALLY_RETURNED','EXCHANGED','PARTIALLY_REFUNDED','WOO_TAGHEZ','DRAFT','TRASH','READY_TO_SHIP','ON_HOLD','NOT_SHIPPED','OUT_FOR_DELIVERY','LOST','PENDING_PREPARATION','PREPARING','READY','QUALITY_CHECK','PACKAGED','ON_HOLD_PREP','PARTIALLY_DELIVERED'];
+
+        let targetStatus = await orderWorkflowService.findStatusByCode(companyId, statusId) || await getSharedPrismaClient().orderStatusDefinition.findUnique({
             where: { id: statusId }
         });
+
+        if (!targetStatus && VALID_STATUSES.includes(statusId?.toUpperCase())) {
+            targetStatus = { code: statusId.toUpperCase(), companyId };
+        }
 
         if (!targetStatus || targetStatus.companyId !== companyId) {
             return res.status(404).json({ success: false, message: 'الحالة المستهدفة غير موجودة' });

@@ -16,6 +16,11 @@ interface OrderStatusOption {
   sortOrder?: number;
 }
 
+interface GroupedStatusOption {
+  name: string;
+  codes: string[];
+}
+
 interface LateCancellationState {
   lateCancellationInterceptEnabled: boolean;
   lateCancellationTargetStatuses: string[];
@@ -40,7 +45,7 @@ const LateCancellationSettings: React.FC = () => {
     lateCancellationTargetStatuses: ["PROCESSING", "PREPARING", "PACKAGED"],
   });
   const [availableStatuses, setAvailableStatuses] = useState<
-    OrderStatusOption[]
+    GroupedStatusOption[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,7 +79,20 @@ const LateCancellationSettings: React.FC = () => {
         (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999),
       );
 
-      setAvailableStatuses(merged);
+      // Group by name
+      const groupedMap = new Map<string, GroupedStatusOption>();
+      merged.forEach((s) => {
+        if (!groupedMap.has(s.name)) {
+          groupedMap.set(s.name, { name: s.name, codes: [s.code] });
+        } else {
+          const group = groupedMap.get(s.name)!;
+          if (!group.codes.includes(s.code)) {
+            group.codes.push(s.code);
+          }
+        }
+      });
+
+      setAvailableStatuses(Array.from(groupedMap.values()));
     } catch (error) {
       console.error("Error fetching order statuses:", error);
     }
@@ -124,14 +142,27 @@ const LateCancellationSettings: React.FC = () => {
     }
   };
 
-  const toggleStatus = (code: string) => {
+  const toggleGroup = (codes: string[]) => {
     setSettings((prev) => {
-      const already = prev.lateCancellationTargetStatuses.includes(code);
+      const isCurrentlySelected = codes.some((code) =>
+        prev.lateCancellationTargetStatuses.includes(code)
+      );
+
+      let newStatuses = [...prev.lateCancellationTargetStatuses];
+      if (isCurrentlySelected) {
+        // Remove all codes in this group
+        newStatuses = newStatuses.filter((code) => !codes.includes(code));
+      } else {
+        // Add all codes in this group
+        newStatuses = [...newStatuses, ...codes];
+      }
+
+      // Deduplicate in case of any overlaps
+      newStatuses = Array.from(new Set(newStatuses));
+
       return {
         ...prev,
-        lateCancellationTargetStatuses: already
-          ? prev.lateCancellationTargetStatuses.filter((s) => s !== code)
-          : [...prev.lateCancellationTargetStatuses, code],
+        lateCancellationTargetStatuses: newStatuses,
       };
     });
   };
@@ -224,12 +255,13 @@ const LateCancellationSettings: React.FC = () => {
             </div>
           ) : (
             availableStatuses.map((s) => {
-              const isSelected =
-                settings.lateCancellationTargetStatuses.includes(s.code);
+              const isSelected = s.codes.some((code) =>
+                settings.lateCancellationTargetStatuses.includes(code)
+              );
               return (
                 <button
-                  key={s.code}
-                  onClick={() => toggleStatus(s.code)}
+                  key={s.name}
+                  onClick={() => toggleGroup(s.codes)}
                   className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                     isSelected
                       ? "border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300"

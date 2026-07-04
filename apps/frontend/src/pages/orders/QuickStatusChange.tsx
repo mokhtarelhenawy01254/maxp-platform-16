@@ -153,6 +153,7 @@ const QuickStatusChange: React.FC = () => {
       const response = await apiClient.post("/order-workflow/change-status", {
         orderId: currentOrder.id,
         statusId: selectedStatus,
+        isOverride: true,
       });
       if (response.data?.data?.status === "pending") {
         toast.info(t("quickStatus.pendingApproval"));
