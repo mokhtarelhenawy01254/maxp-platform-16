@@ -1,153 +1,172 @@
-import React, { useRef, useReducer, useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "../../components/ui/select";
 import { Card, CardContent } from "../../components/ui/card";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "../../components/ui/dialog";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
 } from "../../components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { buildApiUrl } from "../../utils/urlHelper";
-import { tokenManager } from "../../utils/tokenManager";
 import { toast } from "sonner";
-import { Plus, Trash2, Copy, FlaskConical, Search, Check, X, RefreshCw, Eye, EyeOff } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Copy,
+  FlaskConical,
+  Search,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Check,
+  X,
+} from "lucide-react";
+import { useAiProviders, useAiKeys } from "../../hooks/useAiAdminData";
+import {
+  useCreateKey,
+  useToggleKeyStatus,
+  useDeleteKey,
+  useTestKey,
+} from "../../hooks/useKeyMutations";
+import type { AiKey, AiProvider } from "../../types/ai-admin";
 
 function SuperAdminAIKeyManager() {
   return (
     <div className="p-4 max-w-[1440px] mx-auto">
-      <h1 className="text-2xl font-bold mb-4">AI Key Manager</h1>
+      <h1 className="text-2xl font-bold mb-4">إدارة مفاتيح الذكاء الاصطناعي</h1>
       <KeyManagerContent />
     </div>
   );
 }
 
 function KeyManagerContent() {
-  var providersRef = useRef([]);
-  var keysRef = useRef([]);
-  var errorRef = useRef(null);
-  var showAddRef = useRef(false);
-  var showDeleteRef = useRef(null);
-  var showTestRef = useRef(null);
-  var rerender = useReducer(function (x) { return x + 1; }, 0);
-  var done = rerender[0] > 0;
-  var forceUpdate = rerender[1];
+  const queryClient = useQueryClient();
+  const {
+    data: providers,
+    isLoading: providersLoading,
+    error: providersError,
+  } = useAiProviders();
+  const {
+    data: keys,
+    isLoading: keysLoading,
+    error: keysError,
+  } = useAiKeys();
 
-  var searchRef = useRef("");
-  var providerFilterRef = useRef("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [providerFilter, setProviderFilter] = useState("");
 
-  useEffect(function () {
-    var cancelled = false;
-    var h = tokenManager.createAuthHeaders();
-    Promise.all([
-      fetch(buildApiUrl("ai-admin/providers"), { headers: h }).then(function (r) { return r.ok ? r.json() : []; }),
-      fetch(buildApiUrl("ai-admin/keys"), { headers: h }).then(function (r) { return r.ok ? r.json() : []; }),
-    ]).then(function (d) {
-      if (!cancelled) {
-        providersRef.current = Array.isArray(d[0]) ? d[0] : [];
-        keysRef.current = Array.isArray(d[1]) ? d[1] : [];
-        forceUpdate();
-      }
-    }, function (err) {
-      if (!cancelled) {
-        errorRef.current = err;
-        forceUpdate();
-      }
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AiKey | null>(null);
+  const [testTarget, setTestTarget] = useState<{
+    key: AiKey;
+    result?: unknown;
+    error?: string;
+  } | null>(null);
+
+  const createKeyMutation = useCreateKey();
+  const toggleStatusMutation = useToggleKeyStatus();
+  const deleteKeyMutation = useDeleteKey();
+  const testKeyMutation = useTestKey();
+
+  const providerList = useMemo(() => {
+    if (!Array.isArray(providers)) return [];
+    return providers.filter(
+      (p, i, arr) => typeof p === "string" && arr.indexOf(p) === i,
+    );
+  }, [providers]);
+
+  const filteredKeys = useMemo(() => {
+    if (!Array.isArray(keys)) return [];
+    const sq = searchQuery.toLowerCase().trim();
+    const pf = providerFilter;
+    return keys.filter((k) => {
+      if (sq && !k.name.toLowerCase().includes(sq)) return false;
+      if (pf && k.provider !== pf) return false;
+      return true;
     });
-    return function () { cancelled = true; };
-  }, []);
+  }, [keys, searchQuery, providerFilter]);
 
-  function refresh() {
-    var h = tokenManager.createAuthHeaders();
-    Promise.all([
-      fetch(buildApiUrl("ai-admin/providers"), { headers: h }).then(function (r) { return r.ok ? r.json() : []; }),
-      fetch(buildApiUrl("ai-admin/keys"), { headers: h }).then(function (r) { return r.ok ? r.json() : []; }),
-    ]).then(function (d) {
-      providersRef.current = Array.isArray(d[0]) ? d[0] : [];
-      keysRef.current = Array.isArray(d[1]) ? d[1] : [];
-      forceUpdate();
-    }, function (err) {
-      errorRef.current = err;
-      forceUpdate();
-    });
-  }
+  const activeCount = useMemo(() => {
+    if (!Array.isArray(keys)) return 0;
+    return keys.filter((k) => k.is_active).length;
+  }, [keys]);
 
-  function doToggle(key) {
-    var h = tokenManager.createAuthHeaders();
-    fetch(buildApiUrl("ai-admin/keys/" + encodeURIComponent(key.id) + "/status"), {
-      method: "PATCH",
-      headers: Object.assign({ "Content-Type": "application/json" }, h),
-      body: JSON.stringify({ is_active: !key.is_active }),
-    }).then(function (r) {
-      if (!r.ok) throw new Error("Failed to update status");
-      toast.success(key.is_active ? "Key deactivated" : "Key activated");
-      refresh();
-    }, function () {
-      toast.error("Failed to update key status");
-    });
-  }
-
-  function doCopy(val) {
-    navigator.clipboard.writeText(val).then(function () {
-      toast.success("API key copied");
-    }, function () {
-      toast.error("Failed to copy");
-    });
-  }
-
-  function doDelete(id) {
-    var h = tokenManager.createAuthHeaders();
-    fetch(buildApiUrl("ai-admin/keys/" + encodeURIComponent(id)), {
-      method: "DELETE",
-      headers: h,
-    }).then(function (r) {
-      if (!r.ok) throw new Error("Delete failed");
-      toast.success("Key deleted");
-      showDeleteRef.current = null;
-      refresh();
-    }, function () {
-      toast.error("Failed to delete key");
-    });
-  }
-
-  function doTest(key) {
-    var h = tokenManager.createAuthHeaders();
-    fetch(buildApiUrl("ai-admin/test"), {
-      method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, h),
-      body: JSON.stringify({ provider: key.provider, api_key: key.api_key }),
-    }).then(function (r) {
-      return r.json().then(function (data) {
-        if (!r.ok) throw new Error(data.detail || data.message || "Test failed");
-        return data;
-      });
-    }).then(function (result) {
-      showTestRef.current = { key: key, result: result };
-      forceUpdate();
-    }, function (err) {
-      showTestRef.current = { key: key, error: err.message || "Test request failed" };
-      forceUpdate();
-    });
-  }
-
-  if (errorRef.current) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-red-500 text-center">
-          <p>Failed to load AI keys. Please try again.</p>
-        </div>
-      </div>
+  function handleCopy(apiKey: string) {
+    navigator.clipboard.writeText(apiKey).then(
+      () => toast.success("تم نسخ المفتاح"),
+      () => toast.error("فشل النسخ"),
     );
   }
 
-  if (!done) {
+  function handleToggle(key: AiKey) {
+    toggleStatusMutation.mutate({ id: key.id, isActive: !key.is_active });
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    deleteKeyMutation.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
+    });
+  }
+
+  function handleTest(key: AiKey) {
+    testKeyMutation.mutate(
+      { provider: key.provider, apiKey: key.api_key },
+      {
+        onSuccess: (result) => {
+          setTestTarget({ key, result });
+        },
+        onError: (err: any) => {
+          setTestTarget({ key, error: err?.message || "فشل الاختبار" });
+        },
+      },
+    );
+  }
+
+  function handleRefresh() {
+    queryClient.invalidateQueries({ queryKey: ["ai-admin"] });
+    toast.success("تم تحديث البيانات");
+  }
+
+  if (providersError || keysError) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>فشل تحميل البيانات. يرجى المحاولة مرة أخرى.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (providersLoading || keysLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
@@ -155,229 +174,242 @@ function KeyManagerContent() {
     );
   }
 
-  var providers = providersRef.current;
-  var keys = keysRef.current;
-  var sq = searchRef.current.toLowerCase();
-  var pf = providerFilterRef.current;
-  var filtered = keys.filter(function (k) {
-    if (sq && k.name.toLowerCase().indexOf(sq) === -1) return false;
-    if (pf && k.provider !== pf) return false;
-    return true;
-  });
-
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <Card>
           <CardContent className="p-3">
-            <p className="text-xs text-gray-500">Providers</p>
-            <p className="text-xl font-bold">{providers.length}</p>
+            <p className="text-xs text-muted-foreground">المزودون</p>
+            <p className="text-xl font-bold">{providerList.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3">
-            <p className="text-xs text-gray-500">Keys</p>
-            <p className="text-xl font-bold">{keys.length}</p>
+            <p className="text-xs text-muted-foreground">المفاتيح</p>
+            <p className="text-xl font-bold">{Array.isArray(keys) ? keys.length : 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3">
-            <p className="text-xs text-gray-500">Active</p>
-            <p className="text-xl font-bold">{keys.filter(function (k) { return k.is_active; }).length}</p>
+            <p className="text-xs text-muted-foreground">النشطة</p>
+            <p className="text-xl font-bold">{activeCount}</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            className="pl-8"
-            placeholder="Search by name..."
-            onChange={function (e) { searchRef.current = e.target.value; forceUpdate(); }}
+            className="pr-9"
+            placeholder="بحث بالاسم..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select onValueChange={function (v) { providerFilterRef.current = v === "__all" ? "" : v; forceUpdate(); }}>
+        <Select value={providerFilter} onValueChange={setProviderFilter}>
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="All providers" />
+            <SelectValue placeholder="كل المزودين" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all">All providers</SelectItem>
-            {providers.map(function (p) {
-              var val = typeof p === "string" ? p : p.id || p.name || p;
-              return <SelectItem key={val} value={val}>{val}</SelectItem>;
-            })}
+            <SelectItem value="">كل المزودين</SelectItem>
+            {providerList.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        <Button onClick={function () { showAddRef.current = true; forceUpdate(); }}>
-          <Plus className="size-4 ml-1" /> Add Key
+        <Button onClick={() => setShowAddDialog(true)}>
+          <Plus className="size-4 ml-1" />
+          إضافة مفتاح
         </Button>
-        <Button variant="outline" size="icon" onClick={refresh} title="Refresh">
+        <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث">
           <RefreshCw className="size-4" />
         </Button>
       </div>
 
-      <div className="border rounded bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-gray-50">
-              <th className="text-left p-2">Name</th>
-              <th className="text-left p-2">Provider</th>
-              <th className="text-left p-2">Key</th>
-              <th className="text-left p-2">Type</th>
-              <th className="text-left p-2">Status</th>
-              <th className="text-left p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ?
-              <tr><td colSpan={6} className="p-4 text-center text-gray-400">No keys</td></tr> :
-              filtered.map(function (k) {
-                return (
-                  <tr key={k.id} className="border-b hover:bg-gray-50">
-                    <td className="p-2 font-medium">{k.name}</td>
-                    <td className="p-2">
-                      <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{k.provider}</span>
-                    </td>
-                    <td className="p-2">
-                      <span className="font-mono text-xs text-gray-500">
-                        {k.api_key ? k.api_key.substring(0, 12) + "..." : "—"}
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">
-                        {k.key_type || "CENTRAL"}
-                      </span>
-                    </td>
-                    <td className="p-2">
+      <div className="border rounded bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>الاسم</TableHead>
+              <TableHead>المزود</TableHead>
+              <TableHead>المفتاح</TableHead>
+              <TableHead>النوع</TableHead>
+              <TableHead>الحالة</TableHead>
+              <TableHead>الإجراءات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredKeys.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  لا توجد مفاتيح
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredKeys.map((k) => (
+                <TableRow key={k.id}>
+                  <TableCell className="font-medium">{k.name}</TableCell>
+                  <TableCell>
+                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                      {k.provider}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {k.api_key ? `${k.api_key.substring(0, 12)}...` : "\u2014"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                      {k.key_type || "CENTRAL"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleToggle(k)}
+                      className={`text-xs px-2 py-0.5 rounded border cursor-pointer ${
+                        k.is_active
+                          ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800"
+                          : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-800"
+                      }`}
+                    >
+                      {k.is_active ? "نشط" : "غير نشط"}
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={function () { doToggle(k); }}
-                        className={"text-xs px-2 py-0.5 rounded border cursor-pointer " + (k.is_active ? "bg-green-100 text-green-700 border-green-200" : "bg-red-100 text-red-700 border-red-200")}
+                        className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                        title="نسخ المفتاح"
+                        onClick={() => handleCopy(k.api_key)}
                       >
-                        {k.is_active ? "Active" : "Inactive"}
+                        <Copy className="size-3.5" />
                       </button>
-                    </td>
-                    <td className="p-2">
-                      <div className="flex items-center gap-1">
-                        <button
-                          className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-                          title="Copy API key"
-                          onClick={function () { doCopy(k.api_key); }}
-                        >
-                          <Copy className="size-3.5" />
-                        </button>
-                        <button
-                          className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
-                          title="Test key"
-                          onClick={function () { doTest(k); }}
-                        >
-                          <FlaskConical className="size-3.5" />
-                        </button>
-                        <button
-                          className="p-1 hover:bg-gray-100 rounded text-red-500 hover:text-red-700"
-                          title="Delete key"
-                          onClick={function () { showDeleteRef.current = k; forceUpdate(); }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            }
-          </tbody>
-        </table>
+                      <button
+                        className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                        title="اختبار المفتاح"
+                        onClick={() => handleTest(k)}
+                      >
+                        <FlaskConical className="size-3.5" />
+                      </button>
+                      <button
+                        className="p-1 hover:bg-muted rounded text-destructive hover:text-destructive/80"
+                        title="حذف المفتاح"
+                        onClick={() => setDeleteTarget(k)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
-      {showAddRef.current ? <AddKeyDialog
-        providers={providers}
-        onClose={function () { showAddRef.current = false; forceUpdate(); }}
-        onCreated={function () { showAddRef.current = false; refresh(); }}
-      /> : null}
+      {showAddDialog && (
+        <AddKeyDialog
+          providers={providerList}
+          onClose={() => setShowAddDialog(false)}
+          onCreated={() => setShowAddDialog(false)}
+          createKeyMutation={createKeyMutation}
+        />
+      )}
 
-      {showDeleteRef.current ? <DeleteConfirmDialog
-        key={showDeleteRef.current.id}
-        target={showDeleteRef.current}
-        onConfirm={function () { doDelete(showDeleteRef.current.id); }}
-        onCancel={function () { showDeleteRef.current = null; forceUpdate(); }}
-      /> : null}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          target={deleteTarget}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+          isLoading={deleteKeyMutation.isPending}
+        />
+      )}
 
-      {showTestRef.current ? <TestResultDialog
-        data={showTestRef.current}
-        onClose={function () { showTestRef.current = null; forceUpdate(); }}
-      /> : null}
+      {testTarget && (
+        <TestResultDialog
+          data={testTarget}
+          onClose={() => setTestTarget(null)}
+          isLoading={testKeyMutation.isPending}
+        />
+      )}
     </div>
   );
 }
 
-function AddKeyDialog(props) {
-  var providers = props.providers;
-  var [provider, setProvider] = useState("");
-  var [name, setName] = useState("");
-  var [apiKey, setApiKey] = useState("");
-  var [saving, setSaving] = useState(false);
-  var [showKey, setShowKey] = useState(false);
+function AddKeyDialog({
+  providers,
+  onClose,
+  onCreated,
+  createKeyMutation,
+}: {
+  providers: string[];
+  onClose: () => void;
+  onCreated: () => void;
+  createKeyMutation: ReturnType<typeof useCreateKey>;
+}) {
+  const [provider, setProvider] = useState("");
+  const [name, setName] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
 
   function handleSave() {
     if (!provider || !name || !apiKey) {
-      toast.error("Provider, name, and API key are required");
+      toast.error("المزود والاسم والمفتاح مطلوبون");
       return;
     }
-    setSaving(true);
-    var h = tokenManager.createAuthHeaders();
-    fetch(buildApiUrl("ai-admin/keys"), {
-      method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, h),
-      body: JSON.stringify({ provider: provider, name: name, api_key: apiKey }),
-    }).then(function (r) {
-      if (!r.ok) return r.json().then(function (d) { throw new Error(d.detail || d.message || "Failed to create key"); });
-      toast.success("Key created successfully");
-      props.onCreated();
-    }, function (err) {
-      toast.error(err.message || "Failed to create key");
-    }).finally(function () {
-      setSaving(false);
-    });
+    createKeyMutation.mutate(
+      { provider, name, api_key: apiKey },
+      { onSuccess: onCreated },
+    );
   }
 
   return (
-    <Dialog open={true} onOpenChange={function (o) { if (!o) props.onClose(); }}>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New API Key</DialogTitle>
+          <DialogTitle>إضافة مفتاح API جديد</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <label className="text-sm font-medium mb-1 block">Provider</label>
+            <label className="text-sm font-medium mb-1 block">المزود</label>
             <Select value={provider} onValueChange={setProvider}>
               <SelectTrigger>
-                <SelectValue placeholder="Select provider" />
+                <SelectValue placeholder="اختر المزود" />
               </SelectTrigger>
               <SelectContent>
-                {providers.map(function (p) {
-                  var val = typeof p === "string" ? p : p.id || p.name || p;
-                  return <SelectItem key={val} value={val}>{val}</SelectItem>;
-                })}
+                {providers.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Name</label>
-            <Input value={name} onChange={function (e) { setName(e.target.value); }} placeholder="e.g. Production GPT-4" />
+            <label className="text-sm font-medium mb-1 block">الاسم</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="مثال: Production GPT-4"
+            />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">API Key</label>
+            <label className="text-sm font-medium mb-1 block">مفتاح API</label>
             <div className="relative">
               <Input
                 type={showKey ? "text" : "password"}
                 value={apiKey}
-                onChange={function (e) { setApiKey(e.target.value); }}
+                onChange={(e) => setApiKey(e.target.value)}
                 placeholder="sk-..."
               />
               <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                onClick={function () { setShowKey(!showKey); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowKey(!showKey)}
+                type="button"
               >
                 {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
@@ -385,10 +417,14 @@ function AddKeyDialog(props) {
           </div>
         </div>
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={props.onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <LoadingSpinner size="sm" /> : null}
-            {saving ? "Creating..." : "Create Key"}
+          <Button variant="outline" onClick={onClose}>
+            إلغاء
+          </Button>
+          <Button onClick={handleSave} disabled={createKeyMutation.isPending}>
+            {createKeyMutation.isPending ? (
+              <LoadingSpinner size="sm" />
+            ) : null}
+            {createKeyMutation.isPending ? "جارٍ الإنشاء..." : "إنشاء المفتاح"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -396,62 +432,111 @@ function AddKeyDialog(props) {
   );
 }
 
-function DeleteConfirmDialog(props) {
+function DeleteConfirmDialog({
+  target,
+  onConfirm,
+  onCancel,
+  isLoading,
+}: {
+  target: AiKey;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
   return (
-    <AlertDialog open={true} onOpenChange={function (o) { if (!o) props.onCancel(); }}>
+    <AlertDialog open onOpenChange={(o) => { if (!o) onCancel(); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Key</AlertDialogTitle>
+          <AlertDialogTitle>حذف المفتاح</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete <strong>{props.target.name}</strong>? This action cannot be undone.
+            هل أنت متأكد من حذف <strong>{target.name}</strong>؟ لا يمكن التراجع عن هذا الإجراء.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={props.onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={props.onConfirm} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel}>إلغاء</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-700"
+            disabled={isLoading}
+          >
+            {isLoading ? "جارٍ الحذف..." : "حذف"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-function TestResultDialog(props) {
-  var data = props.data;
-  var result = data.result;
-  var error = data.error;
+function TestResultDialog({
+  data,
+  onClose,
+  isLoading,
+}: {
+  data: { key: AiKey; result?: unknown; error?: string };
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const { key, result, error } = data;
+  const r = result as Record<string, unknown> | undefined;
 
   return (
-    <Dialog open={true} onOpenChange={function (o) { if (!o) props.onClose(); }}>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Test Result — {data.key.name}</DialogTitle>
+          <DialogTitle>نتيجة الاختبار — {key.name}</DialogTitle>
         </DialogHeader>
-        {error ?
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : error ? (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
-          </Alert> :
+          </Alert>
+        ) : (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              {result.ok || result.success ?
-                <Badge variant="default" className="bg-green-100 text-green-700 border-green-200"><Check className="size-3 ml-1" /> Success</Badge> :
-                <Badge variant="destructive"><X className="size-3 ml-1" /> Failed</Badge>
-              }
-              {result.latency_ms != null ?
-                <span className="text-xs text-gray-500">{result.latency_ms}ms</span> : null}
+              {r?.ok || r?.success ? (
+                <Badge
+                  variant="default"
+                  className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800"
+                >
+                  <Check className="size-3 ml-1" />
+                  نجاح
+                </Badge>
+              ) : (
+                <Badge variant="destructive">
+                  <X className="size-3 ml-1" />
+                  فشل
+                </Badge>
+              )}
+              {r?.latency_ms != null ? (
+                <span className="text-xs text-muted-foreground">{String(r.latency_ms)}ms</span>
+              ) : null}
             </div>
-            {result.model ?
-              <div><span className="text-sm font-medium">Model:</span> <span className="text-sm">{result.model}</span></div> : null}
-            {result.reply ?
+            {r?.model ? (
               <div>
-                <span className="text-sm font-medium">Reply:</span>
-                <pre className="text-xs bg-gray-50 p-2 rounded mt-1 whitespace-pre-wrap max-h-[200px] overflow-auto">{result.reply}</pre>
-              </div> : null}
-            {typeof result === "object" && !result.reply && !result.model ?
-              <pre className="text-xs bg-gray-50 p-2 rounded mt-1 whitespace-pre-wrap max-h-[200px] overflow-auto">{JSON.stringify(result, null, 2)}</pre> : null}
+                <span className="text-sm font-medium">النموذج:</span>{" "}
+                <span className="text-sm">{String(r.model)}</span>
+              </div>
+            ) : null}
+            {r?.reply ? (
+              <div>
+                <span className="text-sm font-medium">الرد:</span>
+                <pre className="text-xs bg-muted p-2 rounded mt-1 whitespace-pre-wrap max-h-[200px] overflow-auto">
+                  {String(r.reply)}
+                </pre>
+              </div>
+            ) : null}
+            {typeof result === "object" && result !== null && !r?.reply && !r?.model ? (
+              <pre className="text-xs bg-muted p-2 rounded mt-1 whitespace-pre-wrap max-h-[200px] overflow-auto">
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            ) : null}
           </div>
-        }
+        )}
         <DialogFooter>
-          <Button onClick={props.onClose}>Close</Button>
+          <Button onClick={onClose}>إغلاق</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
