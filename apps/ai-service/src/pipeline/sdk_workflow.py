@@ -273,7 +273,7 @@ class PipelineStageExecutor(Executor):
         self._latest_ctx.attachments = list(state.get("attachments") or [])
         self._latest_ctx.final_reply = state.get("final_reply")
         self._latest_ctx.llm_response = state.get("llm_response", "")
-        self._latest_ctx.executed_tools = state.get("executed_tools", [])
+        self._latest_ctx.executed_tools = state.get("executed_tools") or []
         self._latest_ctx.early_return = state.get("early_return")
 
 

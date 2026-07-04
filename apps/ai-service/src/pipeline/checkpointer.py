@@ -41,7 +41,7 @@ class PipelineCheckpointer:
             "tool_context": ctx.tool_context,
             "executed_tools": [
                 {k: v for k, v in t.items() if k != "result"}
-                for t in ctx.executed_tools
+                for t in (ctx.executed_tools or [])
             ],
             "llm_response": ctx.llm_response,
             "final_reply": ctx.final_reply,
@@ -92,7 +92,7 @@ class PipelineCheckpointer:
         )
         ctx.system_prompt = state.get("system_prompt")
         ctx.tool_context = state.get("tool_context", "")
-        ctx.executed_tools = state.get("executed_tools", [])
+        ctx.executed_tools = state.get("executed_tools") or []
         ctx.llm_response = state.get("llm_response", "")
         ctx.final_reply = state.get("final_reply")
         ctx.rounds = state.get("rounds", 0)

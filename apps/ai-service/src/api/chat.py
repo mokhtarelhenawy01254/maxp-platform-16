@@ -171,7 +171,7 @@ async def chat(
         )
 
         reply = sanitize_model_reply(outcome.get("reply", ""))
-        tool_results = outcome.get("tool_results", [])
+        tool_results = outcome.get("tool_results") or []
 
         # Silent Escalation: AI failed, return escalated status with no reply
         if outcome.get("escalation_requested"):
@@ -299,7 +299,7 @@ async def chat_merchant(
         )
 
         reply = sanitize_model_reply(outcome.get("reply", ""))
-        tool_results = outcome.get("tool_results", [])
+        tool_results = outcome.get("tool_results") or []
 
         for tr in tool_results:
             approval_response = await _handle_approval(
