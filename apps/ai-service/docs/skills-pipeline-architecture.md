@@ -46,4 +46,6 @@ The fix adds two fallbacks:
 - Missing tools return `{"tool": func_name, "status": "unknown"}` from the fallback path
 - JSON parse errors trigger a retry with cleaned function name
 - Parallel tool calls may hang if the backend has long-running queries
-- Formatting results (`_format_tool_results`) dynamically parses output lists from catalog searches (`products`, `items`) and category queries (`categories`), extracting correct labels (`productName`, `category`) based on the active tool.
+- Formatting results (`_format_tool_results`) dynamically parses output lists from catalog searches (`products`, `items`, `results`), category queries (`categories`), single product dictionaries (`productName`), and active offers or coupons. Correct labels and statuses are extracted based on the active tool, ensuring friendly fallback states if follow-up LLM calls fail.
+- Message normalization (`_normalize_openai_messages` in `client.py`) automatically serializes Python dictionary arguments within tool calls to JSON strings to maintain compatibility with DeepSeek and standard OpenAI-compatible API schemas.
+

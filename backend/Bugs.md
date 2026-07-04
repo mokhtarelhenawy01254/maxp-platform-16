@@ -1,5 +1,31 @@
 # Backend Bugs Log
 
+### [FIX] Product Search (results key) & Single Product Mismatch in Skills Pipeline
+- **Date**: 2026-07-04
+- **Description**: AI agents (like Yasmine) returned dry, automated messages such as "لم يتم العثور على منتجات تطابق بحثك" or "لا توجد بيانات مخزون متاحة" even when search or inventory checks succeeded and found products.
+- **Root Cause**:
+  1. The `product_search` tool wrappers and declarative Skills map the low-level `"products"` results list to the key `"results"`.
+  2. The pipeline's formatting helper `_format_tool_results` in `skills_pipeline.py` only looked for `"products"` or `"items"`. It defaulted to `[]` when `"results"` was present, completely bypassing formatting.
+  3. Single product responses (like the dictionary returned by `inventory_check`) were also ignored since they lacked list wrappers.
+- **Resolution**:
+  1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to check for `"results"`.
+  2. Added support for single product responses (wrapped dynamically in a list if `"productName"` is present).
+  3. Implemented robust formatting for other active skills (like `offers_list_active`, `coupon_validate`, `order_lookup`, etc.) to prevent dry fallback messages when they succeed.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
+### [FIX] DeepSeek Tool Call dictionary Arguments API Failure (400 Bad Request)
+- **Date**: 2026-07-04
+- **Description**: Follow-up chat completion calls with tool histories failed or returned empty text on DeepSeek-compatible models, forcing the pipeline to fall back to dry text results.
+- **Root Cause**:
+  1. DeepSeek and compatible OpenAI-like APIs require the `arguments` field in `tool_calls` (inside assistant messages) to be a JSON string.
+  2. When the tool call history has dictionary-type arguments (common in runtime storage or history retrieval), passing them back in the chat context causes the API to fail with a validation/400 error.
+- **Resolution**:
+  1. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to inspect tool call objects.
+  2. If the `arguments` field is a Python `dict`, it is serialized to a JSON string using `json.dumps(..., ensure_ascii=False)`.
+- **Files Modified**:
+  - `apps/ai-service/src/llm/client.py`
+
 ### [FIX] WhatsApp Inbox Permission Distribution Gap (Unauthorized Message Leak)
 - **Date**: 2026-07-04
 - **Description**: Moderators or agents who are not assigned to specific WhatsApp numbers could still view their messages, chats, and get real-time socket updates.

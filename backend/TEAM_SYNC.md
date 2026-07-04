@@ -6,6 +6,12 @@
   2. Refactored `getConversationAudience` in `apps/backend/services/whatsappRealtimeAudienceService.js` to build a precise list of authorized users (admins, leaders, assigned agents, and team/routing pool members).
   3. Set `fallbackToCompany` default to `false` in `emitToAudience` to restrict socket message events delivery only to authorized users.
   4. Added backend unit tests in `apps/backend/tests/services/whatsappRealtimeAudienceService.test.js` to secure and verify role/session isolation.
+- **Product Search & DeepSeek Tool Calls Pipeline Fixes (FIX)**: Fixed catalog search, product discovery, and formatting mismatches for AI agents (like Yasmine) on the Swan store:
+  1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to support the `"results"` key returned by product search repository wrappers, preventing it from defaulting to an empty list and falling back to a dry "No products found" message.
+  2. Wrapped single product response dictionaries (e.g. from `inventory_check`) in a list to format product details correctly instead of printing "No stock data available".
+  3. Added robust formatting mapping for `offers_list_active` and `coupon_validate` tools to properly describe active promotions/coupons.
+  4. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to inspect the `tool_calls` in assistant messages and serialize dictionary arguments to JSON strings, preventing DeepSeek API 400 Bad Request/Validation failures in follow-up chat completions.
+  5. Added comprehensive unit tests in `apps/ai-service/tests/pipeline/test_skills_pipeline.py` to verify the new formatting behaviors.
 - **category_list Tool Formatting Mismatch Fix (FIX)**: Fixed a bug where requesting categories from the agent returned "لا توجد تصنيفات متاحة حالياً" (No categories available) even when categories were defined:
   1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to correctly identify and process the `"categories"` key returned by the `category_list` tool.
   2. Extracted and formatted category names to display nicely in the agent's summary instead of falling back to the default "no results" message.

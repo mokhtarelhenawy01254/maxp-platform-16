@@ -339,7 +339,24 @@ class LLMClient:
                 m["content"] = content
             tool_calls = _message_value(msg, "tool_calls")
             if tool_calls:
-                m["tool_calls"] = tool_calls
+                sanitized_tool_calls = []
+                for tc in tool_calls:
+                    if isinstance(tc, dict):
+                        func = tc.get("function") or {}
+                        args = func.get("arguments", "{}")
+                        if isinstance(args, dict):
+                            args = json.dumps(args, ensure_ascii=False)
+                        sanitized_tool_calls.append({
+                            "id": tc.get("id") or f"call_{uuid.uuid4().hex[:8]}",
+                            "type": tc.get("type", "function"),
+                            "function": {
+                                "name": func.get("name"),
+                                "arguments": args,
+                            }
+                        })
+                    else:
+                        sanitized_tool_calls.append(tc)
+                m["tool_calls"] = sanitized_tool_calls
             tool_call_id = _message_value(msg, "tool_call_id")
             if tool_call_id:
                 m["tool_call_id"] = tool_call_id

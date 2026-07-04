@@ -341,19 +341,56 @@ def _format_tool_results(executed: list[dict]) -> str:
             if code == "MISSING_COMPANY":
                 parts.append("عذراً، لم يتم تحديد حساب المتجر. يرجى المحاولة من داخل حساب المتجر.")
                 continue
-            count = result.get("count") or result.get("total")
-            products = result.get("products") or result.get("items") or []
+
+            products = result.get("products") or result.get("items") or result.get("results") or []
+            if not products and isinstance(result, dict) and result.get("productName"):
+                products = [result]
+
             categories = result.get("categories") or []
+
             if isinstance(products, list) and len(products) > 0:
                 names = [p.get("productName") or p.get("name") or "" for p in products[:5]]
                 parts.append(f"{', '.join(filter(None, names))}{'...' if len(products) > 5 else ''}")
             elif isinstance(categories, list) and len(categories) > 0:
                 names = [c.get("category") or "" for c in categories[:5]]
                 parts.append(f"{', '.join(filter(None, names))}{'...' if len(categories) > 5 else ''}")
-            elif count is not None and int(count) == 0:
-                parts.append(messages_by_name.get(name, f"لا توجد نتائج متاحة حالياً."))
+            elif name == "inventory_check" and not result.get("found"):
+                parts.append(f"المنتج '{result.get('queriedName', '')}' غير متوفر حالياً.")
+            elif name == "offers_list_active":
+                active_parts = []
+                if result.get("totalActiveCoupons", 0) > 0:
+                    active_parts.append(f"كوبونات خصم ({result.get('totalActiveCoupons')})")
+                if result.get("hasStorePromotion"):
+                    active_parts.append("خصم تلقائي بالمتجر")
+                if result.get("hasFreeShipping"):
+                    active_parts.append("شحن مجاني")
+                if active_parts:
+                    parts.append(f"العروض المتاحة: {', '.join(active_parts)}")
+                else:
+                    parts.append(messages_by_name.get(name, "لا توجد عروض نشطة حالياً."))
+            elif name == "coupon_validate":
+                if result.get("valid"):
+                    parts.append(f"الكوبون {result.get('code')} صالح (خصم بقيمة {result.get('discountAmount')})")
+                else:
+                    parts.append(f"الكوبون غير صالح: {result.get('error', '')}")
+            elif name == "order_lookup":
+                if result.get("found") or result.get("order"):
+                    order = result.get("order") or result
+                    parts.append(f"الطلب #{order.get('id') or order.get('number')} حالته: {order.get('status')}")
+                else:
+                    parts.append(messages_by_name.get(name, "لم يتم العثور على طلب."))
+            elif name == "customer_info":
+                if result.get("found") or result.get("customer"):
+                    cust = result.get("customer") or result
+                    parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
+                else:
+                    parts.append(messages_by_name.get(name, "لا توجد بيانات للعميل."))
             else:
-                parts.append(messages_by_name.get(name, f"تم تنفيذ {name}"))
+                count = result.get("count") or result.get("total")
+                if count is not None and int(count) == 0:
+                    parts.append(messages_by_name.get(name, f"لا توجد نتائج متاحة حالياً."))
+                else:
+                    parts.append(messages_by_name.get(name, f"تم تنفيذ {name}"))
         elif status == "error":
             parts.append(f"حدث خطأ أثناء تنفيذ الطلب. الرجاء المحاولة مرة أخرى.")
     return "\n".join(parts) if parts else "عذراً، لم أتمكن من معالجة طلبك."
