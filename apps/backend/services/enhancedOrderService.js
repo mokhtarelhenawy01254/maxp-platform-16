@@ -2191,6 +2191,7 @@ class EnhancedOrderService {
 
       let order;
 
+      let whereClause;
       // If it looks like an order number (ORD-xxx), search by orderNumber
       if (orderId && orderId.startsWith('ORD-')) {
         whereClause = {
@@ -2204,7 +2205,7 @@ class EnhancedOrderService {
         });
       } else {
         // Try by cuid/id first
-        let whereClause = {
+        whereClause = {
           id: orderId,
           companyId: companyId
         };

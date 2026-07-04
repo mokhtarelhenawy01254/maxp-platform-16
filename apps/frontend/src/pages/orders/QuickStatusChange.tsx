@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
+import orderWorkflowService, { OrderStatusDefinition } from "../../services/orderWorkflowService";
 import {
   Search,
   ArrowRight,
@@ -72,14 +73,14 @@ interface ChangeLogEntry {
   changedAt: string;
 }
 
-const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+const StatusBadge: React.FC<{ status: string; label?: string }> = ({ status, label }) => {
   const config = STATUS_CONFIG[status] || {
-    labelAr: status,
+    labelAr: label || status,
     color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
   };
   return (
     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.color}`}>
-      {config.labelAr}
+      {label || config.labelAr}
     </span>
   );
 };
@@ -96,9 +97,17 @@ const QuickStatusChange: React.FC = () => {
   const [changeLoading, setChangeLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [siteStatuses, setSiteStatuses] = useState<{id: string, name: string, code?: string}[]>([]);
 
   useEffect(() => {
     inputRef.current?.focus();
+    orderWorkflowService.getStatuses()
+      .then((res) => {
+        if (res?.data && Array.isArray(res.data)) {
+          setSiteStatuses(res.data.map((s: OrderStatusDefinition) => ({ id: s.id, name: s.name, code: s.code })));
+        }
+      })
+      .catch((err) => console.error("Failed to fetch site statuses:", err));
   }, []);
 
   const handleSearch = useCallback(async () => {
@@ -121,6 +130,20 @@ const QuickStatusChange: React.FC = () => {
         const order = { ...body.data, status: body.data.status?.toUpperCase() };
         setCurrentOrder(order);
         setSelectedStatus(order.status);
+        
+        setChangeLog((prev) => {
+          const exists = prev.find(p => p.id === order.id);
+          if (exists) return prev;
+          
+          const newEntry: ChangeLogEntry = {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            oldStatus: order.status,
+            newStatus: "",
+            changedAt: new Date().toLocaleString("ar-EG"),
+          };
+          return [newEntry, ...prev];
+        });
       } else {
         setSearchError(t("quickStatus.orderNotFound", { code }));
       }
@@ -158,14 +181,13 @@ const QuickStatusChange: React.FC = () => {
       if (response.data?.data?.status === "pending") {
         toast.info(t("quickStatus.pendingApproval"));
       } else {
-        const entry: ChangeLogEntry = {
-          id: `${currentOrder.id}-${Date.now()}`,
-          orderNumber: currentOrder.orderNumber,
-          oldStatus: currentOrder.status,
-          newStatus: selectedStatus,
-          changedAt: new Date().toLocaleString("ar-EG"),
-        };
-        setChangeLog((prev) => [entry, ...prev]);
+        setChangeLog((prev) => 
+          prev.map((entry) => 
+            entry.id === currentOrder.id 
+              ? { ...entry, newStatus: selectedStatus, changedAt: new Date().toLocaleString("ar-EG") }
+              : entry
+          )
+        );
         setCurrentOrder((prev) =>
           prev ? { ...prev, status: selectedStatus } : null
         );
@@ -192,6 +214,14 @@ const QuickStatusChange: React.FC = () => {
     setSearchError("");
     setHasSearched(false);
     inputRef.current?.focus();
+  };
+
+  const getStatusDisplayName = (statusValue: string) => {
+    // Check if it's a dynamic status ID or code
+    const dynStatus = siteStatuses.find(s => s.id === statusValue || s.code === statusValue);
+    if (dynStatus) return dynStatus.name;
+    // Fallback to static mapping
+    return STATUS_CONFIG[statusValue]?.labelAr || statusValue;
   };
 
   const hasChanges = changeLog.length > 0;
@@ -247,9 +277,15 @@ const QuickStatusChange: React.FC = () => {
                   ? t("quickStatus.selectStatus")
                   : t("quickStatus.searchFirst")}
               </option>
-              {ORDER_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_CONFIG[s]?.labelAr || s}
+              {(siteStatuses.length > 0
+                ? siteStatuses
+                : ORDER_STATUSES.map((s) => ({
+                    id: s,
+                    name: STATUS_CONFIG[s]?.labelAr || s,
+                  }))
+              ).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>
@@ -325,7 +361,7 @@ const QuickStatusChange: React.FC = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                   {t("quickStatus.currentStatus")}
                 </p>
-                <StatusBadge status={currentOrder.status} />
+                <StatusBadge status={currentOrder.status} label={getStatusDisplayName(currentOrder.status)} />
               </div>
               {currentOrder.total != null && (
                 <div className="text-center">
@@ -344,11 +380,17 @@ const QuickStatusChange: React.FC = () => {
 
       {hasChanges && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
             <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
               <RotateCcw className="text-blue-600 dark:text-blue-400" size={20} />
               {t("quickStatus.changeLog")} ({changeLog.length})
             </h2>
+            <button
+              onClick={() => setChangeLog([])}
+              className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+            >
+              مسح السجل
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -380,16 +422,20 @@ const QuickStatusChange: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge status={entry.oldStatus} />
+                      <StatusBadge status={entry.oldStatus} label={getStatusDisplayName(entry.oldStatus)} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <StatusBadge status={entry.newStatus} />
-                        <CheckCircle
-                          className="text-green-500 shrink-0"
-                          size={16}
-                        />
-                      </div>
+                      {entry.newStatus ? (
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={entry.newStatus} label={getStatusDisplayName(entry.newStatus)} />
+                          <CheckCircle
+                            className="text-green-500 shrink-0"
+                            size={16}
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {entry.changedAt}
