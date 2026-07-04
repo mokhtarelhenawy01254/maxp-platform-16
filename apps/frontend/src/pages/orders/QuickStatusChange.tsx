@@ -288,7 +288,7 @@ const QuickStatusChange: React.FC = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
+          <div className="flex-[3] w-full">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               {t("quickStatus.orderCode")}
             </label>
@@ -300,24 +300,24 @@ const QuickStatusChange: React.FC = () => {
                 onChange={(e) => setOrderCode(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="ابحث برقم الأوردر أو الكود..."
-                className="w-full px-5 py-4 pr-12 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+                className="w-full px-6 py-5 pr-14 text-xl border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                 disabled={searchLoading}
               />
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={22}
+                className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"
+                size={26}
               />
             </div>
           </div>
 
-          <div className="w-full md:w-64">
+          <div className="w-full md:w-80">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               {t("quickStatus.newStatus")}
             </label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-4 py-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors"
+              className="w-full px-5 py-5 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors"
               disabled={changeLoading}
             >
               <option value="">
@@ -341,31 +341,31 @@ const QuickStatusChange: React.FC = () => {
             <button
               onClick={handleSearch}
               disabled={searchLoading || !orderCode.trim()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium"
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium text-lg"
             >
               {searchLoading ? (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={22} className="animate-spin" />
               ) : (
-                <Search size={18} />
+                <Search size={22} />
               )}
               {t("quickStatus.search")}
             </button>
             <button
               onClick={handleChangeStatus}
               disabled={changeLoading || !currentOrder || !selectedStatus || selectedStatus === currentOrder?.status}
-              className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium"
+              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium text-lg"
             >
               {changeLoading ? (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={22} className="animate-spin" />
               ) : (
-                <ArrowRight size={18} />
+                <ArrowRight size={22} />
               )}
               {t("quickStatus.change")}
             </button>
             <button
               onClick={handleClear}
               disabled={searchLoading || changeLoading}
-              className="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium"
+              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium text-lg"
             >
               {t("quickStatus.clear")}
             </button>
