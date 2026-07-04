@@ -22,6 +22,9 @@
   1. Updated `_format_tool_results` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to correctly identify and process the `"categories"` key returned by the `category_list` tool.
   2. Extracted and formatted category names to display nicely in the agent's summary instead of falling back to the default "no results" message.
   3. Updated `apps/ai-service/docs/skills-pipeline-architecture.md` to document the category result formatting behavior.
+- **Yasmine Greeting Repetition Prevention (REFACTOR)**: Addressed greeting repetition behavior in the Yasmine/sales-rep-v2 agent template:
+  1. Added a strict instruction in `apps/backend/agents/sales-rep-v2-agent/SOUL.md` under the "Voice & Tone" section to prohibit repeating the greeting once the conversation is already in progress and the user has been initially greeted.
+
 
 ## 2026-07-03 / 2026-03-09
 - **Company Role Resolution & Sidebar Fix (FIX)**: Fixed a critical bug where company accounts (OWNER, COMPANY_ADMIN) would lose sidebar access after page refresh, showing only 1–2 items instead of the full menu:
