@@ -137,7 +137,6 @@ async def _search_product_json_embeddings(
         FROM products
         WHERE "companyId" = :cid
           AND "deletedAt" IS NULL
-          AND "isActive" = TRUE
           AND {embedding_column} IS NOT NULL
           AND {embedding_column} <> ''
         ORDER BY "updatedAt" DESC

@@ -67,7 +67,6 @@ class ProductSearchRepository(BaseRepository):
             LEFT JOIN categories c ON c.id = p."categoryId"
             WHERE p."companyId" = :company_id
               AND p."deletedAt" IS NULL
-              AND p."isActive" = TRUE
               AND {where}
             ORDER BY
               {order_rank}
