@@ -18,6 +18,19 @@ The "الحالات المستهدفة" (Target Statuses) section in the Late Ca
 - Renders the dynamic list with status `name` (Arabic label from DB) instead of the hardcoded `label`
 - Displays a fallback message when no statuses are available
 
+## Second Change (2026-07-04) — Settings Endpoint Decoupling
+
+The late cancellation settings (`lateCancellationInterceptEnabled`, `lateCancellationTargetStatuses`) were previously loaded/saved via `GET/PUT /api/v1/order-settings`, which requires the paid **`order-invoicing`** marketplace app (129 EGP/month). Companies without this app received a 403 error, blocking the entire settings page.
+
+**Changes:**
+
+1. `apps/backend/routes/settingsRoutes.js` — Added two new endpoints:
+   - `GET /api/v1/settings/cancellation` — reads late cancellation settings from the company's `settings` JSON field
+   - `PUT /api/v1/settings/cancellation` — writes late cancellation settings to the company's `settings` JSON field
+   - Only requires `authenticateToken` (no paid app check)
+
+2. `apps/frontend/src/pages/settings/LateCancellationSettings.tsx` — Changed API calls from `/order-settings` to `/settings/cancellation`
+
 ## Impact
 
-Companies now see exactly their own order and preparation statuses (including custom ones) instead of a fixed subset. The feature automatically adapts when new statuses are added or existing ones renamed.
+Companies now see exactly their own order and preparation statuses (including custom ones) instead of a fixed subset. The feature automatically adapts when new statuses are added or existing ones renamed. Settings can be saved/loaded without requiring the `order-invoicing` app.

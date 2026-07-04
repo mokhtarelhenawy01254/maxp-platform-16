@@ -83,7 +83,7 @@ const LateCancellationSettings: React.FC = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get("/order-settings");
+      const response = await apiClient.get("/settings/cancellation");
       if (response.data.success) {
         const data = response.data.data;
         setSettings({
@@ -107,7 +107,7 @@ const LateCancellationSettings: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await apiClient.put("/order-settings", {
+      const response = await apiClient.put("/settings/cancellation", {
         lateCancellationInterceptEnabled:
           settings.lateCancellationInterceptEnabled,
         lateCancellationTargetStatuses:

@@ -579,6 +579,103 @@ router.put('/user-sidebar', verifyToken.authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// 🛡️ Late Cancellation Settings Endpoints
+// ============================================
+
+// Get late cancellation settings
+router.get('/cancellation', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: 'معرف الشركة مطلوب',
+        code: 'COMPANY_ID_REQUIRED'
+      });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+
+    let parsedSettings = {};
+    try {
+      parsedSettings = company?.settings ? JSON.parse(company.settings) : {};
+    } catch (e) {
+      parsedSettings = {};
+    }
+
+    res.json({
+      success: true,
+      data: {
+        lateCancellationInterceptEnabled: parsedSettings.lateCancellationInterceptEnabled ?? false,
+        lateCancellationTargetStatuses: parsedSettings.lateCancellationTargetStatuses ?? []
+      }
+    });
+  } catch (error) {
+    console.error('❌ [CANCELLATION-SETTINGS] Error fetching:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch cancellation settings',
+      details: error.message
+    });
+  }
+});
+
+// Update late cancellation settings
+router.put('/cancellation', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: 'معرف الشركة مطلوب',
+        code: 'COMPANY_ID_REQUIRED'
+      });
+    }
+
+    const { lateCancellationInterceptEnabled, lateCancellationTargetStatuses } = req.body;
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+
+    let currentSettings = {};
+    try {
+      currentSettings = company?.settings ? JSON.parse(company.settings) : {};
+    } catch (e) {
+      currentSettings = {};
+    }
+
+    currentSettings.lateCancellationInterceptEnabled = lateCancellationInterceptEnabled ?? false;
+    currentSettings.lateCancellationTargetStatuses = Array.isArray(lateCancellationTargetStatuses) ? lateCancellationTargetStatuses : [];
+
+    await getSharedPrismaClient().company.update({
+      where: { id: companyId },
+      data: { settings: JSON.stringify(currentSettings) }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        lateCancellationInterceptEnabled: currentSettings.lateCancellationInterceptEnabled,
+        lateCancellationTargetStatuses: currentSettings.lateCancellationTargetStatuses
+      },
+      message: 'تم حفظ إعدادات اعتراض الإلغاء المتأخر بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ [CANCELLATION-SETTINGS] Error updating:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update cancellation settings',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
 
 
