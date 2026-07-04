@@ -38,8 +38,12 @@ class SyncRequest(BaseModel):
 async def _download_image(url: str) -> tuple[bytes, str] | None:
     if not url:
         return None
+    if url.startswith("/"):
+        from src.config import get_settings
+        settings = get_settings()
+        url = settings.maxp_api_url.rstrip("/") + url
     try:
-        async with httpx.AsyncClient(timeout=15) as c:
+        async with httpx.AsyncClient(timeout=15, verify=False) as c:
             resp = await c.get(url)
             if resp.status_code != 200:
                 return None
