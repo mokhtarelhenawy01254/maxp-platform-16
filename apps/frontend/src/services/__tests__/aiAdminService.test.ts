@@ -24,11 +24,15 @@ describe("aiAdminService", () => {
   });
 
   it("getProviders returns data from apiClient", async () => {
-    mockGet.mockResolvedValue({ data: ["OPENAI", "ANTHROPIC"] });
+    const apiProviders = [
+      { name: "OPENAI", display_name: "OpenAI", adapter_type: "openai_compat", base_url: "https://api.openai.com/v1", default_model: "gpt-4o-mini", is_active: true },
+      { name: "ANTHROPIC", display_name: "Anthropic Claude", adapter_type: "anthropic_native", base_url: "https://api.anthropic.com", default_model: "claude-3-5-sonnet-20241022", is_active: true },
+    ];
+    mockGet.mockResolvedValue({ data: apiProviders });
 
     const result = await aiAdminService.getProviders();
 
-    expect(result).toEqual(["OPENAI", "ANTHROPIC"]);
+    expect(result).toEqual(apiProviders);
     expect(mockGet).toHaveBeenCalledWith("/ai-admin/providers");
   });
 

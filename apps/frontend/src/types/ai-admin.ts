@@ -9,7 +9,14 @@ export interface AiKey {
   companyId?: string;
 }
 
-export type AiProvider = string;
+export interface AiProvider {
+  name: string;
+  display_name: string;
+  adapter_type: string;
+  base_url: string;
+  default_model: string;
+  is_active: boolean;
+}
 
 export interface CreateAiKeyPayload {
   provider: string;

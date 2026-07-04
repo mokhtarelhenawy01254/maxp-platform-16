@@ -23,7 +23,11 @@ describe("useAiAdminData", () => {
   });
 
   it("useAiProviders returns provider list", async () => {
-    mockGetProviders.mockResolvedValue(["OPENAI", "ANTHROPIC"]);
+    const providers = [
+      { name: "OPENAI", display_name: "OpenAI", adapter_type: "openai_compat", base_url: "https://api.openai.com/v1", default_model: "gpt-4o-mini", is_active: true },
+      { name: "ANTHROPIC", display_name: "Anthropic Claude", adapter_type: "anthropic_native", base_url: "https://api.anthropic.com", default_model: "claude-3-5-sonnet-20241022", is_active: true },
+    ];
+    mockGetProviders.mockResolvedValue(providers);
 
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -35,7 +39,7 @@ describe("useAiAdminData", () => {
     const { result } = renderHook(() => useAiProviders(), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(["OPENAI", "ANTHROPIC"]);
+    expect(result.current.data).toEqual(providers);
   });
 
   it("useAiProviders returns empty array when API returns empty", async () => {

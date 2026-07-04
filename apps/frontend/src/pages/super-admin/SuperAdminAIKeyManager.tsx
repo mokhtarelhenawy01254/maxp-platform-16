@@ -100,9 +100,10 @@ function KeyManagerContent() {
 
   const providerList = useMemo(() => {
     if (!Array.isArray(providers)) return [];
-    return providers.filter(
-      (p, i, arr) => typeof p === "string" && arr.indexOf(p) === i,
-    );
+    return providers
+      .filter((p): p is AiProvider => p != null && typeof p.name === "string")
+      .map((p) => p.name)
+      .filter((name, i, arr) => arr.indexOf(name) === i);
   }, [providers]);
 
   const filteredKeys = useMemo(() => {

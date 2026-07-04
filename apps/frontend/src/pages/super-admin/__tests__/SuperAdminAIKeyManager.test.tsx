@@ -32,7 +32,11 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 
-const mockProviders = ["OPENAI", "ANTHROPIC", "GOOGLE"];
+const mockProviders = [
+  { name: "OPENAI", display_name: "OpenAI", adapter_type: "openai_compat", base_url: "https://api.openai.com/v1", default_model: "gpt-4o-mini", is_active: true },
+  { name: "ANTHROPIC", display_name: "Anthropic Claude", adapter_type: "anthropic_native", base_url: "https://api.anthropic.com", default_model: "claude-3-5-sonnet-20241022", is_active: true },
+  { name: "GOOGLE", display_name: "Google Gemini", adapter_type: "openai_compat", base_url: "https://generativelanguage.googleapis.com/v1beta/openai/", default_model: "gemma-3-27b-it", is_active: true },
+];
 
 const mockKeys = [
   {
