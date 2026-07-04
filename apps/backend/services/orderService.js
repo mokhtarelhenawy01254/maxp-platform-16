@@ -871,6 +871,32 @@ class OrderService {
         if (!notes) notes = 'تم نقل الطلب إلى سلة المحذوفات';
       }
 
+      // 🛡️ Late Cancellation Intercept
+      if (status === 'CANCELLED' && order.company?.settings) {
+        try {
+          const settingsObj = typeof order.company.settings === 'string' 
+            ? JSON.parse(order.company.settings) 
+            : order.company.settings;
+            
+          if (settingsObj?.lateCancellationInterceptEnabled && Array.isArray(settingsObj?.lateCancellationTargetStatuses)) {
+            if (settingsObj.lateCancellationTargetStatuses.includes(currentStatus)) {
+              console.log(`⚠️ [ORDER-SERVICE-DEBUG] Intercepting cancellation for order ${order.orderNumber}. Changing to PENDING_CANCELLATION.`);
+              status = 'PENDING_CANCELLATION';
+              if (!notes) notes = 'تم طلب إلغاء الأوردر أثناء التجهيز';
+            }
+          }
+        } catch (e) {
+          console.error('❌ [ORDER-SERVICE-DEBUG] Error parsing company settings for late cancellation intercept:', e);
+        }
+      }
+      
+      // 🚫 Block Scanner / Shipping Progression for PENDING_CANCELLATION
+      if (currentStatus === 'PENDING_CANCELLATION' && ['PREPARING', 'QUALITY_CHECK', 'PACKAGED', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'].includes(status)) {
+        if (!isOverride) {
+          throw createOrderStatusError("تم حظر الإسكانر: الأوردر به طلب إلغاء معلق ويجب حسمه أولاً.");
+        }
+      }
+
       if (!skipCallAttemptGuard) {
         this.assertCallAttemptRequirement(order, status);
       }

@@ -91,6 +91,7 @@ const EMPTY_STAGE_COUNTS: StageCounts = {
   PACKAGED: 0,
   READY_TO_SHIP: 0,
   STOCK_SHORTAGE: 0,
+  PENDING_CANCELLATION: 0,
 };
 
 const EMPTY_PAGINATION: PreparationQueuePagination = {

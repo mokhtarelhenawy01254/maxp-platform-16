@@ -6,7 +6,8 @@ export type StageKey =
   | "QUALITY_CHECK"
   | "PACKAGED"
   | "READY_TO_SHIP"
-  | "STOCK_SHORTAGE";
+  | "STOCK_SHORTAGE"
+  | "PENDING_CANCELLATION";
 
 export type StageFilter = "ALL" | StageKey;
 export type StockFilter = "all" | "ready" | "shortage";

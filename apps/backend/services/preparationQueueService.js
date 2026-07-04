@@ -144,6 +144,9 @@ const normalizePreparationStage = (status) => {
   if (['READY', 'READY_TO_SHIP'].includes(normalized)) {
     return 'READY_TO_SHIP';
   }
+  if (normalized === 'PENDING_CANCELLATION') {
+    return 'PENDING_CANCELLATION';
+  }
   return null;
 };
 

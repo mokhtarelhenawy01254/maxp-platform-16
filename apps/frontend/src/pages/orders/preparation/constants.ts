@@ -118,6 +118,12 @@ export const STAGE_DEFINITIONS: Array<{
     colorClass: "bg-rose-100 text-rose-800 border-rose-200",
     description: "طلبات متوقفة بسبب نقص المخزون أو انتظار تحويل",
   },
+  {
+    key: "PENDING_CANCELLATION",
+    label: "إلغاء قيد التنفيذ",
+    colorClass: "bg-red-100 text-red-800 border-red-300 shadow-sm shadow-red-200 animate-pulse",
+    description: "طلبات طلب العميل إلغاءها أثناء فترة التجهيز - يجب إيقافها فوراً",
+  },
 ];
 
 export const SOURCE_LABELS: Record<string, string> = {

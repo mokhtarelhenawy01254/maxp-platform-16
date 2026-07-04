@@ -13,6 +13,7 @@ import {
   Copy,
   Package,
   CircleDollarSign,
+  AlertOctagon,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
@@ -27,6 +28,7 @@ import OrderWorkflow from "../admin/OrderWorkflow";
 import OrderConfirmationSettings from "./OrderConfirmationSettings";
 import OrderPreparationSettings from "./OrderPreparationSettings";
 import MinimumOrderSettings from "./MinimumOrderSettings";
+import LateCancellationSettings from "./LateCancellationSettings";
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Order Settings Page with Sidebar Tabs
@@ -44,7 +46,8 @@ type TabId =
   | "columns"
   | "incomplete"
   | "confirmation"
-  | "preparation";
+  | "preparation"
+  | "late_cancellation";
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
@@ -59,6 +62,7 @@ const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "incomplete",
   "confirmation",
   "preparation",
+  "late_cancellation",
 ];
 
 const isOrderSettingsTabId = (value: string): value is TabId =>
@@ -188,6 +192,12 @@ const OrderSettings: React.FC = () => {
       icon: Package,
       description: "إعدادات المخزن، الجودة، والإجراءات الجماعية",
     },
+    {
+      id: "late_cancellation",
+      label: "الإلغاء المتأخر",
+      icon: AlertOctagon,
+      description: "إعدادات اعتراض الإلغاء أثناء التجهيز",
+    },
   ];
 
   return (
@@ -271,6 +281,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "workflow" && <OrderWorkflow isEmbedded={true} />}
             {activeTab === "confirmation" && <OrderConfirmationSettings />}
             {activeTab === "preparation" && <OrderPreparationSettings />}
+            {activeTab === "late_cancellation" && <LateCancellationSettings />}
           </div>
         </div>
       </div>

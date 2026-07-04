@@ -6,7 +6,7 @@ import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon, TruckIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon, TruckIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
@@ -198,6 +198,29 @@ const OrderDetails: React.FC = () => {
   const showOrderAttributionCard = !isMerchant && hasOrderCampaignAttributionApp;
   const showConfirmationDistributionCard =
     !isMerchant && hasOrderConfirmationDistributionApp;
+
+  // Late Cancellation Logic
+  const companySettings = useMemo(() => {
+    if (!company?.settings) return {};
+    try {
+      return typeof company.settings === "string"
+        ? JSON.parse(company.settings)
+        : company.settings;
+    } catch (e) {
+      return {};
+    }
+  }, [company?.settings]);
+
+  const lateCancellationInterceptEnabled =
+    companySettings?.lateCancellationInterceptEnabled || false;
+  const lateCancellationTargetStatuses =
+    companySettings?.lateCancellationTargetStatuses || [];
+  const showLateCancellationButton =
+    canUpdateOrderStatus &&
+    lateCancellationInterceptEnabled &&
+    lateCancellationTargetStatuses.includes(
+      order?.status?.toUpperCase() || "",
+    );
 
   // Auth Check
   useEffect(() => {
@@ -853,6 +876,20 @@ const OrderDetails: React.FC = () => {
               >
                 <TruckIcon className="ml-2 -mr-0.5 h-4 w-4" />
                 تسليم جزئي
+              </button>
+            )}
+            {showLateCancellationButton && (
+              <button
+                onClick={() => {
+                  if (confirm("هل أنت متأكد من طلب إلغاء هذا الطلب أثناء فترة التجهيز؟")) {
+                    void updateStatus("PENDING_CANCELLATION", "تم طلب إلغاء الأوردر من المودريتور");
+                  }
+                }}
+                disabled={updating}
+                className="inline-flex items-center px-3 py-2 border border-rose-300 shadow-sm text-sm leading-4 font-medium rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-700 dark:hover:bg-rose-900/30"
+              >
+                <XCircleIcon className="ml-2 -mr-0.5 h-4 w-4" />
+                طلب إلغاء الأوردر
               </button>
             )}
           </>

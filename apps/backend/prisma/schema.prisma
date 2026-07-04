@@ -2603,6 +2603,7 @@ enum OrderStatus {
   PACKAGED
   ON_HOLD_PREP
   PARTIALLY_DELIVERED
+  PENDING_CANCELLATION
 }
 
 enum PaymentStatus {
