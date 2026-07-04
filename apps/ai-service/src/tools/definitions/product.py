@@ -185,7 +185,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     result = await product_tools.search_products(
         input_data.company_id or "",
         query,
-        limit=limit,
+        limit=limit or 20,
         use_vector=input_data.use_vector,
         product_size=input_data.product_size,
         product_color=input_data.product_color,
@@ -194,26 +194,8 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     )
     products = result.get("products", [])
 
-    # Semantic fallback: text search returned no results → try vector search
-    if not products and query and not input_data.list_all and input_data.use_vector:
-        vec_results = await vector_product_search(
-            company_id=input_data.company_id or "",
-            query=query,
-            limit=limit,
-        )
-        if vec_results:
-            top_score = max((r.get("score", 0) for r in vec_results), default=0)
-            # Low confidence → query is likely a catalog-browse intent, return full catalog
-            if top_score < 0.65:
-                catalog = await product_tools.search_products(
-                    input_data.company_id or "", "", limit=50, use_vector=False,
-                )
-                cat_products = catalog.get("products", [])
-                if cat_products:
-                    return {"results": cat_products, "count": catalog.get("count", len(cat_products)), "listAll": True, "searchType": "text"}
-            products = vec_results
-            return {"results": products, "count": len(products), "listAll": False, "searchType": "semantic"}
-        # Vector search returned nothing (no embeddings seeded) → return full catalog
+    # Final fallback: if query returned no products, return the full catalog
+    if not products:
         catalog = await product_tools.search_products(
             input_data.company_id or "", "", limit=50, use_vector=False,
         )
