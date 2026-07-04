@@ -319,7 +319,7 @@ const {
 } = require('./production-facebook-fix');
 
 // Send message to Facebook Messenger
-async function sendFacebookMessage(recipientId, messageContent, messageType = 'TEXT', pageId = null) {
+async function sendFacebookMessage(recipientId, messageContent, messageType = 'TEXT', pageId = null, replyToMessageId = null) {
   try {
     //console.log(`📤 [FACEBOOK-SEND] Sending message to ${recipientId}`);
 
@@ -420,6 +420,7 @@ async function sendFacebookMessage(recipientId, messageContent, messageType = 'T
       companyId: pageData.companyId,
       messageId: messageHash,
       source: 'send_facebook_message',
+      replyToMessageId,
     });
 
     if (result.success) {
@@ -459,6 +460,7 @@ async function sendFacebookMessageViaDeliveryOutbox({
   messageType = 'TEXT',
   pageId,
   pageAccessToken,
+  replyToMessageId = null,
 } = {}) {
   return sendProductionFacebookMessage(
     recipientId,
@@ -466,6 +468,7 @@ async function sendFacebookMessageViaDeliveryOutbox({
     messageType,
     pageId,
     pageAccessToken,
+    replyToMessageId,
   );
 }
 
@@ -2113,7 +2116,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
               
               if (accessToken) {
-                const result = await sendFacebookMessage(senderId, replyText, 'TEXT', messagePageId);
+                const result = await sendFacebookMessage(senderId, replyText, 'TEXT', messagePageId, fbMessageId);
                 
                 if (result.success) {
                   console.log(`✅ [AI-AUTOREPLY] AI reply sent successfully to Facebook.`);

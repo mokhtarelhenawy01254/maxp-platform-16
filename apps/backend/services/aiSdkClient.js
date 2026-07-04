@@ -100,8 +100,11 @@ function normalizeDreamerResponse(payload = {}, conversations = []) {
  * @returns {Promise<{status: string, threadId: string, reply: string|null, draftId: string|null}>}
  */
 async function sendChatMessage({ companyId, customerId, message, threadId, channel = "chat", memoryContext = null }) {
+  const { enrichMemoryContextWithPostProduct } = require('../utils/postProductMappingHelper');
+  const enrichedContext = await enrichMemoryContextWithPostProduct(companyId, threadId, memoryContext);
+
   const url = new URL('/chat', getAiServiceUrl());
-  const body = JSON.stringify({ message, thread_id: threadId || null, channel, memory_context: memoryContext });
+  const body = JSON.stringify({ message, thread_id: threadId || null, channel, memory_context: enrichedContext });
   const token = getAiServiceToken();
 
   const response = await fetch(url.toString(), {

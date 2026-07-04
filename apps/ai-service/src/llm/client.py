@@ -400,11 +400,13 @@ class LLMClient:
         tools: list[dict[str, Any]] | None,
         options: dict[str, Any],
     ) -> ProviderResponse:
+        import httpx
         import openai
 
         client = openai.AsyncOpenAI(
             base_url=self.base_url,
             api_key=self.api_key,
+            timeout=httpx.Timeout(60.0, connect=10.0),
         )
 
         body_messages = self._normalize_openai_messages(messages)

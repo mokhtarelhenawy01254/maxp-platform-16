@@ -1,5 +1,24 @@
 # Backend Bugs Log
 
+### [FIX] AI Service Sandbox Empty Reply (SKILL.md & recentMessages Context Gaps)
+- **Date**: 2026-07-04
+- **Description**: AI Sandbox / chat pipeline returned empty replies and fell back to raw formatted tool results when searching for products that did not exist (e.g., "شنطة ظهر نايك"), or hung for 180 seconds due to API timeout errors.
+- **Root Cause**:
+  1. **Missing SKILL.md Block**: In `skills_pipeline.py`, the primary `_llm_call` successfully loaded the agent's skills block (`get_skills_block`) into the system prompt. However, the follow-up completion call `_build_followup_messages` only used `get_agent_instructions`, omitting the skills instructions. Because of this, the follow-up model had no instructions on how to handle empty tool results (such as suggesting alternative items).
+  2. **Missing recentMessages**: The follow-up messages builder did not include the conversation history `recentMessages` in the chat context, passing only the current user message `ctx.message`. This caused the model to lose the conversational thread.
+  3. **No Timeout in AsyncOpenAI**: The `AsyncOpenAI` client instantiation in `client.py` did not specify a `timeout` parameter, defaulting to 600 seconds, which caused requests to hang for up to 180 seconds until the backend gateway timeout intervened.
+- **Resolution**:
+  1. Updated `_build_followup_messages` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to fetch and inject the `skills_block` using `get_skills_block` if `ctx.agent.allowed_skills` is present.
+  2. Updated `_build_followup_messages` to fetch `recentMessages` from `ctx.external_memory_context` and prepend the conversation history prior to the current user message.
+  3. Configured `timeout=httpx.Timeout(60.0, connect=10.0)` in the `AsyncOpenAI` client initialization in `apps/ai-service/src/llm/client.py`.
+  4. Updated unit tests in `tests/pipeline/test_skills_pipeline.py` and `tests/llm/test_gemma_client.py` to align with the new design behaviors (expecting empty text when tool calls exist, and empty formatting results).
+  5. Resolved a multimodal vision context weakness in `_build_followup_messages` by replacing the plain string `ctx.message` with `build_user_content(ctx.message, ctx.attachments)` for the current user message, ensuring images/attachments are preserved for the follow-up LLM.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+  - `apps/ai-service/src/llm/client.py`
+  - `apps/ai-service/tests/pipeline/test_skills_pipeline.py`
+  - `apps/ai-service/tests/llm/test_gemma_client.py`
+
 ### [FIX] DeepSeek reasoning_content Stripped in OpenAI Messages Serialization (400 Bad Request)
 - **Date**: 2026-07-04
 - **Description**: The Sandbox and chat pipeline fell back to raw formatted tool results instead of returning the agent's natural friendly Arabic persona response.

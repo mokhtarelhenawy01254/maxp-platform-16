@@ -489,7 +489,7 @@ async function validateFacebookRecipientStrict(recipientId, pageId, accessToken)
  * PRODUCTION: Enhanced Facebook message sending with strict validation
  * Will REFUSE to send if validation fails
  */
-async function sendProductionFacebookMessage(recipientId, messageContent, messageType = 'TEXT', pageId, accessToken) {
+async function sendProductionFacebookMessage(recipientId, messageContent, messageType = 'TEXT', pageId, accessToken, replyToMessageId = null) {
   let resolvedMessageContent = messageContent;
 
   try {
@@ -609,6 +609,13 @@ async function sendProductionFacebookMessage(recipientId, messageContent, messag
     } else {
       // Default to text for unknown types
       messageData.message.text = resolvedMessageContent;
+    }
+
+    // If replying to a specific message, include reply_to reference
+    if (replyToMessageId) {
+      messageData.message.reply_to = {
+        mid: replyToMessageId
+      };
     }
 
     //console.log(`📤 [PROD-SEND] Prepared message data:`, JSON.stringify(messageData, null, 2));

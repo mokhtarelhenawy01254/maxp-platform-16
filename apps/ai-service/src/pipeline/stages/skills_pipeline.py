@@ -68,6 +68,12 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     ctx.system_prompt = base_prompt
     system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
 
+    # Inject referred product mapping context (if present)
+    referred_product = ctx.external_memory_context.get("referredProduct")
+    if referred_product and isinstance(referred_product, dict):
+        product_info = f"\n\n[معلومات النظام: العميل تواصل معنا عبر إعلان/منشور مرتبط بالمنتج التالي:\nالاسم: {referred_product.get('name')}\nالسعر: {referred_product.get('price')} جنيه\nالرابط/المعرف: {referred_product.get('id')}\nالرجاء افتراض اهتمام العميل المباشر بهذا المنتج وتوجيه المحادثة لتأكيد شرائه.]"
+        system_prompt += product_info
+
     # Inject full skill instructions (SKILL.md) into system prompt
     if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
         skills_block = get_skills_block(ctx.agent.allowed_skills)
@@ -385,12 +391,27 @@ def _build_followup_messages(
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
     system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
+
+    # Inject SKILL.md instructions (same as primary _llm_call)
+    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+        skills_block = get_skills_block(ctx.agent.allowed_skills)
+        if skills_block:
+            system_prompt += f"\n\n{skills_block}"
+
     messages = [
         {"role": "system", "content": system_prompt},
     ]
 
-    # Original user message
-    messages.append({"role": "user", "content": ctx.message})
+    # Add recent conversation history (same as primary _llm_call)
+    recent = ctx.external_memory_context.get("recentMessages", [])
+    for msg in recent:
+        role = "assistant" if msg.get("role") == "assistant" else "user"
+        messages.append({"role": role, "content": msg.get("content", "")})
+
+    # Current user message — multipart if attachments present
+    from src.context.multimodal import build_user_content
+    user_content = build_user_content(ctx.message, ctx.attachments)
+    messages.append({"role": "user", "content": user_content})
 
     # Assistant response with tool_calls (required by DeepSeek API)
     assistant_msg = {

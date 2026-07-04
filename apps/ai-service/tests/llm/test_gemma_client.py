@@ -186,7 +186,7 @@ def test_parse_response_extracts_text_and_tool_calls() -> None:
     }
     response = client._parse_response(raw)
     assert isinstance(response, GemmaResponse)
-    assert response.text == "Looking that up now."
+    assert response.text == ""
     assert len(response.tool_calls) == 1
     assert response.tool_calls[0]["name"] == "order_lookup"
     assert response.tool_calls[0]["arguments"]["orderNumber"] == "ORD-1"

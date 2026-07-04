@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-04 / 2026-03-09
+- **AI Service Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors, context gaps, and multimodal image mapping issues in follow-up chat completions:
+  1. Updated `_build_followup_messages` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to inject the `skills_block` using `get_skills_block` so the follow-up LLM can see the full skill instructions (such as offering alternatives for empty results).
+  2. Injected conversation history (`recentMessages`) in the follow-up messages context to prevent the LLM from losing conversational context.
+  3. Added a 60-second request timeout and 10-second connect timeout for `AsyncOpenAI` in `apps/ai-service/src/llm/client.py` using `httpx.Timeout` to prevent requests from hanging indefinitely.
+  4. Updated unit tests in `tests/pipeline/test_skills_pipeline.py` and `tests/llm/test_gemma_client.py` to align with the design decisions of the pipeline.
+  5. Resolved a multimodal context gap in `_build_followup_messages` by swapping the plain text `ctx.message` for `build_user_content(ctx.message, ctx.attachments)` for the current user message, ensuring vision-capable models retain access to attached images in the follow-up completion.
 - **DeepSeek reasoning_content Sandbox Fix (FIX)**: Fixed a bug where DeepSeek-R1 (thinking mode) follow-up completions failed on tools synthesis turns, returning raw lists instead of Yasmine's Egyptian Arabic sales rep replies:
   1. Updated `_normalize_openai_messages` in `apps/ai-service/src/llm/client.py` to preserve `reasoning_content` and `reasoning` keys in the serialized assistant messages array. This satisfies DeepSeek's validation requirement that assistant messages carrying reasoning steps must pass them back in consecutive turns, resolving the 400 Bad Request API errors.
   2. Fixed an `ImportError` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` where `ALL_TOOLS` was incorrectly imported from `src.skills.integration` instead of `src.tools.registry`.

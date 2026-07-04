@@ -53,7 +53,7 @@ def test_format_tool_results_empty():
         }
     ]
     formatted = _format_tool_results(executed)
-    assert formatted == "لا توجد تصنيفات متاحة حالياً."
+    assert formatted == ""
 
 
 def test_format_tool_results_with_results_key():

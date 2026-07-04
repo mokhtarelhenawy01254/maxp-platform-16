@@ -50,3 +50,12 @@ The fix adds two fallbacks:
 - Message normalization (`_normalize_openai_messages` in `client.py`) automatically serializes Python dictionary arguments within tool calls to JSON strings to maintain compatibility with DeepSeek and standard OpenAI-compatible API schemas.
 - In `_generate_openai_compat`, if `tool_choice` is set to `"none"`, the `tools` parameter is omitted entirely from the chat completion payload, avoiding provider-level tool definition processing errors.
 
+## Follow-up Completion Context & Timouts (SOTA 2026)
+
+To prevent `AI_SANDBOX_EMPTY_REPLY` failures and timeout hangs during multi-turn tool execution, the follow-up completion call (`_build_followup_messages`) is strictly aligned with the primary call:
+
+1. **System Prompt Alignment**: Full skill instructions (`get_skills_block`) are injected into the system prompt of the follow-up call, allowing the model to remember custom instructions (e.g. suggesting alternatives on empty search results) during tool output synthesis.
+2. **Context Retention**: Previous conversation turns (`recentMessages`) are retrieved and prepended to the user message, maintaining complete thread history.
+3. **Multimodal/Vision Support**: Current user messages are processed via `build_user_content(ctx.message, ctx.attachments)` rather than plain text, preserving attached image media context for vision-capable models.
+4. **Client Timeouts**: Standard `AsyncOpenAI` client instances configure an explicit timeout wrapper (`httpx.Timeout(60.0, connect=10.0)`) to abort slow or unresponsive provider APIs early.
+
