@@ -8,7 +8,7 @@
  * 2026 SOTA: Silent handoff — the customer never knows the AI failed.
  */
 
-const { getIO } = require('./socketService');
+const socketService = require('./socketService');
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
 /**
@@ -38,7 +38,7 @@ async function flagThreadForHumanTakeover({
 }) {
   try {
     const prisma = getSharedPrismaClient();
-    const io = getIO();
+    const io = socketService.getIO();
     const timestamp = new Date();
 
     // 1. Log the escalation event in ActivityLog
