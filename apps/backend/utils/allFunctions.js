@@ -1546,6 +1546,13 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         // حفظ جميع المرفقات
         attachmentsData = attachments;
 
+        // Normalize Facebook attachment format for AI service
+        attachmentsData = attachmentsData.map(a => ({
+          type: a.type || 'image',
+          url: a.payload?.url || a.url || a.payload?.sticker_id || '',
+          detail: 'high'
+        })).filter(a => a.url);
+
         // تحديد نوع الرسالة بناءً على أول مرفق
         const attachment = attachments[0];
         const attachmentType = attachment.type.toLowerCase();
