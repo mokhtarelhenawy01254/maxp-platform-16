@@ -49,7 +49,7 @@ async function flagThreadForHumanTakeover({
           category: 'AI',
           action: 'AI_SILENT_ESCALATION',
           description: `AI failed on ${channel}: ${reason}`,
-          details: JSON.stringify({
+          metadata: JSON.stringify({
             conversationId: conversationId || null,
             customerPhone: customerPhone || null,
             customerId: customerId || null,
@@ -58,7 +58,6 @@ async function flagThreadForHumanTakeover({
             channel,
             timestamp: timestamp.toISOString(),
           }),
-          createdAt: timestamp,
         },
       });
     } catch (logErr) {

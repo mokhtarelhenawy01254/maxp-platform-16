@@ -829,9 +829,6 @@ const AgentSkillsPage = React.lazy(
 const AgentToolsPage = React.lazy(
   () => import("./pages/admin/AgentToolsPage"),
 );
-const AIAgentSandboxPage = React.lazy(
-  () => import("./pages/admin/ai-agent-sandbox/AIAgentSandboxPage"),
-);
 const AIKnowledgeQuestionsPage = React.lazy(
   () => import("./pages/admin/AIKnowledgeQuestionsPage"),
 );
@@ -1884,14 +1881,6 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SkillDetailPage />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/ai-hub-test"
-              element={
-                <Layout fullWidth>
-                  <AIHubLayout />
                 </Layout>
               }
             />

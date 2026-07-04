@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useState, useEffect } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bot, Building2, Send, Loader2, FlaskConical } from "lucide-react";
+import { Bot, Building2, Send, Loader2 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import tokenManager from "../../utils/tokenManager";
