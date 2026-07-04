@@ -122,13 +122,6 @@ function KeyManagerContent() {
     return keys.filter((k) => k.is_active).length;
   }, [keys]);
 
-  function handleCopy(apiKey: string) {
-    navigator.clipboard.writeText(apiKey).then(
-      () => toast.success("تم نسخ المفتاح"),
-      () => toast.error("فشل النسخ"),
-    );
-  }
-
   function handleToggle(key: AiKey) {
     toggleStatusMutation.mutate({ id: key.id, isActive: !key.is_active });
   }
@@ -141,6 +134,10 @@ function KeyManagerContent() {
   }
 
   function handleTest(key: AiKey) {
+    if (!key.api_key) {
+      toast.error("المفتاح الحقيقي غير متاح للاختبار (الـ API لا تعيد المفتاح الكامل)");
+      return;
+    }
     testKeyMutation.mutate(
       { provider: key.provider, apiKey: key.api_key },
       {
@@ -151,6 +148,18 @@ function KeyManagerContent() {
           setTestTarget({ key, error: err?.message || "فشل الاختبار" });
         },
       },
+    );
+  }
+
+  function handleCopyKey(apiKey?: string, masked?: string) {
+    const keyToCopy = apiKey || masked;
+    if (!keyToCopy) {
+      toast.error("المفتاح غير متاح للنسخ");
+      return;
+    }
+    navigator.clipboard.writeText(keyToCopy).then(
+      () => toast.success("تم نسخ المفتاح"),
+      () => toast.error("فشل النسخ"),
     );
   }
 
@@ -260,7 +269,7 @@ function KeyManagerContent() {
                   </TableCell>
                   <TableCell>
                     <span className="font-mono text-xs text-muted-foreground">
-                      {k.api_key ? `${k.api_key.substring(0, 12)}...` : "\u2014"}
+                      {k.api_key_masked || (k.api_key ? `${k.api_key.substring(0, 12)}...` : "\u2014")}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -285,7 +294,7 @@ function KeyManagerContent() {
                       <button
                         className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
                         title="نسخ المفتاح"
-                        onClick={() => handleCopy(k.api_key)}
+                        onClick={() => handleCopyKey(k.api_key, k.api_key_masked)}
                       >
                         <Copy className="size-3.5" />
                       </button>

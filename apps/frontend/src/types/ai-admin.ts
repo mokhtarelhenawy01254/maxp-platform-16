@@ -2,7 +2,8 @@ export interface AiKey {
   id: string;
   name: string;
   provider: string;
-  api_key: string;
+  api_key?: string;
+  api_key_masked?: string;
   key_type: string;
   is_active: boolean;
   priority?: number;
