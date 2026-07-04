@@ -2021,7 +2021,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               message: aiCustomerContent,
               threadId: conversation.id,
               channel: 'FACEBOOK',
-              memoryContext
+              memoryContext,
+              attachments: attachmentsData.length > 0 ? attachmentsData : undefined
             });
 
             // Silent Escalation: AI failed → flag for human takeover, send nothing to customer

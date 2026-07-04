@@ -1,74 +1,41 @@
-# Session Log
+# Session Log — 2026-07-04
 
-<!-- Format:
-## YYYY-MM-DD — Topic
-- Goal: 
-- Done: 
-- Decisions: 
-- Next: 
--->
+## Facebook AI Auto-Reply Fixes — Final Summary
 
-## 2026-07-04 — Browser Session Isolation Protocol
-- Goal: Ensure each AI conversation uses isolated browser sessions (no cross-contamination)
-- Decision: agent-browser `--session <unique-name>` for isolated daemon+state; chrome-devtools `isolatedContext` for page isolation
-- Convention: `conv-<topic>` naming, updated in memory per conversation
-- Current session: `conv-main`
+### Issues Fixed
 
-## 2026-07-02 — Memory + Knowledge Update System (Complete)
-- Goal: Build cross-session memory system + automated AI knowledge updates
-- Done:
-  - Created `.opencode/memory/` core files (project-context, user-preferences, decisions, learned-patterns)
-  - Created `ai-knowledge-base.md` with latest verified AI developments: OpenAI (GPT-5.5, 5.4, 5.6 preview, Agents SDK), Anthropic (Claude Fable 5, Opus 4.8, Sonnet 5, Haiku 4.5), Google (Gemini 3.x series, Veo 3.1, Lyria 3, open models), MCP 2026 Roadmap, 2026 agent patterns
-  - Enhanced AGENTS.md with Session Initialization Protocol, Context Compression Protocol, Knowledge Update Protocol
-  - Created `.opencode/scripts/refresh-ai-knowledge.ps1` for weekly automated research
-  - Scheduled weekly job `ai-knowledge-refresh-weekly` (Mondays 9AM) via Windows Task Scheduler
-  - Refreshed source-map.md dates for verified sources
-- Decisions: Memory-first approach; AI must read knowledge base before making claims; weekly automated research
-- Created `.learnings/` (LEARNINGS.md, ERRORS.md, FEATURE_REQUESTS.md) with self-improvement logging
-- Added On-Demand Research Trigger to AGENTS.md (user says "research X" → I fetch + update)
-- Updated source-map.md with 2026-07-02 verified sources
-- Browsed official docs: OpenAI Agents SDK, OpenAI Models, Anthropic Models, MCP 2026 Roadmap, Google Vertex AI Models
-- Added GitHub as AI source: GitHub Trending (weekly), GitHub Releases API, GitHub Issues
-  - Updated source-map.md with GitHub intelligence sources
-  - Updated AGENTS.md Knowledge Update Protocol with GitHub sources
-  - Updated refresh script to check GitHub trending + releases
-  - Updated ai-knowledge-base.md with GitHub usage section
-- Added MaxP Internal sources to tracking:
-  - SDK layer (`sdk_gateway.py`, `sdk_provider.py`, `sdk_workflow.py`)
-  - Agent creation system (14 templates, 4-file contract, spawn API, manager tools)
-  - Updated source-map.md with 5 internal MaxP source entries
-  - Updated ai-knowledge-base.md with SDK section + Agent Creation section
-  - Updated refresh script to git-log internal SDK files + detect new templates
-- Verified system alignment with 2026 industry trends (researched live sources):
-  - AGENTS.md protocol → confirmed as 60k+ repos industry standard, stewarded by Agentic AI Foundation
-  - Claude Code memory patterns (CLAUDE.md + Auto Memory) → our session init protocol matches
-  - OpenAI Agents SDK harness (AGENTS.md, skills, memory, durable exec) → pattern confirmed
-  - All major platforms (OpenAI, Anthropic, Google, Cursor, Copilot) adopt AGENTS.md + memory files
-  - Updated source-map.md with verification dates and confidence ratings
-  - Updated ai-knowledge-base.md with AGENTS.md Protocol + Claude Code Memory sections
-  - Conclusion: MaxP system is 90%+ aligned; opportunities: nested AGENTS.md, auto memory, hooks
-- Next: Use this system going forward; update files after every session. User can trigger research with "ابحث عن X"
+1. **Prisma module path** — `silentEscalationService.js` used wrong path `../prisma/client`, fixed to `./sharedDatabase`
+2. **getIO undefined** — Destructured import loses `this`, fixed to `socketService.getIO()`
+3. **Python NoneType** — `dict.get(key, [])` returns `None` if key exists with null JSONB value. Fixed with `or []` at 4 locations
+4. **Missing category field** — activityLog.create() required `category` and `description`
+5. **field typo** — `details` → `metadata` in activityLog.create()
+6. **Default model** — changed to `deepseek-chat` to avoid Groq 429 rate limits
+7. **reply_to in Graph API v25.0** — Facebook's v25.0 API rejects `reply_to` in message object. Disabled.
 
-## 2026-07-04 — category_list formatting mismatch fix (Complete)
-- Goal: Fix "لا توجد تصنيفات متاحة حالياً" showing up when client asks for categories despite databases having them.
-- Done:
-  - Identified the root cause in `skills_pipeline.py`'s result formatter which only looked for `"products"` or `"items"` keys.
-  - Modified `_format_tool_results` to look for and format the `"categories"` key returned by the `category_list` tool.
-  - Created a new unit test suite `apps/ai-service/tests/pipeline/test_skills_pipeline.py` testing formatting.
-  - Ran the tests successfully using `uv run pytest` (3 passed).
-  - Staged changes and verified document compliance with `node scripts/verify-docs.js`.
-  - Updated `backend/Bugs.md`, `backend/Structure.md`, `backend/TEAM_SYNC.md`, and `apps/ai-service/docs/skills-pipeline-architecture.md`.
-- Decisions: Keep output formatting aligned with the specific fields returned by our AI tools.
-- Next: Monitor client interaction logs to ensure other tool results format correctly.
+### ياسمين Agent Configuration
 
-## 2026-07-04 — AI Sandbox Empty Reply & Context Gaps Fix (Complete)
-- Goal: Fix `AI_SANDBOX_EMPTY_REPLY` when catalog searches yield empty results, and resolve request hang issues.
-- Done:
-  - Identified 3 bugs: (1) `SKILL.md` block was omitted in `_build_followup_messages`, (2) `recentMessages` conversation history was omitted in follow-up, (3) `AsyncOpenAI` client had no timeout configuration (default 600s).
-  - Modified `_build_followup_messages` in `skills_pipeline.py` to inject `get_skills_block` and prepended `recentMessages` before the user message.
-  - Added `timeout=httpx.Timeout(60.0, connect=10.0)` to `AsyncOpenAI` client initialization in `client.py`.
-  - Updated unit tests in `tests/pipeline/test_skills_pipeline.py` and `tests/llm/test_gemma_client.py` to match the new design decisions.
-  - Ran pytest successfully (all 41 tests passed).
-  - Updated `backend/Bugs.md` and `backend/TEAM_SYNC.md` in compliance with codebase rules.
-- Decisions: Ensure follow-up completion calls receive identical system prompts and conversation history to the primary call to preserve instructions and context. Configure explicit connection and request timeouts on LLM clients to avoid unresponsive gateway hangs.
-- Next: Ready for staging deployment and live validation.
+- Changed channels from `["messenger"]` to include `"facebook"`
+- Added `provider: "DEEPSEEK"` and `keyId` to config
+- Model: `deepseek-v4-flash`
+
+### Root Causes Discovered
+
+1. Auto-reply saved AI response to DB but `sendFacebookMessage()` failed due to `reply_to` in Facebook API v25.0
+2. ياسمين had `"messenger"` in channels but channel resolution looked for `"facebook"`
+3. ياسمين had no `provider`/`keyId` in config, causing `ensure_client()` to fall back to generic routing
+
+### Files Modified
+
+- `apps/backend/services/silentEscalationService.js` — Prisma path, socketService import, category/description, details→metadata
+- `apps/ai-service/src/api/chat.py` — `or []` guards (2 places)
+- `apps/ai-service/src/pipeline/checkpointer.py` — `or []` guards (2 places)
+- `apps/ai-service/src/pipeline/sdk_workflow.py` — `or []` guard
+- `apps/backend/utils/production-facebook-fix.js` — Disabled `reply_to`
+- `apps/ai-service/.env` — `DEFAULT_MODEL=deepseek-chat`
+- Database: `ai.agents` table — channels and config for agent_LSqKxvBVSJL2AO7ItWQKZQ
+
+### Server Access
+- Host: 153.92.223.119 / srv974554.hstgr.cloud
+- Backend: root + Mokhtar1234@#
+- DB: appuser + mokhtar1234
+- PM2: maxp-ai-service, maxp-backend, maxp-webhook-worker
