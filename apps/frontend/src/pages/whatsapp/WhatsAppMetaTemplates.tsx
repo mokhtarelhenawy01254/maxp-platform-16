@@ -85,6 +85,27 @@ const statusIcon: Record<string, React.ComponentType<{ className?: string }>> = 
 
 const CATEGORIES = ["MARKETING", "UTILITY", "AUTHENTICATION"];
 
+/** Sanitize template name to Meta-allowed format: lowercase a-z, 0-9, underscore only */
+function sanitizeTemplateName(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
+/** Check if a string contains named variables like {{name}} instead of {{1}} */
+function hasNamedVariables(text: string): boolean {
+  const matches = text.match(/\{\{([^}]+)\}\}/g) || [];
+  return matches.some((m) => !/^\{\{\d+\}\}$/.test(m));
+}
+
+/** Validate button URL */
+function isValidButtonUrl(url: string): boolean {
+  if (!url) return true;
+  return url.startsWith("https://") || url.startsWith("http://");
+}
+
 const WhatsAppMetaTemplates: React.FC<{
   companyId?: string;
   companyName?: string;
@@ -151,9 +172,31 @@ const WhatsAppMetaTemplates: React.FC<{
   useEffect(() => { fetchSessions(); }, []);
   useEffect(() => { fetchTemplates(); }, [selectedSessionId]);
 
+  const sanitizedName = useMemo(() => sanitizeTemplateName(form.name), [form.name]);
+  const nameValid = sanitizedName.length >= 1 && sanitizedName.length <= 512;
+  const headerVarsOk = !form.headerText || !hasNamedVariables(form.headerText);
+  const bodyVarsOk = !form.bodyText || !hasNamedVariables(form.bodyText);
+  const buttonUrlOk = isValidButtonUrl(form.buttonUrl);
+
   const handleCreate = useCallback(async () => {
-    if (!form.name || !form.bodyText) {
+    if (!sanitizedName || !form.bodyText) {
       toast.error("اسم القالب ومحتوى الرسالة مطلوبان");
+      return;
+    }
+    if (!nameValid) {
+      toast.error("اسم القالب يجب أن يكون بين 1 و 512 حرف (أحرف إنجليزية صغيرة، أرقام، _ فقط)");
+      return;
+    }
+    if (!headerVarsOk) {
+      toast.error("المتغيرات في رأس الرسالة يجب أن تكون مرقمة: {{1}} بدلاً من {{name}}");
+      return;
+    }
+    if (!bodyVarsOk) {
+      toast.error("المتغيرات في محتوى الرسالة يجب أن تكون مرقمة: {{1}}, {{2}} بدلاً من أسماء");
+      return;
+    }
+    if (!buttonUrlOk) {
+      toast.error("رابط الزر يجب أن يبدأ بـ https://");
       return;
     }
     try {
@@ -168,25 +211,28 @@ const WhatsAppMetaTemplates: React.FC<{
         components.push({ type: "FOOTER", text: form.footerText });
       }
       if (form.buttonText) {
-        const buttons: any[] = [{ type: "URL", text: form.buttonText, url: form.buttonUrl || "https://" }];
+        const url = form.buttonUrl || "https://example.com";
+        const finalUrl = url.startsWith("http") ? url : `https://${url}`;
+        const buttons: any[] = [{ type: "URL", text: form.buttonText, url: finalUrl }];
         components.push({ type: "BUTTONS", buttons });
       }
 
       await apiClient.post(
         "/whatsapp-templates/templates",
-        { sessionId: selectedSessionId, name: form.name, language: form.language, category: form.category, components },
+        { sessionId: selectedSessionId, name: sanitizedName, language: form.language, category: form.category, components },
         withCompanyConfig(),
       );
-      toast.success("تم إنشاء القالب بنجاح");
+      toast.success("تم إنشاء القالب بنجاح — سيمر بمراجعة ميتا قبل التفعيل");
       setCreateOpen(false);
       setForm({ name: "", language: "en", category: "MARKETING", headerText: "", bodyText: "", footerText: "", buttonText: "", buttonUrl: "" });
       fetchTemplates();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "فشل إنشاء القالب");
+      const metaMsg = err?.response?.data?.error;
+      toast.error(metaMsg || "فشل إنشاء القالب", { duration: 8000 });
     } finally {
       setSending(false);
     }
-  }, [form, selectedSessionId, withCompanyConfig, fetchTemplates]);
+  }, [form, sanitizedName, nameValid, headerVarsOk, bodyVarsOk, buttonUrlOk, selectedSessionId, withCompanyConfig, fetchTemplates]);
 
   const handleDelete = useCallback(async (templateName: string) => {
     try {
@@ -321,7 +367,18 @@ const WhatsAppMetaTemplates: React.FC<{
             <div className="space-y-2">
               <Label>اسم القالب</Label>
               <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="example: order_update_promo" className="h-11" />
+                placeholder="مثال: payment_request أو طلب دفعة (يتحول تلقائياً)" className="h-11" dir="ltr" />
+              {form.name && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-[color:var(--color-muted-foreground)]">الاسم في Meta:</span>
+                  <code className={`rounded-md px-2 py-0.5 font-mono ${nameValid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-red-500/10 text-red-700 dark:text-red-300'}`}>
+                    {sanitizedName || '(غير صالح)'}
+                  </code>
+                </div>
+              )}
+              <p className="text-[11px] text-[color:var(--color-muted-foreground)]">
+                أحرف إنجليزية صغيرة وأرقام و _ فقط. الأحرف العربية والمسافات تُحوَّل تلقائياً.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -350,13 +407,23 @@ const WhatsAppMetaTemplates: React.FC<{
             <div className="space-y-2">
               <Label>رأس الرسالة (اختياري)</Label>
               <Input value={form.headerText} onChange={(e) => setForm((p) => ({ ...p, headerText: e.target.value }))}
-                placeholder="مرحباً {{name}}" className="h-11" />
+                placeholder="السلام عليكم يا {{1}}" className="h-11" />
+              {form.headerText && !headerVarsOk && (
+                <p className="text-[11px] text-red-500 dark:text-red-400">
+                  ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>محتوى الرسالة *</Label>
               <Textarea value={form.bodyText} onChange={(e) => setForm((p) => ({ ...p, bodyText: e.target.value }))}
-                placeholder={{ ar: "مرحباً {{1}}\nطلبك رقم {{2}} جاهز", en: "Hello {{1}}\nYour order #{{2}} is ready" } as any}
+                placeholder={"مرحباً {{1}}\nطلبك رقم {{2}} جاهز للاستلام."}
                 className="min-h-[120px]" />
+              {form.bodyText && !bodyVarsOk && (
+                <p className="text-[11px] text-red-500 dark:text-red-400">
+                  ⚠️ استخدم متغيرات مرقمة: {"{{1}}"}, {"{{2}}"} بدلاً من أسماء. Meta يتطلب ترقيم المتغيرات.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>تذييل الرسالة (اختياري)</Label>
@@ -372,7 +439,12 @@ const WhatsAppMetaTemplates: React.FC<{
               <div className="space-y-2">
                 <Label>رابط الزر (اختياري)</Label>
                 <Input value={form.buttonUrl} onChange={(e) => setForm((p) => ({ ...p, buttonUrl: e.target.value }))}
-                  placeholder="https://example.com/track" className="h-11" />
+                  placeholder="https://example.com/track" className="h-11" dir="ltr" />
+                {form.buttonUrl && !buttonUrlOk && (
+                  <p className="text-[11px] text-red-500 dark:text-red-400">
+                    ⚠️ الرابط يجب أن يبدأ بـ https:// — مثال: https://paypal.me/harfonline
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -62,8 +62,18 @@ async function createMetaTemplate(req, res) {
 
     res.json({ success: true, result });
   } catch (error) {
-    console.error('Error creating Meta template:', error);
-    res.status(500).json({ error: error.message || 'حدث خطأ أثناء إنشاء القالب' });
+    console.error('Error creating Meta template:', error?.response?.data || error);
+    const metaError = error?.response?.data?.error;
+    const statusCode = error?.response?.status || 500;
+    const errorMessage = metaError
+      ? `${metaError.message || 'Meta API error'}${metaError.error_user_title ? ` — ${metaError.error_user_title}` : ''}${metaError.error_user_msg ? `: ${metaError.error_user_msg}` : ''}`
+      : (error.message || 'حدث خطأ أثناء إنشاء القالب');
+    res.status(statusCode).json({
+      error: errorMessage,
+      metaErrorCode: metaError?.code,
+      metaErrorSubcode: metaError?.error_subcode,
+      metaFbTraceId: metaError?.fbtrace_id
+    });
   }
 }
 

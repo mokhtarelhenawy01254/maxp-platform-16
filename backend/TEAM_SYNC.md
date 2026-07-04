@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-04 / 2026-03-09
+- **WhatsApp Meta Template Creation 400 Error Fix (FIX)**: Fixed a critical bug where template creation requests to Meta Cloud API returned a 400 bad request error:
+  1. Updated `apps/backend/controller/whatsappMetaTemplateController.js` to forward Meta's detailed error responses (with parameters like `error_user_title`/`error_user_msg`) and correct status codes back to the frontend instead of swallowing them under a generic 500 status.
+  2. Implemented name input sanitization helper on the frontend (`WhatsAppMetaTemplates.tsx`) to auto-format templates to Meta's strict conventions (lowercase, underscores, no special characters/spaces).
+  3. Added frontend validation and warning prompts for numbered variable structures (`{{1}}` vs named parameters like `{{name}}`) and dynamic button link protocols (`https://`).
 - **silentEscalationService Import Fix (FIX)**: Fixed a server crash in the Facebook auto-reply escalation loop:
   1. Updated `apps/backend/services/silentEscalationService.js` to correctly import the shared database client wrapper from `./sharedDatabase` instead of the non-existent `../prisma/client`, resolving `MODULE_NOT_FOUND` runtime crashes during human takeover handoffs.
 - **AI Service Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors, context gaps, and multimodal image mapping issues in follow-up chat completions:

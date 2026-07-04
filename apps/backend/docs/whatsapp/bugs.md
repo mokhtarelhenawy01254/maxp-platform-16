@@ -2,6 +2,25 @@
 
 > Domain-specific bug tracker for WhatsApp sessions, notifications, Telegram, and campaigns.
 
+### [FIX] WhatsApp Meta Template Creation Returns 400 Error
+
+- **Date**: 2026-07-04
+- **Description**: Creating a new WhatsApp template via Meta Cloud API always returned `Request failed with status code 400`. Users could not create any templates from the MaxP dashboard.
+- **Root Cause**:
+    1. **Template name validation**: Users entered Arabic names or names with spaces/special characters (e.g., "طلب دفعه بقيمة $56"). Meta requires template names to contain only lowercase a-z, digits, and underscores.
+    2. **Named variables rejected**: Header text used `{{name}}` instead of Meta's required numbered format `{{1}}`.
+    3. **Invalid button URL**: Button URLs like `v.paypal.me/harfonline` lacked the required `https://` prefix.
+    4. **Error swallowed by backend**: The controller caught Axios errors from Meta's API and returned a generic 500 error, hiding Meta's detailed error message that would have explained the exact problem.
+- **Resolution**:
+    1. **Backend**: Updated `whatsappMetaTemplateController.createMetaTemplate` to forward Meta's detailed error response (`error.response.data.error`) including `error_user_title`, `error_user_msg`, and Meta error codes, with the correct HTTP status code from Meta.
+    2. **Frontend**: Added `sanitizeTemplateName()` that auto-converts user input to valid Meta format (lowercase, spaces→underscores, strips non-alphanumeric). Shows real-time preview of the sanitized name.
+    3. **Frontend**: Added `hasNamedVariables()` validator that detects `{{name}}` patterns and warns users to use `{{1}}` instead.
+    4. **Frontend**: Added `isValidButtonUrl()` that ensures URLs start with `https://`. Auto-prefixes `https://` if missing when submitting.
+    5. **Frontend**: Toast error messages now display Meta's full error detail with 8-second duration for readability.
+- **Files Modified**:
+    - `backend/controller/whatsappMetaTemplateController.js`
+    - `frontend/src/pages/whatsapp/WhatsAppMetaTemplates.tsx`
+
 ### [FIX] WhatsApp Session Dropdown Displayed Raw CUID for Meta Cloud
 
 - **Date**: 2026-06-30
