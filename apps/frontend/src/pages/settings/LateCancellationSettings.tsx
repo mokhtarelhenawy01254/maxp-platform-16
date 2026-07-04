@@ -8,34 +8,77 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
-// الحالات القابلة للاختيار كـ "حالات مستهدفة"
-const PREPARATION_STATUSES = [
-  { code: "READY_FOR_PROCESSING", label: "جاهز للتجهيز" },
-  { code: "PROCESSING", label: "قيد التجهيز" },
-  { code: "PREPARING", label: "يجري التجهيز" },
-  { code: "PENDING_PREPARATION", label: "في انتظار التجهيز" },
-  { code: "QUALITY_CHECK", label: "فحص الجودة" },
-  { code: "PACKAGED", label: "تم التغليف" },
-  { code: "READY", label: "جاهز" },
-  { code: "CONFIRMED", label: "مؤكد" },
-];
+interface OrderStatusOption {
+  code: string;
+  name: string;
+  nameEn?: string;
+  statusType: string;
+  sortOrder?: number;
+}
 
 interface LateCancellationState {
   lateCancellationInterceptEnabled: boolean;
   lateCancellationTargetStatuses: string[];
 }
 
+const EXCLUDED_STATUS_CODES = new Set([
+  "CANCELLED",
+  "PENDING_CANCELLATION",
+  "TRASH",
+  "DRAFT",
+  "DUPLICATE_ORDER",
+  "RETURNED",
+  "PARTIALLY_RETURNED",
+  "REFUNDED",
+  "PARTIALLY_REFUNDED",
+  "EXCHANGED",
+]);
+
 const LateCancellationSettings: React.FC = () => {
   const [settings, setSettings] = useState<LateCancellationState>({
     lateCancellationInterceptEnabled: false,
     lateCancellationTargetStatuses: ["PROCESSING", "PREPARING", "PACKAGED"],
   });
+  const [availableStatuses, setAvailableStatuses] = useState<
+    OrderStatusOption[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchSettings();
+    Promise.all([fetchSettings(), fetchOrderStatuses()]);
   }, []);
+
+  const fetchOrderStatuses = async () => {
+    try {
+      const [orderResp, prepResp] = await Promise.all([
+        apiClient.get("/order-status?statusType=order"),
+        apiClient.get("/order-status?statusType=preparation"),
+      ]);
+
+      const mapStatuses = (data: any[]): OrderStatusOption[] =>
+        (data || [])
+          .filter((s: any) => !EXCLUDED_STATUS_CODES.has(s.code))
+          .map((s: any) => ({
+            code: s.code,
+            name: s.name,
+            nameEn: s.nameEn,
+            statusType: s.statusType,
+            sortOrder: s.sortOrder,
+          }));
+
+      const orderList = mapStatuses(orderResp.data?.data);
+      const prepList = mapStatuses(prepResp.data?.data);
+
+      const merged = [...orderList, ...prepList].sort(
+        (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999),
+      );
+
+      setAvailableStatuses(merged);
+    } catch (error) {
+      console.error("Error fetching order statuses:", error);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -174,46 +217,53 @@ const LateCancellationSettings: React.FC = () => {
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {PREPARATION_STATUSES.map((s) => {
-            const isSelected =
-              settings.lateCancellationTargetStatuses.includes(s.code);
-            return (
-              <button
-                key={s.code}
-                onClick={() => toggleStatus(s.code)}
-                className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                  isSelected
-                    ? "border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300"
-                    : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
-                }`}
-              >
-                <span
-                  className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center ${
+          {availableStatuses.length === 0 ? (
+            <div className="col-span-full flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+              <InformationCircleIcon className="w-4 h-4 flex-shrink-0" />
+              لم يتم العثور على حالات — تأكد من تفعيل صلاحيات الطلبات
+            </div>
+          ) : (
+            availableStatuses.map((s) => {
+              const isSelected =
+                settings.lateCancellationTargetStatuses.includes(s.code);
+              return (
+                <button
+                  key={s.code}
+                  onClick={() => toggleStatus(s.code)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                     isSelected
-                      ? "border-rose-500 bg-rose-500"
-                      : "border-gray-300 dark:border-gray-500"
+                      ? "border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300"
+                      : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
                   }`}
                 >
-                  {isSelected && (
-                    <svg
-                      className="w-3 h-3 text-white"
-                      viewBox="0 0 12 12"
-                      fill="none"
-                    >
-                      <path
-                        d="M2 6l3 3 5-5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
-                {s.label}
-              </button>
-            );
-          })}
+                  <span
+                    className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center ${
+                      isSelected
+                        ? "border-rose-500 bg-rose-500"
+                        : "border-gray-300 dark:border-gray-500"
+                    }`}
+                  >
+                    {isSelected && (
+                      <svg
+                        className="w-3 h-3 text-white"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 6l3 3 5-5"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                  {s.name}
+                </button>
+              );
+            })
+          )}
         </div>
 
         {settings.lateCancellationTargetStatuses.length === 0 && (
@@ -270,7 +320,7 @@ const LateCancellationSettings: React.FC = () => {
           )}
         </button>
         <button
-          onClick={fetchSettings}
+          onClick={() => { fetchSettings(); fetchOrderStatuses(); }}
           disabled={saving}
           className="flex items-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
         >
