@@ -4,6 +4,7 @@ import asyncio
 import time
 from typing import Any
 
+import httpx
 import structlog
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -32,6 +33,20 @@ _state: dict[str, Any] = {
 
 class SyncRequest(BaseModel):
     company_id: str | None = None
+
+
+async def _download_image(url: str) -> tuple[bytes, str] | None:
+    if not url:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.get(url)
+            if resp.status_code != 200:
+                return None
+            ct = resp.headers.get("content-type", "image/jpeg")
+            return resp.content, ct
+    except Exception:
+        return None
 
 
 async def _run_backfill(company_id: str | None = None) -> None:
@@ -72,18 +87,19 @@ async def _run_backfill(company_id: str | None = None) -> None:
             desc = p.get("description") or ""
             tags = p.get("tags") or ""
             embed_text = f"{name}. {desc}. {tags}".strip(". ")
+            img_url = p.get("mainImage") or ""
 
             retries = 0
-            vec = None
+            vec_text = None
+            vec_image = None
             while retries < 3:
                 try:
                     res = await svc.generate_embedding_with_provider(text=embed_text)
-                    vec = res.get("vector")
-                    if not vec or len(vec) != 768:
+                    vec_text = res.get("vector")
+                    if not vec_text or len(vec_text) != 768:
                         break
-                    norm = sum(x * x for x in vec) ** 0.5
+                    norm = sum(x * x for x in vec_text) ** 0.5
                     if norm < 0.01:
-                        # pseudo-embedding from rate limit — wait and retry
                         await asyncio.sleep(35)
                         retries += 1
                         continue
@@ -95,8 +111,21 @@ async def _run_backfill(company_id: str | None = None) -> None:
                         continue
                     break
 
-            if vec and len(vec) == 768 and sum(x * x for x in vec) ** 0.5 >= 0.01:
-                vec_str = "[" + ",".join(str(x) for x in vec) + "]"
+            if img_url:
+                downloaded = await _download_image(img_url)
+                if downloaded:
+                    img_bytes, mime = downloaded
+                    try:
+                        ires = await svc.generate_embedding_with_provider(
+                            text=embed_text, image_bytes=img_bytes, mime_type=mime,
+                        )
+                        vec_image = ires.get("vector")
+                    except Exception:
+                        vec_image = None
+
+            if vec_text and len(vec_text) == 768 and sum(x * x for x in vec_text) ** 0.5 >= 0.01:
+                vec_text_str = "[" + ",".join(str(x) for x in vec_text) + "]"
+                vec_image_str = "[" + ",".join(str(x) for x in vec_image) + "]" if vec_image and len(vec_image) == 768 else None
                 status = "IN_STOCK" if (p.get("stock") or 0) > 0 else "OUT_OF_STOCK"
                 if not p.get("trackInventory"):
                     status = "IN_STOCK"
@@ -106,16 +135,19 @@ async def _run_backfill(company_id: str | None = None) -> None:
                             text("""
                                 INSERT INTO ai.product_embeddings
                                     (id, company_id, product_id, product_name, sku, price, status,
-                                     text_embedding, embed_text, image_url)
+                                     text_embedding, image_embedding, embed_text, image_url)
                                 VALUES (gen_random_uuid()::text, :cid, :pid, :name, :sku,
-                                        :price, :status, CAST(:vec AS vector), :embed_text, :image_url)
+                                        :price, :status, CAST(:vec AS vector),
+                                        CAST(:vec_img AS vector), :embed_text, :image_url)
                                 ON CONFLICT (product_id) DO UPDATE SET
-                                    product_name   = EXCLUDED.product_name,
-                                    text_embedding = EXCLUDED.text_embedding,
-                                    embed_text     = EXCLUDED.embed_text,
-                                    status         = EXCLUDED.status,
-                                    price          = EXCLUDED.price,
-                                    updated_at     = now()
+                                    product_name     = EXCLUDED.product_name,
+                                    text_embedding   = EXCLUDED.text_embedding,
+                                    image_embedding  = CASE WHEN EXCLUDED.image_embedding IS NOT NULL THEN EXCLUDED.image_embedding ELSE ai.product_embeddings.image_embedding END,
+                                    embed_text       = EXCLUDED.embed_text,
+                                    status           = EXCLUDED.status,
+                                    price            = EXCLUDED.price,
+                                    image_url        = EXCLUDED.image_url,
+                                    updated_at       = now()
                             """),
                             {
                                 "cid": p["companyId"],
@@ -124,7 +156,8 @@ async def _run_backfill(company_id: str | None = None) -> None:
                                 "sku": p.get("sku") or "",
                                 "price": float(p.get("price") or 0),
                                 "status": status,
-                                "vec": vec_str,
+                                "vec": vec_text_str,
+                                "vec_img": vec_image_str,
                                 "embed_text": embed_text[:500],
                                 "image_url": p.get("mainImage") or "",
                             },
