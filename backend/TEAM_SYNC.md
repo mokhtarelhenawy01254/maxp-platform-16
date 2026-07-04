@@ -1,6 +1,8 @@
 # Team Sync Updates
 
 ## 2026-07-04 / 2026-03-09
+- **silentEscalationService Import Fix (FIX)**: Fixed a server crash in the Facebook auto-reply escalation loop:
+  1. Updated `apps/backend/services/silentEscalationService.js` to correctly import the shared database client wrapper from `./sharedDatabase` instead of the non-existent `../prisma/client`, resolving `MODULE_NOT_FOUND` runtime crashes during human takeover handoffs.
 - **AI Service Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors, context gaps, and multimodal image mapping issues in follow-up chat completions:
   1. Updated `_build_followup_messages` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py` to inject the `skills_block` using `get_skills_block` so the follow-up LLM can see the full skill instructions (such as offering alternatives for empty results).
   2. Injected conversation history (`recentMessages`) in the follow-up messages context to prevent the LLM from losing conversational context.

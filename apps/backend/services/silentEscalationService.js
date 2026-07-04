@@ -9,7 +9,7 @@
  */
 
 const { getIO } = require('./socketService');
-const { getSharedPrismaClient } = require('../prisma/client');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 /**
  * Flag a conversation thread for human takeover after AI failure.

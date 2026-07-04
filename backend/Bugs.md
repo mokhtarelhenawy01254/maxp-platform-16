@@ -1,5 +1,15 @@
 # Backend Bugs Log
 
+### [FIX] silentEscalationService MODULE_NOT_FOUND Database Client Crash
+- **Date**: 2026-07-04
+- **Description**: The Facebook AI auto-reply loop crashed and failed to execute silent human takeover escalation when an AI failure occurred, generating `Error: Cannot find module '../prisma/client'` in the logs.
+- **Root Cause**:
+  - In `apps/backend/services/silentEscalationService.js`, the database Prisma client was required as `require('../prisma/client')`. However, the shared database client wrapper for the backend is located in `sharedDatabase.js` inside the same services directory, and should be imported as `require('./sharedDatabase')`. The incorrect path triggered a `MODULE_NOT_FOUND` error and crashed the auto-reply worker.
+- **Resolution**:
+  - Updated the require statement in `apps/backend/services/silentEscalationService.js` to correctly point to `./sharedDatabase`.
+- **Files Modified**:
+  - `apps/backend/services/silentEscalationService.js`
+
 ### [FIX] AI Service Sandbox Empty Reply (SKILL.md & recentMessages Context Gaps)
 - **Date**: 2026-07-04
 - **Description**: AI Sandbox / chat pipeline returned empty replies and fell back to raw formatted tool results when searching for products that did not exist (e.g., "شنطة ظهر نايك"), or hung for 180 seconds due to API timeout errors.
