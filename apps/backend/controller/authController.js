@@ -132,6 +132,9 @@ const register = async (req, res) => {
     const userTimezone = timezone || 'Asia/Riyadh';
     console.log('[REGISTER] Using timezone:', userTimezone);
 
+    const registrationIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || null;
+    const registrationUserAgent = req.headers['user-agent'] || null;
+
     const existingUser = await prisma.user.findFirst({
       where: {
         email: {
@@ -183,6 +186,8 @@ const register = async (req, res) => {
         sidebarLayout: 'three-tier',
         timezone: userTimezone,
         businessSpecialtyId: selectedSpecialty?.id || null,
+        registrationIp,
+        registrationUserAgent,
       }
     });
 

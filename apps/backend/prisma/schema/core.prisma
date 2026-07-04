@@ -39,6 +39,10 @@ model Company {
   signupCouponRedeemedAt          DateTime?
   businessSpecialtyId             String?
   notes                           String?
+  registration_ip                 String?
+  registration_user_agent         String?
+  registration_device_type        String?
+  registration_device_fingerprint String?
   merchants                       Merchant[]
   shipments                       Shipment[]
   projects                        Project[]

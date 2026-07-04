@@ -99,6 +99,9 @@ const normalizeCompanyFollowUp = (input = {}) => {
 
   return {
     status,
+    callStatus: cleanString(source.callStatus) || null,
+    callDuration: typeof source.callDuration === 'number' ? source.callDuration : null,
+    lastCallAt: normalizeIsoString(source.lastCallAt),
     assignedOwner: {
       ...owner,
       label: owner.name || owner.email || null,
@@ -180,7 +183,9 @@ const mergeCompanyFollowUpSettings = (
         ? "pending"
         : current.status;
 
-  const note = cleanString(patch.note) || null;
+  const callStatus = patch.callStatus !== undefined ? cleanString(patch.callStatus) || null : current.callStatus;
+  const callDuration = patch.callDuration !== undefined ? (typeof patch.callDuration === 'number' ? patch.callDuration : parseInt(patch.callDuration) || null) : current.callDuration;
+  const callStatusChanged = current.callStatus !== callStatus || current.callDuration !== callDuration;
 
   const ownerChanged =
     current.assignedOwner.id !== nextOwner.id ||
@@ -231,6 +236,9 @@ const mergeCompanyFollowUpSettings = (
 
   const nextFollowUp = {
     status: nextStatus,
+    callStatus,
+    callDuration,
+    lastCallAt: callStatusChanged ? nowIso : current.lastCallAt,
     assignedOwner: nextOwner,
     lastNote: noteChanged ? note : current.lastNote,
     updatedAt:
@@ -311,6 +319,9 @@ const getCompanyFollowUpFromDb = async (prisma, company) => {
 
   return normalizeCompanyFollowUp({
     status: dbRecord.status,
+    callStatus: dbRecord.call_status,
+    callDuration: dbRecord.call_duration,
+    lastCallAt: dbRecord.last_call_at?.toISOString(),
     assignedOwner: {
       id: dbRecord.assigned_owner_id,
       name: dbRecord.assigned_owner_name,
@@ -355,6 +366,9 @@ const saveFollowUpToDb = async (prisma, companyId, followUp) => {
     create: {
       company_id: companyId,
       status: followUp.status || "unassigned",
+      call_status: followUp.callStatus || null,
+      call_duration: followUp.callDuration || null,
+      last_call_at: followUp.lastCallAt ? new Date(followUp.lastCallAt) : null,
       assigned_owner_id: followUp.assignedOwner?.id || null,
       assigned_owner_name: followUp.assignedOwner?.name || null,
       assigned_owner_email: followUp.assignedOwner?.email || null,
@@ -369,6 +383,9 @@ const saveFollowUpToDb = async (prisma, companyId, followUp) => {
     },
     update: {
       status: followUp.status || "unassigned",
+      call_status: followUp.callStatus || null,
+      call_duration: followUp.callDuration || null,
+      last_call_at: followUp.lastCallAt ? new Date(followUp.lastCallAt) : null,
       assigned_owner_id: followUp.assignedOwner?.id || null,
       assigned_owner_name: followUp.assignedOwner?.name || null,
       assigned_owner_email: followUp.assignedOwner?.email || null,

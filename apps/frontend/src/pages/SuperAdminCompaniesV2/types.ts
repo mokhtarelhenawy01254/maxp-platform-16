@@ -2,6 +2,15 @@ export interface CompanyCount {
   users: number;
   customers: number;
   facebookPages: number;
+  installedApps: number;
+}
+
+export interface CompanyInstalledApp {
+  id: string;
+  appName: string;
+  appSlug: string;
+  category: string;
+  status: string;
 }
 
 export interface Company {
@@ -17,10 +26,15 @@ export interface Company {
   followUp?: FollowUpState;
   followUpReminder?: FollowUpReminder;
   followUpAutomation?: FollowUpAutomation;
+  installedApps?: CompanyInstalledApp[];
+  installedAppsCount?: number;
 }
 
 export interface FollowUpState {
   status: string;
+  callStatus: string | null;
+  callDuration: number | null;
+  lastCallAt: string | null;
   statusMeta: { label: string; className: string };
   assignedOwner: { id: string | null; label: string };
   updatedAt: string | null;
@@ -122,6 +136,8 @@ export interface EmployeeFormData {
 export interface FollowUpFormData {
   assignedOwnerId: string;
   status: string;
+  callStatus: string;
+  callDuration: string;
   nextActionAt: string;
   note: string;
 }

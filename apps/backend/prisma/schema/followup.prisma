@@ -3,6 +3,9 @@ model FollowUp {
   company_id          String    @unique
   company             Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
   status              String    @default("unassigned")
+  call_status         String?   // "not_called" | "answered" | "no_answer" | "call_back_later"
+  call_duration       Int?      // seconds
+  last_call_at        DateTime?
   assigned_owner_id   String?
   assigned_owner_name String?
   assigned_owner_email String?

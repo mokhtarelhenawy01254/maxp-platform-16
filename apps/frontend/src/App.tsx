@@ -736,6 +736,9 @@ const SuperAdminCompaniesReports = React.lazy(
 const SuperAdminCompanyDetails = React.lazy(
   () => import("./pages/super-admin/SuperAdminCompanyDetails"),
 );
+const SuperAdminFollowUp = React.lazy(
+  () => import("./pages/SuperAdminFollowUp"),
+);
 
 const SuperAdminInvoices = React.lazy(
   () => import("./pages/SuperAdminInvoices"),
@@ -1701,6 +1704,14 @@ const AppContent = () => {
             <Route
               path="/super-admin/companies"
               element={<Navigate to="/super-admin/companies-v2" replace />}
+            />
+            <Route
+              path="/super-admin/follow-up"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminFollowUp />
+                </Layout>
+              }
             />
             <Route
               path="/super-admin/companies-reports"

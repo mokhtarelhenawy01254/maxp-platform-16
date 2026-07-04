@@ -22,7 +22,7 @@ import { CompanyFilters } from "./components/CompanyFilters";
 import { CompaniesTable } from "./components/CompaniesTable";
 import { BulkActionsBar } from "./components/BulkActionsBar";
 import { extractErrorMessage, formatDate, formatDateTime, enrichCompanies, computeQuickStats, getCount, getDefaultFollowUpScheduleValue, toDateTimeLocalValue, fromDateTimeLocalValue, addHoursToDateTimeLocal } from "./utils";
-import { CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS } from "./constants";
+import { CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS, CALL_STATUS_OPTIONS } from "./constants";
 import type { Company, CompanyFormData, EmployeeFormData, FollowUpFormData, FollowUpState, FollowUpReminder, FollowUpAutomation } from "./types";
 
 // ---- Reusable components ----
@@ -199,6 +199,30 @@ function FollowUpFormContent({
               )}
             </SelectContent>
           </Select>
+        </FormField>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <FormField label="حالة الاتصال الهاتفي">
+          <Select value={form.callStatus || "not_called"} onValueChange={(v) => setForm((prev) => ({ ...prev, callStatus: v }))}>
+            <SelectTrigger aria-label="حالة الاتصال الهاتفي" className="h-12 w-full rounded-lg border-border/60 bg-background px-4 text-sm font-bold shadow-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg">
+              {CALL_STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField label="مدة المكالمة (ثانية)">
+          <input
+            aria-label="مدة المكالمة بالثواني"
+            type="number"
+            min="0"
+            className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-bold shadow-sm transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5"
+            value={form.callDuration}
+            onChange={(e) => setForm((prev) => ({ ...prev, callDuration: e.target.value }))}
+            placeholder="0"
+          />
         </FormField>
       </div>
 
@@ -442,11 +466,11 @@ export default function SuperAdminCompaniesV2() {
   const handleBulkDelete = useCallback(() => setDeleteDialog({ open: true, ids: selectedIds, name: "" }), [selectedIds]);
 
   const handleExport = useCallback(() => {
-    const headers = ["ID", "Name", "Email", "Phone", "Website", "Is Active", "Users", "Customers", "Facebook Pages", "Created At"];
+    const headers = ["ID", "Name", "Email", "Phone", "Website", "Is Active", "Users", "Customers", "Facebook Pages", "Installed Apps", "Created At"];
     const lines = enrichedCompanies.map((c) => [
       c.id, `"${c.name || ""}"`, c.email || "", c.phone || "", c.website || "",
       c.isActive ? "Active" : "Inactive",
-      getCount(c, "users"), getCount(c, "customers"), getCount(c, "facebookPages"),
+      getCount(c, "users"), getCount(c, "customers"), getCount(c, "facebookPages"), getCount(c, "installedApps"),
       c.createdAt ? new Date(c.createdAt).toISOString() : "",
     ].join(","));
     const csv = [headers.join(","), ...lines].join("\n");
@@ -518,6 +542,8 @@ export default function SuperAdminCompaniesV2() {
         note: followUpForm.note.trim() || undefined,
         clearOwner: !followUpForm.assignedOwnerId,
         clearNextAction: !followUpForm.assignedOwnerId || !followUpForm.nextActionAt,
+        callStatus: followUpForm.callStatus || "not_called",
+        callDuration: followUpForm.callDuration ? Number(followUpForm.callDuration) : undefined,
       };
       if (followUpForm.assignedOwnerId) payload.assignedOwnerId = followUpForm.assignedOwnerId;
       if (followUpForm.assignedOwnerId && followUpForm.nextActionAt) payload.nextActionAt = fromDateTimeLocalValue(followUpForm.nextActionAt);
@@ -550,12 +576,21 @@ export default function SuperAdminCompaniesV2() {
     } catch (err) { toast.error(extractErrorMessage(err, "فشل تسجيل الدخول")); }
   }, []);
 
+  const handleOpenWhatsApp = useCallback((company: Company) => {
+    const phone = company.phone?.replace(/\s+/g, "").replace(/^0+/, "");
+    if (!phone) { toast.error("لا يوجد رقم هاتف لهذه الشركة"); return; }
+    const full = phone.startsWith("+") ? phone.slice(1) : phone.startsWith("20") ? phone : `20${phone}`;
+    window.open(`https://wa.me/${full}`, "_blank", "noopener,noreferrer");
+  }, []);
+
   const handleOpenFollowUp = useCallback(async (company: Company) => {
     const state = company.followUp || (await import("../../utils/companyFollowUp")).getCompanyFollowUpState(company);
     setFollowUpCompany(company);
     setFollowUpForm({
       assignedOwnerId: state.assignedOwner.id || "",
       status: state.status === "unassigned" ? "pending" : state.status,
+      callStatus: state.callStatus || "not_called",
+      callDuration: state.callDuration ? String(state.callDuration) : "",
       nextActionAt: toDateTimeLocalValue(state.nextActionAt) || (state.assignedOwner.id && state.status !== "resolved" ? getDefaultFollowUpScheduleValue(state.status) : ""),
       note: "",
     });
@@ -846,6 +881,7 @@ export default function SuperAdminCompaniesV2() {
                 onOpenUsers={handleOpenUsers}
                 onOpenFollowUp={handleOpenFollowUp}
                 onOpenFacebookPages={handleOpenFacebookPages}
+                onOpenWhatsApp={handleOpenWhatsApp}
                 onTransferOwnership={handleTransferOwnership}
                 onAddEmployee={handleAddEmployee}
                 onLoginAsAdmin={handleLoginAsAdmin}

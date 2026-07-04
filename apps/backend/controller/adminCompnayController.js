@@ -501,7 +501,8 @@ const getAllCompanies = async (req, res) => {
                         select: {
                             users: true,
                             customers: true,
-                            facebookPages: true
+                            facebookPages: true,
+                            installedApps: true,
                         }
                     }
                 },
@@ -515,7 +516,25 @@ const getAllCompanies = async (req, res) => {
         const companies = [];
         for (const company of rawCompanies) {
             if (!company.slug) await ensureCompanySlug(company, { prisma });
-            companies.push({ ...company, followUp: await getCompanyFollowUpFromDb(prisma, company) });
+            const followUp = await getCompanyFollowUpFromDb(prisma, company);
+            const installedApps = await prisma.companyApp.findMany({
+                where: { companyId: company.id },
+                include: { app: { select: { name: true, slug: true, category: true } } },
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+            });
+            companies.push({
+                ...company,
+                followUp,
+                installedApps: installedApps.map((ca) => ({
+                    id: ca.id,
+                    appName: ca.app.name,
+                    appSlug: ca.app.slug,
+                    category: ca.app.category,
+                    status: ca.status,
+                })),
+                installedAppsCount: company._count?.installedApps || 0,
+            });
         }
 
         const [totalCompanies, activeCompanies, connectedFacebookPages, followUpNow, myDueToday, escalationDue, stale72h] = await Promise.all([
@@ -607,6 +626,7 @@ const getCompanyDetails = async (req, res) => {
             employeeCount,
             ordersThisMonth,
             installedApps,
+            allInstalledApps,
             usageAggregate,
             usageBreakdown,
             usageByApp,
@@ -801,6 +821,18 @@ const getCompanyDetails = async (req, res) => {
                         _all: true,
                     },
                 }),
+                prisma.companyApp.findMany({
+                    where: { companyId },
+                    include: {
+                        app: {
+                            select: {
+                                id: true, slug: true, name: true, category: true,
+                                pricingModel: true, monthlyPrice: true, yearlyPrice: true,
+                            },
+                        },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                }),
             ]);
         });
 
@@ -931,6 +963,14 @@ const getCompanyDetails = async (req, res) => {
                             : null,
                     };
                 }),
+                allInstalledApps: allInstalledApps.map((companyApp) => ({
+                    id: companyApp.id,
+                    status: companyApp.status,
+                    appSlug: companyApp.app?.slug,
+                    appName: companyApp.app?.name,
+                    category: companyApp.app?.category,
+                    pricingModel: companyApp.app?.pricingModel,
+                })),
             },
             limits: {
                 features: {
@@ -1075,6 +1115,8 @@ const updateCompanyFollowUp = async (req, res) => {
             markEscalated,
             clearReminderLog,
             clearEscalationLog,
+            callStatus,
+            callDuration,
         } = req.body || {};
         const prisma = getSharedPrismaClient();
 
@@ -1139,6 +1181,8 @@ const updateCompanyFollowUp = async (req, res) => {
                 ...assignedOwnerPatch,
                 status,
                 note,
+                callStatus,
+                callDuration,
                 clearOwner: shouldClearOwner,
                 nextActionAt,
                 clearNextAction,
@@ -1273,6 +1317,9 @@ const createNewCompany = async (req, res) => {
             email
         });
 
+        const registrationIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || null;
+        const registrationUserAgent = req.headers['user-agent'] || null;
+
         // Create company
         const company = await getSharedPrismaClient().company.create({
             data: {
@@ -1284,7 +1331,9 @@ const createNewCompany = async (req, res) => {
                 currency,
                 isActive: true,
                 // useCentralKeys field removed — key routing is now schema-agnostic
-                sidebarLayout: 'three-tier' // ✅ الوضع الحديث كافتراضي
+                sidebarLayout: 'three-tier', // ✅ الوضع الحديث كافتراضي
+                registrationIp,
+                registrationUserAgent,
             }
         });
 

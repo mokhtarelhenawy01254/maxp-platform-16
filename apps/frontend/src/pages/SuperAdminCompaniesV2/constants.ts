@@ -44,3 +44,10 @@ export const FOLLOW_UP_STATUS_OPTIONS = [
   { value: "resolved", label: "تم الحل" },
   { value: "escalated", label: "مصعد" },
 ] as const;
+
+export const CALL_STATUS_OPTIONS = [
+  { value: "not_called", label: "لم يتم الاتصال" },
+  { value: "answered", label: "تم الرد" },
+  { value: "no_answer", label: "لم يرد" },
+  { value: "call_back_later", label: "معاودة الاتصال" },
+] as const;

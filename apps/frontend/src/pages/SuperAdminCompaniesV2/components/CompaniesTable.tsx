@@ -3,7 +3,7 @@ import { flexRender, getCoreRowModel, useReactTable, createColumnHelper } from "
 import {
   Mail, Facebook, Eye, LogIn, MoreHorizontal, ChevronLeft, ChevronRight,
   CheckCircle2, AlertTriangle, Trash2, Pencil, Users, UserPlus, ArrowLeftRight,
-  Building2, RefreshCw, BadgeCheck, ChevronDown, ChevronUp, Phone, Search,
+  Building2, RefreshCw, BadgeCheck, ChevronDown, ChevronUp, Phone, Search, MessageCircle, Package,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { Checkbox } from "../../../components/ui/checkbox";
@@ -19,6 +19,31 @@ import { getCount } from "../utils";
 import type { Company } from "../types";
 
 const columnHelper = createColumnHelper<Company>();
+
+function getWhatsAppUrl(phone: string | null): string | null {
+  if (!phone) return null;
+  const cleaned = phone.replace(/\s+/g, "").replace(/^0+/, "");
+  const full = cleaned.startsWith("+") ? cleaned.slice(1) : cleaned.startsWith("20") ? cleaned : `20${cleaned}`;
+  return `https://wa.me/${full}`;
+}
+
+function getCallStatusLabel(callStatus: string | null | undefined): string {
+  switch (callStatus) {
+    case "answered": return "تم الرد";
+    case "no_answer": return "لم يرد";
+    case "call_back_later": return "معاودة الاتصال";
+    default: return "لم يتم الاتصال";
+  }
+}
+
+function getCallStatusColor(callStatus: string | null | undefined): string {
+  switch (callStatus) {
+    case "answered": return "text-emerald-600 bg-emerald-50 border-emerald-200";
+    case "no_answer": return "text-rose-600 bg-rose-50 border-rose-200";
+    case "call_back_later": return "text-amber-600 bg-amber-50 border-amber-200";
+    default: return "text-slate-500 bg-slate-50 border-slate-200";
+  }
+}
 
 interface CompaniesTableProps {
   companies: Company[];
@@ -40,6 +65,7 @@ interface CompaniesTableProps {
   onOpenUsers: (company: Company) => void;
   onOpenFollowUp: (company: Company) => void;
   onOpenFacebookPages: (company: Company) => void;
+  onOpenWhatsApp?: (company: Company) => void;
   onTransferOwnership: (company: Company) => void;
   onAddEmployee: (company: Company) => void;
   onLoginAsAdmin: (company: Company) => void;
@@ -53,7 +79,7 @@ export function CompaniesTable({
   isAllVisibleSelected, isSomeVisibleSelected, loading, searchQuery,
   onOpenDetails, onEdit, onDelete,
   onOpenUsers, onOpenFollowUp, onOpenFacebookPages,
-  onTransferOwnership, onAddEmployee, onLoginAsAdmin,
+  onOpenWhatsApp, onTransferOwnership, onAddEmployee, onLoginAsAdmin,
   onRunFollowUpAction, isMobile,
 }: CompaniesTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -217,6 +243,7 @@ export function CompaniesTable({
           { key: "edit", icon: Pencil, label: "تعديل", action: () => onEdit(company) },
           { key: "users", icon: Users, label: "الأعضاء", action: () => onOpenUsers(company) },
           { key: "pages", icon: Building2, label: "صفحات فيسبوك", action: () => onOpenFacebookPages(company) },
+          ...(onOpenWhatsApp && company.phone ? [{ key: "whatsapp", icon: MessageCircle, label: "واتساب", action: () => onOpenWhatsApp(company), tone: "text-emerald-600 font-black" as const }] : []),
           { key: "owner", icon: ArrowLeftRight, label: "نقل الملكية", action: () => onTransferOwnership(company) },
           { key: "employee", icon: UserPlus, label: "إضافة موظف", action: () => onAddEmployee(company) },
           { key: "delete", icon: Trash2, label: "حذف الشركة", action: () => onDelete(company), tone: "text-rose-600 font-black" as const },
@@ -419,11 +446,11 @@ export function CompaniesTable({
                       <p className="flex items-center gap-2"><Mail className="size-3.5 text-primary/60" /> {company.email}</p>
                     </div>
 
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      {(["users", "customers", "facebookPages"] as const).map((key) => (
+                    <div className="mt-2 grid grid-cols-4 gap-2">
+                      {(["users", "customers", "facebookPages", "installedApps"] as const).map((key) => (
                         <div key={key} className="rounded-lg border border-border/40 bg-white px-2 py-2 text-center dark:bg-card">
                           <p className="text-base font-black text-foreground">{getCount(company, key)}</p>
-                          <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground/60">{key === "users" ? "أعضاء" : key === "customers" ? "عملاء" : "صفحات"}</p>
+                          <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground/60">{key === "users" ? "أعضاء" : key === "customers" ? "عملاء" : key === "facebookPages" ? "صفحات" : "تطبيقات"}</p>
                         </div>
                       ))}
                     </div>
@@ -435,6 +462,21 @@ export function CompaniesTable({
                             <Phone className="size-3.5 text-primary/60" /> {company.phone}
                           </p>
                         )}
+                        {company.followUp?.callStatus ? (
+                          <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-black", getCallStatusColor(company.followUp.callStatus))}>
+                            <Phone className="size-3" /> {getCallStatusLabel(company.followUp.callStatus)}
+                          </span>
+                        ) : null}
+                        {company.installedApps && company.installedApps.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {company.installedApps.slice(0, 3).map((app) => (
+                              <span key={app.id} className="inline-flex items-center gap-1 rounded-full border border-primary/10 bg-primary/5 px-2 py-0.5 text-[11px] font-bold text-primary"><Package className="size-2.5" /> {app.appName}</span>
+                            ))}
+                            {(company.installedAppsCount || company.installedApps.length) > 3 && (
+                              <span className="text-[11px] font-bold text-muted-foreground">+{Math.min((company.installedAppsCount || company.installedApps.length) - 3, 99)}</span>
+                            )}
+                          </div>
+                        )}
                         <div className="grid grid-cols-2 gap-2">
                           <Button type="button" size="sm" variant="default" className="h-9 rounded-lg text-xs font-black shadow-sm" onClick={() => onOpenFollowUp(company)}>
                             <CheckCircle2 className="ml-1.5 size-3.5" /> متابعة
@@ -442,6 +484,11 @@ export function CompaniesTable({
                           <Button type="button" size="sm" variant="outline" className="h-9 rounded-lg text-xs font-black" onClick={() => onLoginAsAdmin(company)}>
                             <LogIn className="ml-1.5 size-3.5" /> دخول كأدمن
                           </Button>
+                          {onOpenWhatsApp && company.phone ? (
+                            <Button type="button" size="sm" variant="outline" className="h-9 rounded-lg text-xs font-black border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={() => onOpenWhatsApp(company)}>
+                              <MessageCircle className="ml-1.5 size-3.5" /> واتساب
+                            </Button>
+                          ) : null}
                           <Button type="button" size="sm" variant="outline" className="h-9 rounded-lg text-xs font-black" onClick={() => onOpenUsers(company)}>
                             <Users className="ml-1.5 size-3.5" /> الأعضاء
                           </Button>
@@ -502,6 +549,7 @@ export function CompaniesTable({
                             onOpenFollowUp={onOpenFollowUp}
                             onOpenUsers={onOpenUsers}
                             onOpenFacebookPages={onOpenFacebookPages}
+                            onOpenWhatsApp={onOpenWhatsApp}
                             onLoginAsAdmin={onLoginAsAdmin}
                             onEdit={onEdit}
                             onDelete={onDelete}
@@ -570,7 +618,7 @@ export function CompaniesTable({
 function ExpandedRowContent({
   company, onOpenFollowUp, onOpenUsers, onOpenFacebookPages,
   onLoginAsAdmin, onEdit, onDelete, onTransferOwnership, onAddEmployee,
-  onRunFollowUpAction,
+  onRunFollowUpAction, onOpenWhatsApp,
 }: {
   company: Company;
   onOpenFollowUp: (c: Company) => void;
@@ -582,9 +630,12 @@ function ExpandedRowContent({
   onTransferOwnership: (c: Company) => void;
   onAddEmployee: (c: Company) => void;
   onRunFollowUpAction: (c: Company, a: "remind" | "escalate") => void;
+  onOpenWhatsApp?: (c: Company) => void;
 }) {
   const followUp = company.followUp;
   const followUpAuto = company.followUpAutomation;
+
+  const waUrl = getWhatsAppUrl(company.phone);
 
   return (
     <div className="flex flex-wrap items-start gap-6">
@@ -598,6 +649,29 @@ function ExpandedRowContent({
                 {followUp.statusMeta.label}
               </Badge>
               <span className="text-xs text-muted-foreground">المسؤول: {followUp.assignedOwner.label || "بدون"}</span>
+            </div>
+          </div>
+        ) : null}
+        {followUp?.callStatus ? (
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">حالة الاتصال</p>
+            <span className={cn("mt-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-black", getCallStatusColor(followUp.callStatus))}>
+              <Phone className="size-3" /> {getCallStatusLabel(followUp.callStatus)}
+            </span>
+          </div>
+        ) : null}
+        {company.installedApps && company.installedApps.length > 0 ? (
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">التطبيقات المثبتة</p>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {company.installedApps.slice(0, 5).map((app) => (
+                <span key={app.id} className="inline-flex items-center gap-1 rounded-full border border-primary/10 bg-primary/5 px-2.5 py-0.5 text-xs font-bold text-primary">
+                  <Package className="size-3" /> {app.appName}
+                </span>
+              ))}
+              {(company.installedAppsCount || company.installedApps.length) > 5 ? (
+                <span className="text-xs font-bold text-muted-foreground">+{Math.min((company.installedAppsCount || company.installedApps.length) - 5, 99)}</span>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -618,6 +692,11 @@ function ExpandedRowContent({
         <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onLoginAsAdmin(company)}>
           <LogIn className="ml-1.5 size-3.5" /> دخول كأدمن
         </Button>
+        {onOpenWhatsApp && waUrl ? (
+          <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={() => onOpenWhatsApp(company)}>
+            <MessageCircle className="ml-1.5 size-3.5" /> واتساب
+          </Button>
+        ) : null}
         {followUpAuto?.needsUrgentEscalation || followUpAuto?.needsEscalation ? (
           <Button type="button" size="sm" variant="destructive" className="h-8 rounded-lg text-xs font-black" onClick={() => onRunFollowUpAction(company, "escalate")}>
             <AlertTriangle className="ml-1.5 size-3.5" /> تصعيد

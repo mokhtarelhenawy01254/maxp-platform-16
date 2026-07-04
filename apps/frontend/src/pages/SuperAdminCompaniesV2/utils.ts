@@ -54,7 +54,7 @@ export function normalizeWebsite(website: string | null): string | null {
   return `https://${website}`;
 }
 
-export function getCount(company: Company, key: "users" | "customers" | "facebookPages"): number {
+export function getCount(company: Company, key: "users" | "customers" | "facebookPages" | "installedApps"): number {
   return company._count?.[key] || 0;
 }
 
