@@ -2115,6 +2115,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               const latestPageData = await getPageToken(messagePageId);
               const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
               
+              console.log(`[AI-AUTOREPLY-SEND] pageId=${messagePageId} senderId=${senderId} tokenLen=${accessToken?.length||0} replyLen=${replyText?.length||0} fbMsgId=${fbMessageId||'none'}`);
+              
               if (accessToken) {
                 const result = await sendFacebookMessage(senderId, replyText, 'TEXT', messagePageId, fbMessageId);
                 
