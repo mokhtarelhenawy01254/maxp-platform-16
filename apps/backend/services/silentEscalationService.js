@@ -46,7 +46,9 @@ async function flagThreadForHumanTakeover({
       await prisma.activityLog.create({
         data: {
           companyId,
+          category: 'AI',
           action: 'AI_SILENT_ESCALATION',
+          description: `AI failed on ${channel}: ${reason}`,
           details: JSON.stringify({
             conversationId: conversationId || null,
             customerPhone: customerPhone || null,
