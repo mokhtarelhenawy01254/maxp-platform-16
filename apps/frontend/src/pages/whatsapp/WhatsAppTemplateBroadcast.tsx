@@ -195,7 +195,11 @@ const WhatsAppTemplateBroadcast: React.FC<{
 
               <div className="space-y-2">
                 <Label>القالب (المعتمد فقط)</Label>
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <Select value={selectedTemplate} onValueChange={(name) => {
+                  setSelectedTemplate(name);
+                  const t = templates.find(t => t.name === name);
+                  if (t) setLanguageCode(t.language);
+                }}>
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="اختر قالباً" />
                   </SelectTrigger>
@@ -219,9 +223,9 @@ const WhatsAppTemplateBroadcast: React.FC<{
                 <Select value={languageCode} onValueChange={setLanguageCode}>
                   <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ar">العربية</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
+                    {[...new Set(templates.map(t => t.language))].map(lang => (
+                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
