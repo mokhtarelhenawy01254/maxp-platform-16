@@ -326,7 +326,6 @@ async function sendFacebookMessage(recipientId, messageContent, messageType = 'T
 
     // منع التكرار - فحص إذا كانت الرسالة أُرسلت من قبل
     // استخدام رابط كامل للصور لتجنب اعتبار صور مختلفة كمكررة
-    console.log(`[FB-SEND-CALLED] recipientId=${recipientId} pageId=${pageId} msgType=${messageType} contentStart=${(messageContent||'').substring(0,30)} replyTo=${replyToMessageId||'none'}`);
     const contentForHash = messageType === 'IMAGE' ? messageContent : messageContent.substring(0, 50);
     const messageHash = `${recipientId}_${contentForHash}_${Date.now() - (Date.now() % 60000)}`;
     if (facebookSentCache.has(messageHash)) {
@@ -2113,11 +2112,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               }, 3);
 
               // 6. Send the reply physically to Facebook Messenger
-              console.log(`[AI-AUTOREPLY-SEND1] pageId=${messagePageId} senderId=${senderId} fbMsgId=${fbMessageId||'none'} replyStart=${(replyText||'').substring(0,30)}`);
               const latestPageData = await getPageToken(messagePageId);
               const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
-              
-              console.log(`[AI-AUTOREPLY-SEND2] tokenLen=${accessToken?.length||0} hasPageData=${!!pageData} hasLatestPageData=${!!latestPageData}`);
               
               if (accessToken) {
                 const result = await sendFacebookMessage(senderId, replyText, 'TEXT', messagePageId, fbMessageId);

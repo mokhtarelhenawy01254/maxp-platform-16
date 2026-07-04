@@ -612,7 +612,7 @@ async function sendProductionFacebookMessage(recipientId, messageContent, messag
     }
 
     // If replying to a specific message, include reply_to reference
-    // DISABLED for v25.0+ - Facebook returns "Invalid keys" error
+    // DISABLED for v25.0+ — Facebook returns "Invalid keys" error
     // if (replyToMessageId) {
     //   messageData.message.reply_to = {
     //     mid: replyToMessageId
