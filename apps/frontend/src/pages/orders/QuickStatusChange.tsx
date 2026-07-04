@@ -105,9 +105,14 @@ const QuickStatusChange: React.FC = () => {
       .then((res) => {
         if (res?.data && Array.isArray(res.data)) {
           setSiteStatuses(res.data.map((s: OrderStatusDefinition) => ({ id: s.id, name: s.name, code: s.code })));
+        } else if (Array.isArray(res)) {
+          setSiteStatuses(res.map((s: OrderStatusDefinition) => ({ id: s.id, name: s.name, code: s.code })));
         }
       })
-      .catch((err) => console.error("Failed to fetch site statuses:", err));
+      .catch((err) => {
+        // Silent fail - fallback to static statuses
+        console.warn("Could not fetch site statuses, using defaults:", err?.response?.status);
+      });
   }, []);
 
   const handleSearch = useCallback(async () => {
@@ -117,11 +122,13 @@ const QuickStatusChange: React.FC = () => {
       return;
     }
 
+    // Preserve status pre-selected by user before searching
+    const preSelectedStatus = selectedStatus;
+
     setSearchLoading(true);
     setHasSearched(true);
     setSearchError("");
     setCurrentOrder(null);
-    setSelectedStatus("");
 
     try {
       const response = await apiClient.get(`/orders-enhanced/${encodeURIComponent(code)}`);
@@ -129,7 +136,10 @@ const QuickStatusChange: React.FC = () => {
       if (body?.success && body?.data) {
         const order = { ...body.data, status: body.data.status?.toUpperCase() };
         setCurrentOrder(order);
-        setSelectedStatus(order.status);
+
+        // If user pre-selected a status, keep it; otherwise default to order's current status
+        const statusToSet = preSelectedStatus || order.status;
+        setSelectedStatus(statusToSet);
         
         setChangeLog((prev) => {
           const exists = prev.find(p => p.id === order.id);
@@ -144,6 +154,34 @@ const QuickStatusChange: React.FC = () => {
           };
           return [newEntry, ...prev];
         });
+
+        // Auto-change if user had pre-selected a different status
+        if (preSelectedStatus && preSelectedStatus !== order.status) {
+          try {
+            const changeRes = await apiClient.post("/order-workflow/change-status", {
+              orderId: order.id,
+              statusId: preSelectedStatus,
+              isOverride: true,
+            });
+            if (changeRes.data?.data?.status === "pending") {
+              toast.info(t("quickStatus.pendingApproval"));
+            } else {
+              setChangeLog((prev) =>
+                prev.map((entry) =>
+                  entry.id === order.id
+                    ? { ...entry, newStatus: preSelectedStatus, changedAt: new Date().toLocaleString("ar-EG") }
+                    : entry
+                )
+              );
+              setCurrentOrder({ ...order, status: preSelectedStatus });
+              toast.success(t("quickStatus.changeSuccess"));
+            }
+          } catch (changeErr) {
+            console.error("Auto-change error:", changeErr);
+            const axErr = changeErr as { response?: { data?: { message?: string } } };
+            toast.error(axErr.response?.data?.message || t("quickStatus.changeError"));
+          }
+        }
       } else {
         setSearchError(t("quickStatus.orderNotFound", { code }));
       }
@@ -151,10 +189,13 @@ const QuickStatusChange: React.FC = () => {
       const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
       if (axiosError.response?.status === 404) {
         setSearchError(t("quickStatus.orderNotFound", { code }));
+      } else if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+        setSearchError("انتهت صلاحية الجلسة — يرجى تسجيل الدخول مجدداً.");
       } else {
         console.error("Search error:", error);
         setSearchError(t("quickStatus.searchError"));
       }
+
     } finally {
       setSearchLoading(false);
     }
@@ -204,7 +245,14 @@ const QuickStatusChange: React.FC = () => {
   }, [currentOrder, selectedStatus, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSearch();
+    if (e.key === "Enter") {
+      // If we already have an order loaded and a different status is selected → change directly
+      if (currentOrder && selectedStatus && selectedStatus !== currentOrder.status) {
+        handleChangeStatus();
+      } else {
+        handleSearch();
+      }
+    }
   };
 
   const handleClear = () => {
@@ -251,13 +299,13 @@ const QuickStatusChange: React.FC = () => {
                 value={orderCode}
                 onChange={(e) => setOrderCode(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={t("quickStatus.orderCodePlaceholder")}
-                className="w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="ابحث برقم الأوردر أو الكود..."
+                className="w-full px-5 py-4 pr-12 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                 disabled={searchLoading}
               />
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                size={22}
               />
             </div>
           </div>
@@ -269,13 +317,11 @@ const QuickStatusChange: React.FC = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              disabled={!currentOrder || changeLoading}
+              className="w-full px-4 py-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors"
+              disabled={changeLoading}
             >
               <option value="">
-                {currentOrder
-                  ? t("quickStatus.selectStatus")
-                  : t("quickStatus.searchFirst")}
+                {t("quickStatus.selectStatus")}
               </option>
               {(siteStatuses.length > 0
                 ? siteStatuses
