@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { CalendarDays, Wallet, Users, LayoutDashboard, LogOut, Menu, X, ShoppingCart } from "lucide-react";
 
@@ -10,7 +10,12 @@ const ParentLayout: React.FC<ParentLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const token = localStorage.getItem('parentToken');
   const parent = JSON.parse(localStorage.getItem('parent') || '{}');
+
+  useEffect(() => {
+    if (!token) navigate('/parent/login', { replace: true });
+  }, [token, navigate]);
 
   const navItems = [
     { path: '/parent/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },

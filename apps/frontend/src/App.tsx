@@ -1587,6 +1587,14 @@ const AppContent = () => {
                 </AuthLayout>
               }
             />
+            {/* Parent Portal Routes (outside ProtectedRoute - use own auth) */}
+            <Route path="/parent/dashboard" element={<ParentLayout><ParentDashboardPage /></ParentLayout>} />
+            <Route path="/parent/children" element={<ParentLayout><ParentChildrenPage /></ParentLayout>} />
+            <Route path="/parent/children/:studentId" element={<ParentLayout><ParentChildDetailPage /></ParentLayout>} />
+            <Route path="/parent/sessions" element={<ParentLayout><ParentSessionsPage /></ParentLayout>} />
+            <Route path="/parent/enrollments" element={<ParentLayout><ParentEnrollmentsPage /></ParentLayout>} />
+            <Route path="/parent/wallet" element={<ParentLayout><ParentWalletPage /></ParentLayout>} />
+            <Route path="/parent/buy-package" element={<ParentLayout><ParentBuyPackagePage /></ParentLayout>} />
             <Route
               path="/parent/login"
               element={
@@ -6302,13 +6310,6 @@ const AppContent = () => {
                 <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
                 <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
                 <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
-                <Route path="/parent/dashboard" element={<ParentLayout><ParentDashboardPage /></ParentLayout>} />
-                <Route path="/parent/children" element={<ParentLayout><ParentChildrenPage /></ParentLayout>} />
-                <Route path="/parent/children/:studentId" element={<ParentLayout><ParentChildDetailPage /></ParentLayout>} />
-                <Route path="/parent/sessions" element={<ParentLayout><ParentSessionsPage /></ParentLayout>} />
-                <Route path="/parent/enrollments" element={<ParentLayout><ParentEnrollmentsPage /></ParentLayout>} />
-                <Route path="/parent/wallet" element={<ParentLayout><ParentWalletPage /></ParentLayout>} />
-                <Route path="/parent/buy-package" element={<ParentLayout><ParentBuyPackagePage /></ParentLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={
