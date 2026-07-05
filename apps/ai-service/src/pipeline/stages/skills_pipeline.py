@@ -93,17 +93,20 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 ))
                 if ps_result.get("results"):
                     ctx.external_memory_context["productSearchResults"] = ps_result
+                    top = ps_result["results"][0]
+                    top_score = float(top.get("score") or top.get("similarity") or 0)
                     candidates_text = ""
                     for i, p in enumerate(ps_result["results"][:10], 1):
                         name = p.get("productName") or p.get("name", "")
                         price = p.get("price", "")
-                        score = p.get("score") or p.get("similarity") or 0
-                        candidates_text += f"  {i}. {name} | {price} جنيه | تشابه: {float(score)*100:.0f}%\n"
-                    system_prompt += (
-                        f"\n\n[نتائج البحث عن الصورة:\n{candidates_text}"
-                        " استخدمي طبيعتك كبياعة وتكلمي مع العميل بشكل طبيعي. قولي له إن المنتج ده شبه اللي بعته"
-                        " واعرضي عليه التفاصيل أو تسأليه إذا كان عايز حاجة تاني.]"
-                    )
+                        sc = p.get("score") or p.get("similarity") or 0
+                        candidates_text += f"  {i}. {name} | {price} جنيه | تشابه: {float(sc)*100:.0f}%\n"
+                    if top_score >= 0.9:
+                        system_prompt += f"\n\n[منتج مطابق للصورة: {top.get('productName') or top.get('name', '')} بسعر {top.get('price', '')} جنيه. ردي عليه بشكل طبيعي كبياعة واخلصي المبيعة.]"
+                    elif top_score >= 0.5:
+                        system_prompt += f"\n\n[أقرب منتج للصورة:\n{candidates_text}قولي للعميل إن ده أقرب حاجة عندك ليها.]"
+                    else:
+                        system_prompt += "\n\n[مفيش منتج مطابق في الكتالوج. اعتذري بلطف واعرضي تساعده بحاجة تانية.]"
                 else:
                     system_prompt += (
                         "\n\n[⚠️ العميل أرسل صورة. حللها أولاً بالوصف، ثم أخبره أنك بحثت"
