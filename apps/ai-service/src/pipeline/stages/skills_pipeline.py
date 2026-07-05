@@ -85,8 +85,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         img_urls = [a.get("url", "") for a in ctx.attachments if a.get("type") in ("image", "photo")]
         if img_urls:
             system_prompt += (
-                "\n\n[العميل أرسل صورة. حللها أولاً، ثم استخدم أداة product_search للبحث عن منتجات مشابهة"
-                " في الكتالوج بناءً على وصفك للصورة. يجب عليك البحث فوراً ولا تكتفي بالترحيب.]"
+                "\n\n[⚠️ مهم جداً: العميل أرسل صورة. حللها أولاً بالوصف، ثم استخدم أداة product_search فوراً"
+                " للبحث عن منتجات مشابهة. لا ترد على العميل قبل استخدام product_search."
+                " ابحث أولاً، ثم رد بناءً على النتائج.]"
             )
 
     # 4. Single LLM call with skills as tools
