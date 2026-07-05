@@ -16,7 +16,11 @@ def _build_candidates_block(results: list[dict[str, Any]]) -> str:
         score = float(r.get("score", 0))
         name = r.get("name", "منتج")
         price = r.get("price", "")
-        lines.append(f"{i}. {name} (سعر {price} جنيه, تشابه {score:.0%})")
+        img = r.get("image_url", "")
+        if img:
+            lines.append(f"{i}. ![{name}]({img}) — سعر {price} جنيه, تشابه {score:.0%}")
+        else:
+            lines.append(f"{i}. {name} (سعر {price} جنيه, تشابه {score:.0%})")
     return "\n".join(lines)
 
 
@@ -42,7 +46,7 @@ async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
 
             results = await vector_product_search(
                 company_id=ctx.company_id,
-                query="",
+                query=ctx.message or "",
                 limit=5,
                 image_bytes=img_bytes,
                 mime_type=ct,
@@ -55,22 +59,20 @@ async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
                     existing[name] = r
             all_results = sorted(existing.values(), key=lambda x: -float(x.get("score", 0)))[:5]
 
-        ctx.external_memory_context["productSearchResults"] = {"results": all_results}
-
         base = ctx.message or ""
         if all_results:
             candidates = _build_candidates_block(all_results)
             ctx.message = f"""{base}
 
-[🔍 قام النظام بعمل بحث بالصورة ووجد المنتجات التالية:
+[🔍 تم البحث بالصورة — أقرب المنتجات المطابقة:
 {candidates}
 
-قارن الصورة مع هذه المنتجات واختر أقرب واحد للصورة المرسلة من العميل.
-- إذا وجدت تطابق: أخبر العميل باسم المنتج وسعره واسأله إذا كان يريد الشراء
-- إذا لم تجد تطابق تام: أخبر العميل بأقرب البدائل المتاحة]
+قارن صور المنتجات أعلاه مع صورة العميل واختر الأنسب.
+- تطابق: أخبر العميل باسم المنتج وسعره واسأله عن رغبته في الشراء
+- تطابق تقريبي: اشرح للعميل الفرق واسأله عن رأيه]
 """
         else:
-            ctx.message = f"{base}\n\n[لم يتم العثور على منتجات مطابقة للصورة. أخبر العميل بلطف واسأله عن تفاصيل أكثر.]"
+            ctx.message = f"{base}\n\n[العميل أرسل صورة. استخدم أداة product_search للبحث عن منتجات مشابهة بناءً على وصف الصورة.]"
 
     except Exception:
         ctx.message = f"{ctx.message}\n\n[العميل أرسل صورة مع الرسالة.]"
