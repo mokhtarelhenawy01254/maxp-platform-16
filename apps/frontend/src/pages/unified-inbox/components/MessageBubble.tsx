@@ -1,5 +1,5 @@
 import React, { useState, memo } from "react";
-import { Trash2, Reply, Forward, Star, Smile } from "lucide-react";
+import { Bot, Trash2, Reply, Forward, Star, Smile } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ReactionSelector from "../../../../components/facebook-inbox/Generic/ReactionSelector";
 import LinkifiedText from "../../../components/common/LinkifiedText";
@@ -261,14 +261,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
         <div
           className={`max-w-[85%] sm:max-w-xs lg:max-w-md ${isCustomer ? "ml-auto" : "mr-auto"}`}
         >
-          {!isCustomer && (
+          {!isCustomer && message.isAIResponse ? (
+            <div className="mb-1 flex items-center gap-1.5 text-left text-xs">
+              <div className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-purple-600/10 to-violet-600/10 px-1.5 py-0.5 text-[11px] font-medium text-purple-700 dark:from-purple-400/20 dark:to-violet-400/20 dark:text-purple-300">
+                <Bot className="size-3" />
+                <span>AI</span>
+              </div>
+            </div>
+          ) : !isCustomer ? (
             <div
               className="mb-1 text-left text-xs"
               style={{ color: "var(--color-muted-foreground)" }}
             >
               {message.senderName}
             </div>
-          )}
+          ) : null}
 
           {isCustomer && hasBeenReplied === false && (
             <div

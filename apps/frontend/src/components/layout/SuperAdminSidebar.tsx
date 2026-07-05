@@ -49,6 +49,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
   ]},
   { title: t("superAdmin.evaluation.aiModels"), icon: <Brain className="size-5" />, items: [
     { text: "AI Keys (New)", icon: <Key className="size-4" />, path: "/super-admin/ai-key-manager" },
+    { text: "سجل المفاتيح", icon: <History className="size-4" />, path: "/super-admin/ai-key-logs" },
     { text: "AI Playground", icon: <Play className="size-4" />, path: "/super-admin/ai-playground" },
     { text: t("superAdmin.evaluation.aiTemplates"), icon: <Layers className="size-4" />, path: "/super-admin/ai-templates" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },

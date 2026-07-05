@@ -795,6 +795,9 @@ const SuperAdminAIPlayground = React.lazy(
 const SuperAdminAIKeyManager = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIKeyManager"),
 );
+const SuperAdminAIKeyLogs = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIKeyLogs"),
+);
 const SuperAdminAIChatPage = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIChatPage"),
 );
@@ -1937,6 +1940,16 @@ const AppContent = () => {
                 <Layout fullWidth>
                   <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                     <SuperAdminAIKeyManager />
+                  </React.Suspense>
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-key-logs"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminAIKeyLogs />
                   </React.Suspense>
                 </Layout>
               }

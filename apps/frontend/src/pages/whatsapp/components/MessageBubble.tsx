@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { format, isToday, isYesterday } from "date-fns";
 import {
   AlertTriangle,
+  Bot,
   Check,
   CheckCheck,
   Clock3,
@@ -284,7 +285,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               </div>
             ) : null}
 
-            {senderName ? (
+            {message.fromMe && message.isAIResponse ? (
+              <div className="mb-1 flex items-center gap-1.5">
+                <div className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-purple-600/10 to-violet-600/10 px-1.5 py-0.5 text-[11px] font-medium text-purple-700 dark:from-purple-400/20 dark:to-violet-400/20 dark:text-purple-300">
+                  <Bot className="size-3" />
+                  <span>AI</span>
+                </div>
+              </div>
+            ) : senderName ? (
               <p className="mb-1 text-xs font-semibold text-[color:var(--color-primary)]">
                 {senderName}
               </p>

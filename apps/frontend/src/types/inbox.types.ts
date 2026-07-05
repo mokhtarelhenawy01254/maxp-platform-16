@@ -156,4 +156,5 @@ export interface InboxMessage {
   metadata?: any;
   attachments?: any[]; // Add attachments array for checking buttons etc
   isStarred?: boolean;
+  isAIResponse?: boolean;
 }

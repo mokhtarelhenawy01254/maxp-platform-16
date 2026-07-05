@@ -25,6 +25,19 @@ export interface CreateAiKeyPayload {
   api_key: string;
 }
 
+export interface AiKeyLog {
+  id: string;
+  provider: string;
+  key_id?: string;
+  action: string;
+  status: string;
+  model?: string;
+  latency_ms?: number;
+  error?: string;
+  company_id?: string;
+  created_at: string;
+}
+
 export interface AiTestResult {
   ok?: boolean;
   success?: boolean;

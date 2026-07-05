@@ -1,5 +1,5 @@
 import { apiClient } from "./apiClient";
-import type { AiKey, AiProvider, CreateAiKeyPayload, AiTestResult } from "../types/ai-admin";
+import type { AiKey, AiKeyLog, AiProvider, CreateAiKeyPayload, AiTestResult } from "../types/ai-admin";
 
 export const aiAdminService = {
   getProviders: async (): Promise<AiProvider[]> => {
@@ -25,6 +25,16 @@ export const aiAdminService = {
 
   deleteKey: async (id: string): Promise<void> => {
     await apiClient.delete(`/ai-admin/keys/${encodeURIComponent(id)}`);
+  },
+
+  getKeyLogs: async (params?: {
+    provider?: string;
+    key_id?: string;
+    status?: string;
+    limit?: number;
+  }): Promise<AiKeyLog[]> => {
+    const response = await apiClient.get<AiKeyLog[]>("/ai-admin/logs", { params });
+    return response.data;
   },
 
   testKey: async (provider: string, apiKey: string): Promise<AiTestResult> => {

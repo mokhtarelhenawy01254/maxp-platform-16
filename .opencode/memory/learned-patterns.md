@@ -6,6 +6,14 @@
 - Company settings (late cancellation config) stored in `company.settings` JSON field, accessed via `PUT /api/v1/order-settings` (requires `order-invoicing` app access)
 - Order statuses fetched from `GET /api/v1/order-status` (requires `order-core` app access)
 
+## Cross-Layer Feature Pattern: Python → Express → React (2026-07-05)
+- New super-admin features follow the chain: Python schema/model → Python endpoint → Express admin client method → Express route → Frontend component
+- For Python endpoints accessed via `aiAdminProxyRoute`, the Frontend uses `/ai-admin/{path}` which proxies to `/admin/{path}` on the Python service
+- For dedicated Express routes, the Frontend uses `/super-admin/{path}` which maps to `superAdminRoutes.js`
+- `AgentTemplate` has a slug PK used everywhere; `Agent` has an `id` (auto-generated) + `company_id` FK
+- Company-specific agent overrides are stored on the `Agent` record in `ai.agents` and compared to `AgentTemplate` defaults at query time (not stored as diffs)
+- Per-field diff strategy: simple equality for scalar fields (model, soul, rules), set comparison for list fields (allowed_tools, allowed_skills, channels)
+
 ## Agent Vision — Follow-Up Fallback Missing (2026-07-05)
 - `_raw_llm_call` (follow-up call after tool execution) had no vision fallback — images in the follow-up user message were sent to non-vision models
 - `_llm_call` had the fallback (checks `supports_vision`, switches to Gemini), but `_raw_llm_call` didn't

@@ -1,3 +1,33 @@
+# Session Log — 2026-07-05 — Part 2
+
+## AI Templates Companies Feature
+
+### Built
+1. **Python endpoint** `GET /admin/agent-templates/{slug}/companies` — lists companies using a template with per-field diff (modified/added/removed) comparing agent values to template defaults
+2. **Express routes** — GET companies, PUT update, DELETE archive company agents
+3. **Frontend "الشركات" tab** — table with company name, agent, status, version, diff count; expandable diff details
+4. **EditCompanyAgentDialog** — modal for editing company-specific overrides (model, soul, rules, tools, skills)
+
+### Files Modified
+- `apps/ai-service/src/api/admin/agents_schemas.py` — 3 new Pydantic schemas
+- `apps/ai-service/src/api/admin/agents.py` — new endpoint + imports
+- `apps/backend/services/aiServiceAdminClient.js` — getTemplateCompanies()
+- `apps/backend/routes/superAdminRoutes.js` — 3 new routes
+- `apps/frontend/src/pages/super-admin/SuperAdminAITemplateDetail.tsx` — CompaniesTab component, editCompanyTarget dialog
+- `apps/frontend/src/pages/super-admin/SuperAdminAITemplatesDialogs.tsx` — EditCompanyAgentDialog
+
+### Verification
+- Python AST parses ✓
+- Express scripts parse ✓
+- Route registration confirmed via FastAPI route list ✓
+- Schema JSON serialization tested ✓
+
+### Code review notes
+- EditCompanyAgentDialog sends `allowed_channels` but Python field is `channels` — fixed by not sending it and relying on `allowed_tools`/`allowed_skills` send only
+- `aiAdminProxyRoute` is at `express mount /api/v1/ai-admin → Python /admin/*`
+
+---
+
 # Session Log — 2026-07-04
 
 ## Facebook AI Auto-Reply Fixes — Final Summary
