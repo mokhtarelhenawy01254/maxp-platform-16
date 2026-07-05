@@ -251,7 +251,7 @@ async function saveIncomingMessage(payload) {
     console.error('❌ Error sending WhatsApp notification:', error.message);
   }
 
-  // ── AI auto-reply (fire-and-forget, never blocks the webhook) ──────────────
+  // ── AI auto-reply with debounce ────────────────────────────────────────────
   if (content && messageType === 'TEXT' && syncedCustomer?.companyId) {
     setImmediate(async () => {
       try {
@@ -259,7 +259,7 @@ async function saveIncomingMessage(payload) {
         const prisma = getSharedPrismaClient();
         const aiSetting = await getEffectiveAiAutoReplySetting(syncedCustomer.companyId, prisma);
         if (!aiSetting?.autoReplyEnabled) {
-          console.log('🤖 [WA-AI-AUTOREPLY] AI auto-reply disabled for company');
+          console.log('🟡 [WA-DEBOUNCE] AI auto-reply disabled for company');
           return;
         }
         if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
@@ -268,50 +268,68 @@ async function saveIncomingMessage(payload) {
             const now = new Date();
             const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
             const today = hours[dayName];
-            if (today && !today.enabled) { console.log('🤖 [WA-AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
+            if (today && !today.enabled) { console.log('🟡 [WA-DEBOUNCE] Outside working hours (day disabled)'); return; }
             if (today && today.start && today.end) {
               const currentMinutes = now.getHours() * 60 + now.getMinutes();
               const [startH, startM] = today.start.split(':').map(Number);
               const [endH, endM] = today.end.split(':').map(Number);
               const startMin = startH * 60 + startM;
               const endMin = endH * 60 + endM;
-              if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🤖 [WA-AI-AUTOREPLY] Outside working hours (time)'); return; }
+              if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🟡 [WA-DEBOUNCE] Outside working hours (time)'); return; }
             }
           } catch(e) { /* continue if parsing fails */ }
         }
 
-        const result = await aiSdkClient.sendChatMessage({
-          companyId: syncedCustomer.companyId,
-          customerId: syncedCustomer.id,
+        const { accumulateWA } = require('../facebookDebounceService');
+
+        accumulateWA(syncedCustomer.companyId, sessionId, normalizedJid, {
           message: content,
-          threadId: syncedConversation?.id || null,
-          channel: 'WHATSAPP',
-          memoryContext: null,
-        });
+          customerId: syncedCustomer.id,
+          conversationId: syncedConversation?.id,
+          companyId: syncedCustomer.companyId,
+          sessionId,
+          normalizedJid,
+        }, async (entries) => {
+          if (entries.length === 0) return;
 
-        // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
-        if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
-          const { flagThreadForHumanTakeover } = require('../silentEscalationService');
-          await flagThreadForHumanTakeover({
-            companyId: syncedCustomer.companyId,
-            conversationId: syncedConversation?.id,
-            customerPhone: normalizedJid,
-            customerId: syncedCustomer.id,
-            reason: result.escalation?.reason || 'ai_failure',
-            customerMessage: content,
+          const combinedMessage = entries.map(e => e.message).join('\n---\n');
+          const first = entries[0];
+
+          console.log(`🟢 [WA-DEBOUNCE] Processing ${entries.length} debounced message(s) as one request`);
+
+          const result = await aiSdkClient.sendChatMessage({
+            companyId: first.companyId,
+            customerId: first.customerId,
+            message: combinedMessage,
+            threadId: first.conversationId,
             channel: 'WHATSAPP',
+            memoryContext: null,
           });
-          return;
-        }
 
-        const replyText = result.reply;
-        if (replyText) {
-          await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, replyText, {
-            isAIResponse: true,
-          });
-        }
+          // Silent Escalation
+          if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+            const { flagThreadForHumanTakeover } = require('../silentEscalationService');
+            await flagThreadForHumanTakeover({
+              companyId: first.companyId,
+              conversationId: first.conversationId,
+              customerPhone: first.normalizedJid,
+              customerId: first.customerId,
+              reason: result.escalation?.reason || 'ai_failure',
+              customerMessage: combinedMessage,
+              channel: 'WHATSAPP',
+            });
+            return;
+          }
+
+          const replyText = result.reply;
+          if (replyText) {
+            await WhatsAppMessageHandler.sendText(first.sessionId, first.normalizedJid, replyText, {
+              isAIResponse: true,
+            });
+          }
+        });
       } catch (e) {
-        console.error('❌ [WA-AI-AUTOREPLY] Error generating or sending AI reply:', e.message);
+        console.error('❌ [WA-DEBOUNCE] Error generating or sending AI reply:', e.message);
       }
     });
   }

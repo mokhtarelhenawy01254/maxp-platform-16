@@ -1998,9 +1998,9 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
             }
 
             // 2. Debounce: accumulate messages within N seconds, then process once
-            const { accumulate } = require('../services/facebookDebounceService');
+            const { accumulateFB } = require('../services/facebookDebounceService');
 
-            accumulate(senderId, messagePageId, customer.companyId, pageData?.pageAccessToken, {
+            accumulateFB(senderId, messagePageId, customer.companyId, pageData?.pageAccessToken, {
               message: aiCustomerContent,
               customerId: customer.id,
               conversationId: conversation.id,
