@@ -88,12 +88,14 @@ async function initMediaDirectory() {
  * @param {Buffer} inputBuffer - buffer webm
  * @returns {Promise<Buffer>} buffer ogg
  */
-async function convertWebmToOgg(inputBuffer) {
+async function convertWebmToOgg(inputBuffer, sourceMime) {
     const tempDir = path.join(MEDIA_DIR, 'temp');
     await fs.mkdir(tempDir, { recursive: true });
 
     const ts = Date.now();
-    const inputPath = path.join(tempDir, `convert_in_${ts}.webm`);
+    const extMap = { 'audio/webm': 'webm', 'video/webm': 'webm', 'audio/wav': 'wav', 'audio/wave': 'wav', 'audio/x-wav': 'wav', 'audio/mp3': 'mp3', 'audio/mpeg': 'mp3', 'audio/x-m4a': 'm4a', 'audio/3gpp': '3gp' };
+    const inExt = extMap[sourceMime] || 'webm';
+    const inputPath = path.join(tempDir, `convert_in_${ts}.${inExt}`);
     const outputPath = path.join(tempDir, `convert_out_${ts}.ogg`);
 
     await fs.writeFile(inputPath, inputBuffer);
@@ -224,7 +226,7 @@ async function uploadMedia(source, mimetype, originalName = '') {
         // (يدعم WhatsApp Cloud API: audio/aac, audio/mp4, audio/mpeg, audio/amr, audio/ogg;codecs=opus)
         const META_AUDIO_MIMES = ['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/ogg'];
         if (mediaType === 'audio' && !META_AUDIO_MIMES.includes(cleanMime)) {
-            buffer = await convertWebmToOgg(buffer);
+            buffer = await convertWebmToOgg(buffer, cleanMime);
             outputMime = 'audio/ogg';
         }
 
