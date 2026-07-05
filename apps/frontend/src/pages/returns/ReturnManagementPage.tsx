@@ -285,40 +285,47 @@ const ReturnManagementPage: React.FC = () => {
             </button>
           ))}
         </div>
-        {displayConfig?.showOrderStatusFilter !== false && (
-          <>
-            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
-            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-              <Package size={16} />
-              <span className="text-xs font-medium whitespace-nowrap">حالة الطلب:</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setOrderStatusFilter("")}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  orderStatusFilter === ""
-                    ? "bg-blue-600 dark:bg-blue-500 text-white"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                }`}
-              >
-                الكل
-              </button>
-              {orderStatuses.map((status) => (
-                <button
-                  key={status.code}
-                  onClick={() => setOrderStatusFilter(status.code)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    orderStatusFilter === status.code
-                      ? "bg-blue-600 dark:bg-blue-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {status.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        {(() => {
+            const visibleOs = orderStatuses.filter((s) => {
+              if (!displayConfig?.visibleOrderStatuses) return true;
+              return displayConfig.visibleOrderStatuses.includes(s.code);
+            });
+            if (visibleOs.length === 0) return null;
+            return (
+              <>
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                  <Package size={16} />
+                  <span className="text-xs font-medium whitespace-nowrap">حالة الطلب:</span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => setOrderStatusFilter("")}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      orderStatusFilter === ""
+                        ? "bg-blue-600 dark:bg-blue-500 text-white"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    الكل
+                  </button>
+                  {visibleOs.map((status) => (
+                    <button
+                      key={status.code}
+                      onClick={() => setOrderStatusFilter(status.code)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        orderStatusFilter === status.code
+                          ? "bg-blue-600 dark:bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      {status.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         <input
           type="text"
           value={searchTerm}

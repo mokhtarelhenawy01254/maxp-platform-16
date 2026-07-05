@@ -22,6 +22,7 @@ import {
   Save,
   Settings2,
   Filter,
+  Package,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -43,7 +44,6 @@ const DEFAULT_DISPLAY_CONFIG: ReviewDisplayConfig = {
   showApprovedStatus: true,
   showRejectedStatus: true,
   showCompletedStatus: true,
-  showOrderStatusFilter: true,
 };
 
 const DISPLAY_FIELDS: {
@@ -130,12 +130,6 @@ const DISPLAY_FIELDS: {
     description: "زر إنشاء طلب إرجاع جديد",
     section: "controls",
   },
-  {
-    key: "showOrderStatusFilter",
-    label: "فلترة حالة الطلب الأصلي",
-    description: "إظهار فلتر بحالة الطلب (قيد الانتظار، مؤكد، تم الشحن، ...)",
-    section: "controls",
-  },
 ];
 
 const STATUS_FIELDS: {
@@ -168,6 +162,24 @@ const STATUS_FIELDS: {
     description: "عرض الطلبات المكتملة في شريط التصفية",
     statusValue: "COMPLETED",
   },
+];
+
+const ORDER_STATUS_FIELDS: {
+  code: string;
+  label: string;
+}[] = [
+  { code: "PENDING", label: "قيد الانتظار" },
+  { code: "CONFIRMED", label: "مؤكد" },
+  { code: "SCHEDULED", label: "مجدول" },
+  { code: "PROCESSING", label: "قيد التجهيز" },
+  { code: "SHIPPED", label: "تم الشحن" },
+  { code: "DELIVERED", label: "تم التسليم" },
+  { code: "CANCELLED", label: "ملغي" },
+  { code: "RETURNED", label: "مرتجع" },
+  { code: "REFUNDED", label: "مسترد" },
+  { code: "DUPLICATE_ORDER", label: "طلب مكرر" },
+  { code: "ON_HOLD", label: "معلق" },
+  { code: "PARTIALLY_DELIVERED", label: "تسليم جزئي" },
 ];
 
 const DEFAULT_DATA = [
@@ -290,6 +302,27 @@ const ReturnSettingsPage: React.FC = () => {
 
   const toggleDisplayField = (key: keyof ReviewDisplayConfig) => {
     setDisplayConfig((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const isOrderStatusVisible = (code: string) => {
+    const arr = displayConfig.visibleOrderStatuses;
+    return !arr || arr.includes(code);
+  };
+
+  const toggleOrderStatusField = (code: string) => {
+    setDisplayConfig((prev) => {
+      const arr = prev.visibleOrderStatuses;
+      if (!arr) {
+        // first toggle hides all except this one
+        const all = ORDER_STATUS_FIELDS.map((f) => f.code).filter((c) => c !== code);
+        return { ...prev, visibleOrderStatuses: all };
+      }
+      if (arr.includes(code)) {
+        const next = arr.filter((c) => c !== code);
+        return { ...prev, visibleOrderStatuses: next.length === 0 ? [] : next };
+      }
+      return { ...prev, visibleOrderStatuses: [...arr, code] };
+    });
   };
 
   const addDefaults = async () => {
@@ -593,6 +626,58 @@ const ReturnSettingsPage: React.FC = () => {
                   />
                 </div>
               ))}
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400">
+                  <Package size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-800 dark:text-white">
+                    حالات الطلب الأصلي
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    اختر حالات الطلب التي تظهر في فلتر حالة الطلب
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {ORDER_STATUS_FIELDS.map((field) => (
+                  <div
+                    key={field.code}
+                    className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-2 rounded-lg ${
+                          isOrderStatusVisible(field.code)
+                            ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
+                        }`}
+                      >
+                        {isOrderStatusVisible(field.code) ? (
+                          <Eye size={18} />
+                        ) : (
+                          <EyeOff size={18} />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-800 dark:text-white">
+                          {field.label}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {field.code}
+                        </div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={isOrderStatusVisible(field.code)}
+                      onCheckedChange={() => toggleOrderStatusField(field.code)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

@@ -152,7 +152,7 @@ export interface ReviewDisplayConfig {
   showApprovedStatus?: boolean;
   showRejectedStatus?: boolean;
   showCompletedStatus?: boolean;
-  showOrderStatusFilter?: boolean;
+  visibleOrderStatuses?: string[];
 }
 
 export interface ReturnSettingsData {
