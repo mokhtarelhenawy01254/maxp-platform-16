@@ -26,6 +26,24 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
+const ORDER_STATUS_FIELDS: {
+  code: string;
+  label: string;
+}[] = [
+  { code: "PENDING", label: "قيد الانتظار" },
+  { code: "CONFIRMED", label: "مؤكد" },
+  { code: "SCHEDULED", label: "مجدول" },
+  { code: "PROCESSING", label: "قيد التجهيز" },
+  { code: "SHIPPED", label: "تم الشحن" },
+  { code: "DELIVERED", label: "تم التسليم" },
+  { code: "CANCELLED", label: "ملغي" },
+  { code: "RETURNED", label: "مرتجع" },
+  { code: "REFUNDED", label: "مسترد" },
+  { code: "DUPLICATE_ORDER", label: "طلب مكرر" },
+  { code: "ON_HOLD", label: "معلق" },
+  { code: "PARTIALLY_DELIVERED", label: "تسليم جزئي" },
+];
+
 const DEFAULT_DISPLAY_CONFIG: ReviewDisplayConfig = {
   showOrderColumn: true,
   showCustomerColumn: true,
@@ -44,6 +62,7 @@ const DEFAULT_DISPLAY_CONFIG: ReviewDisplayConfig = {
   showApprovedStatus: true,
   showRejectedStatus: true,
   showCompletedStatus: true,
+  visibleOrderStatuses: ORDER_STATUS_FIELDS.map((f) => f.code),
 };
 
 const DISPLAY_FIELDS: {
@@ -162,24 +181,6 @@ const STATUS_FIELDS: {
     description: "عرض الطلبات المكتملة في شريط التصفية",
     statusValue: "COMPLETED",
   },
-];
-
-const ORDER_STATUS_FIELDS: {
-  code: string;
-  label: string;
-}[] = [
-  { code: "PENDING", label: "قيد الانتظار" },
-  { code: "CONFIRMED", label: "مؤكد" },
-  { code: "SCHEDULED", label: "مجدول" },
-  { code: "PROCESSING", label: "قيد التجهيز" },
-  { code: "SHIPPED", label: "تم الشحن" },
-  { code: "DELIVERED", label: "تم التسليم" },
-  { code: "CANCELLED", label: "ملغي" },
-  { code: "RETURNED", label: "مرتجع" },
-  { code: "REFUNDED", label: "مسترد" },
-  { code: "DUPLICATE_ORDER", label: "طلب مكرر" },
-  { code: "ON_HOLD", label: "معلق" },
-  { code: "PARTIALLY_DELIVERED", label: "تسليم جزئي" },
 ];
 
 const DEFAULT_DATA = [
@@ -311,15 +312,9 @@ const ReturnSettingsPage: React.FC = () => {
 
   const toggleOrderStatusField = (code: string) => {
     setDisplayConfig((prev) => {
-      const arr = prev.visibleOrderStatuses;
-      if (!arr) {
-        // first toggle hides all except this one
-        const all = ORDER_STATUS_FIELDS.map((f) => f.code).filter((c) => c !== code);
-        return { ...prev, visibleOrderStatuses: all };
-      }
+      const arr = prev.visibleOrderStatuses || ORDER_STATUS_FIELDS.map((f) => f.code);
       if (arr.includes(code)) {
-        const next = arr.filter((c) => c !== code);
-        return { ...prev, visibleOrderStatuses: next.length === 0 ? [] : next };
+        return { ...prev, visibleOrderStatuses: arr.filter((c) => c !== code) };
       }
       return { ...prev, visibleOrderStatuses: [...arr, code] };
     });
