@@ -215,9 +215,24 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     ]
     # Add recent conversation history if available
     recent = ctx.external_memory_context.get("recentMessages", [])
-    for msg in recent:
-        role = "assistant" if msg.get("role") == "assistant" else "user"
-        messages.append({"role": role, "content": msg.get("content", "")})
+    if not recent and ctx.conversation_id and ctx.session:
+        try:
+            from sqlalchemy import text
+            result = await ctx.session.execute(
+                text('SELECT content, "isFromCustomer", type FROM public.messages WHERE "conversationId" = :cid ORDER BY "createdAt" ASC LIMIT 15'),
+                {"cid": ctx.conversation_id}
+            )
+            for row in result.fetchall():
+                role = "user" if row[1] else "assistant"
+                content = row[0] or (f"[{row[2]} Attachment]" if row[2] != "TEXT" else "")
+                if content:
+                    messages.append({"role": role, "content": content})
+        except Exception:
+            logger.warning("failed to fetch message history from DB", exc_info=True)
+    else:
+        for msg in recent:
+            role = "assistant" if msg.get("role") == "assistant" else "user"
+            messages.append({"role": role, "content": msg.get("content", "")})
 
     # Build user message — multipart if attachments present
     from src.context.multimodal import build_user_content
