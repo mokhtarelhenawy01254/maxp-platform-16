@@ -220,8 +220,10 @@ async function uploadMedia(source, mimetype, originalName = '') {
             throw new Error('نوع الملف غير مدعوم');
         }
 
-        // تحويل audio/webm إلى audio/ogg ليتوافق مع WhatsApp Cloud API
-        if (mediaType === 'audio' && cleanMime === 'audio/webm') {
+        // تحويل الصيغ الصوتية غير المدعومة إلى audio/ogg ليتوافق مع WhatsApp Cloud API
+        // (يدعم WhatsApp Cloud API: audio/aac, audio/mp4, audio/mpeg, audio/amr, audio/ogg;codecs=opus)
+        const META_AUDIO_MIMES = ['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/ogg'];
+        if (mediaType === 'audio' && !META_AUDIO_MIMES.includes(cleanMime)) {
             buffer = await convertWebmToOgg(buffer);
             outputMime = 'audio/ogg';
         }
