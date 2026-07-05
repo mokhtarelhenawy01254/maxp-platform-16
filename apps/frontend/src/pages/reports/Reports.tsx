@@ -530,6 +530,14 @@ const Reports: React.FC = () => {
       icon: PresentationChartLineIcon,
       onClick: () => navigate("/analytics"),
     },
+    {
+      id: "status-analysis",
+      title: "تحليل تقارير الحالات",
+      description: "تحليل مفصل لأداء الطلبات بناءً على حالتها الحالية",
+      cta: t("reports.openRoute"),
+      icon: ChartBarIcon,
+      onClick: () => navigate("/reports/status-analysis"),
+    },
   ];
 
   const getReportTypeIcon = (type: string) => {

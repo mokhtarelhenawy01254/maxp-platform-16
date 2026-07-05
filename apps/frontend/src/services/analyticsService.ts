@@ -1106,6 +1106,38 @@ class AnalyticsService {
       throw error;
     }
   }
+
+  // --- Status Reports Analysis Methods ---
+  
+  async getAvailableStatuses() {
+    try {
+      const response = await apiClient.get("/analytics/statuses");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching available statuses:", error);
+      throw error;
+    }
+  }
+
+  async getStatusAnalysisReport(
+    statusId: string,
+    period: string = "30",
+    startDate?: string,
+    endDate?: string,
+  ) {
+    try {
+      const params: AnalyticsQueryParams = { status: statusId, period };
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      const response = await apiClient.get("/analytics/status-report", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching status analysis report:", error);
+      throw error;
+    }
+  }
 }
 
 export default new AnalyticsService();

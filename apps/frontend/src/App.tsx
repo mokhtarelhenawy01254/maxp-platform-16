@@ -230,6 +230,7 @@ const SocialOverview = React.lazy(() => import("./pages/competitors/social/Socia
 const AdIntelligence = React.lazy(() => import("./pages/competitors/social/AdIntelligence"));
 const PlatformOverview = React.lazy(() => import("./pages/competitors/social/PlatformOverview"));
 const Reports = React.lazy(() => import("./pages/reports/Reports"));
+const StatusAnalysisReport = React.lazy(() => import("./pages/reports/StatusAnalysisReport"));
 const ShippingReport = React.lazy(
   () => import("./pages/reports/ShippingReport"),
 );
@@ -4312,6 +4313,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ProfitLossReport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reports/status-analysis"
+                  element={
+                    <Layout>
+                      <StatusAnalysisReport />
                     </Layout>
                   }
                 />
