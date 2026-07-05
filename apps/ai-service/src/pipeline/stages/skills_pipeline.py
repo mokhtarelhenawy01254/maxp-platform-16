@@ -66,25 +66,12 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
     ctx.system_prompt = base_prompt
-    system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
 
-    # Inject referred product mapping context (if present)
-    referred_product = ctx.external_memory_context.get("referredProduct")
-    if referred_product and isinstance(referred_product, dict):
-        product_info = f"\n\n[معلومات النظام: العميل تواصل معنا عبر إعلان/منشور مرتبط بالمنتج التالي:\nالاسم: {referred_product.get('name')}\nالسعر: {referred_product.get('price')} جنيه\nالرابط/المعرف: {referred_product.get('id')}\nالرجاء افتراض اهتمام العميل المباشر بهذا المنتج وتوجيه المحادثة لتأكيد شرائه.]"
-        system_prompt += product_info
-
-    # Inject full skill instructions (SKILL.md) into system prompt
-    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
-        skills_block = get_skills_block(ctx.agent.allowed_skills)
-        if skills_block:
-            system_prompt += f"\n\n{skills_block}"
-
-    # Inject image search instruction when customer sends an image
+    # Build image search block UPFRONT (before skills/personality — Gemini pays attention to beginning)
+    image_block = ""
     if ctx.attachments:
         img_urls = [a.get("url", "") for a in ctx.attachments if a.get("type") in ("image", "photo")]
         if img_urls:
-            # Auto-execute product_search with the image URL
             try:
                 from src.tools.definitions.product import product_search
                 from src.tools.definitions.product import ProductSearchInput
@@ -95,28 +82,29 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     ctx.external_memory_context["productSearchResults"] = ps_result
                     top = ps_result["results"][0]
                     top_score = float(top.get("score") or top.get("similarity") or 0)
-                    if top_score and top_score >= 0.9:
-                        product_name = top.get("productName") or top.get("name", "")
-                        product_price = top.get("price", "")
-                        product_id = top.get("id") or top.get("productId", "")
-                        ctx.external_memory_context["confirmedProduct"] = {"name": product_name, "price": product_price, "id": product_id}
-                        system_prompt += f"\n\n[منتج مطابق للصورة: {product_name} بسعر {product_price} جنيه. ردي عليه بشكل طبيعي.]"
-                    elif top_score and top_score >= 0.5:
-                        candidates_text = ""
+                    if top_score >= 0.9:
+                        pname = top.get("productName") or top.get("name", "")
+                        pprice = top.get("price", "")
+                        ctx.external_memory_context["confirmedProduct"] = {"name": pname, "price": pprice}
+                        image_block = f"\n\n[منتج مطابق: {pname} بسعر {pprice} جنيه. هذا هو المنتج نفسه في الصورة. ردي عليه بشكل طبيعي بالأسعار والتفاصيل.]"
+                    elif top_score >= 0.5:
+                        candidates = []
                         for p in ps_result["results"][:5]:
                             n = p.get("productName") or p.get("name", "")
                             pr = p.get("price", "")
-                            sc = p.get("score") or p.get("similarity") or 0
-                            candidates_text += f"- {n} ({float(sc)*100:.0f}%)\n"
-                        system_prompt += f"\n\n[أقرب منتجات للصورة:\n{candidates_text}قولي إن ده أقرب حاجة عندك.]"
+                            s = float(p.get("score") or p.get("similarity") or 0) * 100
+                            candidates.append(f"- {n} ({s:.0f}%)")
+                        image_block = f"\n\n[أقرب منتجات للصورة:\n" + "\n".join(candidates) + "\nقولي إن ده أقرب حاجة عندك.]"
                     else:
-                        system_prompt += "\n\n[⚠️ لم نجد منتج مطابق. قولي للعميل إن المنتج مش موجود. ممنوع اختراع منتجات أو أسعار.]"
+                        image_block = "\n\n[لم نجد منتج مطابق. لا تخترعي منتجات. اعتذري بصراحة.]"
                 else:
-                    system_prompt += "\n\n[⚠️ لم نجد منتج مطابق. قولي للعميل بصراحة إنه مش موجود. ممنوع اختراع منتجات.]"
+                    image_block = "\n\n[لم نجد منتج مطابق. لا تخترعي منتجات.]"
             except Exception:
-                system_prompt += "\n\n[العميل أرسل صورة. حلليها طبيعي.]"
-            # Anti-hallucination guard
-            system_prompt += "\n\n[تنبيه: لا تذكري أي اسم منتج أو سعر غير موجود في قائمة المنتجات أعلاه. إذا لم تجدي نتيجة، اعتذري بصراحة.]"
+                image_block = "\n\n[العميل أرسل صورة. حلليها واسأليه.]"
+
+    system_prompt = f"{base_prompt}{image_block}\n\n{_technical_formatting_constraints()}"
+
+    # Inject referred product mapping context (if present)
 
     # 4. Single LLM call with skills as tools
     try:
