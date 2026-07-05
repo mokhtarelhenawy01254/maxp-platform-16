@@ -103,6 +103,7 @@ class SocketService {
   private baseURL = buildWsUrl();
   private audioContext: AudioContext | null = null;
   private isAudioInitialized: boolean = false;
+  private isConnecting: boolean = false;
 
   constructor() {
     // تهيئة Audio Context (سيتم تفعيله بعد أول user interaction)
@@ -205,6 +206,9 @@ class SocketService {
     if (this.socket?.connected) {
       return this.socket;
     }
+    if (this.isConnecting && this.socket) {
+      return this.socket;
+    }
     if (this.socket) {
       this.disconnect();
     }
@@ -232,9 +236,11 @@ class SocketService {
       );
     }
 
+    this.isConnecting = true;
     this.socket = io(this.baseURL, socketConfig);
 
     this.socket.on("connect", () => {
+      this.isConnecting = false;
       console.log("✅ [SOCKET] Connected to server");
 
       // 🔐 إرسال معلومات المستخدم مع دعم عزل الشركات
@@ -242,10 +248,12 @@ class SocketService {
     });
 
     this.socket.on("disconnect", (reason: string) => {
+      this.isConnecting = false;
       console.log("🔌 [SOCKET] Disconnected from server:", reason);
     });
 
     this.socket.on("connect_error", (error: any) => {
+      this.isConnecting = false;
       console.error("❌ [SOCKET] Connection error:", error);
     });
 

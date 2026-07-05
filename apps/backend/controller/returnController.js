@@ -440,10 +440,20 @@ exports.getReturnSettings = async (req, res) => {
     }
 };
 
+const ALLOWED_SETTINGS_FIELDS = [
+    'excellentThreshold', 'goodThreshold', 'minOrdersForRating',
+    'autoApproveScore', 'enableAutoApproval', 'reviewDisplayConfig'
+];
+
 exports.updateReturnSettings = async (req, res) => {
     try {
         const companyId = req.user.effectiveCompanyId || req.user.companyId;
-        const data = req.body; // expected: { excellentThreshold: 90, ... }
+        const data = {};
+        for (const field of ALLOWED_SETTINGS_FIELDS) {
+            if (req.body[field] !== undefined) {
+                data[field] = req.body[field];
+            }
+        }
 
         const settings = await getPrisma().returnSettings.upsert({
             where: { companyId },

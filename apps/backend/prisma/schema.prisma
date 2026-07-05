@@ -10860,6 +10860,7 @@ model ReturnSettings {
   minOrdersForRating Int      @default(3)
   autoApproveScore   Int      @default(95)
   enableAutoApproval Boolean  @default(false)
+  reviewDisplayConfig Json   @default("{}")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
