@@ -93,14 +93,17 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 ))
                 if ps_result.get("results"):
                     ctx.external_memory_context["productSearchResults"] = ps_result
-                    products_text = "نتائج البحث عن الصورة:\n"
-                    for p in ps_result["results"][:3]:
+                    candidates_text = ""
+                    for i, p in enumerate(ps_result["results"][:10], 1):
                         name = p.get("productName") or p.get("name", "")
                         price = p.get("price", "")
-                        products_text += f"- {name} - {price} جنيه\n"
+                        score = p.get("score") or p.get("similarity") or 0
+                        candidates_text += f"  {i}. {name} | {price} جنيه | تشابه أولي: {float(score)*100:.0f}%\n"
                     system_prompt += (
-                        f"\n\n[⚠️ تم البحث في الكتالوج عن منتجات مشابهة للصورة. النتائج:\n{products_text}"
-                        " أخبر العميل بالنتائج واسأله إن كان يريد تفاصيل أكثر أو المساعدة في أي شيء آخر.]"
+                        f"\n\n[قارن الصورة التي أرسلها العميل مع هذه المنتجات من الكتالوج.\n{candidates_text}"
+                        " اختر المنتج الأكثر تشابهاً مع الصورة.\n"
+                        " رد بهذا التنسيق: \"ده شبيه بـ [اسم المنتج] بنسبة [X]%\"\n"
+                        " لو ما فيش تطابق فوق 50%، قل \"معندناش نفس المنتج بالظبط\"]"
                     )
                 else:
                     system_prompt += (
