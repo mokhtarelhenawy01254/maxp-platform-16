@@ -94,6 +94,7 @@ const telegramAlertService = require("./services/telegramAlertService");
 const {
   getReasonMessage,
   isWhatsAppBaileysConnectionClosed,
+  isGramJsResolveError,
 } = require("./utils/recoverableUnhandledRejection");
 
 
@@ -116,6 +117,10 @@ process.on("unhandledRejection", async (reason, promise) => {
   const msg = getReasonMessage(reason);
   if (isWhatsAppBaileysConnectionClosed(reason)) {
     console.warn("⚠️ [SERVER] Recoverable WhatsApp socket rejection ignored:", msg);
+    return;
+  }
+  if (isGramJsResolveError(reason)) {
+    console.warn("⚠️ [SERVER] Recoverable GramJS resolve rejection ignored:", msg);
     return;
   }
 
@@ -1223,7 +1228,7 @@ async function startServer() {
 }
 
 process.on("unhandledRejection", (reason, promise) => {
-  if (isWhatsAppBaileysConnectionClosed(reason)) {
+  if (isWhatsAppBaileysConnectionClosed(reason) || isGramJsResolveError(reason)) {
     return;
   }
 

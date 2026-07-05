@@ -1,5 +1,26 @@
 # Backend Bugs Log
 
+### [FIX] GramJS Unhandled Rejection Alert Loop
+- **Date**: 2026-07-05
+- **Description**: The server was flooded with unhandled rejections and logged `[Sleeping for 13s on flood wait]` and `Failed to send alert`, causing massive log files (`err-1.log` reached ~1MB) and rate-limiting the Telegram alerting channel.
+- **Root Cause**: An internal update parsing bug inside the `telegram` (GramJS) library triggers `Error: resolve() called for non-request instance` as an unhandled promise rejection. The global `unhandledRejection` handler catches it and triggers a Telegram alert. Sending this alert creates a new Telegram update, which GramJS receives and fails to parse, triggering another unhandled rejection. This creates an infinite feedback loop that spams the server and rate-limits the Telegram alerting channel.
+- **Resolution**: Added `isGramJsResolveError` inside `apps/backend/utils/recoverableUnhandledRejection.js` to identify this specific internal GramJS parsing error. Updated `apps/backend/server.js` global `unhandledRejection` handlers to log it as a warning and bypass sending Telegram alerts for it.
+- **Files Modified**:
+  - `apps/backend/utils/recoverableUnhandledRejection.js`
+  - `apps/backend/server.js`
+  - `apps/backend/tests/utils/recoverableUnhandledRejection.test.js`
+
+### [FIX] WhatsApp upload-send fileFilter Mimetype Rejection
+- **Date**: 2026-07-05
+- **Description**: Users uploading recorded audio or document files via the WhatsApp interface received `Error: نوع الملف غير مدعوم` (File type not supported) errors.
+- **Root Cause**: Browsers (especially Safari or some mobile devices) or upload clients sometimes upload files with mimetypes like `audio/wav`, `audio/aac`, `audio/x-m4a`, or `application/octet-stream`. These mimetypes were not included in `MIME_TYPE_MAP` in `whatsappRoutes.js` and were rejected by Multer's `fileFilter` before reaching the route controller. Additionally, no debug logs were printed when a file was rejected, making it difficult to trace.
+- **Resolution**:
+  - Expanded `MIME_TYPE_MAP` in `apps/backend/routes/whatsappRoutes.js` and `extensions`/`SUPPORTED_TYPES` in `apps/backend/services/whatsapp/WhatsAppMediaHandler.js` to support: `audio/wav`, `audio/x-wav`, `audio/wave`, `audio/x-pn-wav`, `audio/x-m4a`, `audio/aac`, `audio/x-aac`, `application/zip`, `application/x-zip-compressed`, `application/rar`, `application/x-rar-compressed`, and `application/octet-stream`.
+  - Added warning log in Multer's `fileFilter` to print the file name and rejected mimetype.
+- **Files Modified**:
+  - `apps/backend/routes/whatsappRoutes.js`
+  - `apps/backend/services/whatsapp/WhatsAppMediaHandler.js`
+
 ### [FIX] WhatsApp Voice Note Upload Fails with Unsupported Mimetype Error (Codecs parameters)
 - **Date**: 2026-07-05
 - **Description**: Recorded voice notes failed to send on WhatsApp with `Error: نوع الملف غير مدعوم` (HTTP 500 error) on some browsers.

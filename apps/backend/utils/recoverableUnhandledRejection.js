@@ -27,7 +27,21 @@ function isWhatsAppBaileysConnectionClosed(reason) {
   return cameFromBaileys && /connection closed/i.test(message);
 }
 
+function isGramJsResolveError(reason) {
+  const message = getReasonMessage(reason);
+  const stack = reason && typeof reason.stack === "string" ? reason.stack : "";
+  return (
+    message.includes("resolve()") &&
+    message.includes("called for non-request instance") &&
+    (stack.includes("node_modules/telegram") ||
+      stack.includes("node_modules\\telegram") ||
+      stack.includes("node_modules/gramjs") ||
+      stack.includes("node_modules\\gramjs"))
+  );
+}
+
 module.exports = {
   getReasonMessage,
   isWhatsAppBaileysConnectionClosed,
+  isGramJsResolveError,
 };

@@ -20,6 +20,8 @@ const MIME_TYPE_MAP = {
     'image/png': 'png',
     'image/gif': 'gif',
     'image/webp': 'webp',
+    'image/svg+xml': 'svg',
+    'image/bmp': 'bmp',
     'video/mp4': 'mp4',
     'video/3gpp': '3gp',
     'video/quicktime': 'mov',
@@ -29,11 +31,23 @@ const MIME_TYPE_MAP = {
     'audio/amr': 'amr',
     'audio/webm': 'webm',
     'video/webm': 'webm',
+    'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
+    'audio/wave': 'wav',
+    'audio/x-pn-wav': 'wav',
+    'audio/x-m4a': 'm4a',
+    'audio/aac': 'aac',
+    'audio/x-aac': 'aac',
     'application/pdf': 'pdf',
     'application/msword': 'doc',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
     'application/vnd.ms-excel': 'xls',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/zip': 'zip',
+    'application/x-zip-compressed': 'zip',
+    'application/rar': 'rar',
+    'application/x-rar-compressed': 'rar',
+    'application/octet-stream': 'bin',
     'text/plain': 'txt'
 };
 
@@ -59,6 +73,7 @@ const upload = multer({
         if (MIME_TYPE_MAP[cleanMimetype]) {
             cb(null, true);
         } else {
+            console.error(`❌ [WhatsApp Upload] File rejected by Multer fileFilter: name="${file.originalname}", mimetype="${file.mimetype}", size="${file.size || 'unknown'}"`);
             cb(new Error('نوع الملف غير مدعوم'), false);
         }
     }

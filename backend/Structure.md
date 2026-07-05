@@ -14,6 +14,8 @@ No API endpoints were modified or added, but:
 7. A new `silentEscalationService.js` was introduced in the backend to manage Socket.IO events (`ai:escalation`) and DB `ActivityLog` creation for silent human handoffs.
 8. The backend sandbox chat endpoint `/api/v1/ai-sandbox/chat` (handled by `aiSandboxController.sendChatMessage` / `runSelectedAgentInPython`) was updated to map `compiled_system_prompt` from the Python response to `result.compiledSystemPrompt`, enabling system prompt visualization in the Sandbox UI.
 9. The backend endpoint `/api/v1/whatsapp/messages/upload-send` (handled by `whatsappRoutes.js`) was updated to support explicit `ptt` flag and override media classification to `'audio'` when file name is `'voice_note.webm'`, ensuring playable push-to-talk voice messages are delivered to WhatsApp.
+10. The backend endpoint `/api/v1/whatsapp/messages/upload-send` MIME types whitelist was expanded to support common browser/client recording formats (`audio/wav`, `audio/x-wav`, `audio/wave`, `audio/x-pn-wav`, `audio/x-m4a`, `audio/aac`, `audio/x-aac`, `application/zip`, `application/x-zip-compressed`, `application/rar`, `application/x-rar-compressed`, `application/octet-stream`), and detailed console error logging was added to Multer's `fileFilter` for rejections.
+
 
 ### Database Schema Models
 No database models or Prisma schemas were modified. However, the database seeding script for the `ai.skills` table (`seed.py`) was corrected to map `triggerPhrases` from `skill.json` to the database column `trigger_phrases`, enabling SQL intent routing.
@@ -40,4 +42,6 @@ No database models or Prisma schemas were modified. However, the database seedin
 - Unified **WhatsApp Auto-Assignment**: Unified incoming webhook message sync and background sweeps under a single advanced `WhatsAppAssignmentEngineService`, ensuring all incoming chats respect online status, workload capacity, working hours, and transactional locks. Additionally, corrected the candidate pool generation to prioritize configured employee lists (`routingUserIds`) over direct number owners in Round Robin and Shared Inbox modes.
 - **Distributed Sweep Coordination**: Background monitor sweeps utilize PostgreSQL session-level advisory locks (`pg_try_advisory_lock`) to coordinate single-instance execution across PM2 cluster nodes.
 - **Assignment-Relative SLA Cooldown**: Implemented a 5-minute cooldown and assignment-relative SLA timeout calculation based on `lastAssignedAt` to eliminate 60-second reassignment ping-pong loops between moderators.
+- **GramJS Unhandled Rejection Alert Loop Isolation**: Added `isGramJsResolveError` helper in `recoverableUnhandledRejection.js` to identify and ignore `resolve() called for non-request instance` errors from the GramJS library, preventing an infinite feedback loop where unhandled rejections trigger Telegram alerts, which in turn generate new Telegram updates and trigger new errors.
+
 

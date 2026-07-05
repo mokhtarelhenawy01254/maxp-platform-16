@@ -47,15 +47,20 @@ const SIZE_LIMITS = {
 
 // أنواع الملفات المدعومة
 const SUPPORTED_TYPES = {
-    image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp'],
     video: ['video/mp4', 'video/3gpp', 'video/quicktime', 'video/webm'],
-    audio: ['audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/webm'],
+    audio: ['audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/webm', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/x-pn-wav', 'audio/x-m4a', 'audio/aac', 'audio/x-aac'],
     document: [
         'application/pdf',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/rar',
+        'application/x-rar-compressed',
+        'application/octet-stream',
         'text/plain'
     ]
 };
@@ -360,6 +365,8 @@ function getExtension(mimetype) {
         'image/png': 'png',
         'image/gif': 'gif',
         'image/webp': 'webp',
+        'image/svg+xml': 'svg',
+        'image/bmp': 'bmp',
         'video/mp4': 'mp4',
         'video/3gpp': '3gp',
         'video/quicktime': 'mov',
@@ -369,11 +376,23 @@ function getExtension(mimetype) {
         'audio/mpeg': 'mp3',
         'audio/amr': 'amr',
         'audio/webm': 'webm',
+        'audio/wav': 'wav',
+        'audio/x-wav': 'wav',
+        'audio/wave': 'wav',
+        'audio/x-pn-wav': 'wav',
+        'audio/x-m4a': 'm4a',
+        'audio/aac': 'aac',
+        'audio/x-aac': 'aac',
         'application/pdf': 'pdf',
         'application/msword': 'doc',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
         'application/vnd.ms-excel': 'xls',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'application/zip': 'zip',
+        'application/x-zip-compressed': 'zip',
+        'application/rar': 'rar',
+        'application/x-rar-compressed': 'rar',
+        'application/octet-stream': 'bin',
         'text/plain': 'txt'
     };
 
