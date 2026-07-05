@@ -9,8 +9,15 @@ interface AudioRecorderProps {
   onCancel: () => void;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  idle: "اضغط للتسجيل",
+  acquiring_media: "طلب الإذن بالميكروفون...",
+  recording: "Recording...",
+  stopped: "Processing...",
+};
+
 const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
-  const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl } =
+  const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl, error } =
     useReactMediaRecorder({ audio: true });
 
   const [recordingTime, setRecordingTime] = useState(0);
@@ -62,6 +69,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
+  const isError = error || status === "idle";
+
   return (
     <div className="flex w-full items-center gap-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-3 py-2 shadow-md">
       <Button
@@ -87,7 +96,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
             {formatTime(recordingTime)}
           </div>
           <div className="text-xs text-[color:var(--color-muted-foreground)]">
-            {status === "recording" ? "Recording..." : "Processing..."}
+            {error ? (
+              <span className="text-rose-500">تعذر الوصول إلى الميكروفون - تحقق من الإذن</span>
+            ) : (
+              STATUS_LABELS[status] || "Processing..."
+            )}
           </div>
         </div>
       </div>

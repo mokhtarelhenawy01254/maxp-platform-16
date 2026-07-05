@@ -195,7 +195,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 if not final_response.text:
                     logger.warning("skills_pipeline_followup_empty_retrying")
                     final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="auto")
-                ctx.final_reply = final_response.text or _format_tool_results(executed)
+                ctx.final_reply = (final_response.text or _format_tool_results(executed) or "تم البحث. هل تريد تفاصيل عن أي منتج؟")
                 ctx.llm_response = final_response.text or ""
             except Exception as e:
                 logger.error("skills_pipeline_followup_failed", error=str(e))
@@ -420,7 +420,7 @@ def _build_followup_messages(
 
     # Current user message — multipart if attachments present
     from src.context.multimodal import build_user_content
-    user_content = build_user_content(ctx.message, ctx.attachments)
+    user_content = build_user_content(ctx.message, None)
     messages.append({"role": "user", "content": user_content})
 
     # Assistant response with tool_calls (required by DeepSeek API)
