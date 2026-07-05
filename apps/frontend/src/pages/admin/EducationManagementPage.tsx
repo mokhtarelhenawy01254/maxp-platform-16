@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import {
   AcademicCapIcon, BookOpenIcon, GiftIcon, UserGroupIcon,
   UsersIcon, ClockIcon, ChartBarSquareIcon, PlusIcon,
   PencilIcon, TrashIcon, XMarkIcon, CheckIcon,
-  MagnifyingGlassIcon, PhoneIcon
+  MagnifyingGlassIcon, PhoneIcon, EyeIcon
 } from "@heroicons/react/24/outline";
 
 const getCompanyId = (): string | null => {
@@ -421,6 +421,7 @@ export default function EducationManagementPage() {
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1"><PhoneIcon className="w-3 h-3" />{s.phone || "—"}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">ولي الأمر: {s.customer ? `${s.customer.firstName} ${s.customer.lastName || ""}` : "—"}</div>
               <div className="flex gap-2">
+                <Link to={`/admin/education/student/${s.id}`} className="text-xs px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />عرض</Link>
                 <button onClick={() => setStudentModal(s)} className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                 <button onClick={() => handleToggleStudent(s.id, s.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${s.isActive ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>{s.isActive ? "تعطيل" : "تفعيل"}</button>
                 <button onClick={() => handleDeleteStudent(s.id)} className="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />حذف</button>
@@ -459,6 +460,7 @@ export default function EducationManagementPage() {
                 {(!t.subjectRates || t.subjectRates.length === 0) && <span className="text-xs text-gray-400">لا توجد أسعار</span>}
               </div>
               <div className="flex gap-2">
+                <Link to={`/admin/education/teacher/${t.id}`} className="text-xs px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />عرض</Link>
                 <button onClick={() => setTeacherModal(t)} className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                 <button onClick={() => handleToggleTeacher(t.id, t.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${t.isActive ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>{t.isActive ? "تعطيل" : "تفعيل"}</button>
                 <button onClick={() => handleDeleteTeacher(t.id)} className="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />حذف</button>

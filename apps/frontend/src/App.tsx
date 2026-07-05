@@ -856,6 +856,12 @@ const EducationTeacherPaymentsPage = React.lazy(
 const EducationCalendarPage = React.lazy(
   () => import("./pages/admin/EducationCalendarPage"),
 );
+const EducationTeacherProfilePage = React.lazy(
+  () => import("./pages/admin/EducationTeacherProfilePage"),
+);
+const EducationStudentProfilePage = React.lazy(
+  () => import("./pages/admin/EducationStudentProfilePage"),
+);
 const TeacherLoginPage = React.lazy(
   () => import("./pages/auth/TeacherLoginPage"),
 );
@@ -6334,6 +6340,22 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <EducationTeacherPaymentsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/teacher/:id"
+                  element={
+                    <Layout fullWidth>
+                      <EducationTeacherProfilePage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/student/:id"
+                  element={
+                    <Layout fullWidth>
+                      <EducationStudentProfilePage />
                     </Layout>
                   }
                 />
