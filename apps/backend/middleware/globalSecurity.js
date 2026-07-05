@@ -483,6 +483,9 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/agent-inbox/facebook/*',
   'POST /api/v1/agent-inbox/facebook/*',
 
+  // Teacher Portal (public login endpoint)
+  'POST /api/v1/education/teacher-portal/login',
+
   // Public Support
   'GET /api/v1/support/faq',
 
