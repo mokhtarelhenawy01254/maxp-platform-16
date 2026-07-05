@@ -98,12 +98,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         name = p.get("productName") or p.get("name", "")
                         price = p.get("price", "")
                         score = p.get("score") or p.get("similarity") or 0
-                        candidates_text += f"  {i}. {name} | {price} جنيه | تشابه أولي: {float(score)*100:.0f}%\n"
+                        candidates_text += f"  {i}. {name} | {price} جنيه | تشابه: {float(score)*100:.0f}%\n"
                     system_prompt += (
-                        f"\n\n[قارن الصورة التي أرسلها العميل مع هذه المنتجات من الكتالوج.\n{candidates_text}"
-                        " اختر المنتج الأكثر تشابهاً مع الصورة.\n"
-                        " رد بهذا التنسيق: \"ده شبيه بـ [اسم المنتج] بنسبة [X]%\"\n"
-                        " لو ما فيش تطابق فوق 50%، قل \"معندناش نفس المنتج بالظبط\"]"
+                        f"\n\n[نتائج البحث عن الصورة:\n{candidates_text}"
+                        " استخدمي طبيعتك كبياعة وتكلمي مع العميل بشكل طبيعي. قولي له إن المنتج ده شبه اللي بعته"
+                        " واعرضي عليه التفاصيل أو تسأليه إذا كان عايز حاجة تاني.]"
                     )
                 else:
                     system_prompt += (
