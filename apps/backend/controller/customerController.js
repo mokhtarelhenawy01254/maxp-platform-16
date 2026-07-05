@@ -1590,7 +1590,7 @@ const updateCustomer = async (req, res) => {
     }
 
     const { customerId } = req.params;
-    const { firstName, lastName, email, phone, address, city, country, status, notes, birthday } = req.body;
+    const { firstName, lastName, email, phone, password, address, city, country, status, notes, birthday } = req.body;
 
     // التحقق من وجود العميل وانتمائه للشركة
     const customer = await getSharedPrismaClient().customer.findUnique({
@@ -1644,6 +1644,13 @@ const updateCustomer = async (req, res) => {
 
     const newMetadata = Object.keys(parsedMeta).length > 0 ? JSON.stringify(parsedMeta) : null;
 
+    // Hash password if provided
+    let hashedPassword = undefined;
+    if (password !== undefined) {
+      const bcrypt = require('bcryptjs');
+      hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    }
+
     // تحديث بيانات العميل
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
@@ -1652,6 +1659,7 @@ const updateCustomer = async (req, res) => {
         lastName,
         email: email || null,
         phone: phone || null,
+        password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
         metadata: newMetadata,
@@ -1688,7 +1696,7 @@ const createCustomer = async (req, res) => {
       });
     }
 
-    const { firstName, lastName, email, phone, address, city, country, status, notes, tags, metadata } = req.body;
+    const { firstName, lastName, email, phone, password, address, city, country, status, notes, tags, metadata } = req.body;
 
     if (!firstName) {
       return res.status(400).json({
@@ -1712,12 +1720,15 @@ const createCustomer = async (req, res) => {
     if (city) parsedMetadata.city = city;
     if (country) parsedMetadata.country = country;
 
+    const hashedPassword = password ? await require('bcryptjs').hash(password, 10) : undefined;
+
     const newCustomer = await getSharedPrismaClient().customer.create({
       data: {
         firstName,
         lastName: lastName || '',
         email: email || null,
         phone: phone || null,
+        password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
         tags: tags ? JSON.stringify(tags) : '[]',
