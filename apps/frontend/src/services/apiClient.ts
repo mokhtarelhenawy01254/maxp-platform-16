@@ -166,18 +166,17 @@ class ApiClient {
         if (config._companyId) {
           config.headers["X-Company-Id"] = config._companyId;
         } else {
-          // Add X-Company-Id from user data in localStorage
+          // Read companyId from the JWT token (authoritative source), not from localStorage("user")
           try {
-            const userStr = localStorage.getItem("user");
-            if (userStr) {
-              const user = JSON.parse(userStr);
-              if (user?.companyId) {
-                config.headers["X-Company-Id"] = user.companyId;
-                // console.log('🏢 [API] Added X-Company-Id header:', user.companyId);
+            const token = tokenManager.getAccessToken();
+            if (token) {
+              const payload = JSON.parse(atob(token.split(".")[1]));
+              if (payload?.companyId) {
+                config.headers["X-Company-Id"] = payload.companyId;
               }
             }
-          } catch (e) {
-            // Ignore parsing errors
+          } catch {
+            // Token decode failed silently
           }
         }
 

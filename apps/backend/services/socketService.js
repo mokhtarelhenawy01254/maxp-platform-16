@@ -116,7 +116,8 @@ class SocketService {
 
       // 🛡️ SECURITY Check: Verify the user still belongs to this company (not a Zombie session)
       // Super Admin is exempt from this check
-      if (user.role !== 'SUPER_ADMIN' && activeCompanyId !== user.companyId) {
+      // ponytail: always check membership, not just on cross-company access
+      if (user.role !== 'SUPER_ADMIN') {
         const userCompany = await safeQuery(async () => {
           return await getSharedPrismaClient().userCompany.findUnique({
             where: {

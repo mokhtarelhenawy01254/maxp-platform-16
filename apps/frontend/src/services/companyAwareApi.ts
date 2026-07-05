@@ -76,21 +76,24 @@ class CompanyAwareApiService {
 
   private getCurrentUser(): CurrentUserPayload | null {
     try {
-      // Try getting full user object from localStorage first (most reliable)
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        return JSON.parse(userStr) as CurrentUserPayload;
-      }
-
-      // Fallback to decoding token
-      const token = tokenManager.getAccessToken(); // Use tokenManager
+      // Decode JWT token first (authoritative source)
+      const token = tokenManager.getAccessToken();
       if (!token) return null;
 
-      // Decode JWT to get user info (simple decode, not verification)
       const parts = token.split(".");
       if (parts.length !== 3) return null;
 
       const payload = JSON.parse(atob(parts[1] || "")) as CurrentUserPayload;
+
+      // Sync localStorage with token data if stale
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const stored = JSON.parse(userStr) as CurrentUserPayload;
+        if (stored.companyId && stored.companyId !== payload.companyId) {
+          localStorage.setItem("user", JSON.stringify({ ...stored, companyId: payload.companyId }));
+        }
+      }
+
       return payload;
     } catch {
       return null;

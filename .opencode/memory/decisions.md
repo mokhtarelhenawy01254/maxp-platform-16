@@ -18,3 +18,21 @@
 - Decision: Modified both frontend (add `isOverride: true`) and backend (add `VALID_STATUSES` array fallback in route handler)
 - Rationale: Minimal changes; `isOverride` already existed in the backend, just wasn't being sent; the VALID_STATUSES fallback handles companies without custom `OrderStatusDefinition` records
 - Rejected: Creating default `OrderStatusDefinition` records for every company — too heavy; bypass is simpler and safe with `isOverride`
+
+## 2026-07-05 — 5 Medical Human Agents (Named Personas)
+- Context: Need to represent medical center staff as human-like AI agents, not generic bots. Each must have a name, role, and human persona.
+- Decision: Created 20 files across 5 agents (aesthetic-advisor, physio-coordinator, dental-care-specialist, medical-lab-analyst, mental-health-counselor), each with agent.json, SOUL.md, TOOLS.md, AGENTS.md + quick profiles in systemSettings.agentQuickProfiles with locks (lockIdentity:false, lockPersona:true, lockRules:true, lockCustomPrompt:true)
+- Rationale: Per create-premium-human-agent skill (Section ⓺), each agent must = human employee with name, SOUL, anti-detection rules
+- Rejected: Single generic "medical-center-agent" — doesn't match human-staff model
+
+## 2026-07-05 — booking_packages Redesign (Thin Wrapper → Value-Add Skill)
+- Context: booking_packages skill was a thin filter over booking_info — just returned services with packages field, added no value. SKILL.md had hardcoded example prices (500 EGP).
+- Decision: Redesigned packages.py to aggregate pricing data: calculate single_price, per_session cost, has_multi_session_packages boolean. SKILL.md now uses dynamic rules instead of hardcoded prices. Descriptions changed to English per AGENTS.md standard.
+- Rationale: 2026 OpenAI Agents SDK standard expects skills that add value, not thin wrappers. Hardcoded prices = stale data risk. Tool descriptions should be in English (machine-readable).
+- Rejected: Keeping as-is — violates 2026 progressive disclosure pattern and risks stale pricing
+
+## 2026-07-05 — Packages Location Fix (branchServices aggregation)
+- Context: get_center_info() mapped s.get("packages") on service directly, but backend returns packages nested in BookingBranchService[].packages
+- Decision: Fixed booking_tools.py to extract packages from branchServices array and aggregate into flat array with branch names
+- Rationale: Matches actual backend Prisma schema (BookingBranchService model)
+- Rejected: Modifying backend to flatten packages onto service — changes DB layer when tool layer can adapt

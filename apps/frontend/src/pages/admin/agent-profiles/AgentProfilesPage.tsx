@@ -1,12 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
-  Brain, Users, ChevronDown, ChevronRight, ChevronUp,
   Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
-  BookOpen, Shield, RefreshCw, HelpCircle, Menu, MessageSquare, Archive,
-  ShoppingCart, Headphones, Package, Megaphone, Heart,
-  Phone, Mail, Globe, Truck, CreditCard, BarChart, FileText, Settings, User, Bell,
-  type LucideIcon,
+  Shield, RefreshCw, Menu, MessageSquare, Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sandboxApi, type AgentProfileResponse } from "../ai-agent-sandbox/services/sandboxApi";
@@ -104,45 +100,6 @@ async function tryApiFetch<T>(path: string, init?: RequestInit): Promise<T | nul
 
 
 
-function MetadataGrid({ agent, resolvedParentName }: { agent: { departmentIcon?: string | null; departmentName?: string | null; managerType?: string | null; createdBy?: string | null; parentId?: string | null }; resolvedParentName: string | null }) {
-  const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <div className="px-4 lg:px-6 pt-3">
-      <button type="button" onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors w-full"
-      >
-        {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-        <span className="font-medium">{t("agentProfiles.metadata.title")}</span>
-        {!expanded && (
-          <span className="mr-2 text-slate-400/60 truncate">
-            {agent.departmentName || t("agentProfiles.metadata.noDepartment")} · {agent.managerType || "AGENT"}
-          </span>
-        )}
-      </button>
-      {expanded && (
-        <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.department")}</span>
-            <span className="text-slate-700 dark:text-slate-300">{agent.departmentIcon} {agent.departmentName || t("agentProfiles.metadata.unspecified")}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.level")}</span>
-            <span className="text-slate-700 dark:text-slate-300">{agent.managerType || "AGENT"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.manager")}</span>
-            <span className="text-slate-700 dark:text-slate-300">{resolvedParentName || t("agentProfiles.metadata.none")}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.createdBy")}</span>
-            <span className="text-slate-700 dark:text-slate-300">{agent.createdBy || t("agentProfiles.metadata.system")}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface AgentItem {
   id: string;
@@ -178,125 +135,7 @@ const templateIcon = (slug: string) => {
   return "🤖";
 };
 
-const AGENT_CARD_COLORS: Record<string, string> = {
-  'sales-agent': 'var(--role-sales)',
-  'support-agent': 'var(--role-support)',
-  'order-agent': 'var(--role-inventory)',
-  'marketing-agent': 'var(--role-marketing)',
-  'medical-center-agent': 'var(--role-default)',
-};
 
-const AGENT_CARD_CHANNELS: Record<string, Array<{ key: string; label: string }>> = {
-  'sales-agent': [{ key: 'whatsapp', label: 'واتساب' }, { key: 'facebook', label: 'فيسبوك' }, { key: 'dashboard', label: 'لوحة التحكم' }],
-  'support-agent': [{ key: 'whatsapp', label: 'واتساب' }, { key: 'facebook', label: 'فيسبوك' }],
-  'order-agent': [{ key: 'whatsapp', label: 'واتساب' }],
-  'marketing-agent': [{ key: 'facebook', label: 'فيسبوك' }, { key: 'dashboard', label: 'لوحة التحكم' }],
-  'medical-center-agent': [{ key: 'dashboard', label: 'لوحة التحكم' }, { key: 'whatsapp', label: 'واتساب' }],
-};
-
-const CHANNEL_LABELS: Record<string, string> = {
-  whatsapp: 'واتساب',
-  facebook: 'فيسبوك',
-  dashboard: 'لوحة التحكم',
-  phone: 'هاتف',
-};
-
-const CHANNEL_STYLES: Record<string, string> = {
-  whatsapp: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  facebook: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  dashboard: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
-  phone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-};
-
-const AGENT_CARD_ICON: Record<string, LucideIcon> = {
-  'sales-agent': ShoppingCart,
-  'support-agent': Headphones,
-  'order-agent': Package,
-  'marketing-agent': Megaphone,
-  'medical-center-agent': Heart,
-};
-
-const LUCIDE_ICON_MAP: Record<string, LucideIcon> = {
-  ShoppingCart, Headphones, Package, Megaphone, Heart,
-  Bot, MessageSquare, Phone, Mail, Globe,
-  Truck, CreditCard, BarChart, FileText, Settings,
-  User, Shield, Bell,
-};
-
-interface ReadyAgentPersonality {
-  id: string;
-  name: string;
-  desc: string;
-  tone: string;
-  persona: string;
-  goal: string;
-  tasks?: string;
-  boundaries?: string;
-  welcome?: string;
-  language?: string;
-  escalation?: string;
-  customPrompt?: string;
-}
-
-interface ReadyAgent {
-  slug: string;
-  icon: string;
-  title: string;
-  category?: string;
-  desc: string;
-  personalities: ReadyAgentPersonality[];
-  lucideIcon?: string | null;
-  roleColor?: string | null;
-  channels?: string[] | null;
-  lockIdentity?: boolean;
-  lockPersona?: boolean;
-  lockRules?: boolean;
-  lockCustomPrompt?: boolean;
-}
-
-const FALLBACK_READY_AGENTS: ReadyAgent[] = [
-  {
-    slug: 'sales-agent', icon: '🛒', title: 'مندوب مبيعات شامل', category: 'المبيعات',
-    desc: 'وكيل مبيعات متكامل — يبيع المنتجات، يعرض الكتالوج، وينشئ الطلبات',
-    personalities: [
-      { id: 'sales-wadud', name: 'ودود', desc: 'أسلوب ودود ومتعاون، يهتم براحة العميل', tone: 'friendly', persona: 'مندوب مبيعات ودود', goal: 'تساعد العملاء في اختيار المنتجات المناسبة وتقديم تجربة شراء سلسة' },
-      { id: 'sales-rasmi', name: 'محترف', desc: 'أسلوب رسمي ومهني، يركز على الجودة', tone: 'formal', persona: 'مندوب مبيعات محترف', goal: 'تقدم خدمة مبيعات احترافية مع أعلى معايير الجودة' },
-      { id: 'sales-khabir', name: 'خبير مبيعات', desc: 'أسلوب استشاري خبير، يحلل احتياجات العميل', tone: 'detailed', persona: 'خبير مبيعات استشاري', goal: 'تحلل احتياجات العميل وتقدم له الحلول المناسبة بخبرة واحترافية' },
-    ],
-  },
-  {
-    slug: 'support-agent', icon: '🎧', title: 'مندوب خدمة عملاء', category: 'خدمة العملاء',
-    desc: 'وكيل دعم متكامل — يرد على الاستفسارات، يفتح تيكيت، ويتابع الشكاوى',
-    personalities: [
-      { id: 'support-wadud', name: 'ودود', desc: 'صدر رحب وأسلوب لطيف في التعامل', tone: 'friendly', persona: 'ممثل خدمة عملاء ودود', goal: 'تقدم تجربة دعم ممتازة وتترك العميل راضياً' },
-      { id: 'support-rasmi', name: 'محترف', desc: 'رسمي ومهني في حل المشكلات', tone: 'formal', persona: 'ممثل خدمة عملاء محترف', goal: 'تحل استفسارات العملاء بكفاءة واحترافية عالية' },
-      { id: 'support-sary', name: 'سريع', desc: 'سريع ومختصر في تقديم الحلول', tone: 'concise', persona: 'ممثل خدمة عملاء سريع', goal: 'تقدم حلول سريعة ومباشرة لاستفسارات العملاء' },
-    ],
-  },
-  {
-    slug: 'order-agent', icon: '📦', title: 'متابع طلبات محترف', category: 'متابعة الطلبات',
-    desc: 'وكيل متابعة — يتتبع الشحنات ويحدث حالة الطلبات',
-    personalities: [
-      { id: 'order-wadud', name: 'ودود', desc: 'يطمن العميل ويهتم بتفاصيل الشحنة', tone: 'friendly', persona: 'متابع طلبات ودود', goal: 'تطمئن العميل على طلبه وتقدم تحديثات دقيقة' },
-      { id: 'order-rasmi', name: 'محترف', desc: 'دقيق ومنظم في تقارير المتابعة', tone: 'formal', persona: 'متابع طلبات محترف', goal: 'تقدم تقارير دقيقة ومنظمة عن حالة الطلبات' },
-    ],
-  },
-  {
-    slug: 'marketing-agent', icon: '📣', title: 'أخصائي تسويق', category: 'التسويق',
-    desc: 'وكيل تسويق — يدير الحملات والعروض والتواصل مع العملاء',
-    personalities: [
-      { id: 'marketing-mubdi', name: 'مبدع', desc: 'أفكار وحملات تسويقية مبتكرة', tone: 'friendly', persona: 'مسوق مبدع', goal: 'تصمم حملات تسويقية مبتكرة تجذب العملاء' },
-      { id: 'marketing-rasmi', name: 'محترف', desc: 'منهجي واحترافي في إدارة الحملات', tone: 'formal', persona: 'مسوق محترف', goal: 'تدير استراتيجيات تسويقية احترافية تحقق أعلى عائد' },
-    ],
-  },
-  {
-    slug: 'medical-center-agent', icon: '🏥', title: 'مساعد النظام الطبي', category: 'الخدمات الطبية',
-    desc: 'وكيل حجز متكامل — يدير المواعيد، الأطباء، الخدمات، والفروع للمراكز الطبية',
-    personalities: [
-      { id: 'medical-default', name: 'مساعد طبي', desc: 'أسلوب مهني ولطيف في التعامل مع المرضى', tone: 'friendly', persona: 'مساعد النظام الطبي', goal: 'تساعد المرضى في حجز المواعيد وإدارة الخدمات الطبية بسهولة' },
-    ],
-  },
-];
 
 export default function AgentProfilesPage() {
   const { t, i18n } = useTranslation();
@@ -345,21 +184,6 @@ export default function AgentProfilesPage() {
   const [newConfig, setNewConfig] = useState<Record<string, string>>({});
   const [createStep, setCreateStep] = useState(0);
 
-  const [quickOpen, setQuickOpen] = useState(false);
-  const [quickSlug, setQuickSlug] = useState('');
-  const [quickIcon, setQuickIcon] = useState('🤖');
-  const [quickName, setQuickName] = useState('');
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickPersonality, setQuickPersonality] = useState<ReadyAgentPersonality | null>(null);
-  const [quickCreating, setQuickCreating] = useState(false);
-  const [readySelectorOpen, setReadySelectorOpen] = useState(false);
-  const [readyProfiles, setReadyProfiles] = useState<ReadyAgent[]>(FALLBACK_READY_AGENTS);
-
-  useEffect(() => {
-    tryApiFetch<{ success: boolean; profiles: ReadyAgent[] }>("/agent-manager/quick-profiles")
-      .then((data) => { if (data?.profiles?.length) setReadyProfiles(data.profiles); })
-      .catch(() => {});
-  }, []);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!profile) return false;
@@ -629,69 +453,6 @@ export default function AgentProfilesPage() {
     setCreating(false);
   };
 
-  /* ── Quick create ready agent ── */
-  const handleQuickCreate = async () => {
-    if (!quickName.trim()) return;
-    setQuickCreating(true);
-    const ready = readyProfiles.find((a) => a.slug === quickSlug);
-    const config = quickPersonality ? {
-      soul_persona: quickPersonality.persona,
-      soul_goal: quickPersonality.goal,
-      soul_tone: quickPersonality.tone,
-      soul_tasks: quickPersonality.tasks || "",
-      soul_boundaries: quickPersonality.boundaries || "",
-      soul_welcome: quickPersonality.welcome || "",
-      soul_language: quickPersonality.language || "auto",
-      soul_escalation: quickPersonality.escalation || "knowledge_ask",
-      soul_custom: quickPersonality.customPrompt || "",
-      merchant_locks: {
-        lockIdentity: ready?.lockIdentity || false,
-        lockPersona: ready?.lockPersona || false,
-        lockRules: ready?.lockRules || false,
-        lockCustomPrompt: ready?.lockCustomPrompt || false,
-      }
-    } : {};
-    const soulContent = config.soul_persona ? buildSoulContent(config) : "";
-    const data = await tryApiFetch<Record<string, unknown>>(
-      "/agent/agents",
-      { method: "POST", body: JSON.stringify({
-        name: quickName.trim(),
-        templateSlug: ready?.templateSlug || quickSlug,
-        icon: quickIcon,
-        description: quickPersonality?.desc || ready?.desc || null,
-      })},
-    );
-    if (data?.id) {
-      if (config.soul_persona) {
-        await tryApiFetch(`/agent/agents/${data.id}/files`, {
-          method: "PUT", body: JSON.stringify({
-            config,
-            persona: {
-              soulInstructions: soulContent,
-              personaInstructions: quickPersonality?.desc || "",
-              agentInstructions: "",
-              toolsInstructions: "",
-            },
-            files: soulContent ? { "SOUL.md": soulContent } : {},
-          }),
-        });
-      }
-      setQuickOpen(false);
-      setQuickName('');
-      setQuickPersonality(null);
-      toast.success(`تم إنشاء وكيل ${quickTitle}`);
-      sandboxApi.getAgents().then((res) => {
-        setAgents(res.agents as AgentItem[]);
-        setSelectedId(data.id as string);
-        const params = new URLSearchParams(searchParams);
-        params.set("agent", data.id as string);
-        setSearchParams(params, { replace: true });
-      }).catch(() => {});
-    } else {
-      toast.error("فشل إنشاء الوكيل، حاول مرة أخرى");
-    }
-    setQuickCreating(false);
-  };
 
   /* ── Delete agent ── */
   const handleDeleteAgent = async () => {
@@ -814,7 +575,7 @@ export default function AgentProfilesPage() {
         <Bot className="size-4 text-primary" aria-hidden="true" />
         <h2 className="text-sm font-bold text-foreground/90">{t("agentProfiles.sidebar.title")}</h2>
         {!agentsLoading && <Badge variant="secondary" className="text-xs mr-auto">{agents.length}</Badge>}
-        <button onClick={() => setReadySelectorOpen(true)}
+        <button onClick={() => setCreateOpen(true)}
           className="flex items-center justify-center size-6 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-primary"
           title={t("agentProfiles.sidebar.addTitle")}
         >
@@ -949,7 +710,7 @@ export default function AgentProfilesPage() {
             >
               <RefreshCw className={cn("size-4", agentsLoading && "animate-spin")} aria-hidden="true" />
             </button>
-            <button onClick={() => setReadySelectorOpen(true)}
+            <button onClick={() => setCreateOpen(true)}
               className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t("agentProfiles.sidebar.addTitle")}
               title={t("agentProfiles.sidebar.addTitle")}
@@ -1053,7 +814,7 @@ export default function AgentProfilesPage() {
           ) : (
             <div className="space-y-2">
             <p className="text-sm text-muted-foreground/70">{t("agentProfiles.header.noSelectionHint")}</p>
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setReadySelectorOpen(true)}>
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
               <Plus className="size-3.5 ml-1" />{t("agentProfiles.sidebar.addTitle")}
             </Button>
           </div>
@@ -1399,55 +1160,17 @@ export default function AgentProfilesPage() {
           )}
 
           {agents.length === 0 && !agentsLoading ? (
-            <div className="flex flex-col py-10 px-4">
-              <div className="text-center mb-8">
-                <h2 className="text-lg font-bold text-foreground">فريقك الذكي</h2>
-                <p className="text-sm text-muted-foreground/60 mt-1">وكلاء جاهزون — اختر وكيلك وابدأ ف الحال</p>
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="size-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mb-6">
+                <Bot className="size-8 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl mx-auto">
-                {readyProfiles.map((a) => {
-                  const roleColor = a.roleColor ? `var(--role-${a.roleColor})` : (AGENT_CARD_COLORS[a.slug] || 'var(--role-default)');
-                  const rawChannels: string[] = a.channels || [];
-                  const channels = rawChannels.length > 0 ? rawChannels.map((k) => ({ key: k, label: CHANNEL_LABELS[k] || k })) : (AGENT_CARD_CHANNELS[a.slug] || []);
-                  const IconComp = (a.lucideIcon ? LUCIDE_ICON_MAP[a.lucideIcon] : undefined) || AGENT_CARD_ICON[a.slug];
-                  return (
-                    <button key={a.slug} type="button" onClick={() => {
-                      const firstPers = a.personalities?.[0] || null;
-                      setQuickSlug(a.slug);
-                      setQuickIcon(a.icon);
-                      setQuickTitle(a.title);
-                      setQuickName(firstPers ? `${a.title} (${firstPers.name})` : a.title);
-                      setQuickPersonality(firstPers);
-                      setQuickOpen(true);
-                    }}
-                      className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-right shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
-                    >
-                      <div className="h-20 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${roleColor}, color-mix(in srgb, ${roleColor} 70%, black 30%))` }}>
-                        <div className="size-14 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                          {IconComp && <IconComp className="size-7 text-white" />}
-                        </div>
-                      </div>
-                      <div className="p-4 text-right">
-                        <p className="text-sm font-bold text-foreground">{a.title}</p>
-                        {channels.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {channels.map((ch) => (
-                              <span key={ch.key} className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${CHANNEL_STYLES[ch.key] || ''}`}>
-                                {ch.label}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <p className="text-xs text-muted-foreground/60 mt-2 leading-relaxed line-clamp-2">{a.desc}</p>
-                        <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline mt-3 inline-block">اختر ←</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              <button type="button" onClick={() => setCreateOpen(true)} className="mt-6 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors mx-auto">
-                أو أنشئ وكيل مخصص ←
-              </button>
+              <h2 className="text-lg font-bold text-foreground mb-2">ابدأ بناء فريقك الذكي</h2>
+              <p className="text-sm text-muted-foreground/60 max-w-sm mb-6">
+                اختر من بين قوالب الوكلاء الذكاء الاصطناعي المتاحة لتفعيل خدمة الرد التلقائي، إدارة المبيعات، أو خدمة العملاء في متجرك.
+              </p>
+              <Button size="lg" className="h-10 text-sm px-6" onClick={() => setCreateOpen(true)}>
+                <Plus className="size-4 ml-1.5" />إضافة وكيل ذكي جديد
+              </Button>
             </div>
           ) : !selectedId && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -1672,106 +1395,6 @@ export default function AgentProfilesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Ready Agent Selector Dialog ── */}
-      <Dialog open={readySelectorOpen} onOpenChange={(o) => { if (!o) setReadySelectorOpen(false); }}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Users className="size-5 text-primary" />
-              فريقك الذكي
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {readyProfiles.map((a) => {
-                const roleColor = a.roleColor ? `var(--role-${a.roleColor})` : (AGENT_CARD_COLORS[a.slug] || 'var(--role-default)');
-                const rawChannels: string[] = a.channels || [];
-                const channels = rawChannels.length > 0 ? rawChannels.map((k) => ({ key: k, label: CHANNEL_LABELS[k] || k })) : (AGENT_CARD_CHANNELS[a.slug] || []);
-                const IconComp = (a.lucideIcon ? LUCIDE_ICON_MAP[a.lucideIcon] : undefined) || AGENT_CARD_ICON[a.slug];
-                return (
-                  <button key={a.slug} type="button" onClick={() => {
-                    const firstPers = a.personalities?.[0] || null;
-                    setReadySelectorOpen(false);
-                    setQuickSlug(a.slug);
-                    setQuickIcon(a.icon);
-                    setQuickTitle(a.title);
-                    setQuickName(firstPers ? `${a.title} (${firstPers.name})` : a.title);
-                    setQuickPersonality(firstPers);
-                    setQuickOpen(true);
-                  }}
-                    className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-right shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-                  >
-                    <div className="h-16 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${roleColor}, color-mix(in srgb, ${roleColor} 70%, black 30%))` }}>
-                      <div className="size-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                        {IconComp && <IconComp className="size-5 text-white" />}
-                      </div>
-                    </div>
-                    <div className="p-3 text-right">
-                      <p className="text-sm font-bold text-foreground">{a.title}</p>
-                      {channels.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {channels.map((ch) => (
-                            <span key={ch.key} className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium ${CHANNEL_STYLES[ch.key] || ''}`}>
-                              {ch.label}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-xs text-muted-foreground/60 mt-1.5 leading-relaxed line-clamp-2">{a.desc}</p>
-                      <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline mt-2 inline-block">اختر ←</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <button type="button" onClick={() => { setReadySelectorOpen(false); setCreateOpen(true); }} className="mt-4 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-              أو أنشئ وكيل مخصص ←
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Quick Create Dialog ── */}
-      <Dialog open={quickOpen} onOpenChange={(o) => { if (!o && !quickCreating) { setQuickOpen(false); setQuickName(''); setQuickPersonality(null); } }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <span className="text-xl">{quickIcon}</span>
-              {quickTitle} — تفعيل الوكيل
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-3 space-y-4">
-            <p className="text-sm text-muted-foreground/70">الوكيل جاهز بالكامل — اضغط تأكيد مباشرة أو غيّر الشخصية والاسم إن أردت</p>
-
-            {/* Personality selection */}
-            {readyProfiles.find((a) => a.slug === quickSlug)?.personalities.map((p) => (
-              <button key={p.id} type="button" onClick={() => { setQuickPersonality(p); setQuickName(`${quickTitle} (${p.name})`); }}
-                className={`w-full text-right p-3 rounded-xl border transition-all ${
-                  quickPersonality?.id === p.id
-                    ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 shadow-sm'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                }`}
-              >
-                <p className="text-sm font-bold text-foreground">{p.name}</p>
-                <p className="text-xs text-muted-foreground/70 mt-0.5">{p.desc}</p>
-              </button>
-            ))}
-
-            {/* Name input - always visible and pre-filled */}
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">اسم الوكيل</label>
-              <Input value={quickName} onChange={(e) => setQuickName(e.target.value)} placeholder="أدخل اسم الوكيل" className="h-9 text-sm" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setQuickOpen(false); setQuickName(''); setQuickPersonality(null); }} disabled={quickCreating} className="h-8 text-xs">إلغاء</Button>
-            <Button onClick={handleQuickCreate} disabled={quickCreating || !quickName.trim() || !quickPersonality} className="h-8 text-xs">
-              {quickCreating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-              {quickCreating ? 'جارٍ التفعيل...' : '✨ تفعيل الآن'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* ── Archive Confirmation Dialog ── */}
       <Dialog open={!!deleteConfirm && deleteConfirm !== "permanent"} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>

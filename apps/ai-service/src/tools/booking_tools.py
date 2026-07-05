@@ -42,10 +42,23 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
 
     svc_list = []
     for s in services:
+        branch_services = s.get("branchServices", [])
+        packages = []
+        for bs in branch_services:
+            bs_pkgs = bs.get("packages")
+            if bs_pkgs:
+                bn = bs.get("branch", {}).get("name", "")
+                if isinstance(bs_pkgs, list):
+                    for pkg in bs_pkgs:
+                        entry = dict(pkg)
+                        entry["branch"] = bn
+                        packages.append(entry)
+                else:
+                    packages.append({"branch": bn, "packages_data": bs_pkgs})
         svc_list.append({
             "id": s.get("id"), "name": s.get("name"),
             "description": s.get("description"),
-            "price": s.get("packages"),
+            "packages": packages,
         })
 
     doc_list = []

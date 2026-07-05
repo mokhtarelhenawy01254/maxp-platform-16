@@ -28,11 +28,10 @@ No database models or Prisma schemas were modified. However, the database seedin
    - **`conversations.md`**: Created new few-shot interactive dialog examples to steer the agent's behavior.
    - **`integration.py` & `seed.py`**: Enabled caching and prompt injection of trigger phrases inside the system prompt's `<skill>` XML blocks, resolving intent routing gaps.
 
-### Ready Agent Profiles & Merchant Locks
-8. Added ready agent profiles manager endpoints in `superAdminRoutes.js` (`POST /agents/quick-profiles`) supporting merchant constraint flags (`lockIdentity`, `lockPersona`, `lockRules`, `lockCustomPrompt`).
-9. Implemented database seeding file `apps/backend/prisma/seed-quick-profiles.js` to populate default templates.
-10. Added `spawnReadyAgentsService.js` to automatically provision active profiles for new merchant registrations/subscriptions.
-11. Hardened the Super Admin page (`SuperAdminAgentProfiles.tsx`) with personality field validations, auto-slug generation, synced channels, and profile cloning.
+### AI Agent Templates Unification (Template-as-Agent)
+8. Removed legacy ready agent profiles and constraints/locks. AI templates (`AgentTemplate`) are now the single source of truth for agent behavior and configurations.
+9. Decommissioned `spawnReadyAgentsService.js` and removed quick-create seeding logic.
+10. Refactored merchant agent creation (`AgentProfilesPage.tsx`) to directly use AI templates and provision overriding configuration records in the `agents` table mapped to `AgentTemplate` slugs.
 
 ### System Architecture
 - **Vite Chunk Load Recovery & Cache Control Routing**: Overhauled the frontend root error boundary structure in `AdminAppBootstrap.tsx` to statically import the `ErrorBoundary` component, ensuring the application can capture module loading failures (due to deleted assets during production updates) and successfully execute chunk load recovery (automatic window reloads). Hardened the Nginx static assets mapping in `nginx_configs/maxp.online.conf` by adding strict Cache-Control headers (`no-cache, no-store, must-revalidate`) for the SPA `/` location blocks, preventing browsers and proxy CDNs from caching `index.html` and forcing them to fetch the most updated hashed asset references.

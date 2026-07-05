@@ -526,3 +526,25 @@
   - `apps/backend/routes/whatsappRoutes.js`
   - `apps/backend/services/whatsapp/WhatsAppMediaHandler.js`
   - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx`
+
+### [REFACTOR/ARCHITECTURAL] AI Agent Templates Unification (Template-as-Agent)
+- **Date**: 2026-07-05
+- **Description**: Simplified AI agent management by removing the redundant "Agent Profiles" (`/super-admin/agent-profiles`) and "Ready Profiles" systems, unifying everything under "AI Templates".
+- **Root Cause**: Spawned agent profiles copied entire configurations from templates into DB rows, which made maintenance complex and caused configuration synchronization issues.
+- **Resolution**:
+  1. Removed `SuperAdminAgentProfiles` navigation link, route, and file.
+  2. Removed legacy quick-profiles/ready-profiles endpoints from backend (`superAdminRoutes.js` and `agentManagerRoutes.js`).
+  3. Cleaned up/deleted legacy seeding scripts (`seed-quick-profiles.js` and `.github/workflows/seed-quick-profiles.yml`).
+  4. Decommissioned `spawnReadyAgentsService.js` (deleted).
+  5. Refactored the merchant's `AgentProfilesPage.tsx` to directly open the custom agent template creation dialog (creating overriding records in `agents` table mapped to `AgentTemplate` slugs), and updated the empty state UI to show a clean CTA.
+- **Files Modified/Deleted**:
+  - `apps/frontend/src/components/layout/SuperAdminSidebar.tsx` [MODIFY]
+  - `apps/frontend/src/App.tsx` [MODIFY]
+  - `apps/frontend/src/pages/super-admin/SuperAdminAgentProfiles.tsx` [DELETE]
+  - `apps/backend/routes/superAdminRoutes.js` [MODIFY]
+  - `apps/backend/routes/agentManagerRoutes.js` [MODIFY]
+  - `apps/backend/services/spawnReadyAgentsService.js` [DELETE]
+  - `apps/backend/prisma/seed-quick-profiles.js` [DELETE]
+  - `.github/workflows/seed-quick-profiles.yml` [DELETE]
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx` [MODIFY]
+
