@@ -292,7 +292,9 @@ model Company {
    wholesaleStatements              WholesaleStatement[]
     wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
    overlayCampaigns                  OverlayCampaign[]
-   orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
+    orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
+    cancellationReasonCategories       CancellationReasonCategory[]
+    cancellationReasons               CancellationReason[]
 
    @@index([businessSpecialtyId])
   @@map("companies")
