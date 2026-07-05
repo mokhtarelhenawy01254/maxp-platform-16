@@ -26,7 +26,7 @@ const topupWallet = async (req, res) => {
   try {
     const parentId = req.parent.id;
     const { amount } = req.body;
-    if (!amount || amount <= 0) return res.status(400).json({ success: false, message: 'المبلغ مطلوب' });
+    if (!amount || amount <= 0) return res.status(400).json({ success: false, message: 'المبلغ غير صحيح' });
 
     const prisma = getSharedPrismaClient();
     let wallet = await prisma.customerWallet.findUnique({ where: { customerId: parentId } });
@@ -36,21 +36,22 @@ const topupWallet = async (req, res) => {
       });
     }
 
-    const [updated] = await prisma.$transaction([
-      prisma.customerWallet.update({
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.customerWallet.update({
         where: { id: wallet.id },
         data: { balance: { increment: amount }, totalEarned: { increment: amount } }
-      }),
-      prisma.walletTransaction.create({
+      });
+      await tx.walletTransaction.create({
         data: {
           walletId: wallet.id, type: 'CREDIT', amount,
-          balanceBefore: wallet.balance, balanceAfter: wallet.balance + amount,
+          balanceBefore: wallet.balance, balanceAfter: updated.balance,
           description: `شحن المحفظة بمبلغ ${amount} ج.م`
         }
-      })
-    ]);
+      });
+      return updated;
+    });
 
-    res.json({ success: true, data: updated, message: `تم شحن المحفظة بمبلغ ${amount} ج.م` });
+    res.json({ success: true, data: result, message: `تم شحن المحفظة بمبلغ ${amount} ج.م` });
   } catch (error) {
     console.error('[ParentPortal] Topup error:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ في شحن المحفظة' });
@@ -98,7 +99,7 @@ const purchasePackage = async (req, res) => {
     let wallet = await prisma.customerWallet.findUnique({ where: { customerId: parentId } });
     if (!wallet) return res.status(400).json({ success: false, message: 'لا توجد محفظة. قم بشحن المحفظة أولاً' });
     if (wallet.balance < pkg.price) {
-      return res.status(400).json({ success: false, message: `رصيد المحفظة غير كافٍ. المطلوب: ${pkg.price} ج.م، الرصيد: ${wallet.balance} ج.م` });
+      return res.status(400).json({ success: false, message: `الرصيد غير كافٍ. السعر: ${pkg.price} ج.م، الرصيد: ${wallet.balance} ج.م` });
     }
 
     const result = await prisma.$transaction(async (tx) => {
