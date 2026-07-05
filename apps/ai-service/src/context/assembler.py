@@ -104,7 +104,7 @@ class ContextAssembler:
         history_messages = []
         try:
             query = text(
-                'SELECT content, "isFromCustomer", type FROM public.messages '
+                'SELECT content, "isFromCustomer", type, attachments FROM public.messages '
                 'WHERE "conversationId" = :conversation_id '
                 'ORDER BY "createdAt" DESC LIMIT :limit'
             )
@@ -118,11 +118,27 @@ class ContextAssembler:
                 content = row[0] or ""
                 is_from_customer = bool(row[1])
                 msg_type = row[2] or "TEXT"
+                attachments_json = row[3] if len(row) > 3 else None
 
                 role = "user" if is_from_customer else "assistant"
 
                 if not content and msg_type != "TEXT":
-                    content = f"[{msg_type} Attachment]"
+                    if attachments_json:
+                        try:
+                            import json as _json
+                            parsed = _json.loads(attachments_json) if isinstance(attachments_json, str) else attachments_json
+                            urls = []
+                            if isinstance(parsed, list):
+                                for a in parsed:
+                                    u = a.get("url") or a.get("image_url") or ""
+                                    if u:
+                                        urls.append(u)
+                            if urls:
+                                content = f"[{msg_type}: {', '.join(urls[:3])}]"
+                        except Exception:
+                            pass
+                    if not content:
+                        content = f"[{msg_type} Attachment]"
 
                 if content:
                     history_messages.append({

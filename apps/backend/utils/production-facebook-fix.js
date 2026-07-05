@@ -621,39 +621,50 @@ async function sendProductionFacebookMessage(recipientId, messageContent, messag
 
     //console.log(`📤 [PROD-SEND] Prepared message data:`, JSON.stringify(messageData, null, 2));
 
-    // STEP 4: Send message to Facebook API
-    const response = await axios.post(
-      `https://graph.facebook.com/${getMetaGraphApiVersion()}/me/messages`,
-      messageData,
-      {
-        params: { access_token: accessToken },
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000 // 10 second timeout
+    // STEP 4: Send message to Facebook API with retry
+    // ponytail: simple 3-attempt backoff; add jitter if rate-limit false positives appear
+    const MAX_RETRIES = 3;
+    let lastError = null;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await axios.post(
+          `https://graph.facebook.com/${getMetaGraphApiVersion()}/me/messages`,
+          messageData,
+          {
+            params: { access_token: accessToken },
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 10000
+          }
+        );
+        return {
+          success: true,
+          messageId: response.data.message_id,
+          recipientId: response.data.recipient_id,
+          message: 'تم إرسال الرسالة بنجاح'
+        };
+      } catch (err) {
+        lastError = err;
+        const isRateLimit = err.response?.data?.error?.code === 4;
+        const isServerError = err.response && err.response.status >= 500;
+        const isNetworkError = !err.response;
+        if (!isRateLimit && !isServerError && !isNetworkError) {
+          break; // Non-retryable error
+        }
+        if (attempt < MAX_RETRIES) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+          console.warn(`⚠️ [PROD-SEND] Retry ${attempt}/${MAX_RETRIES} after ${delay}ms`, err.message);
+          await new Promise(r => setTimeout(r, delay));
+        }
       }
-    );
+    }
 
-    //console.log(`✅ [PROD-SEND] Message sent successfully`);
-    //console.log(`📝 [PROD-SEND] Facebook response:`, response.data);
-
-    // Return success with Facebook message ID
-    return {
-      success: true,
-      messageId: response.data.message_id,
-      recipientId: response.data.recipient_id,
-      message: 'تم إرسال الرسالة بنجاح'
-    };
-
-  } catch (error) {
+    const error = lastError;
     console.error(`❌ [PROD-SEND] Error sending Facebook message:`, error.message);
 
     // Handle different types of errors
     if (error.response) {
       console.error(`❌ [PROD-SEND] Facebook API Error Response:`, JSON.stringify(error.response.data, null, 2));
       console.error(`❌ [PROD-SEND] Status: ${error.response.status}`);
-      console.error(`❌ [PROD-SEND] Request URL: ${resolvedMessageContent}`);
-      console.error(`❌ [PROD-SEND] Message Type: ${messageType}`);
-      console.error(`❌ [PROD-SEND] Recipient ID: ${recipientId}`);
-      console.error(`❌ [PROD-SEND] Page ID: ${pageId}`);
 
       // Handle specific Facebook errors
       const fbError = error.response.data?.error;
@@ -685,7 +696,7 @@ async function sendProductionFacebookMessage(recipientId, messageContent, messag
         error: 'FACEBOOK_API_ERROR',
         message: `خطأ في API فيسبوك: ${error.response.status}`,
         details: error.response.data,
-        canRetry: error.response.status >= 500 // Retry for server errors
+        canRetry: error.response.status >= 500
       };
     } else if (error.request) {
       console.error(`❌ [PROD-SEND] No response received from Facebook`);

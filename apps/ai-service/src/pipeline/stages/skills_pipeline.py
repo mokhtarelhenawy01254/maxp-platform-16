@@ -232,6 +232,16 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     user_content = build_user_content(ctx.message, ctx.attachments)
     messages.append({"role": "user", "content": user_content})
 
+    # Token budget: drop oldest history messages if over budget
+    # ponytail: simple char/4 estimation, msg-by-msg trimming
+    total_tokens = sum(len(str(m.get("content", ""))) // 4 for m in messages)
+    if total_tokens > ctx.token_budget:
+        logger.warning("token_budget_exceeded", total=total_tokens, budget=ctx.token_budget)
+        while total_tokens > ctx.token_budget and len(messages) > 2:
+            dropped = messages.pop(1)
+            total_tokens -= len(str(dropped.get("content", ""))) // 4
+        logger.info("token_budget_trimmed", remaining=len(messages), final_tokens=total_tokens)
+
     # Get or create LLM client from context
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
@@ -409,7 +419,7 @@ async def _build_followup_messages(
 
     # Current user message — multipart if attachments present
     from src.context.multimodal import build_user_content
-    user_content = build_user_content(ctx.message, None)
+    user_content = build_user_content(ctx.message, ctx.attachments)
     messages.append({"role": "user", "content": user_content})
 
     # Assistant response with tool_calls (required by DeepSeek API)

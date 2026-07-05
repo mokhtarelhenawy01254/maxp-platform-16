@@ -2011,18 +2011,6 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
             // 2. Process the message through Python AI service
             const aiSdkClient = require('../services/aiSdkClient');
-            const workingMemoryService = {
-              addMessage: async () => null,
-              getContext: async () => null,
-              updateSearchContext: async () => null,
-              addQueriedProduct: async () => null,
-              clearSearchContext: async () => null,
-              clearSession: async () => null,
-            };
-
-            const convKey = conversation.id;
-            await workingMemoryService.addMessage(customer.companyId, convKey, { role: 'user', content: aiCustomerContent });
-            const memoryContext = await workingMemoryService.getContext(customer.companyId, convKey);
 
             const result = await aiSdkClient.sendChatMessage({
               companyId: customer.companyId,
@@ -2030,7 +2018,6 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               message: aiCustomerContent,
               threadId: conversation.id,
               channel: 'FACEBOOK',
-              memoryContext,
               attachments: attachmentsData.length > 0 ? attachmentsData : undefined
             });
 
@@ -2619,19 +2606,13 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
           }
 
           const aiSdkClient = require('../services/aiSdkClient');
-          const workingMemoryService = {
-            addMessage: async () => null,
-            getContext: async () => null,
-            updateSearchContext: async () => null,
-            addQueriedProduct: async () => null,
-            clearSearchContext: async () => null,
-            clearSession: async () => null,
-          };
-
-          // Restore working memory from Redis
-          const convKey = conversation.id;
-          await workingMemoryService.addMessage(customer.companyId, convKey, { role: 'user', content: aiCustomerContent });
-          const memoryContext = await workingMemoryService.getContext(customer.companyId, convKey);
+          const igAttachments = attachments && attachments.length > 0
+            ? attachments.map(a => ({
+                type: a.type || 'image',
+                url: a.payload?.url || a.url || '',
+                detail: 'high'
+              })).filter(a => a.url)
+            : undefined;
 
           const result = await aiSdkClient.sendChatMessage({
             companyId: customer.companyId,
@@ -2639,7 +2620,7 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
             message: aiCustomerContent,
             threadId: conversation.id,
             channel: 'INSTAGRAM',
-            memoryContext
+            attachments: igAttachments
           });
 
           // Silent Escalation: AI failed → flag for human takeover, send nothing to customer

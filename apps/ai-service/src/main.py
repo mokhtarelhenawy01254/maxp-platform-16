@@ -81,6 +81,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Redis connection (graceful if unavailable)
         await redis_client.connect()
 
+        # Background working-memory session cleanup (every 30 minutes)
+        from src.memory.working_memory import working_memory_service
+        _cleanup_task: asyncio.Task | None = None
+
+        async def _run_cleanup():
+            while True:
+                await asyncio.sleep(1800)
+                try:
+                    n = await working_memory_service.cleanup_expired_sessions()
+                    if n:
+                        structlog.get_logger().info("cleaned_expired_sessions", count=n)
+                except Exception as exc:
+                    structlog.get_logger().warning("cleanup_failed", error=str(exc))
+        _cleanup_task = asyncio.create_task(_run_cleanup())
+
         # MCP server discovery
         try:
             mcp_registry = get_mcp_registry()
@@ -112,6 +127,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             environment=settings.environment,
         )
         yield
+        if _cleanup_task:
+            _cleanup_task.cancel()
         await redis_client.disconnect()
         await close_db()
         log.info("Shutting down maxp-ai-service", version=settings.version)

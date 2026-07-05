@@ -24,31 +24,42 @@ async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
     if not ctx.attachments:
         return ctx
 
-    img_url = _first_image_url(ctx.attachments)
-    if not img_url:
+    image_urls = _all_image_urls(ctx.attachments)
+    if not image_urls:
         return ctx
 
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.get(img_url)
-            if resp.status_code != 200:
-                return ctx
-            img_bytes = resp.content
-            ct = resp.headers.get("content-type", "image/jpeg")
+        all_results: list[dict[str, Any]] = []
 
-        results = await vector_product_search(
-            company_id=ctx.company_id,
-            query="",
-            limit=5,
-            image_bytes=img_bytes,
-            mime_type=ct,
-        )
-        ctx.external_memory_context["productSearchResults"] = {"results": results}
+        for img_url in image_urls:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(img_url)
+                if resp.status_code != 200:
+                    continue
+                img_bytes = resp.content
+                ct = resp.headers.get("content-type", "image/jpeg")
+
+            results = await vector_product_search(
+                company_id=ctx.company_id,
+                query="",
+                limit=5,
+                image_bytes=img_bytes,
+                mime_type=ct,
+            )
+            # Merge results from this image, keeping highest scores
+            existing = {r.get("name", ""): r for r in all_results}
+            for r in results:
+                name = r.get("name", "")
+                if name and float(r.get("score", 0)) > float(existing.get(name, {}).get("score", 0)):
+                    existing[name] = r
+            all_results = sorted(existing.values(), key=lambda x: -float(x.get("score", 0)))[:5]
+
+        ctx.external_memory_context["productSearchResults"] = {"results": all_results}
 
         base = ctx.message or ""
-        if results:
-            candidates = _build_candidates_block(results)
+        if all_results:
+            candidates = _build_candidates_block(all_results)
             ctx.message = f"""{base}
 
 [🔍 قام النظام بعمل بحث بالصورة ووجد المنتجات التالية:
@@ -67,10 +78,11 @@ async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
     return ctx
 
 
-def _first_image_url(attachments: list[dict[str, Any]]) -> str | None:
+def _all_image_urls(attachments: list[dict[str, Any]]) -> list[str]:
+    urls = []
     for a in attachments or []:
         if a.get("type") in ("image", "photo"):
             url = a.get("url", "")
             if url:
-                return url
-    return None
+                urls.append(url)
+    return urls

@@ -73,11 +73,13 @@ async def _run_backfill(company_id: str | None = None) -> None:
         async with _db_mod.async_session() as sess:
             r = await sess.execute(
                 text(f"""
-                    SELECT id, name, sku, price, stock, "trackInventory",
-                           "mainImage", "companyId", description, tags
-                    FROM public.products
-                    WHERE {where_clause}
-                    ORDER BY "companyId", "updatedAt" DESC
+                    SELECT p.id, p.name, p.sku, p.price, p.stock, "trackInventory",
+                           p."mainImage", p."companyId", p.description, p.tags,
+                           p."categoryId", c.name AS category_name
+                    FROM public.products p
+                    LEFT JOIN public.categories c ON c.id = p."categoryId"
+                    WHERE {where_clause.replace('"deletedAt"', 'p."deletedAt"').replace('"isActive"', 'p."isActive"')}
+                    ORDER BY p."companyId", p."updatedAt" DESC
                 """),
                 params,
             )
@@ -90,7 +92,10 @@ async def _run_backfill(company_id: str | None = None) -> None:
             name = p.get("name") or ""
             desc = p.get("description") or ""
             tags = p.get("tags") or ""
+            cat = p.get("category_name") or ""
             embed_text = f"{name}. {desc}. {tags}".strip(". ")
+            if cat:
+                embed_text += f" Category: {cat}."
             img_url = p.get("mainImage") or ""
 
             retries = 0

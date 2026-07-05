@@ -1,12 +1,6 @@
 // Set timezone to Egypt/Cairo before anything else
 process.env.TZ = "Africa/Cairo";
 
-// Global error handlers — log but do NOT crash on transient rejections
-process.on('uncaughtException', (err) => {
-  console.error('💥 UNCAUGHT EXCEPTION:', err.message, err.stack);
-  setTimeout(() => process.exit(1), 3000);
-});
-
 // Load environment variables
 const path = require("path");
 const fs = require("fs");
