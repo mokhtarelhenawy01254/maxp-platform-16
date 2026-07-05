@@ -10,6 +10,16 @@ from src.pipeline.context import PipelineContext
 from src.tools.vector_product_search import vector_product_search
 
 
+def _build_candidates_block(results: list[dict[str, Any]]) -> str:
+    lines = []
+    for i, r in enumerate(results[:3], 1):
+        score = float(r.get("score", 0))
+        name = r.get("name", "منتج")
+        price = r.get("price", "")
+        lines.append(f"{i}. {name} (سعر {price} جنيه, تشابه {score:.0%})")
+    return "\n".join(lines)
+
+
 async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
     if not ctx.attachments:
         return ctx
@@ -36,28 +46,20 @@ async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
         )
         ctx.external_memory_context["productSearchResults"] = {"results": results}
 
+        base = ctx.message or ""
         if results:
-            top = results[0]
-            score = float(top.get("score", 0))
-            name = top.get("name", "")
-            price = top.get("price", "")
+            candidates = _build_candidates_block(results)
+            ctx.message = f"""{base}
 
-            if score >= 0.8:
-                ctx.external_memory_context["productMatched"] = {
-                    "name": name, "price": price, "score": score, "exact": True,
-                }
-                ctx.message = f"العميل مهتم بـ {name} (سعر {price} جنيه) - يريد التفاصيل."
-            elif score >= 0.5:
-                ctx.external_memory_context["productMatched"] = {
-                    "name": name, "price": price, "score": score, "exact": False,
-                }
-                ctx.message = f"العميل بيسأل عن حاجة شبه صورة - أقرب حاجة عندنا: {name} بسعر {price} جنيه."
-            else:
-                ctx.message = "العميل بعت صورة لم نجد لها منتج مطابق. أخبره بلطف."
+[🔍 قام النظام بعمل بحث بالصورة ووجد المنتجات التالية:
+{candidates}
+
+قارن الصورة مع هذه المنتجات واختر أقرب واحد للصورة المرسلة من العميل.
+- إذا وجدت تطابق: أخبر العميل باسم المنتج وسعره واسأله إذا كان يريد الشراء
+- إذا لم تجد تطابق تام: أخبر العميل بأقرب البدائل المتاحة]
+"""
         else:
-            ctx.message = "العميل بعت صورة لم نجد لها منتج مطابق. أخبره بلطف."
-
-        ctx.attachments = []
+            ctx.message = f"{base}\n\n[لم يتم العثور على منتجات مطابقة للصورة. أخبر العميل بلطف واسأله عن تفاصيل أكثر.]"
 
     except Exception:
         ctx.message = f"{ctx.message}\n\n[العميل أرسل صورة مع الرسالة.]"
