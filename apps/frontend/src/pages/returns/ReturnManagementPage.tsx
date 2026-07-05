@@ -14,8 +14,25 @@ import {
   Clock,
   Eye,
   Edit,
+  Package,
 } from "lucide-react";
+import { apiClient } from "../../services/apiClient";
 import ReturnDetailsModal from "./ReturnDetailsModal";
+
+const FALLBACK_ORDER_STATUSES = [
+  { code: "PENDING", label: "قيد الانتظار" },
+  { code: "CONFIRMED", label: "مؤكد" },
+  { code: "SCHEDULED", label: "مجدول" },
+  { code: "PROCESSING", label: "قيد التجهيز" },
+  { code: "SHIPPED", label: "تم الشحن" },
+  { code: "DELIVERED", label: "تم التسليم" },
+  { code: "CANCELLED", label: "ملغي" },
+  { code: "RETURNED", label: "مرتجع" },
+  { code: "REFUNDED", label: "مسترد" },
+  { code: "DUPLICATE_ORDER", label: "طلب مكرر" },
+  { code: "ON_HOLD", label: "معلق" },
+  { code: "PARTIALLY_DELIVERED", label: "تسليم جزئي" },
+];
 
 const ReturnManagementPage: React.FC = () => {
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
@@ -30,7 +47,9 @@ const ReturnManagementPage: React.FC = () => {
 
   // Filters & Search
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [orderStatuses, setOrderStatuses] = useState(FALLBACK_ORDER_STATUSES);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -68,6 +87,7 @@ const ReturnManagementPage: React.FC = () => {
     try {
       const params: Record<string, any> = { page, limit: 20 };
       if (statusFilter) params.status = statusFilter;
+      if (orderStatusFilter) params.orderStatus = orderStatusFilter;
       if (searchTerm) params.search = searchTerm;
       const reqRes = await returnService.getRequests(params);
       setRequests(reqRes.data.data);
@@ -95,14 +115,31 @@ const ReturnManagementPage: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, searchTerm]);
+  }, [statusFilter, searchTerm, orderStatusFilter]);
 
   useEffect(() => {
     fetchData();
-  }, [statusFilter, searchTerm, page]);
+  }, [statusFilter, searchTerm, orderStatusFilter, page]);
 
   useEffect(() => {
     fetchCategoriesAndReasons();
+  }, []);
+
+  // Load order statuses
+  useEffect(() => {
+    apiClient.get("/order-status", { _skipErrorToast: true })
+      .then((res) => {
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          const fetched = res.data.data
+            .filter((s: any) => s.statusType !== "payment")
+            .map((s: any) => ({
+              code: s.code,
+              label: s.name || s.code,
+            }));
+          if (fetched.length > 0) setOrderStatuses(fetched);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Load display settings
@@ -248,6 +285,40 @@ const ReturnManagementPage: React.FC = () => {
             </button>
           ))}
         </div>
+        {displayConfig?.showOrderStatusFilter !== false && (
+          <>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+              <Package size={16} />
+              <span className="text-xs font-medium whitespace-nowrap">حالة الطلب:</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setOrderStatusFilter("")}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  orderStatusFilter === ""
+                    ? "bg-blue-600 dark:bg-blue-500 text-white"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                الكل
+              </button>
+              {orderStatuses.map((status) => (
+                <button
+                  key={status.code}
+                  onClick={() => setOrderStatusFilter(status.code)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    orderStatusFilter === status.code
+                      ? "bg-blue-600 dark:bg-blue-500 text-white"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  {status.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <input
           type="text"
           value={searchTerm}

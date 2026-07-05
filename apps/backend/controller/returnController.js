@@ -146,7 +146,7 @@ exports.deleteReturnReason = async (req, res) => {
 // Return Requests
 exports.getReturnRequests = async (req, res) => {
     try {
-        const { status, orderId, customerId, isReviewed, search, page: pageStr, limit: limitStr } = req.query;
+        const { status, orderId, customerId, isReviewed, search, orderStatus, page: pageStr, limit: limitStr } = req.query;
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
         const where = { companyId: effectiveCompanyId };
 
@@ -154,6 +154,7 @@ exports.getReturnRequests = async (req, res) => {
         if (orderId) where.orderId = orderId;
         if (customerId) where.customerId = customerId;
         if (isReviewed !== undefined) where.isReviewed = isReviewed === 'true';
+        if (orderStatus) where.order = { status: orderStatus };
 
         if (search) {
             const orders = await getPrisma().order.findMany({

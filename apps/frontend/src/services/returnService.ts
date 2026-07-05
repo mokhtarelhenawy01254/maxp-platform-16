@@ -70,6 +70,7 @@ export const returnService = {
     customerId?: string;
     isReviewed?: boolean;
     search?: string;
+    orderStatus?: string;
     page?: number;
     limit?: number;
   }) =>
@@ -151,6 +152,7 @@ export interface ReviewDisplayConfig {
   showApprovedStatus?: boolean;
   showRejectedStatus?: boolean;
   showCompletedStatus?: boolean;
+  showOrderStatusFilter?: boolean;
 }
 
 export interface ReturnSettingsData {

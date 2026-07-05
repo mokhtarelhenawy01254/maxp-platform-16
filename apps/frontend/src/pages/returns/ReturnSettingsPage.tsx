@@ -43,6 +43,7 @@ const DEFAULT_DISPLAY_CONFIG: ReviewDisplayConfig = {
   showApprovedStatus: true,
   showRejectedStatus: true,
   showCompletedStatus: true,
+  showOrderStatusFilter: true,
 };
 
 const DISPLAY_FIELDS: {
@@ -127,6 +128,12 @@ const DISPLAY_FIELDS: {
     key: "showCreateButton",
     label: "زر طلب جديد",
     description: "زر إنشاء طلب إرجاع جديد",
+    section: "controls",
+  },
+  {
+    key: "showOrderStatusFilter",
+    label: "فلترة حالة الطلب الأصلي",
+    description: "إظهار فلتر بحالة الطلب (قيد الانتظار، مؤكد، تم الشحن، ...)",
     section: "controls",
   },
 ];
