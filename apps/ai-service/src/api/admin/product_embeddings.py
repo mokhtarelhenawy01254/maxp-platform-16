@@ -122,7 +122,7 @@ async def _run_backfill(company_id: str | None = None) -> None:
                     try:
                         import base64
                         ires = await svc.generate_embedding_with_provider(
-                            text=embed_text, image_bytes=base64.b64encode(img_bytes).decode(), mime_type=mime,
+                            image_bytes=base64.b64encode(img_bytes).decode(), mime_type=mime,
                         )
                         vec_image = ires.get("vector")
                     except Exception as e:
