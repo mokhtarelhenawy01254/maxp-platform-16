@@ -35,4 +35,12 @@ Additionally, when an audio file was uploaded, the controller called `WhatsAppMe
 - Modified `sendMedia()` to use the Media API upload path for `audio` and `video` kinds when a `buffer` is available on the media object, instead of directly sending a `link`.
 - This fixes the 500 error when sending voice notes via Meta Cloud API, because `audio/webm` format produced by the browser's `MediaRecorder` is not directly supported by Meta's messages endpoint but can be uploaded via the Media API and referenced by ID.
 
+### 6. WebM → OGG Conversion for Meta Cloud API Compatibility (WhatsAppMediaHandler.js)
+- **Date**: 2026-07-06  
+- Added `convertWebmToOgg()` function that uses `ffmpeg` (via `ffmpeg-static`) to convert `audio/webm` buffers to `audio/ogg` (Opus codec, 16kHz, mono, 16kbps) — the format required by WhatsApp Cloud API for voice messages.
+- Modified `uploadMedia()` to automatically detect `audio/webm` input and convert it to `audio/ogg` before saving, ensuring all downstream code (Meta Media API upload + send) receives a WhatsApp-compatible format.
+- The file extension and mimetype in the returned media object are updated to `.ogg` / `audio/ogg` so the Meta Cloud Provider sends the correct content type.
+
+### Why This Is Necessary
+Meta's WhatsApp Cloud API Media endpoint officially supports `audio/aac`, `audio/mp4`, `audio/mpeg`, `audio/amr`, and `audio/ogg; codecs=opus` for voice messages. The `audio/webm` format produced by browser `MediaRecorder` (Chrome/Edge/Firefox) is **not** a supported type. Even though the file can be uploaded via the Media API, Meta's platform rejects `audio/webm` as an invalid format for WhatsApp message delivery.
 

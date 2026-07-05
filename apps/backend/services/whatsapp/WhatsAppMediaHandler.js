@@ -22,6 +22,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 const fs = require('fs').promises;
 const path = require('path');
+const { execFile } = require('child_process');
 // Optional sharp for image processing
 let sharp;
 try {
@@ -79,6 +80,54 @@ async function initMediaDirectory() {
         console.log('📁 WhatsApp media directory initialized');
     } catch (error) {
         console.error('❌ Error creating media directory:', error);
+    }
+}
+
+/**
+ * تحويل audio/webm إلى audio/ogg (Opus) ليتوافق مع Meta Cloud API
+ * @param {Buffer} inputBuffer - buffer webm
+ * @returns {Promise<Buffer>} buffer ogg
+ */
+async function convertWebmToOgg(inputBuffer) {
+    const tempDir = path.join(MEDIA_DIR, 'temp');
+    await fs.mkdir(tempDir, { recursive: true });
+
+    const ts = Date.now();
+    const inputPath = path.join(tempDir, `convert_in_${ts}.webm`);
+    const outputPath = path.join(tempDir, `convert_out_${ts}.ogg`);
+
+    await fs.writeFile(inputPath, inputBuffer);
+
+    try {
+        await new Promise((resolve, reject) => {
+            execFile('ffmpeg', [
+                '-i', inputPath,
+                '-c:a', 'libopus',
+                '-b:a', '16k',
+                '-ac', '1',
+                '-ar', '16000',
+                '-y',
+                outputPath
+            ], { timeout: 30000 }, async (error) => {
+                await fs.unlink(inputPath).catch(() => {});
+                if (error) {
+                    await fs.unlink(outputPath).catch(() => {});
+                    reject(error);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        const outputBuffer = await fs.readFile(outputPath);
+        await fs.unlink(outputPath).catch(() => {});
+        console.log('🎵 Converted audio/webm → audio/ogg for WhatsApp');
+        return outputBuffer;
+    } catch (error) {
+        await fs.unlink(inputPath).catch(() => {});
+        await fs.unlink(outputPath).catch(() => {});
+        console.error('❌ Failed to convert webm to ogg:', error.message);
+        throw error;
     }
 }
 
@@ -163,11 +212,18 @@ async function uploadMedia(source, mimetype, originalName = '') {
         }
 
         const cleanMime = mimetype ? mimetype.split(';')[0].trim() : '';
+        let outputMime = cleanMime;
 
         // التحقق من النوع
         const mediaType = getMediaTypeFromMimetype(cleanMime);
         if (!mediaType) {
             throw new Error('نوع الملف غير مدعوم');
+        }
+
+        // تحويل audio/webm إلى audio/ogg ليتوافق مع WhatsApp Cloud API
+        if (mediaType === 'audio' && cleanMime === 'audio/webm') {
+            buffer = await convertWebmToOgg(buffer);
+            outputMime = 'audio/ogg';
         }
 
         // التحقق من الحجم
@@ -182,7 +238,7 @@ async function uploadMedia(source, mimetype, originalName = '') {
         }
 
         // إنشاء اسم الملف
-        const extension = getExtension(cleanMime);
+        const extension = getExtension(outputMime);
         const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
         const subDir = getSubDirectory(mediaType);
         const filePath = path.join(MEDIA_DIR, subDir, fileName);
@@ -196,7 +252,7 @@ async function uploadMedia(source, mimetype, originalName = '') {
             fileName,
             url: `/uploads/whatsapp/${subDir}/${fileName}`,
             size: buffer.length,
-            mimetype: cleanMime,
+            mimetype: outputMime,
             type: mediaType
         };
     } catch (error) {
@@ -460,6 +516,7 @@ module.exports = {
     initMediaDirectory,
     downloadMedia,
     uploadMedia,
+    convertWebmToOgg,
     compressImage,
     createThumbnail,
     getImageInfo,
