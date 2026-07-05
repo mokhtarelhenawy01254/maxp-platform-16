@@ -892,6 +892,12 @@ const ParentChildrenPage = React.lazy(
 const ParentChildDetailPage = React.lazy(
   () => import("./pages/parent/ParentChildDetailPage"),
 );
+const ParentWalletPage = React.lazy(
+  () => import("./pages/parent/ParentWalletPage"),
+);
+const ParentBuyPackagePage = React.lazy(
+  () => import("./pages/parent/ParentBuyPackagePage"),
+);
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),
 );
@@ -6301,6 +6307,8 @@ const AppContent = () => {
                 <Route path="/parent/children/:studentId" element={<ParentLayout><ParentChildDetailPage /></ParentLayout>} />
                 <Route path="/parent/sessions" element={<ParentLayout><ParentSessionsPage /></ParentLayout>} />
                 <Route path="/parent/enrollments" element={<ParentLayout><ParentEnrollmentsPage /></ParentLayout>} />
+                <Route path="/parent/wallet" element={<ParentLayout><ParentWalletPage /></ParentLayout>} />
+                <Route path="/parent/buy-package" element={<ParentLayout><ParentBuyPackagePage /></ParentLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={

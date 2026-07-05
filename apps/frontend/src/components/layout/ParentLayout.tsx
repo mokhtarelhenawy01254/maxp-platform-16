@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { CalendarDays, Wallet, Users, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import { CalendarDays, Wallet, Users, LayoutDashboard, LogOut, Menu, X, ShoppingCart } from "lucide-react";
 
 interface ParentLayoutProps {
   children: React.ReactNode;
@@ -17,6 +17,8 @@ const ParentLayout: React.FC<ParentLayoutProps> = ({ children }) => {
     { path: '/parent/children', label: 'أبنائي', icon: Users },
     { path: '/parent/sessions', label: 'الحصص', icon: CalendarDays },
     { path: '/parent/enrollments', label: 'التسجيلات', icon: Wallet },
+    { path: '/parent/wallet', label: 'المحفظة', icon: Wallet },
+    { path: '/parent/buy-package', label: 'شراء باقة', icon: ShoppingCart },
   ];
 
   const handleLogout = () => {

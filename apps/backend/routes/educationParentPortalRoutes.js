@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controller/educationParentAuthController');
+const portalController = require('../controller/educationParentPortalController');
 const { authenticateParentToken } = require('../utils/verifyParentToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
@@ -8,6 +9,14 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 router.post('/login', authController.login);
 router.get('/me', authenticateParentToken, authController.me);
 router.put('/me/password', authenticateParentToken, authController.changePassword);
+
+// Wallet routes
+router.get('/wallet', authenticateParentToken, portalController.getWallet);
+router.post('/wallet/topup', authenticateParentToken, portalController.topupWallet);
+
+// Package purchase
+router.get('/subjects', authenticateParentToken, portalController.getSubjects);
+router.post('/purchase-package', authenticateParentToken, portalController.purchasePackage);
 
 // Parent's children
 router.get('/children', authenticateParentToken, async (req, res) => {
