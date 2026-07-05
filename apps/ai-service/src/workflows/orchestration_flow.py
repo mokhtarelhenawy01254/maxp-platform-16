@@ -21,6 +21,7 @@ from src.pipeline.context import PipelineContext
 from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.pipeline.stages.validate_reply import validate_reply
+from src.pipeline.stages.visual_match import match_product_by_image
 from src.services.a2a_bridge import AGENT_CARD_META
 from src.services.agent_feedback import AgentFeedbackTracker
 from src.services.agent_manager_service import get_agent_manager_service
@@ -392,6 +393,7 @@ async def run_orchestration(
         )
 
         pipeline_stages = [
+            match_product_by_image,
             process_with_skills,
             validate_reply,
         ]
