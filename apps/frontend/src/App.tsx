@@ -871,6 +871,24 @@ const TeacherPaymentsPage = React.lazy(
 const TeacherAvailabilityPage = React.lazy(
   () => import("./pages/teacher/TeacherAvailabilityPage"),
 );
+const ParentLoginPage = React.lazy(
+  () => import("./pages/auth/ParentLoginPage"),
+);
+const ParentLayout = React.lazy(
+  () => import("./components/layout/ParentLayout"),
+);
+const ParentDashboardPage = React.lazy(
+  () => import("./pages/parent/ParentDashboardPage"),
+);
+const ParentSessionsPage = React.lazy(
+  () => import("./pages/parent/ParentSessionsPage"),
+);
+const ParentEnrollmentsPage = React.lazy(
+  () => import("./pages/parent/ParentEnrollmentsPage"),
+);
+const { ParentChildrenPage, ParentChildDetailPage } = React.lazy(
+  () => import("./pages/parent/ParentChildrenPage"),
+);
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),
 );
@@ -1557,6 +1575,14 @@ const AppContent = () => {
               element={
                 <AuthLayout>
                   <TeacherLoginPage />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/parent/login"
+              element={
+                <AuthLayout>
+                  <ParentLoginPage />
                 </AuthLayout>
               }
             />
@@ -6267,6 +6293,11 @@ const AppContent = () => {
                 <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
                 <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
                 <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
+                <Route path="/parent/dashboard" element={<ParentLayout><ParentDashboardPage /></ParentLayout>} />
+                <Route path="/parent/children" element={<ParentLayout><ParentChildrenPage /></ParentLayout>} />
+                <Route path="/parent/children/:studentId" element={<ParentLayout><ParentChildDetailPage /></ParentLayout>} />
+                <Route path="/parent/sessions" element={<ParentLayout><ParentSessionsPage /></ParentLayout>} />
+                <Route path="/parent/enrollments" element={<ParentLayout><ParentEnrollmentsPage /></ParentLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={

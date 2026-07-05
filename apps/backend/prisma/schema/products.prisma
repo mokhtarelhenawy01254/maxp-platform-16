@@ -4,6 +4,7 @@ model Customer {
   lastName                       String
   email                          String?
   phone                          String?
+  password                      String?  /// Hashed password for parent portal login
   avatar                         String?
   facebookId                     String?
   instagramId                    String?

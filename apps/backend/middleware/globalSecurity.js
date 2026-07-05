@@ -486,6 +486,9 @@ const PUBLIC_ROUTES = [
   // Teacher Portal (public login endpoint)
   'POST /api/v1/education/teacher-portal/login',
 
+  // Parent Portal (public login endpoint)
+  'POST /api/v1/education/parent-portal/login',
+
   // Public Support
   'GET /api/v1/support/faq',
 
