@@ -27,6 +27,9 @@ from src.api.admin.agents_schemas import (
     AgentRead,
     AgentStatusUpdate,
     AgentSummary,
+    AgentTemplateCompaniesResponse,
+    AgentTemplateCompany,
+    AgentTemplateCompanyDiff,
     AgentTemplateList,
     AgentTemplateRead,
     AgentUpdate,
@@ -466,6 +469,100 @@ async def get_agent_template(slug: str, session: SessionDep) -> AgentTemplateRea
     if not template:
         raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
     return AgentTemplateRead.model_validate(template)
+
+
+@router.get("/agent-templates/{slug}/companies", response_model=AgentTemplateCompaniesResponse)
+async def get_template_companies(slug: str, session: SessionDep) -> AgentTemplateCompaniesResponse:
+    """Get all companies using this template with diff data."""
+    template = await get_template(slug, session)
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
+
+    result = await session.execute(
+        select(AgentModel).where(
+            AgentModel.template_slug == slug,
+            AgentModel.status != "ARCHIVED",
+        )
+    )
+    agents = result.scalars().all()
+
+    companies_data = []
+    for agent in agents:
+        company_row = await session.execute(
+            text("SELECT name FROM public.companies WHERE id = :cid"),
+            {"cid": agent.company_id},
+        )
+        company_name = company_row.scalar() or agent.company_id
+
+        diffs = []
+        template_model_default = template.model_policy.get("default") if template.model_policy else None
+        if agent.model is not None and agent.model != template_model_default:
+            diffs.append(AgentTemplateCompanyDiff(field="model", type="modified", template_value=template_model_default, agent_value=agent.model))
+        if agent.soul is not None:
+            diffs.append(AgentTemplateCompanyDiff(field="soul", type="modified"))
+        if agent.rules is not None:
+            diffs.append(AgentTemplateCompanyDiff(field="rules", type="modified"))
+        _soul = set(agent.allowed_tools or [])
+        _tmpl_tools = set(template.allowed_tools or [])
+        if _soul != _tmpl_tools:
+            added = list(_soul - _tmpl_tools)
+            removed = list(_tmpl_tools - _soul)
+            if added:
+                diffs.append(AgentTemplateCompanyDiff(field="allowed_tools", type="added", agent_value=added))
+            if removed:
+                diffs.append(AgentTemplateCompanyDiff(field="allowed_tools", type="removed", template_value=removed))
+        _s_skills = set(agent.allowed_skills or [])
+        _tmpl_skills = set(template.allowed_skills or [])
+        if _s_skills != _tmpl_skills:
+            added = list(_s_skills - _tmpl_skills)
+            removed = list(_tmpl_skills - _s_skills)
+            if added:
+                diffs.append(AgentTemplateCompanyDiff(field="allowed_skills", type="added", agent_value=added))
+            if removed:
+                diffs.append(AgentTemplateCompanyDiff(field="allowed_skills", type="removed", template_value=removed))
+        _s_ch = set(str(c or "").strip().lower() for c in (agent.channels or []))
+        _tmpl_ch = set(str(c or "").strip().lower() for c in (template.channels or []))
+        if _s_ch != _tmpl_ch:
+            added = list(_s_ch - _tmpl_ch)
+            removed = list(_tmpl_ch - _s_ch)
+            if added:
+                diffs.append(AgentTemplateCompanyDiff(field="channels", type="added", agent_value=added))
+            if removed:
+                diffs.append(AgentTemplateCompanyDiff(field="channels", type="removed", template_value=removed))
+        if agent.guardrails and agent.guardrails != template.guardrails:
+            diffs.append(AgentTemplateCompanyDiff(field="guardrails", type="modified"))
+        if agent.budget and agent.budget != template.budget:
+            diffs.append(AgentTemplateCompanyDiff(field="budget", type="modified"))
+        _agent_persona = dict(agent.persona or {})
+        _tmpl_persona = dict(template.persona_meta or {})
+        if _agent_persona != _tmpl_persona:
+            diffs.append(AgentTemplateCompanyDiff(field="persona", type="modified"))
+        if agent.version != template.version:
+            diffs.append(AgentTemplateCompanyDiff(field="version", type="modified", template_value=template.version, agent_value=agent.version))
+
+        companies_data.append(AgentTemplateCompany(
+            company_id=agent.company_id,
+            company_name=company_name,
+            agent_id=agent.id,
+            agent_name=agent.name,
+            agent_role=agent.role,
+            agent_status=agent.status,
+            agent_version=agent.version,
+            agent_model=agent.model,
+            template_slug=agent.template_slug,
+            diff_count=len(diffs),
+            diffs=diffs,
+            created_at=agent.created_at.isoformat() if agent.created_at else None,
+            updated_at=agent.updated_at.isoformat() if agent.updated_at else None,
+        ))
+
+    return AgentTemplateCompaniesResponse(
+        template_slug=slug,
+        template_name=template.name,
+        template_version=template.version,
+        total_companies=len(companies_data),
+        companies=companies_data,
+    )
 
 
 @router.post("/templates/seed")

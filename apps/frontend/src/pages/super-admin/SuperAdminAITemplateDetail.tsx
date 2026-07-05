@@ -9,10 +9,10 @@ import i18n from "../../i18n";
 import {
   ArrowRight, Pencil, Copy, Check, Send, Trash2, Edit3,
   Brain, BookOpen, Wrench, Layers, Globe, CreditCard,
-  Shield, Share2, Server, Split, Calendar,
+  Shield, Share2, Server, Split, Calendar, Building2, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
-  EditDialog, ApplyDialog, DeleteDialog, DuplicateDialog,
+  EditDialog, ApplyDialog, DeleteDialog, DuplicateDialog, EditCompanyAgentDialog,
   ROLE_ICONS, ROLE_COLORS, toneColors,
 } from "./SuperAdminAITemplatesDialogs";
 
@@ -38,6 +38,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editCompanyTarget, setEditCompanyTarget] = useState<any>(null);
 
   const fetchTemplate = useCallback(async () => {
     if (!slug) return;
@@ -78,6 +79,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
     { id: "instructions", label: "التعليمات", icon: BookOpen },
     { id: "tools", label: "الأدوات والمهارات", icon: Wrench },
     { id: "config", label: "الإعدادات", icon: Edit3 },
+    { id: "companies", label: "الشركات", icon: Building2 },
     { id: "advanced", label: "متقدم", icon: Split },
   ];
 
@@ -253,6 +255,10 @@ const SuperAdminAITemplateDetail: React.FC = () => {
           </div>
         )}
 
+        {activeTab === "companies" && (
+          <CompaniesTab slug={slug!} onEditAgent={setEditCompanyTarget} />
+        )}
+
         {activeTab === "advanced" && (
           <div className="max-w-3xl space-y-4">
             {t.handoffs?.length > 0 && (
@@ -345,6 +351,14 @@ const SuperAdminAITemplateDetail: React.FC = () => {
         <DeleteDialog
           template={{ slug: t.slug, name: t.name, role: t.role, version: t.version, icon, description: t.role, personaMeta: {}, soulPreview: "", toolsCount: 0, skillsCount: 0, channels: [], budget: {}, industries: [] }}
           onClose={() => setDeleteOpen(false)} onDeleted={() => navigate("/super-admin/ai-templates")}
+        />
+      )}
+      {editCompanyTarget && (
+        <EditCompanyAgentDialog
+          agent={editCompanyTarget}
+          templateSlug={slug!}
+          onClose={() => setEditCompanyTarget(null)}
+          onUpdated={() => { setEditCompanyTarget(null); setActiveTab("companies"); }}
         />
       )}
     </div>

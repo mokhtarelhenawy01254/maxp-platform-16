@@ -567,6 +567,43 @@ router.put("/agents/default-template", async (req, res) => {
 });
 // ── AI Agent Template Details ──────────────────────────────────────
 
+// GET /agents/:slug/companies — list companies using this template
+router.get("/agents/:slug/companies", async (req, res) => {
+  try {
+    const result = await aiServiceAdminClient.getTemplateCompanies(req.params.slug);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[SA-AGENTS] GET template companies error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تحميل الشركات المستخدمة للوكيل' });
+  }
+});
+
+// PUT /agents/:slug/company/:agentId — update company-specific agent
+router.put("/agents/:slug/company/:agentId", async (req, res) => {
+  try {
+    const { companyId } = req.body || {};
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId مطلوب' });
+    const result = await aiServiceAdminClient.updateAgent(req.params.agentId, companyId, req.body || {});
+    return res.json({ success: true, agent: result, message: 'تم تحديث الوكيل بنجاح' });
+  } catch (error) {
+    console.error('[SA-AGENTS] PUT company agent error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تحديث الوكيل' });
+  }
+});
+
+// DELETE /agents/:slug/company/:agentId — archive company-specific agent
+router.delete("/agents/:slug/company/:agentId", async (req, res) => {
+  try {
+    const companyId = req.query.companyId;
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId مطلوب' });
+    await aiServiceAdminClient.archiveAgent(req.params.agentId, companyId);
+    return res.json({ success: true, message: 'تم أرشفة الوكيل بنجاح' });
+  } catch (error) {
+    console.error('[SA-AGENTS] DELETE company agent error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل أرشفة الوكيل' });
+  }
+});
+
 // GET /agents/:id — get agent template with expanded details
 router.get("/agents/:id", async (req, res) => {
   try {

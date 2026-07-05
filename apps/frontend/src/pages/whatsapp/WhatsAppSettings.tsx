@@ -752,26 +752,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     }
   }, [activeTab, connectedSessions, loadScopedTabData, scopedSessionId]);
 
-  // 🔄 Periodic session status polling (every 30 seconds)
-  useEffect(() => {
-    const POLL_INTERVAL = 30000;
-    
-    const pollSessionStatus = async () => {
-      try {
-        const response = await apiClient.get("/whatsapp/sessions", withCompanyConfig());
-        if (response.data?.sessions) {
-          setSessions(response.data.sessions);
-        }
-      } catch {
-        // Silently fail - will retry on next interval
-      }
-    };
-
-    // Initial loadData is already called on mount, so we just set up the interval
-    const intervalId = setInterval(pollSessionStatus, POLL_INTERVAL);
-    
-    return () => clearInterval(intervalId);
-  }, [withCompanyConfig]);
+  // ponytail: no polling — socket events (whatsapp:connection, whatsapp:sessions:status) keep sessions fresh
 
   // 📡 Socket event listeners for real-time WhatsApp updates
   useEffect(() => {
@@ -877,31 +858,16 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       );
     };
 
-    // 🎧 Refresh all sessions when socket reconnects
-    const handleSocketConnect = async () => {
-      console.log("🔌 [WhatsAppSettings] Socket reconnected, refreshing sessions...");
-      try {
-        const response = await apiClient.get("/whatsapp/sessions", withCompanyConfig());
-        if (response.data?.sessions) {
-          setSessions(response.data.sessions);
-        }
-      } catch {
-        // Ignore errors on reconnect
-      }
-    };
-
     socket.on("whatsapp:qr", handleQRCode);
     socket.on("whatsapp:pairing_code", handlePairingCode);
     socket.on("whatsapp:connection", handleConnectionUpdate);
     socket.on("whatsapp:sessions:status", handleSessionsStatus);
-    socket.on("connect", handleSocketConnect);
 
     return () => {
       socket.off("whatsapp:qr", handleQRCode);
       socket.off("whatsapp:pairing_code", handlePairingCode);
       socket.off("whatsapp:connection", handleConnectionUpdate);
       socket.off("whatsapp:sessions:status", handleSessionsStatus);
-      socket.off("connect", handleSocketConnect);
     };
   }, [socket, t, withCompanyConfig]);
 

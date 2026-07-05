@@ -282,6 +282,37 @@ class ManagerContextResponse(BaseModel):
     inbox: InboxSummary = Field(default_factory=InboxSummary)
 
 
+class AgentTemplateCompanyDiff(BaseModel):
+    field: str
+    type: str  # "modified" | "added" | "removed"
+    template_value: Any | None = None
+    agent_value: Any | None = None
+
+
+class AgentTemplateCompany(BaseModel):
+    company_id: str
+    company_name: str
+    agent_id: str
+    agent_name: str
+    agent_role: str
+    agent_status: str
+    agent_version: str
+    agent_model: str | None = None
+    template_slug: str | None = None
+    diff_count: int = 0
+    diffs: list[AgentTemplateCompanyDiff] = []
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+class AgentTemplateCompaniesResponse(BaseModel):
+    template_slug: str
+    template_name: str
+    template_version: str
+    total_companies: int
+    companies: list[AgentTemplateCompany]
+
+
 class TeamMapNode(BaseModel):
     id: str
     name: str

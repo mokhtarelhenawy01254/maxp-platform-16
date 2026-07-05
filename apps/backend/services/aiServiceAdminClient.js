@@ -256,6 +256,10 @@ async function deleteKnowledgeEmbeddingItem(sourceId, sourceType) {
 
 // ── Agent Template Management (2026 unified approach) ──────────────
 
+async function getTemplateCompanies(slug) {
+  return request('GET', `/admin/agent-templates/${encodeURIComponent(slug)}/companies`);
+}
+
 async function listAgentTemplates(params = {}) {
   const query = Object.entries(params)
     .filter(([_, v]) => v !== undefined && v !== null)
@@ -318,6 +322,7 @@ module.exports = {
   listSkills,
   updateToolMeta,
   listAgentTemplates,
+  getTemplateCompanies,
   getAgentTemplate,
   createAgentTemplate,
   updateAgentTemplate,

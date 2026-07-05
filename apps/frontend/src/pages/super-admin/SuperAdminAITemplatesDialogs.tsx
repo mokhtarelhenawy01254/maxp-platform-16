@@ -11,7 +11,7 @@ import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
-import { Brain, Plus, Trash2, Send, CheckCircle, Copy } from "lucide-react";
+import { Brain, Plus, Trash2, Send, CheckCircle, Copy, Save } from "lucide-react";
 
 const CHANNEL_OPTIONS: MultiSelectOption[] = [
   { value: "dashboard", label: "لوحة التحكم" },
@@ -492,6 +492,152 @@ export const DeleteDialog: React.FC<{ template: TemplateItem; onClose: () => voi
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={deleting}>إلغاء</Button>
           <Button variant="destructive" onClick={doDelete} disabled={deleting}>{deleting ? <LoadingSpinner size="sm" /> : <Trash2 className="size-4 ml-1" />} حذف</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/* ════════════════════════════════════════════════
+   Edit Company Agent Dialog
+   ════════════════════════════════════════════════ */
+interface CompanyAgentInfo {
+  agent_id: string;
+  company_id: string;
+  company_name: string;
+  agent_name: string;
+  agent_role: string;
+  agent_status: string;
+  agent_version: string;
+  agent_model: string | null;
+  template_slug: string;
+}
+
+export const EditCompanyAgentDialog: React.FC<{
+  agent: CompanyAgentInfo;
+  templateSlug: string;
+  onClose: () => void;
+  onUpdated: () => void;
+}> = ({ agent, templateSlug, onClose, onUpdated }) => {
+  const [form, setForm] = useState<Record<string, any>>({
+    soul: "", rules: "", model: "",
+    allowed_tools: [] as string[], allowed_skills: [] as string[],
+    allowed_channels: [] as string[], persona: {} as Record<string, any>,
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [allTools, setAllTools] = useState<MultiSelectOption[]>([]);
+  const [allSkills, setAllSkills] = useState<MultiSelectOption[]>([]);
+  const [allModels, setAllModels] = useState<{ modelName: string; provider: string }[]>([]);
+
+  const field = (key: string) => form[key] ?? "";
+  const update = (key: string, val: any) => setForm(p => ({ ...p, [key]: val }));
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [agentRes, toolsRes, skillsRes, modelsRes] = await Promise.all([
+          apiClient.get(`/ai-admin/agents/${agent.agent_id}?company_id=${agent.company_id}`),
+          apiClient.get("/super-admin/agents/tools"),
+          apiClient.get("/super-admin/agents/skills"),
+          apiClient.get("/super-admin/agents/available-models"),
+        ]);
+        if (toolsRes.data.success) setAllTools(toolsRes.data.tools.map(t => ({ value: t.name, label: t.name, group: t.group })));
+        if (skillsRes.data.success) setAllSkills(skillsRes.data.skills.map(s => ({ value: s.id, label: s.displayName })));
+        if (modelsRes.data.success) setAllModels(modelsRes.data.models);
+        const a = agentRes.data;
+        if (a) {
+          setForm({
+            soul: a.soul || "",
+            rules: a.rules || "",
+            model: a.model || "",
+            allowed_tools: a.allowed_tools || [],
+            allowed_skills: a.allowed_skills || [],
+            allowed_channels: a.allowed_channels || [],
+            persona: a.persona || {},
+          });
+        }
+      } catch { setErr("فشل تحميل بيانات الوكيل"); }
+      finally { setLoading(false); }
+    })();
+  }, [agent.agent_id, agent.company_id]);
+
+  const save = async () => {
+    setSaving(true); setErr(null);
+    try {
+      await apiClient.put(`/super-admin/agents/${templateSlug}/company/${agent.agent_id}`, {
+        companyId: agent.company_id,
+        soul: form.soul || null,
+        rules: form.rules || null,
+        model: form.model || null,
+        allowed_tools: form.allowed_tools,
+        allowed_skills: form.allowed_skills,
+        allowed_channels: form.allowed_channels,
+        persona: form.persona,
+      });
+      onUpdated(); onClose();
+    } catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return (
+    <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-xl"><div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div></DialogContent>
+    </Dialog>
+  );
+
+  return (
+    <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">✏️</span>
+            <DialogTitle>تعديل نسخة {agent.company_name}</DialogTitle>
+            <Badge variant="outline" className="text-xs">{agent.agent_name}</Badge>
+          </div>
+        </DialogHeader>
+        {err && <Alert variant="destructive"><AlertDescription>{err}</AlertDescription></Alert>}
+        <div className="flex-1 overflow-auto px-1 py-2 space-y-3">
+          <p className="text-xs text-muted-foreground">هذه التعديلات تؤثر فقط على نسخة هذه الشركة، وليس على القالب الأساسي.</p>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">النموذج</label>
+            <select value={field("model")} onChange={e => update("model", e.target.value)}
+              className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm mt-1">
+              <option value="">النموذج الافتراضي (من القالب)</option>
+              {allModels.map(m => <option key={m.modelName} value={m.modelName}>{m.modelName} ({m.provider})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">الشخصية (Soul)</label>
+            <Textarea className="mt-1 font-mono text-sm min-h-[150px]" dir={i18n.dir()}
+              value={field("soul")} onChange={e => update("soul", e.target.value)}
+              placeholder="شخصية الوكيل الخاصة بهذه الشركة..." />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">القواعد والسياسات (Rules)</label>
+            <Textarea className="mt-1 font-mono text-sm min-h-[100px]" dir={i18n.dir()}
+              value={field("rules")} onChange={e => update("rules", e.target.value)}
+              placeholder="قواعد وسياسات إضافية..." />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">الأدوات المسموحة</label>
+            <MultiSelect options={allTools} selected={form.allowed_tools || []}
+              onChange={v => update("allowed_tools", v)} placeholder="اختر الأدوات..."
+              searchPlaceholder="ابحث عن أداة..." emptyText="لا توجد أدوات" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">المهارات المسموحة</label>
+            <MultiSelect options={allSkills} selected={form.allowed_skills || []}
+              onChange={v => update("allowed_skills", v)} placeholder="اختر المهارات..."
+              searchPlaceholder="ابحث عن مهارة..." emptyText="لا توجد مهارات" />
+          </div>
+        </div>
+        <DialogFooter className="shrink-0 border-t pt-2">
+          <Button variant="outline" onClick={onClose} disabled={saving}>إلغاء</Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? <LoadingSpinner size="sm" /> : <Save className="size-4 ml-1" />} حفظ
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
