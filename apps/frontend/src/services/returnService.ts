@@ -101,8 +101,9 @@ export const returnService = {
   deleteReason: (id: string) => apiClient.delete(`/returns/reasons/${id}`),
 
   // Settings
-  getSettings: () => apiClient.get("/returns/settings"),
-  updateSettings: (data: any) => apiClient.put("/returns/settings", data),
+  getSettings: () => apiClient.get<ReturnSettingsData>("/returns/settings"),
+  updateSettings: (data: any) =>
+    apiClient.put<ReturnSettingsData>("/returns/settings", data),
 
   // Details & Logs
   addContactAttempt: (
@@ -130,4 +131,37 @@ export interface ActivityLog {
   details: string;
   createdAt: string;
   user?: { firstName: string; lastName: string };
+}
+
+export interface ReviewDisplayConfig {
+  showOrderColumn: boolean;
+  showCustomerColumn: boolean;
+  showCustomerRating: boolean;
+  showCustomerSuccessScore: boolean;
+  showCustomerPhone: boolean;
+  showReasonColumn: boolean;
+  showResponsiblePartyColumn: boolean;
+  showStatusColumn: boolean;
+  showReviewColumn: boolean;
+  showDateColumn: boolean;
+  showActionsColumn: boolean;
+  showFilterBar: boolean;
+  showCreateButton: boolean;
+  showPendingStatus?: boolean;
+  showApprovedStatus?: boolean;
+  showRejectedStatus?: boolean;
+  showCompletedStatus?: boolean;
+}
+
+export interface ReturnSettingsData {
+  id: string;
+  companyId: string;
+  excellentThreshold: number;
+  goodThreshold: number;
+  minOrdersForRating: number;
+  autoApproveScore: number;
+  enableAutoApproval: boolean;
+  reviewDisplayConfig: ReviewDisplayConfig;
+  createdAt: string;
+  updatedAt: string;
 }
