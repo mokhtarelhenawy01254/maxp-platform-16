@@ -492,6 +492,37 @@ model OrderStatusHistory {
   @@index([orderId])
 }
 
+model CancellationReasonCategory {
+  id            String               @id @default(cuid())
+  name          String
+  isActive      Boolean              @default(true)
+  companyId     String
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reasons       CancellationReason[]
+
+  @@index([companyId])
+  @@map("cancellation_reason_categories")
+}
+
+model CancellationReason {
+  id              String                     @id @default(cuid())
+  reason          String
+  description     String?
+  categoryId      String?
+  companyId       String
+  isActive        Boolean                    @default(true)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  category        CancellationReasonCategory? @relation(fields: [categoryId], references: [id])
+  company         Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([companyId])
+  @@map("cancellation_reasons")
+}
+
 model OrderInvoiceSettings {
   id                     String   @id @default(cuid())
   companyId              String   @unique

@@ -11,7 +11,7 @@ import {
 import { useCurrency } from "../../hooks/useCurrency";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
-import cancellationReasonService from "../../services/cancellationReasonService";
+import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
 
@@ -54,7 +54,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   >(null);
   const [cancellationReason, setCancellationReason] = useState("");
   const [cancellationReasonOptions, setCancellationReasonOptions] = useState<
-    string[]
+    CancellationReason[]
   >([]);
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
@@ -145,11 +145,9 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   ).toUpperCase();
   const canManageOrderStatus =
     !isMerchantScopedOrder || merchantFulfillmentSource === "MERCHANT";
-  const selectedCancellationReasonOption = cancellationReasonOptions.includes(
-    cancellationReason.trim(),
-  )
-    ? cancellationReason.trim()
-    : "";
+  const selectedCancellationReasonOption = cancellationReasonOptions.find(
+    (r) => r.reason === cancellationReason.trim(),
+  )?.id || "";
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -184,11 +182,11 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
     let isMounted = true;
     setCancellationReasonOptionsLoading(true);
 
-    void cancellationReasonService
-      .getReasonOptions()
-      .then((reasonOptions) => {
+    void cancellationService
+      .getReasons()
+      .then((res) => {
         if (isMounted) {
-          setCancellationReasonOptions(reasonOptions);
+          setCancellationReasonOptions(res.data);
         }
       })
       .catch((loadError) => {
@@ -716,8 +714,8 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                       >
                         <option value="">اختر سببًا جاهزًا</option>
                         {cancellationReasonOptions.map((reason) => (
-                          <option key={reason} value={reason}>
-                            {reason}
+                          <option key={reason.id} value={reason.reason}>
+                            {reason.reason}
                           </option>
                         ))}
                       </select>

@@ -30,7 +30,7 @@ import { OrderDetailsType } from "./types";
 import { printPreparationSlip } from "../../utils/printPreparationSlip";
 import { printOrderInvoice } from "../../utils/printOrderInvoice";
 import { apiClient } from "../../services/apiClient";
-import cancellationReasonService from "../../services/cancellationReasonService";
+import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import tokenManager from "../../utils/tokenManager";
 import {
   ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
@@ -140,7 +140,7 @@ const OrderDetails: React.FC = () => {
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
   const [cancellationReasonOptions, setCancellationReasonOptions] = useState<
-    string[]
+    CancellationReason[]
   >([]);
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
@@ -148,11 +148,9 @@ const OrderDetails: React.FC = () => {
 
   const isGuestOrder = Boolean(order?.metadata?.isGuestOrder);
   const isModalCancellationStatus = isCancellationStatus(newStatus);
-  const selectedCancellationReasonOption = cancellationReasonOptions.includes(
-    statusNotes.trim(),
-  )
-    ? statusNotes.trim()
-    : "";
+  const selectedCancellationReasonOption = cancellationReasonOptions.find(
+    (r) => r.reason === statusNotes.trim(),
+  )?.id || "";
   const latestCancellationReason = useMemo(
     () => getLatestCancellationReason(order),
     [order],
@@ -390,11 +388,11 @@ const OrderDetails: React.FC = () => {
     let isMounted = true;
     setCancellationReasonOptionsLoading(true);
 
-    void cancellationReasonService
-      .getReasonOptions()
-      .then((reasonOptions) => {
+    void cancellationService
+      .getReasons()
+      .then((res) => {
         if (isMounted) {
-          setCancellationReasonOptions(reasonOptions);
+          setCancellationReasonOptions(res.data);
         }
       })
       .catch((error) => {
@@ -1236,8 +1234,8 @@ const OrderDetails: React.FC = () => {
                           >
                             <option value="">اختر سببًا جاهزًا</option>
                             {cancellationReasonOptions.map((reason) => (
-                              <option key={reason} value={reason}>
-                                {reason}
+                              <option key={reason.id} value={reason.reason}>
+                                {reason.reason}
                               </option>
                             ))}
                           </select>

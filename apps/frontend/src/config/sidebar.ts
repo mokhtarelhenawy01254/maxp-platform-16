@@ -603,6 +603,7 @@ export const getSidebarConfig = (
                 { to: '/orders/quick-status', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.quickStatusChange') },
                 { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings') },
+                { to: '/cancellations/settings', icon: XCircleIcon, label: t('sidebar.cancellationSettings') },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations') },
                 { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow') },
                 { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications') },

@@ -1043,6 +1043,9 @@ const ReturnManagementPage = React.lazy(
 const ReturnSettingsPage = React.lazy(
   () => import("./pages/returns/ReturnSettingsPage"),
 );
+const CancellationSettingsPage = React.lazy(
+  () => import("./pages/cancellations/CancellationSettingsPage"),
+);
 const BulkSearchPage = React.lazy(
   () => import("./pages/bulk-search/BulkSearchPage"),
 );
@@ -3794,6 +3797,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ReturnSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/cancellations/settings"
+                  element={
+                    <Layout>
+                      <CancellationSettingsPage />
                     </Layout>
                   }
                 />

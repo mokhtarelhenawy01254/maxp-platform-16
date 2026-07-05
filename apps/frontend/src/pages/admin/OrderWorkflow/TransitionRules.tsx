@@ -20,6 +20,7 @@ interface Props {
 const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
     const [transitions, setTransitions] = useState<OrderWorkflowTransition[]>([]);
     const [isAdding, setIsAdding] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
     const [newRule, setNewRule] = useState<Partial<OrderWorkflowTransition>>({
         fromStatusId: '',
         toStatusId: '',
@@ -50,14 +51,23 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
     };
 
     const handleSave = async () => {
-        if (!newRule.toStatusId) return;
+        if (!newRule.toStatusId) {
+            setSaveError('يرجى اختيار الحالة المستهدفة');
+            return;
+        }
+        const roles = JSON.parse(newRule.allowedRoles || '[]');
+        if (roles.length === 0) {
+            setSaveError('يرجى اختيار دور واحد على الأقل للسماح بهذا الانتقال');
+            return;
+        }
         try {
+            setSaveError(null);
             await orderWorkflowService.upsertTransition(newRule);
             setIsAdding(false);
             fetchTransitions();
             onUpdate();
         } catch (error) {
-            console.error('Failed to save transition', error);
+            setSaveError(error.message || 'فشل حفظ قاعدة الانتقال');
         }
     };
 
@@ -178,9 +188,15 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                             </div>
                         </div>
 
+                        {saveError && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+                                {saveError}
+                            </div>
+                        )}
+
                         <div className="flex gap-4">
                             <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold">حفظ القاعدة</button>
-                            <button onClick={() => setIsAdding(false)} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold">إلغاء</button>
+                            <button onClick={() => { setIsAdding(false); setSaveError(null); }} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold">إلغاء</button>
                         </div>
                     </div>
                 )}

@@ -177,7 +177,10 @@ class OrderWorkflowService {
             let auditType = 'normal';
             if (isOverride) {
                 // Check if user has override permission
-                const canOverride = ['OWNER', 'SUPER_ADMIN'].includes(userRole);
+                const overrideRoles = config.overrideRoles
+                    ? JSON.parse(config.overrideRoles)
+                    : ['OWNER', 'SUPER_ADMIN'];
+                const canOverride = overrideRoles.includes(userRole);
                 if (!canOverride) throw new Error('عذراً، لا تملك صلاحية تجاوز قيود المسار (Override)');
 
                 auditType = 'override';
@@ -185,7 +188,7 @@ class OrderWorkflowService {
 
             // 5. Check if CURRENT status is LOCKED
             if (!isOverride && currentStatusDef && currentStatusDef.lockAfterEntry) {
-                throw new Error(`الحالةالحالية (${currentStatusDef.name}) مغلقة، لا يمكن التغيير منها إلا لصلاحية التجاوز (Override)`);
+                throw new Error(`الحالة الحالية (${currentStatusDef.name}) مغلقة، لا يمكن التغيير منها إلا لصلاحية التجاوز (Override)`);
             }
 
             // 6. Find Transition Rule
@@ -393,31 +396,6 @@ class OrderWorkflowService {
     }
 
     /**
-     * Core logic to update order status and log audit
-     */
-    async processExecution(companyId, order, currentStatusDef, nextStatusDef, userId, type, reason, approvedBy = null) {
-        // 1. Update Order Status
-        await this.prisma.order.update({
-            where: { id: order.id },
-            data: { status: nextStatusDef.code }
-        });
-
-        // 2. Create Audit Log
-        return await this.prisma.orderWorkflowAuditLog.create({
-            data: {
-                companyId,
-                orderId: order.id,
-                fromStatusId: currentStatusDef ? currentStatusDef.id : (order.fromStatusId || null),
-                toStatusId: nextStatusDef.id,
-                userId: userId, // Correct field name from schema
-                changeType: type,
-                reason,
-                // approvedBy: approvedBy // If you add an approver field to audit log
-            }
-        });
-    }
-
-    /**
      * 🔔 Send WhatsApp Notification based on Status
      */
     async sendWorkflowNotification(companyId, order, statusCode) {
@@ -561,23 +539,6 @@ class OrderWorkflowService {
     }
 
     /**
-     * Fallback for legacy behavior
-     */
-    async executeLegacyStatusChange(companyId, orderId, userId, requestedStatusId, reason) {
-        const nextStatusDef = await this.prisma.orderStatusDefinition.findUnique({
-            where: { id: requestedStatusId }
-        });
-        if (!nextStatusDef) throw new Error('الحالة غير صالحة');
-
-        await this.prisma.order.update({
-            where: { id: orderId, companyId },
-            data: { status: nextStatusDef.code }
-        });
-
-        return { success: true, message: 'Status updated (Legacy Mode)' };
-    }
-
-    /**
      * Get Audit Logs for an order
      */
     async getOrderAuditLogs(companyId, orderIdOrNumber) {
@@ -613,7 +574,7 @@ class OrderWorkflowService {
     /**
      * Get Global Audit Logs (Recent activity)
      */
-    async getGlobalAuditLogs(companyId, limit = 20) {
+    async getGlobalAuditLogs(companyId, limit = 20, offset = 0) {
         return await this.prisma.orderWorkflowAuditLog.findMany({
             where: { companyId },
             include: {
@@ -624,14 +585,15 @@ class OrderWorkflowService {
                 approver: { select: { firstName: true, lastName: true } }
             },
             orderBy: { createdAt: 'desc' },
-            take: limit
+            take: limit,
+            skip: offset
         });
     }
 
     /**
      * Get pending approval requests
      */
-    async getPendingRequests(companyId) {
+    async getPendingRequests(companyId, limit = 20, offset = 0) {
         return await this.prisma.orderStatusChangeRequest.findMany({
             where: { companyId, status: 'pending' },
             include: {
@@ -640,7 +602,15 @@ class OrderWorkflowService {
                 toStatus: true,
                 requestor: { select: { firstName: true, lastName: true } }
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+            skip: offset
+        });
+    }
+
+    async getPendingRequestsCount(companyId) {
+        return await this.prisma.orderStatusChangeRequest.count({
+            where: { companyId, status: 'pending' }
         });
     }
 }

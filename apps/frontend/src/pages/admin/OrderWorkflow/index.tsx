@@ -195,7 +195,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                     {activeTab === 'statuses' && <StatusManagement statuses={statuses} onUpdate={fetchData} />}
                                     {activeTab === 'transitions' && <TransitionRules statuses={statuses} onUpdate={fetchData} />}
                                     {activeTab === 'approvals' && <ApprovalRules onUpdate={fetchData} />}
-                                    {activeTab === 'overrides' && <OverridePermissions onUpdate={fetchData} />}
+                                    {activeTab === 'overrides' && <OverridePermissions config={config} onUpdate={fetchData} />}
                                     {activeTab === 'audit' && <AuditLogViewer />}
                                 </div>
                             )}

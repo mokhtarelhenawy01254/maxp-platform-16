@@ -5,42 +5,66 @@ import {
     ClockIcon,
     ChatBubbleBottomCenterTextIcon,
     UserIcon,
-    ShoppingBagIcon
+    ShoppingBagIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import orderWorkflowService from '../../../services/orderWorkflowService';
+
+const PAGE_SIZE = 10;
 
 const ApprovalRules: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [reviewing, setReviewing] = useState<any | null>(null);
     const [reason, setReason] = useState('');
+    const [reviewError, setReviewError] = useState<string | null>(null);
+    const [reviewingAction, setReviewingAction] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const [total, setTotal] = useState(0);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     useEffect(() => {
-        fetchRequests();
+        fetchRequests(0, true);
     }, []);
 
-    const fetchRequests = async () => {
+    const fetchRequests = async (startOffset: number = 0, reset: boolean = false) => {
         try {
-            setLoading(true);
-            const res = await orderWorkflowService.getPendingApprovals();
-            setRequests(res.data);
+            if (reset) setLoading(true);
+            const res = await orderWorkflowService.getPendingApprovals(PAGE_SIZE, startOffset);
+            if (reset) {
+                setRequests(res.data);
+            } else {
+                setRequests(prev => [...prev, ...res.data]);
+            }
+            setTotal(res.total || 0);
+            setOffset(startOffset + res.data.length);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
+    };
+
+    const handleLoadMore = () => {
+        setLoadingMore(true);
+        fetchRequests(offset, false);
     };
 
     const handleReview = async (action: 'approve' | 'reject') => {
         if (!reviewing) return;
         try {
+            setReviewError(null);
+            setReviewingAction(true);
             await orderWorkflowService.reviewApproval(reviewing.id, action, reason);
             setReviewing(null);
             setReason('');
-            fetchRequests();
+            fetchRequests(0, true);
             onUpdate();
         } catch (error) {
-            alert(error.message);
+            setReviewError(error.message || 'فشل تنفيذ العملية');
+        } finally {
+            setReviewingAction(false);
         }
     };
 
@@ -105,6 +129,20 @@ const ApprovalRules: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
                             </div>
                         </div>
                     ))}
+
+                    {offset < total && (
+                        <div className="text-center pt-4">
+                            <button
+                                onClick={handleLoadMore}
+                                disabled={loadingMore}
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
+                            >
+                                {loadingMore ? 'جاري التحميل...' : (
+                                    <>عرض المزيد ({total - offset} متبقي) <ChevronDownIcon className="w-4 h-4" /></>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -131,25 +169,33 @@ const ApprovalRules: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
                             />
                         </div>
 
+                        {reviewError && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+                                {reviewError}
+                            </div>
+                        )}
+
                         <div className="flex gap-4">
                             <button
                                 onClick={() => handleReview('approve')}
-                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition"
+                                disabled={reviewingAction}
+                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <CheckCircleIcon className="w-6 h-6" />
-                                موافقة
+                                {reviewingAction ? 'جاري...' : 'موافقة'}
                             </button>
                             <button
                                 onClick={() => handleReview('reject')}
-                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition"
+                                disabled={reviewingAction}
+                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <XCircleIcon className="w-6 h-6" />
-                                رفض
+                                {reviewingAction ? 'جاري...' : 'رفض'}
                             </button>
                         </div>
 
                         <button
-                            onClick={() => { setReviewing(null); setReason(''); }}
+                            onClick={() => { setReviewing(null); setReason(''); setReviewError(null); }}
                             className="w-full mt-4 py-3 text-slate-400 hover:text-slate-600 font-medium"
                         >
                             إغلاق

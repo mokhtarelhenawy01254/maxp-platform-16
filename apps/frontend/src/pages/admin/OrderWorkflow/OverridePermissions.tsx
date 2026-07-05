@@ -1,18 +1,64 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     ShieldExclamationIcon,
     UserGroupIcon,
     FingerPrintIcon,
     ShieldCheckIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    CheckIcon
 } from '@heroicons/react/24/outline';
+import orderWorkflowService, { OrderWorkflowConfig } from '../../../services/orderWorkflowService';
 
-const OverridePermissions: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
+const AVAILABLE_ROLES = [
+    { value: 'OWNER', label: 'مالك الشركة' },
+    { value: 'SUPER_ADMIN', label: 'مدير النظام' },
+    { value: 'COMPANY_ADMIN', label: 'مدير شركة' },
+    { value: 'MANAGER', label: 'مدير' },
+    { value: 'AGENT', label: 'موظف / عميل' },
+];
+
+interface Props {
+    config: OrderWorkflowConfig | null;
+    onUpdate: () => void;
+}
+
+const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
+    const selectedRoles: string[] = config?.overrideRoles
+        ? JSON.parse(config.overrideRoles)
+        : ['OWNER', 'SUPER_ADMIN'];
+
+    const [draftRoles, setDraftRoles] = useState<string[]>(selectedRoles);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const hasChanges = JSON.stringify([...draftRoles].sort()) !== JSON.stringify([...selectedRoles].sort());
+
+    const handleToggle = (role: string) => {
+        setDraftRoles(prev =>
+            prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+        );
+        setSaved(false);
+    };
+
+    const handleSave = async () => {
+        if (draftRoles.length === 0) return;
+        try {
+            setSaving(true);
+            await orderWorkflowService.updateConfig({ overrideRoles: JSON.stringify(draftRoles) });
+            setSaved(true);
+            onUpdate();
+            setTimeout(() => setSaved(false), 2000);
+        } catch (error) {
+            console.error('Failed to save override roles', error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="animate-in fade-in duration-500">
             <div className="mb-8">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">صلاحيات التجاوز (Override)</h2>
-                <p className="text-slate-500 text-sm">إدارة الصلاحيات التي تسمح بتجاوز قيود المسار والتحكم الكامل في الحالات</p>
+                <p className="text-slate-500 text-sm">حدد الأدوار التي تملك صلاحية تجاوز قيود المسار والتحكم الكامل في الحالات</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -30,28 +76,62 @@ const OverridePermissions: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) =
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                         <h3 className="font-bold flex items-center gap-2 mb-4">
                             <UserGroupIcon className="w-5 h-5 text-slate-400" />
-                            الأدوار التي تملك حق التجاوز حالياً:
+                            اختر الأدوار التي تملك حق التجاوز:
                         </h3>
-                        <ul className="space-y-3">
-                            <li className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                        <FingerPrintIcon className="w-4 h-4 text-indigo-600" />
-                                    </div>
-                                    <span className="font-bold">مالك الشركة (OWNER)</span>
-                                </div>
-                                <ShieldCheckIcon className="w-5 h-5 text-green-500" />
-                            </li>
-                            <li className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 opacity-80">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                                        <UserGroupIcon className="w-4 h-4 text-slate-500" />
-                                    </div>
-                                    <span className="font-bold">مدير النظام (SUPER_ADMIN)</span>
-                                </div>
-                                <ShieldCheckIcon className="w-5 h-5 text-green-500" />
-                            </li>
-                        </ul>
+                        <div className="space-y-3">
+                            {AVAILABLE_ROLES.map(role => {
+                                const isSelected = draftRoles.includes(role.value);
+                                return (
+                                    <button
+                                        key={role.value}
+                                        onClick={() => handleToggle(role.value)}
+                                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                            isSelected
+                                                ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-700'
+                                                : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg ${
+                                                isSelected
+                                                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600'
+                                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                                            }`}>
+                                                <FingerPrintIcon className="w-4 h-4" />
+                                            </div>
+                                            <span className={`font-bold ${isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                {role.label}
+                                            </span>
+                                        </div>
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                            isSelected
+                                                ? 'bg-indigo-600 border-indigo-600'
+                                                : 'border-slate-300 dark:border-slate-600'
+                                        }`}>
+                                            {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {draftRoles.length === 0 && (
+                            <p className="text-xs text-red-500 mt-2">يجب اختيار دور واحد على الأقل</p>
+                        )}
+
+                        <button
+                            onClick={handleSave}
+                            disabled={!hasChanges || draftRoles.length === 0 || saving}
+                            className={`mt-4 w-full py-3 rounded-2xl font-bold transition-all ${
+                                !hasChanges || draftRoles.length === 0
+                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                    : saving
+                                        ? 'bg-indigo-400 text-white cursor-wait'
+                                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            }`}
+                        >
+                            {saving ? 'جاري الحفظ...' : saved ? '✓ تم الحفظ' : 'حفظ التغييرات'}
+                        </button>
                     </div>
                 </div>
 

@@ -5,15 +5,21 @@ import {
     UserIcon,
     ArrowRightIcon,
     ShieldExclamationIcon,
-    CheckBadgeIcon
+    CheckBadgeIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import orderWorkflowService from '../../../services/orderWorkflowService';
+
+const PAGE_SIZE = 20;
 
 const AuditLogViewer: React.FC = () => {
     const [orderNumber, setOrderNumber] = useState('');
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [searched, setSearched] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
 
     React.useEffect(() => {
         fetchInitialLogs();
@@ -22,8 +28,10 @@ const AuditLogViewer: React.FC = () => {
     const fetchInitialLogs = async () => {
         try {
             setLoading(true);
-            const res = await orderWorkflowService.getGlobalAuditLogs(20);
+            const res = await orderWorkflowService.getGlobalAuditLogs(PAGE_SIZE);
             setLogs(res.data);
+            setOffset(res.data.length);
+            setHasMore(res.data.length >= PAGE_SIZE);
             setSearched(false);
         } catch (error) {
             console.error(error);
@@ -37,15 +45,30 @@ const AuditLogViewer: React.FC = () => {
         if (!orderNumber) return;
         try {
             setLoading(true);
-            // In a real app, you'd find order by number first or the API would handle it
-            // For now, let's assume we pass the ID or the API searches by number
             const res = await orderWorkflowService.getAuditLogs(orderNumber);
             setLogs(res.data);
+            setOffset(res.data.length);
+            setHasMore(false);
             setSearched(true);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLoadMore = async () => {
+        try {
+            setLoadingMore(true);
+            const res = await orderWorkflowService.getGlobalAuditLogs(PAGE_SIZE, offset);
+            const newLogs = res.data;
+            setLogs(prev => [...prev, ...newLogs]);
+            setOffset(prev => prev + newLogs.length);
+            setHasMore(newLogs.length >= PAGE_SIZE);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -145,6 +168,20 @@ const AuditLogViewer: React.FC = () => {
                         </div>
                     ))}
                 </div>
+
+                {hasMore && !searched && (
+                    <div className="text-center mt-8">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loadingMore}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
+                        >
+                            {loadingMore ? 'جاري التحميل...' : (
+                                <>عرض المزيد <ChevronDownIcon className="w-4 h-4" /></>
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

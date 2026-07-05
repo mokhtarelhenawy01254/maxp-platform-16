@@ -5,7 +5,8 @@ import {
     TrashIcon,
     CheckCircleIcon,
     LockClosedIcon,
-    NoSymbolIcon
+    NoSymbolIcon,
+    BellIcon
 } from '@heroicons/react/24/outline';
 import orderWorkflowService, { OrderStatusDefinition } from '../../../services/orderWorkflowService';
 
@@ -16,16 +17,26 @@ interface Props {
 
 const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
     const [editingStatus, setEditingStatus] = useState<Partial<OrderStatusDefinition> | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingStatus) return;
+        if (!editingStatus.name?.trim()) {
+            setSaveError('يرجى إدخال اسم الحالة');
+            return;
+        }
+        if (!editingStatus.code?.trim()) {
+            setSaveError('يرجى إدخال رمز الحالة');
+            return;
+        }
         try {
+            setSaveError(null);
             await orderWorkflowService.upsertStatus(editingStatus);
             setEditingStatus(null);
             onUpdate();
         } catch (error) {
-            console.error('Failed to save status', error);
+            setSaveError(error.message || 'فشل حفظ الحالة');
         }
     };
 
@@ -94,6 +105,11 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                             {status.requiresApprovalToExit && (
                                 <span className="flex items-center gap-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100">
                                     <CheckCircleIcon className="w-3 h-3" /> تتطلب موافقة للخروج
+                                </span>
+                            )}
+                            {status.notifyCustomer === false && (
+                                <span className="flex items-center gap-1 text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200">
+                                    <BellIcon className="w-3 h-3" /> الإشعارات معطلة
                                 </span>
                             )}
                         </div>
@@ -197,8 +213,29 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                             <p className="text-slate-500 text-xs">أي محاولة للتغيير من هذه الحالة ستنشئ طلب موافقة للمدير.</p>
                                         </div>
                                     </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={editingStatus.notifyCustomer ?? true}
+                                            onChange={(e) => setEditingStatus({ ...editingStatus, notifyCustomer: e.target.checked })}
+                                            className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <div className="text-sm">
+                                            <p className="font-bold flex items-center gap-1">
+                                                <BellIcon className="w-4 h-4" />
+                                                إرسال إشعار للعميل
+                                            </p>
+                                            <p className="text-slate-500 text-xs">إرسال إشعار واتساب للعميل عند الوصول لهذه الحالة.</p>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
+
+                            {saveError && (
+                                <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+                                    {saveError}
+                                </div>
+                            )}
 
                             <div className="flex gap-4 mt-8">
                                 <button
@@ -209,7 +246,7 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setEditingStatus(null)}
+                                    onClick={() => { setEditingStatus(null); setSaveError(null); }}
                                     className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold hover:bg-slate-200 transition"
                                 >
                                     إلغاء

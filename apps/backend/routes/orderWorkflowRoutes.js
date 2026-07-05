@@ -198,8 +198,11 @@ router.get('/approvals/pending', async (req, res) => {
         const companyId = getCompanyId(req);
         if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
 
-        const requests = await orderWorkflowService.getPendingRequests(companyId);
-        res.json({ success: true, data: requests });
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+        const requests = await orderWorkflowService.getPendingRequests(companyId, limit, offset);
+        const total = await orderWorkflowService.getPendingRequestsCount(companyId);
+        res.json({ success: true, data: requests, total });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -233,7 +236,8 @@ router.get('/audit-logs', async (req, res) => {
         if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
 
         const limit = parseInt(req.query.limit) || 20;
-        const logs = await orderWorkflowService.getGlobalAuditLogs(companyId, limit);
+        const offset = parseInt(req.query.offset) || 0;
+        const logs = await orderWorkflowService.getGlobalAuditLogs(companyId, limit, offset);
         res.json({ success: true, data: logs });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

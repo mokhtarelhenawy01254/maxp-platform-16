@@ -7,6 +7,7 @@ export interface OrderWorkflowConfig {
     enforceTransitions: boolean;
     requireApprovalByDefault: boolean;
     allowOverride: boolean;
+    overrideRoles: string;
 }
 
 export interface OrderStatusDefinition {
@@ -19,6 +20,7 @@ export interface OrderStatusDefinition {
     requiresApprovalToExit: boolean;
     sortOrder: number;
     description?: string;
+    notifyCustomer?: boolean;
 }
 
 export interface OrderWorkflowTransition {
@@ -43,11 +45,11 @@ const orderWorkflowService = {
     upsertTransition: (data: Partial<OrderWorkflowTransition>) => api.post('/order-workflow/transitions', data).then(res => res.data),
     deleteTransition: (id: string) => api.delete(`/order-workflow/transitions/${id}`).then(res => res.data),
 
-    getPendingApprovals: () => api.get('/order-workflow/approvals/pending').then(res => res.data),
+    getPendingApprovals: (limit: number = 20, offset: number = 0) => api.get(`/order-workflow/approvals/pending?limit=${limit}&offset=${offset}`).then(res => res.data),
     reviewApproval: (id: string, action: 'approve' | 'reject', reason?: string) =>
         api.post(`/order-workflow/approvals/${id}/review`, { action, reason }).then(res => res.data),
 
-    getGlobalAuditLogs: (limit: number = 20) => api.get(`/order-workflow/audit-logs?limit=${limit}`).then(res => res.data),
+    getGlobalAuditLogs: (limit: number = 20, offset: number = 0) => api.get(`/order-workflow/audit-logs?limit=${limit}&offset=${offset}`).then(res => res.data),
     getAuditLogs: (orderId: string) => api.get(`/order-workflow/audit-logs/${orderId}`).then(res => res.data),
 
     changeStatus: (orderId: string, statusId: string, reason?: string, isOverride: boolean = false) =>

@@ -8315,6 +8315,7 @@ model OrderWorkflowConfig {
   enforceTransitions       Boolean  @default(true)
   requireApprovalByDefault Boolean  @default(false)
   allowOverride            Boolean  @default(true)
+  overrideRoles            String   @default("[\"OWNER\",\"SUPER_ADMIN\"]")
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
   company                  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -8333,6 +8334,7 @@ model OrderStatusDefinition {
   requiresApprovalToExit Boolean  @default(false)
   sortOrder              Int      @default(0)
   description            String?
+  notifyCustomer         Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
   company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
