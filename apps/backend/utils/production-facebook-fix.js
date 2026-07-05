@@ -150,6 +150,22 @@ function inferMimeTypeFromUrl(mediaUrl, messageType) {
   return DEFAULT_MEDIA_MIME_TYPES[messageType] || 'application/octet-stream';
 }
 
+/**
+ * Send a sender_action to Facebook Messenger (typing_on, typing_off, mark_seen)
+ */
+async function sendFacebookSenderAction(recipientId, action, pageId, pageAccessToken) {
+  if (!recipientId || !pageAccessToken) return;
+  try {
+    await axios.post(
+      `https://graph.facebook.com/${getMetaGraphApiVersion()}/me/messages`,
+      { recipient: { id: recipientId }, sender_action: action },
+      { params: { access_token: pageAccessToken }, timeout: 5000 }
+    );
+  } catch {
+    /* best-effort */
+  }
+}
+
 function buildUploadFilename(mediaUrl, mimeType, messageType) {
   let filename = 'attachment';
 
@@ -821,6 +837,7 @@ module.exports = {
   validateFacebookRecipientStrict,
   sendProductionFacebookMessage,
   handleProductionFacebookError,
+  sendFacebookSenderAction,
   shouldPreferDirectMediaUpload,
   uploadMediaDirectlyToFacebook,
   downloadMediaForFacebookUpload,

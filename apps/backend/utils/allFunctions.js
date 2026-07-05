@@ -2009,139 +2009,154 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               } catch(e) { /* continue if parsing fails */ }
             }
 
-            // 2. Process the message through Python AI service
-            const aiSdkClient = require('../services/aiSdkClient');
+            // 2. Debounce: accumulate messages within N seconds, then process once
+            const { accumulate } = require('../services/facebookDebounceService');
 
-            const result = await aiSdkClient.sendChatMessage({
-              companyId: customer.companyId,
-              customerId: customer.id,
+            accumulate(senderId, messagePageId, customer.companyId, pageData?.pageAccessToken, {
               message: aiCustomerContent,
-              threadId: conversation.id,
-              channel: 'FACEBOOK',
-              attachments: attachmentsData.length > 0 ? attachmentsData : undefined
-            });
+              customerId: customer.id,
+              conversationId: conversation.id,
+              companyId: customer.companyId,
+              messagePageId,
+              senderId,
+              fbMessageId,
+            }, async (entries) => {
+              if (entries.length === 0) return;
 
-            // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
-            if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
-              const { flagThreadForHumanTakeover } = require('../services/silentEscalationService');
-              await flagThreadForHumanTakeover({
-                companyId: customer.companyId,
-                conversationId: conversation.id,
-                customerId: customer.id,
-                reason: result.escalation?.reason || 'ai_failure',
-                customerMessage: aiCustomerContent,
+              const combinedMessage = entries.map(e => e.message).join('\n---\n');
+              const first = entries[0];
+              const latestPageData = await getPageToken(first.messagePageId);
+              const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
+
+              console.log(`🤖 [AI-AUTOREPLY] Processing ${entries.length} debounced message(s) as one request`);
+
+              // 3. Process through Python AI service
+              const aiSdkClient = require('../services/aiSdkClient');
+              const result = await aiSdkClient.sendChatMessage({
+                companyId: first.companyId,
+                customerId: first.customerId,
+                message: combinedMessage,
+                threadId: first.conversationId,
                 channel: 'FACEBOOK',
               });
-              return;
-            }
 
-            const replyText = result.reply;
-
-            if (replyText) {
-              console.log(`🤖 [AI-AUTOREPLY] AI generated response: "${replyText.substring(0, 50)}..."`);
-
-              // 3. Save the AI reply message in the database (instant save)
-              const replyId = require('crypto').randomUUID();
-              
-              const savedReply = await safeQuery(async () => {
-                return await prisma.message.create({
-                  data: {
-                    id: replyId,
-                    content: replyText,
-                    type: 'TEXT',
-                    conversationId: conversation.id,
-                    isFromCustomer: false,
-                    senderId: null, // Sent by AI
-                    metadata: JSON.stringify({
-                      platform: 'facebook',
-                      source: 'ai_reply',
-                      isFacebookReply: true,
-                      timestamp: new Date(),
-                      instantSave: true
-                    }),
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                  }
+              // Silent Escalation
+              if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+                const { flagThreadForHumanTakeover } = require('../services/silentEscalationService');
+                await flagThreadForHumanTakeover({
+                  companyId: first.companyId,
+                  conversationId: first.conversationId,
+                  customerId: first.customerId,
+                  reason: result.escalation?.reason || 'ai_failure',
+                  customerMessage: combinedMessage,
+                  channel: 'FACEBOOK',
                 });
-              }, 3);
-
-              console.log(`💾 [AI-AUTOREPLY] AI reply saved to DB: ${savedReply.id}`);
-
-              // 4. Emit the AI reply message to the company room via Socket.IO
-              const socketService = require('../services/socketService');
-              const io = socketService.getIO();
-              if (io) {
-                const socketData = proxySocketMessageData({
-                  id: savedReply.id,
-                  conversationId: savedReply.conversationId,
-                  content: savedReply.content,
-                  type: savedReply.type.toLowerCase(),
-                  isFromCustomer: savedReply.isFromCustomer,
-                  timestamp: savedReply.createdAt,
-                  metadata: JSON.parse(savedReply.metadata),
-                  senderId: null,
-                  senderName: 'الذكاء الاصطناعي',
-                  lastMessageIsFromCustomer: false,
-                  lastCustomerMessageIsUnread: false,
-                  companyId: customer.companyId,
-                  platform: 'facebook',
-                  channel: 'FACEBOOK'
-                }, {
-                  messageId: savedReply.id
-                });
-
-                io.to(`company_${customer.companyId}`).emit('new_message', socketData);
-                console.log(`⚡ [AI-AUTOREPLY] AI reply emitted to company socket room`);
+                return;
               }
 
-              // 5. Update the conversation metadata and preview
-              await safeQuery(async () => {
-                return await prisma.conversation.update({
-                  where: { id: conversation.id },
-                  data: {
-                    lastMessageAt: new Date(),
-                    lastMessagePreview: replyText.length > 100 ? replyText.substring(0, 100) + '...' : replyText,
-                    lastMessageIsFromCustomer: false,
-                    unreadCount: 0,
-                    updatedAt: new Date()
-                  }
-                });
-              }, 3);
+              const replyText = result.reply;
 
-              // 6. Send the reply physically to Facebook Messenger
-              const latestPageData = await getPageToken(messagePageId);
-              const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
-              
-              if (accessToken) {
-                const result = await sendFacebookMessage(senderId, replyText, 'TEXT', messagePageId, fbMessageId);
-                
-                if (result.success) {
-                  console.log(`✅ [AI-AUTOREPLY] AI reply sent successfully to Facebook.`);
-                  
-                  // Update the saved message with the Facebook message ID
-                  if (result.messageId) {
-                    await safeQuery(async () => {
-                      return await prisma.message.update({
-                        where: { id: savedReply.id },
-                        data: {
-                          metadata: JSON.stringify({
-                            ...JSON.parse(savedReply.metadata),
-                            facebookMessageId: result.messageId,
-                            sentToFacebook: true
-                          })
-                        }
-                      });
-                    }, 3);
+              if (replyText) {
+                console.log(`🤖 [AI-AUTOREPLY] AI generated response: "${replyText.substring(0, 50)}..."`);
+
+                // 4. Save the AI reply to database
+                const replyId = require('crypto').randomUUID();
+                const savedReply = await safeQuery(async () => {
+                  return await prisma.message.create({
+                    data: {
+                      id: replyId,
+                      content: replyText,
+                      type: 'TEXT',
+                      conversationId: first.conversationId,
+                      isFromCustomer: false,
+                      senderId: null,
+                      metadata: JSON.stringify({
+                        platform: 'facebook',
+                        source: 'ai_reply',
+                        isFacebookReply: true,
+                        timestamp: new Date(),
+                        instantSave: true,
+                        debouncedBatchCount: entries.length,
+                      }),
+                      createdAt: new Date(),
+                      updatedAt: new Date()
+                    }
+                  });
+                }, 3);
+
+                console.log(`💾 [AI-AUTOREPLY] AI reply saved to DB: ${savedReply.id}`);
+
+                // 5. Emit the AI reply to frontend
+                const socketService = require('../services/socketService');
+                const io = socketService.getIO();
+                if (io) {
+                  const socketData = proxySocketMessageData({
+                    id: savedReply.id,
+                    conversationId: savedReply.conversationId,
+                    content: savedReply.content,
+                    type: savedReply.type.toLowerCase(),
+                    isFromCustomer: savedReply.isFromCustomer,
+                    timestamp: savedReply.createdAt,
+                    metadata: JSON.parse(savedReply.metadata),
+                    senderId: null,
+                    senderName: 'الذكاء الاصطناعي',
+                    lastMessageIsFromCustomer: false,
+                    lastCustomerMessageIsUnread: false,
+                    companyId: first.companyId,
+                    platform: 'facebook',
+                    channel: 'FACEBOOK'
+                  }, {
+                    messageId: savedReply.id
+                  });
+
+                  io.to(`company_${first.companyId}`).emit('new_message', socketData);
+                  console.log(`⚡ [AI-AUTOREPLY] AI reply emitted to company socket room`);
+                }
+
+                // 6. Update conversation metadata
+                await safeQuery(async () => {
+                  return await prisma.conversation.update({
+                    where: { id: first.conversationId },
+                    data: {
+                      lastMessageAt: new Date(),
+                      lastMessagePreview: replyText.length > 100 ? replyText.substring(0, 100) + '...' : replyText,
+                      lastMessageIsFromCustomer: false,
+                      unreadCount: 0,
+                      updatedAt: new Date()
+                    }
+                  });
+                }, 3);
+
+                // 7. Send the reply to Facebook Messenger
+                if (accessToken) {
+                  const fbResult = await sendFacebookMessage(first.senderId, replyText, 'TEXT', first.messagePageId, first.fbMessageId);
+
+                  if (fbResult.success) {
+                    console.log(`✅ [AI-AUTOREPLY] AI reply sent successfully to Facebook.`);
+                    if (fbResult.messageId) {
+                      await safeQuery(async () => {
+                        return await prisma.message.update({
+                          where: { id: savedReply.id },
+                          data: {
+                            metadata: JSON.stringify({
+                              ...JSON.parse(savedReply.metadata),
+                              facebookMessageId: fbResult.messageId,
+                              sentToFacebook: true
+                            })
+                          }
+                        });
+                      }, 3);
+                    }
+                  } else {
+                    console.error(`❌ [AI-AUTOREPLY] Failed to send AI reply to Facebook:`, fbResult.message || fbResult.error);
                   }
                 } else {
-                  console.error(`❌ [AI-AUTOREPLY] Failed to send AI reply to Facebook:`, result.message || result.error);
+                  console.error(`❌ [AI-AUTOREPLY] Missing Facebook Page Access Token for page: ${first.messagePageId}`);
                 }
               } else {
-                console.error(`❌ [AI-AUTOREPLY] Missing Facebook Page Access Token for page: ${messagePageId}`);
+                console.log(`🤖 [AI-AUTOREPLY] AI service returned no reply (skipped or disabled).`);
               }
-            } else {
-              console.log(`🤖 [AI-AUTOREPLY] AI service returned no reply (skipped or disabled).`);
-            }
+            });
           } catch (aiError) {
             console.error('❌ [AI-AUTOREPLY] Error in Facebook AI auto-reply loop:', aiError);
           }
