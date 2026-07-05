@@ -25,6 +25,12 @@ jobs:
           timeout: 600s
           command_timeout: 10m
           script: |
+            TOKEN=$(grep -m1 '^MAXP_SERVICE_TOKEN=' /var/www/ai-service/.env | cut -d= -f2-)
+            if [ -z "$TOKEN" ]; then
+              TOKEN=$(grep -m1 '^SERVICE_AUTH_TOKEN=' /var/www/ai-service/.env | cut -d= -f2-)
+            fi
+            echo "Token found: ${TOKEN:0:8}..."
             response=$(curl -sS -X POST http://127.0.0.1:8000/admin/product-embeddings/sync \
               -H "Content-Type: application/json" \
-              -d '{"company_id": null}' 2>&1) && echo "✅ Backfill triggered: $response" || echo "❌ Failed: $response"
+              -H "Authorization: Bearer $TOKEN" \
+              -d '{"company_id": null}' 2>&1) && echo "✅ $response" || echo "❌ $response"
