@@ -154,7 +154,7 @@ exports.getReturnRequests = async (req, res) => {
         if (orderId) where.orderId = orderId;
         if (customerId) where.customerId = customerId;
         if (isReviewed !== undefined) where.isReviewed = isReviewed === 'true';
-        if (orderStatus) where.order = { status: orderStatus };
+        if (orderStatus) where.order = { status: orderStatus.toLowerCase() };
 
         if (search) {
             const orders = await getPrisma().order.findMany({
