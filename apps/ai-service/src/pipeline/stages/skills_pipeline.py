@@ -89,7 +89,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 from src.tools.definitions.product import product_search
                 from src.tools.definitions.product import ProductSearchInput
                 ps_result = await product_search(ProductSearchInput(
-                    query="", image_url=img_urls[0], use_vector=True, company_id=ctx.company_id,
+                    query="search by image", image_url=img_urls[0], use_vector=True, company_id=ctx.company_id,
                 ))
                 if ps_result.get("results"):
                     ctx.external_memory_context["productSearchResults"] = ps_result
