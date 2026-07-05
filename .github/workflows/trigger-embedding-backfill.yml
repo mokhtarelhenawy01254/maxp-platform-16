@@ -25,6 +25,6 @@ jobs:
           timeout: 600s
           command_timeout: 10m
           script: |
-            curl -sf -X POST http://127.0.0.1:8000/admin/product-embeddings/sync \
+            response=$(curl -sS -X POST http://127.0.0.1:8000/admin/product-embeddings/sync \
               -H "Content-Type: application/json" \
-              -d '{"company_id": null}' && echo "✅ Backfill triggered" || echo "❌ Failed"
+              -d '{"company_id": null}' 2>&1) && echo "✅ Backfill triggered: $response" || echo "❌ Failed: $response"
