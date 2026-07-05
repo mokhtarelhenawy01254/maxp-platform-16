@@ -175,7 +175,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 if not final_response.text:
                     logger.warning("skills_pipeline_followup_empty_retrying")
                     final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="auto")
-                ctx.final_reply = (final_response.text or _format_tool_results(executed) or "تم البحث. هل تريد تفاصيل عن أي منتج؟")
+                ctx.final_reply = final_response.text or _format_tool_results(executed)
                 ctx.llm_response = final_response.text or ""
             except Exception as e:
                 logger.error("skills_pipeline_followup_failed", error=str(e))
@@ -318,6 +318,31 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
     # Build tool definitions so DeepSeek can understand tool_call history
     tool_dicts = tools or _build_tool_dicts(ctx)
 
+    # If message has images but current model doesn't support vision, switch to Gemini
+    has_images = any(
+        isinstance(m.get("content"), list)
+        and any(p.get("type") == "image_url" for p in m["content"])
+        for m in messages
+    )
+    if has_images:
+        from src.llm.model_capabilities import supports_vision
+        client_model = getattr(client, "model", None)
+        client_provider = getattr(client, "provider", None)
+        if not supports_vision(client_model, client_provider):
+            try:
+                from src.llm.model_manager import model_manager
+                vision_model = "gemini-2.5-flash"
+                routing = await model_manager.get_next_key(vision_model, ctx.company_id)
+                client = LLMClient(
+                    provider=routing.provider,
+                    model=routing.model,
+                    api_key=routing.api_key,
+                    base_url=routing.base_url,
+                )
+                logger.info("followup_vision_fallback_switched", original_model=client_model, new_model=vision_model)
+            except Exception as e:
+                logger.warning("followup_vision_fallback_unavailable", error=str(e))
+
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
@@ -346,6 +371,7 @@ def _format_tool_results(executed: list[dict]) -> str:
         status = item.get("status", "unknown")
         result = item.get("result", {})
         if status == "success" and isinstance(result, dict):
+            handled = False
             code = result.get("code", "")
             if code == "MISSING_COMPANY":
                 continue
@@ -359,12 +385,16 @@ def _format_tool_results(executed: list[dict]) -> str:
             if isinstance(products, list) and len(products) > 0:
                 names = [p.get("productName") or p.get("name") or "" for p in products[:5]]
                 parts.append(f"{', '.join(filter(None, names))}{'...' if len(products) > 5 else ''}")
+                handled = True
             elif isinstance(categories, list) and len(categories) > 0:
                 names = [c.get("category") or "" for c in categories[:5]]
                 parts.append(f"{', '.join(filter(None, names))}{'...' if len(categories) > 5 else ''}")
+                handled = True
             elif name == "inventory_check" and not result.get("found"):
                 parts.append(f"المنتج '{result.get('queriedName', '')}' غير متوفر حالياً.")
+                handled = True
             elif name == "offers_list_active":
+                handled = True
                 active_parts = []
                 if result.get("totalActiveCoupons", 0) > 0:
                     active_parts.append(f"كوبونات خصم ({result.get('totalActiveCoupons')})")
@@ -375,18 +405,37 @@ def _format_tool_results(executed: list[dict]) -> str:
                 if active_parts:
                     parts.append(f"العروض المتاحة: {', '.join(active_parts)}")
             elif name == "coupon_validate":
+                handled = True
                 if result.get("valid"):
                     parts.append(f"الكوبون {result.get('code')} صالح (خصم بقيمة {result.get('discountAmount')})")
                 else:
                     parts.append(f"الكوبون غير صالح: {result.get('error', '')}")
+            elif name == "product_search" and not result.get("found"):
+                parts.append(f"لم أعثر على منتجات مطابقة.")
+                handled = True
             elif name == "order_lookup":
+                handled = True
                 if result.get("found") or result.get("order"):
                     order = result.get("order") or result
                     parts.append(f"الطلب #{order.get('id') or order.get('number')} حالته: {order.get('status')}")
             elif name == "customer_info":
+                handled = True
                 if result.get("found") or result.get("customer"):
                     cust = result.get("customer") or result
                     parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
+
+            if not handled:
+                id_val = result.get("id") or result.get("number") or result.get("orderId")
+                if id_val:
+                    parts.append(f"تم تنفيذ {name}: # {id_val}")
+                elif result.get("found") is False:
+                    parts.append(f"لم يتم العثور على نتائج لـ {name}.")
+                elif result.get("count") is not None:
+                    parts.append(f"نتائج {name}: {result.get('count')}")
+                elif result.get("status"):
+                    parts.append(f"{name}: {result.get('status')}")
+                else:
+                    parts.append(f"تم تنفيذ {name} بنجاح.")
         elif status == "error":
             continue
     return "\n".join(parts) if parts else ""
@@ -398,7 +447,7 @@ async def _build_followup_messages(
     """Build messages for the follow-up LLM call after tool execution."""
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
-    system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
+    system_prompt = f"{base_prompt}\n\nاكتب رداً طبيعياً ومباشراً للعميل بالعامية المصرية بناءً على نتائج الأدوات أعلاه. لا تكرر التحية. لا تخبر العميل أنك استخدمت أدوات."
 
     # Inject SKILL.md instructions (same as primary _llm_call)
     if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:

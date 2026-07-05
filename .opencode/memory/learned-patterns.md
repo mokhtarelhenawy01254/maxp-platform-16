@@ -6,6 +6,17 @@
 - Company settings (late cancellation config) stored in `company.settings` JSON field, accessed via `PUT /api/v1/order-settings` (requires `order-invoicing` app access)
 - Order statuses fetched from `GET /api/v1/order-status` (requires `order-core` app access)
 
+## Agent Vision — Follow-Up Fallback Missing (2026-07-05)
+- `_raw_llm_call` (follow-up call after tool execution) had no vision fallback — images in the follow-up user message were sent to non-vision models
+- `_llm_call` had the fallback (checks `supports_vision`, switches to Gemini), but `_raw_llm_call` didn't
+- Fixed: detect `image_url` in messages list, apply same Gemini fallback in `_raw_llm_call`
+- Placeholder: tests for the follow-up vision path (needs `_raw_llm_call` invocation with mocking); coverage is manual/QA for now
+
+## Agent System Prompt — Follow-Up Phase Contamination (2026-07-05)
+- `_technical_formatting_constraints()` instructs the LLM to leave text empty when calling tools — must NOT be injected into follow-up (message-generation) calls
+- Follow-up calls need a positive instruction: what TO do, not what NOT to do
+- Fallback chain `final_response.text or _format_tool_results(executed) or 'تم البحث...'` must never let generic fallback text reach the customer — every tool result in `_format_tool_results` should produce a meaningful message
+
 ## Deploy Workflow — SSH Timeout Retry (2026-07-04)
 - `Deploy to Server` workflow sometimes fails at `Test SSH Connection (with retry)` step with `Connection timed out` (exit code 255)
 - This is a transient SSH connectivity issue — re-running the workflow from GitHub UI typically succeeds
