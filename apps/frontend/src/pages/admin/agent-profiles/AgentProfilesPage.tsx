@@ -182,7 +182,6 @@ export default function AgentProfilesPage() {
   const [templates, setTemplates] = useState<Array<{ slug: string; name: string; role: string; allowedTools: string[]; allowedSkills: string[] }>>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [newConfig, setNewConfig] = useState<Record<string, string>>({});
-  const [createStep, setCreateStep] = useState(0);
 
 
   const hasUnsavedChanges = useMemo(() => {
@@ -257,7 +256,6 @@ export default function AgentProfilesPage() {
   /* ── Load templates ── */
   useEffect(() => {
     if (!createOpen) return;
-    setCreateStep(0);
     setTemplatesLoading(true);
     tryApiFetch<{ profiles: Array<{ slug: string; name: string; role: string; allowedTools: string[]; allowedSkills: string[] }> }>("/agent-manager/profiles")
       .then((data) => {
@@ -433,7 +431,6 @@ export default function AgentProfilesPage() {
         });
       }
       setCreateOpen(false);
-      setCreateStep(0);
       setNewAgentName("");
       setNewAgentIcon("🤖");
       setNewAgentDesc("");
@@ -915,77 +912,44 @@ export default function AgentProfilesPage() {
                     <div className="max-w-3xl space-y-6">
                   {!editing ? (
                     <div className="space-y-5">
-                      {[
-                        { label: t("agentProfiles.settings.agentName"), value: draftName },
-                        { label: t("agentProfiles.settings.persona"), value: draftConfig.soul_persona, hint: t("agentProfiles.settings.personaHint") },
-                        { label: t("agentProfiles.settings.goal"), value: draftConfig.soul_goal, hint: t("agentProfiles.settings.goalHint"), multi: true },
-                      ].map((f) => (
-                        <div key={f.label}>
-                          <label className="block text-sm font-medium text-foreground/70 mb-1">{f.label}</label>
-                          <p className={`text-sm ${f.value ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                            {f.value || "—"}
-                          </p>
-                          {f.hint && <p className="text-xs text-muted-foreground/70 mt-0.5">{f.hint}</p>}
-                        </div>
-                      ))}
-                      <hr className="border-t border-border/50" />
-                      {[
-                        { label: t("agentProfiles.settings.tone"), value: [
-                          { k: "friendly", l: t("agentProfiles.settings.toneFriendly") },
-                          { k: "formal", l: t("agentProfiles.settings.toneFormal") },
-                          { k: "concise", l: t("agentProfiles.settings.toneConcise") },
-                          { k: "detailed", l: t("agentProfiles.settings.toneDetailed") },
-                        ].find(o => o.k === (draftConfig.soul_tone || "friendly"))?.l, hint: t("agentProfiles.settings.toneHint") },
-                        { label: t("agentProfiles.settings.language"), value: [
-                          { k: "auto", l: t("agentProfiles.settings.languageAuto") },
-                          { k: "ar", l: t("agentProfiles.settings.languageAr") },
-                          { k: "en", l: t("agentProfiles.settings.languageEn") },
-                        ].find(o => o.k === (draftConfig.soul_language || "auto"))?.l, hint: t("agentProfiles.settings.languageHint") },
-                      ].map((f) => (
-                        <div key={f.label}>
-                          <label className="block text-sm font-medium text-foreground/70 mb-1">{f.label}</label>
-                          <p className="text-sm text-foreground/90">{f.value}</p>
-                          {f.hint && <p className="text-xs text-muted-foreground/70 mt-0.5">{f.hint}</p>}
-                        </div>
-                      ))}
-                      <hr className="border-t border-border/50" />
-                      {[
-                        { label: t("agentProfiles.settings.tasks"), value: draftConfig.soul_tasks, hint: t("agentProfiles.settings.tasksHint"), multi: true },
-                        { label: t("agentProfiles.settings.boundaries"), value: draftConfig.soul_boundaries, hint: t("agentProfiles.settings.boundariesHint"), multi: true },
-                        { label: t("agentProfiles.settings.welcome"), value: draftConfig.soul_welcome, hint: t("agentProfiles.settings.welcomeHint") },
-                      ].map((f) => (
-                        <div key={f.label}>
-                          <label className="block text-sm font-medium text-foreground/70 mb-1">{f.label}</label>
-                          {f.multi ? (
-                            <p className={`text-sm whitespace-pre-wrap ${f.value ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                              {f.value || "—"}
-                            </p>
-                          ) : (
-                            <p className={`text-sm truncate ${f.value ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                              {f.value || "—"}
-                            </p>
-                          )}
-                          {f.hint && <p className="text-xs text-muted-foreground/70 mt-0.5">{f.hint}</p>}
-                        </div>
-                      ))}
+                      {/* اسم الوكيل */}
                       <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.escalation")}</label>
-                        <p className="text-sm text-foreground/90">
-                          {[{ v: "knowledge_ask", l: "يسألني عبر لوحة التحكم" }, { v: "escalate_human", l: "يحول المحادثة لبشر" }, { v: "apologize", l: "يعتذر ويقول مايعرفش" }].find(o => o.v === (draftConfig.soul_escalation || "knowledge_ask"))?.l}
+                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.agentName")}</label>
+                        <p className={`text-sm ${draftName ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
+                          {draftName || "—"}
                         </p>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.escalationHint")}</p>
                       </div>
-                      {draftConfig.soul_custom && (
-                        <div>
-                          <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.customPrompt")}</label>
-                          <p className="text-sm text-foreground/90 whitespace-pre-wrap font-mono">{draftConfig.soul_custom}</p>
-                          <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
-                        </div>
-                      )}
+
+                      <hr className="border-t border-border/50" />
+
+                      {/* طريقة الرد */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.tone")}</label>
+                        <p className="text-sm text-foreground/90">
+                          {[
+                            { k: "friendly", l: t("agentProfiles.settings.toneFriendly") },
+                            { k: "formal", l: t("agentProfiles.settings.toneFormal") },
+                            { k: "concise", l: t("agentProfiles.settings.toneConcise") },
+                            { k: "detailed", l: t("agentProfiles.settings.toneDetailed") },
+                          ].find(o => o.k === (draftConfig.soul_tone || "friendly"))?.l}
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
+                      </div>
+
+                      <hr className="border-t border-border/50" />
+
+                      {/* تعليمات إضافية */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.customPrompt")}</label>
+                        <p className={`text-sm whitespace-pre-wrap font-mono ${draftConfig.soul_custom ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
+                          {draftConfig.soul_custom || "—"}
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-6">
-                      {/* Agent Name */}
+                      {/* اسم الوكيل */}
                       <div>
                         <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
                           {t("agentProfiles.settings.agentName")}
@@ -996,33 +960,9 @@ export default function AgentProfilesPage() {
                           placeholder={t("agentProfiles.settings.agentNamePlaceholder")} className="h-8 text-sm" />
                       </div>
 
-                      {/* Persona */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.persona")}
-                          {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Input value={draftConfig.soul_persona || ""} onChange={(e) => handleSoulFieldChange("soul_persona", e.target.value)}
-                          disabled={isPersonaLocked}
-                          placeholder={t("agentProfiles.settings.personaPlaceholder")} className="h-8 text-sm" />
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.personaHint")}</p>
-                      </div>
-
-                      {/* Goal */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.goal")}
-                          {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Textarea value={draftConfig.soul_goal || ""} onChange={(e) => handleSoulFieldChange("soul_goal", e.target.value)}
-                          disabled={isPersonaLocked}
-                          placeholder={t("agentProfiles.settings.goalPlaceholder")} className="text-sm min-h-[48px] resize-y" />
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.goalHint")}</p>
-                      </div>
-
                       <hr className="border-t border-border/50" />
 
-                      {/* Tone */}
+                      {/* طريقة الرد */}
                       <div>
                         <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
                           {t("agentProfiles.settings.tone")}
@@ -1049,92 +989,9 @@ export default function AgentProfilesPage() {
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
                       </div>
 
-                      {/* Language */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.language")}
-                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg w-fit">
-                          {[
-                            { key: "auto", label: t("agentProfiles.settings.languageAuto") },
-                            { key: "ar", label: t("agentProfiles.settings.languageAr") },
-                            { key: "en", label: t("agentProfiles.settings.languageEn") },
-                          ].map((opt) => (
-                            <button key={opt.key} type="button"
-                              disabled={isRulesLocked}
-                              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                                (draftConfig.soul_language || "auto") === opt.key
-                                  ? "bg-background text-foreground shadow-sm"
-                                  : "text-muted-foreground hover:text-foreground"
-                              } ${isRulesLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-                              onClick={() => handleSoulFieldChange("soul_language", opt.key)}
-                            >{opt.label}</button>
-                          ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.languageHint")}</p>
-                      </div>
-
                       <hr className="border-t border-border/50" />
 
-                      {/* Tasks */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.tasks")}
-                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Textarea value={draftConfig.soul_tasks || ""} onChange={(e) => handleSoulFieldChange("soul_tasks", e.target.value)}
-                          disabled={isRulesLocked}
-                          placeholder={t("agentProfiles.settings.tasksPlaceholder")} className="text-sm min-h-[48px] resize-y" />
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.tasksHint")}</p>
-                      </div>
-
-                      {/* Boundaries */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.boundaries")}
-                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Textarea value={draftConfig.soul_boundaries || ""} onChange={(e) => handleSoulFieldChange("soul_boundaries", e.target.value)}
-                          disabled={isRulesLocked}
-                          placeholder={t("agentProfiles.settings.boundariesPlaceholder")} className="text-sm min-h-[48px] resize-y" />
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.boundariesHint")}</p>
-                      </div>
-
-                      {/* Welcome Message */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.welcome")}
-                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Input value={draftConfig.soul_welcome || ""} onChange={(e) => handleSoulFieldChange("soul_welcome", e.target.value)}
-                          disabled={isRulesLocked}
-                          placeholder={t("agentProfiles.settings.welcomePlaceholder")} className="h-8 text-sm" />
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.welcomeHint")}</p>
-                      </div>
-
-                      {/* Escalation */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.escalation")}
-                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Select value={draftConfig.soul_escalation || "knowledge_ask"}
-                          disabled={isRulesLocked}
-                          onValueChange={(v) => handleSoulFieldChange("soul_escalation", v)}>
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="knowledge_ask">يسألني عبر لوحة التحكم</SelectItem>
-                            <SelectItem value="escalate_human">يحول المحادثة لبشر</SelectItem>
-                            <SelectItem value="apologize">يعتذر ويقول مايعرفش</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.escalationHint")}</p>
-                      </div>
-
-                      {/* إضافة تعليمات إضافية */}
+                      {/* تعليمات إضافية */}
                       <div>
                         <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
                           {t("agentProfiles.settings.customPrompt")}
@@ -1142,7 +999,7 @@ export default function AgentProfilesPage() {
                         </label>
                         <Textarea value={draftConfig.soul_custom || ""} onChange={(e) => handleSoulFieldChange("soul_custom", e.target.value)}
                           disabled={isCustomPromptLocked}
-                          placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[48px] resize-y font-mono text-xs" />
+                          placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[80px] resize-y font-mono text-xs" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
                       </div>
                     </div>
@@ -1184,214 +1041,88 @@ export default function AgentProfilesPage() {
         </div>
       </main>
 
-      {/* ── Create Agent Dialog (Multi-Step) ── */}
-      <Dialog open={createOpen} onOpenChange={(o) => { if (!o && !creating) { setCreateOpen(false); setCreateStep(0); } }}>
-        <DialogContent className="sm:max-w-lg !p-0 !gap-0 max-h-[calc(100vh-2rem)]">
-          <div className="flex flex-col max-h-[calc(100vh-2rem)]">
-            <div className="px-5 pt-5 pb-2 flex-shrink-0">
-              <DialogHeader className="mb-0">
-                <DialogTitle className="text-base flex items-center gap-2">
-                  <span className="size-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-sm">✨</span>
-                  {t("agentProfiles.create.title")}
-                </DialogTitle>
-              </DialogHeader>
+      {/* ── Create Agent Dialog (Single-Step) ── */}
+      <Dialog open={createOpen} onOpenChange={(o) => { if (!o && !creating) { setCreateOpen(false); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2">
+              <span className="size-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-sm">✨</span>
+              {t("agentProfiles.create.title")}
+            </DialogTitle>
+          </DialogHeader>
 
-              {/* Step indicator */}
-              <div className="flex items-center justify-center gap-1 mt-4">
-                {[{ i: 0, l: t("agentProfiles.create.template") }, { i: 1, l: t("agentProfiles.settings.persona") }, { i: 2, l: t("agentProfiles.settings.tasks") }].map((s) => (
-                  <React.Fragment key={s.i}>
-                    {s.i > 0 && <div className={`h-px w-8 sm:w-12 ${createStep > s.i - 1 ? "bg-indigo-400" : "bg-slate-200 dark:bg-slate-700"}`} />}
-                    <button type="button" onClick={() => { if (s.i < createStep || s.i === createStep) setCreateStep(s.i); }}
-                      className={`size-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                        createStep >= s.i
-                          ? "bg-indigo-500 text-white shadow-sm"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+          <div className="py-3 space-y-4">
+            {/* اختيار القالب */}
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.create.template")}</label>
+              <Select value={newAgentTemplate || "custom"} onValueChange={(v) => { setNewAgentTemplate(v === "custom" ? null : v); if (v !== "custom") { const tpl = templates.find((t) => t.slug === v); if (tpl && !newAgentName) setNewAgentName(tpl.name); } }}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue>{newAgentTemplate ? `${templateIcon(newAgentTemplate)} ${templates.find((t) => t.slug === newAgentTemplate)?.name || ""}` : `⚙️ ${t("agentProfiles.create.custom")}`}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">⚙️ {t("agentProfiles.create.custom")}</SelectItem>
+                  {templates.map((tpl) => (
+                    <SelectItem key={tpl.slug} value={tpl.slug}>{templateIcon(tpl.slug)} {tpl.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* اسم الوكيل + أيقونة */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label htmlFor="new-agent-name" className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.create.name")}</label>
+                <Input id="new-agent-name" placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-9 text-sm" />
+              </div>
+              <div className="flex-shrink-0">
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.icon.label")}</label>
+                <div className="grid grid-cols-4 gap-0.5">
+                  {AGENT_ICONS.slice(0, 8).map((icon) => (
+                    <button key={icon} type="button" onClick={() => setNewAgentIcon(icon)} title={icon}
+                      className={`size-8 flex items-center justify-center rounded-md text-sm border transition-colors ${
+                        newAgentIcon === icon
+                          ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
+                          : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
                       }`}
-                    >{createStep > s.i ? "✓" : s.i + 1}</button>
-                  </React.Fragment>
-                ))}
+                    >{icon}</button>
+                  ))}
+                </div>
               </div>
             </div>
 
-              <div className="px-5 py-2 flex-1 min-h-0 overflow-y-auto">
-              {/* Step 0: Template + Identity */}
-              {createStep === 0 && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.create.template")}</label>
-                    <Select value={newAgentTemplate || "custom"} onValueChange={(v) => { setNewAgentTemplate(v === "custom" ? null : v); if (v !== "custom") { const tpl = templates.find((t) => t.slug === v); if (tpl && !newAgentName) setNewAgentName(tpl.name); } }}>
-                      <SelectTrigger className="h-7 text-sm">
-                        <SelectValue>{newAgentTemplate ? `${templateIcon(newAgentTemplate)} ${templates.find((t) => t.slug === newAgentTemplate)?.name || ""}` : `⚙️ ${t("agentProfiles.create.custom")}`}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="custom">⚙️ {t("agentProfiles.create.custom")}</SelectItem>
-                        {templates.map((tpl) => (
-                          <SelectItem key={tpl.slug} value={tpl.slug}>{templateIcon(tpl.slug)} {tpl.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="flex-1 space-y-1.5">
-                      <label htmlFor="new-agent-name" className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">{t("agentProfiles.create.name")}</label>
-                      <Input id="new-agent-name" placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-7 text-sm" />
-                    </div>
-                    <div className="flex-shrink-0">
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.icon.label")}</label>
-                      <div className="grid grid-cols-4 gap-0.5">
-                        {AGENT_ICONS.map((icon) => (
-                          <button key={icon} type="button" onClick={() => setNewAgentIcon(icon)} title={icon}
-                            className={`size-7 flex items-center justify-center rounded-md text-sm border transition-colors ${
-                              newAgentIcon === icon
-                                ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
-                                : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
-                            }`}
-                          >{icon}</button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="new-agent-desc" className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.create.description")}</label>
-                    <Input id="new-agent-desc" placeholder={t("agentProfiles.create.descPlaceholder")} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-7 text-sm" />
-                  </div>
-                </div>
-              )}
-
-              {/* Step 1: Personality */}
-              {createStep === 1 && (
-                <section>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="size-1.5 rounded-full bg-indigo-500" />
-                    <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.settings.persona")}</h4>
-                  </div>
-                  <div className="space-y-2.5">
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.persona")}</label>
-                      <Input value={newConfig.soul_persona || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_persona: e.target.value}))} placeholder={t("agentProfiles.settings.personaPlaceholder")} className="h-7 text-sm" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.goal")}</label>
-                      <Textarea value={newConfig.soul_goal || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_goal: e.target.value}))} placeholder={t("agentProfiles.settings.goalPlaceholder")} className="text-sm min-h-[40px] resize-y" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.tone")}</label>
-                      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg w-fit">
-                        {[{k:"friendly",l:t("agentProfiles.settings.toneFriendly")},{k:"formal",l:t("agentProfiles.settings.toneFormal")},{k:"concise",l:t("agentProfiles.settings.toneConcise")},{k:"detailed",l:t("agentProfiles.settings.toneDetailed")}].map((opt) => (
-                          <button key={opt.k} type="button"
-                            className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${(newConfig.soul_tone||"friendly")===opt.k?"bg-white dark:bg-slate-700 text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`}
-                            onClick={() => setNewConfig((p) => ({...p, soul_tone: opt.k}))}
-                          >{opt.l}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.language")}</label>
-                      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg w-fit">
-                        {[{k:"auto",l:t("agentProfiles.settings.languageAuto")},{k:"ar",l:t("agentProfiles.settings.languageAr")},{k:"en",l:t("agentProfiles.settings.languageEn")}].map((opt) => (
-                          <button key={opt.k} type="button"
-                             className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${(newConfig.soul_language||"auto")===opt.k?"bg-white dark:bg-slate-700 text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`}
-                            onClick={() => setNewConfig((p) => ({...p, soul_language: opt.k}))}
-                          >{opt.l}</button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* Step 2: Behavior */}
-              {createStep === 2 && (
-                <section>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="size-1.5 rounded-full bg-indigo-500" />
-                    <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.settings.tasks")}</h4>
-                  </div>
-                  <div className="space-y-2.5">
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.tasks")}</label>
-                      <Textarea value={newConfig.soul_tasks || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_tasks: e.target.value}))} placeholder={t("agentProfiles.settings.tasksPlaceholder")} className="text-sm min-h-[40px] resize-y" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.boundaries")}</label>
-                      <Textarea value={newConfig.soul_boundaries || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_boundaries: e.target.value}))} placeholder={t("agentProfiles.settings.boundariesPlaceholder")} className="text-sm min-h-[40px] resize-y" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.welcome")}</label>
-                      <Input value={newConfig.soul_welcome || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_welcome: e.target.value}))} placeholder={t("agentProfiles.settings.welcomePlaceholder")} className="h-7 text-sm" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.escalation")}</label>
-                      <Select value={newConfig.soul_escalation || "knowledge_ask"} onValueChange={(v) => setNewConfig((p) => ({...p, soul_escalation: v}))}>
-                        <SelectTrigger className="h-7 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="knowledge_ask">يسألني عبر لوحة التحكم</SelectItem>
-                          <SelectItem value="escalate_human">يحول المحادثة لبشر</SelectItem>
-                          <SelectItem value="apologize">يعتذر ويقول مايعرفش</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.customPrompt")}</label>
-                      <Textarea value={newConfig.soul_custom || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_custom: e.target.value}))} placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[40px] resize-y font-mono text-xs" />
-                    </div>
-                  </div>
-                </section>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/30 px-5 py-3 flex-shrink-0">
-              <div className="flex items-center gap-2.5 mb-2">
-                <span className="text-lg flex-shrink-0">{newAgentIcon}</span>
+            {/* Preview */}
+            {newAgentName && (
+              <div className="flex items-center gap-2.5 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span className="text-xl flex-shrink-0">{newAgentIcon}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{newAgentName || t("agentProfiles.create.namePreview")}</p>
-                    <span className={`size-1.5 rounded-full flex-shrink-0 ${newAgentName ? "bg-emerald-500" : "bg-slate-300"}`} />
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                    <span className="text-[10px] text-slate-500">{newAgentDesc || (selectedTemplate ? selectedTemplate.name : t("agentProfiles.create.descPreview"))}</span>
+                  <p className="text-sm font-bold text-foreground truncate">{newAgentName}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
                     {selectedTemplate ? (
-                      <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.role || selectedTemplate.slug}</span>
+                      <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.name}</span>
                     ) : (
-                      <span className="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">CUSTOM</span>
+                      <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">مخصص</span>
                     )}
                   </div>
                 </div>
+                <span className="size-2 rounded-full bg-emerald-500 flex-shrink-0" />
               </div>
-
-              {createError && (
-                <div className="flex items-start gap-2 p-2 mb-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
-                  <AlertCircle className="size-3.5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-600 dark:text-red-400">{createError}</p>
-                </div>
-              )}
-
-              <div className="flex justify-between gap-2">
-                {createStep > 0 ? (
-                  <Button variant="outline" onClick={() => setCreateStep((p) => p - 1)} disabled={creating} className="h-8 text-xs px-3">← رجوع</Button>
-                ) : (
-                  <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating} className="h-8 text-xs px-3">{t("agentProfiles.create.cancel")}</Button>
-                )}
-                {createStep < 2 ? (
-                  <Button onClick={() => {
-                    if (createStep === 0 && !newAgentName.trim()) return;
-                    setCreateStep((p) => p + 1);
-                  }} disabled={createStep === 0 && !newAgentName.trim()} className="h-8 text-xs px-4">
-                    التالي ←
-                  </Button>
-                ) : (
-                  <Button onClick={handleCreateAgent} disabled={creating || !newAgentName.trim()} className="h-8 text-xs px-4">
-                    {creating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : <Plus className="ml-1.5 size-3.5" />}
-                    {creating ? t("agentProfiles.create.creating") : t("agentProfiles.create.submit")}
-                  </Button>
-                )}
-              </div>
-            </div>
+            )}
           </div>
+
+          {createError && (
+            <div className="flex items-start gap-2 p-2 mb-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <AlertCircle className="size-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-600 dark:text-red-400">{createError}</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating} className="h-9 text-xs px-4">{t("agentProfiles.create.cancel")}</Button>
+            <Button onClick={handleCreateAgent} disabled={creating || !newAgentName.trim()} className="h-9 text-xs px-5">
+              {creating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : <Plus className="ml-1.5 size-3.5" />}
+              {creating ? t("agentProfiles.create.creating") : t("agentProfiles.create.submit")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

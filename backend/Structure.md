@@ -28,10 +28,13 @@ No database models or Prisma schemas were modified. However, the database seedin
    - **`conversations.md`**: Created new few-shot interactive dialog examples to steer the agent's behavior.
    - **`integration.py` & `seed.py`**: Enabled caching and prompt injection of trigger phrases inside the system prompt's `<skill>` XML blocks, resolving intent routing gaps.
 
-### AI Agent Templates Unification (Template-as-Agent)
+### AI Agent Templates Unification & View Simplification
 8. Removed legacy ready agent profiles and constraints/locks. AI templates (`AgentTemplate`) are now the single source of truth for agent behavior and configurations.
 9. Decommissioned `spawnReadyAgentsService.js` and removed quick-create seeding logic.
 10. Refactored merchant agent creation (`AgentProfilesPage.tsx`) to directly use AI templates and provision overriding configuration records in the `agents` table mapped to `AgentTemplate` slugs.
+11. Simplified the Merchant Agent Profiles view (`AgentProfilesPage.tsx`) to hide complex system fields (persona, goal, tasks, boundaries, welcome messages, escalation options, language). Merchants now edit and view only **3 items**: **Agent Name**, **Tone / Way of Replying**, and **Additional Instructions**.
+12. Simplified the agent creation wizard to a **single step** (Template + Name + Icon), allowing templates to fully drive the default configuration values.
+13. Preserved all hidden/system prompt configurations inside the `SOUL.md` content on the backend during merchant updates of the simplified fields.
 
 ### System Architecture
 - **Vite Chunk Load Recovery & Cache Control Routing**: Overhauled the frontend root error boundary structure in `AdminAppBootstrap.tsx` to statically import the `ErrorBoundary` component, ensuring the application can capture module loading failures (due to deleted assets during production updates) and successfully execute chunk load recovery (automatic window reloads). Hardened the Nginx static assets mapping in `nginx_configs/maxp.online.conf` by adding strict Cache-Control headers (`no-cache, no-store, must-revalidate`) for the SPA `/` location blocks, preventing browsers and proxy CDNs from caching `index.html` and forcing them to fetch the most updated hashed asset references.
