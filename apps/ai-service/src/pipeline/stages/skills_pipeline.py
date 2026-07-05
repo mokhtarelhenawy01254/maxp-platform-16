@@ -67,38 +67,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
     ctx.system_prompt = base_prompt
 
-    # Build image search block UPFRONT (before skills/personality — Gemini pays attention to beginning)
-    image_block = ""
-    if ctx.attachments:
-        img_urls = [a.get("url", "") for a in ctx.attachments if a.get("type") in ("image", "photo")]
-        if img_urls:
-            try:
-                from src.tools.definitions.product import product_search
-                from src.tools.definitions.product import ProductSearchInput
-                ps_result = await product_search(ProductSearchInput(
-                    query="search by image", image_url=img_urls[0], use_vector=True, company_id=ctx.company_id,
-                ))
-                if ps_result.get("results"):
-                    ctx.external_memory_context["productSearchResults"] = ps_result
-                    top = ps_result["results"][0]
-                    top_score = float(top.get("score") or top.get("similarity") or 0)
-                    if top_score >= 0.9:
-                        pname = top.get("productName") or top.get("name", "")
-                        pprice = top.get("price", "")
-                        ctx.external_memory_context["confirmedProduct"] = {"name": pname, "price": pprice}
-                        image_block = f"\n\n[منتج مطابق: {pname} بسعر {pprice} جنيه.\nردك يجب أن يبدأ بـ: ده {pname} ب {pprice} جنيه]"
-                    elif top_score >= 0.5:
-                        candidates = []
-                        for p in ps_result["results"][:5]:
-                            n = p.get("productName") or p.get("name", "")
-                            pr = p.get("price", "")
-                            s = float(p.get("score") or p.get("similarity") or 0) * 100
-                            candidates.append(f"- {n} ({s:.0f}%)  {pr} جنيه")
-                        image_block = f"\n\n[أقرب منتجات للصورة:\n" + "\n".join(candidates) + "\nابدأ ردك بأقرب منتج.]"
-
-    system_prompt = f"{base_prompt}{image_block}\n\n{_technical_formatting_constraints()}"
-
-    # Inject referred product mapping context (if present)
+    system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
 
     # 4. Single LLM call with skills as tools
     try:

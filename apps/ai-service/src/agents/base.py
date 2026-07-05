@@ -69,6 +69,7 @@ from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineC
 from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.pipeline.stages.validate_reply import validate_reply
+from src.pipeline.stages.visual_match import match_product_by_image
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
 from src.tools.names import canonical_tool_name, canonical_tool_set
 from src.tools.sdk_gateway import wrap_tools_for_gateway
@@ -924,6 +925,7 @@ class BaseAgent:
         ctx = await execute_pipeline(
             ctx,
             [
+                match_product_by_image,
                 process_with_skills,
                 validate_reply,
             ],
@@ -1112,6 +1114,7 @@ class BaseAgent:
             emitter.emit("agent_thinking", {"stage": "resolve_intent"})
 
             for stage in (
+                match_product_by_image,
                 process_with_skills,
                 validate_reply,
             ):
