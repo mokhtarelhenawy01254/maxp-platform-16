@@ -2038,7 +2038,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 }
             }
 
-            // ── AI auto-reply (Baileys sessions) ─────────────────────────────────
+            // ── AI auto-reply with debounce (Baileys sessions) ────────────────────
             if (!fromMe && !importHistory && isNewMessage && messageContent.type === 'TEXT' && syncedCustomer?.companyId) {
                 setImmediate(async () => {
                     try {
@@ -2061,40 +2061,58 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 }
                             } catch(e) { /* continue */ }
                         }
-                        console.log();
-                        const aiSdkClient = require('../aiSdkClient');
-                        const result = await aiSdkClient.sendChatMessage({
-                            companyId: syncedCustomer.companyId,
-                            customerId: syncedCustomer.id,
+
+                        const { accumulate } = require('../facebookDebounceService');
+                        const key = `${syncedCustomer.companyId}:baileys:${sessionId}:${remoteJid}`;
+
+                        accumulate(key, {
                             message: messageContent.text,
-                            threadId: syncedConversation?.id || null,
-                            channel: 'WHATSAPP',
-                            memoryContext: null,
-                        });
+                            customerId: syncedCustomer.id,
+                            conversationId: syncedConversation?.id,
+                            companyId: syncedCustomer.companyId,
+                            sessionId,
+                            remoteJid,
+                        }, async (entries) => {
+                            if (entries.length === 0) return;
 
-                        // Silent Escalation: AI failed → flag for human takeover, send nothing to customer
-                        if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
-                            const { flagThreadForHumanTakeover } = require('../silentEscalationService');
-                            await flagThreadForHumanTakeover({
-                                companyId: syncedCustomer.companyId,
-                                conversationId: syncedConversation?.id,
-                                customerPhone: remoteJid,
-                                customerId: syncedCustomer.id,
-                                reason: result.escalation?.reason || 'ai_failure',
-                                customerMessage: messageContent.text,
+                            const combinedMessage = entries.map(e => e.message).join('\n---\n');
+                            const first = entries[0];
+
+                            console.log(`🟢 [BAILEYS-DEBOUNCE] Processing ${entries.length} debounced message(s)`);
+
+                            const aiSdkClient = require('../aiSdkClient');
+                            const result = await aiSdkClient.sendChatMessage({
+                                companyId: first.companyId,
+                                customerId: first.customerId,
+                                message: combinedMessage,
+                                threadId: first.conversationId,
                                 channel: 'WHATSAPP',
+                                memoryContext: null,
                             });
-                            return;
-                        }
 
-                        const replyText = result?.reply;
-                        if (replyText) {
-                            const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
-                            await WhatsAppMessageHandler.sendText(sessionId, remoteJid, replyText, { isAIResponse: true });
-                            console.log();
-                        }
+                            // Silent Escalation
+                            if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
+                                const { flagThreadForHumanTakeover } = require('../silentEscalationService');
+                                await flagThreadForHumanTakeover({
+                                    companyId: first.companyId,
+                                    conversationId: first.conversationId,
+                                    customerPhone: first.remoteJid,
+                                    customerId: first.customerId,
+                                    reason: result.escalation?.reason || 'ai_failure',
+                                    customerMessage: combinedMessage,
+                                    channel: 'WHATSAPP',
+                                });
+                                return;
+                            }
+
+                            const replyText = result?.reply;
+                            if (replyText) {
+                                const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+                                await WhatsAppMessageHandler.sendText(first.sessionId, first.remoteJid, replyText, { isAIResponse: true });
+                            }
+                        });
                     } catch(e) {
-                        console.error('❌ [WA-BAILEYS-AUTOREPLY] Error:', e.message);
+                        console.error('❌ [BAILEYS-DEBOUNCE] Error:', e.message);
                     }
                 });
             }
