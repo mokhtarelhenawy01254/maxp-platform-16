@@ -1,0 +1,30 @@
+name: Trigger Embedding Backfill
+on: workflow_dispatch
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH Key
+        shell: bash
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
+          chmod 600 "$HOME/.ssh/maxp_deploy_key"
+
+      - name: Trigger Product Embedding Backfill
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          debug: true
+          timeout: 600s
+          command_timeout: 10m
+          script: |
+            curl -sf -X POST http://127.0.0.1:8000/admin/product-embeddings/sync \
+              -H "Content-Type: application/json" \
+              -d '{"company_id": null}' && echo "✅ Backfill triggered" || echo "❌ Failed"
