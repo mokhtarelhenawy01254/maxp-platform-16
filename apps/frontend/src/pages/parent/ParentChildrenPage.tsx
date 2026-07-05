@@ -135,4 +135,4 @@ const ParentChildDetailPage: React.FC = () => {
   );
 };
 
-export { ParentChildrenPage, ParentChildDetailPage };
+export { ParentChildrenPage as default };

@@ -886,8 +886,11 @@ const ParentSessionsPage = React.lazy(
 const ParentEnrollmentsPage = React.lazy(
   () => import("./pages/parent/ParentEnrollmentsPage"),
 );
-const { ParentChildrenPage, ParentChildDetailPage } = React.lazy(
+const ParentChildrenPage = React.lazy(
   () => import("./pages/parent/ParentChildrenPage"),
+);
+const ParentChildDetailPage = React.lazy(
+  () => import("./pages/parent/ParentChildDetailPage"),
 );
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),

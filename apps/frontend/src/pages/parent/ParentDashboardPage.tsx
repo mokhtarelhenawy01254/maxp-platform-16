@@ -29,6 +29,7 @@ const ParentDashboardPage: React.FC = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('parentToken');
+    if (!token) return;
     Promise.all([
       fetch('/api/v1/education/parent-portal/dashboard', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
       fetch('/api/v1/education/parent-portal/children', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
