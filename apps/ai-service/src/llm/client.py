@@ -622,8 +622,8 @@ class LLMClient:
             content = candidates[0].get("content", {})
             parts = content.get("parts", [])
             for part in parts:
-                if "text" in part:
-                    text += part["text"]
+                if "text" in part and part["text"] is not None:
+                    text += str(part["text"])
                 if "functionCall" in part:
                     fc = part["functionCall"]
                     tool_calls.append({
