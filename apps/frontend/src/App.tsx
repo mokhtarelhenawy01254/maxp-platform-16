@@ -853,6 +853,24 @@ const EducationTeacherSchedulePage = React.lazy(
 const EducationTeacherPaymentsPage = React.lazy(
   () => import("./pages/admin/EducationTeacherPaymentsPage"),
 );
+const TeacherLoginPage = React.lazy(
+  () => import("./pages/auth/TeacherLoginPage"),
+);
+const TeacherLayout = React.lazy(
+  () => import("./components/layout/TeacherLayout"),
+);
+const TeacherDashboardPage = React.lazy(
+  () => import("./pages/teacher/TeacherDashboardPage"),
+);
+const TeacherSchedulePage = React.lazy(
+  () => import("./pages/teacher/TeacherSchedulePage"),
+);
+const TeacherPaymentsPage = React.lazy(
+  () => import("./pages/teacher/TeacherPaymentsPage"),
+);
+const TeacherAvailabilityPage = React.lazy(
+  () => import("./pages/teacher/TeacherAvailabilityPage"),
+);
 const FormsBuilderPage = React.lazy(
   () => import("./pages/admin/FormsBuilderPage"),
 );
@@ -1530,6 +1548,15 @@ const AppContent = () => {
               element={
                 <AuthLayout>
                   <PublicAffiliateRegister />
+                </AuthLayout>
+              }
+            />
+            {/* Teacher Portal Login */}
+            <Route
+              path="/teacher/login"
+              element={
+                <AuthLayout>
+                  <TeacherLoginPage />
                 </AuthLayout>
               }
             />
@@ -6236,6 +6263,10 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                <Route path="/teacher/dashboard" element={<TeacherLayout><TeacherDashboardPage /></TeacherLayout>} />
+                <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />
+                <Route path="/teacher/payments" element={<TeacherLayout><TeacherPaymentsPage /></TeacherLayout>} />
+                <Route path="/teacher/availability" element={<TeacherLayout><TeacherAvailabilityPage /></TeacherLayout>} />
                 <Route
                   path="/admin/education/teacher-schedule"
                   element={

@@ -73,6 +73,7 @@ model EducationTeacher {
   name          String
   phone         String?
   email         String?
+  password      String?  /// Hashed password for teacher portal login
   bio           String?  /// Teacher biography/description
   qualifications String? /// Qualifications, certifications
   avatarUrl     String?  /// Profile picture URL

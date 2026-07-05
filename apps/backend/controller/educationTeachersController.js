@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const bcrypt = require('bcryptjs');
 
 const getAll = async (req, res) => {
   try {
@@ -7,7 +8,9 @@ const getAll = async (req, res) => {
 
     const data = await getSharedPrismaClient().educationTeacher.findMany({
       where: { companyId },
-      include: {
+      select: {
+        id: true, companyId: true, employeeId: true, name: true, phone: true, email: true,
+        bio: true, qualifications: true, avatarUrl: true, isActive: true, createdAt: true, updatedAt: true,
         subjectRates: { include: { subject: { select: { id: true, name: true } } } }
       },
       orderBy: { name: 'asc' }
@@ -45,8 +48,10 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { name, phone, email, employeeId, bio, qualifications, avatarUrl, subjectRates } = req.body;
+    const { name, phone, email, password, employeeId, bio, qualifications, avatarUrl, subjectRates } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم المدرس مطلوب' });
+
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
     const data = await getSharedPrismaClient().educationTeacher.create({
       data: {
@@ -55,6 +60,7 @@ const create = async (req, res) => {
         name: name.trim(),
         phone,
         email,
+        password: hashedPassword,
         bio,
         qualifications,
         avatarUrl,
@@ -80,15 +86,17 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { name, phone, email, employeeId, isActive, bio, qualifications, avatarUrl, subjectRates } = req.body;
+    const { name, phone, email, password, employeeId, isActive, bio, qualifications, avatarUrl, subjectRates } = req.body;
 
     const existing = await getSharedPrismaClient().educationTeacher.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المدرس غير موجود' });
 
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+
     const data = await getSharedPrismaClient().educationTeacher.update({
       where: { id },
       data: {
-        name, phone, email, employeeId, isActive, bio, qualifications, avatarUrl,
+        name, phone, email, password: hashedPassword, employeeId, isActive, bio, qualifications, avatarUrl,
         subjectRates: Array.isArray(subjectRates) ? {
           deleteMany: {},
           create: subjectRates.map(sr => ({ subjectId: sr.subjectId, hourlyRate: sr.hourlyRate }))

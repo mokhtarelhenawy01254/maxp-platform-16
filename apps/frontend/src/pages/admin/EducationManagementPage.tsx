@@ -762,6 +762,7 @@ function TeacherModal({ teacher, subjects, onClose, onSave }: {
   const [email, setEmail] = useState(teacher?.email || "");
   const [bio, setBio] = useState(teacher?.bio || "");
   const [qualifications, setQualifications] = useState(teacher?.qualifications || "");
+  const [password, setPassword] = useState("");
   const [subjectRates, setSubjectRates] = useState<{ subjectId: string; hourlyRate: number }[]>(
     teacher?.subjectRates?.map(sr => ({ subjectId: sr.subjectId, hourlyRate: sr.hourlyRate })) || []
   );
@@ -794,6 +795,7 @@ function TeacherModal({ teacher, subjects, onClose, onSave }: {
           </div>
           <div><label className="block text-sm font-medium mb-1">السيرة الذاتية</label><textarea className={INPUT_CLS} rows={2} value={bio} onChange={e => setBio(e.target.value)} /></div>
           <div><label className="block text-sm font-medium mb-1">المؤهلات</label><textarea className={INPUT_CLS} rows={2} value={qualifications} onChange={e => setQualifications(e.target.value)} /></div>
+          <div><label className="block text-sm font-medium mb-1">{teacher?.id ? "كلمة المرور الجديدة (اتركها فارغة إن لم ترد التغيير)" : "كلمة المرور (للدخول إلى بوابة المدرس)"}</label><input type="password" className={INPUT_CLS} value={password} onChange={e => setPassword(e.target.value)} /></div>
           <div>
             <label className="block text-sm font-medium mb-2">أسعار المواد (سعر الساعة)</label>
             {subjectRates.map(sr => {
@@ -817,7 +819,7 @@ function TeacherModal({ teacher, subjects, onClose, onSave }: {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50">إلغاء</button>
-          <button onClick={() => onSave({ ...teacher, name, phone, email, bio, qualifications, subjectRates })} disabled={!name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
+          <button onClick={() => onSave({ ...teacher, name, phone, email, password: password || undefined, bio, qualifications, subjectRates })} disabled={!name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
         </div>
       </div>
     </div>
