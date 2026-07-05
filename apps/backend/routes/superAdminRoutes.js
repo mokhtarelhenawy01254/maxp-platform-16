@@ -604,6 +604,19 @@ router.delete("/agents/:slug/company/:agentId", async (req, res) => {
   }
 });
 
+// POST /agents/:slug/company/:agentId/reconcile — reset company agent to template defaults
+router.post("/agents/:slug/company/:agentId/reconcile", async (req, res) => {
+  try {
+    const companyId = req.query.companyId || req.body?.companyId;
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId مطلوب' });
+    const result = await aiServiceAdminClient.reconcileCompanyAgent(req.params.agentId, companyId);
+    return res.json({ success: true, agent: result, message: 'تم إعادة تعيين الوكيل إلى إعدادات القالب الافتراضية' });
+  } catch (error) {
+    console.error('[SA-AGENTS] POST reconcile agent error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل إعادة تعيين الوكيل' });
+  }
+});
+
 // GET /agents/:id — get agent template with expanded details
 router.get("/agents/:id", async (req, res) => {
   try {

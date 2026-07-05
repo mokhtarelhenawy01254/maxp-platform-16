@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
-import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
@@ -10,6 +11,7 @@ import {
   ArrowRight, Pencil, Copy, Check, Send, Trash2, Edit3,
   Brain, BookOpen, Wrench, Layers, Globe, CreditCard,
   Shield, Share2, Server, Split, Calendar, Building2, ChevronDown, ChevronUp,
+  RotateCcw, Braces, Hash, List,
 } from "lucide-react";
 import {
   EditDialog, ApplyDialog, DeleteDialog, DuplicateDialog, EditCompanyAgentDialog,
@@ -39,6 +41,18 @@ const SuperAdminAITemplateDetail: React.FC = () => {
   const [applyOpen, setApplyOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editCompanyTarget, setEditCompanyTarget] = useState<any>(null);
+  const [reconcileTarget, setReconcileTarget] = useState<any>(null);
+  const [reconcileOpen, setReconcileOpen] = useState(false);
+
+  const doReconcile = async () => {
+    if (!reconcileTarget || !slug) return;
+    try {
+      await apiClient.post(`/super-admin/agents/${slug}/company/${reconcileTarget.agent_id}/reconcile`, { companyId: reconcileTarget.company_id });
+      setReconcileTarget(null);
+      setReconcileOpen(false);
+      setActiveTab("companies");
+    } catch { /* error handled in dialog */ }
+  };
 
   const fetchTemplate = useCallback(async () => {
     if (!slug) return;
@@ -256,7 +270,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
         )}
 
         {activeTab === "companies" && (
-          <CompaniesTab slug={slug!} onEditAgent={setEditCompanyTarget} />
+          <CompaniesTab slug={slug!} onEditAgent={setEditCompanyTarget} onReconcile={(c) => { setReconcileTarget(c); setReconcileOpen(true); }} />
         )}
 
         {activeTab === "advanced" && (
@@ -361,6 +375,29 @@ const SuperAdminAITemplateDetail: React.FC = () => {
           onUpdated={() => { setEditCompanyTarget(null); setActiveTab("companies"); }}
         />
       )}
+      {reconcileOpen && (
+        <Dialog open onOpenChange={o => { if (!o) { setReconcileOpen(false); setReconcileTarget(null); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <RotateCcw className="size-5 text-destructive" />
+                <DialogTitle>إعادة تعيين الوكيل</DialogTitle>
+              </div>
+            </DialogHeader>
+            <p className="text-sm">سيتم إعادة تعيين وكيل <strong>{reconcileTarget?.agent_name}</strong> لشركة <strong>{reconcileTarget?.company_name}</strong> إلى إعدادات القالب الأساسية. جميع التعديلات الخاصة بهذه الشركة (الشخصية، القواعد، الأدوات، المهارات) ستُلغى.</p>
+            <Alert variant="destructive">
+              <AlertTitle className="text-xs font-bold">تأكيد</AlertTitle>
+              <AlertDescription className="text-xs">هذا الإجراء لا يمكن التراجع عنه. سيفقد الوكيل جميع التخصيصات الحالية.</AlertDescription>
+            </Alert>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setReconcileOpen(false); setReconcileTarget(null); }}>إلغاء</Button>
+              <Button variant="destructive" onClick={doReconcile}>
+                <RotateCcw className="size-4 ml-1" /> إعادة تعيين
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
@@ -395,7 +432,17 @@ const DIFF_FIELD_LABELS: Record<string, string> = {
   budget: "الميزانية", persona: "بيانات الشخصية", version: "الإصدار",
 };
 
-const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void }> = ({ slug, onEditAgent }) => {
+const FieldCard: React.FC<{ icon?: any; label: string; value?: string; mono?: boolean; className?: string; children?: React.ReactNode }> = ({ icon: Icon, label, value, mono, className, children }) => (
+  <div className={`rounded-lg border bg-card p-3 ${className || ''}`}>
+    <div className="flex items-center gap-1.5 mb-1.5">
+      {Icon && <Icon className="size-3 text-muted-foreground" />}
+      <span className="text-[0.65rem] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
+    </div>
+    {children || (value ? <div className={`text-xs ${mono ? 'font-mono whitespace-pre-wrap' : ''}`}>{value}</div> : <span className="text-xs text-muted-foreground/50">—</span>)}
+  </div>
+);
+
+const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void; onReconcile: (a: any) => void }> = ({ slug, onEditAgent, onReconcile }) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -472,26 +519,64 @@ const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void }> = 
                     </div>
                   </td>
                 </tr>
-                {expandedId === c.agent_id && c.diffs?.length > 0 && (
+                {expandedId === c.agent_id && (
                   <tr className="bg-muted/20">
                     <td colSpan={6} className="p-3">
-                      <div className="flex flex-col gap-2">
-                        <p className="text-[0.7rem] font-bold text-muted-foreground mb-1">التعديلات على القالب الأساسي:</p>
-                        {c.diffs.map((d: any, i: number) => (
-                          <div key={i} className="flex items-start gap-2 text-xs">
-                            <span className={`shrink-0 text-[0.6rem] px-1.5 py-0.5 rounded-full font-medium ${(DIFF_BADGES[d.type] || DIFF_BADGES.modified).className}`}>
-                              {(DIFF_BADGES[d.type] || DIFF_BADGES.modified).label}
-                            </span>
-                            <span className="font-medium shrink-0">{DIFF_FIELD_LABELS[d.field] || d.field}:</span>
-                            <span className="text-muted-foreground">
-                              {d.template_value !== undefined && d.agent_value !== undefined
-                                ? `${JSON.stringify(d.template_value)} ← ${JSON.stringify(d.agent_value)}`
-                                : d.type === "added" ? `مضاف: ${JSON.stringify(d.agent_value)}`
-                                : d.type === "removed" ? `محذوف: ${JSON.stringify(d.template_value)}`
-                                : "مختلف عن القالب"}
-                            </span>
+                      <div className="flex flex-col gap-4">
+                        {c.diffs?.length > 0 && (
+                          <div>
+                            <p className="text-[0.7rem] font-bold text-muted-foreground mb-2">التعديلات على القالب الأساسي:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {c.diffs.map((d: any, i: number) => (
+                                <span key={i} className={`inline-flex items-center gap-1 text-[0.65rem] px-2 py-0.5 rounded-full font-medium ${(DIFF_BADGES[d.type] || DIFF_BADGES.modified).className}`}>
+                                  {(DIFF_BADGES[d.type] || DIFF_BADGES.modified).label} {DIFF_FIELD_LABELS[d.field] || d.field}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        ))}
+                        )}
+
+                        {(c.agent) && (() => {
+                          const a = c.agent;
+                          return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {a.model && <FieldCard icon={Brain} label="النموذج" value={a.model} className="md:col-span-2" />}
+                              {a.soul && <FieldCard icon={BookOpen} label="الروح (Soul)" value={a.soul} mono className="md:col-span-2" />}
+                              {a.rules && <FieldCard icon={Braces} label="القواعد (Rules)" value={a.rules} mono className="md:col-span-2" />}
+                              {a.persona && Object.keys(a.persona).length > 0 && (
+                                <FieldCard icon={Hash} label="بيانات الشخصية" value={JSON.stringify(a.persona, null, 2)} mono className="md:col-span-2" />
+                              )}
+                              {a.allowed_tools?.length > 0 && (
+                                <FieldCard icon={Wrench} label={`الأدوات المسموحة (${a.allowed_tools.length})`}>
+                                  <div className="flex flex-wrap gap-1">{a.allowed_tools.map((t: string) => <Badge key={t} variant="outline" className="text-[0.65rem]">{t}</Badge>)}</div>
+                                </FieldCard>
+                              )}
+                              {a.allowed_skills?.length > 0 && (
+                                <FieldCard icon={Layers} label={`المهارات المسموحة (${a.allowed_skills.length})`}>
+                                  <div className="flex flex-wrap gap-1">{a.allowed_skills.map((s: string) => <Badge key={s} variant="outline" className="text-[0.65rem]">{s}</Badge>)}</div>
+                                </FieldCard>
+                              )}
+                              {a.allowed_channels?.length > 0 && (
+                                <FieldCard icon={Globe} label="القنوات" value={a.allowed_channels.join(', ')} />
+                              )}
+                              {a.guardrails && Object.keys(a.guardrails).length > 0 && (
+                                <FieldCard icon={Shield} label="حراس الأمان" value={JSON.stringify(a.guardrails)} mono />
+                              )}
+                              {a.budget && Object.keys(a.budget).length > 0 && (
+                                <FieldCard icon={CreditCard} label="الميزانية" value={JSON.stringify(a.budget)} />
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          <Button variant="outline" size="sm" onClick={() => onEditAgent(c)}>
+                            <Pencil className="size-3.5 ml-1" /> تعديل نسخة الشركة
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => onReconcile(c)}>
+                            <RotateCcw className="size-3.5 ml-1" /> إعادة تعيين
+                          </Button>
+                        </div>
                       </div>
                     </td>
                   </tr>

@@ -301,6 +301,7 @@ class AgentTemplateCompany(BaseModel):
     template_slug: str | None = None
     diff_count: int = 0
     diffs: list[AgentTemplateCompanyDiff] = []
+    agent: dict[str, Any] | None = None
     created_at: str | None = None
     updated_at: str | None = None
 

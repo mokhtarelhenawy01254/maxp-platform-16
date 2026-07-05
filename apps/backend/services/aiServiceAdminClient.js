@@ -217,6 +217,10 @@ async function updateAgent(agentId, companyId, data) {
   return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`, body);
 }
 
+async function reconcileCompanyAgent(agentId, companyId) {
+  return request('POST', `/admin/agents/${encodeURIComponent(agentId)}/reconcile?company_id=${encodeURIComponent(companyId)}`);
+}
+
 async function getProductEmbeddingStatus(companyId) {
   const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
   return request('GET', `/admin/product-embeddings/status${qs}`);
@@ -348,6 +352,7 @@ module.exports = {
   getAgentFiles,
   saveAgentFiles,
   updateAgent,
+  reconcileCompanyAgent,
   getProductEmbeddingStatus,
   triggerProductEmbeddingSync,
   getKnowledgeEmbeddingStatus,

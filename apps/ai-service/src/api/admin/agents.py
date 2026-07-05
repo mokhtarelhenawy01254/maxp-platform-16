@@ -476,7 +476,7 @@ async def get_template_companies(slug: str, session: SessionDep) -> AgentTemplat
     """Get all companies using this template with diff data."""
     template = await get_template(slug, session)
     if not template:
-        raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
+            raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
 
     result = await session.execute(
         select(AgentModel).where(
@@ -494,13 +494,16 @@ async def get_template_companies(slug: str, session: SessionDep) -> AgentTemplat
         )
         company_name = company_row.scalar() or agent.company_id
 
+        # Serialize full agent for frontend detail view
+        agent_dict = _agent_to_read(agent).model_dump()
+
         diffs = []
         template_model_default = template.model_policy.get("default") if template.model_policy else None
         if agent.model is not None and agent.model != template_model_default:
             diffs.append(AgentTemplateCompanyDiff(field="model", type="modified", template_value=template_model_default, agent_value=agent.model))
-        if agent.soul is not None:
+        if agent.soul is not None and agent.soul != template.instructions_soul:
             diffs.append(AgentTemplateCompanyDiff(field="soul", type="modified"))
-        if agent.rules is not None:
+        if agent.rules is not None and agent.rules != template.instructions_agents:
             diffs.append(AgentTemplateCompanyDiff(field="rules", type="modified"))
         _soul = set(agent.allowed_tools or [])
         _tmpl_tools = set(template.allowed_tools or [])
@@ -536,7 +539,7 @@ async def get_template_companies(slug: str, session: SessionDep) -> AgentTemplat
         _agent_persona = dict(agent.persona or {})
         _tmpl_persona = dict(template.persona_meta or {})
         if _agent_persona != _tmpl_persona:
-            diffs.append(AgentTemplateCompanyDiff(field="persona", type="modified"))
+            diffs.append(AgentTemplateCompanyDiff(field="persona", type="modified", template_value=_tmpl_persona, agent_value=_agent_persona))
         if agent.version != template.version:
             diffs.append(AgentTemplateCompanyDiff(field="version", type="modified", template_value=template.version, agent_value=agent.version))
 
@@ -552,6 +555,7 @@ async def get_template_companies(slug: str, session: SessionDep) -> AgentTemplat
             template_slug=agent.template_slug,
             diff_count=len(diffs),
             diffs=diffs,
+            agent=agent_dict,
             created_at=agent.created_at.isoformat() if agent.created_at else None,
             updated_at=agent.updated_at.isoformat() if agent.updated_at else None,
         ))
