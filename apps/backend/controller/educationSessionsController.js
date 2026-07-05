@@ -182,7 +182,10 @@ const confirm = async (req, res) => {
 
     const existing = await getSharedPrismaClient().educationSession.findFirst({
       where: { id, companyId },
-      include: { enrollment: true }
+      include: {
+        enrollment: true,
+        teacher: { include: { subjectRates: true } }
+      }
     });
     if (!existing) return res.status(404).json({ success: false, error: 'الحصة غير موجودة' });
     if (existing.status !== 'SCHEDULED') return res.status(400).json({ success: false, error: 'يمكن تأكيد الحصص المجدولة فقط' });
@@ -194,8 +197,19 @@ const confirm = async (req, res) => {
       return res.status(400).json({ success: false, error: 'الساعات المتبقية غير كافية' });
     }
 
-    const [session] = await getSharedPrismaClient().$transaction([
-      getSharedPrismaClient().educationSession.update({
+    // Calculate session payment amount
+    const subjectRate = existing.teacher.subjectRates.find(sr => sr.subjectId === existing.subjectId);
+    const hourlyRate = subjectRate?.hourlyRate || 0;
+    const sessionAmount = Math.round(hours * hourlyRate * 100) / 100;
+
+    // Determine monthly period from session date
+    const sessionDate = new Date(existing.scheduledAt);
+    const periodFrom = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), 1);
+    const periodTo = new Date(sessionDate.getFullYear(), sessionDate.getMonth() + 1, 0, 23, 59, 59);
+
+    const prisma = getSharedPrismaClient();
+    const [session] = await prisma.$transaction(async (tx) => {
+      const updatedSession = await tx.educationSession.update({
         where: { id },
         data: { status: 'CONFIRMED', actualDuration: duration, notes },
         include: {
@@ -203,12 +217,49 @@ const confirm = async (req, res) => {
           teacher: { select: { id: true, name: true } },
           subject: { select: { id: true, name: true } }
         }
-      }),
-      getSharedPrismaClient().educationEnrollment.update({
+      });
+
+      await tx.educationEnrollment.update({
         where: { id: existing.enrollmentId },
         data: { remainingHours: { decrement: hours } }
-      })
-    ]);
+      });
+
+      // Auto-create or update pending payment for this teacher/period
+      const existingPayment = await tx.educationTeacherPayment.findFirst({
+        where: { companyId, teacherId: existing.teacherId, periodFrom, periodTo, status: 'PENDING' }
+      });
+
+      if (existingPayment) {
+        await tx.educationTeacherPayment.update({
+          where: { id: existingPayment.id },
+          data: {
+            totalSessions: { increment: 1 },
+            totalHours: { increment: Math.round(hours * 100) / 100 },
+            grossAmount: { increment: sessionAmount },
+            netAmount: { increment: sessionAmount }
+          }
+        });
+      } else {
+        await tx.educationTeacherPayment.create({
+          data: {
+            companyId,
+            teacherId: existing.teacherId,
+            periodFrom,
+            periodTo,
+            totalSessions: 1,
+            totalHours: Math.round(hours * 100) / 100,
+            hourlyRate,
+            grossAmount: sessionAmount,
+            deductions: 0,
+            netAmount: sessionAmount,
+            status: 'PENDING'
+          }
+        });
+      }
+
+      return [updatedSession];
+    });
+
     educationNotificationService.notifySessionConfirmed(companyId, id).catch(e =>
       console.error('[SessionConfirmNotify]', e.message)
     );
