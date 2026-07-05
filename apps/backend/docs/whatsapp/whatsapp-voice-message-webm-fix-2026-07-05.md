@@ -25,3 +25,9 @@ Additionally, when an audio file was uploaded, the controller called `WhatsAppMe
 
 ### 3. Frontend Explicit Flag (WhatsAppChat.tsx)
 - Updated `onVoiceNoteSend` to append `ptt: 'true'` explicitly to the `FormData` payload when uploading recorded voice notes.
+
+### 4. Mimetype Codecs Normalization (whatsappRoutes.js & WhatsAppMediaHandler.js)
+- Normal browsers sometimes submit recorded audio with parameters in the mimetype, e.g., `audio/webm;codecs=opus`.
+- Updated `whatsappRoutes.js` (Multer setup) and `WhatsAppMediaHandler.js` (helpers `getMediaTypeFromMimetype`, `getExtension`, and `validateFile`) to strip codecs parameters (using `.split(';')[0].trim()`) before checking them against supported types maps. This prevents `Error: نوع الملف غير مدعوم` validation errors on parameters-rich mimetypes.
+
+

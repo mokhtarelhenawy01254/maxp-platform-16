@@ -42,7 +42,8 @@ const storage = multer.diskStorage({
         cb(null, path.join(__dirname, '../public/uploads/whatsapp/temp'));
     },
     filename: (req, file, cb) => {
-        const ext = MIME_TYPE_MAP[file.mimetype] || 'bin';
+        const cleanMimetype = file.mimetype ? file.mimetype.split(';')[0].trim() : '';
+        const ext = MIME_TYPE_MAP[cleanMimetype] || 'bin';
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, `${uniqueSuffix}.${ext}`);
     }
@@ -54,7 +55,8 @@ const upload = multer({
         fileSize: 100 * 1024 * 1024 // 100MB max
     },
     fileFilter: (req, file, cb) => {
-        if (MIME_TYPE_MAP[file.mimetype]) {
+        const cleanMimetype = file.mimetype ? file.mimetype.split(';')[0].trim() : '';
+        if (MIME_TYPE_MAP[cleanMimetype]) {
             cb(null, true);
         } else {
             cb(new Error('نوع الملف غير مدعوم'), false);

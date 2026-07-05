@@ -335,15 +335,17 @@ function getMediaType(message) {
  * الحصول على نوع الوسائط من mimetype
  */
 function getMediaTypeFromMimetype(mimetype) {
+    if (!mimetype) return 'document';
+    const cleanMimetype = mimetype.split(';')[0].trim();
     for (const [type, mimes] of Object.entries(SUPPORTED_TYPES)) {
-        if (mimes.includes(mimetype)) {
+        if (mimes.includes(cleanMimetype)) {
             return type;
         }
     }
     // تخمين من البداية
-    if (mimetype.startsWith('image/')) return 'image';
-    if (mimetype.startsWith('video/')) return 'video';
-    if (mimetype.startsWith('audio/')) return 'audio';
+    if (cleanMimetype.startsWith('image/')) return 'image';
+    if (cleanMimetype.startsWith('video/')) return 'video';
+    if (cleanMimetype.startsWith('audio/')) return 'audio';
     return 'document';
 }
 
@@ -351,6 +353,8 @@ function getMediaTypeFromMimetype(mimetype) {
  * الحصول على امتداد الملف
  */
 function getExtension(mimetype) {
+    if (!mimetype) return 'bin';
+    const cleanMimetype = mimetype.split(';')[0].trim();
     const extensions = {
         'image/jpeg': 'jpg',
         'image/png': 'png',
@@ -373,7 +377,7 @@ function getExtension(mimetype) {
         'text/plain': 'txt'
     };
 
-    return extensions[mimetype] || 'bin';
+    return extensions[cleanMimetype] || 'bin';
 }
 
 /**
@@ -419,8 +423,9 @@ function validateFile(buffer, mimetype, type) {
     }
 
     // التحقق من النوع
+    const cleanMimetype = mimetype ? mimetype.split(';')[0].trim() : '';
     const supportedTypes = SUPPORTED_TYPES[type];
-    if (supportedTypes && !supportedTypes.includes(mimetype)) {
+    if (supportedTypes && !supportedTypes.includes(cleanMimetype)) {
         return {
             valid: false,
             error: `نوع الملف (${mimetype}) غير مدعوم`
