@@ -95,6 +95,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     try:
         provider_response = await _llm_call(ctx, system_prompt, skills)
     except Exception as e:
+        import logging as _log; _log.warning("LLM_CALL_EXCEPTION %s %s", type(e).__name__, str(e)[:300])
         logger.error("skills_pipeline_llm_failed", error=str(e))
         error_details = provider_error_result(e)
         if error_details.get("error_code") == "LLM_RATE_LIMITED":
