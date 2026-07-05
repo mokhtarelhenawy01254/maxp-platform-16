@@ -17,7 +17,7 @@ interface Child {
   enrollments: Array<{
     id: string;
     remainingHours: number;
-    package: { name: string; hoursCount: number };
+    package: { name: string; hoursCount: number } | null;
     teacher: { name: string } | null;
   }>;
 }

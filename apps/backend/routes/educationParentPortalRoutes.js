@@ -19,9 +19,8 @@ router.get('/children', authenticateParentToken, async (req, res) => {
         enrollments: {
           where: { remainingHours: { gt: 0 } },
           include: {
-            package: { select: { id: true, name: true, hoursCount: true } },
-            teacher: { select: { id: true, name: true } },
-            subject: { select: { id: true, name: true } }
+            package: { select: { id: true, name: true, hoursCount: true, price: true } },
+            teacher: { select: { id: true, name: true } }
           }
         }
       },
