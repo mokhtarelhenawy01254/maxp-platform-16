@@ -84,11 +84,34 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     if ctx.attachments:
         img_urls = [a.get("url", "") for a in ctx.attachments if a.get("type") in ("image", "photo")]
         if img_urls:
-            system_prompt += (
-                "\n\n[⚠️ مهم جداً: العميل أرسل صورة. حللها أولاً بالوصف، ثم استخدم أداة product_search فوراً"
-                " للبحث عن منتجات مشابهة. لا ترد على العميل قبل استخدام product_search."
-                " ابحث أولاً، ثم رد بناءً على النتائج.]"
-            )
+            # Auto-execute product_search with the image URL
+            try:
+                from src.tools.definitions.product import product_search
+                from src.tools.definitions.product import ProductSearchInput
+                ps_result = await product_search(ProductSearchInput(
+                    query="", image_url=img_urls[0], use_vector=True, company_id=ctx.company_id,
+                ))
+                if ps_result.get("results"):
+                    ctx.external_memory_context["productSearchResults"] = ps_result
+                    products_text = "نتائج البحث عن الصورة:\n"
+                    for p in ps_result["results"][:3]:
+                        name = p.get("productName") or p.get("name", "")
+                        price = p.get("price", "")
+                        products_text += f"- {name} - {price} جنيه\n"
+                    system_prompt += (
+                        f"\n\n[⚠️ تم البحث في الكتالوج عن منتجات مشابهة للصورة. النتائج:\n{products_text}"
+                        " أخبر العميل بالنتائج واسأله إن كان يريد تفاصيل أكثر أو المساعدة في أي شيء آخر.]"
+                    )
+                else:
+                    system_prompt += (
+                        "\n\n[⚠️ العميل أرسل صورة. حللها أولاً بالوصف، ثم أخبره أنك بحثت"
+                        " لكن لم تجد منتجات مطابقة في الكتالوج. اقترح عليه يسأل عن منتجات أخرى.]"
+                    )
+            except Exception:
+                system_prompt += (
+                    "\n\n[العميل أرسل صورة. حللها أولاً بالوصف،"
+                    " ثم أخبره عن المنتج الذي رأيته في الصورة واسأله إن كان يريد المساعدة.]"
+                )
 
     # 4. Single LLM call with skills as tools
     try:
