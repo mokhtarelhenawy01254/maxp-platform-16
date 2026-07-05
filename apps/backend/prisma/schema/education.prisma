@@ -65,25 +65,76 @@ model EducationStudent {
   @@map("education_students")
 }
 
-/// Education module - Teachers (hourly-based, no attendance tracking)
+/// Education module - Teachers
 model EducationTeacher {
-  id         String   @id @default(cuid())
-  companyId  String
-  employeeId String?  /// Optional link to HR Employee
-  name       String
-  phone      String?
-  email      String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  companyId     String
+  employeeId    String?  /// Optional link to HR Employee
+  name          String
+  phone         String?
+  email         String?
+  bio           String?  /// Teacher biography/description
+  qualifications String? /// Qualifications, certifications
+  avatarUrl     String?  /// Profile picture URL
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   subjectRates EducationTeacherSubject[]
   enrollments  EducationEnrollment[]
   sessions     EducationSession[]
+  availability EducationTeacherAvailability[]
+  payments     EducationTeacherPayment[]
 
   @@index([companyId])
   @@map("education_teachers")
+}
+
+/// Education module - Teacher availability (working days/hours)
+model EducationTeacherAvailability {
+  id          String   @id @default(cuid())
+  companyId   String
+  teacherId   String
+  dayOfWeek   Int      /// 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime   String   /// HH:mm format
+  endTime     String   /// HH:mm format
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  teacher     EducationTeacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([teacherId])
+  @@map("education_teacher_availability")
+}
+
+/// Education module - Teacher payment/salary records
+model EducationTeacherPayment {
+  id           String   @id @default(cuid())
+  companyId    String
+  teacherId    String
+  periodFrom   DateTime /// Start of payment period
+  periodTo     DateTime /// End of payment period
+  totalSessions Int     /// Number of sessions in period
+  totalHours   Float    /// Total hours worked
+  hourlyRate   Float    /// Average hourly rate
+  grossAmount  Float    /// Total amount before deductions
+  deductions   Float    @default(0)
+  netAmount    Float    /// Final amount after deductions
+  status       String   @default("PENDING") /// PENDING, PAID, CANCELLED
+  paidAt       DateTime?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  teacher      EducationTeacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([teacherId])
+  @@index([status])
+  @@map("education_teacher_payments")
 }
 
 /// Education module - Teacher subject assignment with hourly rate

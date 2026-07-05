@@ -76,6 +76,46 @@ const create = async (req, res) => {
     if (enrollment.remainingHours <= 0) return res.status(400).json({ success: false, error: 'رصيد الساعات منتهي' });
     if (!enrollment.teacherId) return res.status(400).json({ success: false, error: 'يجب تعيين مدرس للتسجيل قبل جدولة الحصص' });
 
+    // Conflict detection: check if teacher has another session at the same time
+    const sessionStart = new Date(scheduledAt);
+    const sessionEnd = new Date(sessionStart.getTime() + (plannedDuration || 60) * 60000);
+
+    const conflicting = await getSharedPrismaClient().educationSession.findFirst({
+      where: {
+        companyId,
+        teacherId: enrollment.teacherId,
+        status: { not: 'CANCELLED' },
+        scheduledAt: {
+          gte: new Date(sessionStart.getTime() - 60 * 60000), // 1 hour buffer
+          lte: new Date(sessionEnd.getTime() + 60 * 60000)
+        }
+      },
+      include: {
+        student: { select: { id: true, firstName: true, lastName: true } },
+        subject: { select: { id: true, name: true } }
+      },
+      orderBy: { scheduledAt: 'asc' }
+    });
+
+    if (conflicting) {
+      const conflictStart = new Date(conflicting.scheduledAt);
+      const conflictEnd = new Date(conflictStart.getTime() + (conflicting.plannedDuration || 60) * 60000);
+      // Check actual overlap
+      if (sessionStart < conflictEnd && sessionEnd > conflictStart) {
+        const studentName = `${conflicting.student?.firstName || ''} ${conflicting.student?.lastName || ''}`.trim();
+        return res.status(409).json({
+          success: false,
+          error: `المدرس لديه حصة أخرى في هذا الوقت مع الطالب ${studentName} (${conflicting.subject?.name || ''})`,
+          conflict: {
+            id: conflicting.id,
+            studentName,
+            subjectName: conflicting.subject?.name,
+            scheduledAt: conflicting.scheduledAt
+          }
+        });
+      }
+    }
+
     const data = await getSharedPrismaClient().educationSession.create({
       data: {
         companyId,

@@ -4873,6 +4873,8 @@
     "educationPackages": "Packages",
     "educationStudents": "Students",
     "educationTeachers": "Teachers",
+    "educationTeacherSchedule": "Teacher Schedule",
+    "educationTeacherPayments": "Teacher Payments",
     "educationSessions": "Sessions",
     "educationFunnel": "Notifications & Funnel",
     "mainSection": "Main",

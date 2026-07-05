@@ -50,7 +50,7 @@ interface EducationStudent {
   enrollments?: EducationEnrollment[];
 }
 interface EducationTeacher {
-  id: string; name: string; phone?: string; email?: string; isActive: boolean;
+  id: string; name: string; phone?: string; email?: string; bio?: string; qualifications?: string; avatarUrl?: string; isActive: boolean;
   subjectRates?: { id: string; subjectId: string; hourlyRate: number; subject: { id: string; name: string } }[];
 }
 interface EducationEnrollment {
@@ -760,6 +760,8 @@ function TeacherModal({ teacher, subjects, onClose, onSave }: {
   const [name, setName] = useState(teacher?.name || "");
   const [phone, setPhone] = useState(teacher?.phone || "");
   const [email, setEmail] = useState(teacher?.email || "");
+  const [bio, setBio] = useState(teacher?.bio || "");
+  const [qualifications, setQualifications] = useState(teacher?.qualifications || "");
   const [subjectRates, setSubjectRates] = useState<{ subjectId: string; hourlyRate: number }[]>(
     teacher?.subjectRates?.map(sr => ({ subjectId: sr.subjectId, hourlyRate: sr.hourlyRate })) || []
   );
@@ -790,6 +792,8 @@ function TeacherModal({ teacher, subjects, onClose, onSave }: {
             <div><label className="block text-sm font-medium mb-1">الهاتف</label><input className={INPUT_CLS} value={phone} onChange={e => setPhone(e.target.value)} /></div>
             <div><label className="block text-sm font-medium mb-1">البريد الإلكتروني</label><input className={INPUT_CLS} value={email} onChange={e => setEmail(e.target.value)} /></div>
           </div>
+          <div><label className="block text-sm font-medium mb-1">السيرة الذاتية</label><textarea className={INPUT_CLS} rows={2} value={bio} onChange={e => setBio(e.target.value)} /></div>
+          <div><label className="block text-sm font-medium mb-1">المؤهلات</label><textarea className={INPUT_CLS} rows={2} value={qualifications} onChange={e => setQualifications(e.target.value)} /></div>
           <div>
             <label className="block text-sm font-medium mb-2">أسعار المواد (سعر الساعة)</label>
             {subjectRates.map(sr => {
@@ -813,7 +817,7 @@ function TeacherModal({ teacher, subjects, onClose, onSave }: {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50">إلغاء</button>
-          <button onClick={() => onSave({ ...teacher, name, phone, email, subjectRates })} disabled={!name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
+          <button onClick={() => onSave({ ...teacher, name, phone, email, bio, qualifications, subjectRates })} disabled={!name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
         </div>
       </div>
     </div>

@@ -976,6 +976,8 @@ export const getSidebarConfig = (
                 { to: '/admin/education/packages', icon: GiftIcon, label: t('sidebar.educationPackages') },
                 { to: '/admin/education/students', icon: UserGroupIcon, label: t('sidebar.educationStudents') },
                 { to: '/admin/education/teachers', icon: UsersIcon, label: t('sidebar.educationTeachers') },
+                { to: '/admin/education/teacher-schedule', icon: CalendarDaysIcon, label: t('sidebar.educationTeacherSchedule') },
+                { to: '/admin/education/teacher-payments', icon: CurrencyDollarIcon, label: t('sidebar.educationTeacherPayments') },
                 { to: '/admin/education/sessions', icon: ClockIcon, label: t('sidebar.educationSessions') },
                 { to: '/admin/education/funnel', icon: MegaphoneIcon, label: t('sidebar.educationFunnel') },
             ]

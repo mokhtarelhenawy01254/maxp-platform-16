@@ -28,7 +28,8 @@ const getById = async (req, res) => {
     const data = await getSharedPrismaClient().educationTeacher.findFirst({
       where: { id, companyId },
       include: {
-        subjectRates: { include: { subject: { select: { id: true, name: true } } } }
+        subjectRates: { include: { subject: { select: { id: true, name: true } } } },
+        availability: true
       }
     });
     if (!data) return res.status(404).json({ success: false, error: 'المدرس غير موجود' });
@@ -44,7 +45,7 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { name, phone, email, employeeId, subjectRates } = req.body;
+    const { name, phone, email, employeeId, bio, qualifications, avatarUrl, subjectRates } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم المدرس مطلوب' });
 
     const data = await getSharedPrismaClient().educationTeacher.create({
@@ -54,6 +55,9 @@ const create = async (req, res) => {
         name: name.trim(),
         phone,
         email,
+        bio,
+        qualifications,
+        avatarUrl,
         subjectRates: Array.isArray(subjectRates) && subjectRates.length > 0 ? {
           create: subjectRates.map(sr => ({
             subjectId: sr.subjectId,
@@ -76,7 +80,7 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { name, phone, email, employeeId, isActive, subjectRates } = req.body;
+    const { name, phone, email, employeeId, isActive, bio, qualifications, avatarUrl, subjectRates } = req.body;
 
     const existing = await getSharedPrismaClient().educationTeacher.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المدرس غير موجود' });
@@ -84,7 +88,7 @@ const update = async (req, res) => {
     const data = await getSharedPrismaClient().educationTeacher.update({
       where: { id },
       data: {
-        name, phone, email, employeeId, isActive,
+        name, phone, email, employeeId, isActive, bio, qualifications, avatarUrl,
         subjectRates: Array.isArray(subjectRates) ? {
           deleteMany: {},
           create: subjectRates.map(sr => ({ subjectId: sr.subjectId, hourlyRate: sr.hourlyRate }))
