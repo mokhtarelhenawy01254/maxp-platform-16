@@ -37,8 +37,9 @@ exports.updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, isActive } = req.body;
+        const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
         const category = await getPrisma().cancellationReasonCategory.update({
-            where: { id },
+            where: { id, companyId: effectiveCompanyId },
             data: { name, isActive }
         });
         res.json(category);
@@ -89,8 +90,9 @@ exports.updateReason = async (req, res) => {
     try {
         const { id } = req.params;
         const { reason, description, categoryId, isActive } = req.body;
+        const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
         const updated = await getPrisma().cancellationReason.update({
-            where: { id },
+            where: { id, companyId: effectiveCompanyId },
             data: { reason, description, categoryId, isActive }
         });
         res.json(updated);

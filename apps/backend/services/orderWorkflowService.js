@@ -613,6 +613,73 @@ class OrderWorkflowService {
             where: { companyId, status: 'pending' }
         });
     }
+
+    /**
+     * Get allowed target statuses for a given current status code and user
+     */
+    async getAllowedTransitions(companyId, currentStatusCode, userId) {
+        const config = await this.getConfig(companyId);
+
+        if (!config || !config.enabled) {
+            return [];
+        }
+
+        const currentStatusDef = await this.prisma.orderStatusDefinition.findFirst({
+            where: { companyId, code: currentStatusCode }
+        });
+
+        const userCompany = await this.prisma.userCompany.findUnique({
+            where: { userId_companyId: { userId, companyId } }
+        });
+        const userRole = userCompany?.role || '';
+
+        const overrideRoles = config.overrideRoles
+            ? JSON.parse(config.overrideRoles)
+            : ['OWNER', 'SUPER_ADMIN'];
+        const canOverride = overrideRoles.includes(userRole);
+
+        const transitions = await this.prisma.orderWorkflowTransition.findMany({
+            where: {
+                companyId,
+                OR: [
+                    { fromStatusId: currentStatusDef ? currentStatusDef.id : null },
+                    ...(currentStatusDef ? [{ fromStatusId: null }] : [])
+                ]
+            },
+            include: { toStatus: true }
+        });
+
+        const allowedStatusMap = new Map();
+
+        for (const transition of transitions) {
+            const allowedRoles = JSON.parse(transition.allowedRoles || '[]');
+            if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+                continue;
+            }
+
+            if (transition.toStatus) {
+                allowedStatusMap.set(transition.toStatus.id, {
+                    id: transition.toStatus.id,
+                    code: transition.toStatus.code,
+                    name: transition.toStatus.name,
+                    color: transition.toStatus.color
+                });
+            }
+        }
+
+        if (canOverride && config.allowOverride) {
+            const allStatuses = await this.getStatuses(companyId);
+            allStatuses.forEach(s => {
+                if (!allowedStatusMap.has(s.id)) {
+                    allowedStatusMap.set(s.id, {
+                        id: s.id, code: s.code, name: s.name, color: s.color, requiresOverride: true
+                    });
+                }
+            });
+        }
+
+        return Array.from(allowedStatusMap.values());
+    }
 }
 
 module.exports = new OrderWorkflowService();

@@ -52,6 +52,9 @@ const orderWorkflowService = {
     getGlobalAuditLogs: (limit: number = 20, offset: number = 0) => api.get(`/order-workflow/audit-logs?limit=${limit}&offset=${offset}`).then(res => res.data),
     getAuditLogs: (orderId: string) => api.get(`/order-workflow/audit-logs/${orderId}`).then(res => res.data),
 
+    getAllowedTransitions: (currentStatusCode: string) =>
+        api.get(`/order-workflow/allowed-transitions?currentStatusCode=${encodeURIComponent(currentStatusCode)}`).then(res => res.data),
+
     changeStatus: (orderId: string, statusId: string, reason?: string, isOverride: boolean = false) =>
         api.post('/order-workflow/change-status', { orderId, statusId, reason, isOverride }).then(res => res.data),
 };

@@ -120,7 +120,7 @@ describe('cancellationController', () => {
       await cancellationController.updateCategory(req, res);
 
       expect(prisma.cancellationReasonCategory.update).toHaveBeenCalledWith({
-        where: { id: 'cat-1' },
+        where: { id: 'cat-1', companyId: 'company-1' },
         data: { name: 'مشاكل جديدة', isActive: false }
       });
       expect(res.statusCode).toBe(200);
@@ -182,7 +182,7 @@ describe('cancellationController', () => {
       await cancellationController.updateReason(req, res);
 
       expect(prisma.cancellationReason.update).toHaveBeenCalledWith({
-        where: { id: 'r1' },
+        where: { id: 'r1', companyId: 'company-1' },
         data: { reason: 'سبب جديد', description: 'وصف جديد', categoryId: 'cat-2', isActive: true }
       });
       expect(res.statusCode).toBe(200);

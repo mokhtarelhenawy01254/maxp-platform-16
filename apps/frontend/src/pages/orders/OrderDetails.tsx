@@ -85,6 +85,8 @@ const OrderDetails: React.FC = () => {
     setOrder,
     loading,
     updating,
+    allowedTransitions,
+    workflowStatusDefs,
     orderStatuses,
     paymentStatuses,
     governments,
@@ -137,6 +139,7 @@ const OrderDetails: React.FC = () => {
   // Temporary Form State for Modals
   const [newStatus, setNewStatus] = useState("");
   const [statusNotes, setStatusNotes] = useState("");
+  const [isOverride, setIsOverride] = useState(false);
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
   const [cancellationReasonOptions, setCancellationReasonOptions] = useState<
@@ -144,13 +147,11 @@ const OrderDetails: React.FC = () => {
   >([]);
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
+  const [cancellationAdditionalNotes, setCancellationAdditionalNotes] = useState("");
   const [postponing, setPostponing] = useState(false);
 
   const isGuestOrder = Boolean(order?.metadata?.isGuestOrder);
   const isModalCancellationStatus = isCancellationStatus(newStatus);
-  const selectedCancellationReasonOption = cancellationReasonOptions.find(
-    (r) => r.reason === statusNotes.trim(),
-  )?.id || "";
   const latestCancellationReason = useMemo(
     () => getLatestCancellationReason(order),
     [order],
@@ -369,14 +370,20 @@ const OrderDetails: React.FC = () => {
   };
 
   const onUpdateStatus = async () => {
-    const trimmedStatusNotes = statusNotes.trim();
-    if (isCancellationStatus(newStatus) && !trimmedStatusNotes) return;
+    const trimmedReason = statusNotes.trim();
+    if (isCancellationStatus(newStatus) && !trimmedReason) return;
 
-    const success = await updateStatus(newStatus, trimmedStatusNotes);
+    const notesToSend = isCancellationStatus(newStatus) && cancellationAdditionalNotes.trim()
+      ? trimmedReason + '\n' + cancellationAdditionalNotes.trim()
+      : isCancellationStatus(newStatus) ? trimmedReason : statusNotes.trim();
+
+    const success = await updateStatus(newStatus, notesToSend, isOverride);
     if (success) {
       setShowStatusModal(false);
       setNewStatus("");
       setStatusNotes("");
+      setCancellationAdditionalNotes("");
+      setIsOverride(false);
     }
   };
 
@@ -527,7 +534,7 @@ const OrderDetails: React.FC = () => {
       return;
     }
 
-    const success = await updateStatus(normalizedStatusCode, "");
+    const success = await updateStatus(normalizedStatusCode, "", isOverride);
     if (success) {
       setNewStatus("");
       setStatusNotes("");
@@ -793,6 +800,17 @@ const OrderDetails: React.FC = () => {
     color: "#6B7280",
   };
 
+  const hasWorkflowRestrictions = allowedTransitions.length > 0;
+  const filteredStatusOptions = hasWorkflowRestrictions
+    ? orderStatuses.filter((s) => {
+        if (s.code === order.status) return true;
+        if (!allowedTransitions.includes(s.code)) return false;
+        const wfStatus = workflowStatusDefs.find((ws) => ws.code === s.code);
+        if (wfStatus?.requiresOverride && !isOverride) return false;
+        return true;
+      })
+    : orderStatuses;
+
   const formatOptionalDate = (value?: string | null) =>
     value ? formatDate(value) : "—";
 
@@ -841,7 +859,7 @@ const OrderDetails: React.FC = () => {
         canPrintPreparationSlip={!isMerchant}
         canUpdateStatus={canUpdateOrderStatus}
         currentStatusConfig={currentStatusConfig}
-        statusOptions={canUpdateOrderStatus ? orderStatuses : []}
+        statusOptions={canUpdateOrderStatus ? filteredStatusOptions : []}
         onStatusSelect={canUpdateOrderStatus ? handleQuickStatusSelect : undefined}
       />
 
@@ -880,7 +898,7 @@ const OrderDetails: React.FC = () => {
               <button
                 onClick={() => {
                   if (confirm("هل أنت متأكد من طلب إلغاء هذا الطلب أثناء فترة التجهيز؟")) {
-                    void updateStatus("PENDING_CANCELLATION", "تم طلب إلغاء الأوردر من المودريتور");
+                    void updateStatus("PENDING_CANCELLATION", "تم طلب إلغاء الأوردر من المودريتور", false);
                   }
                 }}
                 disabled={updating}
@@ -1205,67 +1223,102 @@ const OrderDetails: React.FC = () => {
                         <option value="">
                           {t("orderDetails.selectStatus")}
                         </option>
-                        {orderStatuses.map((status) => (
-                          <option key={status.code} value={status.code}>
-                            {status.name}
-                          </option>
-                        ))}
+                        {filteredStatusOptions.map((status) => {
+                          const wfStatus = workflowStatusDefs.find(
+                            (ws) => ws.code === status.code,
+                          );
+                          const hint =
+                            wfStatus?.requiresOverride
+                              ? " (تجاوز)"
+                              : "";
+                          return (
+                            <option key={status.code} value={status.code}>
+                              {status.name}{hint}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
+                    {hasWorkflowRestrictions && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="override-checkbox"
+                          type="checkbox"
+                          checked={isOverride}
+                          onChange={(e) => setIsOverride(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                        />
+                        <label
+                          htmlFor="override-checkbox"
+                          className="text-sm text-gray-600 dark:text-gray-400"
+                        >
+                          تجاوز قواعد المسار (Override)
+                        </label>
+                      </div>
+                    )}
                     <div className="text-right">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {isModalCancellationStatus
-                          ? t("orderDetails.cancellationReasonRequired")
-                          : t("orderDetails.notesOptional")}
-                      </label>
-                      {isModalCancellationStatus &&
-                      cancellationReasonOptions.length > 0 ? (
-                        <div className="mb-3">
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                            اختر سببًا جاهزًا من الإعدادات
+                      {isModalCancellationStatus ? (
+                        <>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            سبب الإلغاء <span className="text-red-500">*</span>
                           </label>
+                          {cancellationReasonOptions.length > 0 ? (
                           <select
-                            value={selectedCancellationReasonOption}
+                            value={statusNotes}
                             onChange={(event) =>
                               setStatusNotes(event.target.value)
                             }
                             disabled={updating || cancellationReasonOptionsLoading}
-                            className="block w-full px-4 py-3 text-sm border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 rounded-xl dark:bg-gray-700 dark:text-gray-100"
+                            className="block w-full px-4 py-3 text-sm border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 rounded-xl dark:bg-gray-700 dark:text-gray-100 mb-3"
                           >
-                            <option value="">اختر سببًا جاهزًا</option>
+                            <option value="">اختر سبب الإلغاء...</option>
                             {cancellationReasonOptions.map((reason) => (
                               <option key={reason.id} value={reason.reason}>
                                 {reason.reason}
                               </option>
                             ))}
                           </select>
-                        </div>
-                      ) : null}
-                      <textarea
-                        value={statusNotes}
-                        onChange={(e) => setStatusNotes(e.target.value)}
-                        rows={3}
-                        className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                        placeholder={
-                          String(
-                            isModalCancellationStatus
-                              ? t("orderDetails.cancellationReasonPlaceholder")
-                              : t("orderDetails.notesPlaceholder") ||
-                                "أضف ملاحظة هنا...",
-                          )
-                        }
-                      />
-                      {isModalCancellationStatus && (
-                        <div className="mt-2 space-y-1">
-                          {cancellationReasonOptionsLoading ? (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                          ) : (
+                            <textarea
+                              value={statusNotes}
+                              onChange={(e) => setStatusNotes(e.target.value)}
+                              rows={2}
+                              className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 mb-3"
+                              placeholder="سبب الإلغاء..."
+                            />
+                          )}
+                          {cancellationReasonOptionsLoading && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                               جاري تحميل الأسباب الجاهزة...
                             </p>
-                          ) : null}
-                          <p className="text-xs text-red-600 dark:text-red-300">
+                          )}
+                          <p className="text-xs text-red-600 dark:text-red-300 mb-3">
                             {t("orderDetails.cancellationReasonHelp")}
                           </p>
-                        </div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ملاحظة إضافية <span className="text-gray-400">(اختياري)</span>
+                          </label>
+                          <textarea
+                            value={cancellationAdditionalNotes}
+                            onChange={(e) => setCancellationAdditionalNotes(e.target.value)}
+                            rows={2}
+                            className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                            placeholder="أضف ملاحظة إضافية (اختياري)..."
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {t("orderDetails.notesOptional")}
+                          </label>
+                          <textarea
+                            value={statusNotes}
+                            onChange={(e) => setStatusNotes(e.target.value)}
+                            rows={3}
+                            className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                            placeholder={t("orderDetails.notesPlaceholder") || "أضف ملاحظة هنا..."}
+                          />
+                        </>
                       )}
                     </div>
                   </div>

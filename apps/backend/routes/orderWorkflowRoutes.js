@@ -132,6 +132,29 @@ router.delete('/transitions/:id', async (req, res) => {
 });
 
 /**
+ * 🔍 Get allowed transitions for current status + user
+ */
+router.get('/allowed-transitions', async (req, res) => {
+    try {
+        const companyId = getCompanyId(req);
+        if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+        const { currentStatusCode } = req.query;
+        if (!currentStatusCode) return res.status(400).json({ success: false, message: 'حالة الطلب الحالية مطلوبة' });
+
+        const allowed = await orderWorkflowService.getAllowedTransitions(
+            companyId,
+            currentStatusCode.toUpperCase(),
+            req.user?.id
+        );
+        res.json({ success: true, data: allowed });
+    } catch (error) {
+        console.error('[ORDER-WORKFLOW-ERROR] GET /allowed-transitions:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
  * ✅ Status Change Execution
  */
 router.post('/change-status', async (req, res) => {

@@ -8,6 +8,7 @@ import {
   validateEgyptianPhone,
   validateCustomerName,
 } from "../../../utils/validation";
+import orderWorkflowService from "../../../services/orderWorkflowService";
 
 const resolveOrderImageSrc = (value: any): string => {
   if (!value) return "";
@@ -95,6 +96,12 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
   const [addingNote, setAddingNote] = useState(false);
   const [updatingNote, setUpdatingNote] = useState(false);
   const [deletingNote, setDeletingNote] = useState(false);
+
+  // Workflow State
+  const [allowedTransitions, setAllowedTransitions] = useState<string[]>([]);
+  const [workflowStatusDefs, setWorkflowStatusDefs] = useState<
+    Array<{ code: string; name: string; color?: string; requiresOverride?: boolean }>
+  >([]);
 
   // Lookups State
   const [orderStatuses, setOrderStatuses] = useState<
@@ -192,6 +199,24 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         { code: "COMPLETED", name: "مدفوع" },
         { code: "FAILED", name: "فشل الدفع" },
       ]);
+    }
+  };
+
+  const fetchAllowedTransitions = async (currentStatusCode: string) => {
+    try {
+      const response = await orderWorkflowService.getAllowedTransitions(currentStatusCode);
+      const responseData = response as any;
+      if (responseData.success && Array.isArray(responseData.data)) {
+        setWorkflowStatusDefs(responseData.data);
+        setAllowedTransitions(responseData.data.map((s: any) => s.code));
+      } else {
+        setWorkflowStatusDefs([]);
+        setAllowedTransitions([]);
+      }
+    } catch (error) {
+      console.warn("[WORKFLOW] Could not fetch allowed transitions:", error);
+      setWorkflowStatusDefs([]);
+      setAllowedTransitions([]);
     }
   };
 
@@ -462,6 +487,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         setOrder(enhancedOrder);
         setOrderNotes(enhancedOrder.orderNotes || []);
 
+        fetchAllowedTransitions(enhancedOrder.status);
+
         console.log("✅ [FRONTEND] Order set in state:", {
           orderNumber: enhancedOrder.orderNumber,
           turboShipmentId: enhancedOrder.turboShipmentId,
@@ -562,7 +589,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     fetchAreas(governmentId);
   };
 
-  const updateStatus = async (newStatus: string, notes: string) => {
+  const updateStatus = async (newStatus: string, notes: string, isOverride: boolean = false) => {
     const normalizedStatus = String(newStatus || "").trim().toUpperCase();
     const trimmedNotes = String(notes || "").trim();
 
@@ -578,6 +605,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         {
           status: normalizedStatus,
           notes: trimmedNotes,
+          isOverride,
         },
       );
       if (response.data.success) {
@@ -589,6 +617,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         }
 
         await fetchOrderDetails();
+        await fetchAllowedTransitions(normalizedStatus);
         toast.success(response.data.message || "تم تحديث حالة الطلب بنجاح");
         return true;
       }
@@ -841,6 +870,9 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     addingNote,
     updatingNote,
     deletingNote,
+    // Workflow
+    allowedTransitions,
+    workflowStatusDefs,
     // Lookups
     orderStatuses,
     paymentStatuses,

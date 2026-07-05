@@ -58,6 +58,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   >([]);
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
+  const [cancellationAdditionalNotes, setCancellationAdditionalNotes] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
 
   const fallbackStatuses: StatusOption[] = [
@@ -144,10 +145,6 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
       "",
   ).toUpperCase();
   const canManageOrderStatus =
-    !isMerchantScopedOrder || merchantFulfillmentSource === "MERCHANT";
-  const selectedCancellationReasonOption = cancellationReasonOptions.find(
-    (r) => r.reason === cancellationReason.trim(),
-  )?.id || "";
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -696,56 +693,67 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
               {pendingCancellationStatus && (
                 <div className="md:col-span-2 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900/50 dark:bg-red-950/20">
                   <label className="block text-sm font-medium text-red-900 dark:text-red-100 mb-2">
-                    {t("orders.cancellationReasonRequired")}
+                    سبب الإلغاء <span className="text-red-500">*</span>
                   </label>
                   {cancellationReasonOptions.length > 0 ? (
-                    <div className="mb-3">
-                      <label className="mb-1 block text-xs font-medium text-red-700 dark:text-red-200">
-                        اختر سببًا جاهزًا من الإعدادات
-                      </label>
-                      <select
-                        value={selectedCancellationReasonOption}
-                        onChange={(e) => {
-                          setCancellationReason(e.target.value);
-                          setError(null);
-                        }}
-                        disabled={isUpdating || cancellationReasonOptionsLoading}
-                        className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100"
-                      >
-                        <option value="">اختر سببًا جاهزًا</option>
-                        {cancellationReasonOptions.map((reason) => (
-                          <option key={reason.id} value={reason.reason}>
-                            {reason.reason}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : null}
-                  <textarea
-                    value={cancellationReason}
-                    onChange={(e) => setCancellationReason(e.target.value)}
-                    rows={3}
-                    disabled={isUpdating}
-                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100"
-                    placeholder={String(t("orders.cancellationReasonPlaceholder"))}
-                  />
+                    <select
+                      value={cancellationReason}
+                      onChange={(e) => {
+                        setCancellationReason(e.target.value);
+                        setError(null);
+                      }}
+                      disabled={isUpdating || cancellationReasonOptionsLoading}
+                      className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100 mb-3"
+                    >
+                      <option value="">اختر سبب الإلغاء...</option>
+                      {cancellationReasonOptions.map((reason) => (
+                        <option key={reason.id} value={reason.reason}>
+                          {reason.reason}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <textarea
+                      value={cancellationReason}
+                      onChange={(e) => setCancellationReason(e.target.value)}
+                      rows={2}
+                      disabled={isUpdating}
+                      className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100 mb-3"
+                      placeholder="سبب الإلغاء..."
+                    />
+                  )}
                   {cancellationReasonOptionsLoading ? (
-                    <p className="mt-2 text-xs text-red-700/80 dark:text-red-200/80">
+                    <p className="mb-2 text-xs text-red-700/80 dark:text-red-200/80">
                       جاري تحميل الأسباب الجاهزة...
                     </p>
                   ) : null}
+                  <label className="block text-sm font-medium text-red-900 dark:text-red-100 mb-1">
+                    ملاحظة إضافية <span className="text-red-400">(اختياري)</span>
+                  </label>
+                  <textarea
+                    value={cancellationAdditionalNotes}
+                    onChange={(e) => setCancellationAdditionalNotes(e.target.value)}
+                    rows={2}
+                    disabled={isUpdating}
+                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:ring-2 focus:ring-red-500/20 disabled:opacity-60 dark:border-red-900/60 dark:bg-gray-800 dark:text-gray-100"
+                    placeholder="أضف ملاحظة إضافية (اختياري)..."
+                  />
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row-reverse">
                     <button
                       type="button"
                       disabled={isUpdating || !cancellationReason.trim()}
                       onClick={async () => {
+                        const notesToSend = cancellationAdditionalNotes.trim()
+                          ? cancellationReason.trim() + '\n' + cancellationAdditionalNotes.trim()
+                          : cancellationReason.trim();
                         const success = await handleUpdateStatus(
                           pendingCancellationStatus,
-                          cancellationReason,
+                          notesToSend,
                         );
                         if (success) {
                           setPendingCancellationStatus(null);
                           setCancellationReason("");
+                          setCancellationAdditionalNotes("");
                         }
                       }}
                       className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
@@ -758,6 +766,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                       onClick={() => {
                         setPendingCancellationStatus(null);
                         setCancellationReason("");
+                        setCancellationAdditionalNotes("");
                       }}
                       className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     >

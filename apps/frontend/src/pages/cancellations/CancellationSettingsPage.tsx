@@ -328,7 +328,7 @@ const CancellationSettingsPage: React.FC = () => {
 
       {/* Category Modal */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
             <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
               {editingCategory ? "تعديل تصنيف" : "تصنيف جديد"}
@@ -370,7 +370,7 @@ const CancellationSettingsPage: React.FC = () => {
 
       {/* Reason Modal */}
       {isReasonModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
             <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
               {editingReason ? "تعديل سبب" : "سبب جديد"}
