@@ -1,5 +1,15 @@
 # Backend Bugs Log
 
+### [FIX] WhatsApp Voice Note Upload Fails with Unsupported Mimetype Error (Codecs parameters)
+- **Date**: 2026-07-05
+- **Description**: Recorded voice notes failed to send on WhatsApp with `Error: نوع الملف غير مدعوم` (HTTP 500 error) on some browsers.
+- **Root Cause**: Browsers recording audio in WhatsApp Chat UI send a WebM blob with mimetype formatted as `audio/webm;codecs=opus`. Because of the parameter trailing part `;codecs=opus`, simple string checks in `MIME_TYPE_MAP` and other validation helpers inside the backend were returning `undefined`, causing the upload to be rejected as an unsupported mimetype.
+- **Resolution**: Updated `apps/backend/routes/whatsappRoutes.js` (Multer setup) and `apps/backend/services/whatsapp/WhatsAppMediaHandler.js` (helpers `getMediaTypeFromMimetype`, `getExtension`, and `validateFile`) to split the mimetype by `;` and trim it before checking it. This extracts the clean base mimetype (e.g. `audio/webm`), resolving all validation failures.
+- **Files Modified**:
+  - `apps/backend/routes/whatsappRoutes.js`
+  - `apps/backend/services/whatsapp/WhatsAppMediaHandler.js`
+  - `apps/backend/docs/whatsapp/whatsapp-voice-message-webm-fix-2026-07-05.md`
+
 ### [FIX] Prisma Schema P1012 - Missing Company Relations for Education Models
 - **Date**: 2026-07-05
 - **Description**: CI/CD `Deploy to Server` workflow failed with Prisma validation error P1012. The `EducationTeacherAvailability` and `EducationTeacherPayment` models defined `company Company @relation(...)` but the `Company` model in `core.prisma` was missing the reverse relation fields.

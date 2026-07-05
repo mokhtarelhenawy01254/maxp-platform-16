@@ -1,6 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-05 / 2026-03-09
+- **WhatsApp Voice Note Mimetype Parameters Normalization (FIX)**: Fixed a bug where voice notes failed to send with an unsupported mimetype error (`Error: نوع الملف غير مدعوم`) on some browsers due to codecs parameters (e.g., `audio/webm;codecs=opus`):
+  1. Updated `apps/backend/routes/whatsappRoutes.js` (Multer filename & fileFilter) to split and clean incoming mimetypes by stripping parameters before validation.
+  2. Updated `apps/backend/services/whatsapp/WhatsAppMediaHandler.js` (`getMediaTypeFromMimetype`, `getExtension`, and `validateFile`) to strip codecs parameters, ensuring correct matching of file types and extensions (saving as `.webm` instead of `.bin`).
 - **Prisma Schema P1012 Fix (FIX)**: Fixed CI/CD deployment failure caused by missing reverse relation fields on the `Company` model for `EducationTeacherAvailability` and `EducationTeacherPayment`. Added both `[]` array fields to `core.prisma`. Validated with `npx prisma validate`.
 - **WhatsApp Voice Note Send Fix (FIX)**: Fixed a bug where recording and sending a voice message in WhatsApp chat failed with "فشل إرسال الرسالة الصوتية":
   1. Updated `apps/backend/routes/whatsappRoutes.js` and `apps/backend/services/whatsapp/WhatsAppMediaHandler.js` to support `audio/webm` and `video/webm` mimetypes, preventing Multer from rejecting uploaded voice messages.
