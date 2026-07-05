@@ -492,8 +492,7 @@ async function validateFacebookRecipientStrict(recipientId, pageId, accessToken)
 async function sendProductionFacebookMessage(recipientId, messageContent, messageType = 'TEXT', pageId, accessToken, replyToMessageId = null) {
   let resolvedMessageContent = messageContent;
 
-  try {
-    //console.log(`🏭 [PROD-SEND] Starting production Facebook message send`);
+  //console.log(`🏭 [PROD-SEND] Starting production Facebook message send`);
     //console.log(`📱 Recipient: ${recipientId}, Page: ${pageId}, Type: ${messageType}`);
     //console.log(`🔐 Access Token Available: ${!!accessToken}`);
     //console.log(`📄 Access Token Length: ${accessToken?.length || 0}`);
@@ -717,7 +716,6 @@ async function sendProductionFacebookMessage(recipientId, messageContent, messag
         canRetry: false
       };
     }
-  }
 }
 
 /**
