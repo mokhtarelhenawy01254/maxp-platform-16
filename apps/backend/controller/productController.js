@@ -436,6 +436,8 @@ const refreshProductVectorKnowledge = (product, companyId) => {
       force: true,
     }).catch(() => {});
 
+    aiServiceAdminClient.triggerProductEmbeddingSync(companyId).catch(() => {});
+
     aiServiceAdminClient.embedKnowledgeItem({
       sourceId: product.id,
       sourceType: 'product',

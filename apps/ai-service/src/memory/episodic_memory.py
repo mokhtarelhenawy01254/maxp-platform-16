@@ -99,6 +99,14 @@ class EpisodicMemoryService:
         model_name = DEFAULT_EMBEDDING_MODEL
 
         cache_text = text or ""
+        if cache_text:
+            import re as _re
+            cache_text = _re.sub(r'[\u064B-\u065F\u0670]', '', cache_text)
+            cache_text = _re.sub(r'[أإآ]', 'ا', cache_text)
+            cache_text = _re.sub(r'[ى]', 'ي', cache_text)
+            cache_text = _re.sub(r'[ة]', 'ه', cache_text)
+            cache_text = _re.sub(r'[\u0640]', '', cache_text)
+            cache_text = _re.sub(r'\s+', ' ', cache_text).strip()
         cacheable = (cache_text or image_bytes) and not skip_cache
         if cacheable:
             cached = await embedding_cache.get_cached_embedding(
@@ -132,8 +140,8 @@ class EpisodicMemoryService:
 
         try:
             parts = []
-            if text:
-                parts.append({"text": text})
+            if cache_text:
+                parts.append({"text": cache_text})
             if image_bytes:
                 parts.append({
                     "inlineData": {

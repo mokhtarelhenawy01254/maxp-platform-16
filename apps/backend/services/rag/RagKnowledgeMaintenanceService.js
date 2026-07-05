@@ -183,19 +183,12 @@ function hasMissingImageEmbedding(item) {
 function buildProductKnowledgeText(product) {
   const name = normalizeText(product.name, 300) || 'Unknown Product';
   const description = normalizeText(product.description, 2000) || '';
-  const categoryLabel = normalizeText(product.category?.name || '', 80) || 'general';
+  const categoryLabel = normalizeText(product.category?.name || '', 80) || '';
   const tagsList = parseTags(product.tags).join(', ');
-  const price = product.price ? String(product.price) : '';
-  const sku = product.sku || '';
 
-  return [
-    `Product: ${name}`,
-    description ? `Description: ${description}` : '',
-    `Category: ${categoryLabel}`,
-    tagsList ? `Tags: ${tagsList}` : '',
-    price ? `Price: ${price}` : '',
-    sku ? `SKU: ${sku}` : '',
-  ].filter(Boolean).join('\n');
+  let text = `${name}. ${description}. ${tagsList}`.replace(/\.+$/, '').replace(/\s+/g, ' ').trim();
+  if (categoryLabel) text += ` Category: ${categoryLabel}.`;
+  return text;
 }
 
 class RagKnowledgeMaintenanceService {

@@ -64,10 +64,10 @@ async def _run_backfill(company_id: str | None = None) -> None:
         pass  # already initialised
 
     try:
-        where_clause = '"deletedAt" IS NULL AND "isActive" = TRUE'
+        where_clause = '"deletedAt" IS NULL'
         params: dict = {}
         if company_id:
-            where_clause += ' AND "companyId" = :company_id'
+            where_clause += ' AND p."companyId" = :company_id'
             params["company_id"] = company_id
 
         async with _db_mod.async_session() as sess:
@@ -75,10 +75,11 @@ async def _run_backfill(company_id: str | None = None) -> None:
                 text(f"""
                     SELECT p.id, p.name, p.sku, p.price, p.stock, "trackInventory",
                            p."mainImage", p."companyId", p.description, p.tags,
-                           p."categoryId", c.name AS category_name
+                           p."categoryId", c.name AS category_name,
+                           p.metadata::json->>'workflow' AS workflow_status
                     FROM public.products p
                     LEFT JOIN public.categories c ON c.id = p."categoryId"
-                    WHERE {where_clause.replace('"deletedAt"', 'p."deletedAt"').replace('"isActive"', 'p."isActive"')}
+                    WHERE {where_clause}
                     ORDER BY p."companyId", p."updatedAt" DESC
                 """),
                 params,
@@ -146,10 +147,12 @@ async def _run_backfill(company_id: str | None = None) -> None:
                             text("""
                                 INSERT INTO ai.product_embeddings
                                     (id, company_id, product_id, product_name, sku, price, status,
-                                     text_embedding, image_embedding, embed_text, image_url)
+                                     text_embedding, image_embedding, embed_text, image_url,
+                                     description, tags, category, workflow_status)
                                 VALUES (gen_random_uuid()::text, :cid, :pid, :name, :sku,
                                         :price, :status, CAST(:vec AS vector),
-                                        CAST(:vec_img AS vector), :embed_text, :image_url)
+                                        CAST(:vec_img AS vector), :embed_text, :image_url,
+                                        :desc, :tags, :cat, :wf)
                                 ON CONFLICT (product_id) DO UPDATE SET
                                     product_name     = EXCLUDED.product_name,
                                     text_embedding   = EXCLUDED.text_embedding,
@@ -158,6 +161,10 @@ async def _run_backfill(company_id: str | None = None) -> None:
                                     status           = EXCLUDED.status,
                                     price            = EXCLUDED.price,
                                     image_url        = EXCLUDED.image_url,
+                                    description      = EXCLUDED.description,
+                                    tags             = EXCLUDED.tags,
+                                    category         = EXCLUDED.category,
+                                    workflow_status  = EXCLUDED.workflow_status,
                                     updated_at       = now()
                             """),
                             {
@@ -171,6 +178,10 @@ async def _run_backfill(company_id: str | None = None) -> None:
                                 "vec_img": vec_image_str,
                                 "embed_text": embed_text[:500],
                                 "image_url": p.get("mainImage") or "",
+                                "desc": desc[:1000] if desc else None,
+                                "tags": tags[:500] if tags else None,
+                                "cat": cat[:200] if cat else None,
+                                "wf": p.get("workflow_status") or "PUBLISHED",
                             },
                         )
                         await sess2.commit()
@@ -198,7 +209,7 @@ async def get_status(company_id: str | None = Query(default=None)) -> dict:
     Returns current sync job state + per-company embedding coverage stats.
     """
     try:
-        where_clause = '"deletedAt" IS NULL AND "isActive" = TRUE'
+        where_clause = '"deletedAt" IS NULL'
         params: dict = {}
         if company_id:
             where_clause += ' AND p."companyId" = :company_id'
@@ -214,7 +225,7 @@ async def get_status(company_id: str | None = Query(default=None)) -> dict:
                         COUNT(pe.product_id)    AS embedded_count
                     FROM public.products p
                     LEFT JOIN ai.product_embeddings pe ON pe.product_id = p.id
-                    WHERE {where_clause.replace('"deletedAt"', 'p."deletedAt"').replace('"isActive"', 'p."isActive"')}
+                    WHERE {where_clause}
                     GROUP BY p."companyId"
                     ORDER BY p."companyId"
                 """),
@@ -240,7 +251,7 @@ async def get_status(company_id: str | None = Query(default=None)) -> dict:
                     SELECT p.id, p.name, p.sku, p."companyId" AS company_id
                     FROM public.products p
                     LEFT JOIN ai.product_embeddings pe ON pe.product_id = p.id
-                    WHERE {where_clause.replace('"deletedAt"', 'p."deletedAt"').replace('"isActive"', 'p."isActive"')}
+                    WHERE {where_clause}
                       AND pe.product_id IS NULL
                     ORDER BY p."companyId", p."updatedAt" DESC
                     LIMIT 500
