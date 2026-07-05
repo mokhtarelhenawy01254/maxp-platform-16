@@ -120,11 +120,13 @@ async def _run_backfill(company_id: str | None = None) -> None:
                 if downloaded:
                     img_bytes, mime = downloaded
                     try:
+                        import base64
                         ires = await svc.generate_embedding_with_provider(
-                            text=embed_text, image_bytes=img_bytes, mime_type=mime,
+                            text=embed_text, image_bytes=base64.b64encode(img_bytes).decode(), mime_type=mime,
                         )
                         vec_image = ires.get("vector")
-                    except Exception:
+                    except Exception as e:
+                        logger.warning("image_embedding_failed", product=name, error=str(e))
                         vec_image = None
 
             if vec_text and len(vec_text) == 768 and sum(x * x for x in vec_text) ** 0.5 >= 0.01:
