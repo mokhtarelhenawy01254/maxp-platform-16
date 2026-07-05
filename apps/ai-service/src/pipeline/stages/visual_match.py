@@ -1,15 +1,16 @@
-"""Stage 0: Match product by image BEFORE LLM sees the message."""
+"""Stage 0: Match product by image BEFORE LLM sees the message.
+Uses hybrid search (image_embedding + text_embedding with RRF) for higher accuracy.
+"""
 
 from __future__ import annotations
 
 from typing import Any
 
 from src.pipeline.context import PipelineContext
-from src.tools.definitions.product import product_search, ProductSearchInput
+from src.tools.vector_product_search import vector_product_search
 
 
 async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
-    """Pre-process image attachments: vector search → match → remove image from LLM input."""
     if not ctx.attachments:
         return ctx
 
@@ -18,26 +19,37 @@ async def match_product_by_image(ctx: PipelineContext) -> PipelineContext:
         return ctx
 
     try:
-        result = await product_search(ProductSearchInput(
-            query="", image_url=img_url, use_vector=True, company_id=ctx.company_id,
-        ))
-        ctx.external_memory_context["productSearchResults"] = result
+        import httpx
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(img_url)
+            if resp.status_code != 200:
+                return ctx
+            img_bytes = resp.content
+            ct = resp.headers.get("content-type", "image/jpeg")
 
-        if result.get("results"):
-            top = result["results"][0]
-            score = float(top.get("score") or top.get("similarity") or 0)
-            name = top.get("productName") or top.get("name", "")
+        results = await vector_product_search(
+            company_id=ctx.company_id,
+            query="",
+            limit=5,
+            image_bytes=img_bytes,
+            mime_type=ct,
+        )
+        ctx.external_memory_context["productSearchResults"] = {"results": results}
+
+        if results:
+            top = results[0]
+            score = float(top.get("score", 0))
+            name = top.get("name", "")
             price = top.get("price", "")
-            pid = top.get("id") or top.get("productId", "")
 
             if score >= 0.8:
                 ctx.external_memory_context["productMatched"] = {
-                    "name": name, "price": price, "id": pid, "score": score, "exact": True
+                    "name": name, "price": price, "score": score, "exact": True,
                 }
                 ctx.message = f"العميل مهتم بـ {name} (سعر {price} جنيه) - يريد التفاصيل."
             elif score >= 0.5:
                 ctx.external_memory_context["productMatched"] = {
-                    "name": name, "price": price, "id": pid, "score": score, "exact": False
+                    "name": name, "price": price, "score": score, "exact": False,
                 }
                 ctx.message = f"العميل بيسأل عن حاجة شبه صورة - أقرب حاجة عندنا: {name} بسعر {price} جنيه."
             else:

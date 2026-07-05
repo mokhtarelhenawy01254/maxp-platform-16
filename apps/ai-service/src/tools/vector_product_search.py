@@ -1,16 +1,19 @@
 """
 Semantic/vector product search using ai.product_embeddings table.
-Called as fallback from product_search when text search returns 0 results.
+Supports hybrid search (image_embedding + text_embedding) with RRF fusion.
 """
 from __future__ import annotations
 
 import json
 import math
+import re
 from typing import Any
 
 import structlog
 
 logger = structlog.get_logger(__name__)
+
+_RRF_K = 60  # Reciprocal Rank Fusion constant — higher = more weight to top ranks
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -37,6 +40,40 @@ def _coerce_embedding(value: Any) -> list[float]:
         except (TypeError, ValueError):
             return []
     return coerced
+
+
+def _extract_keywords(text: str) -> list[str]:
+    words = re.findall(r"[\w+#-]+", text.lower())
+    stopwords = {"the", "a", "an", "of", "in", "on", "for", "and", "or", "to", "is",
+                 "how", "what", "why", "when", "where", "which", "this", "that",
+                 "with", "from", "by", "at", "be", "was", "are", "has", "have",
+                 "do", "does", "did", "will", "would", "can", "could", "may", "might",
+                 "search", "find", "looking", "want", "need", "like", "show",
+                 "ال", "في", "من", "على", "الى", "عن", "مع", "كان", "هذا", "هذه",
+                 "انا", "أنت", "هو", "هي", "هم", "نحن", "عندي", "عندك", "عاوز",
+                 "عايز", "بس", "كده", "دلوقتي", "لو", "لا", "ما", "و", "او"}
+    return sorted({w for w in words if len(w) > 1 and w not in stopwords})
+
+
+def _rrf_merge(
+    lists: list[list[dict[str, Any]]],
+    name_key: str = "name",
+    top_k: int = 10,
+) -> list[dict[str, Any]]:
+    seen: dict[str, dict[str, Any]] = {}
+    scores: dict[str, float] = {}
+    for ranked in lists:
+        for rank, item in enumerate(ranked):
+            name = item.get(name_key, "")
+            if not name:
+                continue
+            if name not in seen:
+                seen[name] = dict(item)
+            scores[name] = scores.get(name, 0.0) + 1.0 / (_RRF_K + rank)
+    for name, item in seen.items():
+        item["score"] = round(scores.get(name, 0.0), 4)
+    merged = sorted(seen.values(), key=lambda x: -x["score"])
+    return merged[:top_k]
 
 
 def _clean_image_url(value: Any) -> str:
@@ -154,6 +191,64 @@ async def _search_product_json_embeddings(
     return _score_embedding_rows(raw, query_embedding, min_score=min_score)[:limit]
 
 
+def _format_product(r: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name":      r["product_name"],
+        "sku":       r["sku"],
+        "price":     float(r["price"] or 0),
+        "status":    r["status"] or "IN_STOCK",
+        "image_url": r["image_url"],
+        "score":     round(float(r.get("score", 0)), 4),
+    }
+
+
+def _search_query(
+    embed_col: str,
+    q_vec_str: str,
+    company_id: str,
+    limit: int,
+    min_score: float,
+    keywords: list[str] | None = None,
+) -> str:
+    kw_filter = ""
+    if keywords:
+        kw_list = "{" + ",".join(f"'{re.escape(k)}'" for k in keywords) + "}"
+        kw_filter = f" AND product_name ILIKE ANY(ARRAY[{kw_list[1:-1]}]::text[])"
+    return f"""
+        SELECT product_name, sku, price, status, image_url,
+               1 - ({embed_col} <=> CAST(:q_vec AS vector)) AS score
+        FROM ai.product_embeddings
+        WHERE company_id = :cid
+          AND {embed_col} IS NOT NULL
+          {kw_filter}
+        ORDER BY {embed_col} <=> CAST(:q_vec AS vector)
+        LIMIT :lim
+    """
+
+
+async def _run_pgvector_search(
+    embed_col: str,
+    q_vec: list[float],
+    company_id: str,
+    limit: int,
+    min_score: float,
+    keywords: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    import src.db.session as _db_mod
+    from sqlalchemy import text
+
+    q_vec_str = "[" + ",".join(str(x) for x in q_vec) + "]"
+    sql = text(_search_query(embed_col, q_vec_str, company_id, limit, min_score, keywords))
+    try:
+        sf = _db_mod.async_session
+        async with sf() as sess:
+            rows = await sess.execute(sql, {"cid": company_id, "q_vec": q_vec_str, "lim": limit})
+            raw = [dict(r._mapping) for r in rows]
+    except Exception:
+        return []
+    return [_format_product(r) for r in raw if float(r.get("score", 0)) >= min_score]
+
+
 async def vector_product_search(
     company_id: str,
     query: str,
@@ -161,25 +256,31 @@ async def vector_product_search(
     min_score: float = 0.30,
     image_bytes: bytes | None = None,
     mime_type: str | None = None,
+    keywords: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """
-    Returns top-k products ranked by cosine similarity to the query embedding.
+    Hybrid search: image_embedding + text_embedding with RRF fusion.
+    Falls back gracefully if pgvector or embeddings are unavailable.
 
     Args:
         company_id:   Tenant ID
         query:        Free-text query (e.g. "winter boots", "حذاء رياضي")
         limit:        Max results to return
-        min_score:    Minimum cosine similarity threshold (0–1)
+        min_score:    Minimum score threshold (cosine or RRF)
         image_bytes:  Optional image bytes for image-based search
         mime_type:    MIME type of the image
+        keywords:     Optional brand/name keywords for ILIKE filter
 
     Returns:
-        List of {name, price, sku, status, score, image_url}
+        List of {name, price, sku, status, image_url, score}
     """
     if not company_id or (not query and not image_bytes):
         return []
 
-    # Generate query embedding
+    # Extract keywords from query text if not explicitly provided
+    kw = keywords or (_extract_keywords(query) if query else None)
+
+    # Generate ONE multimodal embedding from text + image (or text-only, or image-only)
     q_emb = await _generate_embedding(
         text=query or None,
         image_bytes=image_bytes,
@@ -188,84 +289,37 @@ async def vector_product_search(
     if not q_emb:
         return []
 
-    embed_col = "image_embedding" if image_bytes else "text_embedding"
+    fetch_k = max(limit * 3, 15)
 
-    import src.db.session as _db_mod
-    from sqlalchemy import text
+    # Image search (always search image_embedding when image is present)
+    # Text search (search text_embedding when query is present — always for hybrid)
+    searches: list[list[dict[str, Any]]] = []
 
-    q_vec_str = "[" + ",".join(str(x) for x in q_emb) + "]"
+    if image_bytes:
+        vis = await _run_pgvector_search(
+            "image_embedding", q_emb, company_id, fetch_k, min_score, keywords=kw,
+        )
+        if vis:
+            searches.append(vis)
 
-    # Try pgvector cosine operator (fast index scan)
-    results: list[dict[str, Any]] = []
-    try:
-        sql = text(f"""
-            SELECT product_name, sku, price, status, image_url,
-                   1 - ({embed_col} <=> CAST(:q_vec AS vector)) AS score
-            FROM ai.product_embeddings
-            WHERE company_id = :cid
-              AND {embed_col} IS NOT NULL
-            ORDER BY {embed_col} <=> CAST(:q_vec AS vector)
-            LIMIT :lim
-        """)
-        sf = _db_mod.async_session
-        async with sf() as sess:
-            rows = await sess.execute(sql, {"cid": company_id, "q_vec": q_vec_str, "lim": limit * 3})
-            raw = [dict(r._mapping) for r in rows]
+    # Text search — the same multimodal embedding works against text_embedding
+    # because Gemini embedding model maps images+text to the same vector space
+    txt = await _run_pgvector_search(
+        "text_embedding", q_emb, company_id, fetch_k, min_score, keywords=kw,
+    )
+    if txt:
+        searches.append(txt)
 
-        results = [
-            {
-                "name":      r["product_name"],
-                "sku":       r["sku"],
-                "price":     float(r["price"] or 0),
-                "status":    r["status"] or "IN_STOCK",
-                "image_url": r["image_url"],
-                "score":     round(float(r["score"]), 4),
-            }
-            for r in raw
-            if float(r["score"]) >= min_score
-        ]
-
-    except Exception as exc:
-        logger.warning("vector_search: pgvector query failed, using client-side cosine", error=str(exc))
-        # Client-side fallback
-        try:
-            sf = _db_mod.async_session
-            async with sf() as sess:
-                rows = await sess.execute(text(f"""
-                    SELECT product_name, sku, price, status, image_url,
-                           {embed_col}::text AS emb_json
-                    FROM ai.product_embeddings
-                    WHERE company_id = :cid AND {embed_col} IS NOT NULL
-                """), {"cid": company_id})
-                raw = [dict(r._mapping) for r in rows]
-
-            scored = []
-            for r in raw:
-                emb = _coerce_embedding(r.get("emb_json"))
-                if not emb:
-                    continue
-                score = _cosine(q_emb, emb)
-                if score >= min_score:
-                    scored.append({
-                        "name":      r["product_name"],
-                        "sku":       r["sku"],
-                        "price":     float(r["price"] or 0),
-                        "status":    r["status"] or "IN_STOCK",
-                        "image_url": r["image_url"],
-                        "score":     round(score, 4),
-                    })
-            results = sorted(scored, key=lambda x: -x["score"])
-        except Exception as exc2:
-            logger.error("vector_search: fallback also failed", error=str(exc2))
-            results = []
+    if searches:
+        results = _rrf_merge(searches, top_k=limit)
+    else:
+        # Both pgvector searches failed — try client-side fallback
+        embed_col = "image_embedding" if image_bytes else "text_embedding"
+        results = await _client_side_fallback(company_id, q_emb, embed_col, limit, min_score, image_bytes)
 
     if not results:
         results = await _search_product_json_embeddings(
-            company_id,
-            q_emb,
-            limit=limit,
-            min_score=min_score,
-            image_bytes=image_bytes,
+            company_id, q_emb, limit=limit, min_score=min_score, image_bytes=image_bytes,
         )
 
     # Filter to valid full URLs only (skip bare filenames)
@@ -274,14 +328,41 @@ async def vector_product_search(
         if url and not (url.startswith("http://") or url.startswith("https://")):
             r["image_url"] = ""
 
-    # Deduplicate by product name (keep highest score per name)
-    seen: dict[str, dict] = {}
-    for r in results:
-        name = r["name"]
-        if name not in seen or r["score"] > seen[name]["score"]:
-            seen[name] = r
+    logger.info("vector_search results", query=query, company=company_id, count=len(results),
+                top=results[0]["name"] if results else None)
+    return results
 
-    deduped = sorted(seen.values(), key=lambda x: -x["score"])[:limit]
-    logger.info("vector_search results", query=query, company=company_id, count=len(deduped),
-                top=deduped[0]["name"] if deduped else None)
-    return deduped
+
+async def _client_side_fallback(
+    company_id: str,
+    q_emb: list[float],
+    embed_col: str,
+    limit: int,
+    min_score: float,
+    image_bytes: bytes | None,
+) -> list[dict[str, Any]]:
+    import src.db.session as _db_mod
+    from sqlalchemy import text
+
+    try:
+        sf = _db_mod.async_session
+        async with sf() as sess:
+            rows = await sess.execute(text(f"""
+                SELECT product_name, sku, price, status, image_url,
+                       {embed_col}::text AS emb_json
+                FROM ai.product_embeddings
+                WHERE company_id = :cid AND {embed_col} IS NOT NULL
+            """), {"cid": company_id})
+            raw = [dict(r._mapping) for r in rows]
+
+        scored = []
+        for r in raw:
+            emb = _coerce_embedding(r.get("emb_json"))
+            if not emb:
+                continue
+            score = _cosine(q_emb, emb)
+            if score >= min_score:
+                scored.append(_format_product({**r, "score": score}))
+        return sorted(scored, key=lambda x: -x["score"])[:limit]
+    except Exception:
+        return []
