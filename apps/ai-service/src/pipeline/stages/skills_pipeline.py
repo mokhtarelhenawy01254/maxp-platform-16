@@ -95,28 +95,28 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     ctx.external_memory_context["productSearchResults"] = ps_result
                     top = ps_result["results"][0]
                     top_score = float(top.get("score") or top.get("similarity") or 0)
-                    candidates_text = ""
-                    for i, p in enumerate(ps_result["results"][:10], 1):
-                        name = p.get("productName") or p.get("name", "")
-                        price = p.get("price", "")
-                        sc = p.get("score") or p.get("similarity") or 0
-                        candidates_text += f"  {i}. {name} | {price} جنيه | تشابه: {float(sc)*100:.0f}%\n"
-                    if top_score >= 0.9:
-                        system_prompt += f"\n\n[منتج مطابق للصورة: {top.get('productName') or top.get('name', '')} بسعر {top.get('price', '')} جنيه. ردي عليه بشكل طبيعي كبياعة واخلصي المبيعة.]"
-                    elif top_score >= 0.5:
-                        system_prompt += f"\n\n[أقرب منتج للصورة:\n{candidates_text}قولي للعميل إن ده أقرب حاجة عندك ليها.]"
+                    if top_score and top_score >= 0.9:
+                        product_name = top.get("productName") or top.get("name", "")
+                        product_price = top.get("price", "")
+                        product_id = top.get("id") or top.get("productId", "")
+                        ctx.external_memory_context["confirmedProduct"] = {"name": product_name, "price": product_price, "id": product_id}
+                        system_prompt += f"\n\n[منتج مطابق للصورة: {product_name} بسعر {product_price} جنيه. ردي عليه بشكل طبيعي.]"
+                    elif top_score and top_score >= 0.5:
+                        candidates_text = ""
+                        for p in ps_result["results"][:5]:
+                            n = p.get("productName") or p.get("name", "")
+                            pr = p.get("price", "")
+                            sc = p.get("score") or p.get("similarity") or 0
+                            candidates_text += f"- {n} ({float(sc)*100:.0f}%)\n"
+                        system_prompt += f"\n\n[أقرب منتجات للصورة:\n{candidates_text}قولي إن ده أقرب حاجة عندك.]"
                     else:
-                        system_prompt += "\n\n[مفيش منتج مطابق في الكتالوج. اعتذري بلطف واعرضي تساعده بحاجة تانية.]"
+                        system_prompt += "\n\n[⚠️ لم نجد منتج مطابق. قولي للعميل إن المنتج مش موجود. ممنوع اختراع منتجات أو أسعار.]"
                 else:
-                    system_prompt += (
-                        "\n\n[⚠️ العميل أرسل صورة. حللها أولاً بالوصف، ثم أخبره أنك بحثت"
-                        " لكن لم تجد منتجات مطابقة في الكتالوج. اقترح عليه يسأل عن منتجات أخرى.]"
-                    )
+                    system_prompt += "\n\n[⚠️ لم نجد منتج مطابق. قولي للعميل بصراحة إنه مش موجود. ممنوع اختراع منتجات.]"
             except Exception:
-                system_prompt += (
-                    "\n\n[العميل أرسل صورة. حللها أولاً بالوصف،"
-                    " ثم أخبره عن المنتج الذي رأيته في الصورة واسأله إن كان يريد المساعدة.]"
-                )
+                system_prompt += "\n\n[العميل أرسل صورة. حلليها طبيعي.]"
+            # Anti-hallucination guard
+            system_prompt += "\n\n[تنبيه: لا تذكري أي اسم منتج أو سعر غير موجود في قائمة المنتجات أعلاه. إذا لم تجدي نتيجة، اعتذري بصراحة.]"
 
     # 4. Single LLM call with skills as tools
     try:
