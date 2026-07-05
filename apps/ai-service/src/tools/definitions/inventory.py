@@ -109,7 +109,7 @@ async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
         all_available = True
 
         if req_size:
-            matched = [v for v in variants if v.get("type") in _VARIANT_SIZE_ALIASES and req_size.lower() in v.get("name", "").lower()]
+            matched = [v for v in variants if req_size.lower() in v.get("name", "").lower()]
             if matched:
                 for v in matched:
                     constraint_details["matched"].append({
@@ -122,7 +122,7 @@ async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
                 all_available = False
 
         if req_color:
-            matched = [v for v in variants if v.get("type") in _VARIANT_COLOR_ALIASES and req_color.lower() in v.get("name", "").lower()]
+            matched = [v for v in variants if req_color.lower() in v.get("name", "").lower()]
             if matched:
                 for v in matched:
                     constraint_details["matched"].append({

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -16,21 +17,86 @@ logger = structlog.get_logger(__name__)
 _VARIANT_SIZE_ALIASES = {"size", "Size", "\u0645\u0642\u0627\u0633", "\u0627\u0644\u0645\u0642\u0627\u0633"}
 _VARIANT_COLOR_ALIASES = {"color", "Color", "\u0644\u0648\u0646", "\u0627\u0644\u0644\u0648\u0646"}
 
+_KNOWN_SIZES = {
+    "xs", "s", "m", "l", "xl", "xxl", "xxxl", "3xl", "4xl", "5xl",
+    "onesize", "one size", "free size", "free", "universal",
+    "small", "medium", "large", "extra large",
+    "\u0635\u063a\u064a\u0631", "\u0648\u0633\u0637", "\u0643\u0628\u064a\u0631",
+}
+
+
+def _looks_like_size(value: str) -> bool:
+    val = value.strip()
+    if re.match(r"^\d{1,3}(\.\d)?$", val):
+        return True
+    if val.lower() in _KNOWN_SIZES:
+        return True
+    return False
+
+
+def _parse_variant_name(name: str) -> dict[str, str] | None:
+    if not name:
+        return None
+    parts = re.split(r"\s*[/\-|\u060C,]\s*", name)
+    parts = [p.strip() for p in parts if p.strip()]
+    if len(parts) >= 2:
+        size_parts = [p for p in parts if _looks_like_size(p)]
+        color_parts = [p for p in parts if not _looks_like_size(p)]
+        result: dict[str, str] = {}
+        if size_parts:
+            result["size"] = size_parts[0]
+        if color_parts:
+            result["color"] = color_parts[0]
+        if result:
+            return result
+    if _looks_like_size(name):
+        return {"size": name}
+    return None
+
 
 def _aggregate_variants(
     variants: list[dict[str, Any]], aliases: set[str],
 ) -> list[dict[str, Any]]:
+    is_size_dim = aliases == _VARIANT_SIZE_ALIASES
+    is_color_dim = aliases == _VARIANT_COLOR_ALIASES
     result: list[dict[str, Any]] = []
+    seen_values: set[str] = set()
+
     for v in variants:
         vtype = (v.get("type") or "").strip()
-        if vtype not in aliases:
+        name = v.get("name", "")
+        direct_match = vtype in aliases
+        parsed = _parse_variant_name(name)
+
+        value = name
+        if parsed:
+            if is_size_dim and "size" in parsed:
+                value = parsed["size"]
+            elif is_color_dim and "color" in parsed:
+                value = parsed["color"]
+
+        if direct_match:
+            pass
+        elif parsed:
+            if is_size_dim and "size" in parsed:
+                pass
+            elif is_color_dim and "color" in parsed:
+                pass
+            else:
+                continue
+        else:
             continue
+
+        if value in seen_values:
+            continue
+        seen_values.add(value)
+
         stock = v.get("stock", 0)
         track = v.get("trackInventory", True)
         if stock is None:
             stock = 0
         result.append({
-            "value": v.get("name", ""),
+            "value": value,
             "sku": v.get("sku"),
             "stock": stock,
             "status": "AVAILABLE" if not track else (

@@ -94,13 +94,14 @@ async function main() {
       where: { productId: product.id }
     });
 
+    // Composite variants (color + size) for granular stock tracking
     for (const color of colors) {
       for (const size of sizes) {
         await prisma.productVariant.create({
           data: {
             productId: product.id,
             name: `${color} / ${size}`,
-            type: 'size', // or size/color
+            type: 'size',
             sku: `sswan-${color}-${size}`,
             stock: 50,
             isActive: true,
@@ -109,7 +110,24 @@ async function main() {
         variantCount++;
       }
     }
-    console.log(`✅ Created ${variantCount} product variants`);
+
+    // Standalone color variants for AI agent filtering
+    for (const color of colors) {
+      const totalStock = sizes.length * 50;
+      await prisma.productVariant.create({
+        data: {
+          productId: product.id,
+          name: color,
+          type: 'color',
+          sku: `sswan-color-${color}`,
+          stock: totalStock,
+          isActive: true,
+        }
+      });
+      variantCount++;
+    }
+
+    console.log(`✅ Created ${variantCount} product variants (composite + color)`);
 
     console.log('🎉 Seeding completed successfully!');
     process.exit(0);
