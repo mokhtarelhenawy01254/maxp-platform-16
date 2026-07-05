@@ -1959,25 +1959,13 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       // ── 🤖 AI Auto-Reply for Facebook Messenger (fire-and-forget, never blocks the webhook) ──
       const hasCustomerTextForAi = isValidMessageContent(messageText || content);
       const hasCustomerAttachmentsForAi = Array.isArray(attachmentsData) && attachmentsData.length > 0;
-      const aiAttachmentSummary = hasCustomerAttachmentsForAi
-        ? attachmentsData
-          .map((attachment, index) => {
-            const type = attachment?.type || 'attachment';
-            const url = attachment?.payload?.url || attachment?.url || attachment?.payload?.sticker_id || '';
-            return `Attachment ${index + 1}: type=${type}${url ? `, url=${url}` : ''}`;
-          })
-          .join('\n')
-        : '';
-      const aiCustomerContent = [
-        messageText || (messageType === 'TEXT' ? content : ''),
-        aiAttachmentSummary
-          ? `Customer sent Messenger attachment(s):\n${aiAttachmentSummary}\nIf image understanding is unavailable, ask for a short description or hand off safely.`
-          : ''
-      ].filter(Boolean).join('\n\n').trim();
+      const aiCustomerContent = (
+        messageText || (messageType === 'TEXT' ? content : '')
+      ).trim();
       const shouldRunFacebookAiAutoReply = Boolean(
         customer.companyId &&
         (hasCustomerTextForAi || hasCustomerAttachmentsForAi) &&
-        aiCustomerContent
+        (aiCustomerContent || hasCustomerAttachmentsForAi)
       );
 
       if (shouldRunFacebookAiAutoReply) {
@@ -2020,10 +2008,12 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               messagePageId,
               senderId,
               fbMessageId,
+              attachments: attachmentsData,
             }, async (entries) => {
               if (entries.length === 0) return;
 
               const combinedMessage = entries.map(e => e.message).join('\n---\n');
+              const combinedAttachments = entries.flatMap(e => e.attachments || []).filter(Boolean);
               const first = entries[0];
               const latestPageData = await getPageToken(first.messagePageId);
               const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
@@ -2038,6 +2028,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 message: combinedMessage,
                 threadId: first.conversationId,
                 channel: 'FACEBOOK',
+                attachments: combinedAttachments.length > 0 ? combinedAttachments : undefined,
               });
 
               // Silent Escalation
