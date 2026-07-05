@@ -71,6 +71,7 @@ class EpisodicMemoryService:
         image_bytes: str | None = None,
         mime_type: str | None = None,
         dimension: int = 768,
+        task_type: str | None = None,
     ) -> list[float]:
         """Backwards-compatible wrapper that returns only the vector."""
         result = await self.generate_embedding_with_provider(
@@ -78,6 +79,7 @@ class EpisodicMemoryService:
             image_bytes=image_bytes,
             mime_type=mime_type,
             dimension=dimension,
+            task_type=task_type,
         )
         return result["vector"]
 
@@ -88,12 +90,18 @@ class EpisodicMemoryService:
         mime_type: str | None = None,
         dimension: int = 768,
         skip_cache: bool = False,
+        task_type: str | None = None,
     ) -> dict:
         """Generate an embedding and return provenance metadata.
 
         The text-only and multimodal paths now use the same model
         ('gemini-embedding-2') so vectors live in the same vector space and
         can be compared reliably.
+
+        Args:
+            task_type: Optional Gemini task type hint (e.g. "RETRIEVAL_DOCUMENT",
+                      "RETRIEVAL_QUERY"). Improves retrieval accuracy by
+                      specializing the embedding space for the task.
         """
         api_key = await _get_google_api_key()
         model_name = DEFAULT_EMBEDDING_MODEL
@@ -156,6 +164,8 @@ class EpisodicMemoryService:
                 "content": {"parts": parts},
                 "outputDimensionality": dimension,
             }
+            if task_type:
+                payload["taskType"] = task_type
             headers = {"Content-Type": "application/json", "x-goog-api-key": api_key}
             response = requests.post(url, json=payload, headers=headers, timeout=10)
             if response.ok:

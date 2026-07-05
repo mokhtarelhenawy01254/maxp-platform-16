@@ -104,7 +104,7 @@ async def _run_backfill(company_id: str | None = None) -> None:
             vec_image = None
             while retries < 3:
                 try:
-                    res = await svc.generate_embedding_with_provider(text=embed_text)
+                    res = await svc.generate_embedding_with_provider(text=embed_text, task_type="RETRIEVAL_DOCUMENT")
                     vec_text = res.get("vector")
                     if not vec_text or len(vec_text) != 768:
                         break

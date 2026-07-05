@@ -139,6 +139,7 @@ async def _generate_embedding(
             text=text,
             image_bytes=img_b64,
             mime_type=mime_type,
+            task_type="RETRIEVAL_QUERY",
         )
         if res.get("provider") == "pseudo" or res.get("is_pseudo"):
             logger.warning("vector_search: using position-hash pseudo embedding query vector. Results will have no semantic meaning.")
