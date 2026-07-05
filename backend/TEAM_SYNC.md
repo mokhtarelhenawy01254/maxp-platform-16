@@ -1,6 +1,7 @@
 # Team Sync Updates
 
 ## 2026-07-05 / 2026-03-09
+- **Prisma Schema P1012 Fix (FIX)**: Fixed CI/CD deployment failure caused by missing reverse relation fields on the `Company` model for `EducationTeacherAvailability` and `EducationTeacherPayment`. Added both `[]` array fields to `core.prisma`. Validated with `npx prisma validate`.
 - **WhatsApp Voice Note Send Fix (FIX)**: Fixed a bug where recording and sending a voice message in WhatsApp chat failed with "فشل إرسال الرسالة الصوتية":
   1. Updated `apps/backend/routes/whatsappRoutes.js` and `apps/backend/services/whatsapp/WhatsAppMediaHandler.js` to support `audio/webm` and `video/webm` mimetypes, preventing Multer from rejecting uploaded voice messages.
   2. Configured `.webm` extensions in `WhatsAppMediaHandler.js` for webm audio/video types so they save cleanly without using the `.bin` fallback.

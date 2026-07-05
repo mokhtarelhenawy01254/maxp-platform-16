@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [FIX] Prisma Schema P1012 - Missing Company Relations for Education Models
+- **Date**: 2026-07-05
+- **Description**: CI/CD `Deploy to Server` workflow failed with Prisma validation error P1012. The `EducationTeacherAvailability` and `EducationTeacherPayment` models defined `company Company @relation(...)` but the `Company` model in `core.prisma` was missing the reverse relation fields.
+- **Root Cause**: The `feat(education)` commit added `EducationTeacherAvailability` and `EducationTeacherPayment` models with `companyId` foreign keys and `@relation` directives pointing to `Company`, but forgot to add the corresponding `[]` array fields on the `Company` model side. Prisma requires both sides of a relation to be declared.
+- **Resolution**: Added `educationTeacherAvailability EducationTeacherAvailability[]` and `educationTeacherPayments EducationTeacherPayment[]` to the `Company` model in `core.prisma`.
+- **Files Modified**:
+  - `apps/backend/prisma/schema/core.prisma`
+
 ### [FIX] WhatsApp Meta Template Creation Returns 400 Error
 - **Date**: 2026-07-04
 - **Description**: Creating a new WhatsApp template via Meta Cloud API always returned `Request failed with status code 400`. Users could not create any templates from the MaxP dashboard.
