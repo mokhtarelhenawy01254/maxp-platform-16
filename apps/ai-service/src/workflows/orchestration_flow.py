@@ -423,7 +423,13 @@ async def run_orchestration(
             try:
                 wm_key = conversation_id or thread_id
                 if wm_key and message:
-                    await working_memory_service.add_message(company_id, wm_key, {"role": "user", "content": message})
+                    user_msg: dict[str, Any] = {"role": "user", "content": message}
+                    if attachments:
+                        img_urls = [a.get("url", "") for a in attachments if a.get("type") in ("image", "photo")]
+                        if img_urls:
+                            user_msg["attachments"] = [{"type": "image", "url": u} for u in img_urls]
+                            user_msg["content"] += "\n[أرفق صورة]"
+                    await working_memory_service.add_message(company_id, wm_key, user_msg)
                 if wm_key and reply_text:
                     await working_memory_service.add_message(company_id, wm_key, {"role": "assistant", "content": reply_text})
             except Exception:

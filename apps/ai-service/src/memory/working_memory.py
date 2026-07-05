@@ -59,6 +59,8 @@ class WorkingMemoryService:
             msg_obj["modelSelection"] = message["modelSelection"]
         if "intentTrace" in message:
             msg_obj["intentTrace"] = message["intentTrace"]
+        if isinstance(message, dict) and message.get("attachments"):
+            msg_obj["attachments"] = message["attachments"]
 
         msg_obj["timestamp"] = datetime.datetime.utcnow().isoformat()
 

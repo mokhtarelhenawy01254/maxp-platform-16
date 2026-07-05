@@ -383,18 +383,31 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 6. AI Process — load from template (2026 system-prompt-driven pattern)
+        # 6. AI Process — try DB channel agent first, fall back to template
         from src.agents.base import BaseAgent
-        agent = await BaseAgent.from_template(
-            template_slug="facebook-sales-support-agent",
-            company_id=company_id,
-            overrides={
-                "id": f"fb_agent_{page_id[:8]}",
-                "name": f"FB Agent {page_id[:8]}",
-                "persona": {"channel": "facebook"},
-            },
-            session=session,
-        )
+        from src.workflows.orchestration_flow import _resolve_channel_agent
+        from src.skills.registry import get_skill_registry
+        agent = None
+        try:
+            _id, channel_agent, _src = await _resolve_channel_agent(
+                company_id=company_id, channel="facebook",
+                registry=get_skill_registry(), session=session,
+            )
+            if channel_agent:
+                agent = channel_agent
+        except Exception:
+            logger.warning("channel_agent_resolution_failed", exc_info=True)
+        if not agent:
+            agent = await BaseAgent.from_template(
+                template_slug="facebook-sales-support-agent",
+                company_id=company_id,
+                overrides={
+                    "id": f"fb_agent_{page_id[:8]}",
+                    "name": f"FB Agent {page_id[:8]}",
+                    "persona": {"channel": "facebook"},
+                },
+                session=session,
+            )
 
         start_time = datetime.utcnow()
         task_result = await agent.process_task({
@@ -478,18 +491,31 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
         )
         await session.commit()
 
-    # AI Reply to comment — load from template (2026 system-prompt-driven pattern)
+    # AI Reply to comment — try DB channel agent first, fall back to template
     from src.agents.base import BaseAgent
-    agent = await BaseAgent.from_template(
-        template_slug="facebook-sales-support-agent",
-        company_id=company_id,
-        overrides={
-            "id": f"fb_comment_agent_{page_id[:8]}",
-            "name": "FB Comment Agent",
-            "persona": {"channel": "facebook"},
-        },
-        session=session,
-    )
+    from src.workflows.orchestration_flow import _resolve_channel_agent
+    from src.skills.registry import get_skill_registry
+    agent = None
+    try:
+        _id, channel_agent, _src = await _resolve_channel_agent(
+            company_id=company_id, channel="facebook",
+            registry=get_skill_registry(), session=session,
+        )
+        if channel_agent:
+            agent = channel_agent
+    except Exception:
+        logger.warning("channel_agent_resolution_failed", exc_info=True)
+    if not agent:
+        agent = await BaseAgent.from_template(
+            template_slug="facebook-sales-support-agent",
+            company_id=company_id,
+            overrides={
+                "id": f"fb_comment_agent_{page_id[:8]}",
+                "name": "FB Comment Agent",
+                "persona": {"channel": "facebook"},
+            },
+            session=session,
+        )
     task_result = await agent.process_task({
         "description": comment_text,
         "company_id": company_id,
