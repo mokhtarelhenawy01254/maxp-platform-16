@@ -51,9 +51,11 @@ const MIME_TYPE_MAP = {
     'text/plain': 'txt'
 };
 
+const WhatsAppMediaHandler = require('../services/whatsapp/WhatsAppMediaHandler');
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '../public/uploads/whatsapp/temp'));
+        cb(null, path.join(WhatsAppMediaHandler.MEDIA_DIR, 'temp'));
     },
     filename: (req, file, cb) => {
         const cleanMimetype = file.mimetype ? file.mimetype.split(';')[0].trim() : '';

@@ -67,7 +67,7 @@ let isHealthCheckRunning = false;
 // مسار حفظ بيانات الجلسات
 const SESSIONS_DIR = path.join(__dirname, '../../data/whatsapp-sessions');
 // مسار حفظ الوسائط
-const MEDIA_DIR = path.join(__dirname, '../../public/uploads/whatsapp');
+const MEDIA_DIR = path.join(__dirname, '../../uploads/whatsapp');
 const whatsappDisconnectAlertTimestamps = new Map();
 
 // 🔐 Professional Logger
