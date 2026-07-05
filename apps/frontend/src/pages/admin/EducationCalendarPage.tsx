@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, XMark, Clock, User, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Clock, User, BookOpen } from "lucide-react";
 
 const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const DAYS_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -126,7 +126,7 @@ const EducationCalendarPage: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">تفاصيل الحصة</h3>
-              <button onClick={() => setSelectedSession(null)} className="p-1 hover:bg-gray-100 rounded-lg"><XMark size={20} /></button>
+              <button onClick={() => setSelectedSession(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
