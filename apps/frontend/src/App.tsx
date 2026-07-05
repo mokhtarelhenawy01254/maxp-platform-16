@@ -853,6 +853,9 @@ const EducationTeacherSchedulePage = React.lazy(
 const EducationTeacherPaymentsPage = React.lazy(
   () => import("./pages/admin/EducationTeacherPaymentsPage"),
 );
+const EducationCalendarPage = React.lazy(
+  () => import("./pages/admin/EducationCalendarPage"),
+);
 const TeacherLoginPage = React.lazy(
   () => import("./pages/auth/TeacherLoginPage"),
 );
@@ -6303,6 +6306,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <EducationFunnelPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/calendar"
+                  element={
+                    <Layout fullWidth>
+                      <EducationCalendarPage />
                     </Layout>
                   }
                 />
