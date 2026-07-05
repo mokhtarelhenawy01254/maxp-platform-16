@@ -56,6 +56,8 @@ model Company {
   aiKeys                          AiKey[]
   aiSetting                       AiSetting?
   aiTraces                        AiTrace[]
+  cancellationReasonCategories    CancellationReasonCategory[]
+  cancellationReasons             CancellationReason[]
   // agentDepartments removed — 2026 refactor
   // companyAgents removed — 2026 refactor
   socialProfiles                  CompanySocialProfile[]
