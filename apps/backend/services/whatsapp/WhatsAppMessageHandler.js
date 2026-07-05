@@ -390,6 +390,8 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
  */
 async function sendAudio(sessionId, to, audioSource, options = {}) {
     try {
+        const cleanMime = (audioSource.mimetype || 'audio/mp4').split(';')[0].trim();
+
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
         if (provider === 'META_CLOUD') {
             const jid = formatJid(to);
@@ -400,7 +402,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
                 type: 'AUDIO',
                 mediaUrl: audioSource.url || audioSource.filePath,
                 mediaType: 'audio',
-                mediaMimeType: audioSource.mimetype
+                mediaMimeType: cleanMime
             }, { companyId: dbSession?.companyId });
 
             await ensureMetaContact(sessionId, jid, { isOutgoing: true });
@@ -416,7 +418,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
 
         const messageOptions = {
             audio: audioSource.buffer || { url: audioSource.filePath || audioSource.url },
-            mimetype: audioSource.mimetype || 'audio/mp4',
+            mimetype: cleanMime,
             ptt: options.ptt || false // voice note
         };
 
@@ -427,7 +429,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
             type: 'AUDIO',
             mediaUrl: audioSource.url,
             mediaType: 'audio',
-            mediaMimeType: audioSource.mimetype
+            mediaMimeType: cleanMime
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال

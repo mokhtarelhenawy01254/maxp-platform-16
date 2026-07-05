@@ -263,6 +263,10 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
         }
 
         const { sessionId, to, caption, ptt } = req.body;
+        if (!sessionId || !to) {
+            return res.status(400).json({ error: 'sessionId و to مطلوبين' });
+        }
+
         const { WhatsAppMediaHandler, WhatsAppMessageHandler } = require('../services/whatsapp');
 
         // رفع الملف
@@ -271,6 +275,12 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
             req.file.mimetype,
             req.file.originalname
         );
+
+        // حذف الملف المؤقت بعد القراءة
+        const fsSync = require('fs');
+        if (req.file.path && fsSync.existsSync(req.file.path)) {
+            fsSync.unlinkSync(req.file.path);
+        }
 
         // تحديد نوع الوسائط
         let mediaType = media.type;
@@ -300,7 +310,10 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error uploading and sending:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء رفع وإرسال الملف' });
+        res.status(500).json({
+            error: 'حدث خطأ أثناء رفع وإرسال الملف',
+            details: error.message || 'Unknown error'
+        });
     }
 });
 

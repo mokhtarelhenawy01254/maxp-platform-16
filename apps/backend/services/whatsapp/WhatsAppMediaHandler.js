@@ -162,8 +162,10 @@ async function uploadMedia(source, mimetype, originalName = '') {
             throw new Error('مصدر الملف غير صالح');
         }
 
+        const cleanMime = mimetype ? mimetype.split(';')[0].trim() : '';
+
         // التحقق من النوع
-        const mediaType = getMediaTypeFromMimetype(mimetype);
+        const mediaType = getMediaTypeFromMimetype(cleanMime);
         if (!mediaType) {
             throw new Error('نوع الملف غير مدعوم');
         }
@@ -180,7 +182,7 @@ async function uploadMedia(source, mimetype, originalName = '') {
         }
 
         // إنشاء اسم الملف
-        const extension = getExtension(mimetype);
+        const extension = getExtension(cleanMime);
         const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
         const subDir = getSubDirectory(mediaType);
         const filePath = path.join(MEDIA_DIR, subDir, fileName);
@@ -194,7 +196,7 @@ async function uploadMedia(source, mimetype, originalName = '') {
             fileName,
             url: `/uploads/whatsapp/${subDir}/${fileName}`,
             size: buffer.length,
-            mimetype,
+            mimetype: cleanMime,
             type: mediaType
         };
     } catch (error) {

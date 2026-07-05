@@ -9,6 +9,18 @@ const v8 = require("v8");
 const helmet = require("helmet");
 const { buildMemoryPressureSnapshot } = require("./services/memoryPressureMonitorService");
 
+// Setup ffmpeg-static path before any WhatsApp or child process starts
+try {
+  const ffmpeg = require("ffmpeg-static");
+  if (ffmpeg) {
+    const ffmpegDir = path.dirname(ffmpeg);
+    process.env.PATH = ffmpegDir + path.delimiter + process.env.PATH;
+    console.log("✅ [FFMPEG] Statically linked ffmpeg added to PATH:", ffmpegDir);
+  }
+} catch (error) {
+  console.error("⚠️ [FFMPEG] Failed to load ffmpeg-static:", error.message);
+}
+
 // 1. Load base .env (tracked file)
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 

@@ -382,4 +382,127 @@ const MetaCard: React.FC<{ label: string; value: string; className?: string }> =
   </div>
 );
 
+const DIFF_BADGES: Record<string, { label: string; className: string }> = {
+  modified: { label: "معدل", className: "bg-amber-100 text-amber-700" },
+  added: { label: "مضاف", className: "bg-green-100 text-green-700" },
+  removed: { label: "محذوف", className: "bg-red-100 text-red-700" },
+};
+
+const DIFF_FIELD_LABELS: Record<string, string> = {
+  model: "النموذج", soul: "الشخصية", rules: "القواعد",
+  allowed_tools: "الأدوات", allowed_skills: "المهارات",
+  channels: "القنوات", guardrails: "الضوابط",
+  budget: "الميزانية", persona: "بيانات الشخصية", version: "الإصدار",
+};
+
+const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void }> = ({ slug, onEditAgent }) => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true); setError(null);
+    try {
+      const { data: res } = await apiClient.get(`/super-admin/agents/${slug}/companies`);
+      if (res.success) setData(res);
+      else setError("فشل تحميل البيانات");
+    } catch { setError("فشل تحميل الشركات المستخدمة"); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchData(); }, [slug]);
+
+  if (loading) return <div className="flex justify-center py-8"><LoadingSpinner /></div>;
+  if (error) return <div className="max-w-3xl"><Alert variant="destructive"><AlertDescription>{error}</AlertDescription><div className="mt-2"><Button variant="outline" size="sm" onClick={fetchData}>إعادة المحاولة</Button></div></Alert></div>;
+  if (!data || data.total_companies === 0) return (
+    <div className="max-w-3xl flex flex-col items-center gap-3 py-12">
+      <Building2 className="size-16 opacity-15" />
+      <p className="text-sm text-muted-foreground">لا توجد شركات تستخدم هذا القالب حالياً</p>
+    </div>
+  );
+
+  return (
+    <div className="max-w-4xl space-y-3">
+      <div className="flex items-center gap-2">
+        <p className="text-xs text-muted-foreground">{data.total_companies} شركة تستخدم <strong>{data.template_name}</strong> (v{data.template_version})</p>
+      </div>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
+              <th className="text-right p-3 font-medium">الشركة</th>
+              <th className="text-right p-3 font-medium">الوكيل</th>
+              <th className="text-right p-3 font-medium">الحالة</th>
+              <th className="text-right p-3 font-medium">الإصدار</th>
+              <th className="text-center p-3 font-medium">التعديلات</th>
+              <th className="text-left p-3 font-medium">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.companies.map((c: any) => (
+              <React.Fragment key={c.agent_id}>
+                <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                  onClick={() => setExpandedId(expandedId === c.agent_id ? null : c.agent_id)}>
+                  <td className="p-3">
+                    <p className="text-sm font-semibold">{c.company_name}</p>
+                    <p className="text-[0.65rem] text-muted-foreground font-mono">{c.company_id}</p>
+                  </td>
+                  <td className="p-3">
+                    <p className="text-xs">{c.agent_name}</p>
+                    <span className="text-[0.6rem] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{c.agent_role}</span>
+                  </td>
+                  <td className="p-3">
+                    <span className={`text-[0.65rem] px-1.5 py-0.5 rounded-full font-medium ${c.agent_status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
+                      {c.agent_status === "ACTIVE" ? "نشط" : "غير نشط"}
+                    </span>
+                  </td>
+                  <td className="p-3 text-xs text-muted-foreground">{c.agent_version}</td>
+                  <td className="p-3 text-center">
+                    {c.diff_count > 0 ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">{c.diff_count} تعديل</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">بدون تعديلات</span>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon-xs" onClick={() => onEditAgent(c)} title="تعديل نسخة الشركة"><Pencil className="size-3.5" /></Button>
+                      {expandedId === c.agent_id ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
+                    </div>
+                  </td>
+                </tr>
+                {expandedId === c.agent_id && c.diffs?.length > 0 && (
+                  <tr className="bg-muted/20">
+                    <td colSpan={6} className="p-3">
+                      <div className="flex flex-col gap-2">
+                        <p className="text-[0.7rem] font-bold text-muted-foreground mb-1">التعديلات على القالب الأساسي:</p>
+                        {c.diffs.map((d: any, i: number) => (
+                          <div key={i} className="flex items-start gap-2 text-xs">
+                            <span className={`shrink-0 text-[0.6rem] px-1.5 py-0.5 rounded-full font-medium ${(DIFF_BADGES[d.type] || DIFF_BADGES.modified).className}`}>
+                              {(DIFF_BADGES[d.type] || DIFF_BADGES.modified).label}
+                            </span>
+                            <span className="font-medium shrink-0">{DIFF_FIELD_LABELS[d.field] || d.field}:</span>
+                            <span className="text-muted-foreground">
+                              {d.template_value !== undefined && d.agent_value !== undefined
+                                ? `${JSON.stringify(d.template_value)} ← ${JSON.stringify(d.agent_value)}`
+                                : d.type === "added" ? `مضاف: ${JSON.stringify(d.agent_value)}`
+                                : d.type === "removed" ? `محذوف: ${JSON.stringify(d.template_value)}`
+                                : "مختلف عن القالب"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 export default SuperAdminAITemplateDetail;

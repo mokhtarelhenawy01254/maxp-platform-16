@@ -1,5 +1,20 @@
 # Backend Bugs Log
 
+### [FIX] WhatsApp Voice Note 500 Error — Missing ffmpeg + Raw Mimetype in sendAudio
+- **Date**: 2026-07-05
+- **Description**: Voice notes sent from the WhatsApp chat UI returned HTTP 500 on production (`/whatsapp/messages/upload-send`).
+- **Root Cause**: Two issues: (1) `ffmpeg` was not available on the server PATH, causing Baileys audio processing to fail silently. (2) The raw mimetype `audio/webm;codecs=opus` was passed through to `sendAudio` and Baileys' `sendMessage`, which doesn't handle parameterized mimetypes.
+- **Resolution**:
+  - Added `ffmpeg-static` npm dependency and injected its binary path into `process.env.PATH` at server startup in `server.js`.
+  - Normalized mimetypes in `WhatsAppMediaHandler.uploadMedia()` and `WhatsAppMessageHandler.sendAudio()` by stripping `;` parameters.
+  - Improved `upload-send` route error handling to forward `error.message` details, validate required params, and clean up temp files.
+- **Files Modified**:
+  - `apps/backend/server.js`
+  - `apps/backend/package.json`
+  - `apps/backend/services/whatsapp/WhatsAppMediaHandler.js`
+  - `apps/backend/services/whatsapp/WhatsAppMessageHandler.js`
+  - `apps/backend/routes/whatsappRoutes.js`
+
 ### [FIX] GramJS Unhandled Rejection Alert Loop
 - **Date**: 2026-07-05
 - **Description**: The server was flooded with unhandled rejections and logged `[Sleeping for 13s on flood wait]` and `Failed to send alert`, causing massive log files (`err-1.log` reached ~1MB) and rate-limiting the Telegram alerting channel.
