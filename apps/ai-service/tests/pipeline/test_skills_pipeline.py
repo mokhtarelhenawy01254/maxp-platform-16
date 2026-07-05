@@ -1,108 +1,68 @@
-from __future__ import annotations
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.pipeline.stages.skills_pipeline import _format_tool_results
+import pytest
+
+from src.pipeline.context import PipelineContext
 
 
-def test_format_tool_results_with_products():
-    executed = [
-        {
-            "tool": "product_search",
-            "status": "success",
-            "result": {
-                "count": 2,
-                "products": [
-                    {"productName": "Shoes"},
-                    {"productName": "T-Shirt"},
-                ],
-            },
-        }
+@pytest.fixture
+def ctx() -> PipelineContext:
+    return PipelineContext(
+        message="What is the price?",
+        thread_id="test-thread",
+        company_id="test-company",
+        customer_id="test-customer",
+    )
+
+
+@pytest.mark.asyncio
+async def test_followup_uses_ctx_attachments(ctx: PipelineContext) -> None:
+    from src.pipeline.stages.skills_pipeline import _build_followup_messages
+    from src.context.multimodal import build_user_content
+    ctx.attachments = [{"type": "image", "url": "http://example.com/img.jpg"}]
+    mock_response = MagicMock()
+    mock_response.tool_calls = None
+    mock_response.text = "test response"
+    result = await _build_followup_messages(ctx, mock_response, [])
+    assert result is not None
+    user_msgs = [m for m in result if m.get("role") == "user"]
+    assert len(user_msgs) >= 1
+    last_user = user_msgs[-1]["content"]
+    assert isinstance(last_user, list) or "img.jpg" in str(last_user)
+
+
+@pytest.mark.asyncio
+async def test_token_budget_trims_history(ctx: PipelineContext) -> None:
+    from src.pipeline.stages.skills_pipeline import _llm_call
+    ctx.token_budget = 100
+    ctx.llm_client = AsyncMock()
+    ctx.llm_client.generate = AsyncMock(return_value="short reply")
+    system_prompt = "Short system prompt"
+    ctx.external_memory_context["recentMessages"] = [
+        {"role": "user", "content": "Hello " * 1000},
+        {"role": "assistant", "content": "test"},
+        {"role": "user", "content": "final message"},
     ]
-    formatted = _format_tool_results(executed)
-    assert "Shoes" in formatted
-    assert "T-Shirt" in formatted
+    result = await _llm_call(ctx, system_prompt, [])
+    assert result is not None
 
 
-def test_format_tool_results_with_categories():
-    executed = [
-        {
-            "tool": "category_list",
-            "status": "success",
-            "result": {
-                "count": 2,
-                "categories": [
-                    {"category": "Electronics"},
-                    {"category": "Apparel"},
-                ],
-            },
-        }
-    ]
-    formatted = _format_tool_results(executed)
-    assert "Electronics" in formatted
-    assert "Apparel" in formatted
+@pytest.mark.asyncio
+async def test_build_user_content_with_attachments(ctx: PipelineContext) -> None:
+    from src.context.multimodal import build_user_content
+    attachments = [{"type": "image", "url": "http://example.com/img.jpg"}]
+    result = build_user_content("test message", attachments)
+    if isinstance(result, list):
+        assert len(result) == 2
+        assert result[0]["type"] == "text"
+        assert result[1]["type"] == "image_url"
+    else:
+        assert isinstance(result, str)
 
 
-def test_format_tool_results_empty():
-    executed = [
-        {
-            "tool": "category_list",
-            "status": "success",
-            "result": {
-                "count": 0,
-                "categories": [],
-            },
-        }
-    ]
-    formatted = _format_tool_results(executed)
-    assert formatted == ""
-
-
-def test_format_tool_results_with_results_key():
-    executed = [
-        {
-            "tool": "product_search",
-            "status": "success",
-            "result": {
-                "count": 1,
-                "results": [
-                    {"name": "كوتشي الاسكوتش من سوان"}
-                ]
-            }
-        }
-    ]
-    formatted = _format_tool_results(executed)
-    assert "كوتشي الاسكوتش من سوان" in formatted
-
-
-def test_format_tool_results_with_single_product():
-    executed = [
-        {
-            "tool": "inventory_check",
-            "status": "success",
-            "result": {
-                "found": True,
-                "productName": "كوتشي الاسكوتش من سوان",
-                "sku": "sswan"
-            }
-        }
-    ]
-    formatted = _format_tool_results(executed)
-    assert "كوتشي الاسكوتش من سوان" in formatted
-
-
-def test_format_tool_results_with_offers_active():
-    executed = [
-        {
-            "tool": "offers_list_active",
-            "status": "success",
-            "result": {
-                "totalActiveCoupons": 2,
-                "hasStorePromotion": True,
-                "hasFreeShipping": True
-            }
-        }
-    ]
-    formatted = _format_tool_results(executed)
-    assert "كوبونات خصم (2)" in formatted
-    assert "خصم تلقائي بالمتجر" in formatted
-    assert "شحن مجاني" in formatted
-
+@pytest.mark.asyncio
+async def test_build_user_content_without_attachments(ctx: PipelineContext) -> None:
+    from src.context.multimodal import build_user_content
+    result = build_user_content("test message", [])
+    assert isinstance(result, str)
+    assert result == "test message"

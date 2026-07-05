@@ -260,7 +260,7 @@ def test_chat_error_handling(client, mock_session):
 
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "error"
+    assert data["status"] == "escalated"
     assert data["reply"] is None
 
 
