@@ -264,9 +264,22 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
             return res.status(400).json({ error: 'لم يتم رفع ملف' });
         }
 
-        const { sessionId, to, caption, ptt } = req.body;
+        let { sessionId, to, caption, ptt } = req.body;
         if (!sessionId || !to) {
             return res.status(400).json({ error: 'sessionId و to مطلوبين' });
+        }
+
+        const { getSharedPrismaClient } = require('../services/sharedDatabase');
+        if (sessionId === 'all') {
+            const prisma = getSharedPrismaClient();
+            const firstSession = await prisma.whatsAppSession.findFirst({
+                where: { companyId: req.companyId, status: 'CONNECTED' },
+                orderBy: { lastConnectedAt: 'desc' }
+            });
+            if (!firstSession) {
+                return res.status(400).json({ error: 'لا توجد جلسة متصلة' });
+            }
+            sessionId = firstSession.id;
         }
 
         const { WhatsAppMediaHandler, WhatsAppMessageHandler } = require('../services/whatsapp');

@@ -41,6 +41,12 @@ Additionally, when an audio file was uploaded, the controller called `WhatsAppMe
 - Modified `uploadMedia()` to automatically detect `audio/webm` input and convert it to `audio/ogg` before saving, ensuring all downstream code (Meta Media API upload + send) receives a WhatsApp-compatible format.
 - The file extension and mimetype in the returned media object are updated to `.ogg` / `audio/ogg` so the Meta Cloud Provider sends the correct content type.
 
+### 7. Resolve `sessionId=all` to Active Session (whatsappRoutes.js)
+- **Date**: 2026-07-06
+- The frontend sends `sessionId=all` in the upload-send request, meaning "use any available session".
+- Previously, the route handler passed `sessionId=all` directly to `WhatsAppMessageHandler.sendAudio()`, which tried to look up the session by ID "all" in the database and in-memory store — both returned null/undefined, causing the "الجلسة غير متصلة" 500 error.
+- Fixed: the route handler now checks if `sessionId === 'all'` and resolves it by querying the first `CONNECTED` session for the current company from the database, ordered by `lastConnectedAt` descending. The resolved session ID is then passed to the message handler.
+
 ### Why This Is Necessary
 Meta's WhatsApp Cloud API Media endpoint officially supports `audio/aac`, `audio/mp4`, `audio/mpeg`, `audio/amr`, and `audio/ogg; codecs=opus` for voice messages. The `audio/webm` format produced by browser `MediaRecorder` (Chrome/Edge/Firefox) is **not** a supported type. Even though the file can be uploaded via the Media API, Meta's platform rejects `audio/webm` as an invalid format for WhatsApp message delivery.
 
