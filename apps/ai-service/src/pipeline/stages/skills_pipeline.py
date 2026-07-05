@@ -86,21 +86,15 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         pname = top.get("productName") or top.get("name", "")
                         pprice = top.get("price", "")
                         ctx.external_memory_context["confirmedProduct"] = {"name": pname, "price": pprice}
-                        image_block = f"\n\n[منتج مطابق: {pname} بسعر {pprice} جنيه. هذا هو المنتج نفسه في الصورة. ردي عليه بشكل طبيعي بالأسعار والتفاصيل.]"
+                        image_block = f"\n\n[منتج مطابق: {pname} بسعر {pprice} جنيه.\nردك يجب أن يبدأ بـ: ده {pname} ب {pprice} جنيه]"
                     elif top_score >= 0.5:
                         candidates = []
                         for p in ps_result["results"][:5]:
                             n = p.get("productName") or p.get("name", "")
                             pr = p.get("price", "")
                             s = float(p.get("score") or p.get("similarity") or 0) * 100
-                            candidates.append(f"- {n} ({s:.0f}%)")
-                        image_block = f"\n\n[أقرب منتجات للصورة:\n" + "\n".join(candidates) + "\nقولي إن ده أقرب حاجة عندك.]"
-                    else:
-                        image_block = "\n\n[لم نجد منتج مطابق. لا تخترعي منتجات. اعتذري بصراحة.]"
-                else:
-                    image_block = "\n\n[لم نجد منتج مطابق. لا تخترعي منتجات.]"
-            except Exception:
-                image_block = "\n\n[العميل أرسل صورة. حلليها واسأليه.]"
+                            candidates.append(f"- {n} ({s:.0f}%)  {pr} جنيه")
+                        image_block = f"\n\n[أقرب منتجات للصورة:\n" + "\n".join(candidates) + "\nابدأ ردك بأقرب منتج.]"
 
     system_prompt = f"{base_prompt}{image_block}\n\n{_technical_formatting_constraints()}"
 
