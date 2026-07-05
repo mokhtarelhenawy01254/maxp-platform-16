@@ -293,22 +293,6 @@ async function createSession(req, res) {
             return res.status(400).json({ error: 'اسم الجلسة مطلوب' });
         }
 
-        // التحقق من عدد الجلسات
-        const settings = await getSharedPrismaClient().whatsAppSettings.findUnique({
-            where: { companyId }
-        });
-
-        const maxSessions = settings?.maxSessions || 3;
-        const currentSessions = await getSharedPrismaClient().whatsAppSession.count({
-            where: { companyId }
-        });
-
-        if (currentSessions >= maxSessions) {
-            return res.status(400).json({
-                error: `لقد وصلت للحد الأقصى من الجلسات (${maxSessions})`
-            });
-        }
-
         const isMetaProvider = provider === 'META_CLOUD';
         const cleanPhone = isMetaProvider ? '' : normalizePhoneNumber(phoneNumber);
         const shouldImportHistory = !isMetaProvider && (toBooleanOption(importHistory) || toBooleanOption(syncFullHistory));
@@ -429,22 +413,6 @@ async function createSessionWithPairingCode(req, res) {
         }
         metadataObj.keepHistoryOnDelete = toBooleanOption(keepHistoryOnDelete);
         const metadata = JSON.stringify(metadataObj);
-
-        // التحقق من عدد الجلسات
-        const settings = await getSharedPrismaClient().whatsAppSettings.findUnique({
-            where: { companyId }
-        });
-
-        const maxSessions = settings?.maxSessions || 3;
-        const currentSessions = await getSharedPrismaClient().whatsAppSession.count({
-            where: { companyId }
-        });
-
-        if (currentSessions >= maxSessions) {
-            return res.status(400).json({
-                error: `لقد وصلت للحد الأقصى من الجلسات (${maxSessions})`
-            });
-        }
 
         // إنشاء الجلسة في قاعدة البيانات
         const session = await getSharedPrismaClient().whatsAppSession.create({
