@@ -145,7 +145,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         parse_errors = [r for r in results if r.get("status") == "parse_error"]
         if parse_errors:
             logger.warning("skills_pipeline_json_parse_retry", errors=[r.get("error") for r in parse_errors])
-            retry_messages = _build_followup_messages(ctx, provider_response, executed)
+            retry_messages = await _build_followup_messages(ctx, provider_response, executed)
             tool_dicts = [s.to_openai_tool() for s in skills]
             skill_names = {s.name.lower() for s in skills}
             for tool_name in (getattr(ctx.agent, "allowed_tools", None) or []):
@@ -169,7 +169,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
         # Follow-up LLM call for the final reply
         if executed:
-            followup_messages = _build_followup_messages(ctx, provider_response, executed)
+            followup_messages = await _build_followup_messages(ctx, provider_response, executed)
             try:
                 final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
                 if not final_response.text:
@@ -209,32 +209,25 @@ def _unwrap_llm_client(client):
 
 
 async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> ProviderResponse:
-    """Make the primary LLM call with skills as available tools."""
-    messages = [
-        {"role": "system", "content": system_prompt},
-    ]
-    # Add recent conversation history if available
-    recent = ctx.external_memory_context.get("recentMessages", [])
-    if not recent and ctx.conversation_id and ctx.session:
-        try:
-            from sqlalchemy import text
-            result = await ctx.session.execute(
-                text('SELECT content, "isFromCustomer", type FROM public.messages WHERE "conversationId" = :cid ORDER BY "createdAt" ASC LIMIT 15'),
-                {"cid": ctx.conversation_id}
-            )
-            for row in result.fetchall():
-                role = "user" if row[1] else "assistant"
-                content = row[0] or (f"[{row[2]} Attachment]" if row[2] != "TEXT" else "")
-                if content:
-                    messages.append({"role": role, "content": content})
-        except Exception:
-            logger.warning("failed to fetch message history from DB", exc_info=True)
-    else:
-        for msg in recent:
-            role = "assistant" if msg.get("role") == "assistant" else "user"
-            messages.append({"role": role, "content": msg.get("content", "")})
+    """Make the primary LLM call with skills as available tools.
 
-    # Build user message — multipart if attachments present
+    Uses ContextAssembler for DB-backed conversation history, customer profile,
+    session state, RAG evidence, and episodic memories.
+    """
+    from src.context.assembler import ContextAssembler
+    assembler = ContextAssembler()
+
+    ctx.system_prompt = system_prompt
+    enriched_prompt = await assembler.build_system_prompt(ctx)
+
+    messages = [
+        {"role": "system", "content": enriched_prompt},
+    ]
+
+    history = await assembler.fetch_message_history(ctx, limit=15)
+    for msg in history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+
     from src.context.multimodal import build_user_content
     user_content = build_user_content(ctx.message, ctx.attachments)
     messages.append({"role": "user", "content": user_content})
@@ -389,7 +382,7 @@ def _format_tool_results(executed: list[dict]) -> str:
     return "\n".join(parts) if parts else ""
 
 
-def _build_followup_messages(
+async def _build_followup_messages(
     ctx: PipelineContext, first_response: ProviderResponse, executed: list[dict]
 ) -> list[dict]:
     """Build messages for the follow-up LLM call after tool execution."""
@@ -407,11 +400,12 @@ def _build_followup_messages(
         {"role": "system", "content": system_prompt},
     ]
 
-    # Add recent conversation history (same as primary _llm_call)
-    recent = ctx.external_memory_context.get("recentMessages", [])
-    for msg in recent:
-        role = "assistant" if msg.get("role") == "assistant" else "user"
-        messages.append({"role": role, "content": msg.get("content", "")})
+    # Add DB-backed conversation history (same as primary _llm_call)
+    from src.context.assembler import ContextAssembler
+    assembler = ContextAssembler()
+    history = await assembler.fetch_message_history(ctx, limit=15)
+    for msg in history:
+        messages.append({"role": msg["role"], "content": msg.get("content", "")})
 
     # Current user message — multipart if attachments present
     from src.context.multimodal import build_user_content
