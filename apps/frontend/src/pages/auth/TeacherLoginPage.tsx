@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { AuthSurface, AuthNotice } from "../../components/auth/AuthSurface";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
-import { getApiUrl } from "../../utils/getApiUrl";
+import { getApiUrl } from "../../config/environment";
 
 const TeacherLoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
