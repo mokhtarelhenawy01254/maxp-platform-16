@@ -30,4 +30,9 @@ Additionally, when an audio file was uploaded, the controller called `WhatsAppMe
 - Normal browsers sometimes submit recorded audio with parameters in the mimetype, e.g., `audio/webm;codecs=opus`.
 - Updated `whatsappRoutes.js` (Multer setup) and `WhatsAppMediaHandler.js` (helpers `getMediaTypeFromMimetype`, `getExtension`, and `validateFile`) to strip codecs parameters (using `.split(';')[0].trim()`) before checking them against supported types maps. This prevents `Error: نوع الملف غير مدعوم` validation errors on parameters-rich mimetypes.
 
+### 5. Meta Cloud API WebM Audio Upload (MetaCloudProvider.js)
+- Added `uploadMediaFile()` function that uploads media files to Meta's Media API endpoint (`POST /{{version}}/{{phone-number-id}}/media`) using `form-data`.
+- Modified `sendMedia()` to use the Media API upload path for `audio` and `video` kinds when a `buffer` is available on the media object, instead of directly sending a `link`.
+- This fixes the 500 error when sending voice notes via Meta Cloud API, because `audio/webm` format produced by the browser's `MediaRecorder` is not directly supported by Meta's messages endpoint but can be uploaded via the Media API and referenced by ID.
+
 

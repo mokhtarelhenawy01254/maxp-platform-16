@@ -109,6 +109,33 @@ function makeUrlAbsolute(url) {
   const relativePath = url.startsWith('/') ? url : `/${url}`;
   return `${baseUrl}${relativePath}`;
 }
+async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  const { apiVersion, accessToken, phoneNumberId } = resolveConfig(session);
+  const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/media`;
+
+  const FormData = require('form-data');
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('file', fileBuffer, { filename, contentType: mimetype });
+  form.append('type', mimetype);
+
+  const response = await axios.post(url, form, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...form.getHeaders()
+    },
+    timeout: 30000,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity
+  });
+
+  return response.data?.id || null;
+}
 
 async function sendMedia(sessionId, to, media, kind, options = {}) {
   const session = await getSession(sessionId);
@@ -122,8 +149,21 @@ async function sendMedia(sessionId, to, media, kind, options = {}) {
   }
 
   const mediaPayload = {};
+
   if (mediaObj?.id || mediaObj?.mediaId) {
     mediaPayload.id = mediaObj.id || mediaObj.mediaId;
+  } else if (mediaObj?.buffer && (kind === 'audio' || kind === 'video')) {
+    const mediaId = await uploadMediaFile(
+      sessionId,
+      mediaObj.buffer,
+      mediaObj.mimetype || 'audio/ogg',
+      mediaObj.fileName || `voice_note.${mediaObj.mimetype?.split('/')[1] || 'ogg'}`
+    );
+    if (mediaId) {
+      mediaPayload.id = mediaId;
+    } else {
+      throw new Error('فشل رفع الملف إلى خوادم Meta');
+    }
   } else {
     const rawUrl = mediaObj?.url || mediaObj?.link;
     if (rawUrl) {
@@ -391,6 +431,7 @@ module.exports = {
   resolveBaseConfig,
   sendText,
   sendMedia,
+  uploadMediaFile,
   sendLocation,
   sendContacts,
   sendReaction,
