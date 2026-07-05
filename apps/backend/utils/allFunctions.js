@@ -326,8 +326,10 @@ async function sendFacebookMessage(recipientId, messageContent, messageType = 'T
 
     // منع التكرار - فحص إذا كانت الرسالة أُرسلت من قبل
     // استخدام رابط كامل للصور لتجنب اعتبار صور مختلفة كمكررة
+    // تضمين replyToMessageId لمنع حجب ردود مختلفة على رسائل مختلفة من نفس العميل
     const contentForHash = messageType === 'IMAGE' ? messageContent : messageContent.substring(0, 50);
-    const messageHash = `${recipientId}_${contentForHash}_${Date.now() - (Date.now() % 60000)}`;
+    const replyIdPart = replyToMessageId ? `_${replyToMessageId}` : '';
+    const messageHash = `${recipientId}_${contentForHash}${replyIdPart}_${Date.now() - (Date.now() % 60000)}`;
     if (facebookSentCache.has(messageHash)) {
       console.log(`⚠️ [FACEBOOK-SEND] Message already sent recently - skipping duplicate: ${messageHash}`);
       return { success: true, message: 'Message already sent recently', wasCached: true };
