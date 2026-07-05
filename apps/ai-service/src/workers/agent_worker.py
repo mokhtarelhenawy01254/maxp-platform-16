@@ -618,18 +618,31 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 5. AI Process — load from template (2026 system-prompt-driven pattern)
+        # 5. AI Process — try DB channel agent first, fall back to template
         from src.agents.base import BaseAgent
-        agent = await BaseAgent.from_template(
-            "sales-agent",
-            company_id,
-            overrides={
-                "id": f"wa_agent_{phone_number_id[:8]}",
-                "name": f"WA Agent {phone_number_id[:8]}",
-                "persona": {"channel": "whatsapp"},
-            },
-            session=session,
-        )
+        from src.workflows.orchestration_flow import _resolve_channel_agent
+        from src.skills.registry import get_skill_registry
+        agent = None
+        try:
+            _id, channel_agent, _src = await _resolve_channel_agent(
+                company_id=company_id, channel="whatsapp",
+                registry=get_skill_registry(), session=session,
+            )
+            if channel_agent:
+                agent = channel_agent
+        except Exception:
+            logger.warning("channel_agent_resolution_failed", exc_info=True)
+        if not agent:
+            agent = await BaseAgent.from_template(
+                template_slug="sales-agent",
+                company_id=company_id,
+                overrides={
+                    "id": f"wa_agent_{phone_number_id[:8]}",
+                    "name": f"WA Agent {phone_number_id[:8]}",
+                    "persona": {"channel": "whatsapp"},
+                },
+                session=session,
+            )
 
         task_result = await agent.process_task({
             "description": message_text,
@@ -700,18 +713,31 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 4. AI Process — load from template (2026 system-prompt-driven pattern)
+        # 4. AI Process — try DB channel agent first, fall back to template
         from src.agents.base import BaseAgent
-        agent = await BaseAgent.from_template(
-            "sales-agent",
-            company_id,
-            overrides={
-                "id": f"tg_agent_{company_id[:8]}",
-                "name": "TG Agent",
-                "persona": {"channel": "telegram"},
-            },
-            session=session,
-        )
+        from src.workflows.orchestration_flow import _resolve_channel_agent
+        from src.skills.registry import get_skill_registry
+        agent = None
+        try:
+            _id, channel_agent, _src = await _resolve_channel_agent(
+                company_id=company_id, channel="telegram",
+                registry=get_skill_registry(), session=session,
+            )
+            if channel_agent:
+                agent = channel_agent
+        except Exception:
+            logger.warning("channel_agent_resolution_failed", exc_info=True)
+        if not agent:
+            agent = await BaseAgent.from_template(
+                template_slug="sales-agent",
+                company_id=company_id,
+                overrides={
+                    "id": f"tg_agent_{company_id[:8]}",
+                    "name": "TG Agent",
+                    "persona": {"channel": "telegram"},
+                },
+                session=session,
+            )
 
         start_time = datetime.utcnow()
         task_result = await agent.process_task({
