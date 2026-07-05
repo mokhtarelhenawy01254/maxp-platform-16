@@ -282,6 +282,8 @@ model Company {
    educationTeachers                EducationTeacher[]
    educationEnrollments             EducationEnrollment[]
     educationSessions                EducationSession[]
+    educationTeacherAvailability     EducationTeacherAvailability[]
+    educationTeacherPayments         EducationTeacherPayment[]
     formDefinitions                  FormDefinition[]
     formSubmissions                  FormSubmission[]
     wholesalePriceLists              WholesalePriceList[]
