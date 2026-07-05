@@ -272,14 +272,31 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
         const { getSharedPrismaClient } = require('../services/sharedDatabase');
         if (sessionId === 'all') {
             const prisma = getSharedPrismaClient();
-            const firstSession = await prisma.whatsAppSession.findFirst({
-                where: { companyId: req.companyId, status: 'CONNECTED' },
-                orderBy: { lastConnectedAt: 'desc' }
-            });
-            if (!firstSession) {
-                return res.status(400).json({ error: 'لا توجد جلسة متصلة' });
+
+            // 1. Try Baileys sessions connected in-memory first
+            const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+            const companySessions = WhatsAppManager.getCompanySessions(req.companyId);
+            const connectedMemorySessions = companySessions.filter(s => s.status === 'connected');
+            if (connectedMemorySessions.length > 0) {
+                sessionId = connectedMemorySessions[0].sessionId;
+            } else {
+                // 2. Fallback: find any CONNECTED session in DB (for META_CLOUD or recent Baileys)
+                const firstSession = await prisma.whatsAppSession.findFirst({
+                    where: { companyId: req.companyId, status: 'CONNECTED' },
+                    orderBy: { lastConnectedAt: 'desc' }
+                });
+                if (!firstSession) {
+                    return res.status(400).json({ error: 'لا توجد جلسة متصلة' });
+                }
+                // If Baileys session, verify it's actually in memory
+                if (firstSession.provider !== 'META_CLOUD') {
+                    const memSession = WhatsAppManager.getSession(firstSession.id);
+                    if (!memSession || memSession.status !== 'connected') {
+                        return res.status(400).json({ error: 'الجلسة غير متصلة حالياً، يرجى إعادة الاتصال' });
+                    }
+                }
+                sessionId = firstSession.id;
             }
-            sessionId = firstSession.id;
         }
 
         const { WhatsAppMediaHandler, WhatsAppMessageHandler } = require('../services/whatsapp');

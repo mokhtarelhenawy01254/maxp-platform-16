@@ -45,7 +45,10 @@ Additionally, when an audio file was uploaded, the controller called `WhatsAppMe
 - **Date**: 2026-07-06
 - The frontend sends `sessionId=all` in the upload-send request, meaning "use any available session".
 - Previously, the route handler passed `sessionId=all` directly to `WhatsAppMessageHandler.sendAudio()`, which tried to look up the session by ID "all" in the database and in-memory store — both returned null/undefined, causing the "الجلسة غير متصلة" 500 error.
-- Fixed: the route handler now checks if `sessionId === 'all'` and resolves it by querying the first `CONNECTED` session for the current company from the database, ordered by `lastConnectedAt` descending. The resolved session ID is then passed to the message handler.
+- Fixed: the route handler now checks if `sessionId === 'all'` and resolves it in two steps:
+  1. First, queries in-memory connected Baileys sessions via `WhatsAppManager.getCompanySessions()`.
+  2. If none in memory, queries the DB for a `CONNECTED` session. For Baileys sessions, verifies the resolved session is actually present in the in-memory store before using it.
+- This prevents the mismatch between DB status (CONNECTED after deploy restart) and in-memory session (still restoring).
 
 ### Why This Is Necessary
 Meta's WhatsApp Cloud API Media endpoint officially supports `audio/aac`, `audio/mp4`, `audio/mpeg`, `audio/amr`, and `audio/ogg; codecs=opus` for voice messages. The `audio/webm` format produced by browser `MediaRecorder` (Chrome/Edge/Firefox) is **not** a supported type. Even though the file can be uploaded via the Media API, Meta's platform rejects `audio/webm` as an invalid format for WhatsApp message delivery.
