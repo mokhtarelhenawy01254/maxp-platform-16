@@ -471,3 +471,19 @@
   - `apps/backend/controller/platformSubscriptionController.js`
   - `apps/backend/controller/marketplaceController.js`
   - `apps/frontend/src/pages/super-admin/SuperAdminAgentProfiles.tsx`
+
+### [FIX] WhatsApp Voice Message Sending Failure & Mimetype Rejection
+- **Date**: 2026-07-05
+- **Description**: Recorded voice messages (voice notes) in WhatsApp chat interface failed to send, triggering the toast error "فشل إرسال الرسالة الصوتية".
+- **Root Cause**:
+  1. The browser records voice messages as `.webm` files and uploads them with `audio/webm` or `video/webm` mimetypes.
+  2. The Multer file upload filter in `apps/backend/routes/whatsappRoutes.js` rejected these mimetypes because they were missing from the supported `MIME_TYPE_MAP`. This caused the request to fail immediately with an upload error before reaching the route controller.
+  3. When an audio file was uploaded, the controller called `WhatsAppMessageHandler.sendAudio` without passing the `{ ptt: true }` option, meaning it was treated as a standard audio file attachment instead of a playable WhatsApp voice note.
+- **Resolution**:
+  1. Added `audio/webm` and `video/webm` mimetypes to `MIME_TYPE_MAP` in `apps/backend/routes/whatsappRoutes.js` and `SUPPORTED_TYPES` / `getExtension` in `apps/backend/services/whatsapp/WhatsAppMediaHandler.js`.
+  2. Updated the frontend `onVoiceNoteSend` handler in `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx` to append `ptt: 'true'` explicitly to the `FormData` payload.
+  3. Updated the backend router in `whatsappRoutes.js` to extract `ptt` from `req.body` and check if the original file name is `voice_note.webm` to override the media type classification to `'audio'` and pass `{ ptt: isVoiceNote }` to `sendAudio` execution.
+- **Files Modified**:
+  - `apps/backend/routes/whatsappRoutes.js`
+  - `apps/backend/services/whatsapp/WhatsAppMediaHandler.js`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx`

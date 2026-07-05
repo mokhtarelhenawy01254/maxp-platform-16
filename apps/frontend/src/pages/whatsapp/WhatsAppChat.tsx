@@ -1881,6 +1881,7 @@ const WhatsAppChatContent: React.FC = () => {
             formData.append('sessionId', selectedSession);
             formData.append('to', selectedContact.jid);
             formData.append('file', blob, 'voice_note.webm');
+            formData.append('ptt', 'true');
             try {
               await api.post('/whatsapp/messages/upload-send', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
               toast.success('تم إرسال الرسالة الصوتية');

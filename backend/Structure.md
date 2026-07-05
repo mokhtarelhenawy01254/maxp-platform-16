@@ -13,6 +13,7 @@ No API endpoints were modified or added, but:
 6. The Python `/chat` endpoint (`api/chat.py`) was updated to support `status: "escalated"` with optional `escalation` metadata.
 7. A new `silentEscalationService.js` was introduced in the backend to manage Socket.IO events (`ai:escalation`) and DB `ActivityLog` creation for silent human handoffs.
 8. The backend sandbox chat endpoint `/api/v1/ai-sandbox/chat` (handled by `aiSandboxController.sendChatMessage` / `runSelectedAgentInPython`) was updated to map `compiled_system_prompt` from the Python response to `result.compiledSystemPrompt`, enabling system prompt visualization in the Sandbox UI.
+9. The backend endpoint `/api/v1/whatsapp/messages/upload-send` (handled by `whatsappRoutes.js`) was updated to support explicit `ptt` flag and override media classification to `'audio'` when file name is `'voice_note.webm'`, ensuring playable push-to-talk voice messages are delivered to WhatsApp.
 
 ### Database Schema Models
 No database models or Prisma schemas were modified. However, the database seeding script for the `ai.skills` table (`seed.py`) was corrected to map `triggerPhrases` from `skill.json` to the database column `trigger_phrases`, enabling SQL intent routing.

@@ -86,6 +86,16 @@ def _image_url(attachment: dict[str, Any]) -> str | None:
 
 def data_url_to_inline_data(url: str) -> tuple[str, str] | None:
     match = DATA_URL_RE.match(str(url or "").strip())
-    if not match:
-        return None
-    return match.group("mime"), match.group("data")
+    if match:
+        return match.group("mime"), match.group("data")
+    if url.startswith(("http://", "https://")):
+        import httpx
+        try:
+            resp = httpx.get(url, timeout=10, verify=False)
+            if resp.status_code == 200:
+                import base64
+                ct = resp.headers.get("content-type", "image/jpeg")
+                return ct, base64.b64encode(resp.content).decode()
+        except Exception:
+            pass
+    return None

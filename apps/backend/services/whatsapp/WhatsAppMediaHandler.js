@@ -48,8 +48,8 @@ const SIZE_LIMITS = {
 // أنواع الملفات المدعومة
 const SUPPORTED_TYPES = {
     image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-    video: ['video/mp4', 'video/3gpp', 'video/quicktime'],
-    audio: ['audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/amr'],
+    video: ['video/mp4', 'video/3gpp', 'video/quicktime', 'video/webm'],
+    audio: ['audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/webm'],
     document: [
         'application/pdf',
         'application/msword',
@@ -359,10 +359,12 @@ function getExtension(mimetype) {
         'video/mp4': 'mp4',
         'video/3gpp': '3gp',
         'video/quicktime': 'mov',
+        'video/webm': 'webm',
         'audio/ogg': 'ogg',
         'audio/mp4': 'm4a',
         'audio/mpeg': 'mp3',
         'audio/amr': 'amr',
+        'audio/webm': 'webm',
         'application/pdf': 'pdf',
         'application/msword': 'doc',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',

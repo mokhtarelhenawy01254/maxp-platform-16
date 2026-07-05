@@ -27,6 +27,8 @@ const MIME_TYPE_MAP = {
     'audio/mp4': 'm4a',
     'audio/mpeg': 'mp3',
     'audio/amr': 'amr',
+    'audio/webm': 'webm',
+    'video/webm': 'webm',
     'application/pdf': 'pdf',
     'application/msword': 'doc',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
@@ -243,7 +245,7 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
             return res.status(400).json({ error: 'لم يتم رفع ملف' });
         }
 
-        const { sessionId, to, caption } = req.body;
+        const { sessionId, to, caption, ptt } = req.body;
         const { WhatsAppMediaHandler, WhatsAppMessageHandler } = require('../services/whatsapp');
 
         // رفع الملف
@@ -254,8 +256,14 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
         );
 
         // تحديد نوع الوسائط
+        let mediaType = media.type;
+        const isVoiceNote = ptt === 'true' || req.file.originalname === 'voice_note.webm';
+        if (isVoiceNote) {
+            mediaType = 'audio';
+        }
+
         let message;
-        switch (media.type) {
+        switch (mediaType) {
             case 'image':
                 message = await WhatsAppMessageHandler.sendImage(sessionId, to, media, caption);
                 break;
@@ -263,7 +271,7 @@ router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAcce
                 message = await WhatsAppMessageHandler.sendVideo(sessionId, to, media, caption);
                 break;
             case 'audio':
-                message = await WhatsAppMessageHandler.sendAudio(sessionId, to, media);
+                message = await WhatsAppMessageHandler.sendAudio(sessionId, to, media, { ptt: isVoiceNote });
                 break;
             default:
                 message = await WhatsAppMessageHandler.sendDocument(sessionId, to, {

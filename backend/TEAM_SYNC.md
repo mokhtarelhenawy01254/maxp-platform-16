@@ -1,5 +1,12 @@
 # Team Sync Updates
 
+## 2026-07-05 / 2026-03-09
+- **WhatsApp Voice Note Send Fix (FIX)**: Fixed a bug where recording and sending a voice message in WhatsApp chat failed with "فشل إرسال الرسالة الصوتية":
+  1. Updated `apps/backend/routes/whatsappRoutes.js` and `apps/backend/services/whatsapp/WhatsAppMediaHandler.js` to support `audio/webm` and `video/webm` mimetypes, preventing Multer from rejecting uploaded voice messages.
+  2. Configured `.webm` extensions in `WhatsAppMediaHandler.js` for webm audio/video types so they save cleanly without using the `.bin` fallback.
+  3. Added explicit `ptt: 'true'` parameter to `FormData` on the frontend (`WhatsAppChat.tsx`) and extracted it on the backend, falling back to checking if the original name is `'voice_note.webm'`.
+  4. Passed `{ ptt: isVoiceNote }` to `WhatsAppMessageHandler.sendAudio` in the router so recorded voice notes are delivered to WhatsApp as native voice messages (Push-To-Talk) instead of regular audio attachment files.
+
 ## 2026-07-04 / 2026-03-09
 - **WhatsApp Meta Template Creation 400 Error Fix (FIX)**: Fixed a critical bug where template creation requests to Meta Cloud API returned a 400 bad request error:
   1. Updated `apps/backend/controller/whatsappMetaTemplateController.js` to forward Meta's detailed error responses (with parameters like `error_user_title`/`error_user_msg`) and correct status codes back to the frontend instead of swallowing them under a generic 500 status.
