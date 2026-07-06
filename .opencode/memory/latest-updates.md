@@ -24,6 +24,7 @@ When changing order status via the quick status update button, the `/api/v1/orde
 ### Fix
 - **Backend** (`orderWorkflowService.js`): 
   - Added a `VALID_STATUSES` fallback inside `evaluateStatusChange` to recognize standard system statuses (e.g., `CONFIRMED`, `SHIPPED`) even if they lack explicit database definitions.
+  - Set `isSystemFallback: true` on the dummy status definition and configured the service to skip writing to `orderWorkflowAuditLog` (which strictly requires a foreign key relation to an existing `OrderStatusDefinition` row) if the status is a fallback.
   - Adjusted the logic to correctly bypass the `config.enforceTransitions` rule when `isOverride` is true.
 
 ### Files Modified

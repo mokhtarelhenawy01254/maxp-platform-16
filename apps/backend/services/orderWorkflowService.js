@@ -166,7 +166,7 @@ class OrderWorkflowService {
             if (!nextStatusDef) {
                 const VALID_STATUSES = ['PENDING','CONFIRMED','SCHEDULED','READY_FOR_PROCESSING','PROCESSING','SHIPPED','DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED','RETURNED','PARTIALLY_RETURNED','EXCHANGED','PARTIALLY_REFUNDED','WOO_TAGHEZ','DRAFT','TRASH','READY_TO_SHIP','ON_HOLD','NOT_SHIPPED','OUT_FOR_DELIVERY','LOST','PENDING_PREPARATION','PREPARING','READY','QUALITY_CHECK','PACKAGED','ON_HOLD_PREP','PARTIALLY_DELIVERED'];
                 if (VALID_STATUSES.includes(statusOrId?.toUpperCase())) {
-                    nextStatusDef = { id: statusOrId.toUpperCase(), code: statusOrId.toUpperCase(), name: statusOrId.toUpperCase() };
+                    nextStatusDef = { id: statusOrId.toUpperCase(), code: statusOrId.toUpperCase(), name: statusOrId.toUpperCase(), isSystemFallback: true };
                 }
             }
 
@@ -225,7 +225,7 @@ class OrderWorkflowService {
                 }
             }
 
-            const auditLog = {
+            const auditLog = nextStatusDef.isSystemFallback ? null : {
                 fromStatusId: currentStatusDef?.id || null,
                 toStatusId: nextStatusDef.id,
                 changedBy: userId,
@@ -243,7 +243,9 @@ class OrderWorkflowService {
                 data: { status: nextStatusDef.code }
             });
 
-            await this.logAudit(companyId, order.id, auditLog.fromStatusId, auditLog.toStatusId, auditLog.changedBy, auditLog.changeType, auditLog.reason);
+            if (auditLog) {
+                await this.logAudit(companyId, order.id, auditLog.fromStatusId, auditLog.toStatusId, auditLog.changedBy, auditLog.changeType, auditLog.reason);
+            }
 
             // 🔔 Trigger WhatsApp Notification (fire-and-forget)
             this.sendWorkflowNotification(companyId, order, nextStatusDef.code)
