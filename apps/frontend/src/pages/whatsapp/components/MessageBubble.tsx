@@ -10,6 +10,7 @@ import {
   Download,
   FileText,
   MapPin,
+  Radio,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -282,6 +283,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 <p className="mt-1 truncate text-xs text-[color:var(--color-muted-foreground)]">
                   {message.quotedContent || t("whatsapp.window.message")}
                 </p>
+              </div>
+            ) : null}
+
+            {message.fromMe && message.metadata?.isBroadcast ? (
+              <div className="mb-1 flex items-center gap-1.5">
+                <div className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-sky-600/10 to-blue-600/10 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:from-sky-400/20 dark:to-blue-400/20 dark:text-sky-300">
+                  <Radio className="size-3" />
+                  <span>Broadcast</span>
+                </div>
               </div>
             ) : null}
 

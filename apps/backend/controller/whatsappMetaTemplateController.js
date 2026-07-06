@@ -179,6 +179,9 @@ async function broadcastMetaTemplate(req, res) {
             language: recipientLanguage,
             languageCode: recipientLanguage,
             components: recipientComponents
+          },
+          {
+            metadata: { isBroadcast: true }
           }
         );
 

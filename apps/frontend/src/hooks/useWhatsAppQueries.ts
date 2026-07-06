@@ -90,6 +90,7 @@ export interface Message {
   senderId?: string;
   senderName?: string;
   participant?: string;
+  metadata?: any;
 }
 
 export interface QuickReply {
