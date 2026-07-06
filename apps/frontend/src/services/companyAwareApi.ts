@@ -236,6 +236,35 @@ class CompanyAwareApiService {
     return axios.put(this.buildUrl(url), payload, finalConfig);
   }
 
+  // PATCH request with company awareness
+  async patch<T = unknown, D extends RequestPayload = RequestPayload>(
+    url: string,
+    data?: D,
+    config: CompanyAwareRequestConfig = {},
+  ): Promise<AxiosResponse<T>> {
+    const user = this.getCurrentUser();
+    const payload =
+      data &&
+      user?.companyId &&
+      user.role !== "SUPER_ADMIN" &&
+      !config.bypassCompanyCheck
+        ? { ...data, companyId: user.companyId }
+        : data;
+
+    if (config.requireCompanyAccess) {
+      const targetCompanyId =
+        payload && typeof payload.companyId === "string"
+          ? payload.companyId
+          : undefined;
+      if (!this.validateCompanyAccess(targetCompanyId)) {
+        throw new Error("ليس لديك صلاحية للوصول لهذه الشركة");
+      }
+    }
+
+    const finalConfig = this.addCompanyFilter(config);
+    return axios.patch(this.buildUrl(url), payload, finalConfig);
+  }
+
   // DELETE request with company awareness
   async delete<T = unknown>(
     url: string,
