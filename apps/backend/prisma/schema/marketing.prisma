@@ -751,6 +751,7 @@ model FacebookPage {
   instagramAccountId      String?                   @unique
   instagramAccountName    String?
   blockedCustomersOnPages BlockedCustomersOnPage[]
+  facebookPosts           FacebookPost[]
   company                 Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])

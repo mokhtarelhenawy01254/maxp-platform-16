@@ -115,6 +115,7 @@ model Company {
   facebookDynamicAds              FacebookDynamicAd[]
   facebookLookalikeAudiences      FacebookLookalikeAudience[]
   facebookPages                   FacebookPage[]
+  facebookPosts                   FacebookPost[]
   facebookProductCatalogs         FacebookProductCatalog[]
   faqs                            Faq[]
   footerSettings                  FooterSettings?
