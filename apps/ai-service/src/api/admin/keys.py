@@ -421,16 +421,44 @@ async def list_logs(
     limit: int = Query(default=100, ge=1, le=500),
     admin: dict | None = Depends(verify_admin_jwt),
 ) -> list[LogEntry]:
-    stmt = select(ProviderLog).order_by(ProviderLog.created_at.desc())
+    from sqlalchemy import text as sa_text
+
+    clause = []
+    params: dict[str, str | int] = {}
     if provider:
-        stmt = stmt.where(ProviderLog.provider == provider)
+        clause.append("provider = :provider")
+        params["provider"] = provider
     if key_id:
-        stmt = stmt.where(ProviderLog.key_id == key_id)
+        clause.append('"keyId" = :key_id')
+        params["key_id"] = key_id
     if status:
-        stmt = stmt.where(ProviderLog.status == status)
-    stmt = stmt.limit(limit)
-    result = await session.execute(stmt)
-    return [LogEntry.model_validate(r) for r in result.scalars().all()]
+        clause.append("status = :status")
+        params["status"] = status
+    where_sql = " AND ".join(clause) if clause else "TRUE"
+    params["lim"] = limit
+
+    rows = await session.execute(
+        sa_text(f"""
+            SELECT id, provider, "keyId" AS key_id, action, status,
+                   model, "latencyMs" AS latency_ms,
+                   COALESCE(message, '') AS error,
+                   "companyId" AS company_id, "createdAt" AS created_at,
+                   1 AS source
+            FROM public.ai_provider_logs
+            WHERE {where_sql}
+            UNION ALL
+            SELECT id, provider, key_id, action, status,
+                   model, latency_ms, COALESCE(error, '') AS error,
+                   company_id, created_at,
+                   2 AS source
+            FROM ai.provider_logs
+            WHERE {where_sql}
+            ORDER BY created_at DESC
+            LIMIT :lim
+        """),
+        params,
+    )
+    return [LogEntry.model_validate(r) for r in rows.mappings().all()]
 
 
 _DEFAULT_TEST_MODELS: dict[str, str] = {
