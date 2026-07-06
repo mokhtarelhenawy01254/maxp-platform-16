@@ -31,6 +31,12 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children, fullWidth
     return undefined;
   }, [u, isLoading, navigate]);
 
+  useEffect(() => {
+    if (location.pathname.startsWith("/super-admin/")) {
+      localStorage.setItem("superAdmin_lastPath", location.pathname);
+    }
+  }, [location.pathname]);
+
   if (isLoading) return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <p className="text-muted-foreground">{t("superAdmin.dashboardLoading")}</p>
