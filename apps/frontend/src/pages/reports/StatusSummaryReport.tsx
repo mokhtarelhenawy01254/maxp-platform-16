@@ -9,13 +9,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import {
-  ArrowPathIcon,
-  ArrowDownTrayIcon,
-  FunnelIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "@heroicons/react/24/outline";
 
 interface StatusRow {
   status: string;
@@ -365,7 +358,7 @@ const StatusSummaryReport: React.FC = () => {
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                               {inlineMode === "orders" ? "تفاصيل الطلبات" : "تفاصيل القطع"}
                               <span className="mr-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-                                ({formatNumber(inlinePagination.total)})
+                                ({formatNumber(inlinePagination.total ?? 0)})
                               </span>
                             </h3>
                           </div>
@@ -431,14 +424,20 @@ const StatusSummaryReport: React.FC = () => {
                                   </thead>
                                   <tbody>
                                     {inlineItems.map((item, idx) => (
-                                      <tr key={`${item.itemId}-${idx}`} className="border-b border-gray-100 transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:hover:bg-gray-700/50">
+                                      <tr
+                                        key={`${item.itemId}-${idx}`}
+                                        onClick={() => navigate(`/orders/details/${item.orderNumber}`)}
+                                        className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:hover:bg-indigo-900/20"
+                                      >
                                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{item.productName || "—"}</td>
                                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productColor || "—"}</td>
                                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productSize || "—"}</td>
                                         <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{formatNumber(item.quantity)}</td>
                                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatEGP(item.price)}</td>
                                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(item.total)}</td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.orderNumber}</td>
+                                        <td className="px-4 py-3 font-medium text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">
+                                          {item.orderNumber}
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>

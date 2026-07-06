@@ -1,3 +1,12 @@
+# Session Log — 2026-07-06 — Analytics Status Filtering + Clickable Orders
+
+## Changes
+1. **Backend** (`analyticsController.js`): Added `ORDER_STATUS_VALUES` set to filter out payment statuses (PAID, PARTIALLY_PAID, FAILED) from analytics report queries at 3 endpoints
+2. **Frontend** (`StatusSummaryReport.tsx`): Added `useNavigate`, changed status API call to include `statusType: order`, made order rows clickable navigating to `/orders/details/{orderNumber}`
+
+### Deploy
+- Commit `264363d54` → pushed to `main` → Deploy to Server workflow completed in 5m51s ✓
+
 # Session Log — 2026-07-05 — Part 2
 
 ## AI Templates Companies Feature
