@@ -769,16 +769,19 @@ model FacebookPost {
   permalink   String?
   postedAt    DateTime
   isProduct   Boolean   @default(false)
+  productId   String?
   syncStatus  String    @default("synced")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   page    FacebookPage @relation(fields: [pageId], references: [pageId])
   company Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product Product?    @relation(fields: [productId], references: [id])
 
   @@index([pageId])
   @@index([companyId])
   @@index([isProduct])
+  @@index([productId])
   @@index([postedAt])
   @@map("facebook_posts")
 }

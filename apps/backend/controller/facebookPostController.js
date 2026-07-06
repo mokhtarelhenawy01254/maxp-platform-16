@@ -36,21 +36,20 @@ const syncPosts = async (req, res) => {
   }
 };
 
-const toggleProduct = async (req, res) => {
+const setPostProduct = async (req, res) => {
   try {
     const user = req.user;
     if (!user || !user.companyId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const { id } = req.params;
-    const { isProduct } = req.body;
-    if (isProduct === undefined) return res.status(400).json({ success: false, error: 'isProduct is required' });
+    const { productId } = req.body;
 
-    const post = await fbPostService.toggleProductLabel(id, isProduct);
+    const post = await fbPostService.setProduct(id, productId || null);
     res.json({ success: true, data: post });
   } catch (error) {
-    console.error('[FB-POST] Error toggling product:', error);
+    console.error('[FB-POST] Error setting product:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
-module.exports = { getPosts, syncPosts, toggleProduct };
+module.exports = { getPosts, syncPosts, setPostProduct };
