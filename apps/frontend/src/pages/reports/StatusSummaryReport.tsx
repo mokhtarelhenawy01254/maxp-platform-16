@@ -40,7 +40,7 @@ interface OrderDetail {
   paymentMethod: string;
   sourceType: string | null;
   createdAt: string;
-  customer?: { name: string; phone: string } | null;
+  customer?: { firstName: string; lastName: string; phone: string } | null;
 }
 
 interface ItemDetail {
@@ -393,7 +393,7 @@ const StatusSummaryReport: React.FC = () => {
                                     {inlineOrders.map((o) => (
                                       <tr key={o.id} className="border-b border-gray-100 transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:hover:bg-gray-700/50">
                                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{o.orderNumber}</td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.customer?.name || "—"}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.customer ? `${o.customer.firstName} ${o.customer.lastName}`.trim() || "—" : "—"}</td>
                                         <td className="px-4 py-3">
                                           <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                                             {statusLabel(o.status)}

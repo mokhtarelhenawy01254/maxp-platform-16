@@ -3881,7 +3881,7 @@ const getStatusSummaryOrders = async (req, res) => {
           paymentMethod: true,
           sourceType: true,
           createdAt: true,
-          customer: { select: { name: true, phone: true } }
+          customer: { select: { firstName: true, lastName: true, phone: true } }
         },
         orderBy: { createdAt: 'desc' },
         skip,
