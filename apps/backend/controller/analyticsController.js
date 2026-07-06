@@ -3967,56 +3967,54 @@ const getStatusSummaryItems = async (req, res) => {
     }
 
     const where = {
-      companyId: String(companyId),
-      status: { in: filteredStatusCodes },
-      ...dateFilter
+      order: {
+        companyId: String(companyId),
+        status: { in: filteredStatusCodes },
+        ...dateFilter
+      }
     };
 
-    const orderItems = await prisma.order.findMany({
+    const items = await prisma.orderItem.findMany({
       where,
       select: {
         id: true,
-        orderNumber: true,
-        status: true,
-        orderItems: {
+        quantity: true,
+        price: true,
+        total: true,
+        productName: true,
+        productColor: true,
+        productSize: true,
+        productSku: true,
+        order: {
           select: {
             id: true,
-            quantity: true,
-            price: true,
-            total: true,
-            productName: true,
-            productColor: true,
-            productSize: true,
-            productSku: true
+            orderNumber: true,
+            status: true,
+            createdAt: true
           }
         }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { order: { createdAt: 'desc' } },
       skip,
       take: limitNum
     });
 
-    // Flatten: each item becomes its own row with order info
-    const flatItems = [];
-    for (const order of orderItems) {
-      for (const item of order.orderItems) {
-        flatItems.push({
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          orderStatus: order.status,
-          itemId: item.id,
-          productName: item.productName,
-          productColor: item.productColor,
-          productSize: item.productSize,
-          productSku: item.productSku,
-          quantity: item.quantity,
-          price: Number(item.price) || 0,
-          total: Number(item.total) || 0
-        });
-      }
-    }
+    const flatItems = items.map(item => ({
+      orderId: item.order?.id || '',
+      orderNumber: item.order?.orderNumber || 'غير معروف',
+      orderStatus: item.order?.status || 'UNKNOWN',
+      createdAt: item.order?.createdAt || new Date(),
+      itemId: item.id,
+      productName: item.productName,
+      productColor: item.productColor,
+      productSize: item.productSize,
+      productSku: item.productSku,
+      quantity: item.quantity,
+      price: Number(item.price) || 0,
+      total: Number(item.total) || 0
+    }));
 
-    const totalOrders = await prisma.order.count({ where });
+    const totalItems = await prisma.orderItem.count({ where });
 
     res.json({
       success: true,
@@ -4025,8 +4023,8 @@ const getStatusSummaryItems = async (req, res) => {
         pagination: {
           page: pageNum,
           limit: limitNum,
-          totalOrders,
-          totalPages: Math.ceil(totalOrders / limitNum)
+          total: totalItems,
+          totalPages: Math.ceil(totalItems / limitNum)
         }
       }
     });

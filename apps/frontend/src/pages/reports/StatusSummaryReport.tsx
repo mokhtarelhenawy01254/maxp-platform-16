@@ -48,6 +48,7 @@ interface ItemDetail {
   quantity: number;
   price: number;
   total: number;
+  createdAt: string;
 }
 
 interface Pagination {
@@ -420,6 +421,7 @@ const StatusSummaryReport: React.FC = () => {
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">السعر</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -437,6 +439,9 @@ const StatusSummaryReport: React.FC = () => {
                                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(item.total)}</td>
                                         <td className="px-4 py-3 font-medium text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">
                                           {item.orderNumber}
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                          {item.createdAt ? formatDate(item.createdAt) : "—"}
                                         </td>
                                       </tr>
                                     ))}
