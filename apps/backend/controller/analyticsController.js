@@ -5,6 +5,14 @@ const ANALYTICS_DAY_MS = 24 * 60 * 60 * 1000;
 const DELIVERED_ORDER_STATUSES = new Set(['DELIVERED']);
 const CANCELLED_ORDER_STATUSES = new Set(['CANCELLED']);
 const RETURNED_ORDER_STATUSES = new Set(['RETURNED']);
+const ORDER_STATUS_VALUES = new Set([
+  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
+  'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED',
+  'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED',
+  'WOO_TAGHEZ', 'DRAFT', 'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED',
+  'OUT_FOR_DELIVERY', 'LOST', 'PENDING_PREPARATION', 'PREPARING', 'READY',
+  'QUALITY_CHECK', 'PACKAGED', 'ON_HOLD_PREP', 'PARTIALLY_DELIVERED'
+]);
 
 const normalizeAnalyticsDateInput = (value, { endOfDay = false } = {}) => {
   if (!value) {
@@ -3751,6 +3759,13 @@ const getStatusSummaryReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
     }
 
+    // Filter to only valid Prisma OrderStatus values (exclude payment statuses like PARTIALLY_PAID, PAID, FAILED)
+    const filteredStatusCodes = statusCodes.filter(code => ORDER_STATUS_VALUES.has(code));
+
+    if (filteredStatusCodes.length === 0) {
+      return res.status(400).json({ success: false, message: 'لا توجد حالات طلب صالحة للفلترة' });
+    }
+
     const dateFilter = {};
     if (startDate || endDate) {
       dateFilter.createdAt = {};
@@ -3761,7 +3776,7 @@ const getStatusSummaryReport = async (req, res) => {
     const orders = await prisma.order.findMany({
       where: {
         companyId: String(companyId),
-        status: { in: statusCodes },
+        status: { in: filteredStatusCodes },
         ...dateFilter
       },
       include: {
@@ -3797,7 +3812,7 @@ const getStatusSummaryReport = async (req, res) => {
     }
 
     // Build per-status rows
-    const statusRows = statusCodes
+    const statusRows = filteredStatusCodes
       .filter(code => statusMap[code])
       .map(code => ({
         status: code,
@@ -3848,6 +3863,12 @@ const getStatusSummaryOrders = async (req, res) => {
       return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
     }
 
+    const filteredStatusCodes = statusCodes.filter(code => ORDER_STATUS_VALUES.has(code));
+
+    if (filteredStatusCodes.length === 0) {
+      return res.status(400).json({ success: false, message: 'لا توجد حالات طلب صالحة للفلترة' });
+    }
+
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
     const skip = (pageNum - 1) * limitNum;
@@ -3861,7 +3882,7 @@ const getStatusSummaryOrders = async (req, res) => {
 
     const where = {
       companyId: String(companyId),
-      status: { in: statusCodes },
+      status: { in: filteredStatusCodes },
       ...dateFilter
     };
 
@@ -3928,6 +3949,12 @@ const getStatusSummaryItems = async (req, res) => {
       return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
     }
 
+    const filteredStatusCodes = statusCodes.filter(code => ORDER_STATUS_VALUES.has(code));
+
+    if (filteredStatusCodes.length === 0) {
+      return res.status(400).json({ success: false, message: 'لا توجد حالات طلب صالحة للفلترة' });
+    }
+
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
     const skip = (pageNum - 1) * limitNum;
@@ -3941,7 +3968,7 @@ const getStatusSummaryItems = async (req, res) => {
 
     const where = {
       companyId: String(companyId),
-      status: { in: statusCodes },
+      status: { in: filteredStatusCodes },
       ...dateFilter
     };
 
