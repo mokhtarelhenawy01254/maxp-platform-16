@@ -421,10 +421,52 @@ async def list_logs(
     limit: int = Query(default=100, ge=1, le=500),
     admin: dict | None = Depends(verify_admin_jwt),
 ) -> list[LogEntry]:
-    from sqlalchemy import text as sa_text
+    from sqlalchemy import select as sa_select, text as sa_text
 
+    where_sql, params = _build_log_filters(provider, key_id, status)
+    params["lim"] = limit
+
+    union_sql = sa_text(f"""
+        SELECT id, provider, "keyId" AS key_id, action, status,
+               model, "latencyMs" AS latency_ms,
+               COALESCE(message, '') AS error,
+               "companyId" AS company_id, "createdAt" AS created_at
+        FROM public.ai_provider_logs
+        WHERE {where_sql}
+        UNION ALL
+        SELECT id, provider, key_id, action, status,
+               model, latency_ms, COALESCE(error, '') AS error,
+               company_id, created_at
+        FROM ai.provider_logs
+        WHERE {where_sql}
+        ORDER BY created_at DESC
+        LIMIT :lim
+    """)
+
+    try:
+        rows = await session.execute(union_sql, params)
+        return [LogEntry.model_validate(r) for r in rows.mappings().all()]
+    except Exception:
+        logger.warning("public.ai_provider_logs not available, falling back to ai.provider_logs")
+        stmt = sa_select(ProviderLog).order_by(ProviderLog.created_at.desc())
+        if provider:
+            stmt = stmt.where(ProviderLog.provider == provider)
+        if key_id:
+            stmt = stmt.where(ProviderLog.key_id == key_id)
+        if status:
+            stmt = stmt.where(ProviderLog.status == status)
+        stmt = stmt.limit(limit)
+        result = await session.execute(stmt)
+        return [LogEntry.model_validate(r) for r in result.scalars().all()]
+
+
+def _build_log_filters(
+    provider: str | None,
+    key_id: str | None,
+    status: str | None,
+) -> tuple[str, dict[str, str]]:
     clause = []
-    params: dict[str, str | int] = {}
+    params: dict[str, str] = {}
     if provider:
         clause.append("provider = :provider")
         params["provider"] = provider
@@ -434,31 +476,7 @@ async def list_logs(
     if status:
         clause.append("status = :status")
         params["status"] = status
-    where_sql = " AND ".join(clause) if clause else "TRUE"
-    params["lim"] = limit
-
-    rows = await session.execute(
-        sa_text(f"""
-            SELECT id, provider, "keyId" AS key_id, action, status,
-                   model, "latencyMs" AS latency_ms,
-                   COALESCE(message, '') AS error,
-                   "companyId" AS company_id, "createdAt" AS created_at,
-                   1 AS source
-            FROM public.ai_provider_logs
-            WHERE {where_sql}
-            UNION ALL
-            SELECT id, provider, key_id, action, status,
-                   model, latency_ms, COALESCE(error, '') AS error,
-                   company_id, created_at,
-                   2 AS source
-            FROM ai.provider_logs
-            WHERE {where_sql}
-            ORDER BY created_at DESC
-            LIMIT :lim
-        """),
-        params,
-    )
-    return [LogEntry.model_validate(r) for r in rows.mappings().all()]
+    return " AND ".join(clause) if clause else "TRUE", params
 
 
 _DEFAULT_TEST_MODELS: dict[str, str] = {
