@@ -170,9 +170,16 @@ async function broadcastMetaTemplate(req, res) {
         const recipientComponents = recipient.components || components || [];
         const recipientLanguage = recipient.languageCode || languageCode || 'en';
 
-        await MetaCloudProvider.sendTemplate(
-          targetSessionId, to, templateName,
-          recipientLanguage, recipientComponents
+        await WhatsAppMessageHandler.sendTemplateMessage(
+          targetSessionId,
+          to,
+          templateName,
+          {
+            name: templateName,
+            language: recipientLanguage,
+            languageCode: recipientLanguage,
+            components: recipientComponents
+          }
         );
 
         results.sent++;
