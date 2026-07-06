@@ -84,6 +84,7 @@ class AgentUpdate(BaseModel):
     allowed_skills: list[str] | None = None
     allowed_channels: list[str] | None = None
     persona: dict[str, Any] | None = None
+    custom_instructions: dict[str, Any] | None = None
     guardrails: dict[str, Any] | None = None
     budget: dict[str, Any] | None = None
     config: dict[str, Any] | None = None
@@ -109,6 +110,7 @@ class AgentRead(BaseModel):
     status: Literal["ACTIVE", "INACTIVE", "ARCHIVED"]
     model: str | None = None
     persona: dict[str, Any]
+    custom_instructions: dict[str, Any] = {}
     allowed_tools: list[str]
     allowed_skills: list[str]
     allowed_channels: list[str] = []

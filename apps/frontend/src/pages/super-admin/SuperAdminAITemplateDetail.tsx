@@ -564,6 +564,17 @@ const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void; onRe
                               {a.budget && Object.keys(a.budget).length > 0 && (
                                 <FieldCard icon={CreditCard} label="الميزانية" value={JSON.stringify(a.budget)} />
                               )}
+                              {a.custom_instructions && (a.custom_instructions.soul || a.custom_instructions.agents || a.custom_instructions.tools || a.custom_instructions.persona) && (
+                                <>
+                                  <div className="md:col-span-2 border-t pt-3 mt-2">
+                                    <p className="text-[0.65rem] font-bold text-muted-foreground mb-2">📋 إضافات مخصصة (تضاف إلى إعدادات القالب)</p>
+                                  </div>
+                                  {a.custom_instructions.soul && <FieldCard icon={BookOpen} label="إضافة للشخصية (Soul)" value={a.custom_instructions.soul} mono className="md:col-span-2" />}
+                                  {a.custom_instructions.agents && <FieldCard icon={FileText} label="إضافة لقواعد الوكيل" value={a.custom_instructions.agents} mono className="md:col-span-2" />}
+                                  {a.custom_instructions.tools && <FieldCard icon={Wrench} label="إضافة لتعليمات الأدوات" value={a.custom_instructions.tools} mono className="md:col-span-2" />}
+                                  {a.custom_instructions.persona && <FieldCard icon={User} label="إضافة لتعليمات الشخصية" value={a.custom_instructions.persona} mono className="md:col-span-2" />}
+                                </>
+                              )}
                             </div>
                           );
                         })()}
