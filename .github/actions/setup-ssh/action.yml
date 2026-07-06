@@ -11,11 +11,6 @@ inputs:
   key:
     description: 'SSH private key content'
     required: true
-  key-path:
-    description: 'Path to store the key file'
-    required: false
-    default: '$HOME/.ssh/maxp_deploy_key'
-
 runs:
   using: 'composite'
   steps:
@@ -23,8 +18,8 @@ runs:
       shell: bash
       env:
         SSH_KEY: ${{ inputs.key }}
-        SSH_KEY_PATH: ${{ inputs.key-path }}
       run: |
+        SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
         install -m 700 -d "$HOME/.ssh"
         printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$SSH_KEY_PATH"
         chmod 600 "$SSH_KEY_PATH"
