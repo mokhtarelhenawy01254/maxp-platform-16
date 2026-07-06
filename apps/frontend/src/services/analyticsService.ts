@@ -1138,6 +1138,39 @@ class AnalyticsService {
       throw error;
     }
   }
+
+  // --- Status Summary Report (Multi-status aggregate) ---
+
+  async getAvailableStatusesForSummary() {
+    try {
+      const response = await apiClient.get("/analytics/statuses");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching available statuses for summary:", error);
+      throw error;
+    }
+  }
+
+  async getStatusSummaryReport(
+    statuses: string[],
+    startDate?: string,
+    endDate?: string,
+  ) {
+    try {
+      const params: AnalyticsQueryParams & { statuses: string } = {
+        statuses: statuses.join(","),
+      };
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      const response = await apiClient.get("/analytics/status-summary", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching status summary report:", error);
+      throw error;
+    }
+  }
 }
 
 export default new AnalyticsService();

@@ -98,7 +98,7 @@ const AuditLogViewer: React.FC = () => {
                         type="text"
                         value={orderNumber}
                         onChange={(e) => setOrderNumber(e.target.value)}
-                        placeholder="أدخل معرف الطلب (Order ID) للبحث في سجله..."
+                        placeholder="أدخل رقم الطلب أو معرفه للبحث في سجل العمليات..."
                         className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                     />
                 </div>

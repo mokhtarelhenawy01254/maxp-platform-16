@@ -61,6 +61,25 @@ const OverridePermissions: React.FC<Props> = ({ config, onUpdate }) => {
                 <p className="text-slate-500 text-sm">حدد الأدوار التي تملك صلاحية تجاوز قيود المسار والتحكم الكامل في الحالات</p>
             </div>
 
+            {/* Allow Override Toggle */}
+            <div className="mb-8 p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white">السماح بالتجاوز</h3>
+                        <p className="text-sm text-slate-500">تفعيل خاصية تجاوز قيود المسار للأدوار المحددة أدناه</p>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            await orderWorkflowService.updateConfig({ allowOverride: !config?.allowOverride });
+                            onUpdate();
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${config?.allowOverride !== false ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config?.allowOverride !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                     <div className="p-6 rounded-3xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800">

@@ -9,6 +9,7 @@ const orderWorkflowService = require('../services/orderWorkflowService');
 const orderService = require('../services/orderService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const verifyToken = require("../utils/verifyToken");
+const { VALID_ORDER_STATUSES } = require('../utils/constants');
 
 // Apply authentication to all routes
 router.use(verifyToken.authenticateToken);
@@ -174,13 +175,11 @@ router.post('/change-status', async (req, res) => {
             return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
         }
 
-        const VALID_STATUSES = ['PENDING','CONFIRMED','SCHEDULED','READY_FOR_PROCESSING','PROCESSING','SHIPPED','DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED','RETURNED','PARTIALLY_RETURNED','EXCHANGED','PARTIALLY_REFUNDED','WOO_TAGHEZ','DRAFT','TRASH','READY_TO_SHIP','ON_HOLD','NOT_SHIPPED','OUT_FOR_DELIVERY','LOST','PENDING_PREPARATION','PREPARING','READY','QUALITY_CHECK','PACKAGED','ON_HOLD_PREP','PARTIALLY_DELIVERED'];
-
         let targetStatus = await orderWorkflowService.findStatusByCode(companyId, statusId) || await getSharedPrismaClient().orderStatusDefinition.findUnique({
             where: { id: statusId }
         });
 
-        if (!targetStatus && VALID_STATUSES.includes(statusId?.toUpperCase())) {
+        if (!targetStatus && VALID_ORDER_STATUSES.includes(statusId?.toUpperCase())) {
             targetStatus = { code: statusId.toUpperCase(), companyId };
         }
 

@@ -5,6 +5,7 @@
 
 const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
 const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+const { VALID_ORDER_STATUSES } = require('../utils/constants');
 
 class OrderWorkflowService {
     constructor() {
@@ -71,6 +72,20 @@ class OrderWorkflowService {
      * Delete status definition
      */
     async deleteStatus(companyId, statusId) {
+        const linkedTransitions = await this.prisma.orderWorkflowTransition.count({
+            where: {
+                companyId,
+                OR: [
+                    { fromStatusId: statusId },
+                    { toStatusId: statusId }
+                ]
+            }
+        });
+
+        if (linkedTransitions > 0) {
+            throw new Error('لا يمكن حذف هذه الحالة لأنها مرتبطة بقواعد انتقال نشطة. قم بحذف قواعد الانتقال أولاً.');
+        }
+
         return await this.prisma.orderStatusDefinition.delete({
             where: { id: statusId, companyId }
         });
@@ -164,8 +179,7 @@ class OrderWorkflowService {
             }
 
             if (!nextStatusDef) {
-                const VALID_STATUSES = ['PENDING','CONFIRMED','SCHEDULED','READY_FOR_PROCESSING','PROCESSING','SHIPPED','DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED','RETURNED','PARTIALLY_RETURNED','EXCHANGED','PARTIALLY_REFUNDED','WOO_TAGHEZ','DRAFT','TRASH','READY_TO_SHIP','ON_HOLD','NOT_SHIPPED','OUT_FOR_DELIVERY','LOST','PENDING_PREPARATION','PREPARING','READY','QUALITY_CHECK','PACKAGED','ON_HOLD_PREP','PARTIALLY_DELIVERED'];
-                if (VALID_STATUSES.includes(statusOrId?.toUpperCase())) {
+                if (VALID_ORDER_STATUSES.includes(statusOrId?.toUpperCase())) {
                     nextStatusDef = { id: statusOrId.toUpperCase(), code: statusOrId.toUpperCase(), name: statusOrId.toUpperCase(), isSystemFallback: true };
                 }
             }
@@ -225,7 +239,7 @@ class OrderWorkflowService {
                 }
             }
 
-            const auditLog = nextStatusDef.isSystemFallback ? null : {
+            const auditLog = {
                 fromStatusId: currentStatusDef?.id || null,
                 toStatusId: nextStatusDef.id,
                 changedBy: userId,
@@ -481,8 +495,8 @@ class OrderWorkflowService {
                 trackingNumber: order.turboTrackingNumber || 'غير متوفر حالياً',
                 estimatedDays: '2-3',
                 trackingLink: order.turboTrackingNumber
-                    ? `https://mokhtarelhenawy.online/track/${order.orderNumber}`
-                    : `https://mokhtarelhenawy.online/track/${order.orderNumber}`,
+                    ? `https://${process.env.MAIN_DOMAIN || 'mokhtarelhenawy.online'}/track/${order.orderNumber}`
+                    : `https://${process.env.MAIN_DOMAIN || 'mokhtarelhenawy.online'}/track/${order.orderNumber}`,
                 orderId: order.id
             };
 

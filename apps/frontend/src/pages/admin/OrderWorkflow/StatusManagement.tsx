@@ -18,6 +18,8 @@ interface Props {
 const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
     const [editingStatus, setEditingStatus] = useState<Partial<OrderStatusDefinition> | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<OrderStatusDefinition | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,6 +39,18 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
             onUpdate();
         } catch (error) {
             setSaveError(error.message || 'فشل حفظ الحالة');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        try {
+            setDeleteError(null);
+            await orderWorkflowService.deleteStatus(deleteTarget.id);
+            setDeleteTarget(null);
+            onUpdate();
+        } catch (error) {
+            setDeleteError(error.response?.data?.message || error.message || 'فشل حذف الحالة');
         }
     };
 
@@ -77,11 +91,7 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                     <PencilIcon className="w-4 h-4" />
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        if (window.confirm('هل أنت متأكد من حذف هذه الحالة؟ قد يؤثر ذلك على الطلبات الحالية.')) {
-                                            orderWorkflowService.deleteStatus(status.id).then(onUpdate);
-                                        }
-                                    }}
+                                    onClick={() => setDeleteTarget(status)}
                                     className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
                                 >
                                     <TrashIcon className="w-4 h-4" />
@@ -177,6 +187,16 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                 </div>
 
                                 <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">وصف الحالة (اختياري)</label>
+                                        <textarea
+                                            value={editingStatus.description || ''}
+                                            onChange={(e) => setEditingStatus({ ...editingStatus, description: e.target.value })}
+                                            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent"
+                                            placeholder="وصف مختصر للحالة..."
+                                            rows={2}
+                                        />
+                                    </div>
                                     <label className="flex items-center gap-3 cursor-pointer group">
                                         <input
                                             type="checkbox"
@@ -253,6 +273,40 @@ const StatusManagement: React.FC<Props> = ({ statuses, onUpdate }) => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteTarget && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 p-8">
+                        <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">تأكيد الحذف</h3>
+                        <p className="text-slate-600 dark:text-slate-300 mb-2">
+                            هل أنت متأكد من حذف حالة <strong>"{deleteTarget.name}"</strong>؟
+                        </p>
+                        <p className="text-sm text-slate-500 mb-6">
+                            هذا الإجراء لا يمكن التراجع عنه وقد يؤثر على قواعد الانتقال المرتبطة.
+                        </p>
+                        {deleteError && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+                                {deleteError}
+                            </div>
+                        )}
+                        <div className="flex gap-4">
+                            <button
+                                onClick={handleDelete}
+                                className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition"
+                            >
+                                تأكيد الحذف
+                            </button>
+                            <button
+                                onClick={() => { setDeleteTarget(null); setDeleteError(null); }}
+                                className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold hover:bg-slate-200 transition"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

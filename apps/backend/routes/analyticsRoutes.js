@@ -80,6 +80,12 @@ router.get('/stock-forecast', authenticateToken, analyticsController.getStockFor
 // تحليل الحملات وربط الطلبات بالمصادر
 router.get('/campaign-attribution', authenticateToken, cacheMiddleware(60000), analyticsController.getCampaignAttributionAnalytics);
 
+// حالات الطلب المتاحة للتقرير
+router.get('/statuses', authenticateToken, analyticsController.getAvailableStatuses);
+
+// تقرير ملخص الحالات التجميعي
+router.get('/status-summary', authenticateToken, analyticsController.getStatusSummaryReport);
+
 // ==================== Public Routes (للتتبع من Storefront) ====================
 
 // تسجيل زيارة منتج

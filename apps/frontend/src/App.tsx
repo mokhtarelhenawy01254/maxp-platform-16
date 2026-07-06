@@ -642,6 +642,9 @@ const AdvancedReports = React.lazy(
 const ProfitLossReport = React.lazy(
   () => import("./pages/reports/ProfitLossReport"),
 );
+const StatusSummaryReport = React.lazy(
+  () => import("./pages/reports/StatusSummaryReport"),
+);
 const PosPage = React.lazy(() => import("./pages/pos/PosPage"));
 const PlatformIntegrations = React.lazy(
   () => import("./pages/platform-integrations/PlatformIntegrations"),
@@ -3824,6 +3827,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ManualOrderPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/status-summary"
+                  element={
+                    <Layout>
+                      <StatusSummaryReport />
                     </Layout>
                   }
                 />

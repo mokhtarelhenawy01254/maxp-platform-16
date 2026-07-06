@@ -15,6 +15,7 @@ import TransitionRules from './TransitionRules';
 import ApprovalRules from './ApprovalRules';
 import OverridePermissions from './OverridePermissions';
 import AuditLogViewer from './AuditLogViewer';
+import TabErrorBoundary from './TabErrorBoundary';
 
 interface OrderWorkflowProps {
     isEmbedded?: boolean;
@@ -48,12 +49,12 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
     };
 
     const tabs = [
-        { id: 'settings', label: 'الإعدادات العامة', icon: AdjustmentsVerticalIcon },
-        { id: 'statuses', label: 'إدارة الحالات', icon: ListBulletIcon },
-        { id: 'transitions', label: 'قواعد الانتقال', icon: ArrowsRightLeftIcon },
-        { id: 'approvals', label: 'طلبات الموافقة', icon: CheckBadgeIcon },
-        { id: 'overrides', label: 'صلاحيات التجاوز', icon: ShieldCheckIcon },
-        { id: 'audit', label: 'سجل العمليات', icon: ClockIcon },
+        { id: 'settings', label: t('orderWorkflowGeneralSettings'), icon: AdjustmentsVerticalIcon },
+        { id: 'statuses', label: t('orderWorkflowStatusManagement'), icon: ListBulletIcon },
+        { id: 'transitions', label: t('orderWorkflowTransitionRules'), icon: ArrowsRightLeftIcon },
+        { id: 'approvals', label: t('orderWorkflowApprovalRequests'), icon: CheckBadgeIcon },
+        { id: 'overrides', label: t('orderWorkflowOverridePermissions'), icon: ShieldCheckIcon },
+        { id: 'audit', label: t('orderWorkflowAuditLogs'), icon: ClockIcon },
     ];
 
     const handleToggleWorkflow = async (enabled: boolean) => {
@@ -164,6 +165,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                             ) : (
                                 <div className="p-8">
                                     {activeTab === 'settings' && (
+                                        <TabErrorBoundary tabLabel={t('orderWorkflowGeneralSettings')}>
                                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                             <div>
                                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">الإعدادات العامة للمسار</h2>
@@ -191,12 +193,13 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                                 </div>
                                             </div>
                                         </div>
+                                        </TabErrorBoundary>
                                     )}
-                                    {activeTab === 'statuses' && <StatusManagement statuses={statuses} onUpdate={fetchData} />}
-                                    {activeTab === 'transitions' && <TransitionRules statuses={statuses} onUpdate={fetchData} />}
-                                    {activeTab === 'approvals' && <ApprovalRules onUpdate={fetchData} />}
-                                    {activeTab === 'overrides' && <OverridePermissions config={config} onUpdate={fetchData} />}
-                                    {activeTab === 'audit' && <AuditLogViewer />}
+                                    {activeTab === 'statuses' && <TabErrorBoundary tabLabel={t('orderWorkflowStatusManagement')}><StatusManagement statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'transitions' && <TabErrorBoundary tabLabel={t('orderWorkflowTransitionRules')}><TransitionRules statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'approvals' && <TabErrorBoundary tabLabel={t('orderWorkflowApprovalRequests')}><ApprovalRules onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'overrides' && <TabErrorBoundary tabLabel={t('orderWorkflowOverridePermissions')}><OverridePermissions config={config} onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'audit' && <TabErrorBoundary tabLabel={t('orderWorkflowAuditLogs')}><AuditLogViewer /></TabErrorBoundary>}
                                 </div>
                             )}
                         </div>

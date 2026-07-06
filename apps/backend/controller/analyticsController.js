@@ -3690,6 +3690,144 @@ const getPublicDailyAnalytics = async (req, res) => {
   }
 };
 
+// Get Available Order Statuses
+const getAvailableStatuses = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { statusType } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    const whereClause = {
+      companyId: String(companyId),
+      isActive: true,
+      ...(statusType ? { statusType: String(statusType) } : { statusType: 'order' })
+    };
+
+    const statuses = await prisma.orderStatusConfig.findMany({
+      where: whereClause,
+      select: {
+        code: true,
+        name: true,
+        nameEn: true,
+        color: true,
+        icon: true,
+        sortOrder: true
+      },
+      orderBy: { sortOrder: 'asc' }
+    });
+
+    res.json({
+      success: true,
+      data: statuses
+    });
+  } catch (error) {
+    console.error('Error in getAvailableStatuses:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب حالات الطلب', error: error.message });
+  }
+};
+
+// Get Status Summary Report (aggregate per status)
+const getStatusSummaryReport = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { statuses, startDate, endDate } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    if (!statuses) {
+      return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
+    }
+
+    const statusCodes = String(statuses).split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
+    if (statusCodes.length === 0) {
+      return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
+    }
+
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) dateFilter.createdAt.gte = new Date(startDate);
+      if (endDate) dateFilter.createdAt.lte = new Date(endDate);
+    }
+
+    const orders = await prisma.order.findMany({
+      where: {
+        companyId: String(companyId),
+        status: { in: statusCodes },
+        ...dateFilter
+      },
+      include: {
+        orderItems: {
+          select: {
+            quantity: true,
+            total: true,
+            price: true
+          }
+        }
+      }
+    });
+
+    // Group by status
+    const statusMap = {};
+    for (const order of orders) {
+      if (!statusMap[order.status]) {
+        statusMap[order.status] = {
+          status: order.status,
+          ordersCount: 0,
+          itemsCount: 0,
+          productsValue: 0,
+          shippingValue: 0
+        };
+      }
+      statusMap[order.status].ordersCount += 1;
+      statusMap[order.status].shippingValue += Number(order.shipping) || 0;
+      
+      for (const item of order.orderItems) {
+        statusMap[order.status].itemsCount += item.quantity;
+        statusMap[order.status].productsValue += Number(item.total) || 0;
+      }
+    }
+
+    // Build per-status rows
+    const statusRows = statusCodes
+      .filter(code => statusMap[code])
+      .map(code => ({
+        status: code,
+        ordersCount: statusMap[code].ordersCount,
+        itemsCount: statusMap[code].itemsCount,
+        productsValue: Number(statusMap[code].productsValue.toFixed(2)),
+        shippingValue: Number(statusMap[code].shippingValue.toFixed(2))
+      }));
+
+    // Grand totals
+    const grandTotal = {
+      ordersCount: statusRows.reduce((s, r) => s + r.ordersCount, 0),
+      itemsCount: statusRows.reduce((s, r) => s + r.itemsCount, 0),
+      productsValue: Number(statusRows.reduce((s, r) => s + r.productsValue, 0).toFixed(2)),
+      shippingValue: Number(statusRows.reduce((s, r) => s + r.shippingValue, 0).toFixed(2))
+    };
+
+    res.json({
+      success: true,
+      data: {
+        rows: statusRows,
+        totals: grandTotal
+      }
+    });
+  } catch (error) {
+    console.error('Error in getStatusSummaryReport:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب تقرير الحالات', error: error.message });
+  }
+};
+
 module.exports = {
   getStoreAnalytics,
   getConversionRate,
@@ -3720,6 +3858,8 @@ module.exports = {
   getFunnelAnalytics,
   getStockForecastAnalytics,
   getCampaignAttributionAnalytics,
+  getAvailableStatuses,
+  getStatusSummaryReport,
   // Public endpoints
   getPublicStoreAnalytics,
   getPublicTopProducts,
