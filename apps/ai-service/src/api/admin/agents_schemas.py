@@ -48,6 +48,7 @@ class AgentTemplateList(BaseModel):
     instructions_soul: str | None = None
     budget: dict[str, Any] = {}
     is_active: bool = True
+    companies_count: int = 0
 
 
 class AgentCreate(BaseModel):
