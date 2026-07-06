@@ -260,7 +260,8 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             logger.error("no_llm_client_available", error=str(e))
             raise
 
-    # If message has images but current model doesn't support vision, switch to Gemini
+    # If message has images but current model doesn't support vision:
+    # Use Gemini ONLY for image description, then keep DeepSeek for tool calling
     has_images = bool(ctx.attachments)
     if has_images:
         from src.llm.model_capabilities import supports_vision
@@ -273,15 +274,34 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
                 vision_model = "gemini-2.5-flash"
                 routing = await model_manager.get_next_key(vision_model, ctx.company_id)
-                client = LLMClient(
+                vision_client = LLMClient(
                     provider=routing.provider,
                     model=routing.model,
                     api_key=routing.api_key,
                     base_url=routing.base_url,
                 )
-                logger.info("vision_fallback_switched", original_model=client_model, new_model=vision_model)
+                # Call Gemini WITHOUT tools just for image description
+                vision_msgs = [
+                    {"role": "system", "content": "صف المنتجات في الصورة بالتفصيل بالعربي: نوع المنتج، اللون، الشكل، أي نصوص أو علامات تجارية."},
+                    {"role": "user", "content": user_content},
+                ]
+                desc_response = await vision_client.generate(messages=vision_msgs, tools=None, temperature=0.1)
+                if desc_response.text:
+                    desc = desc_response.text.strip()
+                    logger.info("vision_description_extracted", chars=len(desc))
+                    # Inject description into user message for tool-calling LLM (DeepSeek)
+                    base_text = ctx.message
+                    for att in (ctx.attachments or []):
+                        url = ""
+                        if att.get("type") == "image_url" and isinstance(att.get("image_url"), dict):
+                            url = att["image_url"].get("url", "")
+                        if url and url.startswith(("http://", "https://")):
+                            base_text += "\n[image_url: " + url + "]"
+                    base_text += "\n[وصف الصورة: " + desc + "]"
+                    messages[-1] = {"role": "user", "content": base_text}
+                logger.info("vision_two_step", original_model=client_model, vision=vision_model)
             except Exception as e:
-                logger.warning("vision_fallback_unavailable", error=str(e))
+                logger.warning("vision_description_failed", error=str(e))
 
     tool_dicts = [s.to_openai_tool() for s in skills]
 
