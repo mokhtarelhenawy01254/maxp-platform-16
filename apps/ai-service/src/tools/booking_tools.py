@@ -42,6 +42,8 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
 
     svc_list = []
     for s in services:
+        if not s.get("isActive"):
+            continue
         branch_services = s.get("branchServices", [])
         packages = []
         for bs in branch_services:
@@ -149,19 +151,20 @@ async def reserve_appointment(
     branch_id = branch.get("id", "")
     branch_name = branch.get("name", "")
 
-    # 2. Find service by name (partial match)
+    # 2. Find service by name (partial match) — active only
     services = await client.get_booking_services(company_id)
-    if not services:
+    active_services = [s for s in services if s.get("isActive")]
+    if not active_services:
         return {"error": "لا توجد خدمات متاحة"}
     matched_svc = None
     if service_name:
         svc_lower = service_name.strip().lower().replace("ة", "ه")
-        for s in services:
+        for s in active_services:
             s_name = (s.get("name") or "").lower().replace("ة", "ه")
             if svc_lower in s_name or s_name in svc_lower:
                 matched_svc = s; break
     if not matched_svc:
-        matched_svc = services[0]  # fallback
+        matched_svc = active_services[0]  # fallback
     service_id = matched_svc.get("id", "")
     service_label = matched_svc.get("name", "")
 
