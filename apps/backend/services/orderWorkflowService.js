@@ -163,6 +163,13 @@ class OrderWorkflowService {
                 nextStatusDef = await this.findStatusByCode(companyId, statusOrId);
             }
 
+            if (!nextStatusDef) {
+                const VALID_STATUSES = ['PENDING','CONFIRMED','SCHEDULED','READY_FOR_PROCESSING','PROCESSING','SHIPPED','DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED','RETURNED','PARTIALLY_RETURNED','EXCHANGED','PARTIALLY_REFUNDED','WOO_TAGHEZ','DRAFT','TRASH','READY_TO_SHIP','ON_HOLD','NOT_SHIPPED','OUT_FOR_DELIVERY','LOST','PENDING_PREPARATION','PREPARING','READY','QUALITY_CHECK','PACKAGED','ON_HOLD_PREP','PARTIALLY_DELIVERED'];
+                if (VALID_STATUSES.includes(statusOrId?.toUpperCase())) {
+                    nextStatusDef = { id: statusOrId.toUpperCase(), code: statusOrId.toUpperCase(), name: statusOrId.toUpperCase() };
+                }
+            }
+
             if (!nextStatusDef) throw new Error(`الحالة المستهدفة "${statusOrId}" غير موجودة في تعريفات المسار`);
 
             // 3. Check for User Permissions/Role
@@ -200,7 +207,7 @@ class OrderWorkflowService {
                 }
             });
 
-            if (!transition && config.enforceTransitions) {
+            if (!isOverride && !transition && config.enforceTransitions) {
                 throw new Error(`هذا الانتقال من "${currentStatusDef?.name || 'بداية'}" إلى "${nextStatusDef.name}" غير مسموح به في إعدادات المسار`);
             }
 

@@ -15,3 +15,16 @@
 
 ### Deploy
 - Commit `95252c1d` → pushed to `main` → Deploy to Server workflow (retry succeeded after SSH timeout)
+
+## 2026-07-06: Order Status Change 400 Bad Request Fix
+
+### Root Cause
+When changing order status via the quick status update button, the `/api/v1/orders-new/simple/:orderNumber/status` endpoint would fail with a 400 Bad Request and the message "الحالة المستهدفة غير موجودة في تعريفات المسار". This happened because `orderWorkflowService.evaluateStatusChange` strictly validated the target status against custom `OrderStatusDefinition` records, and did not properly fallback to valid system statuses if custom definitions were missing for companies with enabled workflow configurations. Also, it improperly enforced transition rules even when `isOverride: true` was passed.
+
+### Fix
+- **Backend** (`orderWorkflowService.js`): 
+  - Added a `VALID_STATUSES` fallback inside `evaluateStatusChange` to recognize standard system statuses (e.g., `CONFIRMED`, `SHIPPED`) even if they lack explicit database definitions.
+  - Adjusted the logic to correctly bypass the `config.enforceTransitions` rule when `isOverride` is true.
+
+### Files Modified
+- `apps/backend/services/orderWorkflowService.js` — modified `evaluateStatusChange` method.

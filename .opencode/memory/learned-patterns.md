@@ -36,3 +36,9 @@
 - The `POST /api/v1/order-workflow/change-status` endpoint requires `isOverride: true` in the request body to bypass transition validation
 - Without `isOverride`, the backend throws "الحالة المستهدفة غير موجودة في تعريفات المسار"
 - Also: backend's `findStatusByCode` only matches DB-defined `OrderStatusDefinition` records. For raw Prisma enum values, a fallback to `VALID_STATUSES` array is needed in the route handler. See `routes/orderWorkflowRoutes.js:154`
+
+## Order Workflow — Missing System Statuses Fallback (2026-07-06)
+- The issue where changing order status returns 400 Bad Request with "الحالة المستهدفة غير موجودة في تعريفات المسار" was caused by `orderWorkflowService.validateStatusChange` strictly looking for `OrderStatusDefinition` records in the database.
+- It did not properly fallback to valid system statuses (like `PENDING`, `CONFIRMED`, etc.) for companies with `orderWorkflowConfig.enabled: true` that hadn't explicitly defined them.
+- Fixed in `evaluateStatusChange` by introducing a `VALID_STATUSES` array as a fallback when `findStatusByCode` fails to find the status definition.
+- Also fixed an issue where `isOverride` was not bypassing the `config.enforceTransitions` check if a transition rule wasn't found.
