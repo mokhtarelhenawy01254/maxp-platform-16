@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../services/apiClient";
 import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../components/ui/dialog";
+  ArrowPathIcon,
+  ArrowDownTrayIcon,
+  FunnelIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
 import {
   ArrowPathIcon,
   ArrowDownTrayIcon,
@@ -74,14 +75,14 @@ const StatusSummaryReport: React.FC = () => {
   const [fetchingStatuses, setFetchingStatuses] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Drill-down dialog state
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<"orders" | "items">("orders");
-  const [dialogOrders, setDialogOrders] = useState<OrderDetail[]>([]);
-  const [dialogItems, setDialogItems] = useState<ItemDetail[]>([]);
-  const [dialogPagination, setDialogPagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, totalPages: 0 });
-  const [dialogLoading, setDialogLoading] = useState(false);
-  const [dialogError, setDialogError] = useState<string | null>(null);
+  // Inline drill-down state
+  const [inlineExpanded, setInlineExpanded] = useState(false);
+  const [inlineMode, setInlineMode] = useState<"orders" | "items">("orders");
+  const [inlineOrders, setInlineOrders] = useState<OrderDetail[]>([]);
+  const [inlineItems, setInlineItems] = useState<ItemDetail[]>([]);
+  const [inlinePagination, setInlinePagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, totalPages: 0 });
+  const [inlineLoading, setInlineLoading] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadStatuses = async () => {
@@ -118,10 +119,14 @@ const StatusSummaryReport: React.FC = () => {
   }, [selectedStatuses, dateRange]);
 
   const openDrillDown = async (mode: "orders" | "items", pageNum = 1) => {
-    setDialogMode(mode);
-    setDialogOpen(true);
-    setDialogLoading(true);
-    setDialogError(null);
+    if (inlineExpanded && inlineMode === mode && pageNum === 1) {
+      setInlineExpanded(false);
+      return;
+    }
+    setInlineMode(mode);
+    setInlineExpanded(true);
+    setInlineLoading(true);
+    setInlineError(null);
     try {
       const params: Record<string, string> = {
         statuses: selectedStatuses.join(","),
@@ -133,15 +138,15 @@ const StatusSummaryReport: React.FC = () => {
       const res = await apiClient.get(`/analytics/status-summary/${mode}`, { params });
       const data = res.data?.data;
       if (mode === "orders") {
-        setDialogOrders(data.orders || []);
+        setInlineOrders(data.orders || []);
       } else {
-        setDialogItems(data.items || []);
+        setInlineItems(data.items || []);
       }
-      setDialogPagination(data.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
+      setInlinePagination(data.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
     } catch (err: any) {
-      setDialogError(err?.response?.data?.message || "فشل في تحميل التفاصيل");
+      setInlineError(err?.response?.data?.message || "فشل في تحميل التفاصيل");
     } finally {
-      setDialogLoading(false);
+      setInlineLoading(false);
     }
   };
 
@@ -324,20 +329,20 @@ const StatusSummaryReport: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-gray-100 bg-white transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
-                    <td className="px-6 py-5">
-                      <button
-                        type="button"
-                        onClick={() => openDrillDown("orders")}
-                        className="text-lg font-bold text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
-                      >
-                        {formatNumber(reportData.totals.ordersCount)}
-                      </button>
+                  <tr 
+                    className="border-b border-gray-100 bg-white transition-colors hover:bg-gray-50/50 cursor-pointer dark:border-gray-700/50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                    onClick={() => openDrillDown("orders")}
+                  >
+                    <td className="px-6 py-5 text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                      {formatNumber(reportData.totals.ordersCount)}
                     </td>
                     <td className="px-6 py-5">
                       <button
                         type="button"
-                        onClick={() => openDrillDown("items")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDrillDown("items");
+                        }}
                         className="text-lg font-bold text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
                       >
                         {formatNumber(reportData.totals.itemsCount)}
@@ -350,129 +355,128 @@ const StatusSummaryReport: React.FC = () => {
                       {formatEGP(reportData.totals.shippingValue)}
                     </td>
                   </tr>
+                  {inlineExpanded && (
+                    <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                      <td colSpan={4} className="p-0 border-b border-gray-100 dark:border-gray-700">
+                        <div className="border-t-2 border-indigo-100 bg-white/50 p-6 dark:border-indigo-900/30 dark:bg-gray-900/30">
+                          <div className="mb-4 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                              {inlineMode === "orders" ? "تفاصيل الطلبات" : "تفاصيل القطع"}
+                              <span className="mr-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                                ({formatNumber(inlinePagination.total)})
+                              </span>
+                            </h3>
+                          </div>
+                          <div className="overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 max-h-[60vh]">
+                            {inlineLoading ? (
+                              <div className="flex items-center justify-center py-16">
+                                <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-500" />
+                              </div>
+                            ) : inlineError ? (
+                              <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">{inlineError}</div>
+                            ) : inlineMode === "orders" ? (
+                              inlineOrders.length === 0 ? (
+                                <p className="py-16 text-center text-sm text-gray-500">لا توجد طلبات</p>
+                              ) : (
+                                <table className="w-full text-right text-sm">
+                                  <thead>
+                                    <tr className="sticky top-0 z-10 border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">العميل</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الحالة</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المحافظة</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {inlineOrders.map((o) => (
+                                      <tr key={o.id} className="border-b border-gray-100 transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:hover:bg-gray-700/50">
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{o.orderNumber}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.customer?.name || "—"}</td>
+                                        <td className="px-4 py-3">
+                                          <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                            {statusLabel(o.status)}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(o.total)}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.governorate || o.city || "—"}</td>
+                                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{formatDate(o.createdAt)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )
+                            ) : (
+                              inlineItems.length === 0 ? (
+                                <p className="py-16 text-center text-sm text-gray-500">لا توجد قطع</p>
+                              ) : (
+                                <table className="w-full text-right text-sm">
+                                  <thead>
+                                    <tr className="sticky top-0 z-10 border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المنتج</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">اللون</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المقاس</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الكمية</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">السعر</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {inlineItems.map((item, idx) => (
+                                      <tr key={`${item.itemId}-${idx}`} className="border-b border-gray-100 transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:hover:bg-gray-700/50">
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{item.productName || "—"}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productColor || "—"}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productSize || "—"}</td>
+                                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{formatNumber(item.quantity)}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatEGP(item.price)}</td>
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(item.total)}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.orderNumber}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )
+                            )}
+                          </div>
+                          {!inlineLoading && inlinePagination.totalPages > 1 && (
+                            <div className="mt-4 flex items-center justify-between px-2">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">
+                                صفحة {formatNumber(inlinePagination.page)} من {formatNumber(inlinePagination.totalPages)}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={inlinePagination.page <= 1}
+                                  onClick={() => openDrillDown(inlineMode, inlinePagination.page - 1)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                                >
+                                  <ChevronRightIcon className="h-4 w-4" />
+                                  السابق
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={inlinePagination.page >= inlinePagination.totalPages}
+                                  onClick={() => openDrillDown(inlineMode, inlinePagination.page + 1)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                                >
+                                  التالي
+                                  <ChevronLeftIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
       )}
-
-      {/* Drill-down Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              {dialogMode === "orders" ? "تفاصيل الطلبات" : "تفاصيل القطع"}
-              <span className="mr-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-                ({formatNumber(dialogPagination.total)})
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-auto -mx-6 px-6">
-            {dialogLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-500" />
-              </div>
-            ) : dialogError ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">{dialogError}</div>
-            ) : dialogMode === "orders" ? (
-              dialogOrders.length === 0 ? (
-                <p className="py-16 text-center text-sm text-gray-500">لا توجد طلبات</p>
-              ) : (
-                <table className="w-full text-right text-sm">
-                  <thead>
-                    <tr className="sticky top-0 z-10 border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">العميل</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الحالة</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المحافظة</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dialogOrders.map((o) => (
-                      <tr key={o.id} className="border-b border-gray-100 transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:hover:bg-gray-700/50">
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{o.orderNumber}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.customer?.name || "—"}</td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                            {statusLabel(o.status)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(o.total)}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.governorate || o.city || "—"}</td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{formatDate(o.createdAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )
-            ) : (
-              dialogItems.length === 0 ? (
-                <p className="py-16 text-center text-sm text-gray-500">لا توجد قطع</p>
-              ) : (
-                <table className="w-full text-right text-sm">
-                  <thead>
-                    <tr className="sticky top-0 z-10 border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المنتج</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">اللون</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المقاس</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الكمية</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">السعر</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
-                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dialogItems.map((item, idx) => (
-                      <tr key={`${item.itemId}-${idx}`} className="border-b border-gray-100 transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:hover:bg-gray-700/50">
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{item.productName || "—"}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productColor || "—"}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productSize || "—"}</td>
-                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{formatNumber(item.quantity)}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatEGP(item.price)}</td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(item.total)}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.orderNumber}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )
-            )}
-          </div>
-
-          {/* Pagination */}
-          {!dialogLoading && dialogPagination.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-200 px-2 pt-4 dark:border-gray-700">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                صفحة {formatNumber(dialogPagination.page)} من {formatNumber(dialogPagination.totalPages)}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={dialogPagination.page <= 1}
-                  onClick={() => openDrillDown(dialogMode, dialogPagination.page - 1)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
-                >
-                  <ChevronRightIcon className="h-4 w-4" />
-                  السابق
-                </button>
-                <button
-                  type="button"
-                  disabled={dialogPagination.page >= dialogPagination.totalPages}
-                  onClick={() => openDrillDown(dialogMode, dialogPagination.page + 1)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
-                >
-                  التالي
-                  <ChevronLeftIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Empty: no selection */}
       {selectedStatuses.length === 0 && !loading && !reportData && (
