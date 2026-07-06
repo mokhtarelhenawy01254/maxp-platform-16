@@ -107,6 +107,10 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             else:
                 arguments = arguments_str
 
+            # Auto-inject image_bytes into product_search when images are present but not passed
+            if func_name == "product_search" and ctx.attachments and not arguments.get("image_bytes") and not arguments.get("image_url"):
+                _inject_image_to_product_search(arguments, ctx.attachments)
+
             skill = registry.get(func_name)
             if not skill:
                 # Fallback: try native tool definitions
@@ -534,6 +538,45 @@ async def _build_followup_messages(
             )
 
     return messages
+
+
+def _inject_image_to_product_search(arguments: dict, attachments: list[dict]) -> None:
+    """Inject image_bytes/mime_type into product_search args from context attachments.
+
+    Called when the LLM calls product_search without image context even though the
+    user message included an image attachment. This ensures embedding (vector) search
+    runs instead of falling back to text-only search.
+    """
+    import re as _re
+    _DATA_URL_RE = _re.compile(r"^data:(?P<mime>[^;,]+);base64,(?P<data>.+)$", _re.IGNORECASE | _re.DOTALL)
+    for att in attachments:
+        if not isinstance(att, dict):
+            continue
+        # Check direct base64 payload keys first
+        b64 = (
+            att.get("image_bytes") or att.get("imageBytes")
+            or att.get("base64_data") or att.get("base64Data")
+            or ""
+        ).strip()
+        if b64:
+            mime = (
+                att.get("mime_type") or att.get("mimeType")
+                or att.get("content_type") or att.get("contentType")
+                or "image/jpeg"
+            ).strip() or "image/jpeg"
+            arguments["image_bytes"] = b64
+            arguments["mime_type"] = mime
+            logger.info("product_search_image_bytes_injected", mime=mime, bytes_len=len(b64))
+            return
+        # Check already-converted OpenAI image_url format with data URI
+        if att.get("type") == "image_url" and isinstance(att.get("image_url"), dict):
+            url = att["image_url"].get("url", "")
+            m = _DATA_URL_RE.match(url)
+            if m:
+                arguments["mime_type"] = m.group("mime")
+                arguments["image_bytes"] = m.group("data")
+                logger.info("product_search_image_bytes_injected_from_data_url", mime=m.group("mime"))
+                return
 
 
 def get_agent_instructions(agent: Any) -> str:
