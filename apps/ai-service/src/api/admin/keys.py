@@ -430,7 +430,46 @@ async def list_logs(
         stmt = stmt.where(ProviderLog.status == status)
     stmt = stmt.limit(limit)
     result = await session.execute(stmt)
-    return [LogEntry.model_validate(r) for r in result.scalars().all()]
+    rows = [LogEntry.model_validate(r) for r in result.scalars().all()]
+
+    try:
+        clause, p = _build_public_filters(provider, key_id, status)
+        p["lim"] = limit
+        from sqlalchemy import text as _t
+        pub = await session.execute(_t(f"""
+            SELECT id, provider, "keyId" AS key_id, action, status,
+                   model, "latencyMs" AS latency_ms,
+                   COALESCE(message, '') AS error,
+                   "companyId" AS company_id, "createdAt" AS created_at
+            FROM public.ai_provider_logs
+            WHERE {clause}
+            ORDER BY "createdAt" DESC LIMIT :lim
+        """), p)
+        rows.extend(LogEntry.model_validate(r) for r in pub.mappings().all())
+        rows.sort(key=lambda r: r.created_at, reverse=True)
+        rows[:] = rows[:limit]
+    except Exception:
+        pass
+    return rows
+
+
+def _build_public_filters(
+    provider: str | None,
+    key_id: str | None,
+    status: str | None,
+) -> tuple[str, dict[str, str]]:
+    clause = []
+    params: dict[str, str] = {}
+    if provider:
+        clause.append("provider = :provider")
+        params["provider"] = provider
+    if key_id:
+        clause.append('"keyId" = :key_id')
+        params["key_id"] = key_id
+    if status:
+        clause.append("status = :status")
+        params["status"] = status
+    return " AND ".join(clause) if clause else "TRUE", params
 
 
 _DEFAULT_TEST_MODELS: dict[str, str] = {
