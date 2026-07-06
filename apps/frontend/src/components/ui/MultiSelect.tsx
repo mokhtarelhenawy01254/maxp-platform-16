@@ -131,6 +131,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 return (
                   <label
                     key={o.value}
+                    onClick={() => toggle(o.value)}
                     className={`flex items-center gap-3 px-3 py-2 cursor-pointer text-sm transition-colors ${
                       isSelected ? "bg-primary/5" : "hover:bg-muted/40"
                     }`}

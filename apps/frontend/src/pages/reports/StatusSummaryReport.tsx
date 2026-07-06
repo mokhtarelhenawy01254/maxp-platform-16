@@ -118,207 +118,211 @@ const StatusSummaryReport: React.FC = () => {
     new Intl.NumberFormat("ar-EG").format(val);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8" dir="rtl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          تقرير الحالات
-        </h1>
-      </div>
-
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="mb-4">
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            اختر حالة الطلب:
-          </label>
-          {fetchingStatuses ? (
-            <div className="flex h-10 items-center gap-2 text-sm text-gray-400">
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
-              جاري تحميل الحالات...
-            </div>
-          ) : (
-            <MultiSelect
-              options={statusOptions}
-              selected={selectedStatuses}
-              onChange={setSelectedStatuses}
-              placeholder="اختر حالة أو أكثر..."
-              searchPlaceholder="بحث عن حالة..."
-              emptyText="لا توجد حالات متاحة"
-            />
-          )}
+    <div className="flex h-full flex-col" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            تقرير الحالات
+          </h1>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+            تحليل مجمع لحالات الطلبات
+          </p>
         </div>
-
-        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              من تاريخ:
-            </label>
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, start: e.target.value }))
-              }
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              إلى تاريخ:
-            </label>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, end: e.target.value }))
-              }
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
+        {reportData && (
           <button
             type="button"
-            onClick={fetchReport}
-            disabled={selectedStatuses.length === 0 || loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
           >
-            {loading ? (
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
-            ) : (
-              <FunnelIcon className="h-4 w-4" />
-            )}
-            عرض البيانات
+            <ArrowDownTrayIcon className="h-4 w-4" />
+            تصدير CSV
           </button>
+        )}
+      </div>
 
-          {reportData && (
-            <button
-              type="button"
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-            >
-              <ArrowDownTrayIcon className="h-4 w-4" />
-              تصدير CSV
-            </button>
-          )}
+      {/* Filters */}
+      <div className="px-6 pb-5">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-0 flex-1">
+              <label className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-gray-400">
+                اختر حالة الطلب
+              </label>
+              {fetchingStatuses ? (
+                <div className="flex h-10 items-center gap-2 text-sm text-gray-400">
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  جاري تحميل الحالات...
+                </div>
+              ) : (
+                <MultiSelect
+                  options={statusOptions}
+                  selected={selectedStatuses}
+                  onChange={setSelectedStatuses}
+                  placeholder="اختر حالة أو أكثر..."
+                  searchPlaceholder="بحث عن حالة..."
+                  emptyText="لا توجد حالات متاحة"
+                />
+              )}
+            </div>
+            <div className="w-36">
+              <label className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-gray-400">
+                من تاريخ
+              </label>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
+                className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"
+              />
+            </div>
+            <div className="w-36">
+              <label className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-gray-400">
+                إلى تاريخ
+              </label>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
+                className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:bg-gray-700"
+              />
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={fetchReport}
+                disabled={selectedStatuses.length === 0 || loading}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FunnelIcon className="h-4 w-4" />
+                )}
+                عرض البيانات
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
-          {error}
-        </div>
-      )}
-
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-500" />
-          <span className="mr-3 text-gray-500">جاري تحميل التقرير...</span>
-        </div>
-      )}
-
-      {reportData && !loading && (
-        <>
-          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-            <h4 className="mb-2 text-base font-bold text-blue-800 dark:text-blue-200">
-              حالات الطلبات المختارة:
-            </h4>
-            <ul className="list-inside list-disc space-y-1 text-sm text-blue-700 dark:text-blue-300">
-              {selectedStatuses.map((code) => (
-                <li key={code}>
-                  {statusOptions.find((o) => o.value === code)?.label || code}
-                </li>
-              ))}
-            </ul>
+        <div className="px-6 pb-5">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+            {error}
           </div>
+        </div>
+      )}
 
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {reportData.rows.map((row) => (
-              <div
-                key={row.status}
-                className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+      {/* Loading */}
+      {loading && (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <ArrowPathIcon className="h-10 w-10 animate-spin text-indigo-500" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">جاري تحميل التقرير...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {reportData && !loading && (
+        <div className="flex flex-1 flex-col gap-0 overflow-hidden px-6 pb-6">
+          {/* Selected statuses tags */}
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-medium text-gray-600 dark:text-gray-400">الحالات المختارة:</span>
+            {selectedStatuses.map((code) => (
+              <span
+                key={code}
+                className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
               >
-                <div className="rounded-t-lg border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50">
-                  <h5 className="text-base font-bold text-gray-900 dark:text-white">
-                    {statusOptions.find((o) => o.value === row.status)?.label || row.status}
-                  </h5>
-                </div>
-                <div className="px-0 py-0">
-                  <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                    <li className="px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300">
-                      عدد الطلبات: {formatNumber(row.ordersCount)}
-                    </li>
-                    <li className="px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300">
-                      عدد القطع: {formatNumber(row.itemsCount)}
-                    </li>
-                    <li className="px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300">
-                      قيمة المنتجات: {formatEGP(row.productsValue)}
-                    </li>
-                    <li className="px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300">
-                      قيمة الشحن: {formatEGP(row.shippingValue)}
-                    </li>
-                  </ul>
-                </div>
-              </div>
+                {statusOptions.find((o) => o.value === code)?.label || code}
+              </span>
             ))}
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-            <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+          {/* Per-status cards */}
+          {reportData.rows.length > 0 && (
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {reportData.rows.map((row) => {
+                const label = statusOptions.find((o) => o.value === row.status)?.label || row.status;
+                return (
+                  <div
+                    key={row.status}
+                    className="overflow-hidden rounded-xl border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                  >
+                    <div className="border-b border-gray-100 bg-gray-50/50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-800/50">
+                      <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</h5>
+                    </div>
+                    <div className="space-y-0">
+                      <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">عدد الطلبات</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatNumber(row.ordersCount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-gray-50 px-4 py-2.5 text-sm dark:border-gray-700/50">
+                        <span className="text-gray-500 dark:text-gray-400">عدد القطع</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatNumber(row.itemsCount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-gray-50 px-4 py-2.5 text-sm dark:border-gray-700/50">
+                        <span className="text-gray-500 dark:text-gray-400">قيمة المنتجات</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatEGP(row.productsValue)}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-gray-50 px-4 py-2.5 text-sm dark:border-gray-700/50">
+                        <span className="text-gray-500 dark:text-gray-400">قيمة الشحن</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatEGP(row.shippingValue)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Totals Table - Full Width Hero */}
+          <div className="flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                 البيانات الإجمالية
               </h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-sm">
+            <div className="overflow-auto">
+              <table className="w-full text-right">
                 <thead>
-                  <tr className="border-b border-gray-700 bg-gray-800 dark:bg-gray-700">
-                    <th className="px-4 py-3 font-semibold text-white">
-                      عدد الطلبات
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-white">
-                      عدد القطع
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-white">
-                      قيمة المنتجات
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-white">
-                      قيمة الشحن
-                    </th>
+                  <tr className="bg-gray-800 text-white dark:bg-gray-900">
+                    <th className="px-6 py-4 text-sm font-semibold">عدد الطلبات</th>
+                    <th className="px-6 py-4 text-sm font-semibold">عدد القطع</th>
+                    <th className="px-6 py-4 text-sm font-semibold">قيمة المنتجات</th>
+                    <th className="px-6 py-4 text-sm font-semibold">قيمة الشحن</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
-                    <td className="px-4 py-3">
+                  <tr className="border-b border-gray-100 bg-white transition-colors hover:bg-gray-50/50 dark:border-gray-700/50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
+                    <td className="px-6 py-5">
                       <button
                         type="button"
                         onClick={() =>
-                          navigate(
-                            `/orders?status=${selectedStatuses.join(",").toLowerCase()}`,
-                          )
+                          navigate(`/orders?status=${selectedStatuses.join(",").toLowerCase()}`)
                         }
-                        className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400"
+                        className="text-lg font-bold text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
                       >
                         {formatNumber(reportData.totals.ordersCount)}
                       </button>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-5">
                       <button
                         type="button"
                         onClick={() =>
-                          navigate(
-                            `/orders?view=items&status=${selectedStatuses.join(",").toLowerCase()}`,
-                          )
+                          navigate(`/orders?view=items&status=${selectedStatuses.join(",").toLowerCase()}`)
                         }
-                        className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400"
+                        className="text-lg font-bold text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
                       >
                         {formatNumber(reportData.totals.itemsCount)}
                       </button>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                    <td className="px-6 py-5 text-lg font-bold text-gray-900 dark:text-white">
                       {formatEGP(reportData.totals.productsValue)}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                    <td className="px-6 py-5 text-lg font-bold text-gray-900 dark:text-white">
                       {formatEGP(reportData.totals.shippingValue)}
                     </td>
                   </tr>
@@ -326,22 +330,42 @@ const StatusSummaryReport: React.FC = () => {
               </table>
             </div>
           </div>
-        </>
-      )}
-
-      {!reportData && !loading && selectedStatuses.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
-          <p className="text-gray-500 dark:text-gray-400">
-            لا توجد بيانات للعرض. حاول تغيير نطاق التاريخ أو اختيار حالات أخرى.
-          </p>
         </div>
       )}
 
+      {/* Empty: no selection */}
       {selectedStatuses.length === 0 && !loading && !reportData && (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
-          <p className="text-gray-500 dark:text-gray-400">
-            اختر حالة أو أكثر من القائمة أعلاه ثم اضغط &quot;عرض البيانات&quot;
-          </p>
+        <div className="flex flex-1 items-center justify-center px-6 pb-6">
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
+              <FunnelIcon className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+              اختر حالة أو أكثر للبدء
+            </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              اختر حالة أو أكثر من القائمة أعلاه ثم اضغط &quot;عرض البيانات&quot;
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty: no results */}
+      {!reportData && !loading && selectedStatuses.length > 0 && (
+        <div className="flex flex-1 items-center justify-center px-6 pb-6">
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
+              <svg className="h-10 w-10 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+              لا توجد نتائج
+            </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              لا توجد بيانات للعرض. حاول تغيير نطاق التاريخ أو اختيار حالات أخرى.
+            </p>
+          </div>
         </div>
       )}
     </div>

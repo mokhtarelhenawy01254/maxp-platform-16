@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
     ArrowsRightLeftIcon,
     ListBulletIcon,
@@ -22,7 +21,6 @@ interface OrderWorkflowProps {
 }
 
 const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
-    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('settings');
     const [config, setConfig] = useState<OrderWorkflowConfig | null>(null);
     const [statuses, setStatuses] = useState<OrderStatusDefinition[]>([]);
@@ -49,12 +47,12 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
     };
 
     const tabs = [
-        { id: 'settings', label: t('orderWorkflowGeneralSettings'), icon: AdjustmentsVerticalIcon },
-        { id: 'statuses', label: t('orderWorkflowStatusManagement'), icon: ListBulletIcon },
-        { id: 'transitions', label: t('orderWorkflowTransitionRules'), icon: ArrowsRightLeftIcon },
-        { id: 'approvals', label: t('orderWorkflowApprovalRequests'), icon: CheckBadgeIcon },
-        { id: 'overrides', label: t('orderWorkflowOverridePermissions'), icon: ShieldCheckIcon },
-        { id: 'audit', label: t('orderWorkflowAuditLogs'), icon: ClockIcon },
+        { id: 'settings', label: 'الإعدادات العامة', icon: AdjustmentsVerticalIcon },
+        { id: 'statuses', label: 'إدارة الحالات', icon: ListBulletIcon },
+        { id: 'transitions', label: 'قواعد الانتقال', icon: ArrowsRightLeftIcon },
+        { id: 'approvals', label: 'طلبات الموافقة', icon: CheckBadgeIcon },
+        { id: 'overrides', label: 'صلاحيات التجاوز', icon: ShieldCheckIcon },
+        { id: 'audit', label: 'سجل العمليات', icon: ClockIcon },
     ];
 
     const handleToggleWorkflow = async (enabled: boolean) => {
@@ -165,7 +163,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                             ) : (
                                 <div className="p-8">
                                     {activeTab === 'settings' && (
-                                        <TabErrorBoundary tabLabel={t('orderWorkflowGeneralSettings')}>
+                                        <TabErrorBoundary tabLabel="الإعدادات العامة">
                                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                             <div>
                                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">الإعدادات العامة للمسار</h2>
@@ -195,11 +193,11 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                         </div>
                                         </TabErrorBoundary>
                                     )}
-                                    {activeTab === 'statuses' && <TabErrorBoundary tabLabel={t('orderWorkflowStatusManagement')}><StatusManagement statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
-                                    {activeTab === 'transitions' && <TabErrorBoundary tabLabel={t('orderWorkflowTransitionRules')}><TransitionRules statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
-                                    {activeTab === 'approvals' && <TabErrorBoundary tabLabel={t('orderWorkflowApprovalRequests')}><ApprovalRules onUpdate={fetchData} /></TabErrorBoundary>}
-                                    {activeTab === 'overrides' && <TabErrorBoundary tabLabel={t('orderWorkflowOverridePermissions')}><OverridePermissions config={config} onUpdate={fetchData} /></TabErrorBoundary>}
-                                    {activeTab === 'audit' && <TabErrorBoundary tabLabel={t('orderWorkflowAuditLogs')}><AuditLogViewer /></TabErrorBoundary>}
+                                    {activeTab === 'statuses' && <TabErrorBoundary tabLabel="إدارة الحالات"><StatusManagement statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'transitions' && <TabErrorBoundary tabLabel="قواعد الانتقال"><TransitionRules statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'approvals' && <TabErrorBoundary tabLabel="طلبات الموافقة"><ApprovalRules onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'overrides' && <TabErrorBoundary tabLabel="صلاحيات التجاوز"><OverridePermissions config={config} onUpdate={fetchData} /></TabErrorBoundary>}
+                                    {activeTab === 'audit' && <TabErrorBoundary tabLabel="سجل العمليات"><AuditLogViewer /></TabErrorBoundary>}
                                 </div>
                             )}
                         </div>
