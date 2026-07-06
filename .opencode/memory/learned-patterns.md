@@ -53,6 +53,14 @@
 - `actions/cache` for node_modules significantly speeds up CI (2-3min saved)
 - For `paths-ignore`, use `'*.md'` not `'./*.md'` — glob is relative to repo root
 
+## Agent Tool Gender Inference — Don't Hardcode Name Lists in Tools (2026-07-07)
+
+- Initial fix put `AR_MALE_NAMES` / `AR_FEMALE_NAMES` / `AMBIGUOUS_NAMES` and `_infer_gender_from_name()` inside `booking_tools.py`
+- This violates the **Structured Parameters / No Brittle Text Extraction** rule from `AGENTS.md`: tools should not do keyword-based NLP on names
+- Hardcoded lists limit the agent (only covers listed names), create maintenance burden, and remove the LLM's own reasoning capability
+- Correct pattern: keep `gender` optional in the tool; if missing and the backend branch has `genderDays`, return a polite slot-filling request; let the **agent's SOUL.md** decide whether to infer gender from the name using its own knowledge
+- Updated 6 medical agent personas (`medical-center-agent`, `dental-care-specialist`, `aesthetic-advisor`, `physio-coordinator`, `mental-health-counselor`, `medical-lab-analyst`) with the rule: infer only if confident, leave `gender` empty if ambiguous, don't ask at all if branch has no `genderDays`
+
 ## Codebase Secrets Audit — 50+ Hardcoded Credentials (2026-07-06)
 - This repo is private, but hardcoded secrets were pervasive: 30+ files with `postgres:0165676135@localhost`, scripts with production DB credentials (92.113.22.70), live JWT tokens and signing secrets, a GitHub PAT in `scripts/upload-github-secrets.js`, and SSH root password in `services/check_replies.py`
 - Fix strategy: delete the ad-hoc scripts entirely rather than refactoring to env vars (they were one-off debug tools, not part of the running service)

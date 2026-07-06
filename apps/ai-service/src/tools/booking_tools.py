@@ -108,66 +108,6 @@ async def get_slots(company_id: str, date: str, gender: str = "") -> dict[str, A
 
 # ── booking_reserve ──
 
-AR_MALE_NAMES = {
-    "محمد", "أحمد", "علي", "محمود", "عمرو", "خالد", "عبد", "عبدالله", "عبدالرحمن", "عبدالعزيز",
-    "طارق", "وائل", "حسام", "مصطفى", "إبراهيم", "يوسف", "عمر", "حسن", "حسين", "كريم", "اسلام",
-    "إسلام", "مينا", "بيشوي", "مارتن", "بيتر", "جورج", "كيرلس", "يوسف", "ميسرة", "مكرم", "ممدوح",
-    "سامح", "رامي", "هاني", "عادل", "شريف", "وجيه", "مجدي", "تامر", "أشرف", "أسامة", "سامي",
-    "فادي", "وسيم", "بلال", "عمار", "زياد", "يحيى", "هشام", "جلال", "سيد", "رضا", "نبيل", "عاطف",
-    "باسم", "ماهر", "جميل", "سعيد", "فتحي", "لطفي", "أنور", "منير", "صبري", "توفيق", "شعبان",
-    "عوض", "فهمي", "حلمي", "داود", "سليمان", "يحي", "نوح", "هارون", "موسى", "يعقوب", "يوسف",
-    "ياسر", "خضر", "خوليو", "بدر", "فاروق", "سعد", "فارس", "خليل", "رياض", "صالح", "وجدي", "ثروت",
-    "حاتم", "مهاب", "أيهاب", "وليد", "هيثم", "رؤوف", "عماد", "سهيل", "سري", "داوود", "حمدي",
-}
-AR_FEMALE_NAMES = {
-    "فاطمة", "سارة", "مريم", "نور", "آية", "السيدة", "هدير", "مي", "إسراء", "علا", "دينا",
-    "ريهام", "نشوى", "غادة", "هبة", "منى", "سامية", "نادية", "ليلى", "هدى", "رانيا", "داليا",
-    "ياسمين", "جasmine", "شيرين", "المصري", "ملك", "ملاك", "يسرا", "سوسن", "فيروز", "رحاب",
-    "عبير", "سحر", "حنان", "أمل", "أحلام", "نهى", "هناء", "سعاد", "فريدة", "فريال", "نهلة",
-    "هند", "صفاء", "marwa", "مروة", "إيمان", "رمضان", "بثينة", "وداد", "كريمة", "سهام", "فاطمه",
-    "سحر", "نجوى", "عزة", "هالة", "رانيا", "شيرين", "ندى", "رشا", "وفاء", "نهى", "أميرة",
-    "يسرى", "دعاء", "سلمى", "ميار", "كارما", "لوجين", "جنا", "روان", "ريتاج", "تسنيم", "مليكة",
-    "إيلاف", "لين", "زينب", "خديجة", "عائشة", "حفصة", "هاجر", "موسى", "صفية", "ريحانة", "بشرى",
-}
-AMBIGUOUS_NAMES = {
-    "نور", "شمس", "سعد", "سعدي", "ريان", "رمضان", "عيد", "حبيب", "حبيبة", "دلال", "أمل",
-    "فرح", "يسر", "هناء", "منى", "سمير", "سميرة", "حسن", "حسنة", "ناصر", "نصرة", "صباح",
-    "نجاح", "سعادة", "عزيز", "عزيزة", "كمال", "كريمة", "فخر", "فخرية", "إشراق", "إشراقة",
-    "سلام", "سلامة", "براء", "براءة", "تقوى", "هدى", "هدية", "فوز", "فوزية", "نورهان",
-    "هيثم",  # mostly male but can be ambiguous in some dialects
-}
-
-
-def _normalize_name(name: str) -> str:
-    n = name.strip().lower()
-    # Normalize Arabic variants
-    n = n.replace("آ", "ا").replace("أ", "ا").replace("إ", "ا").replace("ء", "")
-    n = n.replace("ة", "ه")
-    return n
-
-
-def _infer_gender_from_name(name: str) -> str | None:
-    """Infer MALE/FEMALE from Arabic first name. Returns None if ambiguous/unknown."""
-    if not name:
-        return None
-    # Take first name token
-    first = name.split()[0]
-    norm = _normalize_name(first)
-    if norm in AMBIGUOUS_NAMES:
-        return None
-    if norm in AR_MALE_NAMES:
-        return "MALE"
-    if norm in AR_FEMALE_NAMES:
-        return "FEMALE"
-    # Try removing common suffixes/prefixes
-    clean = norm.replace("ال", "")
-    if clean in AR_MALE_NAMES:
-        return "MALE"
-    if clean in AR_FEMALE_NAMES:
-        return "FEMALE"
-    return None
-
-
 async def reserve_appointment(
     company_id: str,
     patient_name: str,
@@ -254,17 +194,14 @@ async def reserve_appointment(
 
     g = gender.upper().strip()
     if not g:
-        inferred = _infer_gender_from_name(name)
-        if inferred:
-            g = inferred
-            logger.info("inferred_gender_from_name", name=name, gender=g)
+        logger.info("gender_missing_for_branch", branch=branch_name, name=name)
 
     if has_gender_days and g not in ("MALE", "M", "FEMALE", "F"):
-        # Ambiguous or unknown gender when branch has gender days configured.
-        # Ask politely instead of guessing.
+        # Gender is required to validate the day but was not provided or is unclear.
+        # Let the agent collect it via conversational slot-filling.
         return {
             "needs_gender": True,
-            "message": "عذرًا، اسمك جميل وممكن يكون لشخص أو شخصة. عشان أقدر أحددلك اليوم المناسب في الفرع، هل حضرتك راجل ولا ست؟"
+            "message": "عذرًا، محتاج أعرف نوع المريض عشان أحدد اليوم المناسب في الفرع. هل حضرتك راجل ولا ست؟"
         }
 
     if g in ("MALE", "M"):
