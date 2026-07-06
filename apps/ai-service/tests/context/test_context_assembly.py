@@ -272,3 +272,47 @@ async def test_assemble_messages_integration():
     assert "Ahmed Ali" in messages[0]["content"]
     assert messages[1]["role"] == "user"
     assert messages[1]["content"] == "yes, that color is fine"
+
+
+@pytest.mark.asyncio
+async def test_facebook_channel_injects_continuation_instructions():
+    ctx = MagicMock(spec=PipelineContext)
+    ctx.message = "hello"
+    ctx.thread_id = "conv_123"
+    ctx.customer_id = "cust_123"
+    ctx.company_id = "company_abc"
+    ctx.system_prompt = "base"
+    ctx.channel = "facebook"
+    ctx.agent = None
+    ctx.rag_evidence = ""
+    ctx.episodic_memories = []
+    ctx.session_state = None
+    ctx.session = AsyncMock(spec=AsyncSession)
+
+    assembler = ContextAssembler()
+    prompt = await assembler.build_system_prompt(ctx)
+
+    assert "<continuation>" in prompt
+    assert "Do NOT introduce yourself" in prompt
+    assert "seamless continuity" in prompt
+
+
+@pytest.mark.asyncio
+async def test_non_facebook_channel_does_not_inject_continuation():
+    ctx = MagicMock(spec=PipelineContext)
+    ctx.message = "hello"
+    ctx.thread_id = "conv_123"
+    ctx.customer_id = "cust_123"
+    ctx.company_id = "company_abc"
+    ctx.system_prompt = "base"
+    ctx.channel = "chat"
+    ctx.agent = None
+    ctx.rag_evidence = ""
+    ctx.episodic_memories = []
+    ctx.session_state = None
+    ctx.session = AsyncMock(spec=AsyncSession)
+
+    assembler = ContextAssembler()
+    prompt = await assembler.build_system_prompt(ctx)
+
+    assert "<continuation>" not in prompt
