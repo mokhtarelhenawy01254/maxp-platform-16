@@ -54,6 +54,7 @@ export interface TemplateItem {
   personaMeta: { language?: string; dialect?: string; tone?: string; formality?: string; };
   soulPreview: string; toolsCount: number; skillsCount: number; channels: string[];
   budget: { dailyUsd?: number; }; industries: string[]; isActive?: boolean;
+  companiesCount?: number;
 }
 
 interface FullTemplate {
@@ -522,7 +523,8 @@ export const EditCompanyAgentDialog: React.FC<{
   const [form, setForm] = useState<Record<string, any>>({
     soul: "", rules: "", model: "",
     allowed_tools: [] as string[], allowed_skills: [] as string[],
-    allowed_channels: [] as string[], persona: {} as Record<string, any>,
+    allowed_channels: [] as string[],
+    soulInstructions: "", agentInstructions: "", toolsInstructions: "", personaInstructions: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -555,7 +557,10 @@ export const EditCompanyAgentDialog: React.FC<{
             allowed_tools: a.allowed_tools || [],
             allowed_skills: a.allowed_skills || [],
             allowed_channels: a.allowed_channels || [],
-            persona: a.persona || {},
+            soulInstructions: a.persona?.soulInstructions || "",
+            agentInstructions: a.persona?.agentInstructions || "",
+            toolsInstructions: a.persona?.toolsInstructions || "",
+            personaInstructions: a.persona?.personaInstructions || "",
           });
         }
       } catch { setErr("فشل تحميل بيانات الوكيل"); }
@@ -574,7 +579,12 @@ export const EditCompanyAgentDialog: React.FC<{
         allowed_tools: form.allowed_tools,
         allowed_skills: form.allowed_skills,
         allowed_channels: form.allowed_channels,
-        persona: form.persona,
+        persona: {
+          soulInstructions: form.soulInstructions || "",
+          agentInstructions: form.agentInstructions || "",
+          toolsInstructions: form.toolsInstructions || "",
+          personaInstructions: form.personaInstructions || "",
+        },
       });
       onUpdated(); onClose();
     } catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
@@ -619,6 +629,24 @@ export const EditCompanyAgentDialog: React.FC<{
             <Textarea className="mt-1 font-mono text-sm min-h-[100px]" dir={i18n.dir()}
               value={field("rules")} onChange={e => update("rules", e.target.value)}
               placeholder="قواعد وسياسات إضافية..." />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">قواعد الوكيل (AGENTS.md)</label>
+            <Textarea className="mt-1 font-mono text-sm min-h-[100px]" dir={i18n.dir()}
+              value={field("agentInstructions")} onChange={e => update("agentInstructions", e.target.value)}
+              placeholder="قواعد الوكيل الخاصة بهذه الشركة..." />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">تعليمات الأدوات (TOOLS.md)</label>
+            <Textarea className="mt-1 font-mono text-sm min-h-[100px]" dir={i18n.dir()}
+              value={field("toolsInstructions")} onChange={e => update("toolsInstructions", e.target.value)}
+              placeholder="تعليمات الأدوات..." />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">تعليمات الشخصية (PERSONA.md)</label>
+            <Textarea className="mt-1 font-mono text-sm min-h-[100px]" dir={i18n.dir()}
+              value={field("personaInstructions")} onChange={e => update("personaInstructions", e.target.value)}
+              placeholder="تعليمات الشخصية..." />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">الأدوات المسموحة</label>
