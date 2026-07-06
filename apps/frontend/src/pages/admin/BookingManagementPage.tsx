@@ -413,6 +413,64 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
   );
 };
 
+const ServiceDetailModal = ({ service, onClose }: { service: BookingService; onClose: () => void }) => {
+  const bs = service.branchServices || [];
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold">{service.name}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{service.description || "لا يوجد وصف"}</p>
+          </div>
+          <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${service.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{service.isActive ? "نشط" : "غير نشط"}</span>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2"><BuildingOffice2Icon className="w-4 h-4" />الفروع والباقات</h4>
+            {bs.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">لم يتم ربط الخدمة بأي فرع</p>
+            ) : (
+              <div className="space-y-3">
+                {bs.map(b => (
+                  <div key={b.id} className="border dark:border-gray-600 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-sm">{b.branch.name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "متاحة" : "غير متاحة"}</span>
+                    </div>
+                    {b.hasPackages && (b.packages || []).length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {(b.packages || []).map((pkg, i) => (
+                          <span key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                            {pkg.count} جلسات - {pkg.price} ج.م
+                            {pkg.originalPrice && <span className="line-through mr-1 text-gray-400">{pkg.originalPrice} ج.م</span>}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 dark:text-gray-500">لا توجد باقات</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1">
+            <p>تاريخ الإضافة: {new Date(service.createdAt).toLocaleDateString("ar-EG")}</p>
+            <p>معرف الخدمة: {service.id}</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function BookingManagementPage() {
   const { "*": path } = useParams();
   const navigate = useNavigate();
@@ -430,6 +488,7 @@ export default function BookingManagementPage() {
   const [branchModal, setBranchModal] = useState<Partial<BookingBranch> | null | undefined>(undefined);
   const [doctorModal, setDoctorModal] = useState<Partial<BookingDoctor> | null | undefined>(undefined);
   const [serviceModal, setServiceModal] = useState<Partial<BookingService> | null | undefined>(undefined);
+  const [serviceDetail, setServiceDetail] = useState<BookingService | null>(null);
   const [appointmentModal, setAppointmentModal] = useState<Partial<BookingAppointment> | null | undefined>(undefined);
 
   const [selectedBranchId, setSelectedBranchId] = useState("");
@@ -848,9 +907,10 @@ export default function BookingManagementPage() {
                   </div>
                 ))}
                 <div className="flex gap-2 mt-2">
+                  <button onClick={() => setServiceDetail(s)} className="text-xs px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />عرض</button>
                   <button onClick={() => setServiceModal(s)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                   <button onClick={() => toggleActive("services", s.id, s.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${s.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{s.isActive ? "تعطيل" : "تفعيل"}</button>
-                  <button onClick={() => cloneService(s)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />استنساخ</button>
+                  <button onClick={() => cloneService(s)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />استنساخ</button>
                 </div>
               </div>
             );
@@ -858,6 +918,7 @@ export default function BookingManagementPage() {
           {filtered.length === 0 && <p className="col-span-full text-gray-400 dark:text-gray-500 text-center py-12">لا توجد خدمات</p>}
         </div>
         {serviceModal !== undefined && <ServiceModal service={serviceModal} branches={branches} onClose={() => setServiceModal(undefined)} onSave={saveService} />}
+        {serviceDetail && <ServiceDetailModal service={serviceDetail} onClose={() => setServiceDetail(null)} />}
       </div>
     );
   };
