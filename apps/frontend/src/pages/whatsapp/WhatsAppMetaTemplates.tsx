@@ -11,6 +11,12 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
+  Pencil,
+  Image,
+  Video,
+  File,
+  MessageSquare,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -124,6 +130,7 @@ const WhatsAppMetaTemplates: React.FC<{
     name: "",
     language: "en",
     category: "MARKETING",
+    headerFormat: "TEXT" as string,
     headerText: "",
     bodyText: "",
     footerText: "",
@@ -133,6 +140,22 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewTemplate, setViewTemplate] = useState<MetaTemplate | null>(null);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    language: string;
+    category: string;
+    headerFormat: string;
+    headerText: string;
+    bodyText: string;
+    footerText: string;
+    buttonText: string;
+    buttonUrl: string;
+  } | null>(null);
+  const [editSending, setEditSending] = useState(false);
+
+  const [varValues, setVarValues] = useState<Record<string, string>>({});
 
   const withCompanyConfig = useCallback(
     (config: ApiRequestConfig = {}) =>
@@ -174,9 +197,62 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const sanitizedName = useMemo(() => sanitizeTemplateName(form.name), [form.name]);
   const nameValid = sanitizedName.length >= 1 && sanitizedName.length <= 512;
-  const headerVarsOk = !form.headerText || !hasNamedVariables(form.headerText);
+  const headerVarsOk = form.headerFormat !== "TEXT" || !form.headerText || !hasNamedVariables(form.headerText);
   const bodyVarsOk = !form.bodyText || !hasNamedVariables(form.bodyText);
   const buttonUrlOk = isValidButtonUrl(form.buttonUrl);
+
+  const extractedVars = useMemo(() => {
+    const allText = [form.headerText, form.bodyText, form.footerText, form.buttonText].filter(Boolean).join(" ");
+    const matches = allText.match(/\{\{(\d+)\}\}/g) || [];
+    const vars = [...new Set(matches)].sort((a, b) => {
+      const na = parseInt(a.replace(/\D/g, ""));
+      const nb = parseInt(b.replace(/\D/g, ""));
+      return na - nb;
+    });
+    return vars;
+  }, [form.headerText, form.bodyText, form.footerText, form.buttonText]);
+
+  const previewText = useMemo(() => {
+    let text = "";
+    if (form.headerFormat === "TEXT" && form.headerText) {
+      text += `🔷 ${form.headerText}\n\n`;
+    } else if (form.headerFormat !== "TEXT" && form.headerText) {
+      text += `🔷 [${form.headerFormat}] ${form.headerText}\n\n`;
+    } else if (form.headerFormat !== "TEXT") {
+      text += `🔷 [${form.headerFormat} media]\n\n`;
+    }
+    if (form.bodyText) text += `${form.bodyText}\n`;
+    if (form.footerText) text += `\n${form.footerText}`;
+    if (form.buttonText) text += `\n\n[ ${form.buttonText} ]`;
+    extractedVars.forEach((v) => {
+      const key = v.replace(/\D/g, "");
+      text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), varValues[key] || `{{${key}}}`);
+    });
+    return text;
+  }, [form, extractedVars, varValues]);
+
+  const buildComponents = useCallback((f: typeof form) => {
+    const components: any[] = [
+      { type: "BODY", text: f.bodyText },
+    ];
+    if (f.headerFormat === "TEXT" && f.headerText) {
+      components.unshift({ type: "HEADER", format: "TEXT", text: f.headerText });
+    } else if (f.headerFormat !== "TEXT") {
+      components.unshift({ type: "HEADER", format: f.headerFormat, text: f.headerText || undefined });
+    } else if (f.headerText) {
+      components.unshift({ type: "HEADER", format: "TEXT", text: f.headerText });
+    }
+    if (f.footerText) {
+      components.push({ type: "FOOTER", text: f.footerText });
+    }
+    if (f.buttonText) {
+      const url = f.buttonUrl || "https://example.com";
+      const finalUrl = url.startsWith("http") ? url : `https://${url}`;
+      const buttons: any[] = [{ type: "URL", text: f.buttonText, url: finalUrl }];
+      components.push({ type: "BUTTONS", buttons });
+    }
+    return components;
+  }, []);
 
   const handleCreate = useCallback(async () => {
     if (!sanitizedName || !form.bodyText) {
@@ -201,21 +277,7 @@ const WhatsAppMetaTemplates: React.FC<{
     }
     try {
       setSending(true);
-      const components: any[] = [
-        { type: "BODY", text: form.bodyText },
-      ];
-      if (form.headerText) {
-        components.unshift({ type: "HEADER", format: "TEXT", text: form.headerText });
-      }
-      if (form.footerText) {
-        components.push({ type: "FOOTER", text: form.footerText });
-      }
-      if (form.buttonText) {
-        const url = form.buttonUrl || "https://example.com";
-        const finalUrl = url.startsWith("http") ? url : `https://${url}`;
-        const buttons: any[] = [{ type: "URL", text: form.buttonText, url: finalUrl }];
-        components.push({ type: "BUTTONS", buttons });
-      }
+      const components = buildComponents(form);
 
       await apiClient.post(
         "/whatsapp-templates/templates",
@@ -224,7 +286,8 @@ const WhatsAppMetaTemplates: React.FC<{
       );
       toast.success("تم إنشاء القالب بنجاح — سيمر بمراجعة ميتا قبل التفعيل");
       setCreateOpen(false);
-      setForm({ name: "", language: "en", category: "MARKETING", headerText: "", bodyText: "", footerText: "", buttonText: "", buttonUrl: "" });
+      setForm({ name: "", language: "en", category: "MARKETING", headerFormat: "TEXT", headerText: "", bodyText: "", footerText: "", buttonText: "", buttonUrl: "" });
+      setVarValues({});
       fetchTemplates();
     } catch (err: any) {
       const metaMsg = err?.response?.data?.error;
@@ -232,7 +295,32 @@ const WhatsAppMetaTemplates: React.FC<{
     } finally {
       setSending(false);
     }
-  }, [form, sanitizedName, nameValid, headerVarsOk, bodyVarsOk, buttonUrlOk, selectedSessionId, withCompanyConfig, fetchTemplates]);
+  }, [form, sanitizedName, nameValid, headerVarsOk, bodyVarsOk, buttonUrlOk, selectedSessionId, withCompanyConfig, fetchTemplates, buildComponents]);
+
+  const handleEdit = useCallback(async () => {
+    if (!editForm || !editForm.name) {
+      toast.error("بيانات التعديل غير مكتملة");
+      return;
+    }
+    try {
+      setEditSending(true);
+      const components = buildComponents(editForm);
+
+      await apiClient.put(
+        "/whatsapp-templates/templates",
+        { sessionId: selectedSessionId, templateName: editForm.name, components, language: editForm.language, category: editForm.category },
+        withCompanyConfig(),
+      );
+      toast.success("تم تحديث القالب — سيمر بمراجعة ميتا");
+      setEditOpen(false);
+      setEditForm(null);
+      fetchTemplates();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "فشل تحديث القالب", { duration: 8000 });
+    } finally {
+      setEditSending(false);
+    }
+  }, [editForm, selectedSessionId, withCompanyConfig, fetchTemplates, buildComponents]);
 
   const handleDelete = useCallback(async (templateName: string) => {
     try {
@@ -342,6 +430,26 @@ const WhatsAppMetaTemplates: React.FC<{
                         <Button variant="ghost" size="icon-sm" onClick={() => setViewTemplate(t)}>
                           <FileText className="size-4" />
                         </Button>
+                        <Button variant="ghost" size="icon-sm" onClick={() => {
+                          const headerComponent = t.components?.find((c) => c.type === "HEADER");
+                          const bodyComponent = t.components?.find((c) => c.type === "BODY");
+                          const footerComponent = t.components?.find((c) => c.type === "FOOTER");
+                          const buttonsComponent = t.components?.find((c) => c.type === "BUTTONS");
+                          setEditForm({
+                            name: t.name,
+                            language: t.language,
+                            category: t.category,
+                            headerFormat: headerComponent?.format || "TEXT",
+                            headerText: headerComponent?.text || "",
+                            bodyText: bodyComponent?.text || "",
+                            footerText: footerComponent?.text || "",
+                            buttonText: buttonsComponent?.buttons?.[0]?.text || "",
+                            buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
+                          });
+                          setEditOpen(true);
+                        }}>
+                          <Pencil className="size-4" />
+                        </Button>
                         <Button variant="ghost" size="icon-sm" className="text-red-500 dark:text-red-400" onClick={() => setDeleteConfirm(t.name)}>
                           <Trash2 className="size-4" />
                         </Button>
@@ -405,15 +513,34 @@ const WhatsAppMetaTemplates: React.FC<{
               </div>
             </div>
             <div className="space-y-2">
-              <Label>رأس الرسالة (اختياري)</Label>
-              <Input value={form.headerText} onChange={(e) => setForm((p) => ({ ...p, headerText: e.target.value }))}
-                placeholder="السلام عليكم يا {{1}}" className="h-11" />
-              {form.headerText && !headerVarsOk && (
-                <p className="text-[11px] text-red-500 dark:text-red-400">
-                  ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
-                </p>
-              )}
-            </div>
+                <Label>رأس الرسالة (اختياري)</Label>
+                <div className="flex gap-2">
+                  <Select value={form.headerFormat} onValueChange={(v) => setForm((p) => ({ ...p, headerFormat: v }))}>
+                    <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TEXT"><MessageSquare className="ml-1 size-3.5 inline" /> TEXT</SelectItem>
+                      <SelectItem value="IMAGE"><Image className="ml-1 size-3.5 inline" /> IMAGE</SelectItem>
+                      <SelectItem value="VIDEO"><Video className="ml-1 size-3.5 inline" /> VIDEO</SelectItem>
+                      <SelectItem value="DOCUMENT"><File className="ml-1 size-3.5 inline" /> DOCUMENT</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.headerFormat === "TEXT" && (
+                    <Input value={form.headerText} onChange={(e) => setForm((p) => ({ ...p, headerText: e.target.value }))}
+                      placeholder="السلام عليكم يا {{1}}" className="h-11 flex-1" />
+                  )}
+                  {form.headerFormat !== "TEXT" && (
+                    <div className="flex h-11 flex-1 items-center rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3 text-sm text-[color:var(--color-muted-foreground)]">
+                      <Eye className="ml-2 size-4" />
+                      <span>يتم تحديد `{form.headerFormat === "IMAGE" ? "الصورة" : form.headerFormat === "VIDEO" ? "الفيديو" : "المستند"} عند الإرسال</span>
+                    </div>
+                  )}
+                </div>
+                {form.headerText && !headerVarsOk && (
+                  <p className="text-[11px] text-red-500 dark:text-red-400">
+                    ⚠️ استخدم متغيرات مرقمة: {"{{1}}"} بدلاً من {"{{name}}"}. Meta لا يقبل أسماء متغيرات.
+                  </p>
+                )}
+              </div>
             <div className="space-y-2">
               <Label>محتوى الرسالة *</Label>
               <Textarea value={form.bodyText} onChange={(e) => setForm((p) => ({ ...p, bodyText: e.target.value }))}
@@ -448,6 +575,35 @@ const WhatsAppMetaTemplates: React.FC<{
               </div>
             </div>
           </div>
+          {extractedVars.length > 0 && (
+            <div className="space-y-2 rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] p-3">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">اختبار المتغيرات</Label>
+              <div className="flex flex-wrap gap-2">
+                {extractedVars.map((v) => {
+                  const key = v.replace(/\D/g, "");
+                  return (
+                    <div key={key} className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-[color:var(--color-muted-foreground)]">{v}</span>
+                      <Input
+                        value={varValues[key] || ""}
+                        onChange={(e) => setVarValues((p) => ({ ...p, [key]: e.target.value }))}
+                        placeholder={`قيمة ${key}`}
+                        className="h-8 w-28 text-xs"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-muted)] p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">معاينة حية</p>
+            <div className="wa-bubble rounded-2xl bg-[#d9fdd3] px-4 py-3 shadow-sm dark:bg-[var(--whatsapp-message-outgoing)]">
+              <p className="whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]">{previewText || "(لا يوجد محتوى)"}</p>
+            </div>
+          </div>
+
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setCreateOpen(false)} className="rounded-full">إلغاء</Button>
             <Button onClick={handleCreate} disabled={sending} className="rounded-full">
@@ -546,6 +702,94 @@ const WhatsAppMetaTemplates: React.FC<{
               })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewTemplate(null)} className="rounded-full">إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={(o) => { if (!o) { setEditOpen(false); setEditForm(null); } }}>
+        <DialogContent className="max-w-xl sm:rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>تعديل القالب</DialogTitle>
+            <DialogDescription>
+              تعديل قالب "{editForm?.name}". بعد التعديل، يمر القالب بمراجعة جديدة من ميتا.
+            </DialogDescription>
+          </DialogHeader>
+          {editForm && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>التصنيف</Label>
+                <Select value={editForm.category} onValueChange={(v) => setEditForm((p) => p ? { ...p, category: v } : null)}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>اللغة</Label>
+                <Select value={editForm.language} onValueChange={(v) => setEditForm((p) => p ? { ...p, language: v } : null)}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ar">العربية</SelectItem>
+                    <SelectItem value="fr">Français</SelectItem>
+                    <SelectItem value="tr">Türkçe</SelectItem>
+                    <SelectItem value="ur">اردو</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>رأس الرسالة (اختياري)</Label>
+                <div className="flex gap-2">
+                  <Select value={editForm.headerFormat} onValueChange={(v) => setEditForm((p) => p ? { ...p, headerFormat: v } : null)}>
+                    <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TEXT">TEXT</SelectItem>
+                      <SelectItem value="IMAGE">IMAGE</SelectItem>
+                      <SelectItem value="VIDEO">VIDEO</SelectItem>
+                      <SelectItem value="DOCUMENT">DOCUMENT</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {editForm.headerFormat === "TEXT" ? (
+                    <Input value={editForm.headerText} onChange={(e) => setEditForm((p) => p ? { ...p, headerText: e.target.value } : null)}
+                      placeholder="نص الرأس" className="h-11 flex-1" />
+                  ) : (
+                    <div className="flex h-11 flex-1 items-center rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] px-3 text-sm text-[color:var(--color-muted-foreground)]">
+                      <Eye className="ml-2 size-4" />
+                      <span>يتم تحديد الوسائط عند الإرسال</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>محتوى الرسالة *</Label>
+                <Textarea value={editForm.bodyText} onChange={(e) => setEditForm((p) => p ? { ...p, bodyText: e.target.value } : null)}
+                  className="min-h-[120px]" />
+              </div>
+              <div className="space-y-2">
+                <Label>تذييل الرسالة (اختياري)</Label>
+                <Input value={editForm.footerText} onChange={(e) => setEditForm((p) => p ? { ...p, footerText: e.target.value } : null)}
+                  placeholder="شكراً" className="h-11" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>نص الزر (اختياري)</Label>
+                  <Input value={editForm.buttonText} onChange={(e) => setEditForm((p) => p ? { ...p, buttonText: e.target.value } : null)}
+                    placeholder="تتبع الطلب" className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label>رابط الزر (اختياري)</Label>
+                  <Input value={editForm.buttonUrl} onChange={(e) => setEditForm((p) => p ? { ...p, buttonUrl: e.target.value } : null)}
+                    placeholder="https://example.com" className="h-11" dir="ltr" />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditForm(null); }} className="rounded-full">إلغاء</Button>
+            <Button onClick={handleEdit} disabled={editSending} className="rounded-full">
+              {editSending ? "جاري التحديث..." : "تحديث القالب"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
