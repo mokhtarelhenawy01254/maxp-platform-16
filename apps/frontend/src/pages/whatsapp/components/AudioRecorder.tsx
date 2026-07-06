@@ -17,21 +17,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
-  const { status, startRecording, stopRecording, clearBlobUrl, error } =
-    useReactMediaRecorder({
-      audio: true,
-      onStop: (_blobUrl: string, blob: Blob) => {
-        if (sendRequestedRef.current) {
-          sendRequestedRef.current = false;
-          onSend(blob);
-          clearBlobUrl();
-        }
-      },
-    });
+  const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl, error } =
+    useReactMediaRecorder({ audio: true });
 
+  const [isSending, setIsSending] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const sendRequestedRef = useRef(false);
+  const sentRef = useRef(false);
 
   useEffect(() => {
     if (status === "recording") {
@@ -52,6 +44,29 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   useEffect(() => {
     startRecording();
   }, [startRecording]);
+
+  useEffect(() => {
+    if (isSending && mediaBlobUrl && status === "stopped") {
+      if (sentRef.current) return;
+      sentRef.current = true;
+      const sendAudio = async () => {
+        try {
+          const response = await fetch(mediaBlobUrl);
+          const blob = await response.blob();
+          onSend(blob);
+          clearBlobUrl();
+        } catch (error) {
+          console.error("Error fetching audio blob:", error);
+        } finally {
+          setIsSending(false);
+        }
+      };
+      sendAudio();
+    }
+    if (!isSending) {
+      sentRef.current = false;
+    }
+  }, [clearBlobUrl, isSending, mediaBlobUrl, onSend, status]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -97,7 +112,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
 
       <Button
         onClick={() => {
-          sendRequestedRef.current = true;
+          setIsSending(true);
           stopRecording();
         }}
         disabled={status !== "recording"}
