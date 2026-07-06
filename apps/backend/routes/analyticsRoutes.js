@@ -86,6 +86,12 @@ router.get('/statuses', authenticateToken, analyticsController.getAvailableStatu
 // تقرير ملخص الحالات التجميعي
 router.get('/status-summary', authenticateToken, analyticsController.getStatusSummaryReport);
 
+// تفاصيل الطلبات حسب الحالة (drill-down)
+router.get('/status-summary/orders', authenticateToken, analyticsController.getStatusSummaryOrders);
+
+// تفاصيل القطع حسب الحالة (drill-down)
+router.get('/status-summary/items', authenticateToken, analyticsController.getStatusSummaryItems);
+
 // ==================== Public Routes (للتتبع من Storefront) ====================
 
 // تسجيل زيارة منتج

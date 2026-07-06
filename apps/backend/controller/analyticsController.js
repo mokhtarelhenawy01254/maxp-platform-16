@@ -3704,7 +3704,7 @@ const getAvailableStatuses = async (req, res) => {
     const whereClause = {
       companyId: String(companyId),
       isActive: true,
-      ...(statusType ? { statusType: String(statusType) } : { statusType: 'order' })
+      ...(statusType ? { statusType: String(statusType) } : {})
     };
 
     const statuses = await prisma.orderStatusConfig.findMany({
@@ -3828,6 +3828,187 @@ const getStatusSummaryReport = async (req, res) => {
   }
 };
 
+// Get orders detail for selected statuses (drill-down)
+const getStatusSummaryOrders = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { statuses, startDate, endDate, page = '1', limit = '50' } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    if (!statuses) {
+      return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
+    }
+
+    const statusCodes = String(statuses).split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+    if (statusCodes.length === 0) {
+      return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
+    }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) dateFilter.createdAt.gte = new Date(startDate);
+      if (endDate) dateFilter.createdAt.lte = new Date(endDate);
+    }
+
+    const where = {
+      companyId: String(companyId),
+      status: { in: statusCodes },
+      ...dateFilter
+    };
+
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          shipping: true,
+          subtotal: true,
+          customerId: true,
+          governorate: true,
+          city: true,
+          paymentMethod: true,
+          sourceType: true,
+          createdAt: true,
+          customer: { select: { name: true, phone: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum
+      }),
+      prisma.order.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limitNum)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in getStatusSummaryOrders:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب تفاصيل الطلبات', error: error.message });
+  }
+};
+
+// Get items detail for selected statuses (drill-down)
+const getStatusSummaryItems = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { statuses, startDate, endDate, page = '1', limit = '50' } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    if (!statuses) {
+      return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
+    }
+
+    const statusCodes = String(statuses).split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+    if (statusCodes.length === 0) {
+      return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
+    }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) dateFilter.createdAt.gte = new Date(startDate);
+      if (endDate) dateFilter.createdAt.lte = new Date(endDate);
+    }
+
+    const where = {
+      companyId: String(companyId),
+      status: { in: statusCodes },
+      ...dateFilter
+    };
+
+    const orderItems = await prisma.order.findMany({
+      where,
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        orderItems: {
+          select: {
+            id: true,
+            quantity: true,
+            price: true,
+            total: true,
+            productName: true,
+            productColor: true,
+            productSize: true,
+            productSku: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limitNum
+    });
+
+    // Flatten: each item becomes its own row with order info
+    const flatItems = [];
+    for (const order of orderItems) {
+      for (const item of order.orderItems) {
+        flatItems.push({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          orderStatus: order.status,
+          itemId: item.id,
+          productName: item.productName,
+          productColor: item.productColor,
+          productSize: item.productSize,
+          productSku: item.productSku,
+          quantity: item.quantity,
+          price: Number(item.price) || 0,
+          total: Number(item.total) || 0
+        });
+      }
+    }
+
+    const totalOrders = await prisma.order.count({ where });
+
+    res.json({
+      success: true,
+      data: {
+        items: flatItems,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          totalOrders,
+          totalPages: Math.ceil(totalOrders / limitNum)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in getStatusSummaryItems:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب تفاصيل القطع', error: error.message });
+  }
+};
+
 module.exports = {
   getStoreAnalytics,
   getConversionRate,
@@ -3860,6 +4041,8 @@ module.exports = {
   getCampaignAttributionAnalytics,
   getAvailableStatuses,
   getStatusSummaryReport,
+  getStatusSummaryOrders,
+  getStatusSummaryItems,
   // Public endpoints
   getPublicStoreAnalytics,
   getPublicTopProducts,
