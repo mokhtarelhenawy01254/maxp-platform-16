@@ -460,6 +460,7 @@ router.get("/agents/marketplace", async (req, res) => {
         budget: a.budget || {},
         industries: AGENT_INDUSTRIES[a.slug] || [],
         isActive: a.is_active !== false,
+        companiesCount: a.companies_count || 0,
       })) : [],
     });
   } catch (error) {

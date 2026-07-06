@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import case, select, text
+from sqlalchemy import case, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -458,7 +458,24 @@ async def list_agent_templates(
 ) -> list[AgentTemplateList]:
     """List agent templates. Default: active only. Use ?all=true to include inactive."""
     templates = await list_templates(session, active_only=not include_inactive)
-    return [AgentTemplateList.model_validate(t) for t in templates]
+
+    count_result = await session.execute(
+        select(
+            AgentModel.template_slug,
+            func.count().label("cnt"),
+        ).where(
+            AgentModel.template_slug.isnot(None),
+            AgentModel.status != "ARCHIVED",
+        ).group_by(AgentModel.template_slug)
+    )
+    counts = {row.template_slug: row.cnt for row in count_result}
+
+    result: list[AgentTemplateList] = []
+    for t in templates:
+        item = AgentTemplateList.model_validate(t)
+        item.companies_count = counts.get(t.slug, 0)
+        result.append(item)
+    return result
 
 
 @router.get("/templates/{slug}", response_model=AgentTemplateRead)
