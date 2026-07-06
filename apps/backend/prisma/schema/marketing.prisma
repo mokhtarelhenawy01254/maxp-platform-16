@@ -757,6 +757,31 @@ model FacebookPage {
   @@map("facebook_pages")
 }
 
+/// منشورات الصفحة المتصلة بفيسبوك — للسحب والتحديد كمنتج
+model FacebookPost {
+  id          String    @id @default(cuid())
+  postId      String    @unique
+  pageId      String
+  companyId   String
+  message     String?   @db.Text
+  mediaUrl    String?
+  permalink   String?
+  postedAt    DateTime
+  isProduct   Boolean   @default(false)
+  syncStatus  String    @default("synced")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  page    FacebookPage @relation(fields: [pageId], references: [pageId])
+  company Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([companyId])
+  @@index([isProduct])
+  @@index([postedAt])
+  @@map("facebook_posts")
+}
+
 model FacebookPixelConfig {
   id                        String             @id @default(cuid())
   storefrontSettingsId      String

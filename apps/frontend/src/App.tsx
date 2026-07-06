@@ -92,6 +92,9 @@ const InstagramInbox = React.lazy(
 const FacebookPostCreator = React.lazy(
   () => import("./pages/facebook-inbox/FacebookPostCreator"),
 );
+const FacebookPostManager = React.lazy(
+  () => import("./pages/facebook-inbox/FacebookPostManager"),
+);
 const UnifiedInbox = React.lazy(
   () => import("./pages/unified-inbox/UnifiedInbox"),
 );
@@ -3199,6 +3202,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <FacebookPostCreator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/facebook/posts"
+                  element={
+                    <Layout>
+                      <FacebookPostManager />
                     </Layout>
                   }
                 />
@@ -6527,6 +6538,10 @@ const AppContent = () => {
                   />
                 <Route
                   path="/facebook/create-post"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/facebook/posts"
                   element={<Navigate to="/auth/login" replace />}
                 />
                 <Route
