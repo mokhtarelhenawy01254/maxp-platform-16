@@ -58,10 +58,12 @@ function statusColor(status?: string) {
 
 function formatTime(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleString("ar-SA", {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return d.toLocaleString("ar-EG", {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit",
-  });
+    hour12: false,
+  }) + " " + tz;
 }
 
 function SuperAdminAIKeyLogs() {
