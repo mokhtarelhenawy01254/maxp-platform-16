@@ -497,6 +497,7 @@ export default function BookingManagementPage() {
   const [filters, setFilters] = useState({ status: "", branchId: "", dateFrom: "", dateTo: "" });
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
+  const [serviceFilterStatus, setServiceFilterStatus] = useState<"all" | "active" | "inactive">("active");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchAll(); }, []);
@@ -871,12 +872,21 @@ export default function BookingManagementPage() {
   };
 
   const renderServices = () => {
-    const filtered = services.filter(s => !searchService || s.name.includes(searchService));
+    const filtered = services.filter(s => {
+      const matchesSearch = !searchService || s.name.includes(searchService);
+      const matchesStatus = serviceFilterStatus === "all" || (serviceFilterStatus === "active" && s.isActive) || (serviceFilterStatus === "inactive" && !s.isActive);
+      return matchesSearch && matchesStatus;
+    });
     return (
       <div>
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           <h2 className="text-xl font-bold">إدارة الخدمات</h2>
           <div className="flex gap-3">
+            <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={serviceFilterStatus} onChange={e => setServiceFilterStatus(e.target.value as "all" | "active" | "inactive")}>
+              <option value="active">النشطة</option>
+              <option value="inactive">غير النشطة</option>
+              <option value="all">الكل</option>
+            </select>
             <div className="relative"><MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" /><input className="border dark:border-gray-600 rounded-lg pr-9 pl-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={searchService} onChange={e => setSearchService(e.target.value)} /></div>
             <button onClick={() => setServiceModal({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة خدمة</button>
           </div>
