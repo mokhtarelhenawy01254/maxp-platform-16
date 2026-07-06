@@ -5,10 +5,19 @@ on:
     branches:
       - main
       - staging
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
 
 env:
   NODE_VERSION: "20"
+
+concurrency:
+  group: storefront-validation-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
