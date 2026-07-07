@@ -91,14 +91,14 @@ function KeyLogsContent() {
 
   const { data: companies } = useQuery({
     queryKey: ["super-admin", "companies"],
-    queryFn: () => companyAwareApi.getAllCompanies(),
+    queryFn: () => companyAwareApi.getAllCompanies({ pageSize: 0 }),
     staleTime: 300_000,
   });
 
   const companyNameMap = useMemo(() => {
     try {
-      const raw = companies?.data?.data ?? companies?.data ?? companies;
-      const list: any[] = Array.isArray(raw) ? raw : (Array.isArray(companies) ? companies : []);
+      const list: any[] = companies?.data?.companies ?? companies?.data ?? companies ?? [];
+      if (!Array.isArray(list)) return {};
       const map: Record<string, string> = {};
       for (const c of list) if (c?.id) map[c.id] = c.name || c.id;
       return map;
