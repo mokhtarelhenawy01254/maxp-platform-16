@@ -242,7 +242,7 @@ function ConsumptionContent() {
                   <TableHead className="text-left" dir="ltr">التكلفة</TableHead>
                   <TableHead className="text-left" dir="ltr">الطلبات</TableHead>
                   <TableHead className="text-left" dir="ltr">التوكنز</TableHead>
-                  <TableHead>المزود الرئيسي</TableHead>
+                  <TableHead>المزوّد الأكثر استخداماً</TableHead>
                   <TableHead>نسبة النجاح</TableHead>
                   <TableHead>آخر نشاط</TableHead>
                 </TableRow>
