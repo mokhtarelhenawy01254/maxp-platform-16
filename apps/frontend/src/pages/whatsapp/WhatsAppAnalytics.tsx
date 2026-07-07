@@ -626,6 +626,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                 <TableHead>{t("whatsappAnalytics.logs.recipient")}</TableHead>
                 <TableHead>{t("whatsappAnalytics.logs.type")}</TableHead>
                 <TableHead>{t("whatsappAnalytics.logs.status")}</TableHead>
+                <TableHead>{t("whatsappAnalytics.logs.error")}</TableHead>
                 <TableHead>{t("whatsappAnalytics.logs.date")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -662,6 +663,15 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                         {STATUS_LABELS[log.status] || log.status}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      {log.status === "FAILED" && log.failureReason ? (
+                        <span className="max-w-[180px] truncate block text-xs text-red-600 dark:text-red-400" title={log.failureReason}>
+                          {log.failureReason}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm text-[color:var(--color-muted-foreground)]">
                       {formatLocaleDate(log.createdAt)}
                     </TableCell>
@@ -669,7 +679,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center">
+                  <TableCell colSpan={5} className="py-10 text-center">
                     <div className="space-y-2">
                       <p className="font-medium text-[color:var(--color-foreground)]">
                         {t("whatsappAnalytics.logs.noLogs")}
