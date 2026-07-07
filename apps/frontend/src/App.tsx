@@ -1366,6 +1366,17 @@ const AppContent = () => {
 
   const [activeLpSlugs, setActiveLpSlugs] = useState<Set<string> | null>(null);
 
+  // Catch Vite dynamic-import failures when a redeploy deleted old chunks
+  // that a cached browser still references. Reload to get fresh index.html.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      window.location.reload();
+    };
+    window.addEventListener('vite:preloadError', handler);
+    return () => window.removeEventListener('vite:preloadError', handler);
+  }, []);
+
   useEffect(() => {
     fetch("/api/v1/public/lp-pages", { credentials: "include" })
       .then((r) => {

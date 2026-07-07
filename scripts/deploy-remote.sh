@@ -71,9 +71,12 @@ sync_frontend_dist() {
     "$source_dir/" /var/www/frontend2/dist/
   sudo rm -rf /var/www/frontend2/dist/products
   sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
-  # Remove stale hashed chunks after the new entrypoint is live so deleted
-  # frontend routes cannot remain reachable from old build artifacts.
-  sudo rsync -a --delete --exclude 'index.html' \
+  # Keep old hashed chunks so cached browsers don't 404 on previous-build
+  # lazy chunks. Old index.html references are gone; old chunks are inert
+  # but harmless on disk and essential for cache-in-flight compatibility.
+  # (The first sync already uploaded new assets + this re-sync is now a no-op
+  # that ensures the chown below covers any leftover files we didn't delete.)
+  sudo rsync -a --exclude 'index.html' \
     "$source_dir/" /var/www/frontend2/dist/
   sudo chown -R $USER:$USER /var/www/frontend2/dist
 }
