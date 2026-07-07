@@ -36,3 +36,21 @@
 - Decision: Fixed booking_tools.py to extract packages from branchServices array and aggregate into flat array with branch names
 - Rationale: Matches actual backend Prisma schema (BookingBranchService model)
 - Rejected: Modifying backend to flatten packages onto service — changes DB layer when tool layer can adapt
+
+## 2026-07-06 — Delete vs Refactor Secrets (Private Repo)
+- Context: 50+ files had hardcoded production credentials (DB passwords, JWT secrets, SSH keys, GitHub PAT). The repo is private on GitHub.
+- Decision: Delete all ad-hoc debug/test scripts containing hardcoded secrets rather than refactoring to env vars
+- Rationale: These were one-off debug scripts, not part of the running service. The production service already uses `.env` properly. 133 files, 9458 lines removed.
+- Rejected: Refactoring each script to use env vars — 50+ scripts, most were single-use debug tools. Not worth the effort.
+
+## 2026-07-06 — Dockerize Deferred (Ponytail)
+- Context: CI/CD currently uses tarball SCP + SSH script (deploy-remote.sh). Considered containerization.
+- Decision: Defer Docker. Current system works reliably, handles all edge cases (blue-green frontend, .env backup/restore, health checks).
+- Rationale: Docker adds complexity (registry, server Docker setup, env management, debugging) without solving any actual problem.
+- Rejected: Adding Dockerfiles + docker-compose + registry + CI changes — significant effort for marginal benefit.
+
+## 2026-07-06 — AI Agent Doc Rewrite (Complete Inaccuracy)
+- Context: `ai-agent-system.md` described a Node.js system (`backend/services/aiAgent/`) that was either never built or replaced years ago. The real system is Python FastAPI + Microsoft Agent Framework.
+- Decision: Full rewrite of the doc to match actual architecture.
+- Rationale: Onboarding anyone with the old doc would cause deep confusion. The doc was a liability.
+- Rejected: Incremental fixes — too many inaccuracies (location, language, agent count, tool system, MCP, providers, workers). Full rewrite was faster.
