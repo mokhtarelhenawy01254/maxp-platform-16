@@ -875,6 +875,133 @@ router.post('/dev/evaluations/compare', superAdminController.compareEvaluations)
 // 🔍 Global Search - super admin only
 router.get("/global-search", superAdminController.globalSearch);
 
+// 📊 AI Company Consumption — aggregated AI usage per company
+const { calculateCost, MODEL_COSTS_PER_M } = require("../config/modelCosts");
+
+router.get("/ai/company-consumption", checkPermission("canViewReports"), async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const days = parseInt(req.query.days) || 30;
+
+    const dateFilter = new Date();
+    dateFilter.setDate(dateFilter.getDate() - days);
+
+    const [providers, companiesList, totalLogs] = await Promise.all([
+      prisma.aiProviderLog.groupBy({
+        by: ["companyId", "provider", "model", "status"],
+        _count: { id: true },
+        _sum: { latencyMs: true },
+        where: { createdAt: { gte: dateFilter } },
+      }),
+      prisma.company.findMany({
+        select: { id: true, name: true, nameEn: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.aiProviderLog.count({ where: { createdAt: { gte: dateFilter } } }),
+    ]);
+
+    const companyMap = {};
+    for (const c of companiesList) {
+      companyMap[c.id] = { id: c.id, name: c.name, nameEn: c.nameEn || c.name, totalRequests: 0, successCount: 0, failedCount: 0, totalTokens: 0, totalCost: 0, totalLatency: 0, models: {}, providers: {}, lastActivity: null };
+    }
+
+    // ponytail: cost estimated from modelCosts.js (not persisted)
+    for (const row of providers) {
+      const cid = row.companyId;
+      if (!companyMap[cid]) continue;
+      const c = companyMap[cid];
+      const count = row._count.id;
+      c.totalRequests += count;
+      if (row.status === "success" || row.status === "ok") c.successCount += count;
+      else c.failedCount += count;
+      if (row._sum.latencyMs) c.totalLatency += row._sum.latencyMs;
+
+      if (row.provider) c.providers[row.provider] = (c.providers[row.provider] || 0) + count;
+      if (row.model) c.models[row.model] = (c.models[row.model] || 0) + count;
+    }
+
+    // Get token usage from metadata (JSON) — sample recent logs for token estimates
+    const tokenSample = await prisma.aiProviderLog.findMany({
+      where: { createdAt: { gte: dateFilter }, metadata: { not: null } },
+      select: { companyId: true, model: true, metadata: true },
+      take: 5000,
+    });
+
+    const tokenCounts = {};
+    for (const s of tokenSample) {
+      if (!s.metadata) continue;
+      try {
+        const meta = JSON.parse(s.metadata);
+        const tokens = meta?.tokens;
+        if (tokens) {
+          const key = `${s.companyId}::${s.model || "unknown"}`;
+          if (!tokenCounts[key]) tokenCounts[key] = { input: 0, output: 0, count: 0 };
+          tokenCounts[key].input += tokens.prompt_tokens || tokens.input_tokens || tokens.input || 0;
+          tokenCounts[key].output += tokens.completion_tokens || tokens.output_tokens || tokens.output || 0;
+          tokenCounts[key].count++;
+        }
+      } catch { /* skip bad JSON */ }
+    }
+
+    for (const [key, counts] of Object.entries(tokenCounts)) {
+      const [cid, model] = key.split("::");
+      if (!companyMap[cid]) continue;
+      companyMap[cid].totalTokens += counts.input + counts.output;
+      const cost = calculateCost(model, counts.input, counts.output);
+      companyMap[cid].totalCost += cost;
+    }
+
+    // Get last activity per company
+    const lastActivity = await prisma.aiProviderLog.groupBy({
+      by: ["companyId"],
+      _max: { createdAt: true },
+      where: { createdAt: { gte: dateFilter } },
+    });
+    for (const la of lastActivity) {
+      if (companyMap[la.companyId]) {
+        companyMap[la.companyId].lastActivity = la._max.createdAt;
+      }
+    }
+
+    const companies = Object.values(companyMap)
+      .filter(c => c.totalRequests > 0)
+      .sort((a, b) => b.totalCost - a.totalCost);
+
+    const totalCost = companies.reduce((s, c) => s + c.totalCost, 0);
+    const totalRequests = companies.reduce((s, c) => s + c.totalRequests, 0);
+    const activeCompanies = companies.length;
+    const totalFailed = companies.reduce((s, c) => s + c.failedCount, 0);
+    const errorRate = totalRequests > 0 ? (totalFailed / totalRequests * 100) : 0;
+
+    // Model distribution across all companies
+    const modelDist = {};
+    for (const c of companies) {
+      for (const [model, count] of Object.entries(c.models)) {
+        modelDist[model] = (modelDist[model] || 0) + count;
+      }
+    }
+
+    res.json({
+      success: true,
+      summary: {
+        totalCost: Math.round(totalCost * 100) / 100,
+        totalRequests,
+        activeCompanies,
+        failedCount: totalFailed,
+        errorRate: Math.round(errorRate * 100) / 100,
+        periodDays: days,
+      },
+      modelDistribution: Object.entries(modelDist)
+        .map(([model, count]) => ({ model, count, pct: totalRequests > 0 ? Math.round(count / totalRequests * 10000) / 100 : 0 }))
+        .sort((a, b) => b.count - a.count),
+      companies,
+    });
+  } catch (error) {
+    console.error("[SA] company-consumption error:", error.message);
+    res.status(500).json({ success: false, error: "فشل تحميل بيانات الاستهلاك" });
+  }
+});
+
 // 🧩 AI Embedding Status & Sync — proxied to ai-service admin API
 router.get(
   "/ai/product-embeddings/status",

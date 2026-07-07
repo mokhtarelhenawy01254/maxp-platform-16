@@ -826,6 +826,9 @@ const SuperAdminAITemplateDetail = React.lazy(
 const SuperAdminProductEmbeddings = React.lazy(
   () => import("./pages/super-admin/SuperAdminProductEmbeddings"),
 );
+const SuperAdminAIConsumption = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIConsumption"),
+);
 // Merchant AI Pages
 const AIHubLayout = React.lazy(
   () => import("./pages/admin/AIHubLayout"),
@@ -1957,6 +1960,16 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminProductEmbeddings />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-consumption"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminAIConsumption />
+                  </React.Suspense>
                 </Layout>
               }
             />
