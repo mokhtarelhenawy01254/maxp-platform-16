@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ImageIcon, Loader2, Sparkles, Download, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { ImageIcon, Loader2, Sparkles, Download, ChevronDown, ChevronUp, Trash2, Copy, ExternalLink, RefreshCw, Grid3X3, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   SettingsPageShell,
   SettingsPageHero,
@@ -192,6 +196,11 @@ const AIImageGenerator: React.FC = () => {
   const [brandIdentity, setBrandIdentity] = useState<Record<string, string>>({});
   const [agentModel, setAgentModel] = useState("google/gemini-3.1-flash-image");
 
+  const [gallery, setGallery] = useState<any[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; url: string; filename: string }>({ open: false, url: "", filename: "" });
+  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string } | null>(null);
+
   useEffect(() => {
     apiClient.get("/ai-image/model-config").then((res) => {
       if (res.success && res.data?.model) setAgentModel(res.data.model);
@@ -209,7 +218,16 @@ const AIImageGenerator: React.FC = () => {
         }));
       }
     }).catch(() => {});
+    fetchGallery();
   }, []);
+
+  const fetchGallery = async () => {
+    setGalleryLoading(true);
+    try {
+      const res = await apiClient.get("/ai-image/history");
+      if (res.success && Array.isArray(res.data)) setGallery(res.data);
+    } catch {} finally { setGalleryLoading(false); }
+  };
 
   const update = <K extends keyof FormData>(key: K, val: FormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -311,31 +329,26 @@ const AIImageGenerator: React.FC = () => {
     setMessage(null);
 
     try {
-      const structured = buildPromptJson();
       const prompt = buildPromptText();
+      const params = { prompt, model: agentModel, aspectRatio: form.aspectRatio, style: form.mood || form.theme || undefined };
+      setLastParams(params);
 
       const res = await apiClient.post("/ai-image/generate", {
         prompt,
-        structured,
-        model: agentModel,
-        aspectRatio: form.aspectRatio,
-        style: form.mood || form.theme || undefined,
+        structured: buildPromptJson(),
+        ...params,
       });
 
       if (res.success && res.data?.imageUrl) {
         setImageUrl(res.data.imageUrl);
         setMessage({ type: "success", text: "تم توليد الصورة بنجاح" });
+        fetchGallery();
       } else {
         setMessage({ type: "error", text: "لم يتم استلام الصورة من الموديل" });
       }
     } catch (err: any) {
-      setMessage({
-        type: "error",
-        text: err?.response?.data?.message || err.message || "فشل في توليد الصورة",
-      });
-    } finally {
-      setLoading(false);
-    }
+      setMessage({ type: "error", text: err?.response?.data?.message || err.message || "فشل في توليد الصورة" });
+    } finally { setLoading(false); }
   };
 
   const handleDownload = () => {
@@ -344,6 +357,55 @@ const AIImageGenerator: React.FC = () => {
     a.href = imageUrl;
     a.download = `maxp-ai-${Date.now()}.${form.format}`;
     a.click();
+  };
+
+  const handleCopyUrl = async () => {
+    if (!imageUrl) return;
+    try {
+      await navigator.clipboard.writeText(window.location.origin + imageUrl);
+      setMessage({ type: "success", text: "تم نسخ الرابط" });
+    } catch {
+      setMessage({ type: "error", text: "فشل نسخ الرابط" });
+    }
+  };
+
+  const handleOpenTab = () => {
+    if (!imageUrl) return;
+    window.open(imageUrl, "_blank");
+  };
+
+  const handleRegenerate = () => {
+    if (!lastParams) return;
+    setImageUrl("");
+    setMessage(null);
+    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style), 100);
+  };
+
+  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string) => {
+    setLoading(true);
+    try {
+      const res = await apiClient.post("/ai-image/generate", { prompt, model, aspectRatio, style });
+      if (res.success && res.data?.imageUrl) {
+        setImageUrl(res.data.imageUrl);
+        setMessage({ type: "success", text: "تم توليد الصورة بنجاح" });
+        fetchGallery();
+      } else {
+        setMessage({ type: "error", text: "لم يتم استلام الصورة من الموديل" });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: err?.response?.data?.message || err.message || "فشل في توليد الصورة" });
+    } finally { setLoading(false); }
+  };
+
+  const handleDeleteImage = async (filename: string) => {
+    try {
+      await apiClient.delete(`/ai-image/${filename}`);
+      setGallery((prev) => prev.filter((g) => g.filename !== filename));
+      setDeleteDialog({ open: false, url: "", filename: "" });
+      setMessage({ type: "success", text: "تم حذف الصورة" });
+    } catch {
+      setMessage({ type: "error", text: "فشل حذف الصورة" });
+    }
   };
 
   const handleReset = () => {
@@ -898,8 +960,19 @@ const AIImageGenerator: React.FC = () => {
               <Button variant="outline" className="gap-2" onClick={handleDownload}>
                 <Download className="size-4" /> تحميل
               </Button>
-              <Button variant="outline" className="gap-2" onClick={() => setImageUrl("")}>
-                توليد جديدة
+              <Button variant="outline" className="gap-2" onClick={handleCopyUrl}>
+                <Copy className="size-4" /> نسخ الرابط
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={handleOpenTab}>
+                <ExternalLink className="size-4" /> فتح في تبويب
+              </Button>
+              {lastParams && (
+                <Button variant="outline" className="gap-2" onClick={handleRegenerate} disabled={loading}>
+                  <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> توليد مماثل
+                </Button>
+              )}
+              <Button variant="ghost" className="gap-2 text-red-500" onClick={() => setImageUrl("")}>
+                <Trash2 className="size-4" /> مسح
               </Button>
             </div>
           </div>
@@ -912,6 +985,77 @@ const AIImageGenerator: React.FC = () => {
           </div>
         )}
       </div>
+      <div className="mt-8 border-t pt-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-lg font-semibold">
+            <Grid3X3 className="size-5 text-sky-600" />
+            الصور المُنشأة
+            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700 dark:bg-sky-900 dark:text-sky-300">{gallery.length}</span>
+          </h3>
+          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={fetchGallery} disabled={galleryLoading}>
+            <RefreshCw className={`size-3 ${galleryLoading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
+        </div>
+        {gallery.length === 0 ? (
+          <div className="flex min-h-[160px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
+            <div className="text-center text-slate-400">
+              <ImageIcon className="mx-auto size-10" />
+              <p className="mt-2 text-sm">لا توجد صور بعد. أول صورة هتظهر هنا.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {gallery.map((img) => (
+              <div key={img.filename} className="group relative overflow-hidden rounded-lg border bg-slate-50 dark:bg-gray-900">
+                <img src={img.url} alt="" className="aspect-square w-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    type="button"
+                    className="rounded bg-white/20 p-1.5 text-white hover:bg-white/40"
+                    onClick={() => { setImageUrl(img.url); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    title="عرض"
+                  >
+                    <ImageIcon className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded bg-white/20 p-1.5 text-white hover:bg-white/40"
+                    onClick={() => window.open(img.url, "_blank")}
+                    title="فتح"
+                  >
+                    <ExternalLink className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded bg-red-500/60 p-1.5 text-white hover:bg-red-500/80"
+                    onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
+                    title="حذف"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(open ? deleteDialog : { open: false, url: "", filename: "" })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><AlertCircle className="size-5 text-red-500" /> حذف الصورة</DialogTitle>
+            <DialogDescription>متأكد إنك عايز تحذف الصورة دي؟ مش هتقدر ترجعها بعد كدا.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center">
+            <img src={deleteDialog.url} alt="" className="max-h-48 rounded-lg object-contain" />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteDialog({ open: false, url: "", filename: "" })}>إلغاء</Button>
+            <Button variant="destructive" onClick={() => handleDeleteImage(deleteDialog.filename)}>حذف</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SettingsPageShell>
   );
 };

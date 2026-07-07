@@ -142,6 +142,40 @@ exports.getModelConfig = async (req, res) => {
   }
 };
 
+exports.getHistory = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const imgDir = path.join(__dirname, "..", "uploads", "ai-images", companyId || "unknown");
+    if (!fs.existsSync(imgDir)) return res.json({ success: true, data: [] });
+    const files = fs.readdirSync(imgDir)
+      .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
+      .map(f => {
+        const stat = fs.statSync(path.join(imgDir, f));
+        return { filename: f, url: `/uploads/ai-images/${companyId || "unknown"}/${f}`, createdAt: stat.birthtime || stat.mtime, size: stat.size };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return res.json({ success: true, data: files });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteImage = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const filename = req.params.filename;
+    if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+      return res.status(400).json({ success: false, message: "اسم ملف غير صالح" });
+    }
+    const filePath = path.join(__dirname, "..", "uploads", "ai-images", companyId || "unknown", filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, message: "الملف مش موجود" });
+    fs.unlinkSync(filePath);
+    return res.json({ success: true, message: "تم الحذف" });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.getModels = async (req, res) => {
   res.json({ success: true, data: ALLOWED_MODELS });
 };
