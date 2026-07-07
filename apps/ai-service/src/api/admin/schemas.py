@@ -32,6 +32,7 @@ class AiKeyBase(BaseModel):
 class AiKeyCreate(AiKeyBase):
     api_key: str = Field(..., min_length=1)
     id: str | None = Field(default=None, min_length=1, max_length=50)
+    models: list[str] | None = None
 
 
 class AiKeyUpdate(BaseModel):

@@ -91,15 +91,18 @@ function KeyLogsContent() {
 
   const { data: companies } = useQuery({
     queryKey: ["super-admin", "companies"],
-    queryFn: () => companyAwareApi.getAllCompanies(),
+    queryFn: () => companyAwareApi.getAllCompanies({ pageSize: 0 }),
     staleTime: 300_000,
   });
 
   const companyNameMap = useMemo(() => {
-    if (!companies?.data) return {};
-    const map: Record<string, string> = {};
-    for (const c of companies.data) map[c.id] = c.name;
-    return map;
+    try {
+      const body: any = companies?.data;
+      const raw: any[] = body?.data?.companies ?? body?.companies ?? (Array.isArray(body) ? body : []);
+      const map: Record<string, string> = {};
+      for (const c of raw) if (c?.id) map[c.id] = c.name || c.id;
+      return map;
+    } catch { return {}; }
   }, [companies]);
 
   const { data: logs, isLoading, error } = useAiKeyLogs({

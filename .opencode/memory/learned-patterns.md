@@ -1,3 +1,9 @@
+## Vite Chunk 404 After Deploy — `rsync --delete` + `immutable` Cache (2026-07-07)
+- **Issue:** `AppDashboardPage-Bdn6Gg1x.js` 404 on production after `96106ac7` refactor. Browser had cached old `route-storefront-CjTr7twW.js` (immutable max-age=31536000) which referenced old chunk name.
+- **Root cause:** Nginx serves `/assets/` with `immutable` (1yr). Browser never revalidates. `deploy-remote.sh` used `rsync --delete` removing old chunks. New `index.html` only references new hashes. Cached JS referencing old hashes → 404.
+- **Fix (two-part):** (1) Removed `--delete` from second rsync in `sync_frontend_dist()` — old chunks stay on disk only referenced by cached clients, harmless. (2) Added `vite:preloadError` event listener in `AppContent` (App.tsx:1363-1372) — Vite's recommended pattern — prevents React error + reloads page when a stale dynamic import fails.
+- **Lesson:** Vite code-split chunks + immutable cache + delete-on-deploy = guaranteed 404 for returning users with cached JS. Either keep old chunks or handle `vite:preloadError`.
+
 ## Order Status 400 Bad Request with Custom Status IDs (2026-07-07)
 - **Issue:** Changing an order status to a custom status failed with 400 Bad Request.
 - **Cause:** The frontend passes the custom status ID (a CUID) to the endpoint. The backend aggressively uppercased the status string via normalizeOrderStatusCode(). Because CUIDs are case-sensitive and stored lowercase in Prisma, the workflow service failed to find the uppercased CUID in the database.
