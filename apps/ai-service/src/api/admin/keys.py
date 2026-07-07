@@ -465,8 +465,8 @@ async def list_logs(
         rows.extend(LogEntry.model_validate(r) for r in pub.mappings().all())
         rows.sort(key=lambda r: r.created_at, reverse=True)
         rows[:] = rows[:limit]
-    except Exception:
-        pass
+    except Exception as _pub_exc:
+        logger.warning("public_logs_query_failed", error=str(_pub_exc))
     return rows
 
 
