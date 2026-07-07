@@ -269,6 +269,17 @@ You are continuing an existing conversation on Facebook Messenger that was previ
             if session_state.get("queriedProducts"):
                 recent = session_state["queriedProducts"][-5:]
                 state_lines.append(f"  Recently Queried: {recent}")
+            if session_state.get("referredProduct"):
+                prod = session_state["referredProduct"]
+                name = prod.get("name", prod.get("id", ""))
+                state_lines.append(f"  Referred Product: {name}")
+                price = prod.get("price")
+                if price:
+                    state_lines.append(f"  Referred Product Price: {price}")
+                desc = prod.get("description", "")
+                if desc:
+                    state_lines.append(f"  Referred Product Description: {desc[:240]}")
+
             if session_state.get("recentMessages"):
                 recent_messages = []
                 for message in session_state["recentMessages"][-6:]:
