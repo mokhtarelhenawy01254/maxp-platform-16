@@ -1679,11 +1679,16 @@ const WhatsAppChatContent: React.FC = () => {
 
   const handleOpenTemplateDialog = useCallback(async () => {
     if (!selectedSession) return;
+    const sessionId = selectedContact?.sessionId || (selectedSession === 'all' ? null : selectedSession);
+    if (!sessionId) {
+      toast.error('الرجاء اختيار جلسة واتساب محددة');
+      return;
+    }
     setTemplateDialogOpen(true);
     setLoadingTemplates(true);
     try {
       const res = await api.get('/whatsapp-templates/templates', {
-        params: { sessionId: selectedSession }
+        params: { sessionId }
       });
       const allTemplates = res.data?.templates || res.data?.data || [];
       setTemplates(allTemplates.filter((t: any) => t.status === 'APPROVED'));
@@ -1693,7 +1698,7 @@ const WhatsAppChatContent: React.FC = () => {
     } finally {
       setLoadingTemplates(false);
     }
-  }, [selectedSession]);
+  }, [selectedSession, selectedContact]);
 
   const handleSelectTemplate = (tmpl: any) => {
     setSelectedTemplate(tmpl);
@@ -1714,7 +1719,8 @@ const WhatsAppChatContent: React.FC = () => {
 
   const handleSendTemplate = async () => {
     if (!selectedSession || !selectedContact || !selectedTemplate) return;
-    const targetSessionId = selectedContact.sessionId || selectedSession;
+    const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
+    if (!targetSessionId) return toast.error('الرجاء اختيار جلسة واتساب محددة');
     const bodyComponent = selectedTemplate.components?.find((c: any) => c.type === 'BODY');
     const params: Record<string, any> = {
       name: selectedTemplate.name,
