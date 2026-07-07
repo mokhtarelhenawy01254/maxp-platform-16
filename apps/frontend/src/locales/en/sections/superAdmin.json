@@ -356,11 +356,7 @@
         "active": "Active",
         "inactive": "Inactive"
       }
-    },
-    "logs": {
-            "title": "Central Logs",
-            "description": "Monitor sending and failures across all companies from one screen."
-          }
+      }
         }
       },
       "recentFailures": {
