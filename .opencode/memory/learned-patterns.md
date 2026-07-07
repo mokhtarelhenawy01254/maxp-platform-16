@@ -1,3 +1,8 @@
+## Order Status 400 Bad Request with Custom Status IDs (2026-07-07)
+- **Issue:** Changing an order status to a custom status failed with 400 Bad Request.
+- **Cause:** The frontend passes the custom status ID (a CUID) to the endpoint. The backend aggressively uppercased the status string via normalizeOrderStatusCode(). Because CUIDs are case-sensitive and stored lowercase in Prisma, the workflow service failed to find the uppercased CUID in the database.
+- **Fix:** Added a defense-in-depth check in orderService.js to intercept CUIDs (length > 20) and resolve them to their uppercase status code before processing. Also updated orderWorkflowService.evaluateStatusChange to try a lowercased ID lookup if the first uppercase lookup fails, and strictly use workflowResult.nextStatusCode to update the DB.
+
 ## Late Cancellation — Dynamic Statuses (2026-07-04)
 
 - `LateCancellationSettings.tsx` had a hardcoded `PREPARATION_STATUSES` array that didn't match actual company statuses

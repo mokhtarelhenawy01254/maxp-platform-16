@@ -174,6 +174,14 @@ class OrderWorkflowService {
                 where: { id: statusOrId }
             }).catch(() => null);
 
+            // ⚡ FIX: Since statusOrId might have been uppercased by upstream handlers,
+            // also try finding it as a lowercased ID (CUIDs are lowercase)
+            if (!nextStatusDef && statusOrId) {
+                nextStatusDef = await this.prisma.orderStatusDefinition.findUnique({
+                    where: { id: statusOrId.toLowerCase() }
+                }).catch(() => null);
+            }
+
             if (!nextStatusDef) {
                 nextStatusDef = await this.findStatusByCode(companyId, statusOrId);
             }

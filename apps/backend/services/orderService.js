@@ -829,6 +829,18 @@ class OrderService {
       const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
       status = normalizeOrderStatusCode(status);
 
+      // ⚡ FIX: If status is an ID (CUIDs are typically >20 chars), resolve it to its Code
+      // This prevents saving an uppercased CUID to the database and fixes workflow validation.
+      if (status && status.length > 20) {
+        const prisma = this.getPrisma();
+        const statusDef = await prisma.orderStatusDefinition.findUnique({
+          where: { id: status.toLowerCase() }
+        }).catch(() => null);
+        if (statusDef && statusDef.code) {
+          status = statusDef.code.toUpperCase();
+        }
+      }
+
       // 🚀 SPEED OPTIMIZATION: Use pre-fetched order if available
       const order = existingOrderObject || await safeQuery(async () => {
         const prisma = this.getPrisma();
@@ -929,6 +941,9 @@ class OrderService {
         if (workflowResult && workflowResult.status === 'allowed') {
           console.log(`✅ [ORDER-SERVICE-DEBUG] Action allowed by Workflow Service.`);
           workflowAuditLog = workflowResult.auditLog || null;
+          if (workflowResult.nextStatusCode) {
+            status = workflowResult.nextStatusCode;
+          }
         }
 
         if (workflowResult && workflowResult.status === 'pending') {
