@@ -1748,11 +1748,27 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
           });
           if (parentMsg) {
             const snippet = parentMsg.type === 'IMAGE' ? '📷 صورة' : parentMsg.type === 'FILE' ? '📎 ملف' : (parentMsg.content || '').substring(0, 80);
+            let parentSenderName = 'موظف';
+            if (parentMsg.isFromCustomer) {
+              parentSenderName = `${customer.firstName} ${customer.lastName}`.trim();
+            } else {
+              try {
+                const parentMetadata = typeof parentMsg.metadata === 'string' ? JSON.parse(parentMsg.metadata) : (parentMsg.metadata || {});
+                parentSenderName = parentMetadata.employeeName || parentMetadata.senderName || 'موظف';
+              } catch (e) {
+                parentSenderName = 'موظف';
+              }
+            }
             replyMeta = {
               replyToResolvedMessageId: parentMsg.id,
               replyToContentSnippet: snippet,
               replyToSenderIsCustomer: !!parentMsg.isFromCustomer,
-              replyToType: parentMsg.type
+              replyToType: parentMsg.type,
+              replyTo: {
+                senderName: parentSenderName,
+                type: (parentMsg.type || 'text').toLowerCase(),
+                content: snippet
+              }
             };
           }
         } catch (e) {
