@@ -286,7 +286,7 @@ jobs:
               echo "❌ Passwordless sudo is required for production deploys"
               exit 1
             }
-            DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+            export DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
             exec 9>/tmp/maxp-production-deploy.lock
             if ! flock -n 9; then
               echo "❌ Another production deployment is already running on the server"
