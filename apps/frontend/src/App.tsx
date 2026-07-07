@@ -854,6 +854,12 @@ const BookingManagementPage = React.lazy(
 const EducationManagementPage = React.lazy(
   () => import("./pages/admin/EducationManagementPage"),
 );
+const AIImageGenerator = React.lazy(
+  () => import("./pages/admin/AIImageGenerator"),
+);
+const BrandIdentitySettings = React.lazy(
+  () => import("./pages/admin/BrandIdentitySettings"),
+);
 const EducationFunnelPage = React.lazy(
   () => import("./pages/admin/EducationFunnelPage"),
 );
@@ -6419,6 +6425,22 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <EducationManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-image-generator"
+                  element={
+                    <Layout fullWidth>
+                      <AIImageGenerator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/brand-identity"
+                  element={
+                    <Layout fullWidth>
+                      <BrandIdentitySettings />
                     </Layout>
                   }
                 />
