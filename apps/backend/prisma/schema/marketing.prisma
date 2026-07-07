@@ -905,6 +905,7 @@ model WhatsAppNotificationLog {
   readAt                          DateTime?
   failedAt                        DateTime?
   failureReason                   String?
+  errorCode                       String?
   clicked                         Boolean                               @default(false)
   clickedAt                       DateTime?
   responded                       Boolean                               @default(false)
