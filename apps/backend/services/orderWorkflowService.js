@@ -191,8 +191,16 @@ class OrderWorkflowService {
                 where: { userId_companyId: { userId, companyId } }
             });
 
-            if (!userCompany) throw new Error('المستخدم غير مصرح له لهذه الشركة');
-            const userRole = userCompany.role;
+            // Fall back to the user's global role (e.g. SUPER_ADMIN) when no
+            // company-scoped record exists – this avoids a spurious 400 for
+            // admins operating via effectiveCompanyId.
+            let userRole = userCompany?.role;
+            if (!userRole) {
+                const globalUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+                userRole = globalUser?.role || null;
+            }
+
+            if (!userRole) throw new Error('المستخدم غير مصرح له لهذه الشركة');
 
             // 4. Handle OVERRIDE
             let auditType = 'normal';
