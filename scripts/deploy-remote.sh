@@ -1,5 +1,8 @@
 set -e
 
+: "${DEPLOY_STAGING:="${HOME}/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"}"
+export DEPLOY_STAGING
+
 export NODE_ENV=production
 export PUPPETEER_SKIP_DOWNLOAD=1
 export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
