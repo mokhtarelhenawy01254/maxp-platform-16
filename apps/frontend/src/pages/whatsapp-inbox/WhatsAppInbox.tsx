@@ -65,6 +65,12 @@ type Conversation = {
     detectedCountry: string | null;
     detectedDepartment: string | null;
   };
+  window: {
+    isOpen: boolean;
+    remainingSeconds: number;
+    remainingLabel: string;
+    windowExpiresAt: string | null;
+  };
 };
 
 type SessionsApiResponse = {
@@ -564,6 +570,15 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                             {copy.common.vip}
                           </span>
                         ) : null}
+                        {conversation.window?.isOpen ? (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
+                            ⏱ {conversation.window.remainingLabel}
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] text-red-700 dark:bg-red-950/30 dark:text-red-200">
+                            ✕ {conversation.window.remainingLabel}
+                          </span>
+                        )}
                         {conversation.flags.detectedLanguage ? (
                           <span>{conversation.flags.detectedLanguage.toUpperCase()}</span>
                         ) : null}
