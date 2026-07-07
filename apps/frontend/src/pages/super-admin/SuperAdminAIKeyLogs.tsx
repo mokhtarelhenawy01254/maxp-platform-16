@@ -89,10 +89,11 @@ function KeyLogsContent() {
 
   const [refreshTick, setRefreshTick] = useState(0);
 
-  const { data: companies } = useQuery({
+  const { data: companies, isLoading: loadingCompanies } = useQuery({
     queryKey: ["super-admin", "companies"],
     queryFn: () => companyAwareApi.getAllCompanies({ pageSize: 0 }),
-    staleTime: 300_000,
+    staleTime: 600_000,
+    gcTime: 900_000,
   });
 
   const companyNameMap = useMemo(() => {
