@@ -33,9 +33,11 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
         wd = _try_parse_json(b.get("workingDays"))
         male_days = [AR_DAY_NAMES.get(d2i(k), k) for k in (gd.get("male", []) if gd else [])]
         female_days = [AR_DAY_NAMES.get(d2i(k), k) for k in (gd.get("female", []) if gd else [])]
+        phones = b.get("phones") if isinstance(b.get("phones"), list) else ([b.get("phone")] if b.get("phone") else [])
         summary.append({
             "id": b.get("id"), "name": b.get("name"), "address": b.get("address"),
-            "phone": b.get("phone"),
+            "phone": phones[0] if phones else "",
+            "phones": phones,
             "male_days": male_days, "female_days": female_days,
             "hours": wd,
         })

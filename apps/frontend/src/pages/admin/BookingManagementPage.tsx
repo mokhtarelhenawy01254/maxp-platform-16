@@ -883,7 +883,11 @@ export default function BookingManagementPage() {
             <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
               <td className="py-3 px-4 font-medium">{b.name}</td>
               <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
-              <td className="py-3 px-4">{b.phone || "—"}</td>
+              <td className="py-3 px-4">
+                <div className="flex flex-wrap gap-1">
+                  {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="text-xs inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">{p}</span>) || "—"}
+                </div>
+              </td>
                             <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">{
                 (() => {
                   try {
