@@ -131,7 +131,7 @@ export default function FacebookPostManager() {
 
   const filteredProducts = products.filter(p =>
     !productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()) || p.sku.toLowerCase().includes(productSearch.toLowerCase())
-  ).slice(0, 10);
+  );
 
   const formatDate = (d: string) => {
     const date = new Date(d);
