@@ -217,7 +217,7 @@ class OrderWorkflowService {
                 const overrideRoles = config.overrideRoles
                     ? JSON.parse(config.overrideRoles)
                     : ['OWNER', 'SUPER_ADMIN'];
-                const canOverride = overrideRoles.includes(userRole);
+                const canOverride = overrideRoles.includes(userRole) || overrideRoles.includes(userId);
                 if (!canOverride) throw new Error('عذراً، لا تملك صلاحية تجاوز قيود المسار (Override)');
 
                 auditType = 'override';
@@ -244,7 +244,7 @@ class OrderWorkflowService {
             // 7. Check Role Permission in Transition
             if (!isOverride && transition) {
                 const allowedRoles = JSON.parse(transition.allowedRoles || '[]');
-                if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+                if (allowedRoles.length > 0 && !allowedRoles.includes(userRole) && !allowedRoles.includes(userId)) {
                     throw new Error('دورك الحالي لا يملك صلاحية تنفيذ هذا الانتقال');
                 }
 
@@ -675,7 +675,7 @@ class OrderWorkflowService {
         const overrideRoles = config.overrideRoles
             ? JSON.parse(config.overrideRoles)
             : ['OWNER', 'SUPER_ADMIN'];
-        const canOverride = overrideRoles.includes(userRole);
+        const canOverride = overrideRoles.includes(userRole) || overrideRoles.includes(userId);
 
         const transitions = await this.prisma.orderWorkflowTransition.findMany({
             where: {
@@ -692,7 +692,7 @@ class OrderWorkflowService {
 
         for (const transition of transitions) {
             const allowedRoles = JSON.parse(transition.allowedRoles || '[]');
-            if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+            if (allowedRoles.length > 0 && !allowedRoles.includes(userRole) && !allowedRoles.includes(userId)) {
                 continue;
             }
 
