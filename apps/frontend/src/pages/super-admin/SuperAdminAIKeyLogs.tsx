@@ -96,10 +96,13 @@ function KeyLogsContent() {
   });
 
   const companyNameMap = useMemo(() => {
-    const list = Array.isArray(companies) ? companies : (Array.isArray(companies?.data) ? companies.data : (companies?.data?.data ? companies.data.data : []));
-    const map: Record<string, string> = {};
-    for (const c of list) if (c && c.id) map[c.id] = c.name || c.id;
-    return map;
+    try {
+      const raw = companies?.data?.data ?? companies?.data ?? companies;
+      const list: any[] = Array.isArray(raw) ? raw : (Array.isArray(companies) ? companies : []);
+      const map: Record<string, string> = {};
+      for (const c of list) if (c?.id) map[c.id] = c.name || c.id;
+      return map;
+    } catch { return {}; }
   }, [companies]);
 
   const { data: logs, isLoading, error } = useAiKeyLogs({
