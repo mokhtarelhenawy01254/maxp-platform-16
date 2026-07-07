@@ -85,6 +85,7 @@ exports.generateImage = async (req, res) => {
     const result = response.data;
     let imageUrl = "";
     const msg = result?.choices?.[0]?.message;
+    if (msg) console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","), "images type:", typeof msg.images, "images isArray:", Array.isArray(msg.images));
     if (msg) {
       if (typeof msg.content === "string") {
         imageUrl = msg.content;
@@ -96,11 +97,12 @@ exports.generateImage = async (req, res) => {
         }
       }
       if (!imageUrl && msg.image_url?.url) imageUrl = msg.image_url.url;
-      if (!imageUrl && Array.isArray(msg.images)) {
-        for (const img of msg.images) {
+      if (!imageUrl && msg.images) {
+        const imgArr = Array.isArray(msg.images) ? msg.images : Object.values(msg.images);
+        for (const img of imgArr) {
           if (typeof img === "string") { imageUrl = img; break; }
-          if (img.url) { imageUrl = img.url; break; }
-          if (img.image_url?.url) { imageUrl = img.image_url.url; break; }
+          if (img?.url) { imageUrl = img.url; break; }
+          if (img?.image_url?.url) { imageUrl = img.image_url.url; break; }
         }
       }
     }
