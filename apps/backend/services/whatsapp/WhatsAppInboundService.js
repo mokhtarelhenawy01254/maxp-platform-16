@@ -299,12 +299,34 @@ async function saveIncomingMessage(payload) {
 
           console.log(`🟢 [WA-DEBOUNCE] Processing ${entries.length} debounced message(s) as one request`);
 
+          // ponytail: admin routing — if sender is in companyLifecycleAdminPhones, route to WHATSAPP_ADMIN channel
+          let channel = 'WHATSAPP';
+          try {
+            const senderPhone = first.normalizedJid.split('@')[0].replace(/\D/g, '');
+            const notifSettings = await prisma.whatsAppNotificationSettings.findUnique({
+              where: { companyId: first.companyId },
+              select: { companyLifecycleAdminPhones: true },
+            });
+            if (notifSettings?.companyLifecycleAdminPhones) {
+              const adminPhones = notifSettings.companyLifecycleAdminPhones
+                .split(/[\r\n,;،]+/)
+                .map(s => s.trim().replace(/\D/g, ''))
+                .filter(Boolean);
+              if (adminPhones.includes(senderPhone)) {
+                channel = 'WHATSAPP_ADMIN';
+                console.log(`🔵 [WA-DEBOUNCE] Sender ${senderPhone} is admin → routing to ${channel}`);
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️ [WA-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);
+          }
+
           const result = await aiSdkClient.sendChatMessage({
             companyId: first.companyId,
             customerId: first.customerId,
             message: combinedMessage,
             threadId: first.conversationId,
-            channel: 'WHATSAPP',
+            channel,
             memoryContext: null,
           });
 
