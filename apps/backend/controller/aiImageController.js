@@ -104,11 +104,15 @@ exports.generateImage = async (req, res) => {
     if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     const mdMatch = typeof imageUrl === "string" && imageUrl.match(/!\[.*?\]\((.*?)\)/);
     if (mdMatch) imageUrl = mdMatch[1];
-    console.log("[AI-IMAGE] Full result:", JSON.stringify(result));
+    console.log("[AI-IMAGE] result keys:", Object.keys(result).join(","));
     if (msg) {
       console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","));
-      if (msg.images) console.log("[AI-IMAGE] msg.images:", JSON.stringify(msg.images));
+      console.log("[AI-IMAGE] msg.images type+value:", typeof msg.images, JSON.stringify(msg.images).slice(0, 300));
+      console.log("[AI-IMAGE] msg all values:", JSON.stringify(Object.fromEntries(Object.entries(msg).filter(([k]) => k !== "reasoning_details"))).slice(0, 3000));
     }
+    console.log("[AI-IMAGE] result.urls:", JSON.stringify(result.urls).slice(0, 500));
+    console.log("[AI-IMAGE] result.data:", JSON.stringify(result.data).slice(0, 500));
+    console.log("[AI-IMAGE] choice keys:", JSON.stringify(Object.keys(result.choices[0])).slice(0, 500));
 
     return res.status(200).json({
       success: true,
