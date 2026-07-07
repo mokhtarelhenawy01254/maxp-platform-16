@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -364,15 +365,27 @@ function AddKeyDialog({
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [modelsText, setModelsText] = useState("");
   const [showKey, setShowKey] = useState(false);
+
+  function handleProviderChange(value: string) {
+    setProvider(value);
+    if (value === "OPENROUTER" && !modelsText) {
+      setModelsText("openrouter/auto");
+    }
+  }
 
   function handleSave() {
     if (!provider || !name || !apiKey) {
       toast.error("المزود والاسم والمفتاح مطلوبون");
       return;
     }
+    const models = modelsText
+      .split("\n")
+      .map((m) => m.trim())
+      .filter(Boolean);
     createKeyMutation.mutate(
-      { provider, name, api_key: apiKey },
+      { provider, name, api_key: apiKey, models: models.length > 0 ? models : undefined },
       { onSuccess: onCreated },
     );
   }
@@ -386,7 +399,7 @@ function AddKeyDialog({
         <div className="space-y-3">
           <div>
             <label className="text-sm font-medium mb-1 block">المزود</label>
-            <Select value={provider} onValueChange={setProvider}>
+            <Select value={provider} onValueChange={handleProviderChange}>
               <SelectTrigger>
                 <SelectValue placeholder="اختر المزود" />
               </SelectTrigger>
@@ -424,6 +437,22 @@ function AddKeyDialog({
                 {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">
+              الموديلات (موديل واحد في كل سطر)
+            </label>
+            <Textarea
+              value={modelsText}
+              onChange={(e) => setModelsText(e.target.value)}
+              placeholder={provider === "OPENROUTER" ? "openrouter/auto" : "deepseek-chat\ngpt-4o-mini"}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {provider === "OPENROUTER"
+                ? "افتراضيًا openrouter/auto. أضف موديلات محددة لوضع routing مخصص."
+                : "إذا تركت فارغًا، هيستخدم الموديل الافتراضي للمزود."}
+            </p>
           </div>
         </div>
         <DialogFooter className="mt-4">
