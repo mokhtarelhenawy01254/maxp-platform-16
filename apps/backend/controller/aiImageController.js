@@ -18,16 +18,12 @@ function getPrisma() {
 }
 
 async function getOpenRouterKey() {
-  const key = process.env.OPENROUTER_API_KEY;
-  if (key) return key;
-  try {
-    const prisma = getPrisma();
-    const row = await prisma.$queryRawUnsafe(
-      `SELECT key_value FROM ai.ai_keys WHERE provider = 'OPENROUTER' AND is_active = true ORDER BY priority ASC LIMIT 1`
-    );
-    if (row?.length) return row[0].key_value;
-  } catch (_) {}
-  throw new Error("OPENROUTER_API_KEY not found in env or ai.ai_keys table");
+  const prisma = getPrisma();
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT "apiKey" FROM public.ai_keys WHERE provider = 'OPENROUTER' AND "isActive" = true ORDER BY priority ASC LIMIT 1`
+  );
+  if (rows?.length) return rows[0].apiKey;
+  throw new Error("OPENROUTER_API_KEY not found in ai_keys table");
 }
 
 exports.generateImage = async (req, res) => {
