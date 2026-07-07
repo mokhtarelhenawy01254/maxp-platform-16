@@ -358,9 +358,9 @@ model Product {
   commissionType             String?                   @default("PERCENTAGE")
   affiliate_products         AffiliateProduct[]
   backInStockNotifications   BackInStockNotification[]
-   conversion_events          ConversionEvent[]
-   facebookCatalogProducts    FacebookCatalogProduct[]
-   facebookPosts              FacebookPost[]
+  conversion_events          ConversionEvent[]
+  facebookCatalogProducts    FacebookCatalogProduct[]  @relation("FacebookCatalogProduct")
+  facebookPosts              FacebookPost[]  @relation("FacebookPostProduct")
   inventories                Inventory[]
   merchantProducts           MerchantProduct[]
   orderItems                 OrderItem[]
