@@ -169,10 +169,10 @@ if [ -f "$DEPLOY_STAGING/ai-service.tar.gz" ]; then
   "$UV_BIN" sync --frozen 2>&1 | tail -5
 
   echo "🗄️ Running ai-service database migrations..."
-  "$UV_BIN" run alembic upgrade head 2>&1
+  "$UV_BIN" run alembic upgrade head 2>&1 || echo "⚠️ Migration failed (non-fatal)"
 
   echo "🌱 Seeding agent templates..."
-  "$UV_BIN" run python -m scripts.seed_agent_templates 2>&1
+  "$UV_BIN" run python -m scripts.seed_agent_templates 2>&1 || echo "⚠️ Seeding failed (non-fatal)"
 
   echo "🔄 Starting/restarting maxp-ai-service in PM2..."
   if [ -n "$PM2_BIN" ]; then
