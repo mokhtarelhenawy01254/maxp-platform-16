@@ -119,7 +119,8 @@ exports.generateImage = async (req, res) => {
     }
     console.log("[AI-IMAGE] result.urls:", sf(JSON.stringify(result.urls)).slice(0, 500));
     console.log("[AI-IMAGE] result.data:", sf(JSON.stringify(result.data)).slice(0, 500));
-    console.log("[AI-IMAGE] result.id:", sf(result.id));
+    console.log("[AI-IMAGE] FINAL imageUrl length:", imageUrl?.length || 0, "starts with:", imageUrl?.slice(0, 50));
+    console.log("[AI-IMAGE] imageUrl empty?", !imageUrl, "is data URL?", imageUrl?.startsWith("data:"));
 
     return res.status(200).json({
       success: true,
