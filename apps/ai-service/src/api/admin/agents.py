@@ -1309,12 +1309,22 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     if not template:
         raise HTTPException(status_code=404, detail=f"Template not found: {agent.template_slug}")
 
+    # Migrate existing config.soul_custom to custom_instructions before clearing
+    existing_custom = dict(agent.custom_instructions or {})
+    config_soul_custom = (agent.config or {}).get("soul_custom")
+    if config_soul_custom and not existing_custom.get("soul"):
+        existing_custom["soul"] = config_soul_custom
+    agent.custom_instructions = existing_custom
+
     agent.allowed_tools = template.allowed_tools
     agent.allowed_skills = template.allowed_skills
     agent.channels = template.channels
     agent.guardrails = template.guardrails
     agent.budget = template.budget
     agent.version = template.version
+    agent.soul = None
+    agent.rules = None
+    agent.persona = {}
 
     await session.commit()
     await session.refresh(agent)
