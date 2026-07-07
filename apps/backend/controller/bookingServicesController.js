@@ -270,7 +270,7 @@ const toggleService = async (req, res) => {
     const service = await getSharedPrismaClient().bookingService.update({
       where: { id },
       data: { isActive: !existing.isActive },
-      include: { branchServices: { include: { branch: { select: { id: true, name: true } } } } } }
+      include: { branchServices: { include: { branch: { select: { id: true, name: true } } } } }
     });
     res.json({ success: true, data: service, message: existing.isActive ? 'تم إيقاف الخدمة' : 'تم تفعيل الخدمة' });
   } catch (error) {
