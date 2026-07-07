@@ -79,6 +79,13 @@
 - The production service (Express backend, Python AI service) uses proper `.env`-based configuration — the secrets were only in ad-hoc/debug scripts
 - Action: if credentials were rotated, update the production .env files and inform the team
 
+## React.lazy() + Conditional Rendering = Missing Suspense Boundary (2026-07-07)
+- **Issue:** Navigating to `/apps` crashed with `Cannot read properties of undefined (reading 'default')` on production.
+- **Root cause:** `AppDashboardPage` is `React.lazy()` loaded. It was rendered in 3 different locations in `Layout.tsx` based on layout mode. The first location had `<React.Suspense>`, the other two did not.
+- **Fix:** Wrap ALL rendering locations of a lazy component with `<React.Suspense>`.
+- **Pattern:** When a component is `React.lazy()` and used conditionally in multiple layout branches, every branch that renders it needs its own Suspense boundary. A single Suspense wrapping the parent won't work because each conditional branch is a separate render path.
+- **Checklist for lazy components:** Search for all JSX usages of the lazy component name. If it appears in multiple conditional blocks, each needs Suspense.
+
 ## AI Agent Architecture Doc Was Completely Wrong (2026-07-06)
 - `ai-agent-system.md` described a Node.js-based system (`backend/services/aiAgent/BaseAgent.js`, `CEOAgent.js`, etc.) that **does not exist**
 - The real architecture: Node.js Express → HTTP proxy → Python FastAPI + Microsoft Agent Framework

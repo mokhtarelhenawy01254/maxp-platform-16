@@ -97,7 +97,8 @@ exports.generateImage = async (req, res) => {
     if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     const mdMatch = typeof imageUrl === "string" && imageUrl.match(/!\[.*?\]\((.*?)\)/);
     if (mdMatch) imageUrl = mdMatch[1];
-    console.log("[AI-IMAGE] Raw result snippet:", JSON.stringify(result).slice(0, 500));
+    console.log("[AI-IMAGE] Full result:", JSON.stringify(result));
+    if (msg) console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","));
 
     return res.status(200).json({
       success: true,

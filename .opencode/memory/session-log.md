@@ -1,3 +1,26 @@
+# Session Log — 2026-07-07 — AppDashboardPage Suspense Fix + reportWebVitals Fix
+
+## reportWebVitals Adblocker Crash Loop
+- **Issue:** Storefronts (like `swan.maxp.online`) stuck in infinite reload loop (`?__maxp_cache_recovery=...`)
+- **Root cause:** Dynamic import of `./utils/reportWebVitals` blocked by adblockers (chunk has "vitals" in name) → Vite preload error handler triggers page reload → blocked again → infinite loop
+- **Fix:** Removed the unused `reportWebVitals` dynamic import from `main.tsx`. The actual logging was commented out, so the import was dead code.
+- **Files:** `apps/frontend/src/main.tsx`, `backend/Bugs.md`, `backend/TEAM_SYNC.md`
+
+## AppDashboardPage Suspense Boundary
+- **Issue:** `Cannot read properties of undefined (reading 'default')` crash navigating to `/apps`
+- **Root cause:** `AppDashboardPage` loaded via `React.lazy()`. Two of three rendering locations in Layout.tsx (sidebar-full at L641, sidebar-right at L718) wrapped it **without** `<React.Suspense>`. The first location (L550) had it correctly. Depending on which layout path was used, the lazy component was rendered outside a Suspense boundary.
+- **Fix:** Wrapped both occurrences with `<React.Suspense fallback={<ContentSkeleton />}>`
+- **Verification:** Built successfully (`✓ built in 55.18s`), Layout chunk hash changed
+- **Add translations:** Added missing `aiImageGenerator` and `profitabilityEngine` translation keys (already added to the new location, removed from old)
+- **Commit:** `89bc7f2` → pushed to `main`
+
+## Key Lessons
+- 3 rendering locations for same lazy component = 3 Suspense boundaries needed
+- Always check ALL layout branches when a lazy component is used conditionally
+- The `vite:preloadError` handler prevents crash but Suspense is the correct fix for lazy components
+
+---
+
 # Session Log — 2026-07-06 — Analytics Status Filtering + Clickable Orders
 
 ## Changes
