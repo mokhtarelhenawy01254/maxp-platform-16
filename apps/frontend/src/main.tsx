@@ -206,12 +206,7 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-// Performance monitoring
-if (import.meta.env.PROD) {
-  import("./utils/reportWebVitals").then(({ reportWebVitals }) => {
-    reportWebVitals();
-  });
-}
+
 
 // Hot Module Replacement (HMR) for development
 if (import.meta.hot) {

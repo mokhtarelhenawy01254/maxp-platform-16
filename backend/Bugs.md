@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [FIX] reportWebVitals Adblocker Crash Loop in Storefronts
+- **Date**: 2026-07-07
+- **Description**: Public storefronts (like `swan.maxp.online`) would load in an infinite refresh/redirect loop with query parameter `?__maxp_cache_recovery=...` and console errors like `TypeError: Cannot destructure property 'reportWebVitals' of 'undefined' as it is undefined` or `TypeError: Failed to fetch dynamically imported module`.
+- **Root Cause**: In production, `main.tsx` dynamically imported `./utils/reportWebVitals` via `import("./utils/reportWebVitals")` to track Core Web Vitals. Because the chunk name contains the word "vitals", it gets blocked by adblockers (Safari content blockers, uBlock Origin, etc.). When blocked, the import throws a dynamic import fetch failure. The global error recovery handler (`chunk-recovery.js` / `vite:preloadError` listener) caught this failure, classified it as a critical Vite chunk load failure, and redirected the page with a cache-busting timestamp `?__maxp_cache_recovery=...` in an attempt to recover. Since the blocker kept blocking the URL on subsequent reloads, the page was trapped in an infinite reload loop.
+- **Resolution**: Removed the unused performance monitoring dynamic import of `reportWebVitals` from `apps/frontend/src/main.tsx`. The performance reporter did nothing in production anyway since its actual logging/sending calls were commented out, making it safe to completely decommission.
+- **Files Modified**:
+  - `apps/frontend/src/main.tsx`
+
 ### [FIX] WhatsApp Voice Note 500 Error — Missing ffmpeg + Raw Mimetype in sendAudio
 - **Date**: 2026-07-05
 - **Description**: Voice notes sent from the WhatsApp chat UI returned HTTP 500 on production (`/whatsapp/messages/upload-send`).
