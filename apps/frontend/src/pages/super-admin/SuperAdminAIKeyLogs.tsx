@@ -96,9 +96,9 @@ function KeyLogsContent() {
   });
 
   const companyNameMap = useMemo(() => {
-    if (!companies?.data) return {};
+    const list = Array.isArray(companies) ? companies : (Array.isArray(companies?.data) ? companies.data : (companies?.data?.data ? companies.data.data : []));
     const map: Record<string, string> = {};
-    for (const c of companies.data) map[c.id] = c.name;
+    for (const c of list) if (c && c.id) map[c.id] = c.name || c.id;
     return map;
   }, [companies]);
 
