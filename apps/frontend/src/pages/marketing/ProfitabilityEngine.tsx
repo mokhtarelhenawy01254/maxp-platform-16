@@ -6,6 +6,9 @@ import {
   BookmarkIcon as SaveIcon, TrashIcon, DocumentTextIcon,
   SparklesIcon, ScaleIcon, ArrowPathIcon,
   PrinterIcon, ArrowDownTrayIcon, CheckIcon, XMarkIcon,
+  ShieldCheckIcon, RocketLaunchIcon,
+  CheckCircleIcon, ExclamationCircleIcon, XCircleIcon,
+  ArrowTrendingUpIcon, CubeIcon, Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
@@ -154,22 +157,22 @@ export default function ProfitabilityEngine() {
   }, [results, inputs, currency, t, fmtCurr]);
 
   const recommendations = useMemo(() => {
-    const R: { icon: string; title: string; desc: string }[] = [];
+    const R: { icon: React.ReactNode; title: string; desc: string }[] = [];
     if (inputs.cpp > results.safeCAC) {
       const targetCpp = Math.round(results.safeCAC);
-      R.push({ icon: "🎯", title: t("profitabilityEngine.recReduceCpp"), desc: t("profitabilityEngine.recReduceCppDesc", { target: fmtCurr(targetCpp), current: fmtCurr(inputs.cpp), saving: fmtCurr(Math.round((inputs.cpp - targetCpp) * results.monthlyOrdersPlaced)) }) });
+      R.push({ icon: <ScaleIcon className="w-5 h-5 text-amber-500" />, title: t("profitabilityEngine.recReduceCpp"), desc: t("profitabilityEngine.recReduceCppDesc", { target: fmtCurr(targetCpp), current: fmtCurr(inputs.cpp), saving: fmtCurr(Math.round((inputs.cpp - targetCpp) * results.monthlyOrdersPlaced)) }) });
     }
     if (inputs.deliveryRate < 80) {
       const improvement = Math.round((80 - inputs.deliveryRate) / 2);
-      R.push({ icon: "📦", title: t("profitabilityEngine.recImproveDelivery"), desc: t("profitabilityEngine.recImproveDeliveryDesc", { rate: inputs.deliveryRate, target: Math.min(100, inputs.deliveryRate + improvement * 2), improvement }) });
+      R.push({ icon: <CubeIcon className="w-5 h-5 text-blue-500" />, title: t("profitabilityEngine.recImproveDelivery"), desc: t("profitabilityEngine.recImproveDeliveryDesc", { rate: inputs.deliveryRate, target: Math.min(100, inputs.deliveryRate + improvement * 2), improvement }) });
     }
     if (results.netProfit < 0) {
       const neededAov = Math.ceil(results.revenue / results.ordersDelivered + Math.abs(results.netProfit) / results.ordersDelivered);
-      R.push({ icon: "📈", title: t("profitabilityEngine.recIncreaseAov"), desc: t("profitabilityEngine.recIncreaseAovDesc", { target: fmtCurr(neededAov), current: fmtCurr(inputs.aov), diff: fmtCurr(neededAov - inputs.aov) }) });
+      R.push({ icon: <ArrowTrendingUpIcon className="w-5 h-5 text-emerald-500" />, title: t("profitabilityEngine.recIncreaseAov"), desc: t("profitabilityEngine.recIncreaseAovDesc", { target: fmtCurr(neededAov), current: fmtCurr(inputs.aov), diff: fmtCurr(neededAov - inputs.aov) }) });
     }
     if (results.grossProfitMargin < 20) {
       const targetCogs = Math.round((inputs.aov - (inputs.aov * 0.2) - inputs.packingFees - inputs.shippingFees));
-      if (targetCogs > 0 && targetCogs < inputs.cogs) R.push({ icon: "🏭", title: t("profitabilityEngine.recReduceCogs"), desc: t("profitabilityEngine.recReduceCogsDesc", { target: fmtCurr(targetCogs), current: fmtCurr(inputs.cogs), diff: fmtCurr(inputs.cogs - targetCogs) }) });
+      if (targetCogs > 0 && targetCogs < inputs.cogs) R.push({ icon: <Cog6ToothIcon className="w-5 h-5 text-purple-500" />, title: t("profitabilityEngine.recReduceCogs"), desc: t("profitabilityEngine.recReduceCogsDesc", { target: fmtCurr(targetCogs), current: fmtCurr(inputs.cogs), diff: fmtCurr(inputs.cogs - targetCogs) }) });
     }
     return R;
   }, [inputs, results, currency, t, fmtCurr]);
@@ -314,7 +317,7 @@ export default function ProfitabilityEngine() {
                   ? "bg-blue-600 text-white border-blue-600"
                   : "border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
               }`}>
-              {name === "Conservative" ? "🛡 " : name === "Balanced" ? "⚖️ " : "🚀 "}{T(name.toLowerCase())}
+              {name === "Conservative" ? <ShieldCheckIcon className="w-4 h-4 shrink-0" /> : name === "Balanced" ? <ScaleIcon className="w-4 h-4 shrink-0" /> : <RocketLaunchIcon className="w-4 h-4 shrink-0" />} {T(name.toLowerCase())}
             </button>
           ))}
           <span className="text-gray-300 dark:text-gray-700 mx-1 hidden sm:inline">|</span>
@@ -513,7 +516,7 @@ export default function ProfitabilityEngine() {
                   : zoneKey === "warning" ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-400"
                   : "bg-red-500/15 border-red-500/30 text-red-400"
               }`}>
-                {zoneKey === "safe" ? "🟢" : zoneKey === "warning" ? "🟡" : "🔴"} {zoneKey === "safe" ? T("safeZone") : zoneKey === "warning" ? T("warningZone") : T("dangerZone")}
+                {zoneKey === "safe" ? <CheckCircleIcon className="w-4 h-4" /> : zoneKey === "warning" ? <ExclamationCircleIcon className="w-4 h-4" /> : <XCircleIcon className="w-4 h-4" />} {zoneKey === "safe" ? T("safeZone") : zoneKey === "warning" ? T("warningZone") : T("dangerZone")}
                 <span className="font-mono"> - {T("cppShort")}: {fmtCurr(inputs.cpp)}</span>
               </div>
               <div className="space-y-1">
@@ -590,7 +593,7 @@ export default function ProfitabilityEngine() {
               {recommendations.map((r, i) => (
                 <div key={i} className="bg-gray-50 dark:bg-gray-800/40 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
                   <div className="flex items-start gap-2">
-                    <span className="text-lg shrink-0">{r.icon}</span>
+                    <span className="shrink-0">{r.icon}</span>
                     <div>
                       <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{r.title}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{r.desc}</div>
