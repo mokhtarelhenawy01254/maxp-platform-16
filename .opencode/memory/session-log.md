@@ -1,3 +1,15 @@
+# Session Log — 2026-07-08 — AI Company Consumption Dashboard
+
+## New Feature: Super Admin AI Consumption Dashboard
+- **Route:** `/super-admin/ai-consumption`
+- **Backend:** `GET /api/v1/super-admin/ai/company-consumption` in `superAdminRoutes.js:881`
+- **Frontend:** `SuperAdminAIConsumption.tsx` → KPIs (total cost, requests, active companies, error rate) + model distribution chart + sortable/filterable companies table
+- **Sidebar:** "استهلاك الشركات" under AI Models group in SuperAdminSidebar.tsx
+- **Data source:** Aggregates `AiProviderLog` (groupBy companyId/provider/model/status) + token estimates from `metadata` JSON + `modelCosts.js` for cost calculation
+- **Lesson:** `Company` model has no `nameEn` field in Prisma schema — caused 500 error on first deploy. Fixed by removing `nameEn` from query and frontend type.
+
+---
+
 # Session Log — 2026-07-07 — AppDashboardPage Suspense Fix + reportWebVitals Fix
 
 ## reportWebVitals Adblocker Crash Loop

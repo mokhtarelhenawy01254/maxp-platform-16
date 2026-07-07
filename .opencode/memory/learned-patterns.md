@@ -1,3 +1,10 @@
+## AI Consumption Dashboard — Prisma Schema Fields (2026-07-08)
+- The `Company` model in Prisma has NO `nameEn` field — only `name`.
+- When querying with `.findMany({ select: {...} })`, any field not in the actual Prisma schema causes a runtime 500 error.
+- Always verify field names against actual Prisma schema files (in `prisma/schema/*.prisma`).
+- `AiProviderLog.metadata` is a Text field containing JSON like `{"tokens": {"prompt_tokens": ..., "completion_tokens": ...}}` — needs `JSON.parse()`.
+- Model costs are configured in `config/modelCosts.js` (per 1M tokens), not in the database.
+
 ## Vite Chunk 404 After Deploy — `rsync --delete` + `immutable` Cache (2026-07-07)
 - **Issue:** `AppDashboardPage-Bdn6Gg1x.js` 404 on production after `96106ac7` refactor. Browser had cached old `route-storefront-CjTr7twW.js` (immutable max-age=31536000) which referenced old chunk name.
 - **Root cause:** Nginx serves `/assets/` with `immutable` (1yr). Browser never revalidates. `deploy-remote.sh` used `rsync --delete` removing old chunks. New `index.html` only references new hashes. Cached JS referencing old hashes → 404.
