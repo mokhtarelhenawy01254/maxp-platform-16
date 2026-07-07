@@ -34,7 +34,37 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.SERVER_HOST }}" ]; then echo "❌ SERVER_HOST missing"; exit 1; fi
+          if [ -z "${{ secrets.SERVER_USER }}" ]; then echo "❌ SERVER_USER missing"; exit 1; fi
+          if [ -z "${{ secrets.SERVER_SSH_KEY }}" ]; then echo "❌ SERVER_SSH_KEY missing"; exit 1; fi
+          echo "✅ All secrets present"
 
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Test SSH Connection
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" \
+            "echo '✅ SSH connection successful' && df -h \$HOME"
+
+      - name: Get Runner IP
+        run: |
+          RUNNER_IP=$(curl -s https://ifconfig.me)
+          echo "🌐 GitHub Runner Public IP: $RUNNER_IP"
+          echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
 
       - name: Enforce AI Agent File Size Guard
         run: |
@@ -162,49 +192,7 @@ jobs:
             theme-presets.tar.gz
           retention-days: 3
 
-      - name: Verify Secrets
-        run: |
-          if [ -z "${{ secrets.SERVER_HOST }}" ]; then
-            echo "❌ SERVER_HOST is missing"
-            exit 1
-          fi
-          if [ -z "${{ secrets.SERVER_USER }}" ]; then
-            echo "❌ SERVER_USER is missing"
-            exit 1
-          fi
-          if [ -z "${{ secrets.SERVER_SSH_KEY }}" ]; then
-            echo "❌ SERVER_SSH_KEY is missing"
-            exit 1
-          fi
-          echo "✅ All secrets are present"
-
-      # Diagnostic: Get Runner IP (Useful for whitelisting on server firewall)
-      - name: Get Runner IP
-        run: |
-          RUNNER_IP=$(curl -s https://ifconfig.me)
-          echo "🌐 GitHub Runner Public IP: $RUNNER_IP"
-          echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
-          echo "💡 If SSH times out, run on the server: sudo ufw allow ${{ env.SERVER_SSH_PORT }}/tcp && sudo ufw reload"
-
-      # Prepare SSH Key & Test SSH Connection & Setup Staging
-      - name: Setup SSH Key
-        uses: ./.github/actions/setup-ssh
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ env.SERVER_SSH_PORT }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-
-      - name: Test SSH Connection
-        shell: bash
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
-        run: |
-          set -euo pipefail
-          ssh -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
-            -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" \
-            "echo '✅ SSH connection successful' && df -h \$HOME"
+      # Setup Remote Staging Directory
 
       - name: Setup Remote Staging Directory
         shell: bash
