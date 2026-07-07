@@ -383,6 +383,7 @@ const StatusSummaryReport: React.FC = () => {
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المحافظة</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -402,6 +403,18 @@ const StatusSummaryReport: React.FC = () => {
                                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(o.total)}</td>
                                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.governorate || o.city || "—"}</td>
                                         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{formatDate(o.createdAt)}</td>
+                                        <td className="px-4 py-3">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigate(`/orders/${o.orderNumber}`);
+                                            }}
+                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                          >
+                                            عرض التفاصيل
+                                          </button>
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -422,6 +435,7 @@ const StatusSummaryReport: React.FC = () => {
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -442,6 +456,18 @@ const StatusSummaryReport: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                                           {item.createdAt ? formatDate(item.createdAt) : "—"}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigate(`/orders/${item.orderNumber}`);
+                                            }}
+                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                          >
+                                            عرض التفاصيل
+                                          </button>
                                         </td>
                                       </tr>
                                     ))}
