@@ -93,12 +93,22 @@ exports.generateImage = async (req, res) => {
         }
       }
       if (!imageUrl && msg.image_url?.url) imageUrl = msg.image_url.url;
+      if (!imageUrl && Array.isArray(msg.images)) {
+        for (const img of msg.images) {
+          if (typeof img === "string") { imageUrl = img; break; }
+          if (img.url) { imageUrl = img.url; break; }
+          if (img.image_url?.url) { imageUrl = img.image_url.url; break; }
+        }
+      }
     }
     if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     const mdMatch = typeof imageUrl === "string" && imageUrl.match(/!\[.*?\]\((.*?)\)/);
     if (mdMatch) imageUrl = mdMatch[1];
     console.log("[AI-IMAGE] Full result:", JSON.stringify(result));
-    if (msg) console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","));
+    if (msg) {
+      console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","));
+      if (msg.images) console.log("[AI-IMAGE] msg.images:", JSON.stringify(msg.images));
+    }
 
     return res.status(200).json({
       success: true,
