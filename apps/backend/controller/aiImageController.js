@@ -80,7 +80,24 @@ exports.generateImage = async (req, res) => {
     );
 
     const result = response.data;
-    const imageUrl = result?.choices?.[0]?.message?.content || result?.data?.[0]?.url || "";
+    let imageUrl = "";
+    const msg = result?.choices?.[0]?.message;
+    if (msg) {
+      if (typeof msg.content === "string") {
+        imageUrl = msg.content;
+      } else if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === "image_url") {
+            imageUrl = part.image_url?.url || imageUrl;
+          }
+        }
+      }
+      if (!imageUrl && msg.image_url?.url) imageUrl = msg.image_url.url;
+    }
+    if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
+    const mdMatch = typeof imageUrl === "string" && imageUrl.match(/!\[.*?\]\((.*?)\)/);
+    if (mdMatch) imageUrl = mdMatch[1];
+    console.log("[AI-IMAGE] Raw result snippet:", JSON.stringify(result).slice(0, 500));
 
     return res.status(200).json({
       success: true,
