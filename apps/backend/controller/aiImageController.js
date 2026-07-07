@@ -104,15 +104,22 @@ exports.generateImage = async (req, res) => {
     if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     const mdMatch = typeof imageUrl === "string" && imageUrl.match(/!\[.*?\]\((.*?)\)/);
     if (mdMatch) imageUrl = mdMatch[1];
-    console.log("[AI-IMAGE] result keys:", Object.keys(result).join(","));
-    if (msg) {
-      console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","));
-      console.log("[AI-IMAGE] msg.images type+value:", typeof msg.images, JSON.stringify(msg.images).slice(0, 300));
-      console.log("[AI-IMAGE] msg all values:", JSON.stringify(Object.fromEntries(Object.entries(msg).filter(([k]) => k !== "reasoning_details"))).slice(0, 3000));
+    const sf = (v, fb = "") => (v == null ? fb : String(v));
+    const choice = result?.choices?.[0];
+    const choiceMsg = choice?.message;
+    console.log("[AI-IMAGE] RESULT TOP KEYS:", Object.keys(result).join(","));
+    console.log("[AI-IMAGE] CHOICE KEYS:", choice ? Object.keys(choice).join(",") : "NO_CHOICES");
+    console.log("[AI-IMAGE] CHOICE_MSG KEYS:", choiceMsg ? Object.keys(choiceMsg).join(",") : "NO_MSG");
+    console.log("[AI-IMAGE] FULL CHOICE:", sf(JSON.stringify(choice)).slice(0, 6000));
+    if (choiceMsg) {
+      console.log("[AI-IMAGE] MSG images:", sf(JSON.stringify(choiceMsg.images)).slice(0, 500));
+      console.log("[AI-IMAGE] MSG image_url:", sf(JSON.stringify(choiceMsg.image_url)).slice(0, 500));
+      console.log("[AI-IMAGE] MSG type:", choiceMsg.type);
+      console.log("[AI-IMAGE] MSG content type:", typeof choiceMsg.content, Array.isArray(choiceMsg.content) ? "array" : sf(choiceMsg.content).slice(0, 200));
     }
-    console.log("[AI-IMAGE] result.urls:", JSON.stringify(result.urls).slice(0, 500));
-    console.log("[AI-IMAGE] result.data:", JSON.stringify(result.data).slice(0, 500));
-    console.log("[AI-IMAGE] choice keys:", JSON.stringify(Object.keys(result.choices[0])).slice(0, 500));
+    console.log("[AI-IMAGE] result.urls:", sf(JSON.stringify(result.urls)).slice(0, 500));
+    console.log("[AI-IMAGE] result.data:", sf(JSON.stringify(result.data)).slice(0, 500));
+    console.log("[AI-IMAGE] result.id:", sf(result.id));
 
     return res.status(200).json({
       success: true,
