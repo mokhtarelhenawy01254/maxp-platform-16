@@ -5698,8 +5698,25 @@
           "description": "Key screens for managing WhatsApp from super admin.",
           "links": {
             "logs": {
-              "title": "Central Logs",
-              "description": "Monitor sending and failures across all companies from one screen."
+              "title": "WhatsApp Logs",
+              "description": "Monitor company registration and subscription messages going through the super admin scope only.",
+              "filtersTitle": "Log Filters",
+              "searchPlaceholder": "Search by phone, content, or company",
+              "statusAll": "All Statuses",
+              "companyAll": "All Companies",
+              "listTitle": "Company Onboarding Log",
+              "listDescription": "Latest registration and subscription messages sent from the super admin scope.",
+              "empty": "No logs match the current filters.",
+              "columns": {
+                "company": "Company",
+                "event": "Event",
+                "status": "Status",
+                "error": "Error",
+                "recipient": "Recipient",
+                "time": "Time"
+              },
+              "statusPlaceholder": "Status",
+              "companyPlaceholder": "Company"
             },
             "companies": {
               "title": "WhatsApp Companies",
@@ -6406,7 +6423,8 @@
       "order": "Send Order",
       "task": "Tasks",
       "attach": "Attach File",
-      "emoji": "Emojis"
+      "emoji": "Emojis",
+      "template": "Send Template"
     }
   },
   "whatsappAnalytics": {
