@@ -19,12 +19,11 @@ runs:
       env:
         SSH_KEY: ${{ inputs.key }}
       run: |
-        SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
-        install -m 700 -d "$HOME/.ssh"
-        printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$SSH_KEY_PATH"
-        chmod 600 "$SSH_KEY_PATH"
+        mkdir -p ~/.ssh
+        printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/maxp_deploy_key
+        chmod 600 ~/.ssh/maxp_deploy_key
 
     - name: Accept host key
       shell: bash
       run: |
-        ssh-keyscan -p '${{ inputs.port }}' -H '${{ inputs.host }}' >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+        ssh-keyscan -p '${{ inputs.port }}' -H '${{ inputs.host }}' >> ~/.ssh/known_hosts 2>/dev/null || true
