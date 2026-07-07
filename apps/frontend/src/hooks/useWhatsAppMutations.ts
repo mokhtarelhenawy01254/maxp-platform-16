@@ -59,6 +59,7 @@ interface SendTemplateParams {
   to: string;
   templateId: string;
   parameters?: Record<string, any>;
+  templateBody?: string;
 }
 
 const updateAllConversationCaches = (

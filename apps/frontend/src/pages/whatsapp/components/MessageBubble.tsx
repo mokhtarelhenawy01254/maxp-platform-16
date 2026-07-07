@@ -219,6 +219,38 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         }
       }
 
+      if (message.messageType === "TEMPLATE") {
+        let templateName = '';
+        let bodyContent = message.content || '';
+        try {
+          const interactive = message.interactiveData ? JSON.parse(message.interactiveData) : null;
+          if (interactive?.templateName) templateName = interactive.templateName;
+          if (!templateName && bodyContent.startsWith('Template: ')) {
+            templateName = bodyContent.replace('Template: ', '').trim();
+          }
+          if (templateName && bodyContent.startsWith(templateName + '\n')) {
+            bodyContent = bodyContent.slice(templateName.length).trim();
+          }
+        } catch {}
+
+        return (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <FileText className="size-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                {templateName || 'Template'}
+              </span>
+            </div>
+            {bodyContent ? (
+              <LinkifiedText
+                text={bodyContent}
+                className="block whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]"
+              />
+            ) : null}
+          </div>
+        );
+      }
+
       return (
         <LinkifiedText
           text={message.content}

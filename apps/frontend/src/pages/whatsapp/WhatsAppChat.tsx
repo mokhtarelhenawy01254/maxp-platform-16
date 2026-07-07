@@ -1735,12 +1735,17 @@ const WhatsAppChatContent: React.FC = () => {
     } else {
       params.components = [];
     }
+    const bodyText = bodyComponent?.text || '';
+    const templateBody = bodyText && Object.keys(templateVariables).length > 0
+      ? bodyText.replace(/\{\{(\d+)\}\}/g, (_, n) => templateVariables[`{{${n}}}`] || `{{${n}}}`)
+      : bodyText;
     try {
       await sendTemplateMutation.mutateAsync({
         sessionId: targetSessionId,
         to: selectedContact.jid,
         templateId: selectedTemplate.name,
         parameters: params,
+        templateBody,
       });
       toast.success('تم إرسال القالب');
       setTemplateDialogOpen(false);

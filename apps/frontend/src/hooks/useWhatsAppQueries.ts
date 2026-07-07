@@ -91,6 +91,7 @@ export interface Message {
   senderName?: string;
   participant?: string;
   metadata?: any;
+  interactiveData?: string;
 }
 
 export interface QuickReply {
