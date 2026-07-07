@@ -382,6 +382,7 @@ export default function AgentProfilesPage() {
       icon: draftIcon,
       config: draftConfig,
       files: draftFiles,
+      customInstructions: draftConfig.soul_custom ? { soul: draftConfig.soul_custom } : undefined,
     };
     const data = await tryApiFetch<{ success: boolean } & Record<string, unknown>>(
       `/agent/agents/${selectedId}/files`,
@@ -519,7 +520,6 @@ export default function AgentProfilesPage() {
     if (welcome) parts.push(`\n## رسالة الترحيب\n${welcome}`);
     if (escalation) parts.push(`\n## عندما لا تعرف الإجابة\n${escalation}`);
     if (language) parts.push(`\n## لغة الرد\n${language}`);
-    if (config.soul_custom) parts.push(`\n## تعليمات إضافية\n${config.soul_custom}`);
     return parts.join("\n\n");
   };
 
