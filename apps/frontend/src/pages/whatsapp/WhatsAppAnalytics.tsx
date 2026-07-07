@@ -59,6 +59,7 @@ interface NotificationLog {
   status: string;
   sentAt: string;
   createdAt: string;
+  failureReason: string | null;
   template?: { name: string };
   order?: { orderNumber: string };
   customer?: { firstName: string; lastName: string };

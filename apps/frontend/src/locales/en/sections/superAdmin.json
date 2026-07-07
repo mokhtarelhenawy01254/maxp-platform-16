@@ -294,6 +294,7 @@
         "company": "Company",
         "event": "Event",
         "status": "Status",
+        "error": "Error",
         "recipient": "Recipient",
         "time": "Time"
       },
