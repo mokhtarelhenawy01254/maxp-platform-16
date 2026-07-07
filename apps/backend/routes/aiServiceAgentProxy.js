@@ -94,4 +94,25 @@ router.post('/seed-template', async (req, res) => {
   }
 });
 
+// POST /agents/spawn — spawn an agent instance from a template for the company
+router.post('/agents/spawn', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+
+    const { template_slug, name, role, ...rest } = req.body || {};
+    if (!template_slug) return res.status(400).json({ success: false, error: 'template_slug is required' });
+    if (!name) return res.status(400).json({ success: false, error: 'name is required' });
+
+    const result = await aiServiceAdminClient.spawnAgent({
+      companyId, role: role || undefined, template_slug, name, ...rest,
+    });
+    if (!result) return res.status(502).json({ success: false, error: 'ai-service unreachable or returned an error' });
+    return res.json({ success: true, agent: result });
+  } catch (error) {
+    console.error('[ai-proxy] agent spawn failed:', error.message);
+    return res.status(502).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
