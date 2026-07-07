@@ -97,10 +97,10 @@ function KeyLogsContent() {
 
   const companyNameMap = useMemo(() => {
     try {
-      const list: any[] = companies?.data?.companies ?? companies?.data ?? companies ?? [];
-      if (!Array.isArray(list)) return {};
+      const body: any = companies?.data;
+      const raw: any[] = body?.data?.companies ?? body?.companies ?? (Array.isArray(body) ? body : []);
       const map: Record<string, string> = {};
-      for (const c of list) if (c?.id) map[c.id] = c.name || c.id;
+      for (const c of raw) if (c?.id) map[c.id] = c.name || c.id;
       return map;
     } catch { return {}; }
   }, [companies]);
