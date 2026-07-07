@@ -14,7 +14,7 @@ import { Input } from "../../components/ui/input";
 const PAGE_SIZE = 20;
 
 type CompanyConsumption = {
-  id: string; name: string; nameEn: string;
+  id: string; name: string;
   totalRequests: number; successCount: number; failedCount: number;
   totalTokens: number; totalCost: number; totalLatency: number;
   models: Record<string, number>; providers: Record<string, number>;
@@ -83,7 +83,7 @@ function ConsumptionContent() {
   const filtered = useMemo(() => {
     if (!searchTerm) return companies;
     const q = searchTerm.toLowerCase();
-    return companies.filter(c => c.name.toLowerCase().includes(q) || c.nameEn.toLowerCase().includes(q));
+    return companies.filter(c => c.name.toLowerCase().includes(q));
   }, [companies, searchTerm]);
 
   const sorted = useMemo(() => {
@@ -263,7 +263,7 @@ function ConsumptionContent() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">{c.name}</span>
-                            <span className="text-xs text-muted-foreground">{c.nameEn}</span>
+                            <span className="text-xs text-muted-foreground">{c.name}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-left" dir="ltr">

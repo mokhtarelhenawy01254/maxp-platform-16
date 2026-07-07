@@ -894,7 +894,7 @@ router.get("/ai/company-consumption", checkPermission("canViewReports"), async (
         where: { createdAt: { gte: dateFilter } },
       }),
       prisma.company.findMany({
-        select: { id: true, name: true, nameEn: true },
+        select: { id: true, name: true },
         orderBy: { name: "asc" },
       }),
       prisma.aiProviderLog.count({ where: { createdAt: { gte: dateFilter } } }),
@@ -902,7 +902,7 @@ router.get("/ai/company-consumption", checkPermission("canViewReports"), async (
 
     const companyMap = {};
     for (const c of companiesList) {
-      companyMap[c.id] = { id: c.id, name: c.name, nameEn: c.nameEn || c.name, totalRequests: 0, successCount: 0, failedCount: 0, totalTokens: 0, totalCost: 0, totalLatency: 0, models: {}, providers: {}, lastActivity: null };
+      companyMap[c.id] = { id: c.id, name: c.name, totalRequests: 0, successCount: 0, failedCount: 0, totalTokens: 0, totalCost: 0, totalLatency: 0, models: {}, providers: {}, lastActivity: null };
     }
 
     // ponytail: cost estimated from modelCosts.js (not persisted)
@@ -998,8 +998,7 @@ router.get("/ai/company-consumption", checkPermission("canViewReports"), async (
     });
   } catch (error) {
     console.error("[SA] company-consumption error:", error.message);
-    console.error("[SA] company-consumption stack:", error.stack?.split('\n').slice(0,6).join('\n'));
-    res.status(500).json({ success: false, error: "فشل تحميل بيانات الاستهلاك: " + error.message });
+    res.status(500).json({ success: false, error: "فشل تحميل بيانات الاستهلاك" });
   }
 });
 
