@@ -492,6 +492,7 @@ export const getSidebarConfig = (
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
                 { to: '/admin/ai-hub?tab=routing', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.channelRouting') },
+                { to: '/facebook/posts', icon: TagIcon, label: t('sidebar.facebookAgentPosts') },
                 { to: '/admin/ai-hub?tab=skills', icon: SwatchIcon, label: t('sidebar.aiAgentSkills'), hidden: !isFeatureEnabled('aiToolsEnabled') },
                 { to: '/admin/ai-hub?tab=tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools'), hidden: !isFeatureEnabled('aiToolsEnabled') },
             ]

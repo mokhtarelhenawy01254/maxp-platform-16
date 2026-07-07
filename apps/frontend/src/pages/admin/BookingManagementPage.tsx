@@ -29,7 +29,7 @@ const api = (path: string) => {
 };
 
 interface BookingBranch {
-  id: string; name: string; address: string; phone: string;
+  id: string; name: string; address: string; phone: string; phones?: string[];
   workingDays: string; workStart: string; workEnd: string;
   isActive: boolean; createdAt: string;
 }
@@ -109,7 +109,7 @@ const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600
   const BranchModal = ({ branch, onClose, onSave }: {
     branch?: Partial<BookingBranch> | null;
     onClose: () => void;
-    onSave: (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; workStart?: string; workEnd?: string }) => Promise<void>;
+    onSave: (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string }) => Promise<void>;
   }) => {
     const days = [
       { value: "sat", label: "السبت" }, { value: "sun", label: "الأحد" },
@@ -124,10 +124,12 @@ const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600
       return { male: obj.male || [], female: obj.female || [] };
     };
     const initForm = () => {
-      const defaults = { name: "", address: "", phone: "", workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true };
+      const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true };
+      let initialPhones = (branch?.phones || []).filter(Boolean);
+      if (initialPhones.length === 0 && branch?.phone) initialPhones = [branch.phone];
       if (!branch?.workingDays || typeof branch.workingDays === 'string') {
         const gd = tryParseGenderDays(branch?.genderDays);
-        return { ...defaults, ...branch, maleDays: gd?.male || [], femaleDays: gd?.female || [] };
+        return { ...defaults, ...branch, phones: initialPhones, maleDays: gd?.male || [], femaleDays: gd?.female || [] };
       }
       const obj = branch.workingDays as Record<string, string>;
       const dayKeys = Object.keys(obj).filter(k => obj[k]);
@@ -138,6 +140,7 @@ const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600
         workingDays: dayKeys.join(","),
         workStart: times[0] || "09:00",
         workEnd: times[1] || "22:00",
+        phones: initialPhones,
         maleDays: gd?.male || [],
         femaleDays: gd?.female || [],
       };
@@ -163,8 +166,23 @@ const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600
           </div>
           <div className="space-y-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><input className={MODAL_INPUT_CLS} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الهاتف</label><input className={MODAL_INPUT_CLS} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أرقام الهاتف</label>
+              <div className="space-y-2">
+                {(form.phones || []).map((p: string, i: number) => (
+                  <div key={i} className="flex gap-2">
+                    <input className={`${MODAL_INPUT_CLS} flex-1`} dir="ltr" placeholder="010xxxxxxxx" value={p} onChange={e => {
+                      const next = [...(form.phones || [])];
+                      next[i] = e.target.value;
+                      setForm({ ...form, phones: next });
+                    }} />
+                    <button onClick={() => setForm({ ...form, phones: (form.phones || []).filter((_, idx) => idx !== i) })} className="px-2 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف الرقم"><TrashIcon className="w-4 h-4" /></button>
+                  </div>
+                ))}
+                <button onClick={() => setForm({ ...form, phones: [...(form.phones || []), ""] })} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700">+ إضافة رقم هاتف</button>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أيام العمل</label>
               <div className="flex flex-wrap gap-2">
@@ -587,10 +605,11 @@ export default function BookingManagementPage() {
     try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch (e: any) { console.error("fetchAppointments", e); setAppointments([]); throw e; }
   };
 
-  const saveBranch = async (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; workStart?: string; workEnd?: string }) => {
+  const saveBranch = async (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string }) => {
     const isEdit = !!d.id;
     const url = isEdit ? api(`branches/${d.id}`) : api("branches");
-    const body: Record<string, unknown> = { name: d.name, address: d.address, phone: d.phone, isActive: d.isActive };
+    const phones = (d.phones || []).map(p => String(p).trim()).filter(Boolean);
+    const body: Record<string, unknown> = { name: d.name, address: d.address, phone: phones[0] || d.phone || "", phones, isActive: d.isActive };
     if (d.workingDays) {
       const days = d.workingDays.split(",").filter(Boolean);
       if (days.length > 0) {
@@ -835,7 +854,7 @@ export default function BookingManagementPage() {
               </div>
               <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">{b.phone || "—"}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex flex-wrap gap-1">{(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{p}</span>) || "—"}</div>
             {(() => {
               const gd = typeof b.genderDays === 'string' ? (() => { try { return JSON.parse(b.genderDays); } catch { return null; } })() : b.genderDays;
               if (!gd || (!gd.male?.length && !gd.female?.length)) return null;

@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { companyAwareApi } from "../../services/companyAwareApi";
 import { useAiKeyLogs } from "../../hooks/useAiKeyLogs";
 import { useAiKeys } from "../../hooks/useAiAdminData";
 import type { AiKeyLog } from "../../types/ai-admin";
@@ -86,6 +88,19 @@ function KeyLogsContent() {
   const [page, setPage] = useState(0);
 
   const [refreshTick, setRefreshTick] = useState(0);
+
+  const { data: companies } = useQuery({
+    queryKey: ["super-admin", "companies"],
+    queryFn: () => companyAwareApi.getAllCompanies(),
+    staleTime: 300_000,
+  });
+
+  const companyNameMap = useMemo(() => {
+    if (!companies?.data) return {};
+    const map: Record<string, string> = {};
+    for (const c of companies.data) map[c.id] = c.name;
+    return map;
+  }, [companies]);
 
   const { data: logs, isLoading, error } = useAiKeyLogs({
     provider: providerFilter || undefined,
@@ -265,6 +280,7 @@ function KeyLogsContent() {
                 <TableHead>الوقت</TableHead>
                 <TableHead>المزود</TableHead>
                 <TableHead>المفتاح</TableHead>
+                <TableHead>الشركة</TableHead>
                 <TableHead>الإجراء</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>النموذج</TableHead>
@@ -274,13 +290,13 @@ function KeyLogsContent() {
             <TableBody>
               {paged.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     لا توجد سجلات
                   </TableCell>
                 </TableRow>
               ) : (
                 paged.map((log) => (
-                  <TableRow key={log.id}>
+                    <TableRow key={log.id}>
                     <TableCell className="text-xs whitespace-nowrap">{formatTime(log.created_at)}</TableCell>
                     <TableCell>
                       <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.provider}</span>
@@ -291,6 +307,9 @@ function KeyLogsContent() {
                           {(keyNameMap[log.key_id] || log.key_id).substring(0, 12)}{log.key_id.length > 12 ? "..." : ""}
                         </span>
                       ) : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {log.company_id ? (companyNameMap[log.company_id] || log.company_id.substring(0, 8) + "…") : "—"}
                     </TableCell>
                     <TableCell className="text-xs">{ACTION_LABELS[log.action] || log.action}</TableCell>
                     <TableCell>
