@@ -302,7 +302,9 @@ async function saveIncomingMessage(payload) {
           // ponytail: admin routing — if sender is in companyLifecycleAdminPhones, route to WHATSAPP_ADMIN channel
           let channel = 'WHATSAPP';
           try {
-            const senderPhone = first.normalizedJid.split('@')[0].replace(/\D/g, '');
+            // raw JID may be @lid (multi-device) — try resolved phone first
+            let senderPhone = first.normalizedJid.split('@')[0].replace(/\D/g, '');
+            console.log(`🔍 [WA-DEBOUNCE] sender JID=${first.normalizedJid} extractedPhone=${senderPhone}`);
             const notifSettings = await prisma.whatsAppNotificationSettings.findUnique({
               where: { companyId: first.companyId },
               select: { companyLifecycleAdminPhones: true },
@@ -312,9 +314,23 @@ async function saveIncomingMessage(payload) {
                 .split(/[\r\n,;،]+/)
                 .map(s => s.trim().replace(/\D/g, ''))
                 .filter(Boolean);
+              // @lid opaque ID won't match — try resolve via customer table
+              if (!adminPhones.includes(senderPhone) && first.customerId) {
+                const customer = await prisma.customer.findUnique({
+                  where: { id: first.customerId },
+                  select: { phone: true, whatsappId: true },
+                });
+                const altPhone = (customer?.phone || customer?.whatsappId || '').replace(/\D/g, '');
+                if (altPhone && adminPhones.includes(altPhone)) {
+                  senderPhone = altPhone;
+                  console.log(`🔍 [WA-DEBOUNCE] resolved via customer table → ${altPhone}`);
+                }
+              }
               if (adminPhones.includes(senderPhone)) {
                 channel = 'WHATSAPP_ADMIN';
                 console.log(`🔵 [WA-DEBOUNCE] Sender ${senderPhone} is admin → routing to ${channel}`);
+              } else {
+                console.log(`⚪ [WA-DEBOUNCE] Sender ${senderPhone} not in admin whitelist → WHATSAPP`);
               }
             }
           } catch (e) {

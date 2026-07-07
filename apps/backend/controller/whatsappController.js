@@ -555,7 +555,9 @@ async function updateSession(req, res) {
         const { id } = req.params;
         const {
             name,
+            aiEnabled,
             autoReply,
+            aiMode,
             welcomeMessage,
             awayMessage,
             workingHoursEnabled,
@@ -594,9 +596,9 @@ async function updateSession(req, res) {
             where: { id },
             data: {
                 name,
-                aiEnabled: false,
+                aiEnabled: aiEnabled !== undefined ? aiEnabled : false,
                 autoReply,
-                aiMode: 'manual',
+                aiMode: aiMode || 'manual',
                 welcomeMessage,
                 awayMessage,
                 workingHoursEnabled,
