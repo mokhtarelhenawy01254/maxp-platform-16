@@ -13,6 +13,7 @@ const {
     WhatsAppMessageHandler,
     WhatsAppMediaHandler
 } = require('../services/whatsapp');
+const { computeWindowStatus } = require('../services/whatsapp/WhatsAppWindowService');
 
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
@@ -855,6 +856,7 @@ async function getConversations(req, res) {
                     category: true,
                     unreadCount: true,
                     lastMessageAt: true,
+                    lastCustomerMessageAt: true,
                     isArchived: true,
                     isPinned: true,
                     isMuted: true,
@@ -918,8 +920,9 @@ async function getConversations(req, res) {
 
         const conversationsWithLastMessage = contacts.map(contact => ({
             ...contact,
-            session: contact.whatsAppSession, // Map whatsAppSession to session for frontend compatibility
-            lastMessage: lastMessagesMap.get(`${contact.sessionId}:${contact.jid}`) || null
+            session: contact.whatsAppSession,
+            lastMessage: lastMessagesMap.get(`${contact.sessionId}:${contact.jid}`) || null,
+            window: computeWindowStatus(contact)
         }));
 
         res.json({

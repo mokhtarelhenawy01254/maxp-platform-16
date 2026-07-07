@@ -69,6 +69,12 @@ export interface Contact {
     fromMe: boolean;
     timestamp: string;
   };
+  window: {
+    isOpen: boolean;
+    remainingSeconds: number;
+    remainingLabel: string;
+    windowExpiresAt: string | null;
+  };
 }
 
 export interface Message {
