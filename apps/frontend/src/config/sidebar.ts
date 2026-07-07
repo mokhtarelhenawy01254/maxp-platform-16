@@ -57,6 +57,7 @@ import {
     WalletIcon,
     CubeIcon,
     SwatchIcon,
+    PhotoIcon,
     UserPlusIcon,
     CalculatorIcon,
     TrophyIcon,
@@ -486,6 +487,7 @@ export const getSidebarConfig = (
             icon: SparklesIcon,
             items: [
                 { to: '/admin/agent-profiles', icon: UserGroupIcon, label: t('sidebar.agentProfiles') },
+                { to: '/admin/ai-image-generator', icon: PhotoIcon, label: t('sidebar.aiImageGenerator') },
                 { to: '/admin/ai-catalog', icon: ShoppingBagIcon, label: t('sidebar.aiCatalog') },
                 { to: '/admin/ai-knowledge-questions', icon: LightBulbIcon, label: t('sidebar.aiKnowledgeQuestions') },
                 { to: '/admin/ai-hub?tab=sandbox', icon: BeakerIcon, label: t('sidebar.aiAgentSandbox') },
@@ -838,6 +840,7 @@ export const getSidebarConfig = (
                 { to: '/advertising/facebook-ads/audiences', icon: UserGroupIcon, label: t('sidebar.audiences') },
                 { to: '/advertising/facebook-ads/catalogs', icon: ShoppingBagIcon, label: t('sidebar.productCatalogs') },
                 { to: '/tools/break-even', icon: CalculatorIcon, label: t('sidebar.projectBreakEven') },
+                { to: '/tools/profitability-engine', icon: CalculatorIcon, label: t('sidebar.profitabilityEngine') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])

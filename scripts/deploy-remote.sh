@@ -1,0 +1,667 @@
+set -e
+
+: "${DEPLOY_STAGING:="${HOME}/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"}"
+export DEPLOY_STAGING
+
+export NODE_ENV=production
+export PUPPETEER_SKIP_DOWNLOAD=1
+export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+NODE_BIN="$(dirname "$(command -v node)")"
+export PATH="$NODE_BIN:$PATH"
+
+read_env_port() {
+  local env_file="$1"
+  local port_line=""
+  local port_value=""
+  if [ ! -f "$env_file" ]; then
+    return 1
+  fi
+
+  port_line="$(grep -E '^PORT=' "$env_file" | tail -n 1 || true)"
+  if [ -z "$port_line" ]; then
+    return 1
+  fi
+
+  port_value="${port_line#PORT=}"
+  port_value="${port_value%\"}"
+  port_value="${port_value#\"}"
+  port_value="${port_value%\'}"
+  port_value="${port_value#\'}"
+  printf '%s\n' "$port_value"
+}
+
+PM2_BIN="$(dirname "$(command -v node)")/pm2"
+if [ ! -x "$PM2_BIN" ]; then
+  PM2_BIN="$(command -v pm2 || true)"
+fi
+
+echo "🧹 Running automatic cleanup to free space..."
+if [ -n "$PM2_BIN" ]; then
+  "$PM2_BIN" flush || echo "⚠️ PM2 flush failed"
+fi
+sudo journalctl --vacuum-time=1d || echo "⚠️ Journalctl cleanup failed"
+sudo npm cache clean --force || echo "⚠️ NPM cache cleanup failed"
+
+echo "🚀 Starting deployment on server..."
+
+# Diagnostic listing
+echo "📋 Staging directory content:"
+ls -R "$DEPLOY_STAGING" | head -n 50
+
+# Create directories with sudo if needed
+sudo mkdir -p /var/www/frontend2
+sudo mkdir -p /var/www/backend2
+sudo mkdir -p /var/www/shared
+
+sync_frontend_dist() {
+  local source_dir="$1"
+
+  if [ ! -f "$source_dir/index.html" ]; then
+    echo "❌ Frontend source is missing index.html: $source_dir"
+    exit 1
+  fi
+
+  sudo mkdir -p /var/www/frontend2/dist
+
+  # Publish immutable hashed assets before the HTML entrypoint.
+  # This prevents Vite lazy chunks from 404ing while a deploy is in progress.
+  sudo rsync -a --exclude 'index.html' \
+    "$source_dir/" /var/www/frontend2/dist/
+  sudo rm -rf /var/www/frontend2/dist/products
+  sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
+  # Remove stale hashed chunks after the new entrypoint is live so deleted
+  # frontend routes cannot remain reachable from old build artifacts.
+  sudo rsync -a --delete --exclude 'index.html' \
+    "$source_dir/" /var/www/frontend2/dist/
+  sudo chown -R $USER:$USER /var/www/frontend2/dist
+}
+
+# Move frontend files from staging
+if [ -f "$DEPLOY_STAGING/frontend.tar.gz" ]; then
+  echo "📦 Extracting frontend files from staging..."
+  rm -rf "$DEPLOY_STAGING/frontend_extract"
+  mkdir -p "$DEPLOY_STAGING/frontend_extract"
+  tar -xzf "$DEPLOY_STAGING/frontend.tar.gz" -C "$DEPLOY_STAGING/frontend_extract"
+  sync_frontend_dist "$DEPLOY_STAGING/frontend_extract"
+  echo "✅ Frontend extracted successfully"
+elif [ -d "$DEPLOY_STAGING/frontend/dist" ]; then
+  echo "📦 Moving frontend files from old staging format..."
+  sync_frontend_dist "$DEPLOY_STAGING/frontend/dist"
+  echo "✅ Frontend moved successfully"
+elif [ -d "/var/www/frontend/dist" ]; then
+  echo "📦 Moving frontend files from legacy location..."
+  sync_frontend_dist "/var/www/frontend/dist"
+  sudo rm -rf /var/www/frontend
+  echo "✅ Frontend moved successfully from legacy"
+else
+  echo "⚠️ Frontend files not found, skipping..."
+fi
+
+if [ -f "$DEPLOY_STAGING/theme-presets.tar.gz" ]; then
+  echo "📦 Syncing storefront theme preset manifests..."
+  sudo mkdir -p /var/www/frontend2/src/storefront/themes
+  rm -rf "$DEPLOY_STAGING/theme_presets_extract"
+  mkdir -p "$DEPLOY_STAGING/theme_presets_extract"
+  tar -xzf "$DEPLOY_STAGING/theme-presets.tar.gz" -C "$DEPLOY_STAGING/theme_presets_extract"
+  sudo rsync -a --delete \
+    "$DEPLOY_STAGING/theme_presets_extract/" /var/www/frontend2/src/storefront/themes/
+  sudo chown -R $USER:$USER /var/www/frontend2/src
+  echo "✅ Storefront theme presets synced successfully"
+else
+  echo "⚠️ Theme preset archive not found, skipping..."
+fi
+
+# Move shared files from staging
+if [ -f "$DEPLOY_STAGING/shared.tar.gz" ]; then
+  echo "📦 Extracting shared files from tarball..."
+  sudo mkdir -p /var/www/shared
+  sudo tar -xzf "$DEPLOY_STAGING/shared.tar.gz" -C /var/www/shared
+  sudo chown -R $USER:$USER /var/www/shared
+  echo "✅ Shared files extracted successfully"
+else
+  echo "⚠️ Shared files not found, skipping..."
+fi
+
+# Move Python AI service files from staging
+if [ -f "$DEPLOY_STAGING/ai-service.tar.gz" ]; then
+  echo "🐍 Extracting Python AI service files from tarball..."
+
+  if [ -f "/var/www/ai-service/.env" ]; then
+    sudo cp /var/www/ai-service/.env /tmp/ai_service_env_backup.env
+  fi
+
+  sudo mkdir -p /var/www/ai-service
+  rm -rf "$DEPLOY_STAGING/ai_service_extract"
+  mkdir -p "$DEPLOY_STAGING/ai_service_extract"
+  tar -xzf "$DEPLOY_STAGING/ai-service.tar.gz" -C "$DEPLOY_STAGING/ai_service_extract"
+  sudo rsync -a --delete \
+    --exclude .env \
+    --exclude .venv \
+    "$DEPLOY_STAGING/ai_service_extract/ai-service/" /var/www/ai-service/
+
+  if [ -f "/tmp/ai_service_env_backup.env" ]; then
+    sudo cp /tmp/ai_service_env_backup.env /var/www/ai-service/.env
+  fi
+
+  sudo chown -R $USER:$USER /var/www/ai-service
+  test -f /var/www/ai-service/pyproject.toml
+  test -f /var/www/ai-service/src/main.py
+  echo "✅ Python AI service source is present at /var/www/ai-service"
+
+  UV_BIN=""
+  for candidate in /root/.local/bin/uv /usr/local/bin/uv; do
+    if [ -x "$candidate" ]; then
+      UV_BIN="$candidate"
+      break
+    fi
+  done
+
+  if [ -z "$UV_BIN" ]; then
+    echo "📦 Installing uv package manager..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    UV_BIN="/root/.local/bin/uv"
+  fi
+
+  echo "🐍 Installing Python dependencies..."
+  cd /var/www/ai-service
+  "$UV_BIN" sync --frozen 2>&1 | tail -5
+
+  echo "🗄️ Running ai-service database migrations..."
+  "$UV_BIN" run alembic upgrade head 2>&1 || echo "⚠️ Migration failed (non-fatal)"
+
+  echo "🌱 Seeding agent templates..."
+  "$UV_BIN" run python -m scripts.seed_agent_templates 2>&1 || echo "⚠️ Seeding failed (non-fatal)"
+
+  echo "🔄 Starting/restarting maxp-ai-service in PM2..."
+  if [ -n "$PM2_BIN" ]; then
+    if "$PM2_BIN" list | grep -q "maxp-ai-service"; then
+      "$PM2_BIN" restart maxp-ai-service --update-env
+    else
+      "$PM2_BIN" start "$UV_BIN run uvicorn src.main:app --host 0.0.0.0 --port 8000" \
+        --name maxp-ai-service --interpreter none \
+        --cwd /var/www/ai-service
+    fi
+    sleep 4
+    if "$PM2_BIN" list | grep "maxp-ai-service" | grep -q "online"; then
+      echo "✅ maxp-ai-service is running"
+    else
+      echo "⚠️ maxp-ai-service may not be running — check logs"
+      "$PM2_BIN" logs maxp-ai-service --lines 20 --nostream || true
+    fi
+    "$PM2_BIN" save || true
+  fi
+else
+  echo "⚠️ AI service archive not found, skipping Python AI service deploy"
+fi
+
+# Move backend files from staging
+if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
+  echo "📦 Extracting backend files from tarball..."
+  # Keep the current backend running during file sync/preparation.
+  # We only switch/reload at the very end to minimize production downtime.
+  
+  # Save uploads folder if it exists in backend2 (preserve user uploads)
+  if [ -d "/var/www/backend2/uploads" ]; then
+    echo "💾 Saving uploads folder from backend2..."
+    sudo rm -rf /tmp/backend_uploads_backup
+    sudo cp -r /var/www/backend2/uploads /tmp/backend_uploads_backup
+  fi
+
+  # Save .env if it exists in backend2
+  if [ -f "/var/www/backend2/.env" ]; then
+    sudo cp /var/www/backend2/.env /tmp/backend_env_backup.env
+  fi
+
+  sudo mkdir -p /var/www/backend2
+  rm -rf "$DEPLOY_STAGING/backend_extract"
+  mkdir -p "$DEPLOY_STAGING/backend_extract"
+  tar -xzf "$DEPLOY_STAGING/backend.tar.gz" -C "$DEPLOY_STAGING/backend_extract"
+  sudo rsync -a --delete \
+    --exclude uploads \
+    --exclude logs \
+    --exclude .env \
+    --exclude node_modules \
+    --exclude prisma/generated \
+    "$DEPLOY_STAGING/backend_extract/backend/" /var/www/backend2/
+  sudo mkdir -p /var/www/backend2/logs
+  sudo chown -R $USER:$USER /var/www/backend2
+  
+  # Restore .env strategy: backup first (preserves real secrets), then fallback to template
+  if [ -f "/tmp/backend_env_backup.env" ]; then
+    sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
+  elif [ -f "/var/www/backend2/.env.production" ]; then
+    sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
+  fi
+
+  # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
+  # This ensures BackendClient tools (offers_list_active, etc.) can authenticate
+  AI_SVC_TOKEN=""
+  for ENV_PATH in /var/www/ai-service/.env /opt/maxp-ai-service/.env /opt/maxp-ai-service/.env.production; do
+    if [ -f "$ENV_PATH" ]; then
+      AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+      [ -z "$AI_SVC_TOKEN" ] && AI_SVC_TOKEN="$(grep -m1 '^SERVICE_AUTH_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+      [ -n "$AI_SVC_TOKEN" ] && echo "📋 Found token in $ENV_PATH" && break
+    fi
+  done
+  if [ -n "$AI_SVC_TOKEN" ]; then
+    if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
+      sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+    elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
+      sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+    else
+      echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
+    fi
+    echo "✅ Synced token from ai-service to backend"
+  else
+    echo "⚠️ Could not find token in any ai-service .env — tools may fail to auth"
+  fi
+
+              # Restore uploads
+  if [ -d "/tmp/backend_uploads_backup" ]; then
+    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
+    sudo rm -rf /tmp/backend_uploads_backup
+  fi
+  
+  echo "✅ Backend extracted and restored successfully"
+elif [ -d "$DEPLOY_STAGING/backend" ]; then
+  echo "📦 Moving backend files from staging directory..."
+  
+  # Save uploads folder if it exists in backend2 (preserve user uploads)
+  if [ -d "/var/www/backend2/uploads" ]; then
+    echo "💾 Saving uploads folder from backend2..."
+    sudo cp -r /var/www/backend2/uploads /tmp/backend_uploads_backup
+  fi
+
+  # Save .env if it exists in backend2
+  if [ -f "/var/www/backend2/.env" ]; then
+    sudo cp /var/www/backend2/.env /tmp/backend_env_backup.env
+  fi
+
+  sudo chmod -R 777 /var/www/backend2 2>/dev/null || true
+  sudo rm -rf /var/www/backend2 || true
+  sudo mv "$DEPLOY_STAGING/backend" /var/www/backend2
+  sudo mkdir -p /var/www/backend2/logs
+  sudo chown -R $USER:$USER /var/www/backend2
+  
+  # Restore .env strategy: backup first (preserves real secrets), then fallback to template
+  if [ -f "/tmp/backend_env_backup.env" ]; then
+    sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
+  elif [ -f "/var/www/backend2/.env.production" ]; then
+    sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
+  fi
+
+  # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
+  AI_SVC_TOKEN=""
+  for ENV_PATH in /var/www/ai-service/.env /opt/maxp-ai-service/.env /opt/maxp-ai-service/.env.production; do
+    if [ -f "$ENV_PATH" ]; then
+      AI_SVC_TOKEN="$(grep -m1 '^MAXP_SERVICE_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+      [ -z "$AI_SVC_TOKEN" ] && AI_SVC_TOKEN="$(grep -m1 '^SERVICE_AUTH_TOKEN=' "$ENV_PATH" | cut -d= -f2-)"
+      [ -n "$AI_SVC_TOKEN" ] && echo "📋 Found token in $ENV_PATH" && break
+    fi
+  done
+  if [ -n "$AI_SVC_TOKEN" ]; then
+    if grep -q '^AI_SERVICE_TOKEN=' /var/www/backend2/.env; then
+      sudo sed -i "s|^AI_SERVICE_TOKEN=.*|AI_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+    elif grep -q '^MAXP_SERVICE_TOKEN=' /var/www/backend2/.env; then
+      sudo sed -i "s|^MAXP_SERVICE_TOKEN=.*|MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}|" /var/www/backend2/.env
+    else
+      echo "MAXP_SERVICE_TOKEN=${AI_SVC_TOKEN}" | sudo tee -a /var/www/backend2/.env
+    fi
+    echo "✅ Synced token from ai-service to backend"
+  else
+    echo "⚠️ Could not find token in any ai-service .env — tools may fail to auth"
+  fi
+
+              # Restore uploads
+  if [ -d "/tmp/backend_uploads_backup" ]; then
+    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
+    sudo rm -rf /tmp/backend_uploads_backup
+  fi
+  
+  echo "✅ Backend moved successfully from staging"
+elif [ -d "/var/www/backend" ]; then
+  echo "📦 Moving backend files from legacy location..."
+  sudo rm -rf /var/www/backend2 || true
+  sudo mv /var/www/backend /var/www/backend2
+  sudo mkdir -p /var/www/backend2/logs
+  sudo chown -R $USER:$USER /var/www/backend2
+  echo "✅ Backend moved successfully from legacy"
+else
+  echo "⚠️ Backend not found, skipping..."
+fi
+
+# Re-install dependencies on the server (now safe because we handle failures)
+echo "📦 Installing backend production dependencies on server..."
+cd /var/www/backend2
+if [ -f package-lock.json ]; then
+  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm ci --omit=dev
+else
+  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install --omit=dev
+fi
+ 
+# NOTE: Server-side npm/prisma steps restored for efficiency.
+# Large dependencies are no longer uploaded to save bandwidth and time.
+
+# Database migration with fixes
+echo "🔄 Synchronizing database schema..."
+cd /var/www/backend2
+
+# Step 0: Clean up legacy files to prevent conflicts
+echo "🧹 Cleaning up legacy Prisma files..."
+# Remove direct schema.prisma if it exists on the server to prevent conflicts with schema folder
+sudo rm -f /var/www/backend2/prisma/schema.prisma || echo "⚠️ Could not delete schema.prisma"
+sudo rm -f /var/www/backend2/schema.prisma || echo "⚠️ Could not delete root schema.prisma"
+
+
+# Step 2: Generate Prisma Client
+echo "📦 Generating Prisma Client..."
+PRISMA_BIN="./node_modules/.bin/prisma"
+if [ ! -x "$PRISMA_BIN" ]; then
+  echo "❌ Local Prisma CLI not found after dependency install"
+  exit 1
+fi
+
+# Ensure sharp is correctly installed for Linux x64 to prevent crashes
+echo "🖼️ Fixing sharp dependency for Linux..."
+npm install --os=linux --cpu=x64 sharp --no-save || echo "⚠️ Sharp fix failed, continuing..."
+ 
+# Run generate with the specific schema folder
+# Keep the existing generated clients in place until the new client
+# is ready. PM2 can restart a worker during deploy, and deleting
+# these folders first makes that worker crash while the app is live.
+"$PRISMA_BIN" generate --schema=prisma/schema || {
+    echo "❌ Prisma generation failed"
+    exit 1
+}
+test -f prisma/generated/postgresql_v2/runtime/library.js || {
+    echo "❌ Prisma runtime files are missing after generate"
+    find prisma/generated/postgresql_v2 -maxdepth 2 -type f | sort | head -n 80 || true
+    exit 1
+}
+mkdir -p node_modules/.prisma
+rsync -a --delete prisma/generated/postgresql_v2/ node_modules/.prisma/client/
+test -f node_modules/.prisma/client/default.js || {
+    echo "❌ Prisma compatibility client is missing after sync"
+    find node_modules/.prisma/client -maxdepth 2 -type f | sort | head -n 80 || true
+    exit 1
+}
+
+# Step 2.5: Sync appuser password with .env
+echo "🔄 Synchronizing appuser password..."
+bash scripts/sync-db-pass.sh || echo "⚠️ Password sync failed, continuing..."
+
+# Step 2.7: Fix Audit Logs Types (Casting String to Enum)
+echo "🛠️ Fixing Audit Logs data types..."
+bash scripts/fix-audit-logs.sh || echo "⚠️ Audit logs fix skipped or failed, continuing..."
+
+# Step 3: Push schema to PostgreSQL database
+echo "🚀 Pushing schema to PostgreSQL..."
+"$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
+    echo "❌ Database synchronization failed"
+    exit 1
+}
+
+# Step 6: Automated Seeding
+echo "🌱 Running automated seeding..."
+"$PRISMA_BIN" db seed --schema=prisma/schema || echo "⚠️ Seeding failed, continuing deployment..."
+
+# Step 7: Create/Verify Super Admin
+echo "👑 Creating/verifying super admin user..."
+  SUPER_ADMIN_EMAIL="${SUPER_ADMIN_EMAIL:-}" SUPER_ADMIN_PASSWORD="${SUPER_ADMIN_PASSWORD:-}" npm run setup:superadmin || echo "⚠️ Super admin setup failed, continuing deployment..."
+
+echo "✅ Database schema synchronized with PostgreSQL"
+
+# Step 7.5: Sync file-defined marketplace apps/bundles into DB before the app boots.
+# This keeps production (CATALOG_SOURCE=db) from hiding newly shipped catalog entries.
+echo "🧩 Syncing missing marketplace catalog entries..."
+NODE_ENV=production npm run catalog:sync-target -- --only-missing --fail-on-missing || {
+    echo "❌ Marketplace catalog sync failed or left unresolved catalog entries"
+    exit 1
+}
+
+echo "🧹 Deactivating deprecated marketplace apps..."
+NODE_ENV=production node scripts/deactivate_old_marketplace_apps.js || {
+    echo "⚠️ Deprecated app deactivation had issues, continuing..."
+}
+
+# Restart services
+echo "🔄 Restarting services..."
+if [ -n "$PM2_BIN" ]; then
+  echo "📋 Current PM2 processes:"
+  "$PM2_BIN" list
+
+  # Remove legacy backend names before standardized ecosystem startup
+  "$PM2_BIN" delete backend1 || true
+  "$PM2_BIN" delete chat-backend || true
+
+  cd /var/www/backend2
+  echo "🚀 Starting/reloading ecosystem (backend + worker)..."
+  NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production
+  "$PM2_BIN" save
+
+  sleep 3
+
+  echo "📋 PM2 status after restart:"
+  "$PM2_BIN" list
+
+  if "$PM2_BIN" list | grep -q "maxp-backend"; then
+    echo "📋 Maxp-backend logs (last 20 lines):"
+    "$PM2_BIN" logs maxp-backend --lines 20 --nostream || echo "⚠️ Could not get backend logs"
+  fi
+
+  if "$PM2_BIN" list | grep -q "maxp-webhook-worker"; then
+    echo "📋 Webhook worker logs (last 20 lines):"
+    "$PM2_BIN" logs maxp-webhook-worker --lines 20 --nostream || echo "⚠️ Could not get worker logs"
+  else
+    echo "⚠️ Webhook worker process not found after deploy"
+    exit 1
+  fi
+
+  echo "🩺 Verifying backend health after reload..."
+  HEALTH_PORT=""
+  for env_file in /var/www/backend2/.env.production /var/www/backend2/.env; do
+    CANDIDATE_PORT="$(read_env_port "$env_file" || true)"
+    if [ -n "$CANDIDATE_PORT" ]; then
+      HEALTH_PORT="$CANDIDATE_PORT"
+      echo "ℹ️ Health check port resolved from $(basename "$env_file"): $HEALTH_PORT"
+      break
+    fi
+  done
+
+  HEALTH_PORT_CANDIDATES=""
+  if [ -n "$HEALTH_PORT" ]; then
+    HEALTH_PORT_CANDIDATES="$HEALTH_PORT"
+  fi
+  for fallback_port in 3008 3007; do
+    if [[ " $HEALTH_PORT_CANDIDATES " != *" $fallback_port "* ]]; then
+      HEALTH_PORT_CANDIDATES="$HEALTH_PORT_CANDIDATES $fallback_port"
+    fi
+  done
+
+  ACTIVE_HEALTH_PORT=""
+  HEALTH_MAX_ATTEMPTS=30
+  HEALTH_SLEEP_SECONDS=5
+  for attempt in $(seq 1 "$HEALTH_MAX_ATTEMPTS"); do
+    for port in $HEALTH_PORT_CANDIDATES; do
+      echo "🩺 Health attempt $attempt/$HEALTH_MAX_ATTEMPTS: http://127.0.0.1:$port/api/v1/health"
+      if curl -fsS --max-time 20 "http://127.0.0.1:$port/api/v1/health" >/dev/null; then
+        ACTIVE_HEALTH_PORT="$port"
+        break 2
+      fi
+    done
+
+    if [ "$attempt" -lt "$HEALTH_MAX_ATTEMPTS" ]; then
+      echo "⏳ Backend not healthy yet; waiting $HEALTH_SLEEP_SECONDS seconds before retry..."
+      sleep "$HEALTH_SLEEP_SECONDS"
+    fi
+  done
+
+  if [ -z "$ACTIVE_HEALTH_PORT" ]; then
+    echo "❌ Backend health check failed after deploy"
+    echo "🔎 Tried ports:$HEALTH_PORT_CANDIDATES"
+    ss -ltnp | grep -E '3007|3008' || true
+    "$PM2_BIN" logs maxp-backend --lines 50 --nostream || true
+    exit 1
+  fi
+
+  echo "✅ Backend health check passed on port $ACTIVE_HEALTH_PORT"
+
+  echo "🧩 Verifying marketplace full catalog API after reload..."
+  MARKETPLACE_CATALOG_JSON="$(curl -fsS --max-time 20 "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/marketplace/apps?page=1&limit=200")"
+  MARKETPLACE_CATALOG_JSON="$MARKETPLACE_CATALOG_JSON" node -e 'const payload=JSON.parse(process.env.MARKETPLACE_CATALOG_JSON||"{}"); const data=Array.isArray(payload.data)?payload.data:[]; const total=Number((payload.pagination&&payload.pagination.total)||data.length); const limit=Number((payload.pagination&&payload.pagination.limit)||0); if(limit!==200||data.length===0||data.length!==total){ console.error("❌ Marketplace full catalog API verification failed",{count:data.length,total,limit}); process.exit(1); } console.log("✅ Marketplace full catalog API returned "+data.length+"/"+total+" apps with limit="+limit);'
+
+  echo "🧪 Testing Medical Center agent on production server..."
+  cd /var/www/backend2
+  node scripts/test-production-medical-agent.js || echo "⚠️ Medical agent test script had issues"
+  echo "📋 Printing last 50 lines of PM2 backend and AI service error logs for debugging..."
+  "$PM2_BIN" logs maxp-backend --lines 50 --nostream || true
+  "$PM2_BIN" logs maxp-ai-service --lines 50 --nostream || true
+else
+  echo "⚠️ PM2 not found, skipping restart"
+fi
+
+# Save PM2 state so it survives server reboots
+if [ -n "$PM2_BIN" ]; then
+  echo "💾 Saving PM2 process list..."
+  "$PM2_BIN" save || echo "⚠️ PM2 save failed"
+fi
+
+# Sync Nginx configs from the repo and reload after backend is healthy
+if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
+  echo "🌐 Syncing Nginx configs..."
+  rm -rf "$DEPLOY_STAGING/nginx_extract"
+  mkdir -p "$DEPLOY_STAGING/nginx_extract"
+  tar -xzf "$DEPLOY_STAGING/nginx-configs.tar.gz" -C "$DEPLOY_STAGING/nginx_extract"
+
+  MAXP_NGINX_TARGET="/etc/nginx/sites-available/maxp.online.conf"
+  MOKHTAR_NGINX_TARGET="/etc/nginx/sites-available/mokhtarelhenawy.online.conf"
+  MAXP_NGINX_ENABLED="/etc/nginx/sites-enabled/maxp.online.conf"
+  MOKHTAR_NGINX_ENABLED="/etc/nginx/sites-enabled/mokhtarelhenawy.online.conf"
+  MAXP_NGINX_BACKUP="/tmp/maxp.online.conf.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.bak"
+  MOKHTAR_NGINX_BACKUP="/tmp/mokhtarelhenawy.online.conf.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.bak"
+  CONFLICT_BACKUP_DIR="$DEPLOY_STAGING/nginx_conflict_backup"
+  CONFLICT_MANIFEST="$CONFLICT_BACKUP_DIR/manifest.txt"
+
+  if [ -f "$MAXP_NGINX_TARGET" ]; then
+    sudo cp "$MAXP_NGINX_TARGET" "$MAXP_NGINX_BACKUP"
+  fi
+  if [ -f "$MOKHTAR_NGINX_TARGET" ]; then
+    sudo cp "$MOKHTAR_NGINX_TARGET" "$MOKHTAR_NGINX_BACKUP"
+  fi
+
+  sudo cp "$DEPLOY_STAGING/nginx_extract/maxp.online.conf" "$MAXP_NGINX_TARGET"
+  sudo cp "$DEPLOY_STAGING/nginx_extract/mokhtarelhenawy.online.conf" "$MOKHTAR_NGINX_TARGET"
+  sudo ln -sfn "$MAXP_NGINX_TARGET" "$MAXP_NGINX_ENABLED"
+  sudo ln -sfn "$MOKHTAR_NGINX_TARGET" "$MOKHTAR_NGINX_ENABLED"
+
+  rm -rf "$CONFLICT_BACKUP_DIR"
+  mkdir -p "$CONFLICT_BACKUP_DIR"
+  : > "$CONFLICT_MANIFEST"
+
+  mapfile -t CONFLICTING_NGINX_FILES < <(
+    for candidate in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
+      [ -e "$candidate" ] || continue
+      if [ "$candidate" = "$MAXP_NGINX_ENABLED" ] || [ "$candidate" = "$MOKHTAR_NGINX_ENABLED" ]; then
+        continue
+      fi
+
+      if sudo grep -qF 'server_name maxp.online www.maxp.online *.maxp.online;' "$candidate" || \
+         sudo grep -qF 'server_name mokhtarelhenawy.online www.mokhtarelhenawy.online *.mokhtarelhenawy.online;' "$candidate"; then
+        printf '%s\n' "$candidate"
+      fi
+    done
+  )
+
+  if [ "${#CONFLICTING_NGINX_FILES[@]}" -gt 0 ]; then
+    echo "⚠️ Disabling conflicting legacy Nginx configs..."
+    for candidate in "${CONFLICTING_NGINX_FILES[@]}"; do
+      backup_path="$CONFLICT_BACKUP_DIR/$(basename "$candidate").${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.bak"
+      echo "   - $candidate"
+      sudo cp -L "$candidate" "$backup_path"
+      printf '%s|%s\n' "$candidate" "$backup_path" >> "$CONFLICT_MANIFEST"
+      sudo rm -f "$candidate"
+    done
+  fi
+
+  if ! sudo nginx -t; then
+    echo "❌ Nginx configuration test failed, restoring previous configs..."
+    if [ -f "$MAXP_NGINX_BACKUP" ]; then
+      sudo cp "$MAXP_NGINX_BACKUP" "$MAXP_NGINX_TARGET"
+    fi
+    if [ -f "$MOKHTAR_NGINX_BACKUP" ]; then
+      sudo cp "$MOKHTAR_NGINX_BACKUP" "$MOKHTAR_NGINX_TARGET"
+    fi
+    if [ -f "$CONFLICT_MANIFEST" ]; then
+      while IFS='|' read -r original_path backup_path; do
+        [ -n "$original_path" ] || continue
+        sudo cp "$backup_path" "$original_path"
+      done < "$CONFLICT_MANIFEST"
+    fi
+    sudo nginx -t || true
+    exit 1
+  fi
+
+  sudo systemctl reload nginx
+  echo "✅ Nginx configs synced and reloaded successfully"
+
+  echo "⏳ Waiting for Nginx to stabilize..."
+  sleep 3
+
+  echo "🧪 Running storefront SEO smoke tests..."
+  TEST_HOST="swan.maxp.online"
+  GENERIC_TITLE="منصة إدارة التواصل والتجارة الإلكترونية"
+  BACKEND_HTML_FILE="$(mktemp)"
+  NGINX_HTML_FILE="$(mktemp)"
+
+  BACKEND_STATUS="$(curl -sS --max-time 20 -o "$BACKEND_HTML_FILE" -w '%{http_code}' -H "Host: ${TEST_HOST}" -H "Accept: text/html" "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/shop")"
+  NGINX_STATUS="$(curl -ksS --max-time 20 --resolve "${TEST_HOST}:443:127.0.0.1" -o "$NGINX_HTML_FILE" -w '%{http_code}' -H "Accept: text/html" "https://${TEST_HOST}/shop")"
+
+  BACKEND_HTML="$(cat "$BACKEND_HTML_FILE")"
+  NGINX_HTML="$(cat "$NGINX_HTML_FILE")"
+
+  BACKEND_TITLE="$(printf '%s' "$BACKEND_HTML" | tr '\n' ' ' | sed -n 's:.*<title>\([^<]*\)</title>.*:\1:p' | head -n 1)"
+  NGINX_TITLE="$(printf '%s' "$NGINX_HTML" | tr '\n' ' ' | sed -n 's:.*<title>\([^<]*\)</title>.*:\1:p' | head -n 1)"
+
+  echo "ℹ️ Backend storefront status: ${BACKEND_STATUS}"
+  echo "ℹ️ Backend storefront title: ${BACKEND_TITLE}"
+  echo "ℹ️ Nginx storefront status: ${NGINX_STATUS}"
+  echo "ℹ️ Nginx storefront title: ${NGINX_TITLE}"
+
+  if [ "$BACKEND_STATUS" != "200" ]; then
+    echo "❌ Backend storefront HTML returned HTTP ${BACKEND_STATUS}"
+    head -c 240 "$BACKEND_HTML_FILE" || true
+    echo
+    exit 1
+  fi
+
+  if [ "$NGINX_STATUS" != "200" ]; then
+    echo "❌ Nginx storefront HTML returned HTTP ${NGINX_STATUS}"
+    head -c 240 "$NGINX_HTML_FILE" || true
+    echo
+    sudo nginx -T 2>/dev/null | grep -nE 'server_name .*maxp\.online|server_name .*mokhtarelhenawy\.online|try_files .*@storefront_spa|proxy_pass http://127\.0\.0\.1:3007|proxy_pass http://localhost:3007' || true
+    exit 1
+  fi
+
+  if [ -z "$BACKEND_TITLE" ] || [ "$BACKEND_TITLE" = "$GENERIC_TITLE" ]; then
+    echo "❌ Backend storefront HTML is still returning generic SEO metadata"
+    exit 1
+  fi
+
+  if [ -z "$NGINX_TITLE" ] || [ "$NGINX_TITLE" = "$GENERIC_TITLE" ]; then
+    echo "❌ Nginx storefront HTML is still returning generic SEO metadata"
+    sudo nginx -T 2>/dev/null | grep -nE 'server_name .*maxp\.online|server_name .*mokhtarelhenawy\.online|try_files .*@storefront_spa|proxy_pass http://127\.0\.0\.1:3007|proxy_pass http://localhost:3007' || true
+    exit 1
+  fi
+
+  if ! printf '%s' "$NGINX_HTML" | grep -q '<link rel="canonical"'; then
+    echo "❌ Nginx storefront HTML is missing the canonical link tag"
+    exit 1
+  fi
+else
+  echo "⚠️ Nginx config archive not found, skipping Nginx sync"
+fi
+
+echo "✅ Deployment completed!"
+rm -rf "$DEPLOY_STAGING"

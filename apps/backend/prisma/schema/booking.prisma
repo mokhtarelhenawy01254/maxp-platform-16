@@ -5,6 +5,7 @@ model BookingBranch {
   name        String
   address     String?
   phone       String?
+  phones      Json?    /// List of phone numbers: ["01234567890","02-1234567"]
   workingDays Json?    /// Working hours per day: {"sat":"3-9","sun":"12-9",...}
   genderDays  Json?    /// Gender day mapping: {"male":["sat","mon","wed"],"female":["sun","tue","thu"]}
   isActive    Boolean  @default(true)

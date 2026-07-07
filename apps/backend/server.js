@@ -845,6 +845,10 @@ app.use("/api/v1/telegram-settings", telegramSettingsRoutes);
 const facebookStatusRoutes = require("./routes/facebookStatusRoutes");
 app.use("/api/v1/facebook/status", facebookStatusRoutes);
 
+// AI Image Generation
+const aiImageRoutes = require("./routes/aiImageRoutes");
+app.use("/api/v1/ai-image", aiImageRoutes);
+
 // Frontend error tracking
 app.use("/api/v1/errors", errorRoutes);
 

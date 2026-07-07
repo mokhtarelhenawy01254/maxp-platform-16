@@ -359,7 +359,8 @@ model Product {
   affiliate_products         AffiliateProduct[]
   backInStockNotifications   BackInStockNotification[]
   conversion_events          ConversionEvent[]
-  facebookCatalogProducts    FacebookCatalogProduct[]
+  facebookCatalogProducts    FacebookCatalogProduct[]  @relation("FacebookCatalogProduct")
+  facebookPosts              FacebookPost[]  @relation("FacebookPostProduct")
   inventories                Inventory[]
   merchantProducts           MerchantProduct[]
   orderItems                 OrderItem[]

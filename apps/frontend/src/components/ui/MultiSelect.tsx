@@ -87,7 +87,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0 shadow-lg rounded-xl"
+        className="w-[var(--radix-popover-trigger-width)] p-0 shadow-xl rounded-xl bg-white dark:bg-gray-800 z-[100] border border-gray-200 dark:border-gray-700 overflow-hidden"
         align="start"
         sideOffset={4}
       >

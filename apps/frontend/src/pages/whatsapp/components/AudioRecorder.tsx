@@ -63,9 +63,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
       };
       sendAudio();
     }
-    if (!isSending) {
-      sentRef.current = false;
-    }
   }, [clearBlobUrl, isSending, mediaBlobUrl, onSend, status]);
 
   const formatTime = (seconds: number) => {

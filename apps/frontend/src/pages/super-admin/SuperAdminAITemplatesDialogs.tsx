@@ -525,6 +525,7 @@ export const EditCompanyAgentDialog: React.FC<{
     allowed_tools: [] as string[], allowed_skills: [] as string[],
     allowed_channels: [] as string[],
     soulInstructions: "", agentInstructions: "", toolsInstructions: "", personaInstructions: "",
+    custom_soul: "", custom_agents: "", custom_tools: "", custom_persona: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -561,6 +562,10 @@ export const EditCompanyAgentDialog: React.FC<{
             agentInstructions: a.persona?.agentInstructions || "",
             toolsInstructions: a.persona?.toolsInstructions || "",
             personaInstructions: a.persona?.personaInstructions || "",
+            custom_soul: a.custom_instructions?.soul || "",
+            custom_agents: a.custom_instructions?.agents || "",
+            custom_tools: a.custom_instructions?.tools || "",
+            custom_persona: a.custom_instructions?.persona || "",
           });
         }
       } catch { setErr("فشل تحميل بيانات الوكيل"); }
@@ -584,6 +589,12 @@ export const EditCompanyAgentDialog: React.FC<{
           agentInstructions: form.agentInstructions || "",
           toolsInstructions: form.toolsInstructions || "",
           personaInstructions: form.personaInstructions || "",
+        },
+        custom_instructions: {
+          soul: form.custom_soul || "",
+          agents: form.custom_agents || "",
+          tools: form.custom_tools || "",
+          persona: form.custom_persona || "",
         },
       });
       onUpdated(); onClose();
@@ -647,6 +658,35 @@ export const EditCompanyAgentDialog: React.FC<{
             <Textarea className="mt-1 font-mono text-sm min-h-[100px]" dir={i18n.dir()}
               value={field("personaInstructions")} onChange={e => update("personaInstructions", e.target.value)}
               placeholder="تعليمات الشخصية..." />
+          </div>
+          <div className="border-t pt-3 mt-2">
+            <p className="text-xs font-bold text-muted-foreground mb-2">📋 إضافات مخصصة (تضاف إلى تعليمات القالب دون حذفها)</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">إضافة للشخصية (Soul)</label>
+                <Textarea className="mt-1 font-mono text-sm min-h-[80px]" dir={i18n.dir()}
+                  value={field("custom_soul")} onChange={e => update("custom_soul", e.target.value)}
+                  placeholder="إضافات مخصصة للشخصية..." />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">إضافة لقواعد الوكيل (AGENTS.md)</label>
+                <Textarea className="mt-1 font-mono text-sm min-h-[80px]" dir={i18n.dir()}
+                  value={field("custom_agents")} onChange={e => update("custom_agents", e.target.value)}
+                  placeholder="إضافات مخصصة لقواعد الوكيل..." />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">إضافة لتعليمات الأدوات (TOOLS.md)</label>
+                <Textarea className="mt-1 font-mono text-sm min-h-[80px]" dir={i18n.dir()}
+                  value={field("custom_tools")} onChange={e => update("custom_tools", e.target.value)}
+                  placeholder="إضافات مخصصة لتعليمات الأدوات..." />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">إضافة لتعليمات الشخصية (PERSONA.md)</label>
+                <Textarea className="mt-1 font-mono text-sm min-h-[80px]" dir={i18n.dir()}
+                  value={field("custom_persona")} onChange={e => update("custom_persona", e.target.value)}
+                  placeholder="إضافات مخصصة لتعليمات الشخصية..." />
+              </div>
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">الأدوات المسموحة</label>

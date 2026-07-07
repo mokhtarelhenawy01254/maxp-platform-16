@@ -93,6 +93,7 @@ class Agent(Base):
     model: Mapped[str | None] = mapped_column(String(200), nullable=True)
     model_policy: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     persona: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    custom_instructions: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     allowed_tools: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     allowed_skills: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     channels: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True, default=list)

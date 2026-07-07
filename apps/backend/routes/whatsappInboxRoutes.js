@@ -33,6 +33,15 @@ router.get(
   inboxController.getUnreadCounts
 );
 
+// ─── WhatsApp Messaging Window ────────────────────────────────────
+
+router.get(
+  '/sessions/:sessionId/contacts/:phone/window',
+  numberAccessGuard('sessionId'),
+  requireDbPermission('inbox.view'),
+  inboxController.getContactWindow
+);
+
 // ─── Conversations ────────────────────────────────────────────────
 
 router.get(

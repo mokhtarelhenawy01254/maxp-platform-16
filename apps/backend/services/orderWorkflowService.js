@@ -174,6 +174,14 @@ class OrderWorkflowService {
                 where: { id: statusOrId }
             }).catch(() => null);
 
+            // ⚡ FIX: Since statusOrId might have been uppercased by upstream handlers,
+            // also try finding it as a lowercased ID (CUIDs are lowercase)
+            if (!nextStatusDef && statusOrId) {
+                nextStatusDef = await this.prisma.orderStatusDefinition.findUnique({
+                    where: { id: statusOrId.toLowerCase() }
+                }).catch(() => null);
+            }
+
             if (!nextStatusDef) {
                 nextStatusDef = await this.findStatusByCode(companyId, statusOrId);
             }
@@ -191,8 +199,16 @@ class OrderWorkflowService {
                 where: { userId_companyId: { userId, companyId } }
             });
 
-            if (!userCompany) throw new Error('المستخدم غير مصرح له لهذه الشركة');
-            const userRole = userCompany.role;
+            // Fall back to the user's global role (e.g. SUPER_ADMIN) when no
+            // company-scoped record exists – this avoids a spurious 400 for
+            // admins operating via effectiveCompanyId.
+            let userRole = userCompany?.role;
+            if (!userRole) {
+                const globalUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+                userRole = globalUser?.role || null;
+            }
+
+            if (!userRole) throw new Error('المستخدم غير مصرح له لهذه الشركة');
 
             // 4. Handle OVERRIDE
             let auditType = 'normal';
@@ -201,7 +217,7 @@ class OrderWorkflowService {
                 const overrideRoles = config.overrideRoles
                     ? JSON.parse(config.overrideRoles)
                     : ['OWNER', 'SUPER_ADMIN'];
-                const canOverride = overrideRoles.includes(userRole);
+                const canOverride = overrideRoles.includes(userRole) || overrideRoles.includes(userId);
                 if (!canOverride) throw new Error('عذراً، لا تملك صلاحية تجاوز قيود المسار (Override)');
 
                 auditType = 'override';
@@ -228,7 +244,7 @@ class OrderWorkflowService {
             // 7. Check Role Permission in Transition
             if (!isOverride && transition) {
                 const allowedRoles = JSON.parse(transition.allowedRoles || '[]');
-                if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+                if (allowedRoles.length > 0 && !allowedRoles.includes(userRole) && !allowedRoles.includes(userId)) {
                     throw new Error('دورك الحالي لا يملك صلاحية تنفيذ هذا الانتقال');
                 }
 
@@ -659,7 +675,7 @@ class OrderWorkflowService {
         const overrideRoles = config.overrideRoles
             ? JSON.parse(config.overrideRoles)
             : ['OWNER', 'SUPER_ADMIN'];
-        const canOverride = overrideRoles.includes(userRole);
+        const canOverride = overrideRoles.includes(userRole) || overrideRoles.includes(userId);
 
         const transitions = await this.prisma.orderWorkflowTransition.findMany({
             where: {
@@ -676,7 +692,7 @@ class OrderWorkflowService {
 
         for (const transition of transitions) {
             const allowedRoles = JSON.parse(transition.allowedRoles || '[]');
-            if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+            if (allowedRoles.length > 0 && !allowedRoles.includes(userRole) && !allowedRoles.includes(userId)) {
                 continue;
             }
 

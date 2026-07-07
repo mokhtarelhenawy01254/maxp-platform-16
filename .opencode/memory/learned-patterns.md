@@ -1,3 +1,8 @@
+## Order Status 400 Bad Request with Custom Status IDs (2026-07-07)
+- **Issue:** Changing an order status to a custom status failed with 400 Bad Request.
+- **Cause:** The frontend passes the custom status ID (a CUID) to the endpoint. The backend aggressively uppercased the status string via normalizeOrderStatusCode(). Because CUIDs are case-sensitive and stored lowercase in Prisma, the workflow service failed to find the uppercased CUID in the database.
+- **Fix:** Added a defense-in-depth check in orderService.js to intercept CUIDs (length > 20) and resolve them to their uppercase status code before processing. Also updated orderWorkflowService.evaluateStatusChange to try a lowercased ID lookup if the first uppercase lookup fails, and strictly use workflowResult.nextStatusCode to update the DB.
+
 ## Late Cancellation — Dynamic Statuses (2026-07-04)
 
 - `LateCancellationSettings.tsx` had a hardcoded `PREPARATION_STATUSES` array that didn't match actual company statuses
@@ -42,3 +47,36 @@
 - It did not properly fallback to valid system statuses (like `PENDING`, `CONFIRMED`, etc.) for companies with `orderWorkflowConfig.enabled: true` that hadn't explicitly defined them.
 - Fixed in `evaluateStatusChange` by introducing a `VALID_STATUSES` array as a fallback when `findStatusByCode` fails to find the status definition.
 - Also fixed an issue where `isOverride` was not bypassing the `config.enforceTransitions` check if a transition rule wasn't found.
+
+## CI Workflow Audit — Secrets & Dead Code (2026-07-06)
+- 11 workflows → 6 remaining (deploy.yml, deploy-staging.yml, storefront-validation.yml, migrate-agents.yml, trigger-embedding-backfill.yml, mirror-to-maxp4.yml)
+- `--testPathPatterns` must be `--testPathPattern` (no trailing 's') — Jest silently skips with wrong flag
+- `cancel-in-progress: true` with DB migrations is dangerous — set to `false` for production CI
+- Breaking inline SSH scripts into `scripts/deploy-remote.sh` reduces deploy.yml from 941→292 lines
+- `appleboy/ssh-action` handles its own SSH key setup; don't add a separate `setup-ssh` step before it
+- `request_pty: true` with `appleboy/ssh-action` causes issues — avoid
+- `actions/cache` for node_modules significantly speeds up CI (2-3min saved)
+- For `paths-ignore`, use `'*.md'` not `'./*.md'` — glob is relative to repo root
+
+## Agent Tool Gender Inference — Don't Hardcode Name Lists in Tools (2026-07-07)
+
+- Initial fix put `AR_MALE_NAMES` / `AR_FEMALE_NAMES` / `AMBIGUOUS_NAMES` and `_infer_gender_from_name()` inside `booking_tools.py`
+- This violates the **Structured Parameters / No Brittle Text Extraction** rule from `AGENTS.md`: tools should not do keyword-based NLP on names
+- Hardcoded lists limit the agent (only covers listed names), create maintenance burden, and remove the LLM's own reasoning capability
+- Correct pattern: keep `gender` optional in the tool; if missing and the backend branch has `genderDays`, return a polite slot-filling request; let the **agent's SOUL.md** decide whether to infer gender from the name using its own knowledge
+- Updated 6 medical agent personas (`medical-center-agent`, `dental-care-specialist`, `aesthetic-advisor`, `physio-coordinator`, `mental-health-counselor`, `medical-lab-analyst`) with the rule: infer only if confident, leave `gender` empty if ambiguous, don't ask at all if branch has no `genderDays`
+
+## Codebase Secrets Audit — 50+ Hardcoded Credentials (2026-07-06)
+- This repo is private, but hardcoded secrets were pervasive: 30+ files with `postgres:0165676135@localhost`, scripts with production DB credentials (92.113.22.70), live JWT tokens and signing secrets, a GitHub PAT in `scripts/upload-github-secrets.js`, and SSH root password in `services/check_replies.py`
+- Fix strategy: delete the ad-hoc scripts entirely rather than refactoring to env vars (they were one-off debug tools, not part of the running service)
+- Result: 133 files changed, 9458 lines deleted
+- The production service (Express backend, Python AI service) uses proper `.env`-based configuration — the secrets were only in ad-hoc/debug scripts
+- Action: if credentials were rotated, update the production .env files and inform the team
+
+## AI Agent Architecture Doc Was Completely Wrong (2026-07-06)
+- `ai-agent-system.md` described a Node.js-based system (`backend/services/aiAgent/BaseAgent.js`, `CEOAgent.js`, etc.) that **does not exist**
+- The real architecture: Node.js Express → HTTP proxy → Python FastAPI + Microsoft Agent Framework
+- 21 agents defined (not 5 as documented)
+- Tools are Pydantic modules auto-discovered, not JSON files
+- MCP is integrated Python client, not a separate directory
+- The doc has been fully rewritten with the actual architecture

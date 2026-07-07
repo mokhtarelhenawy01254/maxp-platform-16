@@ -617,6 +617,7 @@ const PreparationQueue: React.FC = () => {
               )
                 ? "QC completed from preparation queue"
                 : "Updated from preparation queue",
+            isOverride: true,
           },
         );
 

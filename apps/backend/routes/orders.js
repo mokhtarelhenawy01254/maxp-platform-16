@@ -3835,7 +3835,7 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
 
   try {
     const { orderNumber } = req.params;
-    const { status, notes } = req.body;
+    const { status, notes, isOverride = false } = req.body;
 
     if (!status) {
       console.log(`❌ [ORDERS-ROUTE-DEBUG] Missing status`);
@@ -3880,7 +3880,7 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     console.log(`📞 [ORDERS-ROUTE-DEBUG] Calling orderService.updateOrderStatus...`);
     const userId = req.user?.id;
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
-    const order = await orderService.updateOrderStatus(orderNumber, companyId, normalizedStatus, statusNotes, userId, userName);
+    const order = await orderService.updateOrderStatus(orderNumber, companyId, normalizedStatus, statusNotes, userId, userName, null, isOverride);
 
     if (order?.workflowStatus === 'pending') {
       return res.json({

@@ -73,6 +73,7 @@
     "order": "Send Order",
     "task": "Tasks",
     "attach": "Attach File",
-    "emoji": "Emojis"
+    "emoji": "Emojis",
+    "template": "Send Template"
   }
 }

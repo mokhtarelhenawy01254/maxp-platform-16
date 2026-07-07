@@ -1489,25 +1489,26 @@ model WalletNumber {
 }
 
 model WhatsAppContact {
-  id              String          @id
-  sessionId       String
-  jid             String
-  phoneNumber     String
-  name            String?
-  pushName        String?
-  profilePicUrl   String?         @db.Text
-  isGroup         Boolean         @default(false)
-  isBlocked       Boolean         @default(false)
-  customerId      String?
-  category        String?         @default("LEAD")
-  tags            String?         @db.Text
-  notes           String?         @db.Text
-  lastMessageAt   DateTime?
-  unreadCount     Int             @default(0)
-  totalMessages   Int             @default(0)
-  isArchived      Boolean         @default(false)
-  isPinned        Boolean         @default(false)
-  isMuted         Boolean         @default(false)
+  id                    String          @id
+  sessionId             String
+  jid                   String
+  phoneNumber           String
+  name                  String?
+  pushName              String?
+  profilePicUrl         String?         @db.Text
+  isGroup               Boolean         @default(false)
+  isBlocked             Boolean         @default(false)
+  customerId            String?
+  category              String?         @default("LEAD")
+  tags                  String?         @db.Text
+  notes                 String?         @db.Text
+  lastMessageAt         DateTime?
+  lastCustomerMessageAt DateTime?
+  unreadCount           Int             @default(0)
+  totalMessages         Int             @default(0)
+  isArchived            Boolean         @default(false)
+  isPinned              Boolean         @default(false)
+  isMuted               Boolean         @default(false)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime
   customers       Customer?       @relation(fields: [customerId], references: [id])

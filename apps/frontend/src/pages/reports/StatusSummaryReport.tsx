@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect";
@@ -8,6 +8,8 @@ import {
   FunnelIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "@heroicons/react/24/outline";
 
 interface StatusRow {
@@ -51,6 +53,15 @@ interface ItemDetail {
   createdAt: string;
 }
 
+interface GroupedItem {
+  productName: string | null;
+  productColor: string | null;
+  productSize: string | null;
+  quantity: number;
+  total: number;
+  orders: { orderNumber: string; orderId: string }[];
+}
+
 interface Pagination {
   page: number;
   limit: number;
@@ -79,6 +90,7 @@ const StatusSummaryReport: React.FC = () => {
   const [inlinePagination, setInlinePagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, totalPages: 0 });
   const [inlineLoading, setInlineLoading] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadStatuses = async () => {
@@ -174,6 +186,40 @@ const StatusSummaryReport: React.FC = () => {
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+
+  const groupedItems = useMemo(() => {
+    const groups = new Map<string, GroupedItem>();
+    for (const item of inlineItems) {
+      const key = `${item.productName || ""}|${item.productColor || ""}|${item.productSize || ""}`;
+      if (groups.has(key)) {
+        const g = groups.get(key)!;
+        g.quantity += item.quantity;
+        g.total += item.total;
+        if (!g.orders.find((o) => o.orderNumber === item.orderNumber)) {
+          g.orders.push({ orderNumber: item.orderNumber, orderId: item.orderId });
+        }
+      } else {
+        groups.set(key, {
+          productName: item.productName,
+          productColor: item.productColor,
+          productSize: item.productSize,
+          quantity: item.quantity,
+          total: item.total,
+          orders: [{ orderNumber: item.orderNumber, orderId: item.orderId }],
+        });
+      }
+    }
+    return Array.from(groups.values());
+  }, [inlineItems]);
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const statusLabel = (code: string) =>
     statusOptions.find((o) => o.value === code.toUpperCase())?.label || code;
@@ -383,13 +429,14 @@ const StatusSummaryReport: React.FC = () => {
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المحافظة</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {inlineOrders.map((o) => (
                                       <tr
                                         key={o.id}
-                                        onClick={() => navigate(`/orders/details/${o.orderNumber}`)}
+                                        onClick={() => navigate(`/orders/${o.orderNumber}`)}
                                         className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:hover:bg-indigo-900/20"
                                       >
                                         <td className="px-4 py-3 font-medium text-indigo-600 dark:text-indigo-400">{o.orderNumber}</td>
@@ -402,6 +449,18 @@ const StatusSummaryReport: React.FC = () => {
                                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(o.total)}</td>
                                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.governorate || o.city || "—"}</td>
                                         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{formatDate(o.createdAt)}</td>
+                                        <td className="px-4 py-3">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigate(`/orders/${o.orderNumber}`);
+                                            }}
+                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                          >
+                                            عرض التفاصيل
+                                          </button>
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -418,33 +477,98 @@ const StatusSummaryReport: React.FC = () => {
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">اللون</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المقاس</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الكمية</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">السعر</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">عدد الطلبات</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {inlineItems.map((item, idx) => (
-                                      <tr
-                                        key={`${item.itemId}-${idx}`}
-                                        onClick={() => navigate(`/orders/details/${item.orderNumber}`)}
-                                        className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:hover:bg-indigo-900/20"
-                                      >
-                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{item.productName || "—"}</td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productColor || "—"}</td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.productSize || "—"}</td>
-                                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{formatNumber(item.quantity)}</td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatEGP(item.price)}</td>
-                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(item.total)}</td>
-                                        <td className="px-4 py-3 font-medium text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">
-                                          {item.orderNumber}
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                                          {item.createdAt ? formatDate(item.createdAt) : "—"}
-                                        </td>
-                                      </tr>
-                                    ))}
+                                    {groupedItems.map((group, idx) => {
+                                      const groupKey = `${group.productName || ""}|${group.productColor || ""}|${group.productSize || ""}|${idx}`;
+                                      const isExpanded = expandedGroups.has(groupKey);
+                                      return (
+                                        <React.Fragment key={groupKey}>
+                                          <tr
+                                            onClick={() => toggleGroup(groupKey)}
+                                            className="cursor-pointer border-b border-gray-100 bg-white transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:bg-gray-800 dark:hover:bg-indigo-900/20"
+                                          >
+                                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                                              <span className="inline-flex items-center gap-1">
+                                                {isExpanded ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" />}
+                                                {group.productName || "—"}
+                                              </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{group.productColor || "—"}</td>
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{group.productSize || "—"}</td>
+                                            <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{formatNumber(group.quantity)}</td>
+                                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(group.total)}</td>
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatNumber(group.orders.length)}</td>
+                                            <td className="px-4 py-3">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleGroup(groupKey);
+                                                }}
+                                                className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                              >
+                                                {isExpanded ? "إخفاء" : "عرض الطلبات"}
+                                              </button>
+                                            </td>
+                                          </tr>
+                                          {isExpanded && (
+                                            <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                                              <td colSpan={7} className="p-0">
+                                                <div className="border-b border-gray-100 bg-gray-50/30 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30">
+                                                  <table className="w-full text-right text-xs">
+                                                    <thead>
+                                                      <tr className="text-gray-500 dark:text-gray-400">
+                                                        <th className="px-3 py-2 font-semibold">رقم الطلب</th>
+                                                        <th className="px-3 py-2 font-semibold">السعر</th>
+                                                        <th className="px-3 py-2 font-semibold">التاريخ</th>
+                                                        <th className="px-3 py-2 font-semibold">الإجراء</th>
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                      {inlineItems
+                                                        .filter(
+                                                          (item) =>
+                                                            (item.productName || "") === (group.productName || "") &&
+                                                            (item.productColor || "") === (group.productColor || "") &&
+                                                            (item.productSize || "") === (group.productSize || "")
+                                                        )
+                                                        .map((item, iidx) => (
+                                                          <tr
+                                                            key={`${item.itemId}-${iidx}`}
+                                                            onClick={() => navigate(`/orders/${item.orderNumber}`)}
+                                                            className="cursor-pointer border-t border-gray-100 transition-colors hover:bg-indigo-50/30 dark:border-gray-700/30 dark:hover:bg-indigo-900/10"
+                                                          >
+                                                            <td className="px-3 py-2 font-medium text-indigo-600 dark:text-indigo-400">{item.orderNumber}</td>
+                                                            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{formatEGP(item.price)}</td>
+                                                            <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{item.createdAt ? formatDate(item.createdAt) : "—"}</td>
+                                                            <td className="px-3 py-2">
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  navigate(`/orders/${item.orderNumber}`);
+                                                                }}
+                                                                className="text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                              >
+                                                                عرض التفاصيل
+                                                              </button>
+                                                            </td>
+                                                          </tr>
+                                                        ))}
+                                                    </tbody>
+                                                  </table>
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </React.Fragment>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               )

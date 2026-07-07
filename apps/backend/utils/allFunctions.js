@@ -680,7 +680,8 @@ async function handleFacebookComment(commentData, pageId = null) {
               postId: postId,
               companyId: pageData.companyId
             }
-          }
+          },
+          include: { product: { select: { id: true, name: true, price: true, description: true } } }
         });
       });
 
@@ -990,8 +991,54 @@ async function handleFacebookComment(commentData, pageId = null) {
         }
         return; // Exit after sending fixed response
       } else if (postSettings.responseMethod === 'manual') {
-        // For manual method, we don't do anything automatically
         //console.log(`📝 [COMMENT] Manual response method set for post ${postId} - no automatic response`);
+        return;
+      } else if (postSettings.responseMethod === 'ai') {
+        console.log(`🤖 [COMMENT] AI response method for comment ${commentId} on post ${postId}`);
+
+        const { sendChatMessage } = require('../services/aiSdkClient');
+
+        const memoryContext = postSettings.product
+          ? { referredProduct: { id: postSettings.product.id, name: postSettings.product.name, price: postSettings.product.price, description: postSettings.product.description } }
+          : null;
+
+        let customer = existingComment
+          ? await safeQuery(async () => { const p = getSharedPrismaClient(); return await p.customer.findFirst({ where: { facebookId: senderId, companyId: pageData.companyId } }); })
+          : null;
+        if (!customer && senderId) {
+          customer = await safeQuery(async () => {
+            const p = getSharedPrismaClient();
+            return await p.customer.create({ data: { facebookId: senderId, firstName: senderName || 'FB User', lastName: '', email: null, phone: null, companyId: pageData.companyId, metadata: JSON.stringify({ source: 'facebook_comment_ai' }) } });
+          });
+        }
+
+        const aiResponse = customer ? await sendChatMessage({ companyId: pageData.companyId, customerId: customer.id, message: commentText, channel: 'facebook', memoryContext }).catch(e => { console.error('❌ [COMMENT-AI] AI service error:', e.message); return null; }) : null;
+
+        if (aiResponse?.reply) {
+          await sendFacebookCommentReply(commentId, aiResponse.reply, pageData.pageAccessToken);
+
+          await safeQuery(async () => {
+            const p = getSharedPrismaClient();
+            await p.facebookComment.update({ where: { id: savedComment.id }, data: { response: aiResponse.reply, respondedAt: new Date() } });
+          });
+
+          if (senderId && customer) {
+            const { sendProductionFacebookMessage } = require('./production-facebook-fix');
+            const conversation = await safeQuery(async () => {
+              const p = getSharedPrismaClient();
+              return await p.conversation.findFirst({ where: { customerId: customer.id, status: { in: ['ACTIVE', 'RESOLVED'] } }, orderBy: { updatedAt: 'desc' } });
+            });
+            if (conversation) {
+              await safeQuery(async () => {
+                const p = getSharedPrismaClient();
+                await p.message.create({ data: { conversationId: conversation.id, content: aiResponse.reply, type: 'TEXT', isFromCustomer: false, metadata: JSON.stringify({ platform: 'facebook', source: 'comment_ai_reply', commentId }) } });
+              });
+            }
+            await sendProductionFacebookMessage(senderId, aiResponse.reply, 'TEXT', pageId, pageData.pageAccessToken).catch(e => console.warn('⚠️ [COMMENT-AI] Messenger send failed:', e.message));
+          }
+        } else {
+          console.warn(`⚠️ [COMMENT-AI] No AI reply for comment ${commentId}`);
+        }
         return;
       }
     }
@@ -1701,11 +1748,27 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
           });
           if (parentMsg) {
             const snippet = parentMsg.type === 'IMAGE' ? '📷 صورة' : parentMsg.type === 'FILE' ? '📎 ملف' : (parentMsg.content || '').substring(0, 80);
+            let parentSenderName = 'موظف';
+            if (parentMsg.isFromCustomer) {
+              parentSenderName = `${customer.firstName} ${customer.lastName}`.trim();
+            } else {
+              try {
+                const parentMetadata = typeof parentMsg.metadata === 'string' ? JSON.parse(parentMsg.metadata) : (parentMsg.metadata || {});
+                parentSenderName = parentMetadata.employeeName || parentMetadata.senderName || 'موظف';
+              } catch (e) {
+                parentSenderName = 'موظف';
+              }
+            }
             replyMeta = {
               replyToResolvedMessageId: parentMsg.id,
               replyToContentSnippet: snippet,
               replyToSenderIsCustomer: !!parentMsg.isFromCustomer,
-              replyToType: parentMsg.type
+              replyToType: parentMsg.type,
+              replyTo: {
+                senderName: parentSenderName,
+                type: (parentMsg.type || 'text').toLowerCase(),
+                content: snippet
+              }
             };
           }
         } catch (e) {

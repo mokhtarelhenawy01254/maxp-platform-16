@@ -61,6 +61,7 @@ roles:
     - facebook_ad_create_draft
     - message_broadcast
     - audit_read
+    - generate_social_image
 
   FACEBOOK_SALES_SUPPORT:
     - product_search

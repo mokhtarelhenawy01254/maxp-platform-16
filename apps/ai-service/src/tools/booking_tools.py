@@ -33,15 +33,19 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
         wd = _try_parse_json(b.get("workingDays"))
         male_days = [AR_DAY_NAMES.get(d2i(k), k) for k in (gd.get("male", []) if gd else [])]
         female_days = [AR_DAY_NAMES.get(d2i(k), k) for k in (gd.get("female", []) if gd else [])]
+        phones = b.get("phones") if isinstance(b.get("phones"), list) else ([b.get("phone")] if b.get("phone") else [])
         summary.append({
             "id": b.get("id"), "name": b.get("name"), "address": b.get("address"),
-            "phone": b.get("phone"),
+            "phone": phones[0] if phones else "",
+            "phones": phones,
             "male_days": male_days, "female_days": female_days,
             "hours": wd,
         })
 
     svc_list = []
     for s in services:
+        if not s.get("isActive"):
+            continue
         branch_services = s.get("branchServices", [])
         packages = []
         for bs in branch_services:
@@ -110,8 +114,8 @@ async def reserve_appointment(
     company_id: str,
     patient_name: str,
     patient_phone: str,
-    gender: str,
-    service_name: str,
+    gender: str = "",
+    service_name: str = "",
     branch_name: str = "",
     appointment_date: str = "",
     appointment_time: str = ""
@@ -149,19 +153,20 @@ async def reserve_appointment(
     branch_id = branch.get("id", "")
     branch_name = branch.get("name", "")
 
-    # 2. Find service by name (partial match)
+    # 2. Find service by name (partial match) — active only
     services = await client.get_booking_services(company_id)
-    if not services:
+    active_services = [s for s in services if s.get("isActive")]
+    if not active_services:
         return {"error": "لا توجد خدمات متاحة"}
     matched_svc = None
     if service_name:
         svc_lower = service_name.strip().lower().replace("ة", "ه")
-        for s in services:
+        for s in active_services:
             s_name = (s.get("name") or "").lower().replace("ة", "ه")
             if svc_lower in s_name or s_name in svc_lower:
                 matched_svc = s; break
     if not matched_svc:
-        matched_svc = services[0]  # fallback
+        matched_svc = active_services[0]  # fallback
     service_id = matched_svc.get("id", "")
     service_label = matched_svc.get("name", "")
 
@@ -180,15 +185,27 @@ async def reserve_appointment(
         date_str = date_str.replace("2024", str(today.year)).replace("2025", str(today.year))
         logger.info("auto_corrected_year", corrected_date=date_str, reason="LLM year hallucination")
 
-    # 6. Gender-day validation + auto-correct
+    # 6. Gender inference + gender-day validation + auto-correct
     date_obj = date_type.fromisoformat(date_str)
     day_idx = date_obj.weekday()
 
     gd = _try_parse_json(branch.get("genderDays"))
     male_days_set = {d2i(k) for k in (gd.get("male", []) if gd else [])}
     female_days_set = {d2i(k) for k in (gd.get("female", []) if gd else [])}
+    has_gender_days = bool(male_days_set or female_days_set)
 
-    g = gender.upper()
+    g = gender.upper().strip()
+    if not g:
+        logger.info("gender_missing_for_branch", branch=branch_name, name=name)
+
+    if has_gender_days and g not in ("MALE", "M", "FEMALE", "F"):
+        # Gender is required to validate the day but was not provided or is unclear.
+        # Let the agent collect it via conversational slot-filling.
+        return {
+            "needs_gender": True,
+            "message": "عذرًا، محتاج أعرف نوع المريض عشان أحدد اليوم المناسب في الفرع. هل حضرتك راجل ولا ست؟"
+        }
+
     if g in ("MALE", "M"):
         valid_days = male_days_set
     elif g in ("FEMALE", "F"):

@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - staging
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
 
 env:
@@ -24,10 +29,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Cache Frontend node_modules
+        uses: actions/cache@v4
+        id: cache-frontend
+        with:
+          path: apps/frontend/node_modules
+          key: frontend-node-stage-${{ hashFiles('apps/frontend/package-lock.json') }}
+          restore-keys: |
+            frontend-node-stage-
+
       - name: Install Frontend Dependencies
+        if: steps.cache-frontend.outputs.cache-hit != 'true'
         working-directory: ./apps/frontend
-        run: |
-          npm ci --ignore-scripts || npm install --ignore-scripts
+        run: npm ci --ignore-scripts
         env:
           HUSKY: '0'
 
@@ -48,19 +62,21 @@ jobs:
           echo "🌐 Runner IP: $(curl -s https://ifconfig.me)"
           echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
 
+      - name: Setup SSH Key
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
       - name: Copy Frontend Build to Server
         shell: bash
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
           SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
         run: |
-          install -m 700 -d "$HOME/.ssh"
-          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/staging_deploy_key"
-          chmod 600 "$HOME/.ssh/staging_deploy_key"
-          ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
-          scp -i "$HOME/.ssh/staging_deploy_key" -P "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new \
+          scp -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new \
             frontend-staging.tar.gz "$SERVER_USER@$SERVER_HOST:~/frontend-staging.tar.gz"
 
       - name: Deploy to Server via SSH
@@ -71,7 +87,6 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
-          request_pty: true
           timeout: 300s
           command_timeout: 30m
           use_insecure_cipher: false
@@ -87,6 +102,7 @@ jobs:
             cd /var/www/backend-stage
             echo "📥 Pulling latest changes from staging branch..."
             git fetch origin staging
+            git stash push -m "deploy-$(date +%s)" 2>/dev/null || true
             git reset --hard origin/staging
 
             # Install Backend Dependencies

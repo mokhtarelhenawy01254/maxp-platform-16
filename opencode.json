@@ -33,7 +33,8 @@
     "@tarquinen/opencode-dcp",
     "opencode-websearch-cited",
     "opencode-pty",
-    "opencode-browser"
+    "opencode-browser",
+    "./.opencode/plugin/secrets.mjs"
   ],
   "instructions": [
     ".opencode/shell_strategy.md"

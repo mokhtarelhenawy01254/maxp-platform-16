@@ -3554,7 +3554,9 @@ async function sendTemplateMessage(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const message = await WhatsAppMessageHandler.sendTemplateMessage(targetSessionId, to, templateId, parameters || {});
+        const message = await WhatsAppMessageHandler.sendTemplateMessage(targetSessionId, to, templateId, parameters || {}, {
+            templateBody: req.body.templateBody
+        });
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending template message:', error);

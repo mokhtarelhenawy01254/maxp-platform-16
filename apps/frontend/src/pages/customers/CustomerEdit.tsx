@@ -23,6 +23,7 @@ interface CustomerFormData {
   status: string;
   notes: string;
   birthday: string;
+  password: string;
 }
 
 const CustomerEdit: React.FC = () => {
@@ -34,6 +35,7 @@ const CustomerEdit: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState<CustomerFormData>({
     firstName: "",
@@ -46,6 +48,7 @@ const CustomerEdit: React.FC = () => {
     status: "LEAD",
     notes: "",
     birthday: "",
+    password: "",
   });
 
   useEffect(() => {
@@ -115,7 +118,9 @@ const CustomerEdit: React.FC = () => {
     setSuccessMessage("");
 
     try {
-      await apiClient.put(`/customers/${id}`, formData);
+      const payload: any = { ...formData };
+      if (!payload.password) delete payload.password;
+      await apiClient.put(`/customers/${id}`, payload);
       setSuccessMessage("تم حفظ التغييرات بنجاح");
       setTimeout(() => {
         navigate(`/customers/${id}`);
@@ -256,6 +261,25 @@ const CustomerEdit: React.FC = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="example@email.com"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                كلمة المرور الجديدة (اتركها فارغة إن لم ترد التغيير)
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  minLength={6}
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="أدخل كلمة المرور الجديدة"
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-2 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                  {showPassword ? "👁" : "👁‍🗨"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
