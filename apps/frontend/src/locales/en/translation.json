@@ -6303,6 +6303,7 @@
       "location": "Send Location",
       "order": "Send Order",
       "task": "Tasks",
+      "template": "Send Template",
       "attach": "Attach File",
       "emoji": "Emojis"
     }
@@ -6335,6 +6336,7 @@
       "recipient": "Recipient",
       "type": "Type",
       "status": "Status",
+      "error": "Error",
       "date": "Date",
       "noLogs": "No logs found",
       "rowsPerPage": "Rows per page:",
