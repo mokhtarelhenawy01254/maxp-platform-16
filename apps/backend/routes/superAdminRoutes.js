@@ -998,7 +998,8 @@ router.get("/ai/company-consumption", checkPermission("canViewReports"), async (
     });
   } catch (error) {
     console.error("[SA] company-consumption error:", error.message);
-    res.status(500).json({ success: false, error: "فشل تحميل بيانات الاستهلاك" });
+    console.error("[SA] company-consumption stack:", error.stack?.split('\n').slice(0,6).join('\n'));
+    res.status(500).json({ success: false, error: "فشل تحميل بيانات الاستهلاك: " + error.message });
   }
 });
 
