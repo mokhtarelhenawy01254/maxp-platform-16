@@ -89,21 +89,18 @@ function KeyLogsContent() {
 
   const [refreshTick, setRefreshTick] = useState(0);
 
-  const { data: companies, isLoading: loadingCompanies } = useQuery({
+  const { data: companies } = useQuery({
     queryKey: ["super-admin", "companies"],
-    queryFn: () => companyAwareApi.getAllCompanies({ pageSize: 0 }),
-    staleTime: 600_000,
-    gcTime: 900_000,
+    queryFn: () => companyAwareApi.getAllCompanies(),
+    staleTime: 300_000,
+    select: (res) => res.data?.data?.companies ?? [],
   });
 
   const companyNameMap = useMemo(() => {
-    try {
-      const body: any = companies?.data;
-      const raw: any[] = body?.data?.companies ?? body?.companies ?? (Array.isArray(body) ? body : []);
-      const map: Record<string, string> = {};
-      for (const c of raw) if (c?.id) map[c.id] = c.name || c.id;
-      return map;
-    } catch { return {}; }
+    if (!Array.isArray(companies)) return {};
+    const map: Record<string, string> = {};
+    for (const c of companies) map[c.id] = c.name;
+    return map;
   }, [companies]);
 
   const { data: logs, isLoading, error } = useAiKeyLogs({

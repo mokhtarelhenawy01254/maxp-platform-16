@@ -23,7 +23,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   const [isSending, setIsSending] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const sentRef = useRef(false);
+  const sendLockRef = useRef(false);
 
   useEffect(() => {
     if (status === "recording") {
@@ -46,10 +46,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   }, [startRecording]);
 
   useEffect(() => {
-    if (isSending && mediaBlobUrl && status === "stopped") {
-      if (sentRef.current) return;
-      sentRef.current = true;
-      const sendAudio = async () => {
+    const sendAudio = async () => {
+      if (isSending && mediaBlobUrl && status === "stopped") {
+        if (sendLockRef.current) return;
+        sendLockRef.current = true;
         try {
           const response = await fetch(mediaBlobUrl);
           const blob = await response.blob();
@@ -60,9 +60,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
         } finally {
           setIsSending(false);
         }
-      };
-      sendAudio();
-    }
+      }
+    };
+    sendAudio();
   }, [clearBlobUrl, isSending, mediaBlobUrl, onSend, status]);
 
   const formatTime = (seconds: number) => {

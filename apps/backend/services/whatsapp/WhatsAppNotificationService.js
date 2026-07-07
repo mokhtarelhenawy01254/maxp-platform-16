@@ -2244,7 +2244,8 @@ async function sendNotification(options) {
         data: {
           status: 'FAILED',
           failedAt: new Date(),
-          failureReason: sendError.code ? `[${sendError.code}] ${sendError.message}` : sendError.message
+          failureReason: sendError.code ? `[${sendError.code}] ${sendError.message}` : sendError.message,
+          errorCode: sendError.code ? String(sendError.code) : null,
         }
       }));
 
