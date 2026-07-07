@@ -940,7 +940,7 @@ class OrderService {
       // Enforce allowed transitions if configured
       try {
         await this.validateConfiguredStatusTransition(order.companyId, order.status, status, {
-          skipValidation: skipTransitionValidation
+          skipValidation: skipTransitionValidation || isOverride
         });
       } catch (transitionError) {
         console.error('❌ [ORDER-SERVICE] Invalid status transition:', transitionError.message);
