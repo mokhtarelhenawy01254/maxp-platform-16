@@ -882,6 +882,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                 {contact.unreadCount}
                               </span>
                             ) : null}
+                            {contact.window ? (
+                              <span className={`inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                contact.window.isOpen
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200'
+                                  : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-200'
+                              }`}>
+                                {contact.window.isOpen ? '⏱' : '✕'} {contact.window.remainingLabel}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
                       </div>

@@ -686,7 +686,9 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         template_slug=template_slug,
         status="ACTIVE",
         model=model,
-        persona=body.persona or {},
+        soul=body.soul or (template.soul if template else None),
+        rules=body.rules or (template.rules if template else None),
+        persona=(template.persona if template else {}) | (body.persona or {}),
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
         channels=body.allowed_channels or (template.channels if template else []),
@@ -694,7 +696,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         budget=body.budget or (template.budget if template else {}),
         parent_id=body.parent_id,
         version=template.version if template else "1.0.0",
-        config=body.config or {},
+        config=(template.config if template else {}) | (body.config or {}),
     )
     session.add(agent)
     try:
@@ -1309,12 +1311,22 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     if not template:
         raise HTTPException(status_code=404, detail=f"Template not found: {agent.template_slug}")
 
+    # Migrate existing config.soul_custom to custom_instructions before clearing
+    existing_custom = dict(agent.custom_instructions or {})
+    config_soul_custom = (agent.config or {}).get("soul_custom")
+    if config_soul_custom and not existing_custom.get("soul"):
+        existing_custom["soul"] = config_soul_custom
+    agent.custom_instructions = existing_custom
+
     agent.allowed_tools = template.allowed_tools
     agent.allowed_skills = template.allowed_skills
     agent.channels = template.channels
     agent.guardrails = template.guardrails
     agent.budget = template.budget
     agent.version = template.version
+    agent.soul = None
+    agent.rules = None
+    agent.persona = {}
 
     await session.commit()
     await session.refresh(agent)

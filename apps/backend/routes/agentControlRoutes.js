@@ -311,6 +311,7 @@ router.put('/agents/:id/files', async (req, res) => {
       persona: req.body?.persona,
       style: req.body?.style, policies: req.body?.policies,
       guardrails: req.body?.guardrails, budget: req.body?.budget,
+      custom_instructions: req.body?.customInstructions,
     };
     const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, payload);
     // 2026: ai-service manages agents; no dual-write to public.company_agents

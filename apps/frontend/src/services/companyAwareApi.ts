@@ -309,8 +309,8 @@ class CompanyAwareApiService {
   }
 
   // Admin operations (bypass company check)
-  async getAllCompanies() {
-    return this.get("/admin/companies", { bypassCompanyCheck: true });
+  async getAllCompanies(params?: Record<string, string | number>) {
+    return this.get("/admin/companies", { params, bypassCompanyCheck: true });
   }
 
   async getCompanyById(companyId: string) {

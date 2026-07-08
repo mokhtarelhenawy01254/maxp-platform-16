@@ -57,6 +57,7 @@ import {
     WalletIcon,
     CubeIcon,
     SwatchIcon,
+    PhotoIcon,
     UserPlusIcon,
     CalculatorIcon,
     TrophyIcon,
@@ -486,6 +487,7 @@ export const getSidebarConfig = (
             icon: SparklesIcon,
             items: [
                 { to: '/admin/agent-profiles', icon: UserGroupIcon, label: t('sidebar.agentProfiles') },
+                { to: '/admin/ai-image-generator', icon: PhotoIcon, label: t('sidebar.aiImageGenerator') },
                 { to: '/admin/ai-catalog', icon: ShoppingBagIcon, label: t('sidebar.aiCatalog') },
                 { to: '/admin/ai-knowledge-questions', icon: LightBulbIcon, label: t('sidebar.aiKnowledgeQuestions') },
                 { to: '/admin/ai-hub?tab=sandbox', icon: BeakerIcon, label: t('sidebar.aiAgentSandbox') },

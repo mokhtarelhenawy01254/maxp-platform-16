@@ -63,10 +63,16 @@ def _rrf_merge(
     seen: dict[str, dict[str, Any]] = {}
     scores: dict[str, float] = {}
     for ranked in lists:
+        # Only count each product's BEST rank within this list.
+        # Products with many stored embeddings would otherwise accumulate
+        # multiple RRF contributions from the same ranked list, crowding out
+        # products that have fewer (but equally or more relevant) embeddings.
+        counted_in_list: set[str] = set()
         for rank, item in enumerate(ranked):
             name = item.get(name_key, "")
-            if not name:
+            if not name or name in counted_in_list:
                 continue
+            counted_in_list.add(name)
             if name not in seen:
                 seen[name] = dict(item)
             scores[name] = scores.get(name, 0.0) + 1.0 / (_RRF_K + rank)
@@ -215,14 +221,21 @@ def _search_query(
     if keywords:
         kw_list = "{" + ",".join(f"'{re.escape(k)}'" for k in keywords) + "}"
         kw_filter = f" AND product_name ILIKE ANY(ARRAY[{kw_list[1:-1]}]::text[])"
+    # DISTINCT ON (product_name): keep only the closest embedding per product.
+    # Without this, products with many stored embeddings dominate the ranked list
+    # and accumulate unfair RRF scores in _rrf_merge.
     return f"""
-        SELECT product_name, sku, price, status, image_url,
-               1 - ({embed_col} <=> CAST(:q_vec AS vector)) AS score
-        FROM ai.product_embeddings
-        WHERE company_id = :cid
-          AND {embed_col} IS NOT NULL
-          {kw_filter}
-        ORDER BY {embed_col} <=> CAST(:q_vec AS vector)
+        SELECT * FROM (
+            SELECT DISTINCT ON (product_name)
+                   product_name, sku, price, status, image_url,
+                   1 - ({embed_col} <=> CAST(:q_vec AS vector)) AS score
+            FROM ai.product_embeddings
+            WHERE company_id = :cid
+              AND {embed_col} IS NOT NULL
+              {kw_filter}
+            ORDER BY product_name, {embed_col} <=> CAST(:q_vec AS vector)
+        ) sub
+        ORDER BY score DESC
         LIMIT :lim
     """
 

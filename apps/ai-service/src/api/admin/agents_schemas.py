@@ -63,6 +63,8 @@ class AgentCreate(BaseModel):
     allowed_skills: list[str] | None = None
     allowed_channels: list[str] | None = None
     persona: dict[str, Any] | None = None
+    soul: str | None = None
+    rules: str | None = None
     guardrails: dict[str, Any] | None = None
     budget: dict[str, Any] | None = None
     parent_id: str | None = None

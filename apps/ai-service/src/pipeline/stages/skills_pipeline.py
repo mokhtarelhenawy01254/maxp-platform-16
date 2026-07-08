@@ -107,9 +107,13 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             else:
                 arguments = arguments_str
 
-            # Auto-inject image_bytes into product_search when images are present but not passed
-            if func_name == "product_search" and ctx.attachments and not arguments.get("image_bytes") and not arguments.get("image_url"):
-                _inject_image_to_product_search(arguments, ctx.attachments)
+            # Auto-inject image_bytes into product_search when base64 image attachments are present.
+            # Only skip if a real HTTP image_url was passed (embedding will use the URL directly).
+            # If image_url is a data-URI or hallucinated string, we override with the real bytes.
+            if func_name == "product_search" and ctx.attachments and not arguments.get("image_bytes"):
+                _iu = arguments.get("image_url") or ""
+                if not _iu or not str(_iu).startswith(("http://", "https://")):
+                    _inject_image_to_product_search(arguments, ctx.attachments)
 
             skill = registry.get(func_name)
             if not skill:
@@ -316,10 +320,14 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         if tname not in skill_names and tname in ALL_TOOLS:
             tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
 
+    tool_choice = getattr(ctx.agent.config, "tool_choice", None) if ctx.agent and hasattr(ctx.agent, "config") else None
+    if tool_choice == "required" and client and getattr(client, "provider", None) == "DEEPSEEK":
+        tool_choice = None
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
         temperature=0.3,
+        tool_choice=tool_choice,
     )
 
 

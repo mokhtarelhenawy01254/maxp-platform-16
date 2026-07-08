@@ -676,6 +676,80 @@ router.put('/cancellation', verifyToken.authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// 🎨 Brand Identity Endpoints
+// ============================================
+
+// Get brand identity
+router.get('/brand-identity', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب', code: 'COMPANY_ID_REQUIRED' });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+
+    let parsed = {};
+    try { parsed = company?.settings ? JSON.parse(company.settings) : {}; } catch (e) { parsed = {}; }
+
+    const defaults = {
+      brandName: '',
+      primaryColor: '#000000',
+      secondaryColor: '#ffffff',
+      accentColor: '#ff0000',
+      headingFont: 'Cairo',
+      bodyFont: 'Tajawal',
+      brandVoice: '',
+      designRules: '',
+      visualGuidelines: '',
+    };
+
+    res.json({ success: true, data: { ...defaults, ...(parsed.brandIdentity || {}) } });
+  } catch (error) {
+    console.error('❌ [BRAND-IDENTITY] Error fetching:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch brand identity', details: error.message });
+  }
+});
+
+// Update brand identity
+router.put('/brand-identity', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب', code: 'COMPANY_ID_REQUIRED' });
+    }
+
+    const brandData = req.body;
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+
+    let currentSettings = {};
+    try { currentSettings = company?.settings ? JSON.parse(company.settings) : {}; } catch (e) { currentSettings = {}; }
+
+    currentSettings.brandIdentity = {
+      ...(currentSettings.brandIdentity || {}),
+      ...brandData,
+      updatedAt: new Date().toISOString()
+    };
+
+    await getSharedPrismaClient().company.update({
+      where: { id: companyId },
+      data: { settings: JSON.stringify(currentSettings) }
+    });
+
+    res.json({ success: true, data: currentSettings.brandIdentity, message: 'تم حفظ الهوية البصرية بنجاح' });
+  } catch (error) {
+    console.error('❌ [BRAND-IDENTITY] Error updating:', error);
+    res.status(500).json({ success: false, error: 'Failed to update brand identity', details: error.message });
+  }
+});
+
 module.exports = router;
 
 

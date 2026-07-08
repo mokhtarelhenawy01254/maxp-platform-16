@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useReactMediaRecorder } from "react-media-recorder";
 import { Loader2, Mic, Send, Trash2 } from "lucide-react";
 
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { Button } from "@/components/ui/button";
 
 interface AudioRecorderProps {
@@ -13,18 +13,21 @@ const STATUS_LABELS: Record<string, string> = {
   idle: "اضغط للتسجيل",
   acquiring_media: "طلب الإذن بالميكروفون...",
   recording: "Recording...",
+  stopping: "جاري المعالجة...",
   stopped: "Processing...",
 };
 
 const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl, error } =
-    useReactMediaRecorder({ audio: true });
+    useAudioRecorder();
 
   const [isSending, setIsSending] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const sentRef = useRef(false);
+  const sendLockRef = useRef(false);
+  const startedRef = useRef(false);
 
+  // Timer for recording duration
   useEffect(() => {
     if (status === "recording") {
       timerRef.current = setInterval(() => {
@@ -41,28 +44,44 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
     };
   }, [status]);
 
+  // Start recording ONCE on mount
   useEffect(() => {
-    startRecording();
+    if (!startedRef.current) {
+      startedRef.current = true;
+      startRecording();
+    }
   }, [startRecording]);
 
+  // Reset send lock when recording restarts
   useEffect(() => {
-    if (isSending && mediaBlobUrl && status === "stopped") {
-      if (sentRef.current) return;
-      sentRef.current = true;
-      const sendAudio = async () => {
-        try {
-          const response = await fetch(mediaBlobUrl);
-          const blob = await response.blob();
-          onSend(blob);
-          clearBlobUrl();
-        } catch (error) {
-          console.error("Error fetching audio blob:", error);
-        } finally {
-          setIsSending(false);
-        }
-      };
-      sendAudio();
+    if (status === "recording") {
+      sendLockRef.current = false;
     }
+  }, [status]);
+
+  // Send audio when stopped and isSending
+  useEffect(() => {
+    if (!isSending || !mediaBlobUrl || status !== "stopped") return;
+    if (sendLockRef.current) return;
+    sendLockRef.current = true;
+
+    const sendAudio = async () => {
+      try {
+        const response = await fetch(mediaBlobUrl);
+        const blob = await response.blob();
+        if (blob.size < 500) {
+          console.error("Audio blob too small, likely empty recording:", blob.size);
+          return;
+        }
+        onSend(blob);
+        clearBlobUrl();
+      } catch (error) {
+        console.error("Error fetching audio blob:", error);
+      } finally {
+        setIsSending(false);
+      }
+    };
+    sendAudio();
   }, [clearBlobUrl, isSending, mediaBlobUrl, onSend, status]);
 
   const formatTime = (seconds: number) => {
@@ -71,14 +90,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const isError = error || status === "idle";
-
   return (
     <div className="flex w-full items-center gap-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-3 py-2 shadow-md">
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={onCancel}
+        disabled={isSending}
         className="rounded-full text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
       >
         <Trash2 className="size-4" />
@@ -109,10 +127,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
 
       <Button
         onClick={() => {
+          if (recordingTime < 1) return;
           setIsSending(true);
           stopRecording();
         }}
-        disabled={status !== "recording"}
+        disabled={status !== "recording" || recordingTime < 1 || isSending}
         className="rounded-full"
       >
         <Send className="size-4" />

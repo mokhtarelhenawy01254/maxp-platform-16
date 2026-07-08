@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   Cog6ToothIcon,
   CreditCardIcon,
-  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
 import { getApiUrl } from "../../config/environment";
@@ -48,11 +47,11 @@ const SectionHeader: React.FC<{
   title: string;
   description: string;
 }> = ({ title, description }) => (
-  <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
-    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+  <div className="border-b border-border pb-4 mb-6">
+    <h2 className="text-xl font-semibold text-foreground">
       {title}
     </h2>
-    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+    <p className="mt-1 text-sm text-muted-foreground">
       {description}
     </p>
   </div>
@@ -67,7 +66,6 @@ const Settings: React.FC = () => {
     { id: "custom-domain", name: "الدومين المخصص", component: CustomDomainPage },
     { id: "store", name: "إعدادات المتجر", component: StoreSettingsRedirect },
     { id: "security", name: "الأمان", component: SecuritySettings },
-
     { id: "sidebar", name: "القائمة الجانبية", component: SidebarSettings },
   ];
 
@@ -93,11 +91,11 @@ const Settings: React.FC = () => {
     <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="flex items-center text-3xl font-bold text-gray-900 dark:text-gray-100">
-            <Cog6ToothIcon className="mr-3 h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="flex items-center text-3xl font-bold text-foreground">
+            <Cog6ToothIcon className="mr-3 h-8 w-8 text-primary" />
             الإعدادات
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-muted-foreground">
             إدارة إعدادات الحساب والنظام من مكان واحد.
           </p>
         </div>
@@ -105,14 +103,14 @@ const Settings: React.FC = () => {
         <button
           type="button"
           onClick={() => navigate("/marketplace")}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/10"
         >
           <CreditCardIcon className="h-5 w-5" />
           إدارة الاشتراك والفواتير
         </button>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div className="rounded-3xl border border-border bg-card">
         <ActiveComponent />
       </div>
     </div>
@@ -121,19 +119,45 @@ const Settings: React.FC = () => {
 
 const ProfileSettings: React.FC = () => {
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
   const [formData, setFormData] = useState<ProfileFormState>({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
+    firstName: "",
+    lastName: "",
+    email: "",
     phone: "",
-    timezone: user?.timezone || "Africa/Cairo",
+    timezone: "Africa/Cairo",
     language: "ar",
   });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${getApiUrl()}/hr/employees/me`, {
+          headers: getAuthHeaders(),
+        });
+        const payload = await res.json();
+        if (!cancelled && payload?.success && payload?.employee) {
+          const e = payload.employee;
+          setFormData({
+            firstName: e.firstName || "",
+            lastName: e.lastName || "",
+            email: e.email || "",
+            phone: e.phone || "",
+            timezone: e.timezone || "Africa/Cairo",
+            language: "ar",
+          });
+        }
+      } catch { /* ignore */ } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleFieldChange =
     (field: keyof ProfileFormState) =>
@@ -196,63 +220,69 @@ const ProfileSettings: React.FC = () => {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-first-name">الاسم الأول</Label>
-            <Input id="profile-first-name" name="firstName" type="text" autoComplete="given-name" value={formData.firstName} onChange={handleFieldChange("firstName")} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-last-name">الاسم الأخير</Label>
-            <Input id="profile-last-name" name="lastName" type="text" autoComplete="family-name" value={formData.lastName} onChange={handleFieldChange("lastName")} />
-          </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
         </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-first-name">الاسم الأول</Label>
+              <Input id="profile-first-name" name="firstName" type="text" autoComplete="given-name" value={formData.firstName} onChange={handleFieldChange("firstName")} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-last-name">الاسم الأخير</Label>
+              <Input id="profile-last-name" name="lastName" type="text" autoComplete="family-name" value={formData.lastName} onChange={handleFieldChange("lastName")} />
+            </div>
+          </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-email">البريد الإلكتروني</Label>
-            <Input id="profile-email" name="email" type="email" autoComplete="email" value={formData.email} onChange={handleFieldChange("email")} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-email">البريد الإلكتروني</Label>
+              <Input id="profile-email" name="email" type="email" autoComplete="email" value={formData.email} disabled />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-phone">رقم الهاتف</Label>
+              <Input id="profile-phone" name="phone" type="tel" autoComplete="tel" value={formData.phone} onChange={handleFieldChange("phone")} placeholder="+201234567890" />
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-phone">رقم الهاتف</Label>
-            <Input id="profile-phone" name="phone" type="tel" autoComplete="tel" value={formData.phone} onChange={handleFieldChange("phone")} placeholder="+201234567890" />
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-timezone">المنطقة الزمنية</Label>
-            <Select value={formData.timezone} onValueChange={(value) => setFormData((prev) => ({ ...prev, timezone: value }))}>
-              <SelectTrigger id="profile-timezone">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Africa/Cairo">القاهرة (GMT+2)</SelectItem>
-                <SelectItem value="Asia/Riyadh">الرياض (GMT+3)</SelectItem>
-                <SelectItem value="Asia/Dubai">دبي (GMT+4)</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-timezone">المنطقة الزمنية</Label>
+              <Select value={formData.timezone} onValueChange={(value) => setFormData((prev) => ({ ...prev, timezone: value }))}>
+                <SelectTrigger id="profile-timezone">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Africa/Cairo">القاهرة (GMT+2)</SelectItem>
+                  <SelectItem value="Asia/Riyadh">الرياض (GMT+3)</SelectItem>
+                  <SelectItem value="Asia/Dubai">دبي (GMT+4)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-language">اللغة</Label>
+              <Select value={formData.language} onValueChange={(value) => setFormData((prev) => ({ ...prev, language: value }))}>
+                <SelectTrigger id="profile-language">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ar">العربية</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-language">اللغة</Label>
-            <Select value={formData.language} onValueChange={(value) => setFormData((prev) => ({ ...prev, language: value }))}>
-              <SelectTrigger id="profile-language">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ar">العربية</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSaving}>
-            {isSaving ? "جاري الحفظ..." : "حفظ التغييرات"}
-          </Button>
-        </div>
-      </form>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "جاري الحفظ..." : "حفظ التغييرات"}
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
@@ -370,10 +400,10 @@ const SecuritySettings: React.FC = () => {
         description="غيّر كلمة المرور وراجع معايير الأمان الأساسية."
       />
 
-      <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+      <div className="rounded-xl border border-border bg-muted/50 p-4">
         <div className="flex items-start gap-3">
-          <ShieldCheckIcon className="mt-0.5 size-5 text-yellow-600 dark:text-yellow-300" />
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+          <ShieldCheckIcon className="mt-0.5 size-5 text-muted-foreground" />
+          <p className="text-sm text-foreground">
             استخدم كلمة مرور قوية وفريدة لحسابك، وغيّرها دوريًا لحماية بيانات الشركة.
           </p>
         </div>
@@ -435,8 +465,8 @@ const StoreSettingsRedirect: React.FC = () => {
   return (
     <div className="px-6 py-10">
       <div className="text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-indigo-600" />
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+        <p className="mt-4 text-sm text-muted-foreground">
           جاري التحويل إلى إعدادات المتجر...
         </p>
       </div>

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 
 class ProviderRead(BaseModel):
@@ -32,6 +32,7 @@ class AiKeyBase(BaseModel):
 class AiKeyCreate(AiKeyBase):
     api_key: str = Field(..., min_length=1)
     id: str | None = Field(default=None, min_length=1, max_length=50)
+    models: list[str] | None = None
 
 
 class AiKeyUpdate(BaseModel):
@@ -135,6 +136,11 @@ class LogEntry(BaseModel):
     error: str | None
     company_id: str | None
     created_at: datetime
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def coerce_id(cls, v):
+        return str(v) if not isinstance(v, str) else v
 
     @field_serializer("created_at")
     def serialize_created_at(self, dt: datetime) -> str:

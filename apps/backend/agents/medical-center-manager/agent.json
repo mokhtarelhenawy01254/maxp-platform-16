@@ -1,0 +1,66 @@
+{
+  "slug": "medical-center-manager",
+  "name": "مدير المركز الطبي",
+  "role": "MEDICAL_CENTER_MANAGER",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "gemini-2.5-flash"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "executive",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "booking_info",
+    "booking_slots",
+    "booking_reserve",
+    "booking_status",
+    "booking_branches_list",
+    "booking_branch_create",
+    "booking_branch_update",
+    "booking_branch_delete",
+    "booking_doctors_list",
+    "booking_doctor_create",
+    "booking_doctor_update",
+    "booking_doctor_delete",
+    "booking_services_list",
+    "booking_service_create",
+    "booking_service_update",
+    "booking_service_delete",
+    "booking_service_toggle",
+    "booking_appointments_list",
+    "booking_appointment_update_status",
+    "booking_appointments_bulk_delete",
+    "booking_reports_summary",
+    "agent_handoff_to",
+    "knowledge_search"
+  ],
+  "allowedSkills": [
+    "medical-center-management",
+    "clinic-knowledge-resolver",
+    "handoff-to-human"
+  ],
+  "channels": ["whatsapp_admin", "dashboard"],
+  "humanApproval": {
+    "mode": "OFF"
+  },
+  "budget": {
+    "dailyUsd": 3,
+    "maxToolCallsPerRun": 15
+  },
+  "config": {
+    "toolChoice": "required"
+  }
+}

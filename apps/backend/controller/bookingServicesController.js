@@ -44,7 +44,7 @@ const createService = async (req, res) => {
         requiresConsultation: requiresConsultation !== false,
         branchServices: Array.isArray(branches) && branches.length > 0 ? {
           create: branches.map((b) => ({
-            branchId: b.branchId,
+            branchId: b.branchId || b,
             hasPackages: b.hasPackages !== false,
             packages: b.packages || undefined,
             isActive: b.isActive !== false
@@ -258,7 +258,29 @@ const removeServiceBranch = async (req, res) => {
   }
 };
 
+const toggleService = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const existing = await getSharedPrismaClient().bookingService.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الخدمة غير موجودة' });
+
+    const service = await getSharedPrismaClient().bookingService.update({
+      where: { id },
+      data: { isActive: !existing.isActive },
+      include: { branchServices: { include: { branch: { select: { id: true, name: true } } } } }
+    });
+    res.json({ success: true, data: service, message: existing.isActive ? 'تم إيقاف الخدمة' : 'تم تفعيل الخدمة' });
+  } catch (error) {
+    console.error('Error toggling service:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تبديل حالة الخدمة' });
+  }
+};
+
 module.exports = {
   getAllServices, createService, updateService, deleteService,
-  cloneService, getServiceBranches, addServiceBranch, updateServiceBranch, removeServiceBranch
+  cloneService, getServiceBranches, addServiceBranch, updateServiceBranch, removeServiceBranch,
+  toggleService
 };

@@ -11,6 +11,7 @@ router.post('/:id/branches', verifyToken.authenticateToken, controller.addServic
 router.put('/:id/branches/:branchId', verifyToken.authenticateToken, controller.updateServiceBranch);
 router.delete('/:id/branches/:branchId', verifyToken.authenticateToken, controller.removeServiceBranch);
 router.put('/:id', verifyToken.authenticateToken, controller.updateService);
+router.patch('/:id/toggle', verifyToken.authenticateToken, controller.toggleService);
 router.delete('/:id', verifyToken.authenticateToken, controller.deleteService);
 
 module.exports = router;

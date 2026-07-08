@@ -1,5 +1,11 @@
 # Architectural & Design Decisions
 
+## 2026-07-07 — Vite Chunk 404: Keep Old Chunks + `vite:preloadError`
+- **Context:** After AppDashboardPage redesign (96106ac7), returning users got 404 on old chunk. Nginx had `immutable` cache on `/assets/`, deploy deleted old files via `rsync --delete`.
+- **Decision:** Combined two fixes: (A) removed `--delete` from deploy script so old chunks persist on disk, (B) added `vite:preloadError` listener to reload page when a stale import fails.
+- **Rationale:** (A) prevents the 404 entirely for users whose cached JS references old chunks. (B) is a safety net for edge cases (e.g., user whose tab was open since before deploy — their in-memory module graph may reference deleted chunks even with fresh HTML). Vite docs recommend (B) but alone it doesn't prevent the first 404 request.
+- **Rejected:** Shortening cache duration on `/assets/` — defeats purpose of content hashing. Always-delete approach — reliable for fresh visitors but breaks returning cached users.
+
 <!-- Format:
 ## YYYY-MM-DD — Title
 - Context: Why this decision was needed

@@ -27,6 +27,7 @@ from src.api.admin.schemas import (
 )
 from src.db.models import (
     AiKey,
+    AiModelConfig,
     GlobalAiConfig,
     Provider,
     ProviderLog,
@@ -147,6 +148,22 @@ async def create_key(
             detail=f"Key name '{payload.name}' already exists for provider '{payload.provider}'",
         ) from exc
     await session.refresh(key)
+
+    if payload.models:
+        for i, model_name in enumerate(payload.models):
+            model_name = model_name.strip()
+            if not model_name:
+                continue
+            session.add(
+                AiModelConfig(
+                    id=f"{key.id}_model_{i}",
+                    key_id=key.id,
+                    model_name=model_name,
+                    is_enabled=True,
+                    priority=i + 1,
+                )
+            )
+        await session.commit()
 
     session.add(
         ProviderLog(
@@ -448,8 +465,8 @@ async def list_logs(
         rows.extend(LogEntry.model_validate(r) for r in pub.mappings().all())
         rows.sort(key=lambda r: r.created_at, reverse=True)
         rows[:] = rows[:limit]
-    except Exception:
-        pass
+    except Exception as _pub_exc:
+        logger.warning("public_logs_query_failed", error=str(_pub_exc))
     return rows
 
 

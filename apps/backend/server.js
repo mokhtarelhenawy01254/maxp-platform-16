@@ -194,6 +194,7 @@ const bookingDoctorsRoutes = require("./routes/bookingDoctorsRoutes");
 const bookingServicesRoutes = require("./routes/bookingServicesRoutes");
 const bookingAppointmentsRoutes = require("./routes/bookingAppointmentsRoutes");
 const bookingDraftRoutes = require("./routes/bookingDraftRoutes");
+const bookingReportsRoutes = require("./routes/bookingReportsRoutes");
 const educationSubjectsRoutes = require("./routes/educationSubjectsRoutes");
 const educationPackagesRoutes = require("./routes/educationPackagesRoutes");
 const educationStudentsRoutes = require("./routes/educationStudentsRoutes");
@@ -736,6 +737,7 @@ app.use("/api/v1/booking/doctors", bookingDoctorsRoutes);
 app.use("/api/v1/booking/services", bookingServicesRoutes);
 app.use("/api/v1/booking/appointments", bookingAppointmentsRoutes);
 app.use("/api/v1/booking/drafts", bookingDraftRoutes);
+app.use("/api/v1/booking/reports", bookingReportsRoutes);
 app.use("/api/v1/education/subjects", educationSubjectsRoutes);
 app.use("/api/v1/education/packages", educationPackagesRoutes);
 app.use("/api/v1/education/students", educationStudentsRoutes);
@@ -844,6 +846,10 @@ app.use("/api/v1/telegram-settings", telegramSettingsRoutes);
 // Facebook Status
 const facebookStatusRoutes = require("./routes/facebookStatusRoutes");
 app.use("/api/v1/facebook/status", facebookStatusRoutes);
+
+// AI Image Generation
+const aiImageRoutes = require("./routes/aiImageRoutes");
+app.use("/api/v1/ai-image", aiImageRoutes);
 
 // Frontend error tracking
 app.use("/api/v1/errors", errorRoutes);

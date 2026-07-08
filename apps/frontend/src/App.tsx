@@ -826,6 +826,9 @@ const SuperAdminAITemplateDetail = React.lazy(
 const SuperAdminProductEmbeddings = React.lazy(
   () => import("./pages/super-admin/SuperAdminProductEmbeddings"),
 );
+const SuperAdminAIConsumption = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIConsumption"),
+);
 // Merchant AI Pages
 const AIHubLayout = React.lazy(
   () => import("./pages/admin/AIHubLayout"),
@@ -853,6 +856,12 @@ const BookingManagementPage = React.lazy(
 );
 const EducationManagementPage = React.lazy(
   () => import("./pages/admin/EducationManagementPage"),
+);
+const AIImageGenerator = React.lazy(
+  () => import("./pages/admin/AIImageGenerator"),
+);
+const BrandIdentitySettings = React.lazy(
+  () => import("./pages/admin/BrandIdentitySettings"),
 );
 const EducationFunnelPage = React.lazy(
   () => import("./pages/admin/EducationFunnelPage"),
@@ -1359,6 +1368,17 @@ const AppContent = () => {
   const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
 
   const [activeLpSlugs, setActiveLpSlugs] = useState<Set<string> | null>(null);
+
+  // Catch Vite dynamic-import failures when a redeploy deleted old chunks
+  // that a cached browser still references. Reload to get fresh index.html.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      window.location.reload();
+    };
+    window.addEventListener('vite:preloadError', handler);
+    return () => window.removeEventListener('vite:preloadError', handler);
+  }, []);
 
   useEffect(() => {
     fetch("/api/v1/public/lp-pages", { credentials: "include" })
@@ -1940,6 +1960,16 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminProductEmbeddings />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-consumption"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminAIConsumption />
+                  </React.Suspense>
                 </Layout>
               }
             />
@@ -6419,6 +6449,22 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <EducationManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-image-generator"
+                  element={
+                    <Layout fullWidth>
+                      <AIImageGenerator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/brand-identity"
+                  element={
+                    <Layout fullWidth>
+                      <BrandIdentitySettings />
                     </Layout>
                   }
                 />

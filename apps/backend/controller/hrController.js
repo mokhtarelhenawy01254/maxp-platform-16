@@ -156,7 +156,7 @@ async function updateMyProfile(req, res) {
       userUpdateData.firstName = allowedUpdates.firstName;
     if (allowedUpdates.lastName)
       userUpdateData.lastName = allowedUpdates.lastName;
-    if (allowedUpdates.phone) userUpdateData.phone = allowedUpdates.phone;
+    if (allowedUpdates.phone !== undefined) userUpdateData.phone = allowedUpdates.phone;
     if (allowedUpdates.timezone)
       userUpdateData.timezone = allowedUpdates.timezone;
 

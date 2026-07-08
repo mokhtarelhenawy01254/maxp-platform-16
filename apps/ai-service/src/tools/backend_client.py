@@ -580,6 +580,70 @@ class BackendClient:
     async def finalize_booking_draft(self, company_id: str, draft_id: str) -> dict[str, Any]:
         return await self._request("POST", f"/api/v1/booking/drafts/{draft_id}/finalize", json_body={"companyId": company_id})
 
+    # ── Booking Admin APIs (branches CRUD) ──
+
+    async def create_booking_branch(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/booking/branches", json_body={**data, "companyId": company_id})
+
+    async def update_booking_branch(self, company_id: str, branch_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("PUT", f"/api/v1/booking/branches/{branch_id}", json_body={**data, "companyId": company_id})
+
+    async def delete_booking_branch(self, company_id: str, branch_id: str) -> dict[str, Any]:
+        return await self._request("DELETE", f"/api/v1/booking/branches/{branch_id}", json_body={"companyId": company_id})
+
+    # ── Booking Admin APIs (doctors CRUD) ──
+
+    async def create_booking_doctor(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/booking/doctors", json_body={**data, "companyId": company_id})
+
+    async def update_booking_doctor(self, company_id: str, doctor_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("PUT", f"/api/v1/booking/doctors/{doctor_id}", json_body={**data, "companyId": company_id})
+
+    async def delete_booking_doctor(self, company_id: str, doctor_id: str) -> dict[str, Any]:
+        return await self._request("DELETE", f"/api/v1/booking/doctors/{doctor_id}", json_body={"companyId": company_id})
+
+    # ── Booking Admin APIs (services CRUD + toggle) ──
+
+    async def create_booking_service(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/booking/services", json_body={**data, "companyId": company_id})
+
+    async def update_booking_service(self, company_id: str, service_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("PUT", f"/api/v1/booking/services/{service_id}", json_body={**data, "companyId": company_id})
+
+    async def delete_booking_service(self, company_id: str, service_id: str) -> dict[str, Any]:
+        return await self._request("DELETE", f"/api/v1/booking/services/{service_id}", json_body={"companyId": company_id})
+
+    async def toggle_booking_service(self, company_id: str, service_id: str) -> dict[str, Any]:
+        return await self._request("PATCH", f"/api/v1/booking/services/{service_id}/toggle", json_body={"companyId": company_id})
+
+    # ── Booking Admin APIs (appointments management) ──
+
+    async def get_booking_appointments(
+        self, company_id: str, filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"companyId": company_id}
+        if filters:
+            params.update({k: v for k, v in filters.items() if v is not None})
+        result = await self._request("GET", "/api/v1/booking/appointments", params=params)
+        return result.get("data", [])
+
+    async def update_booking_appointment_status(
+        self, company_id: str, appointment_id: str, status: str, notes: str | None = None,
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {"companyId": company_id, "status": status}
+        if notes:
+            body["notes"] = notes
+        return await self._request("PUT", f"/api/v1/booking/appointments/{appointment_id}/status", json_body=body)
+
+    async def bulk_delete_booking_appointments(self, company_id: str, ids: list[str]) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/booking/appointments/bulk-delete", json_body={"companyId": company_id, "ids": ids})
+
+    # ── Booking Admin APIs (reports) ──
+
+    async def get_booking_reports_summary(self, company_id: str, period: str = "today") -> dict[str, Any]:
+        result = await self._request("GET", "/api/v1/booking/reports/summary", params={"companyId": company_id, "period": period})
+        return result.get("data", {})
+
 
 _backend_client: BackendClient | None = None
 

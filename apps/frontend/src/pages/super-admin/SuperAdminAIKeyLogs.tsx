@@ -93,12 +93,13 @@ function KeyLogsContent() {
     queryKey: ["super-admin", "companies"],
     queryFn: () => companyAwareApi.getAllCompanies(),
     staleTime: 300_000,
+    select: (res) => res.data?.data?.companies ?? [],
   });
 
   const companyNameMap = useMemo(() => {
-    if (!companies?.data) return {};
+    if (!Array.isArray(companies)) return {};
     const map: Record<string, string> = {};
-    for (const c of companies.data) map[c.id] = c.name;
+    for (const c of companies) map[c.id] = c.name;
     return map;
   }, [companies]);
 
