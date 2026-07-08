@@ -85,7 +85,6 @@ exports.generateImage = async (req, res) => {
     const result = response.data;
     let imageUrl = "";
     const msg = result?.choices?.[0]?.message;
-    if (msg) console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","), "images type:", typeof msg.images, "images isArray:", Array.isArray(msg.images));
     if (msg) {
       if (typeof msg.content === "string") {
         imageUrl = msg.content;
@@ -127,7 +126,6 @@ exports.generateImage = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ [AI-IMAGE] Generation failed:", error.message);
     const status = error.response?.status || 500;
     const detail = error.response?.data?.error?.message || error.message;
     return res.status(status).json({ success: false, message: detail });

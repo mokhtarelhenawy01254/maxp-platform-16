@@ -563,19 +563,19 @@ const AIImageGenerator: React.FC = () => {
         ...params,
       })
       .then((res) => {
-        if (res.data?.imageUrl) {
-          setImageUrl(res.data.imageUrl);
+        if (res.data?.data?.imageUrl) {
+          setImageUrl(res.data.data.imageUrl);
           toast.success("تم توليد الصورة بنجاح");
           setMessage({ type: "success", text: "تم توليد الصورة بنجاح" });
           fetchGallery();
         } else {
-          const text = res.data?.message || "لم يتم استلام الصورة من الموديل";
+          const text = res.data?.data?.message || res.data?.message || "لم يتم استلام الصورة من الموديل";
           toast.error(text);
           setMessage({ type: "error", text });
         }
       })
       .catch((err: any) => {
-        const text = err?.response?.data?.message || err.message || "فشل في توليد الصورة";
+        const text = err?.response?.data?.message || err?.response?.data?.data?.message || err.message || "فشل في توليد الصورة";
         toast.error(text);
         setMessage({ type: "error", text });
       })
@@ -617,18 +617,18 @@ const AIImageGenerator: React.FC = () => {
     setLoading(true);
     try {
       const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style });
-      if (res.data?.imageUrl) {
-        setImageUrl(res.data.imageUrl);
+      if (res.data?.data?.imageUrl) {
+        setImageUrl(res.data.data.imageUrl);
         toast.success("تم توليد الصورة بنجاح");
         setMessage({ type: "success", text: "تم توليد الصورة بنجاح" });
         fetchGallery();
       } else {
-        const text = res.data?.message || "لم يتم استلام الصورة من الموديل";
+        const text = res.data?.data?.message || res.data?.message || "لم يتم استلام الصورة من الموديل";
         toast.error(text);
         setMessage({ type: "error", text });
       }
     } catch (err: any) {
-      const text = err?.response?.data?.message || err.message || "فشل في توليد الصورة";
+      const text = err?.response?.data?.message || err?.response?.data?.data?.message || err.message || "فشل في توليد الصورة";
       toast.error(text);
       setMessage({ type: "error", text });
     } finally {
