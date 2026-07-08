@@ -90,10 +90,13 @@ exports.generateImage = async (req, res) => {
           n: 1,
           size: `${dims.width}x${dims.height}`,
         },
-        { headers, timeout: 120000 }
+        { headers, timeout: 180000 }
       );
       result = resp.data;
-      imageUrl = result?.data?.[0]?.url || "";
+      console.log("[AI-IMAGE-OPENAI] result keys:", Object.keys(result).join(","));
+      console.log("[AI-IMAGE-OPENAI] result sample:", JSON.stringify(result).slice(0, 3000));
+      imageUrl = result?.data?.[0]?.url || result?.url || "";
+      if (!imageUrl && Array.isArray(result?.data)) imageUrl = result.data[0].b64_json ? `data:image/png;base64,${result.data[0].b64_json}` : "";
     } else {
       const resp = await axios.post(
         `${OPENROUTER_BASE}/chat/completions`,
