@@ -86,7 +86,7 @@ export default function PricingStrategyCalculator() {
   const [scenarioName, setScenarioName] = useState("");
 
   useEffect(() => {
-    try { const d = localStorage.getItem(STORAGE_KEY); if (d) setSaved(JSON.parse(d)); } catch { }
+    try { const d = localStorage.getItem(STORAGE_KEY); if (d) setSaved(JSON.parse(d)); } catch { /* ignore */ }
   }, []);
 
   const persist = useCallback((list: SavedScenario[]) => {
@@ -103,6 +103,11 @@ export default function PricingStrategyCalculator() {
 
   const conversionRate = CURRENCY_RATES[currency] || 1;
   const fmtCurr = useCallback((v: number) => `${(v * conversionRate).toLocaleString("en-US", { maximumFractionDigits: 0 })} ${sym(currency)}`, [conversionRate, currency]);
+
+  const T = useCallback((k: string, vars?: Record<string, string | number>) => {
+    const key = `pricingStrategy.${k}`;
+    return vars ? t(key, vars) : t(key);
+  }, [t]);
 
   const r = useMemo(() => compute(inputs), [inputs]);
 
@@ -134,7 +139,7 @@ export default function PricingStrategyCalculator() {
     { name: T("shipping"), value: inputs.shipping, fill: "hsl(189 96% 52%)" },
     { name: T("packing"), value: inputs.packing, fill: "hsl(142 76% 36%)" },
     { name: T("adCost"), value: inputs.adCost, fill: "hsl(271 91% 65%)" },
-  ], [inputs, t]);
+  ], [inputs, T]);
 
   const maxCost = Math.max(...costBreakdownData.map(d => d.value), 1);
 
@@ -148,7 +153,7 @@ export default function PricingStrategyCalculator() {
     if (r.vsCompetitorPct < -25) M.push({ type: "info", msg: T("alertBelowCompetitor", { pct: Math.round(Math.abs(r.vsCompetitorPct)) }) });
     if (inputs.commissionPct > 10) M.push({ type: "info", msg: T("alertHighCommission") });
     return M;
-  }, [r, inputs, t]);
+  }, [r, inputs, T]);
 
   const recommendations = useMemo(() => {
     const R: { icon: React.ReactNode; title: string; desc: string }[] = [];
@@ -172,7 +177,7 @@ export default function PricingStrategyCalculator() {
       R.push({ icon: <ArrowTrendingUpIcon className="w-5 h-5 text-orange-500" />, title: T("recIncreaseMargin"), desc: T("recIncreaseMarginDesc", { current: r.markupPct.toFixed(1), target: (r.markupPct + 10).toFixed(1) }) });
     }
     return R;
-  }, [inputs, r, t, fmtCurr]);
+  }, [inputs, r, T, fmtCurr]);
 
   const saveScenario = () => {
     if (saved.length >= 3) return;
@@ -184,11 +189,6 @@ export default function PricingStrategyCalculator() {
 
   const loadScenario = (s: SavedScenario) => { setInputs({ ...s.inputs }); setCurrency(s.currency); };
   const deleteScenario = (id: string) => persist(saved.filter((s) => s.id !== id));
-
-  const T = (k: string, vars?: Record<string, string | number>) => {
-    const key = `pricingStrategy.${k}`;
-    return vars ? t(key, vars) : t(key);
-  };
 
   const Slider: React.FC<{
     label: string; value: number; min: number; max: number;
