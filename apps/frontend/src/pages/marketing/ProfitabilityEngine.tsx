@@ -73,7 +73,7 @@ function computeProfitability(inputs: Inputs): Results {
   const daysToBreakEven = ordersPerDay > 0 && isFinite(breakEvenOrders) ? Math.ceil(breakEvenOrders / ordersPerDay) : Infinity;
   const bevCAC = monthlyOrdersPlaced > 0 ? grossProfit / monthlyOrdersPlaced : 0;
   const safeCAC = bevCAC * 0.8;
-  const netBreakEvenCPP = monthlyOrdersPlaced > 0 ? (grossProfit + fixedCosts) / monthlyOrdersPlaced : bevCAC;
+  const netBreakEvenCPP = monthlyOrdersPlaced > 0 ? (revenue - totalVariableCost - fixedCosts) / monthlyOrdersPlaced : bevCAC;
   return { monthlyOrdersPlaced, ordersConfirmed, ordersDelivered, ordersRTO, revenue, variableCostDelivered, variableCostRTO, totalVariableCost, adSpend, grossProfit, grossProfitMargin, fixedCosts, netProfit, netProfitMargin, profitPerOrder, totalCosts, contributionPerOrder, breakEvenOrders, isAchievable, daysToBreakEven, bevCAC, safeCAC, netBreakEvenCPP };
 }
 
@@ -128,8 +128,8 @@ export default function ProfitabilityEngine() {
   const profitColor = results.netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
   const profitBg = results.netProfit >= 0 ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10" : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10";
 
-  const zoneKey = results.netBreakEvenCPP > 0
-    ? (inputs.cpp <= results.safeCAC ? "safe" : inputs.cpp <= results.netBreakEvenCPP ? "warning" : "danger")
+  const zoneKey = results.netProfit >= 0
+    ? (inputs.cpp <= results.safeCAC ? "safe" : "warning")
     : "danger";
 
   const waterfallData = useMemo(() => [
