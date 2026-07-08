@@ -321,7 +321,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
 
     tool_choice = getattr(ctx.agent.config, "tool_choice", None) if ctx.agent and hasattr(ctx.agent, "config") else None
-    if tool_choice == "required" and client and getattr(client, "_llm_client", None) and getattr(client._llm_client, "provider", None) == "DEEPSEEK":
+    if tool_choice == "required" and client and getattr(client, "provider", None) == "DEEPSEEK":
         tool_choice = None
     return await client.generate(
         messages=messages,
