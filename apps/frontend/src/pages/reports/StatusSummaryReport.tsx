@@ -66,13 +66,18 @@ interface ItemDetail {
   createdAt: string;
 }
 
-interface GroupedItem {
-  productName: string | null;
+interface GroupedVariation {
   productColor: string | null;
   productSize: string | null;
   quantity: number;
   total: number;
-  orders: { orderNumber: string; orderId: string }[];
+}
+
+interface GroupedItem {
+  productName: string | null;
+  quantity: number;
+  total: number;
+  variations: GroupedVariation[];
 }
 
 interface Pagination {
@@ -211,22 +216,37 @@ const StatusSummaryReport: React.FC = () => {
   const groupedItems = useMemo(() => {
     const groups = new Map<string, GroupedItem>();
     for (const item of inlineItems) {
-      const key = `${item.productName || ""}|${item.productColor || ""}|${item.productSize || ""}`;
+      const key = item.productName || "بدون اسم";
       if (groups.has(key)) {
         const g = groups.get(key)!;
         g.quantity += item.quantity;
         g.total += item.total;
-        if (!g.orders.find((o) => o.orderNumber === item.orderNumber)) {
-          g.orders.push({ orderNumber: item.orderNumber, orderId: item.orderId });
+        
+        const varKey = `${item.productColor || ""}|${item.productSize || ""}`;
+        const existingVar = g.variations.find(v => `${v.productColor || ""}|${v.productSize || ""}` === varKey);
+        
+        if (existingVar) {
+          existingVar.quantity += item.quantity;
+          existingVar.total += item.total;
+        } else {
+          g.variations.push({
+            productColor: item.productColor,
+            productSize: item.productSize,
+            quantity: item.quantity,
+            total: item.total,
+          });
         }
       } else {
         groups.set(key, {
-          productName: item.productName,
-          productColor: item.productColor,
-          productSize: item.productSize,
+          productName: item.productName || "بدون اسم",
           quantity: item.quantity,
           total: item.total,
-          orders: [{ orderNumber: item.orderNumber, orderId: item.orderId }],
+          variations: [{
+            productColor: item.productColor,
+            productSize: item.productSize,
+            quantity: item.quantity,
+            total: item.total,
+          }],
         });
       }
     }
@@ -589,17 +609,15 @@ const StatusSummaryReport: React.FC = () => {
                                   <thead>
                                     <tr className="sticky top-0 z-10 border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المنتج</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">اللون</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المقاس</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">عدد الألوان/المقاسات</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الكمية الكلية</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">عدد الطلبات</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {groupedItems.map((group, idx) => {
-                                      const groupKey = `${group.productName || ""}|${group.productColor || ""}|${group.productSize || ""}|${idx}`;
+                                      const groupKey = `${group.productName || ""}|${idx}`;
                                       const isExpanded = expandedGroups.has(groupKey);
                                       return (
                                         <React.Fragment key={groupKey}>
@@ -613,23 +631,9 @@ const StatusSummaryReport: React.FC = () => {
                                                 {group.productName || "—"}
                                               </span>
                                             </td>
-                                            <td className="px-4 py-3">
-                                              {group.productColor ? (
-                                                <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-sm text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                                  {group.productColor}
-                                                </span>
-                                              ) : "—"}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                              {group.productSize ? (
-                                                <span className="inline-flex rounded-md bg-blue-50 px-2 py-0.5 text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                                  {group.productSize}
-                                                </span>
-                                              ) : "—"}
-                                            </td>
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatNumber(group.variations.length)}</td>
                                             <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">{formatNumber(group.quantity)}</td>
                                             <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(group.total)}</td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatNumber(group.orders.length)}</td>
                                             <td className="px-4 py-3">
                                               <button
                                                 type="button"
@@ -639,58 +643,47 @@ const StatusSummaryReport: React.FC = () => {
                                                 }}
                                                 className="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
                                               >
-                                                {isExpanded ? "إخفاء" : "عرض الطلبات"}
+                                                {isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
                                               </button>
                                             </td>
                                           </tr>
                                           {isExpanded && (
                                             <tr className="bg-gray-50/50 dark:bg-gray-800/50">
-                                              <td colSpan={7} className="p-0">
+                                              <td colSpan={5} className="p-0">
                                                 <div className="border-b border-gray-100 bg-gray-50/30 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/30">
                                                   <table className="w-full text-right text-xs">
                                                     <thead>
                                                       <tr className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                                                        <th className="px-3 py-2 font-semibold">رقم الطلب</th>
-                                                        <th className="px-3 py-2 font-semibold">الكمية</th>
-                                                        <th className="px-3 py-2 font-semibold">سعر الوحدة</th>
+                                                        <th className="px-3 py-2 font-semibold">اللون</th>
+                                                        <th className="px-3 py-2 font-semibold">المقاس</th>
+                                                        <th className="px-3 py-2 font-semibold">الكمية المطلوبة</th>
                                                         <th className="px-3 py-2 font-semibold">الإجمالي</th>
-                                                        <th className="px-3 py-2 font-semibold">التاريخ</th>
-                                                        <th className="px-3 py-2 font-semibold">فتح</th>
                                                       </tr>
                                                     </thead>
                                                     <tbody>
-                                                      {inlineItems
-                                                        .filter(
-                                                          (item) =>
-                                                            (item.productName || "") === (group.productName || "") &&
-                                                            (item.productColor || "") === (group.productColor || "") &&
-                                                            (item.productSize || "") === (group.productSize || "")
-                                                        )
-                                                        .map((item, iidx) => (
-                                                          <tr
-                                                            key={`${item.itemId}-${iidx}`}
-                                                            onClick={() => navigate(`/orders/${item.orderNumber}`)}
-                                                            className="cursor-pointer border-t border-gray-100 transition-colors hover:bg-indigo-50/30 dark:border-gray-700/30 dark:hover:bg-indigo-900/10"
-                                                          >
-                                                            <td className="px-3 py-2 font-medium text-indigo-600 dark:text-indigo-400">{item.orderNumber}</td>
-                                                            <td className="px-3 py-2 font-bold text-gray-900 dark:text-gray-100">{item.quantity}</td>
-                                                            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{formatEGP(item.price)}</td>
-                                                            <td className="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">{formatEGP(item.total)}</td>
-                                                            <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{item.createdAt ? formatDate(item.createdAt) : "—"}</td>
-                                                            <td className="px-3 py-2">
-                                                              <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation();
-                                                                  navigate(`/orders/${item.orderNumber}`);
-                                                                }}
-                                                                className="text-teal-600 hover:text-teal-800 hover:underline dark:text-teal-400 dark:hover:text-teal-300"
-                                                              >
-                                                                فتح
-                                                              </button>
-                                                            </td>
-                                                          </tr>
-                                                        ))}
+                                                      {group.variations.map((v, vidx) => (
+                                                        <tr
+                                                          key={vidx}
+                                                          className="border-t border-gray-100 transition-colors hover:bg-indigo-50/30 dark:border-gray-700/30 dark:hover:bg-indigo-900/10"
+                                                        >
+                                                          <td className="px-3 py-2">
+                                                            {v.productColor ? (
+                                                              <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                                                {v.productColor}
+                                                              </span>
+                                                            ) : "—"}
+                                                          </td>
+                                                          <td className="px-3 py-2">
+                                                            {v.productSize ? (
+                                                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-0.5 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                                {v.productSize}
+                                                              </span>
+                                                            ) : "—"}
+                                                          </td>
+                                                          <td className="px-3 py-2 font-bold text-gray-900 dark:text-gray-100">{v.quantity}</td>
+                                                          <td className="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">{formatEGP(v.total)}</td>
+                                                        </tr>
+                                                      ))}
                                                     </tbody>
                                                   </table>
                                                 </div>
