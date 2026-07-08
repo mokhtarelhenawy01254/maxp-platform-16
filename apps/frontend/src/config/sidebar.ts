@@ -840,6 +840,7 @@ export const getSidebarConfig = (
                 { to: '/advertising/facebook-ads/audiences', icon: UserGroupIcon, label: t('sidebar.audiences') },
                 { to: '/advertising/facebook-ads/catalogs', icon: ShoppingBagIcon, label: t('sidebar.productCatalogs') },
                 { to: '/tools/break-even', icon: CalculatorIcon, label: t('sidebar.projectBreakEven') },
+                { to: '/tools/product-break-even', icon: CurrencyDollarIcon, label: t('sidebar.productBreakEven') },
                 { to: '/tools/profitability-engine', icon: CalculatorIcon, label: t('sidebar.profitabilityEngine') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل

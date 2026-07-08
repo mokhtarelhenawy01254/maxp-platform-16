@@ -83,6 +83,9 @@ const CampaignPredictionCalculator = React.lazy(
 const ProjectBreakEvenCalculator = React.lazy(
   () => import("./pages/marketing/ProjectBreakEvenCalculator"),
 );
+const ProductBreakEvenCalculator = React.lazy(
+  () => import("./pages/marketing/ProductBreakEvenCalculator"),
+);
 const ProfitabilityEngine = React.lazy(
   () => import("./pages/marketing/ProfitabilityEngine"),
 );
@@ -2569,6 +2572,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ProjectBreakEvenCalculator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/product-break-even"
+                  element={
+                    <Layout>
+                      <ProductBreakEvenCalculator />
                     </Layout>
                   }
                 />
