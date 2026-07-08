@@ -71,60 +71,67 @@ exports.generateImage = async (req, res) => {
         ]
       : prompt;
 
-    const response = await axios.post(
-      `${OPENROUTER_BASE}/chat/completions`,
-      {
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
-        extra_body: { response_format: { type: "image" } },
-        ...(dims ? { width: dims.width, height: dims.height } : {}),
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "HTTP-Referer": "https://maxp.online",
-          "X-Title": "MaxP Social Image Generator",
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "https://maxp.online",
+      "X-Title": "MaxP Social Image Generator",
+    };
+
+    let result, imageUrl = "";
+
+    const isOpenAIModel = model.startsWith("openai/");
+
+    if (isOpenAIModel) {
+      const resp = await axios.post(
+        `${OPENROUTER_BASE}/images/generations`,
+        {
+          model,
+          prompt,
+          n: 1,
+          size: `${dims.width}x${dims.height}`,
         },
-        timeout: 120000,
-      }
-    );
-
-    const result = response.data;
-    console.log("[AI-IMAGE] result keys:", Object.keys(result).join(","));
-    const msg = result?.choices?.[0]?.message;
-    if (msg) {
-      console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","));
-      console.log("[AI-IMAGE] msg.images:", JSON.stringify(msg.images).slice(0, 300));
-      console.log("[AI-IMAGE] msg sample:", JSON.stringify(Object.fromEntries(Object.entries(msg).filter(([k]) => k !== "reasoning_details"))).slice(0, 2000));
-    }
-    let imageUrl = "";
-
-    if (msg?.images) {
-      const imgArr = Array.isArray(msg.images) ? msg.images : Object.values(msg.images);
-      for (const img of imgArr) {
-        if (typeof img === "string") { imageUrl = img; break; }
-        if (img?.image_url?.url) { imageUrl = img.image_url.url; break; }
-        if (img?.url) { imageUrl = img.url; break; }
-      }
-    }
-
-    if (!imageUrl && msg?.content) {
-      if (typeof msg.content === "string") {
-        const c = msg.content.trim();
-        if (c.startsWith("data:image/") || c.startsWith("http")) imageUrl = c;
-        else { const m = c.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/); if (m) imageUrl = m[1]; }
-      } else if (Array.isArray(msg.content)) {
-        for (const part of msg.content) {
-          if (part.type === "image_url") { imageUrl = part.image_url?.url; break; }
+        { headers, timeout: 120000 }
+      );
+      result = resp.data;
+      imageUrl = result?.data?.[0]?.url || "";
+    } else {
+      const resp = await axios.post(
+        `${OPENROUTER_BASE}/chat/completions`,
+        {
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
+          extra_body: { response_format: { type: "image" } },
+          ...(dims ? { width: dims.width, height: dims.height } : {}),
+        },
+        { headers, timeout: 120000 }
+      );
+      result = resp.data;
+      const msg = result?.choices?.[0]?.message;
+      if (msg?.images) {
+        const imgArr = Array.isArray(msg.images) ? msg.images : Object.values(msg.images);
+        for (const img of imgArr) {
+          if (typeof img === "string") { imageUrl = img; break; }
+          if (img?.image_url?.url) { imageUrl = img.image_url.url; break; }
+          if (img?.url) { imageUrl = img.url; break; }
         }
       }
+      if (!imageUrl && msg?.content) {
+        if (typeof msg.content === "string") {
+          const c = msg.content.trim();
+          if (c.startsWith("data:image/") || c.startsWith("http")) imageUrl = c;
+          else { const m = c.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/); if (m) imageUrl = m[1]; }
+        } else if (Array.isArray(msg.content)) {
+          for (const part of msg.content) {
+            if (part.type === "image_url") { imageUrl = part.image_url?.url; break; }
+          }
+        }
+      }
+      if (!imageUrl && msg?.image_url?.url) imageUrl = msg.image_url.url;
+      if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     }
-
-    if (!imageUrl && msg?.image_url?.url) imageUrl = msg.image_url.url;
-    if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
 
     if (!imageUrl) {
       return res.status(200).json({ success: true, data: { imageUrl: "", model: result?.model || model, usage: result?.usage || null } });
