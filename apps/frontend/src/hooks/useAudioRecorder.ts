@@ -60,11 +60,19 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         chunksRef.current = [];
         setMediaBlobUrl(url);
         setStatus("stopped");
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+          mediaStreamRef.current = null;
+        }
       };
 
       recorder.onerror = () => {
         setError("recorder_error");
         setStatus("error");
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+          mediaStreamRef.current = null;
+        }
       };
 
       recorder.start();
@@ -73,6 +81,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       const name = err instanceof DOMException ? err.name : "unknown";
       setError(name);
       setStatus("error");
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+      }
     }
   };
 
@@ -80,9 +92,6 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       setStatus("stopping");
       mediaRecorderRef.current.stop();
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
     }
   };
 

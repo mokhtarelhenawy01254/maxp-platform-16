@@ -85,6 +85,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
         variant="ghost"
         size="icon-sm"
         onClick={onCancel}
+        disabled={isSending}
         className="rounded-full text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
       >
         <Trash2 className="size-4" />
@@ -115,10 +116,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
 
       <Button
         onClick={() => {
+          if (recordingTime < 1) return;
           setIsSending(true);
           stopRecording();
         }}
-        disabled={status !== "recording"}
+        disabled={status !== "recording" || recordingTime < 1 || isSending}
         className="rounded-full"
       >
         <Send className="size-4" />

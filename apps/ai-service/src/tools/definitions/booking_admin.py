@@ -172,6 +172,8 @@ async def booking_services_list(input_data: ListServicesInput) -> dict[str, Any]
 
 async def booking_service_create(input_data: CreateServiceInput) -> dict[str, Any]:
     data = input_data.model_dump(exclude={"company_id"}, exclude_none=True)
+    if data.get("branches") and isinstance(data["branches"], list):
+        data["branches"] = [{"branchId": b} if isinstance(b, str) else b for b in data["branches"]]
     return await booking_admin_tools.create_service(input_data.company_id, data)
 
 async def booking_service_update(input_data: UpdateServiceInput) -> dict[str, Any]:

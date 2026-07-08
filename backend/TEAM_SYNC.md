@@ -1,5 +1,11 @@
 # Team Sync Updates
 
+## 2026-07-08 / 2026-03-09
+- **WhatsApp Voice Note Truncated to 1-Second / Silent Message (FIX)**: Fixed a critical bug where recorded WhatsApp voice notes were sent as empty/silent 1-second messages.
+  1. **Frontend Stream Lifecycle Fix**: In `useAudioRecorder.ts`, moved track stopping logic from `stopRecording` into `onstop` and `onerror` handlers, preventing stream termination before the MediaRecorder completes encoding.
+  2. **Backend FFmpeg Timing Restoration**: In `WhatsAppMediaHandler.js`, added `-fflags +genpts` before `-i` in the FFmpeg Ogg conversion command to force regeneration of presentation timestamps for WebM files (which lack duration headers).
+  3. **Payload Size & Duration Validations**: Added validation to block empty/small uploads (<500 bytes) on both frontend and backend, and disabled the frontend send button if the recording duration is under 1 second (`recordingTime < 1`).
+
 ## 2026-07-07 / 2026-03-09
 - **reportWebVitals Adblocker Crash Loop Fix (FIX)**: Fixed an infinite refresh/redirect loop (`?__maxp_cache_recovery=...`) affecting public storefronts (like `swan.maxp.online`) for users using adblockers (Safari content blockers, uBlock Origin, etc.). Removed the dynamic import of `reportWebVitals` from `apps/frontend/src/main.tsx` which was blocked by adblockers and triggered a critical chunk load error. The dynamic import was safe to remove as the reporting code was commented out in production anyway.
 
