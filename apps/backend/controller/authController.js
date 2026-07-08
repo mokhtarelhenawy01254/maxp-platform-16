@@ -188,8 +188,8 @@ const register = async (req, res) => {
         businessSpecialty: selectedSpecialty?.id
           ? { connect: { id: selectedSpecialty.id } }
           : undefined,
-        registrationIp,
-        registrationUserAgent,
+        registration_ip: registrationIp,
+        registration_user_agent: registrationUserAgent,
       }
     });
 
