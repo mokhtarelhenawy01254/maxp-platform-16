@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Cog6ToothIcon,
   CreditCardIcon,
+  UserIcon,
+  GlobeAltIcon,
+  ShoppingBagIcon,
   ShieldCheckIcon,
+  Bars3Icon,
 } from "@heroicons/react/24/outline";
 
 import { getApiUrl } from "../../config/environment";
@@ -21,12 +25,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 interface SettingsTab {
   id: string;
   name: string;
+  icon: React.ComponentType<{ className?: string }>;
   component: React.ComponentType;
 }
 
@@ -63,12 +69,11 @@ const Settings: React.FC = () => {
   const { tab } = useParams<{ tab?: string }>();
 
   const tabs: SettingsTab[] = [
-    { id: "profile", name: "الملف الشخصي", component: ProfileSettings },
-    { id: "custom-domain", name: "الدومين المخصص", component: CustomDomainPage },
-    { id: "store", name: "إعدادات المتجر", component: StoreSettingsRedirect },
-    { id: "security", name: "الأمان", component: SecuritySettings },
-
-    { id: "sidebar", name: "القائمة الجانبية", component: SidebarSettings },
+    { id: "profile", name: "الملف الشخصي", icon: UserIcon, component: ProfileSettings },
+    { id: "custom-domain", name: "الدومين المخصص", icon: GlobeAltIcon, component: CustomDomainPage },
+    { id: "store", name: "إعدادات المتجر", icon: ShoppingBagIcon, component: StoreSettingsRedirect },
+    { id: "security", name: "الأمان", icon: ShieldCheckIcon, component: SecuritySettings },
+    { id: "sidebar", name: "القائمة الجانبية", icon: Bars3Icon, component: SidebarSettings },
   ];
 
   const validTabIds = tabs.map((item) => item.id);
@@ -112,7 +117,23 @@ const Settings: React.FC = () => {
         </button>
       </div>
 
-      <div className="rounded-3xl border border-border bg-card">
+      <div className="rounded-3xl border border-border bg-card overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(val) => navigate(`/settings/${val}`)}>
+          <div className="border-b border-border">
+            <TabsList variant="line" className="w-full justify-start rounded-none bg-transparent p-0 h-auto">
+              {tabs.map((t) => (
+                <TabsTrigger
+                  key={t.id}
+                  value={t.id}
+                  className="data-active:text-primary relative rounded-none px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent after:transition-colors data-active:after:bg-primary data-active:after:opacity-100"
+                >
+                  <t.icon className="ml-2 size-4" />
+                  {t.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        </Tabs>
         <ActiveComponent />
       </div>
     </div>
@@ -135,6 +156,7 @@ const ProfileSettings: React.FC = () => {
     timezone: "Africa/Cairo",
     language: "ar",
   });
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,6 +182,17 @@ const ProfileSettings: React.FC = () => {
       }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, []);
 
   const handleFieldChange =
@@ -224,11 +257,21 @@ const ProfileSettings: React.FC = () => {
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <div className="h-10 w-32 animate-pulse rounded-lg bg-muted" />
+          </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="profile-first-name">الاسم الأول</Label>

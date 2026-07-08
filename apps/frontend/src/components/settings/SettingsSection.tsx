@@ -54,20 +54,20 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
                         <div className="flex items-center gap-2">
                             <h3
                                 className={joinClasses(
-                                    "text-lg font-semibold text-gray-900 dark:text-white",
+                                    "text-lg font-semibold text-foreground",
                                     titleClassName,
                                 )}
                             >
                                 {title}
                             </h3>
                             {badgeText ? (
-                                <span className="inline-flex items-center rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:bg-white/10 dark:text-gray-300">
+                                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     {badgeText}
                                 </span>
                             ) : null}
                         </div>
                         {helperText ? (
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <p className="mt-1 text-xs text-muted-foreground">
                                 {helperText}
                             </p>
                         ) : null}
@@ -81,7 +81,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
                             onChange={(e) => onToggle(e.target.checked)}
                             className="sr-only peer"
                         />
-                                <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                 )}
             </div>

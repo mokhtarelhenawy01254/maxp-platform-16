@@ -34,11 +34,11 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h2 className="text-2xl font-bold text-foreground">
                         {title}
                     </h2>
                     {description && (
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             {description}
                         </p>
                     )}
@@ -47,7 +47,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
                     <button
                         onClick={onReset}
                         disabled={saving}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 transition-all"
+                        className="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-md text-muted-foreground bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 transition-all"
                     >
                         <ArrowPathIcon className="h-4 w-4 ml-2" />
                         إعادة تعيين
