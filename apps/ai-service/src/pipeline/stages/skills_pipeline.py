@@ -13,7 +13,6 @@ from src.pipeline.context import PipelineContext
 from src.pipeline.provider_errors import provider_error_result
 from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta, get_skills_block
 from src.skills.registry import get_skill_registry
-from src.tools.registry import ALL_TOOLS
 
 logger = structlog.get_logger(__name__)
 
@@ -107,31 +106,20 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             else:
                 arguments = arguments_str
 
-            skill = registry.get(func_name)
-            if not skill:
-                # Fallback: try native tool definitions
-                tool = ALL_TOOLS.get(func_name)
-                if tool:
-                    if ctx.company_id and "company_id" not in arguments:
-                        arguments = {**arguments, "company_id": ctx.company_id}
-                    try:
-                        validated = tool.input_model(**arguments)
-                        result = await tool.func(validated)
-                        return {"tool": func_name, "status": "success", "result": result}
-                    except Exception as e:
-                        logger.error("tool_execution_failed", name=func_name, error=str(e))
-                        return {"tool": func_name, "status": "error", "error": str(e)}
-                logger.warning("unknown_skill_called", name=func_name)
+            tool = registry.resolve(func_name)
+            if not tool:
+                logger.warning("unknown_tool_called", name=func_name)
                 return {"tool": func_name, "status": "unknown"}
 
             if ctx.company_id and "company_id" not in arguments:
                 arguments = {**arguments, "company_id": ctx.company_id}
 
             try:
-                result = await skill.execute(**arguments)
+                validated = tool.input_model(**arguments)
+                result = await tool.func(validated)
                 return {"tool": func_name, "status": "success", "result": result}
             except Exception as e:
-                logger.error("skill_execution_failed", name=func_name, error=str(e))
+                logger.error("tool_execution_failed", name=func_name, error=str(e))
                 return {"tool": func_name, "status": "error", "error": str(e)}
 
         results = await asyncio.gather(*[_execute_one(tc) for tc in provider_response.tool_calls])
@@ -150,8 +138,10 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             skill_names = {s.name.lower() for s in skills}
             for tool_name in (getattr(ctx.agent, "allowed_tools", None) or []):
                 tn = tool_name.lower()
-                if tn not in skill_names and tn in ALL_TOOLS:
-                    tool_dicts.append(ALL_TOOLS[tn].to_json_schema_spec())
+                if tn not in skill_names:
+                    tool = registry.resolve(tn)
+                    if tool:
+                        tool_dicts.append(tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec') else {"type": "function", "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}})
             retry_response = await _raw_llm_call(ctx, retry_messages, tools=tool_dicts)
             if retry_response.tool_calls:
                 retry_results = await asyncio.gather(*[_execute_one(tc) for tc in retry_response.tool_calls])
@@ -289,14 +279,23 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
     for tool_name in allowed:
         tname = tool_name.lower()
-        if tname not in skill_names and tname in ALL_TOOLS:
-            tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
+        if tname not in skill_names:
+            tool = registry.resolve(tname)
+            if tool:
+                tool_dicts.append(tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec') else {
+                    "type": "function",
+                    "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}
+                })
 
     tool_choice = None
     if ctx.agent and hasattr(ctx.agent, "config"):
         agent_tc = getattr(ctx.agent.config, "tool_choice", None) or getattr(ctx.agent.config, "config", {}).get("toolChoice")
         if agent_tc:
             tool_choice = agent_tc
+
+    provider = (getattr(client, "provider", None) or "").upper()
+    if tool_choice == "required" and provider == "DEEPSEEK":
+        tool_choice = None
 
     return await client.generate(
         messages=messages,
@@ -365,15 +364,18 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 
 
 def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
-    from src.tools.registry import ALL_TOOLS
+    from src.skills.registry import get_skill_registry
+    registry = get_skill_registry()
     tool_dicts = []
-    used_names = set()
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
     for tool_name in allowed:
         tname = tool_name.lower()
-        if tname in ALL_TOOLS:
-            tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
-            used_names.add(tname)
+        tool = registry.resolve(tname)
+        if tool:
+            tool_dicts.append(
+                tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
+                else {"type": "function", "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}}
+            )
     return tool_dicts
 
 

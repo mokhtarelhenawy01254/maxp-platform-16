@@ -8,6 +8,7 @@ from agent_framework import FunctionInvocationContext, FunctionTool
 
 from src.mcp_integration.registry import get_mcp_registry
 from src.skills.integration import SKILL_TOOLS, get_skill_tool_names
+from src.skills.registry import get_skill_registry
 from src.tools.names import canonical_tool_name
 
 # -- Auto-discovery ----------------------------------------------------------
@@ -45,11 +46,13 @@ def _discover_domain_tools() -> list[FunctionTool]:
 
 _ALL_DOMAIN_TOOLS = _discover_domain_tools()
 
-# -- Build ALL_TOOLS dict ----------------------------------------------------
+# -- Build ALL_TOOLS dict + register in SkillRegistry -----------------------
 
 ALL_TOOLS: dict[str, FunctionTool] = {}
+_registry = get_skill_registry()
 for _t in _ALL_DOMAIN_TOOLS + list(SKILL_TOOLS):
     ALL_TOOLS[_t.name] = _t
+    _registry.register_tool(_t)
 
 # -- Tool groupings (name-based, resolved from ALL_TOOLS) ---------------------
 
@@ -133,14 +136,14 @@ def _resolve_tool_set(names: set[str]) -> list[FunctionTool]:
     return resolved
 
 
-# Set approval modes on write tools
+# Set approval modes on write tools (via registry for unified lookup)
 for _name in WRITE_TOOL_NAMES:
-    _tool = ALL_TOOLS.get(_name)
+    _tool = _registry.resolve(_name)
     if _tool:
         _tool.approval_mode = "always_require"
 
 for _name in DIRECT_WRITE_TOOL_NAMES:
-    _tool = ALL_TOOLS.get(_name)
+    _tool = _registry.resolve(_name)
     if _tool:
         _tool.approval_mode = "never_require"
 
@@ -339,7 +342,7 @@ def get_write_tools() -> list[FunctionTool]:
 
 def get_all_tools() -> list[FunctionTool]:
     from src.tools.manager_tools import get_manager_tools
-    return list(ALL_TOOLS.values()) + get_manager_tools() + get_mcp_tools()
+    return _registry.get_all_tools() + get_manager_tools() + get_mcp_tools()
 
 
 def get_tool(name: str) -> FunctionTool | None:
