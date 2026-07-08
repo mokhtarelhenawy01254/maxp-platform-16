@@ -185,7 +185,9 @@ const register = async (req, res) => {
         isActive: true,
         sidebarLayout: 'three-tier',
         timezone: userTimezone,
-        businessSpecialtyId: selectedSpecialty?.id || null,
+        businessSpecialty: selectedSpecialty?.id
+          ? { connect: { id: selectedSpecialty.id } }
+          : undefined,
         registrationIp,
         registrationUserAgent,
       }
