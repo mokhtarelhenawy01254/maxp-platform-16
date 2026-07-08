@@ -125,11 +125,11 @@ DIRECT_WRITE_TOOL_NAMES: set[str] = {
 
 
 def _resolve_tool_set(names: set[str]) -> list[FunctionTool]:
-    """Resolve a set of tool names to FunctionTool instances from ALL_TOOLS."""
+    """Resolve a set of tool names to FunctionTool instances via registry."""
     resolved: list[FunctionTool] = []
     seen: set[str] = set()
     for name in names:
-        tool = ALL_TOOLS.get(name)
+        tool = _registry.resolve(name)
         if tool and tool.name not in seen:
             resolved.append(tool)
             seen.add(tool.name)
@@ -302,8 +302,7 @@ def get_tools_for_role(role: str) -> list[FunctionTool]:
     role_upper = role.upper()
     tool_names = ROLE_TOOLS.get(role_upper)
     if tool_names is not None:
-        return [ALL_TOOLS[n] for n in tool_names if n in ALL_TOOLS]
-    # Unknown role: grant only core read tools as a safe default
+        return [t for n in tool_names if (t := _registry.resolve(n)) is not None]
     return list(CORE_TOOLS)
 
 
@@ -325,7 +324,7 @@ def resolve_tools_from_names(names: list[str]) -> list[FunctionTool]:
     seen: set[str] = set()
     for name in names:
         canonical = canonical_tool_name(name)
-        tool = ALL_TOOLS.get(canonical)
+        tool = _registry.resolve(canonical)
         if tool and tool.name not in seen:
             resolved.append(tool)
             seen.add(tool.name)
@@ -346,7 +345,7 @@ def get_all_tools() -> list[FunctionTool]:
 
 
 def get_tool(name: str) -> FunctionTool | None:
-    return ALL_TOOLS.get(canonical_tool_name(name))
+    return _registry.resolve(canonical_tool_name(name))
 
 
 async def _mcp_gateway_placeholder(input_data: dict[str, Any]) -> dict[str, Any]:
