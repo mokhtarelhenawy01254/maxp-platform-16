@@ -320,10 +320,12 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         if tname not in skill_names and tname in ALL_TOOLS:
             tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
 
+    tool_choice = getattr(ctx.agent.config, "tool_choice", None) if ctx.agent and hasattr(ctx.agent, "config") else None
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
         temperature=0.3,
+        tool_choice=tool_choice,
     )
 
 
