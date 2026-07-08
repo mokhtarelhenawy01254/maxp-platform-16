@@ -44,6 +44,7 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
   const updatePayload = {
     pushName: pushName || undefined,
     lastMessageAt: new Date(),
+    lastCustomerMessageAt: isOutgoing ? undefined : new Date(),
     totalMessages: { increment: 1 },
     unreadCount: isOutgoing ? undefined : { increment: 1 },
     updatedAt: new Date()
@@ -57,6 +58,7 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
     phoneNumber,
     pushName,
     lastMessageAt: new Date(),
+    lastCustomerMessageAt: isOutgoing ? undefined : new Date(),
     totalMessages: 1,
     unreadCount: isOutgoing ? 0 : 1,
     isGroup: normalizedJid?.endsWith('@g.us') || false,
@@ -285,6 +287,7 @@ async function saveIncomingMessage(payload) {
         accumulateWA(syncedCustomer.companyId, sessionId, normalizedJid, {
           message: content,
           customerId: syncedCustomer.id,
+          customerPhone: syncedCustomer?.phone || normalizedJid.split('@')[0],
           conversationId: syncedConversation?.id,
           companyId: syncedCustomer.companyId,
           sessionId,
@@ -297,12 +300,35 @@ async function saveIncomingMessage(payload) {
 
           console.log(`🟢 [WA-DEBOUNCE] Processing ${entries.length} debounced message(s) as one request`);
 
+          // ponytail: admin routing — match sender phone against company admin users
+          let channel = 'WHATSAPP';
+          try {
+            const senderPhone = (first.customerPhone || first.normalizedJid.split('@')[0]).replace(/\D/g, '');
+            const adminUsers = await prisma.user.findMany({
+              where: { companyId: first.companyId, role: { in: ['OWNER', 'COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
+              select: { phone: true },
+              take: 20,
+            });
+            const adminPhones = adminUsers.map(u => {
+              const p = u.phone.replace(/\D/g, '');
+              return p.startsWith('0') ? '20' + p.slice(1) : p;
+            }).filter(Boolean);
+            if (adminPhones.includes(senderPhone)) {
+              channel = 'WHATSAPP_ADMIN';
+              console.log(`🔵 [WA-DEBOUNCE] Sender ${senderPhone} is admin → routing to WHATSAPP_ADMIN`);
+            } else {
+              console.log(`⚪ [WA-DEBOUNCE] Sender ${senderPhone} not in admin users → WHATSAPP`);
+            }
+          } catch (e) {
+            console.warn('⚠️ [WA-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);
+          }
+
           const result = await aiSdkClient.sendChatMessage({
             companyId: first.companyId,
             customerId: first.customerId,
             message: combinedMessage,
             threadId: first.conversationId,
-            channel: 'WHATSAPP',
+            channel,
             memoryContext: null,
           });
 

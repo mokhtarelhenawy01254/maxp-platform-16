@@ -53,6 +53,18 @@ class AgentTemplate(Base):
 
     agents: Mapped[list["Agent"]] = relationship("Agent", back_populates="template")
 
+    @property
+    def soul(self) -> str | None:
+        return self.instructions_soul
+
+    @property
+    def rules(self) -> str | None:
+        return self.instructions_agents
+
+    @property
+    def persona(self) -> dict[str, Any]:
+        return self.persona_meta
+
 
 class Agent(Base):
     """Unified agent model — the single source of truth for runtime agent
@@ -93,6 +105,7 @@ class Agent(Base):
     model: Mapped[str | None] = mapped_column(String(200), nullable=True)
     model_policy: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     persona: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    custom_instructions: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     allowed_tools: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     allowed_skills: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     channels: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True, default=list)

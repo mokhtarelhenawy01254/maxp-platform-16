@@ -1,5 +1,80 @@
 # Latest Updates
 
+## 2026-07-08: AI Image Generator — Image Upload + Model Fixes
+
+### Fix 1: `res.data.data.imageUrl` Nesting Bug
+- **Issue**: Frontend checked `res.data?.imageUrl` but backend returns `{ success: true, data: { imageUrl } }` → nested under `data.data.imageUrl`
+- **Fix**: Changed all response reads to `res.data?.data?.imageUrl`, error reads to `res.data?.data?.message || res.data?.message`
+- **Files**: `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
+
+### Fix 2: `msg.images` Null Handling
+- **Issue**: `Array.isArray(null)` returns `false`, skipping extraction of images from OpenRouter response
+- **Fix**: Changed guard from `Array.isArray(msg.images)` to truthy check + `Object.values` fallback
+- **Files**: `apps/backend/controller/aiImageController.js`
+
+### Fix 3: Image In URL Extraction — `msg.images` Null
+- **Issue**: OpenRouter Gemini Flash Image returns `msg.images` as null but image data embedded elsewhere
+- **Fix**: Added `Object.values(msg.images)` fallback when `Array.isArray` is false but `msg.images` is truthy
+- **Files**: `apps/backend/controller/aiImageController.js`
+
+### New Feature: Product Image Upload to OpenRouter
+- **Issue**: User uploads product image but backend ignores it, AI invents product
+- **Fix**:
+  - **Backend**: Accepts `productImage` (base64 data URL), sends as `image_url` content part in user message, system prompt instructs to use reference image
+  - **Frontend**: Converts `primaryImage` File to base64 via FileReader, sends as `productImage` in POST body
+- **Files**: `apps/backend/controller/aiImageController.js`, `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
+
+### Deploy History
+- Commit `410e3efa` → Run #448 ✅ (gallery UX)
+- Commit `d2830c2f` → Run #452 ❌ cancelled, fixed in #454 ✅ (msg.images null guard)
+- Commit `3dbe3b05` → Run #459 ✅ (frontend nesting fix)
+- Commit `bb2c4af5` → Run #461 ✅ (product image upload)
+
+## 2026-07-08: AI Image Generator — Full UX + Gallery
+
+### New Features
+- **Image Gallery** — grid of generated images (up to 5 cols), hover overlay for view/open/delete
+- **Delete confirmation dialog** — shows image thumbnail, confirm/cancel
+- **Copy URL** — copies permanent image URL to clipboard
+- **Open in new tab** — opens image URL directly
+- **Regenerate** — re-sends last prompt with same params without refilling form
+- **Gallery auto-refresh** after each successful generation
+
+### Backend
+- `GET /api/v1/ai-image/history` — reads `uploads/ai-images/{companyId}/` dir, returns sorted file list with metadata
+- `DELETE /api/v1/ai-image/:filename` — deletes file with path traversal protection
+
+### Frontend
+- `AIImageGenerator.tsx` — added gallery section + preview action buttons + delete dialog + regenerate
+
+### Images saved to disk
+- `uploads/ai-images/{companyId}/{timestamp}-{random}.{jpg|png}` — permanent URL returned instead of data URL
+
+### Deploy
+- Commit `410e3efa` → pushed to `main` → Run #448 ✅ (~5 min)
+
+## 2026-07-08: AI Image Generator — UX Refactor
+
+### Improvements
+- **RTL-first Arabic UI** — all labels, tabs, selects, helper hints in Arabic, right-to-left
+- **Tab order optimized** — platform → product → brand → copy → style → campaign → output
+- **Field grouping** — related controls grouped with `Field` helper and hint text
+- **Inline validation** — generate disabled until product name or headline provided; helper message explains why
+- **Live aspect preview** — aspect ratio shows pixel dimensions and preview indicator per platform
+- **Action row redesign** — generate + reset placed below form, reset styled as outline
+- **Result area** — auto-scroll on generation, improved empty state with current dimensions
+- **Transparent background guard** — switch disabled unless format is PNG, with hint
+- **Gallery polish** — image error handling, hover overlay actions, badge count, refresh button
+- **Delete dialog** — shows image preview before confirming deletion
+
+### Technical
+- Fixed TypeScript issues in `AIImageGenerator.tsx` (`tsc` clean)
+- Added `PRODUCT.md` / `DESIGN.md` for `impeccable` context gates
+
+### Files Modified
+- `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
+- `PRODUCT.md`, `DESIGN.md`
+
 ## 2026-07-04: AI Skills & Tools Merchant Sidebar Section — Bug Fix
 
 ### Root Cause

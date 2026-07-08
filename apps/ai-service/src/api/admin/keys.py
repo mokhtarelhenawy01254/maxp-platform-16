@@ -27,6 +27,7 @@ from src.api.admin.schemas import (
 )
 from src.db.models import (
     AiKey,
+    AiModelConfig,
     GlobalAiConfig,
     Provider,
     ProviderLog,
@@ -147,6 +148,22 @@ async def create_key(
             detail=f"Key name '{payload.name}' already exists for provider '{payload.provider}'",
         ) from exc
     await session.refresh(key)
+
+    if payload.models:
+        for i, model_name in enumerate(payload.models):
+            model_name = model_name.strip()
+            if not model_name:
+                continue
+            session.add(
+                AiModelConfig(
+                    id=f"{key.id}_model_{i}",
+                    key_id=key.id,
+                    model_name=model_name,
+                    is_enabled=True,
+                    priority=i + 1,
+                )
+            )
+        await session.commit()
 
     session.add(
         ProviderLog(
@@ -421,8 +438,6 @@ async def list_logs(
     limit: int = Query(default=100, ge=1, le=500),
     admin: dict | None = Depends(verify_admin_jwt),
 ) -> list[LogEntry]:
-    from sqlalchemy import text as sa_text
-
     stmt = select(ProviderLog).order_by(ProviderLog.created_at.desc())
     if provider:
         stmt = stmt.where(ProviderLog.provider == provider)
@@ -435,24 +450,23 @@ async def list_logs(
     rows = [LogEntry.model_validate(r) for r in result.scalars().all()]
 
     try:
-        clause, params = _build_public_filters(provider, key_id, status)
-        params["lim"] = limit
-        public = await session.execute(sa_text(f"""
+        clause, p = _build_public_filters(provider, key_id, status)
+        p["lim"] = limit
+        from sqlalchemy import text as _t
+        pub = await session.execute(_t(f"""
             SELECT id, provider, "keyId" AS key_id, action, status,
                    model, "latencyMs" AS latency_ms,
                    COALESCE(message, '') AS error,
                    "companyId" AS company_id, "createdAt" AS created_at
             FROM public.ai_provider_logs
             WHERE {clause}
-            ORDER BY "createdAt" DESC
-            LIMIT :lim
-        """), params)
-        rows.extend(LogEntry.model_validate(r) for r in public.mappings().all())
+            ORDER BY "createdAt" DESC LIMIT :lim
+        """), p)
+        rows.extend(LogEntry.model_validate(r) for r in pub.mappings().all())
         rows.sort(key=lambda r: r.created_at, reverse=True)
         rows[:] = rows[:limit]
-    except Exception:
-        logger.warning("public.ai_provider_logs not available, skipping")
-
+    except Exception as _pub_exc:
+        logger.warning("public_logs_query_failed", error=str(_pub_exc))
     return rows
 
 

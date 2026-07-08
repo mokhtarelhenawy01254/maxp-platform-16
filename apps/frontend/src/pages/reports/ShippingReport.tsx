@@ -322,7 +322,7 @@ const ShippingReport: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() =>
-                            navigate(`/orders/details/${row.orderNumber}`)
+                            navigate(`/orders/${row.orderNumber}`)
                           }
                           className="text-blue-600 hover:text-blue-800 font-medium"
                         >

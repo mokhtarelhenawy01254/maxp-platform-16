@@ -156,6 +156,21 @@ async function broadcastMetaTemplate(req, res) {
       return res.status(404).json({ error: 'الجلسة غير موجودة' });
     }
 
+    // Fetch template definition to extract body text for display in chat
+    let templateBodyText = '';
+    try {
+      const allTemplates = await MetaCloudProvider.listTemplates(targetSessionId);
+      const templateDef = allTemplates.find(t => t.name === templateName);
+      if (templateDef?.components) {
+        const bodyComp = templateDef.components.find(c => c.type === 'BODY');
+        if (bodyComp?.text) {
+          templateBodyText = bodyComp.text;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch template body text:', err.message);
+    }
+
     const results = { sent: 0, failed: 0, errors: [] };
 
     for (const recipient of recipients) {
@@ -170,9 +185,31 @@ async function broadcastMetaTemplate(req, res) {
         const recipientComponents = recipient.components || components || [];
         const recipientLanguage = recipient.languageCode || languageCode || 'en';
 
-        await MetaCloudProvider.sendTemplate(
-          targetSessionId, to, templateName,
-          recipientLanguage, recipientComponents
+        // Resolve {{1}}, {{2}} variables in the body text per recipient
+        let resolvedBody = templateBodyText;
+        if (resolvedBody && recipientComponents.length > 0) {
+          const bodyParams = recipientComponents.find(c => c.type === 'BODY')?.parameters || [];
+          bodyParams.forEach((param, idx) => {
+            if (param.text) {
+              resolvedBody = resolvedBody.replace(new RegExp(`\\{\\{${idx + 1}\\}\\}`, 'g'), param.text);
+            }
+          });
+        }
+
+        await WhatsAppMessageHandler.sendTemplateMessage(
+          targetSessionId,
+          to,
+          templateName,
+          {
+            name: templateName,
+            language: recipientLanguage,
+            languageCode: recipientLanguage,
+            components: recipientComponents
+          },
+          {
+            metadata: { isBroadcast: true },
+            templateBody: resolvedBody
+          }
         );
 
         results.sent++;

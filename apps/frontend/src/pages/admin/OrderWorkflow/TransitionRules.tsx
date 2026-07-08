@@ -11,6 +11,8 @@ import orderWorkflowService, {
     OrderStatusDefinition,
     OrderWorkflowTransition
 } from '../../../services/orderWorkflowService';
+import api from '../../../services/api';
+import { useAuth } from '../../../hooks/useAuthSimple';
 
 interface Props {
     statuses: OrderStatusDefinition[];
@@ -18,7 +20,9 @@ interface Props {
 }
 
 const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
+    const { user } = useAuth();
     const [transitions, setTransitions] = useState<OrderWorkflowTransition[]>([]);
+    const [employees, setEmployees] = useState<{id: string, firstName: string, lastName: string}[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [newRule, setNewRule] = useState<Partial<OrderWorkflowTransition>>({
@@ -39,7 +43,21 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
 
     useEffect(() => {
         fetchTransitions();
-    }, []);
+        if (user?.companyId) {
+            fetchEmployees();
+        }
+    }, [user?.companyId]);
+
+    const fetchEmployees = async () => {
+        try {
+            const res = await api.get(`/companies/${user.companyId}/users?limit=100`);
+            if (res.data?.success && res.data?.data?.users) {
+                setEmployees(res.data.data.users);
+            }
+        } catch (error) {
+            console.error('Failed to fetch employees', error);
+        }
+    };
 
     const fetchTransitions = async () => {
         try {
@@ -159,6 +177,26 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                                         </label>
                                     ))}
                                 </div>
+                                <label className="block text-sm font-medium mb-1 mt-4">الموظفين المسموح لهم (اختياري):</label>
+                                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-100 dark:border-slate-700 rounded-lg">
+                                    {employees.map(emp => (
+                                        <label key={emp.id} className="flex items-center gap-2 text-xs p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={JSON.parse(newRule.allowedRoles || '[]').includes(emp.id)}
+                                                onChange={(e) => {
+                                                    const roles = JSON.parse(newRule.allowedRoles || '[]');
+                                                    const updated = e.target.checked
+                                                        ? [...roles, emp.id]
+                                                        : roles.filter((r: string) => r !== emp.id);
+                                                    setNewRule({ ...newRule, allowedRoles: JSON.stringify(updated) });
+                                                }}
+                                            />
+                                            {emp.firstName} {emp.lastName}
+                                        </label>
+                                    ))}
+                                    {employees.length === 0 && <p className="text-xs text-slate-400 col-span-2">جاري تحميل الموظفين...</p>}
+                                </div>
                             </div>
                             <div className="space-y-4">
                                 <label className="flex items-center gap-3 cursor-pointer">
@@ -214,11 +252,16 @@ const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
                             </div>
 
                             <div className="hidden md:flex flex-wrap items-center gap-2 px-6 border-x border-slate-100 dark:border-slate-700">
-                                {JSON.parse(t.allowedRoles || '[]').map((role: string) => (
-                                    <span key={role} className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
-                                        {availableRoles.find(r => r.value === role)?.label || role}
-                                    </span>
-                                ))}
+                                {JSON.parse(t.allowedRoles || '[]').map((role: string) => {
+                                    const roleObj = availableRoles.find(r => r.value === role);
+                                    const empObj = employees.find(e => e.id === role);
+                                    const label = roleObj ? roleObj.label : (empObj ? `${empObj.firstName} ${empObj.lastName}` : role);
+                                    return (
+                                        <span key={role} className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                                            {label}
+                                        </span>
+                                    );
+                                })}
                                 {t.requiresApproval && <ShieldCheckIcon className="w-5 h-5 text-amber-500" title="يتطلب موافقة" />}
                                 {t.restrictBackward && <ExclamationCircleIcon className="w-5 h-5 text-red-400" title="ممنوع العودة" />}
                             </div>

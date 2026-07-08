@@ -119,6 +119,7 @@ class BaseAgentConfig:
     persona: dict[str, Any] = field(default_factory=dict)
     policies: dict[str, Any] = field(default_factory=dict)
     instructions: dict[str, Any] = field(default_factory=dict)
+    custom_instructions: dict[str, Any] = field(default_factory=dict)
     output_schema: Any = None
     tool_choice: str | None = None
 
@@ -173,6 +174,7 @@ class BaseAgent:
         self.persona = config.persona or {}
         self.policies = config.policies or {}
         self._instructions = config.instructions or {}
+        self._custom_instructions = config.custom_instructions or {}
         self.output_schema = config.output_schema
 
         self.handoffs: list[dict[str, Any]] = list(config.handoffs or [])
@@ -233,7 +235,7 @@ class BaseAgent:
             role=overrides.get("role") or profile.role,
             company_id=company_id,
             allowed_tools=overrides.get("allowed_tools") or profile.allowed_tools,
-            tool_choice=overrides.get("tool_choice") or profile.tool_choice,
+            tool_choice=(overrides.get("config") or {}).get("toolChoice") or overrides.get("tool_choice") or profile.tool_choice,
             allowed_skills=overrides.get("allowed_skills") or profile.allowed_skills,
             template_slug=template_slug,
             version=profile.version,
@@ -261,6 +263,7 @@ class BaseAgent:
                 "persona": profile.instructions_persona,
                 **(overrides.get("instructions") or {}),
             },
+            custom_instructions=dict(overrides.get("custom_instructions") or {}),
             output_schema=overrides.get("output_schema") or profile.output_schema,
             status=overrides.get("status", "ACTIVE"),
             handoffs=overrides.get("handoffs") or profile.handoffs,
@@ -635,18 +638,30 @@ class BaseAgent:
         soul_override = self._instructions.get("soul")
         if callable(soul_override):
             soul_override = soul_override(variables)
+        custom_soul = self._custom_instructions.get("soul")
+        if custom_soul:
+            soul_override = (soul_override or "") + f"\n\n📋 إضافات مخصصة:\n{custom_soul}"
 
         persona_override = self._instructions.get("persona")
         if callable(persona_override):
             persona_override = persona_override(variables)
+        custom_persona = self._custom_instructions.get("persona")
+        if custom_persona:
+            persona_override = (persona_override or "") + f"\n\n📋 إضافات مخصصة:\n{custom_persona}"
 
         tools_override = self._instructions.get("tools")
         if callable(tools_override):
             tools_override = tools_override(variables)
+        custom_tools = self._custom_instructions.get("tools")
+        if custom_tools:
+            tools_override = (tools_override or "") + f"\n\n📋 إضافات مخصصة:\n{custom_tools}"
 
         agents_override = self._instructions.get("agents")
         if callable(agents_override):
             agents_override = agents_override(variables)
+        custom_agents = self._custom_instructions.get("agents")
+        if custom_agents:
+            agents_override = (agents_override or "") + f"\n\n📋 إضافات مخصصة:\n{custom_agents}"
 
         try:
             hydrated: HydratedPrompt = registry.build_prompt(

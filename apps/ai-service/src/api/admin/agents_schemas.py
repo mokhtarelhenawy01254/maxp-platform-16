@@ -48,6 +48,7 @@ class AgentTemplateList(BaseModel):
     instructions_soul: str | None = None
     budget: dict[str, Any] = {}
     is_active: bool = True
+    companies_count: int = 0
 
 
 class AgentCreate(BaseModel):
@@ -62,6 +63,8 @@ class AgentCreate(BaseModel):
     allowed_skills: list[str] | None = None
     allowed_channels: list[str] | None = None
     persona: dict[str, Any] | None = None
+    soul: str | None = None
+    rules: str | None = None
     guardrails: dict[str, Any] | None = None
     budget: dict[str, Any] | None = None
     parent_id: str | None = None
@@ -83,6 +86,7 @@ class AgentUpdate(BaseModel):
     allowed_skills: list[str] | None = None
     allowed_channels: list[str] | None = None
     persona: dict[str, Any] | None = None
+    custom_instructions: dict[str, Any] | None = None
     guardrails: dict[str, Any] | None = None
     budget: dict[str, Any] | None = None
     config: dict[str, Any] | None = None
@@ -108,6 +112,7 @@ class AgentRead(BaseModel):
     status: Literal["ACTIVE", "INACTIVE", "ARCHIVED"]
     model: str | None = None
     persona: dict[str, Any]
+    custom_instructions: dict[str, Any] = {}
     allowed_tools: list[str]
     allowed_skills: list[str]
     allowed_channels: list[str] = []

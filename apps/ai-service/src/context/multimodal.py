@@ -14,11 +14,25 @@ def build_user_content(message: str, attachments: list[dict[str, Any]] | None) -
     image_parts = [_part for item in (attachments or []) if (_part := image_attachment_to_openai_part(item))]
     if not image_parts:
         return message
-    return [{"type": "text", "text": message}, *image_parts]
+    # Annotate text with image URLs so LLMs can pass them to product_search(image_url=...)
+    text_content = message
+    for part in image_parts:
+        if part.get("type") == "image_url":
+            url = (part.get("image_url") or {}).get("url", "")
+            if url and url.startswith(("http://", "https://")):
+                text_content = text_content + "\n[image_url: " + url + "]"
+    return [{"type": "text", "text": text_content}, *image_parts]
 
 
 def image_attachment_to_openai_part(attachment: dict[str, Any]) -> dict[str, Any] | None:
-    if not isinstance(attachment, dict) or not _is_image_attachment(attachment):
+    if not isinstance(attachment, dict):
+        return None
+    # Pass-through: already in OpenAI image_url format
+    if attachment.get("type") == "image_url" and isinstance(attachment.get("image_url"), dict):
+        url = str(attachment["image_url"].get("url") or "").strip()
+        if url:
+            return attachment
+    if not _is_image_attachment(attachment):
         return None
 
     image_url = _image_url(attachment)

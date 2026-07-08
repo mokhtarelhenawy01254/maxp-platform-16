@@ -23,6 +23,7 @@ export interface CreateAiKeyPayload {
   provider: string;
   name: string;
   api_key: string;
+  models?: string[];
 }
 
 export interface AiKeyLog {

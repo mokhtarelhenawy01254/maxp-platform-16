@@ -38,6 +38,7 @@ interface LogRow {
   recipientPhone: string;
   recipientName: string | null;
   createdAt: string;
+  failureReason: string | null;
   company: {
     name: string;
     slug: string | null;
@@ -213,10 +214,15 @@ export default function SuperAdminWhatsAppLogs() {
                             </p>
                           ) : null}
                         </div>
-                        <p className="mt-3 text-xs text-[color:var(--color-muted-foreground)]">
-                          {new Date(log.createdAt).toLocaleString("ar-EG")}
-                        </p>
-                      </div>
+                          {log.status === "FAILED" && log.failureReason ? (
+                            <p className="mt-2 text-xs text-red-600 dark:text-red-400 truncate" title={log.failureReason}>
+                              {log.failureReason}
+                            </p>
+                          ) : null}
+                          <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
+                            {new Date(log.createdAt).toLocaleString("ar-EG")}
+                          </p>
+                        </div>
                     ))
                   )}
                 </div>
@@ -227,7 +233,8 @@ export default function SuperAdminWhatsAppLogs() {
                       <TableRow>
                         <TableHead>{t("superAdmin.whatsapp.logs.columns.company")}</TableHead>
                         <TableHead>{t("superAdmin.whatsapp.logs.columns.event")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.logs.columns.status")}</TableHead>
+                         <TableHead>{t("superAdmin.whatsapp.logs.columns.status")}</TableHead>
+                        <TableHead>{t("superAdmin.whatsapp.logs.columns.error")}</TableHead>
                         <TableHead>{t("superAdmin.whatsapp.logs.columns.recipient")}</TableHead>
                         <TableHead className="text-left">{t("superAdmin.whatsapp.logs.columns.time")}</TableHead>
                       </TableRow>
@@ -235,7 +242,7 @@ export default function SuperAdminWhatsAppLogs() {
                     <TableBody>
                       {logs.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
                             {t("superAdmin.whatsapp.logs.empty")}
                           </TableCell>
                         </TableRow>
@@ -253,6 +260,15 @@ export default function SuperAdminWhatsAppLogs() {
                               <Badge variant="outline" className="rounded-full">
                                 {log.status}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {log.status === "FAILED" && log.failureReason ? (
+                                <span className="max-w-[200px] truncate block text-xs text-red-600 dark:text-red-400" title={log.failureReason}>
+                                  {log.failureReason}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="space-y-1">

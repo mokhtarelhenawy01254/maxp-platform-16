@@ -1546,12 +1546,16 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
 
             const result = await MetaCloudProvider.sendTemplate(sessionId, to, templateName, languageCode, components);
 
+            const templateBody = options?.templateBody || '';
+            const displayContent = templateBody ? `${templateName}\n${templateBody}` : `Template: ${templateName}`;
+            let meta = serializeOutgoingMetadata(options.metadata);
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
                 type: 'TEMPLATE',
-                content: `Template: ${templateName}`,
+                content: displayContent,
                 interactiveData: JSON.stringify({ templateName, languageCode, components }),
-                isAIResponse: options.isAIResponse || false
+                isAIResponse: options.isAIResponse || false,
+                metadata: meta
             }, { companyId: dbSession?.companyId });
 
             await ensureMetaContact(sessionId, jid, { isOutgoing: true });
@@ -1579,7 +1583,8 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             type: 'TEMPLATE',
             content: `Template: ${templateId}`,
             interactiveData: JSON.stringify({ templateId, parameters }),
-            isAIResponse: options.isAIResponse || false
+            isAIResponse: options.isAIResponse || false,
+            metadata: serializeOutgoingMetadata(options.metadata)
         }, { companyId: session.companyId });
 
         return savedMessage;

@@ -203,6 +203,7 @@ const SuperAdminAITemplates: React.FC = () => {
                   <th className="text-right p-3 font-medium">القالب</th>
                   <th className="text-right p-3 font-medium">الدور</th>
                   <th className="text-right p-3 font-medium">الحالة</th>
+                  <th className="text-right p-3 font-medium">الشركات</th>
                   <th className="text-right p-3 font-medium">الإصدار</th>
                   <th className="text-right p-3 font-medium">المجالات</th>
                   <th className="text-right p-3 font-medium">الإحصائيات</th>
@@ -242,6 +243,10 @@ const SuperAdminAITemplates: React.FC = () => {
                           {t.isActive !== false ? "نشط" : "مخفي"}
                         </span>
                       </td>
+                      <td className="p-3">
+                        <span className="text-xs font-semibold text-primary">{t.companiesCount ?? 0}</span>
+                        <span className="text-[0.65rem] text-muted-foreground mr-1">شركة</span>
+                      </td>
                       <td className="p-3 text-xs text-muted-foreground">{t.version}</td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
@@ -277,7 +282,7 @@ const SuperAdminAITemplates: React.FC = () => {
                     </tr>
                     {expandedSlug === t.slug && (
                       <tr className="bg-muted/20">
-                        <td colSpan={9} className="p-3">
+                        <td colSpan={10} className="p-3">
                           <div className="flex gap-4">
                             {t.soulPreview && <div className="flex-1"><p className="text-[0.7rem] font-bold text-muted-foreground mb-1">لمحة عن الشخصية</p><p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-4 dir-rtl">{t.soulPreview}</p></div>}
                             {t.personaMeta?.tone && (

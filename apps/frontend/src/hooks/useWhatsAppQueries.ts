@@ -69,6 +69,12 @@ export interface Contact {
     fromMe: boolean;
     timestamp: string;
   };
+  window: {
+    isOpen: boolean;
+    remainingSeconds: number;
+    remainingLabel: string;
+    windowExpiresAt: string | null;
+  };
 }
 
 export interface Message {
@@ -90,6 +96,8 @@ export interface Message {
   senderId?: string;
   senderName?: string;
   participant?: string;
+  metadata?: any;
+  interactiveData?: string;
 }
 
 export interface QuickReply {

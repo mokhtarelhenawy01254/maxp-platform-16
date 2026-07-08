@@ -1,5 +1,11 @@
 # Architectural & Design Decisions
 
+## 2026-07-07 — Vite Chunk 404: Keep Old Chunks + `vite:preloadError`
+- **Context:** After AppDashboardPage redesign (96106ac7), returning users got 404 on old chunk. Nginx had `immutable` cache on `/assets/`, deploy deleted old files via `rsync --delete`.
+- **Decision:** Combined two fixes: (A) removed `--delete` from deploy script so old chunks persist on disk, (B) added `vite:preloadError` listener to reload page when a stale import fails.
+- **Rationale:** (A) prevents the 404 entirely for users whose cached JS references old chunks. (B) is a safety net for edge cases (e.g., user whose tab was open since before deploy — their in-memory module graph may reference deleted chunks even with fresh HTML). Vite docs recommend (B) but alone it doesn't prevent the first 404 request.
+- **Rejected:** Shortening cache duration on `/assets/` — defeats purpose of content hashing. Always-delete approach — reliable for fresh visitors but breaks returning cached users.
+
 <!-- Format:
 ## YYYY-MM-DD — Title
 - Context: Why this decision was needed
@@ -36,3 +42,21 @@
 - Decision: Fixed booking_tools.py to extract packages from branchServices array and aggregate into flat array with branch names
 - Rationale: Matches actual backend Prisma schema (BookingBranchService model)
 - Rejected: Modifying backend to flatten packages onto service — changes DB layer when tool layer can adapt
+
+## 2026-07-06 — Delete vs Refactor Secrets (Private Repo)
+- Context: 50+ files had hardcoded production credentials (DB passwords, JWT secrets, SSH keys, GitHub PAT). The repo is private on GitHub.
+- Decision: Delete all ad-hoc debug/test scripts containing hardcoded secrets rather than refactoring to env vars
+- Rationale: These were one-off debug scripts, not part of the running service. The production service already uses `.env` properly. 133 files, 9458 lines removed.
+- Rejected: Refactoring each script to use env vars — 50+ scripts, most were single-use debug tools. Not worth the effort.
+
+## 2026-07-06 — Dockerize Deferred (Ponytail)
+- Context: CI/CD currently uses tarball SCP + SSH script (deploy-remote.sh). Considered containerization.
+- Decision: Defer Docker. Current system works reliably, handles all edge cases (blue-green frontend, .env backup/restore, health checks).
+- Rationale: Docker adds complexity (registry, server Docker setup, env management, debugging) without solving any actual problem.
+- Rejected: Adding Dockerfiles + docker-compose + registry + CI changes — significant effort for marginal benefit.
+
+## 2026-07-06 — AI Agent Doc Rewrite (Complete Inaccuracy)
+- Context: `ai-agent-system.md` described a Node.js system (`backend/services/aiAgent/`) that was either never built or replaced years ago. The real system is Python FastAPI + Microsoft Agent Framework.
+- Decision: Full rewrite of the doc to match actual architecture.
+- Rationale: Onboarding anyone with the old doc would cause deep confusion. The doc was a liability.
+- Rejected: Incremental fixes — too many inaccuracies (location, language, agent count, tool system, MCP, providers, workers). Full rewrite was faster.

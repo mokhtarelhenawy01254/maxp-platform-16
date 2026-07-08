@@ -13,6 +13,7 @@ const {
     WhatsAppMessageHandler,
     WhatsAppMediaHandler
 } = require('../services/whatsapp');
+const { computeWindowStatus } = require('../services/whatsapp/WhatsAppWindowService');
 
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
 const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql://');
@@ -554,7 +555,9 @@ async function updateSession(req, res) {
         const { id } = req.params;
         const {
             name,
+            aiEnabled,
             autoReply,
+            aiMode,
             welcomeMessage,
             awayMessage,
             workingHoursEnabled,
@@ -593,9 +596,9 @@ async function updateSession(req, res) {
             where: { id },
             data: {
                 name,
-                aiEnabled: false,
+                aiEnabled: aiEnabled !== undefined ? aiEnabled : false,
                 autoReply,
-                aiMode: 'manual',
+                aiMode: aiMode || 'manual',
                 welcomeMessage,
                 awayMessage,
                 workingHoursEnabled,
@@ -855,6 +858,7 @@ async function getConversations(req, res) {
                     category: true,
                     unreadCount: true,
                     lastMessageAt: true,
+                    lastCustomerMessageAt: true,
                     isArchived: true,
                     isPinned: true,
                     isMuted: true,
@@ -918,8 +922,9 @@ async function getConversations(req, res) {
 
         const conversationsWithLastMessage = contacts.map(contact => ({
             ...contact,
-            session: contact.whatsAppSession, // Map whatsAppSession to session for frontend compatibility
-            lastMessage: lastMessagesMap.get(`${contact.sessionId}:${contact.jid}`) || null
+            session: contact.whatsAppSession,
+            lastMessage: lastMessagesMap.get(`${contact.sessionId}:${contact.jid}`) || null,
+            window: computeWindowStatus(contact)
         }));
 
         res.json({
@@ -3554,7 +3559,9 @@ async function sendTemplateMessage(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const message = await WhatsAppMessageHandler.sendTemplateMessage(targetSessionId, to, templateId, parameters || {});
+        const message = await WhatsAppMessageHandler.sendTemplateMessage(targetSessionId, to, templateId, parameters || {}, {
+            templateBody: req.body.templateBody
+        });
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending template message:', error);

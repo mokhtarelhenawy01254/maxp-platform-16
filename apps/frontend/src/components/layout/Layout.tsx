@@ -633,23 +633,25 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             {headerBlock}
 
              <main
-                className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
-                  shouldRemovePadding ? "p-0" : "p-4 md:p-6"
-                } hr-theme`}
-              >
-                {location.pathname === '/apps' ? (
-                  <AppDashboardPage
-                    userId={user?.id}
-                    companyId={user?.companyId || user?.company?.id}
-                    allSections={menuSections}
-                  />
-                ) : (
-                  <React.Suspense fallback={<ContentSkeleton />}>
-                    <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
-                  </React.Suspense>
-                )}
-              </main>
-           </div>
+                 className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
+                   shouldRemovePadding ? "p-0" : "p-4 md:p-6"
+                 } hr-theme`}
+               >
+                 {location.pathname === '/apps' ? (
+                   <React.Suspense fallback={<ContentSkeleton />}>
+                     <AppDashboardPage
+                       userId={user?.id}
+                       companyId={user?.companyId || user?.company?.id}
+                       allSections={menuSections}
+                     />
+                   </React.Suspense>
+                 ) : (
+                   <React.Suspense fallback={<ContentSkeleton />}>
+                     <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                   </React.Suspense>
+                 )}
+               </main>
+            </div>
          </div>
        ) : (
          <div className="flex w-full h-screen overflow-hidden">
@@ -696,42 +698,44 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                    mobileMode={true}
                    toggleSidebar={() => setIsMobileMenuOpen(false)}
                    sections={filteredSections}
-                   collapsedSections={collapsedSections}
-                   toggleSection={toggleSection}
-                   currentPath={sidebarCurrentPath}
-                   t={t}
-                   searchQuery={searchQuery}
-                   setSearchQuery={setSearchQuery}
-                 />
-               </div>
-             </div>
-           ) : null}
-
-           <div className="flex-1 w-full flex flex-col overflow-hidden">
-              {headerBlock}
-
-              <main
-                 className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
-                   shouldRemovePadding ? "p-0" : "p-4 md:p-6"
-                 } hr-theme`}
-              >
-                {location.pathname === '/apps' ? (
-                  <AppDashboardPage
-                    userId={user?.id}
-                    companyId={user?.companyId || user?.company?.id}
-                    allSections={menuSections}
+                    collapsedSections={collapsedSections}
+                    toggleSection={toggleSection}
+                    currentPath={sidebarCurrentPath}
+                    t={t}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
                   />
-                ) : (
-                  <React.Suspense fallback={<ContentSkeleton />}>
-                    <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
-                  </React.Suspense>
-                )}
-              </main>
-          </div>
-        </div>
-      )}
+                </div>
+              </div>
+            ) : null}
 
-      {isSuperAdmin && showActiveUsers && (
+            <div className="flex-1 w-full flex flex-col overflow-hidden">
+               {headerBlock}
+
+               <main
+                  className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
+                    shouldRemovePadding ? "p-0" : "p-4 md:p-6"
+                  } hr-theme`}
+               >
+                 {location.pathname === '/apps' ? (
+                   <React.Suspense fallback={<ContentSkeleton />}>
+                     <AppDashboardPage
+                       userId={user?.id}
+                       companyId={user?.companyId || user?.company?.id}
+                       allSections={menuSections}
+                     />
+                   </React.Suspense>
+                 ) : (
+                   <React.Suspense fallback={<ContentSkeleton />}>
+                     <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                   </React.Suspense>
+                 )}
+               </main>
+           </div>
+         </div>
+       )}
+
+       {isSuperAdmin && showActiveUsers && (
         <ActiveUsersMonitor
           isOpen={showActiveUsers}
           onClose={() => setShowActiveUsers(false)}

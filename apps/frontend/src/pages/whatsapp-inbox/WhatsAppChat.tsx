@@ -77,6 +77,12 @@ type ConversationDetail = {
     };
   };
   canTransfer: boolean;
+  window: {
+    isOpen: boolean;
+    remainingSeconds: number;
+    remainingLabel: string;
+    windowExpiresAt: string | null;
+  };
 };
 
 type ConversationApiResponse = {
@@ -450,6 +456,11 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             {conversation.flags.detectedDepartment ? <span>{copy.chat.department}: {conversation.flags.detectedDepartment}</span> : null}
             {conversation.flags.ownerLock?.lockExpiresAt ? <span>{copy.chat.lockUntil}: {formatTime(conversation.flags.ownerLock.lockExpiresAt)}</span> : null}
             {conversation.flags.sla?.maxWaitingDeadlineAt ? <span>{copy.chat.slaDeadline}: {formatTime(conversation.flags.sla.maxWaitingDeadlineAt)}</span> : null}
+            {conversation.window?.isOpen ? (
+              <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">⏱ {conversation.window.remainingLabel}</span>
+            ) : (
+              <span className="rounded-md bg-red-100 px-2 py-0.5 text-red-700 dark:bg-red-950/30 dark:text-red-200">✕ {conversation.window.remainingLabel}</span>
+            )}
           </div>
         </header>
 

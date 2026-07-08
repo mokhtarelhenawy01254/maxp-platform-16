@@ -213,6 +213,22 @@ class ContextAssembler:
             if _db_rules:
                 base_prompt += f"\n\n<rules>\n{_db_rules}\n</rules>"
 
+        # Channel-specific: Facebook continuation instructions
+        # Prevents the agent from introducing itself or changing direction when
+        # the customer was already talking to a human agent before AI activation.
+        if ctx.channel == "facebook":
+            base_prompt += """
+<continuation>
+You are continuing an existing conversation on Facebook Messenger that was previously handled by a human agent.
+
+- Do NOT introduce yourself as if starting a new conversation
+- Do NOT apologize for being an AI or mention that you are an AI
+- Do NOT change the topic or direction of the conversation
+- Continue naturally in the same tone, language, and style as the human agent's previous replies
+- The human agent's replies are in the message history — follow their lead on formality, length, and approach
+- If images or products were discussed previously, reference them contextually when relevant
+- Your role is to provide seamless continuity so the customer does not notice any transition
+</continuation>"""
 
         sections: list[tuple[str, str]] = []  # (section_name, xml_content)
 
@@ -253,6 +269,17 @@ class ContextAssembler:
             if session_state.get("queriedProducts"):
                 recent = session_state["queriedProducts"][-5:]
                 state_lines.append(f"  Recently Queried: {recent}")
+            if session_state.get("referredProduct"):
+                prod = session_state["referredProduct"]
+                name = prod.get("name", prod.get("id", ""))
+                state_lines.append(f"  Referred Product: {name}")
+                price = prod.get("price")
+                if price:
+                    state_lines.append(f"  Referred Product Price: {price}")
+                desc = prod.get("description", "")
+                if desc:
+                    state_lines.append(f"  Referred Product Description: {desc[:240]}")
+
             if session_state.get("recentMessages"):
                 recent_messages = []
                 for message in session_state["recentMessages"][-6:]:

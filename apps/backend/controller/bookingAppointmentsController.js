@@ -102,6 +102,20 @@ const getAvailableSlots = async (req, res) => {
       select: { startTime: true, endTime: true }
     });
 
+    // Max bookings per slot from branch config
+    const maxPerSlot = branch.maxBookingsPerSlot ?? 1;
+
+    // Count existing appointments per time window (30-min bucket)
+    const countInWindow = (time) => {
+      const [h, m] = time.split(':').map(Number);
+      const windowStart = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const windowEndM = m + BOOKING_SLOT_DURATION;
+      const windowEnd = `${(h + Math.floor(windowEndM / 60)).toString().padStart(2, '0')}:${(windowEndM % 60).toString().padStart(2, '0')}`;
+      return existingAppointments.filter(apt =>
+        apt.startTime === windowStart || (apt.endTime && apt.endTime > windowStart && apt.startTime < windowEnd)
+      ).length;
+    };
+
     // Generate slots (first every hour, then every 30min)
     const slots = [];
     const lastSlot = BOOKING_LAST_SLOT;
@@ -111,23 +125,19 @@ const getAvailableSlots = async (req, res) => {
     for (let hour = startHour; hour < lastSlotHour; hour++) {
       const timeString = `${hour.toString().padStart(2, '0')}:00`;
       const endTimeString = `${(hour + 1).toString().padStart(2, '0')}:00`;
-      const isAvailable = !existingAppointments.some(apt =>
-        apt.startTime === timeString || (apt.endTime && apt.endTime > timeString && apt.startTime < endTimeString)
-      );
-      slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: isAvailable });
+      const booked = countInWindow(timeString);
+      slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: booked < maxPerSlot, bookedCount: booked, maxPerSlot });
     }
 
-    // If all full hours are booked, try half-hour slots
-    const bookedFull = slots.filter(s => !s.available).length;
-    if (bookedFull >= slots.length) {
+    // If all full hours are at max, try half-hour slots
+    const allFull = slots.every(s => !s.available);
+    if (allFull) {
       for (let hour = startHour; hour < lastSlotHour; hour++) {
         const timeString = `${hour.toString().padStart(2, '0')}:30`;
         const endHourTime = hour + 1;
         const endTimeString = `${endHourTime.toString().padStart(2, '0')}:30`;
-        const isAvailable = !existingAppointments.some(apt =>
-          apt.startTime === timeString || (apt.endTime && apt.endTime > timeString && apt.startTime < endTimeString)
-        );
-        slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: isAvailable });
+        const booked = countInWindow(timeString);
+        slots.push({ startTime: timeString, endTime: endTimeString, duration: BOOKING_SLOT_DURATION, available: booked < maxPerSlot, bookedCount: booked, maxPerSlot });
       }
     }
 
@@ -167,15 +177,16 @@ const createAppointment = async (req, res) => {
       }
     }
 
-    // Check slot availability
-    const existing = await getSharedPrismaClient().appointment.findFirst({
+    // Check slot availability (count-based, respect maxBookingsPerSlot)
+    const maxPerSlot = branch.maxBookingsPerSlot ?? 1;
+    const existingCount = await getSharedPrismaClient().appointment.count({
       where: {
         companyId, branchId,
         appointmentDate: new Date(appointmentDate),
         startTime, status: { notIn: ['cancelled', 'no_show'] }
       }
     });
-    if (existing) return res.status(400).json({ success: false, error: 'هذا الوقت محجوز بالفعل' });
+    if (existingCount >= maxPerSlot) return res.status(400).json({ success: false, error: `هذا الوقت ممتلئ (الحد الأقصى: ${maxPerSlot})` });
 
     const duration = BOOKING_SLOT_DURATION;
     const [startHour, startMinute] = startTime.split(':').map(Number);

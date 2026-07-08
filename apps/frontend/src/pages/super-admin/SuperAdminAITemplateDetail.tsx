@@ -11,7 +11,7 @@ import {
   ArrowRight, Pencil, Copy, Check, Send, Trash2, Edit3,
   Brain, BookOpen, Wrench, Layers, Globe, CreditCard,
   Shield, Share2, Server, Split, Calendar, Building2, ChevronDown, ChevronUp,
-  RotateCcw, Braces, Hash, List,
+  RotateCcw, Braces, Hash, List, FileText, User,
 } from "lucide-react";
 import {
   EditDialog, ApplyDialog, DeleteDialog, DuplicateDialog, EditCompanyAgentDialog,
@@ -541,11 +541,10 @@ const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void; onRe
                           return (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {a.model && <FieldCard icon={Brain} label="النموذج" value={a.model} className="md:col-span-2" />}
-                              {a.soul && <FieldCard icon={BookOpen} label="الروح (Soul)" value={a.soul} mono className="md:col-span-2" />}
-                              {a.rules && <FieldCard icon={Braces} label="القواعد (Rules)" value={a.rules} mono className="md:col-span-2" />}
-                              {a.persona && Object.keys(a.persona).length > 0 && (
-                                <FieldCard icon={Hash} label="بيانات الشخصية" value={JSON.stringify(a.persona, null, 2)} mono className="md:col-span-2" />
-                              )}
+                              {(a.persona?.soulInstructions || a.soul) && <FieldCard icon={BookOpen} label="الشخصية (Soul)" value={a.persona?.soulInstructions || a.soul} mono className="md:col-span-2" />}
+                              {(a.persona?.agentInstructions || a.rules) && <FieldCard icon={FileText} label="قواعد الوكيل (AGENTS.md)" value={a.persona?.agentInstructions || a.rules} mono className="md:col-span-2" />}
+                              {a.persona?.toolsInstructions && <FieldCard icon={Wrench} label="تعليمات الأدوات (TOOLS.md)" value={a.persona.toolsInstructions} mono className="md:col-span-2" />}
+                              {a.persona?.personaInstructions && <FieldCard icon={User} label="تعليمات الشخصية (PERSONA.md)" value={a.persona.personaInstructions} mono className="md:col-span-2" />}
                               {a.allowed_tools?.length > 0 && (
                                 <FieldCard icon={Wrench} label={`الأدوات المسموحة (${a.allowed_tools.length})`}>
                                   <div className="flex flex-wrap gap-1">{a.allowed_tools.map((t: string) => <Badge key={t} variant="outline" className="text-[0.65rem]">{t}</Badge>)}</div>
@@ -564,6 +563,17 @@ const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void; onRe
                               )}
                               {a.budget && Object.keys(a.budget).length > 0 && (
                                 <FieldCard icon={CreditCard} label="الميزانية" value={JSON.stringify(a.budget)} />
+                              )}
+                              {a.custom_instructions && (a.custom_instructions.soul || a.custom_instructions.agents || a.custom_instructions.tools || a.custom_instructions.persona) && (
+                                <div className="md:col-span-2 border rounded-lg border-dashed border-amber-300 bg-amber-50/40 p-3">
+                                  <p className="text-[0.65rem] font-bold text-amber-700 mb-2">📄 ملف إضافات العميل — يضاف إلى إعدادات القالب دون تعديلها</p>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {a.custom_instructions.soul && <FieldCard icon={BookOpen} label="إضافة للشخصية (Soul)" value={a.custom_instructions.soul} mono />}
+                                    {a.custom_instructions.agents && <FieldCard icon={FileText} label="إضافة لقواعد الوكيل" value={a.custom_instructions.agents} mono />}
+                                    {a.custom_instructions.tools && <FieldCard icon={Wrench} label="إضافة لتعليمات الأدوات" value={a.custom_instructions.tools} mono />}
+                                    {a.custom_instructions.persona && <FieldCard icon={User} label="إضافة لتعليمات الشخصية" value={a.custom_instructions.persona} mono />}
+                                  </div>
+                                </div>
                               )}
                             </div>
                           );
