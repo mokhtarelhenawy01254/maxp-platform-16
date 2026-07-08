@@ -46,7 +46,9 @@ def _discover_domain_tools() -> list[FunctionTool]:
 
 _ALL_DOMAIN_TOOLS = _discover_domain_tools()
 
-# -- Build ALL_TOOLS dict + register in SkillRegistry -----------------------
+# -- Register all tools in SkillRegistry ----------------------------------
+# ALL_TOOLS is deprecated — kept temporarily for backward-compatible re-exports.
+# All consumers should use SkillRegistry directly.
 
 ALL_TOOLS: dict[str, FunctionTool] = {}
 _registry = get_skill_registry()

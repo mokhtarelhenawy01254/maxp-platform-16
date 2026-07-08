@@ -287,6 +287,9 @@ model Appointment {
   source          String?   /// whatsapp/facebook/chat/dashboard
   paymentRequired Boolean   @default(false)
   paymentStatus   String?
+  createdById     String?
+  createdByType   String?   /// ai_service / user (human dashboard user)
+  createdByName   String?
   confirmedAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

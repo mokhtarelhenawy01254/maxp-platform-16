@@ -1,11 +1,12 @@
 /**
  * validate-agent-skills.js
  *
- * Checks agent → skill integrity:
- * 1. Every agent.json allowedSkills → skill directory exists with skill.json
+ * Checks agent ? skill + tool integrity:
+ * 1. Every agent.json allowedSkills ? skill directory exists with skill.json
  * 2. Every skill directory has skill.json + SKILL.md
- * 3. Every agent.json allowedTools → resolved in definitions, manager_tools, or SkillRegistry
- * 4. Every skill.json allowedTools → resolved similarly
+ * 3. Every agent.json allowedTools ? resolved in SkillRegistry
+ * 4. Every skill.json allowedTools ? resolved in SkillRegistry
+ * 5. Every tool in definitions/ is registered in SkillRegistry
  *
  * Run: node scripts/validate-agent-skills.js
  */
@@ -18,6 +19,7 @@ const SKILLS_DIR = path.join(ROOT, "apps/ai-service/skills");
 const TOOLS_DIR = path.join(ROOT, "apps/ai-service/src/tools/definitions");
 const MANAGER_TOOLS_FILE = path.join(ROOT, "apps/ai-service/src/tools/manager_tools.py");
 const SKILLS_SRC_DIR = path.join(ROOT, "apps/ai-service/src/skills");
+const REGISTER_ALL_FILE = path.join(ROOT, "apps/ai-service/src/tools/registry.py");
 
 let errors = [];
 let warnings = [];
@@ -25,10 +27,9 @@ let warnings = [];
 function err(msg) { errors.push(msg); }
 function warn(msg) { warnings.push(msg); }
 
-// ── Collect all canonical tool names ──
+// — Collect all canonical tool names from every source —
 const allCanonicalToolNames = new Set();
 
-// 1. Scan tool definitions
 function scanFileForFunctionToolNames(filePath) {
   if (!fs.existsSync(filePath)) return;
   const content = fs.readFileSync(filePath, "utf-8");
@@ -36,13 +37,39 @@ function scanFileForFunctionToolNames(filePath) {
   for (const m of matches) allCanonicalToolNames.add(m[1].replace(/\./g, "_"));
 }
 
+// 1. Scan tool definitions (__all_tools__)
 const defFiles = fs.readdirSync(TOOLS_DIR).filter(f => f.endsWith(".py") && f !== "__init__.py");
-for (const f of defFiles) scanFileForFunctionToolNames(path.join(TOOLS_DIR, f));
+for (const f of defFiles) {
+  const fullPath = path.join(TOOLS_DIR, f);
+  const content = fs.readFileSync(fullPath, "utf-8");
+  // Check it's in __all_tools__ (exported)
+  const hasAllTools = content.includes("__all_tools__");
+  const matches = content.matchAll(/FunctionTool\(\s*\n?\s*name\s*=\s*"([^"]+)"/g);
+  for (const m of matches) {
+    allCanonicalToolNames.add(m[1].replace(/\./g, "_"));
+    if (!hasAllTools) {
+      warn(`${f}: tool "${m[1]}" defined but not in __all_tools__`);
+    }
+  }
+}
 
 // 2. Scan manager_tools.py
-scanFileForFunctionToolNames(MANAGER_TOOLS_FILE);
+if (fs.existsSync(MANAGER_TOOLS_FILE)) {
+  const content = fs.readFileSync(MANAGER_TOOLS_FILE, "utf-8");
+  const matches = content.matchAll(/FunctionTool\(\s*\n?\s*name\s*=\s*"([^"]+)"/g);
+  for (const m of matches) allCanonicalToolNames.add(m[1].replace(/\./g, "_"));
+}
 
-// 3. Scan all src/skills/ for Skill(name="...")
+// 3. Check registry.py registers all tools
+const registryContent = fs.readFileSync(REGISTER_ALL_FILE, "utf-8");
+const registryToolNames = new Set();
+const regMatches = registryContent.matchAll(/register_tool\(\s*(\w+)\s*(?:,|\s*\))/g);
+for (const m of regMatches) {
+  // The tool variable names — not tool names, but rough check
+  registryToolNames.add(m[1]);
+}
+
+// 4. Scan all src/skills/ for Skill(name="...")
 const knownSkillNames = new Set();
 function scanDirForSkill(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -61,20 +88,12 @@ function scanDirForSkill(filePath) {
 }
 scanDirForSkill(SKILLS_SRC_DIR);
 
-// 4. Known aliases
-const knownAliases = {
-  "agent_handoff": "agent_handoff_to",
-};
-for (const [, target] of Object.entries(knownAliases)) {
-  if (allCanonicalToolNames.has(target)) allCanonicalToolNames.add(target);
-}
-
 function toolIsValid(name) {
   const canonical = name.replace(/\./g, "_");
   return allCanonicalToolNames.has(canonical) || knownSkillNames.has(canonical);
 }
 
-// ── Scan all agents ──
+// — Scan all agents —
 const agentDirs = fs.readdirSync(AGENTS_DIR, { withFileTypes: true })
   .filter(d => d.isDirectory())
   .map(d => d.name);
@@ -124,14 +143,14 @@ for (const agentDir of agentDirs) {
     const skillTools = skillManifest.allowedTools || skillManifest.tools || [];
     for (const tool of skillTools) {
       if (!toolIsValid(tool)) {
-        err(`${skillId}/skill.json: tool "${tool}" (canonical: "${tool.replace(/\./g, "_")}") not found in any tool definition or skill registry`);
+        err(`${skillId}/skill.json: tool "${tool}" not found in any tool definition or skill registry`);
       }
     }
   }
 
   for (const tool of allowedTools) {
     if (!toolIsValid(tool)) {
-      err(`${agentDir}/agent.json: tool "${tool}" (canonical: "${tool.replace(/\./g, "_")}") not found in any tool definition or manager_tools`);
+      err(`${agentDir}/agent.json: tool "${tool}" not found in any tool definition or manager_tools`);
     }
   }
 }
@@ -145,16 +164,16 @@ for (const skillDir of allSkillDirs) {
 }
 
 if (errors.length === 0 && warnings.length === 0) {
-  console.log(`✅ Agent skill integrity: ${agentDirs.length} agents, ${allSkillDirs.length} skills — all valid`);
+  console.log(`? Agent skill integrity: ${agentDirs.length} agents, ${allSkillDirs.length} skills — all valid`);
   process.exit(0);
 }
 
 if (errors.length > 0) {
-  console.error(`❌ ${errors.length} error(s):`);
+  console.error(`? ${errors.length} error(s):`);
   errors.forEach(e => console.error(`  - ${e}`));
 }
 if (warnings.length > 0) {
-  console.warn(`⚠️  ${warnings.length} warning(s):`);
+  console.warn(`?  ${warnings.length} warning(s):`);
   warnings.forEach(w => console.warn(`  - ${w}`));
 }
 

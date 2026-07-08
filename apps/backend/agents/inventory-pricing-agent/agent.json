@@ -27,7 +27,7 @@
     "product.create",
     "inventory.check",
     "inventory.adjust",
-    "product.updatePrice",
+    "product.update.price",
     "discount.create_draft",
     "audit.read"
   ],

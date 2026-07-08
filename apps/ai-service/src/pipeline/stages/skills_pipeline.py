@@ -277,10 +277,11 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
     skill_names = {s.name.lower() for s in skills}
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
+    sk_registry = get_skill_registry()
     for tool_name in allowed:
         tname = tool_name.lower()
         if tname not in skill_names:
-            tool = registry.resolve(tname)
+            tool = sk_registry.resolve(tname)
             if tool:
                 tool_dicts.append(tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec') else {
                     "type": "function",

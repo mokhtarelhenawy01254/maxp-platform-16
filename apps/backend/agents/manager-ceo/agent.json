@@ -30,7 +30,7 @@
     "agent.update.profile",
     "agent.run.task",
     "agent.handoff.to",
-    "skill.create",
+    "skill.manage",
     "product.search",
     "product.create",
     "product.low.stock",

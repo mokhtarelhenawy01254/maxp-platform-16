@@ -14,10 +14,10 @@
   },
   "allowedTools": [
     "competitor.search",
-    "competitor.getProducts",
-    "competitor.priceCompare",
-    "competitor.getAds",
-    "competitor.generateReport",
+    "competitor.get.products",
+    "competitor.price.compare",
+    "competitor.get.ads",
+    "competitor.generate.report",
     "product.search",
     "inventory.check",
     "audit.read"
