@@ -93,7 +93,36 @@
 - **Pattern:** When a component is `React.lazy()` and used conditionally in multiple layout branches, every branch that renders it needs its own Suspense boundary. A single Suspense wrapping the parent won't work because each conditional branch is a separate render path.
 - **Checklist for lazy components:** Search for all JSX usages of the lazy component name. If it appears in multiple conditional blocks, each needs Suspense.
 
-## AI Agent Architecture Doc Was Completely Wrong (2026-07-06)
+## OpenRouter Image Generation — Response Data Nesting (2026-07-08)
+- Backend returns `{ success: true, data: { imageUrl, model, usage } }` (nested `data` object)
+- Frontend axios receives this as `res.data` = the full JSON body. So `res.data.data.imageUrl` is correct, NOT `res.data.imageUrl`.
+- **Rule**: Always check the backend's actual `res.status().json()` structure against frontend response reads.
+
+## Gemini Flash Image — `msg.images` Can Be `null` (2026-07-08)
+- OpenRouter Gemini Flash Image response has `choices[0].message.images = null` even when image IS generated
+- `Array.isArray(null)` → `false` → extraction code is silently skipped
+- Extraction succeeds via `msg.images[0].image_url.url` only when `msg.images` is an actual array
+- **Fix**: Check `msg.images` for truthiness first, then try `Array.isArray()`, fallback to `Object.values()` for array-like objects
+
+## Product Image References via OpenRouter Chat Completions (2026-07-08)
+- To pass a reference product image to Gemini Flash Image / GPT Image via OpenRouter:
+  - Convert File to base64 on frontend via `FileReader.readAsDataURL()`
+  - Send as `productImage` in POST body
+  - Backend constructs user message as array of content parts: `[{ type: "text", text: prompt }, { type: "image_url", image_url: { url: productImage } }]`
+  - System prompt must explicitly instruct the model to USE the reference image (e.g., "Use it as the primary visual — place the actual product from the reference image")
+
+## AI Image Gallery — Deploy Wipes `uploads/ai-images/` (2026-07-08)
+- `deploy-remote.sh` backs up `uploads/` via `--exclude uploads` in rsync, then `cp` + restore cycle
+- But if `uploads/ai-images/` never existed before the deploy (fresh dir created by runtime after previous deploy), the backup won't include it
+- **Fix**: Either create empty dir in repo, or ensure first-generation creates it before deploy runs
+
+## PM2 Logs for Backend Debugging (2026-07-08)
+- Backend `console.log()` goes to `/var/www/backend2/logs/out-1.log`
+- Backend `console.error()` goes to `/var/www/backend2/logs/err-1.log`
+- PM2 in-memory tool may be out of date — use `pm2 update` on server to sync, but logs are still in the file paths above
+- `gh run watch` sometimes 404s even when `gh run list` shows the run — use `gh run list` polling instead
+
+## DeepSeek Tool Hallucination — MEDICAL_CENTER_MANAGER (2026-07-08){newline}- **Issue:** `booking_reserve` hallucination — agent said "تم الحجز بنجاح" with fake code but never called the tool. Only happened with `MEDICAL_CENTER_MANAGER` agent (شيماء), not with `PHYSIOTHERAPY` agent (أحمد).{newline}- **Root Cause 1:** Missing `skill.json` + `SKILL.md` at `apps/ai-service/skills/medical-center-management/`. The pipeline's `_iter_allowed_skills_meta()` uses file-based skill dirs to look up tool names and inject skill instructions. Without a directory, the pipeline skipped this skill entirely — no instructions injected, no tool filtering applied from the skill.{newline}- **Root Cause 2:** Pipeline ignored agent's `config.tool_choice` in `_llm_call()`. The medical-center-manager `agent.json` has `"config": { "toolChoice": "required" }` but `skills_pipeline.py:_llm_call()` never read it — always passed `None` → defaulted to `"auto"`. With 23 tools (vs physio-coordinator's 6), DeepSeek in `"auto"` mode chose text replies.{newline}- **Fixes:**{newline}  - Fix 1: Created `apps/ai-service/skills/medical-center-management/skill.json` + `SKILL.md` matching the agent's `allowedTools`.{newline}  - Fix 2: Modified `skills_pipeline.py:_llm_call()` (line 323 area) to read `ctx.agent.config.tool_choice` and pass it as `tool_choice` to `client.generate()`.{newline}  - Fix 3 (earlier): Fixed `branches` param type mismatch — Python sends `list[str]` but Node controller expected `list[{branchId}]`. Fixed in both `bookingServicesController.js:47` and `booking_admin.py:173-175`.{newline}- **Verification:** Post-fix, شيماء successfully called `booking_slots` → `booking_reserve` → created real appointment (ID confirmed in DB) → `booking_status` with `cancel` → status changed to `cancelled` successfully.{newline}- **Lesson:** Any new agent role with write tools needs: (1) file-based skill dir at `apps/ai-service/skills/<slug>/`, (2) tool_choice check in pipeline, (3) param type alignment between Python Pydantic models and Node.js controllers.{newline}{newline}## AI Agent Architecture Doc Was Completely Wrong (2026-07-06)
 - `ai-agent-system.md` described a Node.js-based system (`backend/services/aiAgent/BaseAgent.js`, `CEOAgent.js`, etc.) that **does not exist**
 - The real architecture: Node.js Express → HTTP proxy → Python FastAPI + Microsoft Agent Framework
 - 21 agents defined (not 5 as documented)

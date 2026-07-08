@@ -25,7 +25,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -47,7 +47,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
                     <button
                         onClick={onReset}
                         disabled={saving}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 transition-all"
                     >
                         <ArrowPathIcon className="h-4 w-4 ml-2" />
                         إعادة تعيين
@@ -55,7 +55,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
                     <button
                         onClick={onSave}
                         disabled={saving}
-                        className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 shadow-sm transition-all shadow-indigo-200 dark:shadow-none"
+                        className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 shadow-sm transition-all shadow-primary/20"
                     >
                         {saving ? (
                             <>

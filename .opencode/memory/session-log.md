@@ -1,22 +1,30 @@
-# Session Log — 2026-07-08 — AI Image Generator UX Refactor
+# Session Log — 2026-07-08 — Swan AI Image Generation Test + Debugging
 
-## Work
-1. Inspected `/admin/ai-image-generator` and identified 10 design flaws
-2. Created `PRODUCT.md` and `DESIGN.md` for `impeccable` context gates
-3. Refactored `apps/frontend/src/pages/admin/AIImageGenerator.tsx`:
-   - RTL-first Arabic labels and tab order (platform → product → brand → copy → style → campaign → output)
-   - Grouped fields with helper hints and required/validation states
-   - Arabic select options for CTA, mood, theme, layout, text position
-   - Live aspect-ratio preview with pixel dimensions
-   - Generate/reset action row moved below the form with inline validation message
-   - Transparent-background switch disabled unless PNG
-   - Toast feedback via sonner and auto-scroll to result
-   - Improved empty state and gallery with image error handling + hover actions
-   - Delete confirmation dialog with preview
+## What Happened
+1. **Deploy #437** (f0e4cb70) — initial image gen deployed, 2nd try
+2. **Swan test #1** — generated image, returned empty `imageUrl` despite 1120 image_tokens
+3. **Root cause #1**: Backend controller queried wrong schema (`ai.ai_keys` instead of `public.ai_keys`), wrong column (`key_value` instead of `apiKey`). Fixed.
+4. **Deploy #441-443** — image URL extraction from `msg.images[0].image_url.url` confirmed working via SSH logs (503,639 char base64 data URL)
+5. **Deploy #446** — image save to disk (`uploads/ai-images/{companyId}/{filename}`) deployed
+6. **Swan test #2** — ✅ image generated + displayed + downloaded successfully
+7. **Deploy #448** — Gallery (history, copy, delete, regenerate) deployed
+8. **Issue**: Gallery showed 0 images because `uploads/ai-images/` dir was wiped by deploy
+9. **Root cause #2**: `res.data?.data?.imageUrl` → frontend checked wrong nesting path
+10. **Root cause #3**: `msg.images` could be `null` — `Array.isArray(null)` = `false`
+11. **Swan test #3** — ✅ image generated with permanent URL + all action buttons working
+12. **New feature**: Profile image upload support — backend accepts productImage, sends as reference to OpenRouter
+13. **Deploy #461** — deployed (includes nested fix + null guard + product image upload)
 
-## Verification
-- `tsc` clean on `AIImageGenerator.tsx`
-- Dev server smoke test: login + navigate + full-page screenshot shows new RTL layout
+## Key Files Modified
+- `apps/backend/controller/aiImageController.js` — 5x (config, msg.images null guard, productImage, logging)
+- `apps/frontend/src/pages/admin/AIImageGenerator.tsx` — 3x (nested imageUrl fix, productImage base64, lastParams)
+- `.opencode/memory/latest-updates.md`
+- `.opencode/memory/session-log.md`
+
+## Server
+- Host: 153.92.223.119
+- PM2: maxp-backend (log: /var/www/backend2/logs/out-1.log)
+- Deploy: main push → GitHub Actions "Deploy to Server"
 
 ---
 

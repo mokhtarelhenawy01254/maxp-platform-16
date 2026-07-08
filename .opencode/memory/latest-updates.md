@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-07-08: AI Image Generator — Image Upload + Model Fixes
+
+### Fix 1: `res.data.data.imageUrl` Nesting Bug
+- **Issue**: Frontend checked `res.data?.imageUrl` but backend returns `{ success: true, data: { imageUrl } }` → nested under `data.data.imageUrl`
+- **Fix**: Changed all response reads to `res.data?.data?.imageUrl`, error reads to `res.data?.data?.message || res.data?.message`
+- **Files**: `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
+
+### Fix 2: `msg.images` Null Handling
+- **Issue**: `Array.isArray(null)` returns `false`, skipping extraction of images from OpenRouter response
+- **Fix**: Changed guard from `Array.isArray(msg.images)` to truthy check + `Object.values` fallback
+- **Files**: `apps/backend/controller/aiImageController.js`
+
+### Fix 3: Image In URL Extraction — `msg.images` Null
+- **Issue**: OpenRouter Gemini Flash Image returns `msg.images` as null but image data embedded elsewhere
+- **Fix**: Added `Object.values(msg.images)` fallback when `Array.isArray` is false but `msg.images` is truthy
+- **Files**: `apps/backend/controller/aiImageController.js`
+
+### New Feature: Product Image Upload to OpenRouter
+- **Issue**: User uploads product image but backend ignores it, AI invents product
+- **Fix**:
+  - **Backend**: Accepts `productImage` (base64 data URL), sends as `image_url` content part in user message, system prompt instructs to use reference image
+  - **Frontend**: Converts `primaryImage` File to base64 via FileReader, sends as `productImage` in POST body
+- **Files**: `apps/backend/controller/aiImageController.js`, `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
+
+### Deploy History
+- Commit `410e3efa` → Run #448 ✅ (gallery UX)
+- Commit `d2830c2f` → Run #452 ❌ cancelled, fixed in #454 ✅ (msg.images null guard)
+- Commit `3dbe3b05` → Run #459 ✅ (frontend nesting fix)
+- Commit `bb2c4af5` → Run #461 ✅ (product image upload)
+
 ## 2026-07-08: AI Image Generator — Full UX + Gallery
 
 ### New Features

@@ -38,7 +38,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
     return (
         <div
             className={joinClasses(
-                "rounded-lg border border-gray-100 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800",
+                "rounded-lg border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md",
                 className,
             )}
         >
@@ -46,7 +46,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
                 <div className="flex items-start gap-3">
                     <Icon
                         className={joinClasses(
-                            "mt-0.5 h-6 w-6 text-indigo-600 dark:text-indigo-400",
+                            "mt-0.5 h-6 w-6 text-primary",
                             iconClassName,
                         )}
                     />
@@ -81,7 +81,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
                             onChange={(e) => onToggle(e.target.checked)}
                             className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
+                                <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                 )}
             </div>
