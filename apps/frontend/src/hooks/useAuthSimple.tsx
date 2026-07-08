@@ -501,8 +501,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const result = await response.json();
 
       if (!response.ok) {
+        const specificError = result.errors?.[0];
         throw new Error(
-          repairMojibakeText(result.message, 'فشل في إنشاء الحساب'),
+          specificError
+            ? repairMojibakeText(specificError, 'فشل في إنشاء الحساب')
+            : repairMojibakeText(result.message, 'فشل في إنشاء الحساب'),
         );
       }
 
