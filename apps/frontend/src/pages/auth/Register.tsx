@@ -145,6 +145,7 @@ const extractErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === "object" && error !== null && "response" in error) {
     const response = (error as any).response;
+    if (response?.data?.errors?.length) return response.data.errors[0];
     if (response?.data?.message) return response.data.message;
   }
   return fallback;
