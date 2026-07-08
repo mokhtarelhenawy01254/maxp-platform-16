@@ -79,7 +79,7 @@ exports.generateImage = async (req, res) => {
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
-        response_format: { type: "image" },
+        extra_body: { response_format: { type: "image" } },
         ...(dims ? { width: dims.width, height: dims.height } : {}),
       },
       {
@@ -93,40 +93,44 @@ exports.generateImage = async (req, res) => {
     );
 
     const result = response.data;
-    let imageUrl = "";
+    console.log("[AI-IMAGE] result keys:", Object.keys(result).join(","));
     const msg = result?.choices?.[0]?.message;
+    if (msg) {
+      console.log("[AI-IMAGE] msg keys:", Object.keys(msg).join(","));
+      console.log("[AI-IMAGE] msg.images:", JSON.stringify(msg.images).slice(0, 300));
+      console.log("[AI-IMAGE] msg sample:", JSON.stringify(Object.fromEntries(Object.entries(msg).filter(([k]) => k !== "reasoning_details"))).slice(0, 2000));
+    }
+    let imageUrl = "";
 
-    if (msg && msg.images) {
+    if (msg?.images) {
       const imgArr = Array.isArray(msg.images) ? msg.images : Object.values(msg.images);
       for (const img of imgArr) {
-        if (typeof img === "string" && (img.startsWith("data:image/") || img.startsWith("http"))) { imageUrl = img; break; }
-        if (img?.url) { imageUrl = img.url; break; }
+        if (typeof img === "string") { imageUrl = img; break; }
         if (img?.image_url?.url) { imageUrl = img.image_url.url; break; }
+        if (img?.url) { imageUrl = img.url; break; }
       }
     }
 
-    if (!imageUrl && msg?.image_url?.url) imageUrl = msg.image_url.url;
-
-    if (!imageUrl && Array.isArray(msg?.content)) {
-      for (const part of msg.content) {
-        if (part.type === "image_url") {
-          imageUrl = part.image_url?.url || imageUrl;
+    if (!imageUrl && msg?.content) {
+      if (typeof msg.content === "string") {
+        const c = msg.content.trim();
+        if (c.startsWith("data:image/") || c.startsWith("http")) imageUrl = c;
+        else { const m = c.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/); if (m) imageUrl = m[1]; }
+      } else if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === "image_url") { imageUrl = part.image_url?.url; break; }
         }
       }
     }
 
-    if (!imageUrl && typeof msg?.content === "string") {
-      const trimmed = msg.content.trim();
-      if (trimmed.startsWith("data:image/") || trimmed.startsWith("http")) {
-        imageUrl = trimmed;
-      } else {
-        const mdMatch = trimmed.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
-        if (mdMatch) imageUrl = mdMatch[1];
-      }
+    if (!imageUrl && msg?.image_url?.url) imageUrl = msg.image_url.url;
+    if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
+
+    if (!imageUrl) {
+      return res.status(200).json({ success: true, data: { imageUrl: "", model: result?.model || model, usage: result?.usage || null } });
     }
 
-    if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
-    if (imageUrl && imageUrl.startsWith("data:")) {
+    if (imageUrl.startsWith("data:")) {
       const ext = imageUrl.startsWith("data:image/png") ? "png" : "jpg";
       const buffer = Buffer.from(imageUrl.split(",")[1], "base64");
       const filename = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}.${ext}`;
