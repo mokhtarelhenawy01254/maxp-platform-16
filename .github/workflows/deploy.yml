@@ -180,6 +180,7 @@ jobs:
           ls -lh *.tar.gz
 
       - name: Upload Build Artifacts
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: deploy-tarballs-${{ github.run_id }}
