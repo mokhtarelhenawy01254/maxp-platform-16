@@ -688,7 +688,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         model=model,
         soul=body.soul or (template.soul if template else None),
         rules=body.rules or (template.rules if template else None),
-        persona={**(template.persona or {}) if template else {}, **(body.persona or {})},
+        persona=(template.persona if template else {}) | (body.persona or {}),
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
         channels=body.allowed_channels or (template.channels if template else []),
@@ -696,7 +696,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         budget=body.budget or (template.budget if template else {}),
         parent_id=body.parent_id,
         version=template.version if template else "1.0.0",
-        config={**(template.config if template else {}), **(body.config or {})},
+        config=(template.config if template else {}) | (body.config or {}),
     )
     session.add(agent)
     try:
