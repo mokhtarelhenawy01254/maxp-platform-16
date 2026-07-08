@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useReactMediaRecorder } from "react-media-recorder";
 import { Loader2, Mic, Send, Trash2 } from "lucide-react";
 
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { Button } from "@/components/ui/button";
 
 interface AudioRecorderProps {
@@ -18,7 +18,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl, error } =
-    useReactMediaRecorder({ audio: true });
+    useAudioRecorder();
 
   const [isSending, setIsSending] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
