@@ -471,7 +471,7 @@ const AIImageGenerator: React.FC = () => {
     apiClient
       .get<ModelConfigResponse>("/ai-image/model-config")
       .then((res) => {
-        if (res.data?.model) setAgentModel(res.data.model);
+        if (res.data?.data?.model) setAgentModel(res.data.data.model);
       })
       .catch(() => {});
     apiClient
