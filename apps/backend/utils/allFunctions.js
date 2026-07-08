@@ -1680,7 +1680,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       }
 
       // ✅ FIX: لو العميل رد باقتباس من غير نص، نخزن محتوى افتراضي عشان الرسالة تظهر
-      if (replyToMid && messageType === 'TEXT' && !isValidMessageContent(content as string)) {
+      if (replyToMid && messageType === 'TEXT' && !isValidMessageContent(content)) {
         content = '[رد على رسالة]';
         messageType = 'TEXT';
       }
