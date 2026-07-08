@@ -394,6 +394,7 @@ class LLMClient:
             }
             if self.provider in ("DEEPSEEK", "OPENAI"):
                 tool_def["function"]["strict"] = True
+                params.setdefault("additionalProperties", False)
             sanitized.append(tool_def)
         return sanitized
 

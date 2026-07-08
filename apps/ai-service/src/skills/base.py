@@ -29,6 +29,7 @@ class Skill:
                 props.pop(f, None)
             required = schema.get("required", [])
             schema["required"] = [r for r in required if r not in self._internal_fields]
+        schema.setdefault("additionalProperties", False)
         return {
             "type": "function",
             "function": {
