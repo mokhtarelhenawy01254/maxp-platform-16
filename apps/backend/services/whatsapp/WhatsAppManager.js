@@ -2086,10 +2086,11 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             try {
                                 const senderPhone = (first.customerPhone || first.remoteJid.split('@')[0]).replace(/\D/g, '');
                                 const prisma = getSharedPrismaClient();
-                                const adminUsers = await prisma.user.findMany({
-                                    where: { companyId: first.companyId, role: { in: ['COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
-                                    select: { phone: true },
-                                });
+            const adminUsers = await prisma.user.findMany({
+              where: { companyId: first.companyId, role: { in: ['OWNER', 'COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
+              select: { phone: true },
+              take: 20,
+            });
                                 const adminPhones = adminUsers.map(u => {
                                     const p = u.phone.replace(/\D/g, '');
                                     return p.startsWith('0') ? '20' + p.slice(1) : p;

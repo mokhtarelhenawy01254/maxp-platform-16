@@ -305,8 +305,9 @@ async function saveIncomingMessage(payload) {
           try {
             const senderPhone = (first.customerPhone || first.normalizedJid.split('@')[0]).replace(/\D/g, '');
             const adminUsers = await prisma.user.findMany({
-              where: { companyId: first.companyId, role: { in: ['COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
+              where: { companyId: first.companyId, role: { in: ['OWNER', 'COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
               select: { phone: true },
+              take: 20,
             });
             const adminPhones = adminUsers.map(u => {
               const p = u.phone.replace(/\D/g, '');
