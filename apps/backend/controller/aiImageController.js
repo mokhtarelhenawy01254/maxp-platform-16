@@ -44,11 +44,13 @@ exports.generateImage = async (req, res) => {
     const apiKey = await getOpenRouterKey();
 
     const systemPrompt = [
-      "You are a professional social media image designer. Generate a high-quality image based on the user's request.",
+      "You are a professional social media image designer. Your ONLY output MUST be a valid image. NEVER return text descriptions.",
+      "Generate a high-quality social media image based on the user's brief below.",
       productImage ? "The user has provided a reference product image. Use it as the primary visual — place the actual product from the reference image into the design. Do NOT ignore the reference or invent a different product." : "",
       style ? `Style: ${style}.` : "",
       negativePrompt ? `Avoid: ${negativePrompt}.` : "",
-      "Ensure the image is suitable for social media use with clear composition and appropriate colors.",
+      "The image must be in 1:1 square format suitable for Instagram. Use the brand colors and typography specified. Ensure text is readable and well-positioned over the background.",
+      "Return ONLY the generated image — no introductory text, no explanation, no markdown formatting around the image.",
     ].filter(Boolean).join(" ");
 
     const supportedAspectRatios = {
@@ -93,26 +95,36 @@ exports.generateImage = async (req, res) => {
     const result = response.data;
     let imageUrl = "";
     const msg = result?.choices?.[0]?.message;
-    if (msg) {
-      if (typeof msg.content === "string") {
-        imageUrl = msg.content;
-      } else if (Array.isArray(msg.content)) {
-        for (const part of msg.content) {
-          if (part.type === "image_url") {
-            imageUrl = part.image_url?.url || imageUrl;
-          }
-        }
+
+    if (msg && msg.images) {
+      const imgArr = Array.isArray(msg.images) ? msg.images : Object.values(msg.images);
+      for (const img of imgArr) {
+        if (typeof img === "string" && (img.startsWith("data:image/") || img.startsWith("http"))) { imageUrl = img; break; }
+        if (img?.url) { imageUrl = img.url; break; }
+        if (img?.image_url?.url) { imageUrl = img.image_url.url; break; }
       }
-      if (!imageUrl && msg.image_url?.url) imageUrl = msg.image_url.url;
-      if (!imageUrl && msg.images) {
-        const imgArr = Array.isArray(msg.images) ? msg.images : Object.values(msg.images);
-        for (const img of imgArr) {
-          if (typeof img === "string") { imageUrl = img; break; }
-          if (img?.url) { imageUrl = img.url; break; }
-          if (img?.image_url?.url) { imageUrl = img.image_url.url; break; }
+    }
+
+    if (!imageUrl && msg?.image_url?.url) imageUrl = msg.image_url.url;
+
+    if (!imageUrl && Array.isArray(msg?.content)) {
+      for (const part of msg.content) {
+        if (part.type === "image_url") {
+          imageUrl = part.image_url?.url || imageUrl;
         }
       }
     }
+
+    if (!imageUrl && typeof msg?.content === "string") {
+      const trimmed = msg.content.trim();
+      if (trimmed.startsWith("data:image/") || trimmed.startsWith("http")) {
+        imageUrl = trimmed;
+      } else {
+        const mdMatch = trimmed.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
+        if (mdMatch) imageUrl = mdMatch[1];
+      }
+    }
+
     if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     if (imageUrl && imageUrl.startsWith("data:")) {
       const ext = imageUrl.startsWith("data:image/png") ? "png" : "jpg";
@@ -122,6 +134,16 @@ exports.generateImage = async (req, res) => {
       const absoluteDir = path.join(__dirname, "..", relativeDir);
       if (!fs.existsSync(absoluteDir)) fs.mkdirSync(absoluteDir, { recursive: true });
       fs.writeFileSync(path.join(absoluteDir, filename), buffer);
+      try {
+        const meta = {
+          prompt: prompt?.slice(0, 2000) || "",
+          platform: req.body.structured?.platform || "",
+          aspectRatio: req.body.structured?.aspectRatio || aspectRatio,
+          purpose: req.body.structured?.campaign?.purpose || "",
+          model: result.model || model,
+        };
+        fs.writeFileSync(path.join(absoluteDir, `${filename}.meta.json`), JSON.stringify(meta));
+      } catch {}
       imageUrl = `/${relativeDir}/${filename}`;
     }
 
@@ -159,7 +181,12 @@ exports.getHistory = async (req, res) => {
       .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
       .map(f => {
         const stat = fs.statSync(path.join(imgDir, f));
-        return { filename: f, url: `/uploads/ai-images/${companyId || "unknown"}/${f}`, createdAt: stat.birthtime || stat.mtime, size: stat.size };
+        const metaPath = path.join(imgDir, `${f}.meta.json`);
+        let meta = {};
+        if (fs.existsSync(metaPath)) {
+          try { meta = JSON.parse(fs.readFileSync(metaPath, "utf8")); } catch {}
+        }
+        return { filename: f, url: `/uploads/ai-images/${companyId || "unknown"}/${f}`, createdAt: stat.birthtime || stat.mtime, size: stat.size, ...meta };
       })
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return res.json({ success: true, data: files });

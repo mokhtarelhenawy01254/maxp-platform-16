@@ -235,7 +235,7 @@ class BaseAgent:
             role=overrides.get("role") or profile.role,
             company_id=company_id,
             allowed_tools=overrides.get("allowed_tools") or profile.allowed_tools,
-            tool_choice=overrides.get("tool_choice") or profile.tool_choice,
+            tool_choice=(overrides.get("config") or {}).get("toolChoice") or overrides.get("tool_choice") or profile.tool_choice,
             allowed_skills=overrides.get("allowed_skills") or profile.allowed_skills,
             template_slug=template_slug,
             version=profile.version,

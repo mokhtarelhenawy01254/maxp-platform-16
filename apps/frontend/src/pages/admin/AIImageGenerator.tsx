@@ -265,6 +265,11 @@ interface GenerateResponse {
   data?: {
     imageUrl?: string;
     message?: string;
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
   };
 }
 
@@ -305,6 +310,32 @@ interface FormData {
   avoidPrompt: string;
   editablePrompt: string;
 }
+
+const DRAFT_KEY = "aiImageGenerator_draft_v1";
+
+const loadDraft = (): Partial<FormData> | null => {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const saveDraft = (form: FormData) => {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+  } catch {}
+};
+
+const clearDraft = () => {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {}
+};
 
 const initialForm: FormData = {
   platform: "instagram",
@@ -410,7 +441,10 @@ function AspectPreview({
 }
 
 const AIImageGenerator: React.FC = () => {
-  const [form, setForm] = useState<FormData>(initialForm);
+  const [form, setForm] = useState<FormData>(() => {
+    const draft = loadDraft();
+    return { ...initialForm, ...(draft || {}) };
+  });
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -427,6 +461,7 @@ const AIImageGenerator: React.FC = () => {
   const [galleryFilter, setGalleryFilter] = useState<string>("all");
   const [gallerySearch, setGallerySearch] = useState<string>("");
   const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string; productImage?: string } | null>(null);
+  const [usage, setUsage] = useState<{ prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null>(null);
 
   const selectValue = <K extends keyof FormData>(key: K) => (value: string | null) => {
     if (value !== null) update(key, value as FormData[K]);
@@ -503,8 +538,21 @@ const AIImageGenerator: React.FC = () => {
     return () => URL.revokeObjectURL(url);
   }, [primaryImage]);
 
+  const setPrimaryImageAndDraft = (file: File | null) => {
+    setPrimaryImage(file);
+    setForm((prev) => {
+      const next = { ...prev };
+      saveDraft(next);
+      return next;
+    });
+  };
+
   const update = <K extends keyof FormData>(key: K, val: FormData[K]) => {
-    setForm((prev) => ({ ...prev, [key]: val }));
+    setForm((prev) => {
+      const next = { ...prev, [key]: val };
+      saveDraft(next);
+      return next;
+    });
   };
 
   const platformLabel = useMemo(
@@ -655,6 +703,7 @@ const AIImageGenerator: React.FC = () => {
       });
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
+        setUsage(res.data?.data?.usage || null);
         toast.success("تم توليد الصورة بنجاح");
         fetchGallery();
       } else {
@@ -708,6 +757,7 @@ const AIImageGenerator: React.FC = () => {
       const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, productImage });
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
+        setUsage(res.data?.data?.usage || null);
         toast.success("تم توليد الصورة بنجاح");
         fetchGallery();
       } else {
@@ -737,29 +787,55 @@ const AIImageGenerator: React.FC = () => {
 
   const handleReset = () => {
     setForm(initialForm);
+    clearDraft();
     setImageUrl("");
     setMessage(null);
     setPrimaryImage(null);
     setPromptTouched(false);
     setGalleryFilter("all");
     setGallerySearch("");
+    setUsage(null);
     toast.info("تم تصفير النموذج");
   };
 
+  const formatDate = (date: string | Date) => {
+    try {
+      return new Intl.DateTimeFormat("ar-SA", { dateStyle: "short", timeStyle: "short" }).format(new Date(date));
+    } catch {
+      return "";
+    }
+  };
+
   const filteredGallery = useMemo(() => {
+    const q = gallerySearch.trim().toLowerCase();
     return gallery.filter((img) => {
       if (galleryFilter !== "all" && img.platform !== galleryFilter) return false;
-      if (gallerySearch.trim() && !img.filename.toLowerCase().includes(gallerySearch.trim().toLowerCase())) return false;
-      return true;
+      if (!q) return true;
+      const hay = [
+        img.filename || "",
+        img.prompt || "",
+        img.purpose || "",
+        img.aspectRatio || "",
+        formatDate(img.createdAt),
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
     });
   }, [gallery, galleryFilter, gallerySearch]);
 
   const applyTemplate = (template: string) => {
     const t = TEMPLATES[template];
     if (!t) return;
-    setForm((prev) => ({ ...prev, ...t }));
+    setForm((prev) => {
+      const next = { ...prev, ...t };
+      saveDraft(next);
+      return next;
+    });
     setPromptTouched(false);
-    setTimeout(() => setForm((prev) => ({ ...prev, editablePrompt: buildPromptText() })), 0);
+    setTimeout(() => setForm((prev) => {
+      const next = { ...prev, editablePrompt: buildPromptText() };
+      saveDraft(next);
+      return next;
+    }), 0);
   };
 
   const inputCls = "bg-white dark:bg-gray-900";
@@ -943,7 +1019,7 @@ const AIImageGenerator: React.FC = () => {
                       <Input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => setPrimaryImage(e.target.files?.[0] || null)}
+                        onChange={(e) => setPrimaryImageAndDraft(e.target.files?.[0] || null)}
                         className={inputCls}
                       />
                     ) : (
@@ -955,7 +1031,7 @@ const AIImageGenerator: React.FC = () => {
                         />
                         <button
                           type="button"
-                          onClick={() => setPrimaryImage(null)}
+                          onClick={() => setPrimaryImageAndDraft(null)}
                           className="absolute -right-2 -top-2 rounded-full border bg-background p-1 shadow-sm hover:bg-muted"
                           title="إزالة الصورة"
                         >
@@ -1466,6 +1542,15 @@ const AIImageGenerator: React.FC = () => {
           </Button>
         </div>
 
+        {usage && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">استخدام الموديل:</span>
+            {usage.prompt_tokens !== undefined && <span>prompt: {usage.prompt_tokens.toLocaleString()}</span>}
+            {usage.completion_tokens !== undefined && <span>completion: {usage.completion_tokens.toLocaleString()}</span>}
+            {usage.total_tokens !== undefined && <span className="font-semibold">الإجمالي: {usage.total_tokens.toLocaleString()} token</span>}
+          </div>
+        )}
+
         <div id="ai-generated-result" className="mt-6">
           {loading ? (
             <div className="flex min-h-[400px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
@@ -1543,6 +1628,29 @@ const AIImageGenerator: React.FC = () => {
               تحديث
             </Button>
           </div>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">المنصة:</span>
+              <Select value={galleryFilter} onValueChange={(v) => setGalleryFilter(v || "all")}>
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  {PLATFORMS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Input
+              placeholder="ابحث باسم الملف، البرومبت، التاريخ..."
+              value={gallerySearch}
+              onChange={(e) => setGallerySearch(e.target.value)}
+              className={`h-8 sm:w-72 ${inputCls}`}
+            />
+          </div>
+
           {filteredGallery.length === 0 ? (
             <div className="flex min-h-[160px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
               <div className="text-center text-slate-400">
@@ -1568,6 +1676,20 @@ const AIImageGenerator: React.FC = () => {
                       e.currentTarget.style.display = "none";
                     }}
                   />
+                  {(img.platform || img.aspectRatio || img.purpose) && (
+                    <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                      {img.platform && <Badge variant="secondary" className="text-[10px]">{PLATFORMS.find((p) => p.value === img.platform)?.label || img.platform}</Badge>}
+                      {img.aspectRatio && <Badge variant="outline" className="text-[10px]">{img.aspectRatio}</Badge>}
+                    </div>
+                  )}
+                  {img.prompt && (
+                    <div
+                      title={img.prompt}
+                      className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/70 to-transparent px-2 pt-6 pb-2 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      {img.prompt}
+                    </div>
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       type="button"

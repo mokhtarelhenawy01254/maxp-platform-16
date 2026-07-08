@@ -694,7 +694,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         budget=body.budget or (template.budget if template else {}),
         parent_id=body.parent_id,
         version=template.version if template else "1.0.0",
-        config=body.config or {},
+        config={**(template.config if template else {}), **(body.config or {})},
     )
     session.add(agent)
     try:
