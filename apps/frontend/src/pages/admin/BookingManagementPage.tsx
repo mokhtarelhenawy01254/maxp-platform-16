@@ -32,6 +32,7 @@ interface BookingBranch {
   id: string; name: string; address: string; phone: string; phones?: string[];
   workingDays: string; workStart: string; workEnd: string;
   isActive: boolean; createdAt: string;
+  maxBookingsPerSlot?: number;
 }
 
 interface BookingDoctor {
@@ -124,7 +125,7 @@ const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600
       return { male: obj.male || [], female: obj.female || [] };
     };
     const initForm = () => {
-      const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true };
+      const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true, maxBookingsPerSlot: 1 };
       let initialPhones = (branch?.phones || []).filter(Boolean);
       if (initialPhones.length === 0 && branch?.phone) initialPhones = [branch.phone];
       if (!branch?.workingDays || typeof branch.workingDays === 'string') {
@@ -219,6 +220,11 @@ const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600
                   </div>
                 </div>
               </div>
+            </div>
+            <div className="border-t dark:border-gray-700 pt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحد الأقصى للحجوزات لكل وقت</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">عدد الحجوزات المسموح بها في نفس الساعة (الافتراضي: ١)</p>
+              <input type="number" min={1} max={99} className={MODAL_INPUT_CLS} value={form.maxBookingsPerSlot ?? 1} onChange={e => setForm({ ...form, maxBookingsPerSlot: Math.max(1, Number(e.target.value)) })} />
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
@@ -372,6 +378,13 @@ const ServiceModal = ({ service, branches, onClose, onSave }: {
   );
 };
 
+const InfoBlock = ({ label, value, dir, fullWidth }: { label: string; value: string; dir?: string; fullWidth?: boolean }) => (
+  <div className={fullWidth ? "col-span-2" : ""}>
+    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">{label}</label>
+    <p className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${dir === "ltr" ? "dir-ltr text-left" : ""}`}>{value}</p>
+  </div>
+);
+
 const AppointmentModal = ({ appointment, branches, branchDoctors, services, onClose, onSave }: {
   appointment?: Partial<BookingAppointment> | null;
   branches: BookingBranch[];
@@ -409,11 +422,72 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
 
   const doctors = branchDoctors.filter(d => d.branchId === form.branchId && d.isActive);
 
+  const branchName = appointment?.branchName || branches.find(b => b.id === (appointment?.branchId || form.branchId))?.name || "";
+  const serviceName = appointment?.serviceName || services.find(s => s.id === (appointment?.serviceId || form.serviceId))?.name || "";
+  const doctorName = appointment?.doctorName || branchDoctors.find(d => d.id === (appointment?.doctorId || form.doctorId))?.name || "";
+
+  // ── Detail view for existing appointments ──
+  if (appointment?.id) {
+    return (
+      <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold">تفاصيل الموعد</h3>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Status badge */}
+            <div className="flex justify-center mb-2">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${STATUS_MAP[appointment.status || ""]?.color || ""}`}>
+                {STATUS_MAP[appointment.status || ""]?.label || appointment.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <InfoBlock label="العميل" value={appointment.customerName} />
+              <InfoBlock label="الهاتف" value={appointment.customerPhone || "—"} dir="ltr" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <InfoBlock label="الجنس" value={appointment.customerGender === "female" ? "أنثى" : "ذكر"} />
+              <InfoBlock label="المصدر" value={appointment.source || "dashboard"} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <InfoBlock label="الفرع" value={branchName} />
+              <InfoBlock label="الخدمة" value={serviceName || "—"} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <InfoBlock label="الطبيب" value={doctorName || "أي طبيب"} />
+              <InfoBlock label="المدة" value={`${appointment.duration || 30} دقيقة`} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <InfoBlock label="التاريخ" value={appointment.appointmentDate} />
+              <InfoBlock label="الوقت" value={`${appointment.startTime} - ${appointment.endTime || "—"}`} />
+            </div>
+            {(appointment.paymentRequired || appointment.paymentStatus) && (
+              <div className="grid grid-cols-2 gap-4">
+                <InfoBlock label="مطلوب دفع" value={appointment.paymentRequired ? "نعم" : "لا"} />
+                <InfoBlock label="حالة الدفع" value={appointment.paymentStatus || "—"} />
+              </div>
+            )}
+            {appointment.notes && <InfoBlock label="ملاحظات" value={appointment.notes} fullWidth />}
+            <InfoBlock label="تاريخ الإنشاء" value={appointment.createdAt ? new Date(appointment.createdAt).toLocaleString("ar-EG") : "—"} fullWidth />
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <button onClick={onClose} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">إغلاق</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Create form ──
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">{appointment?.id ? "تفاصيل الموعد" : "حجز موعد"}</h3>
+          <h3 className="text-lg font-bold">حجز موعد</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
@@ -458,13 +532,10 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
               </select>
             </div>
           </div>
-          {appointment?.id && (
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-          )}
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          {!appointment?.id && <button onClick={() => onSave(form)} disabled={!form.customerName || !form.branchId || !form.appointmentDate || !form.startTime} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حجز</button>}
+          <button onClick={() => onSave(form)} disabled={!form.customerName || !form.branchId || !form.appointmentDate || !form.startTime} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حجز</button>
         </div>
       </div>
     </div>
@@ -605,7 +676,7 @@ export default function BookingManagementPage() {
     try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch (e: any) { console.error("fetchAppointments", e); setAppointments([]); throw e; }
   };
 
-  const saveBranch = async (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string }) => {
+  const saveBranch = async (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string; maxBookingsPerSlot?: number }) => {
     const isEdit = !!d.id;
     const url = isEdit ? api(`branches/${d.id}`) : api("branches");
     const phones = (d.phones || []).map(p => String(p).trim()).filter(Boolean);
@@ -627,6 +698,7 @@ export default function BookingManagementPage() {
     } else {
       body.genderDays = { male: [], female: [] };
     }
+    if (d.maxBookingsPerSlot !== undefined) body.maxBookingsPerSlot = d.maxBookingsPerSlot;
     const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const data = await res.json();
     if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
