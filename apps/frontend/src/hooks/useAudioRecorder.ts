@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type AudioRecorderStatus = "idle" | "acquiring_media" | "recording" | "stopping" | "stopped" | "error";
 
@@ -19,6 +19,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const mimeTypeRef = useRef<string>("audio/webm");
 
   useEffect(() => {
     return () => {
@@ -31,7 +32,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     };
   }, [mediaBlobUrl]);
 
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     try {
       setError(undefined);
       setStatus("acquiring_media");
@@ -42,8 +43,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
       let mimeType = "audio/webm";
       if (!MediaRecorder.isTypeSupported("audio/webm")) {
-        mimeType = "audio/wav";
+        if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        } else {
+          mimeType = "audio/wav";
+        }
       }
+      mimeTypeRef.current = mimeType;
 
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
@@ -55,7 +61,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
         const url = URL.createObjectURL(blob);
         chunksRef.current = [];
         setMediaBlobUrl(url);
@@ -86,22 +92,22 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         mediaStreamRef.current = null;
       }
     }
-  };
+  }, []);
 
-  const stopRecording = () => {
+  const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       setStatus("stopping");
       mediaRecorderRef.current.stop();
     }
-  };
+  }, []);
 
-  const clearBlobUrl = () => {
+  const clearBlobUrl = useCallback(() => {
     if (mediaBlobUrl) {
       URL.revokeObjectURL(mediaBlobUrl);
     }
     setMediaBlobUrl(undefined);
     setStatus("idle");
-  };
+  }, [mediaBlobUrl]);
 
   return { status, mediaBlobUrl, error, startRecording, stopRecording, clearBlobUrl };
 }

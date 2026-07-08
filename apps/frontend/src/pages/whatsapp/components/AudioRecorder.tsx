@@ -13,6 +13,7 @@ const STATUS_LABELS: Record<string, string> = {
   idle: "اضغط للتسجيل",
   acquiring_media: "طلب الإذن بالميكروفون...",
   recording: "Recording...",
+  stopping: "جاري المعالجة...",
   stopped: "Processing...",
 };
 
@@ -24,7 +25,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   const [recordingTime, setRecordingTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const sendLockRef = useRef(false);
+  const startedRef = useRef(false);
 
+  // Timer for recording duration
   useEffect(() => {
     if (status === "recording") {
       timerRef.current = setInterval(() => {
@@ -41,16 +44,22 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
     };
   }, [status]);
 
+  // Start recording ONCE on mount
   useEffect(() => {
-    startRecording();
+    if (!startedRef.current) {
+      startedRef.current = true;
+      startRecording();
+    }
   }, [startRecording]);
 
+  // Reset send lock when recording restarts
   useEffect(() => {
     if (status === "recording") {
       sendLockRef.current = false;
     }
   }, [status]);
 
+  // Send audio when stopped and isSending
   useEffect(() => {
     if (!isSending || !mediaBlobUrl || status !== "stopped") return;
     if (sendLockRef.current) return;
@@ -60,6 +69,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
       try {
         const response = await fetch(mediaBlobUrl);
         const blob = await response.blob();
+        if (blob.size < 500) {
+          console.error("Audio blob too small, likely empty recording:", blob.size);
+          return;
+        }
         onSend(blob);
         clearBlobUrl();
       } catch (error) {
@@ -76,8 +89,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
-
-  const isError = error || status === "idle";
 
   return (
     <div className="flex w-full items-center gap-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-3 py-2 shadow-md">
