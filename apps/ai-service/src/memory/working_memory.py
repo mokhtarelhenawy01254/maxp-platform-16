@@ -78,11 +78,12 @@ class WorkingMemoryService:
         session.messages = session.messages[overflow:]
 
         old_summary_text = f"{session.summary} | " if session.summary else ""
-        compressed = "; ".join([
-            f"[{m.get('role', 'user')}]: {str(m.get('content', ''))[:80]}"
+        compressed_lines = [
+            f"[{m.get('role', 'user')}]: {str(m.get('content', ''))[:500]}"
             for m in old_messages
-        ])
-        session.summary = f"{old_summary_text}Compressed {len(old_messages)} msgs: {compressed}"
+        ]
+        header = f"[Earlier conversation - {len(old_messages)} message(s)]"
+        session.summary = f"{old_summary_text}{header}\n" + "\n".join(compressed_lines)
 
     async def get_context(self, company_id: str, conversation_id: str) -> dict[str, Any] | None:
         key = self._key(company_id, conversation_id)

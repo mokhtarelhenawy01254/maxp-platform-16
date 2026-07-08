@@ -1619,8 +1619,13 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         return; // Conversation already created/updated above, no need to create message
       }
 
+      // NEW: Capture Facebook message ID and reply reference FIRST
+      const fbMessageId = webhookEvent.message?.mid;
+      const replyToMid = webhookEvent.message?.reply_to?.mid;
+
       // ✅ FIX: التحقق من صحة محتوى الرسالة لجميع الأنواع (بما في ذلك الرسائل الفارغة من الإعلانات)
-      const isEmptyMessage = messageType === 'TEXT' && !isValidMessageContent(content);
+      // ✅ FIX: لو في replyToMid (اقتباس)، الرسالة مش فارغة حتى لو مفيش نص
+      const isEmptyMessage = messageType === 'TEXT' && !isValidMessageContent(content) && !replyToMid;
       const hasNoAttachments = !attachments || attachments.length === 0;
 
       if (isEmptyMessage && hasNoAttachments) {
@@ -1674,9 +1679,11 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         return; // تجاهل الرسالة الفارغة
       }
 
-      // NEW: Capture Facebook message ID and reply reference
-      const fbMessageId = webhookEvent.message?.mid;
-      const replyToMid = webhookEvent.message?.reply_to?.mid;
+      // ✅ FIX: لو العميل رد باقتباس من غير نص، نخزن محتوى افتراضي عشان الرسالة تظهر
+      if (replyToMid && messageType === 'TEXT' && !isValidMessageContent(content as string)) {
+        content = '[رد على رسالة]';
+        messageType = 'TEXT';
+      }
 
       // 🔍 DEBUG: Log reply_to information
       // console.log('🔍 [REPLY-DEBUG] Message data:', {

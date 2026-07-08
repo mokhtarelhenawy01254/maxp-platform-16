@@ -213,6 +213,7 @@ class ContextAssembler:
             if _db_rules:
                 base_prompt += f"\n\n<rules>\n{_db_rules}\n</rules>"
 
+
         sections: list[tuple[str, str]] = []  # (section_name, xml_content)
 
         # 0. Current datetime — helps LLM with date math and relative day names
@@ -350,12 +351,12 @@ class ContextAssembler:
             return system_prompt, history
 
         # Strategy 2: Drop low-priority sections from system prompt
+        # Order: least important dropped first, most important preserved
         droppable_tags = [
-            ("relevant_memories", "<relevant_memories>", "</relevant_memories>"),
-            ("skills_available", "<skills_available>", "</skills_available>"),
+            ("session_state", "<session_state>", "</session_state>"),
             ("conversation_summary", "<conversation_summary>", "</conversation_summary>"),
             ("company_knowledge", "<company_knowledge>", "</company_knowledge>"),
-            ("session_state", "<session_state>", "</session_state>"),
+            ("relevant_memories", "<relevant_memories>", "</relevant_memories>"),
         ]
 
         for tag_name, open_tag, close_tag in droppable_tags:
