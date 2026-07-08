@@ -2068,6 +2068,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                         accumulate(key, {
                             message: messageContent.text,
                             customerId: syncedCustomer.id,
+                            customerPhone: syncedCustomer?.phone || remoteJid.split('@')[0],
                             conversationId: syncedConversation?.id,
                             companyId: syncedCustomer.companyId,
                             sessionId,
@@ -2083,13 +2084,16 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             // ponytail: admin routing — match sender phone against company admin users
                             let channel = 'WHATSAPP';
                             try {
-                                const senderPhone = first.remoteJid.split('@')[0].replace(/\D/g, '');
+                                const senderPhone = (first.customerPhone || first.remoteJid.split('@')[0]).replace(/\D/g, '');
                                 const prisma = getSharedPrismaClient();
                                 const adminUsers = await prisma.user.findMany({
                                     where: { companyId: first.companyId, role: { in: ['COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
                                     select: { phone: true },
                                 });
-                                const adminPhones = adminUsers.map(u => u.phone.replace(/\D/g, '')).filter(Boolean);
+                                const adminPhones = adminUsers.map(u => {
+                                    const p = u.phone.replace(/\D/g, '');
+                                    return p.startsWith('0') ? '20' + p.slice(1) : p;
+                                }).filter(Boolean);
                                 if (adminPhones.includes(senderPhone)) {
                                     channel = 'WHATSAPP_ADMIN';
                                     console.log(`🔵 [BAILEYS-DEBOUNCE] Sender ${senderPhone} is admin → routing to WHATSAPP_ADMIN`);

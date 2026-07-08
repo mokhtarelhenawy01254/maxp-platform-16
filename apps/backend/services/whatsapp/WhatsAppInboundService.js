@@ -287,6 +287,7 @@ async function saveIncomingMessage(payload) {
         accumulateWA(syncedCustomer.companyId, sessionId, normalizedJid, {
           message: content,
           customerId: syncedCustomer.id,
+          customerPhone: syncedCustomer?.phone || normalizedJid.split('@')[0],
           conversationId: syncedConversation?.id,
           companyId: syncedCustomer.companyId,
           sessionId,
@@ -302,12 +303,15 @@ async function saveIncomingMessage(payload) {
           // ponytail: admin routing — match sender phone against company admin users
           let channel = 'WHATSAPP';
           try {
-            const senderPhone = first.normalizedJid.split('@')[0].replace(/\D/g, '');
+            const senderPhone = (first.customerPhone || first.normalizedJid.split('@')[0]).replace(/\D/g, '');
             const adminUsers = await prisma.user.findMany({
               where: { companyId: first.companyId, role: { in: ['COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
               select: { phone: true },
             });
-            const adminPhones = adminUsers.map(u => u.phone.replace(/\D/g, '')).filter(Boolean);
+            const adminPhones = adminUsers.map(u => {
+              const p = u.phone.replace(/\D/g, '');
+              return p.startsWith('0') ? '20' + p.slice(1) : p;
+            }).filter(Boolean);
             if (adminPhones.includes(senderPhone)) {
               channel = 'WHATSAPP_ADMIN';
               console.log(`🔵 [WA-DEBOUNCE] Sender ${senderPhone} is admin → routing to WHATSAPP_ADMIN`);
