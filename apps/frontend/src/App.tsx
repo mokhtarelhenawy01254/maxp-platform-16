@@ -89,6 +89,9 @@ const ProductBreakEvenCalculator = React.lazy(
 const ProfitabilityEngine = React.lazy(
   () => import("./pages/marketing/ProfitabilityEngine"),
 );
+const PricingStrategyCalculator = React.lazy(
+  () => import("./pages/marketing/PricingStrategyCalculator"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2588,6 +2591,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ProfitabilityEngine />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/pricing-strategy"
+                  element={
+                    <Layout>
+                      <PricingStrategyCalculator />
                     </Layout>
                   }
                 />
