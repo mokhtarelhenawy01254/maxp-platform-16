@@ -700,7 +700,7 @@ const AIImageGenerator: React.FC = () => {
       const res = await apiClient.post<GenerateResponse>("/ai-image/generate", {
         structured: buildPromptJson(),
         ...params,
-      });
+      }, { timeout: 120000 });
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
@@ -754,7 +754,7 @@ const AIImageGenerator: React.FC = () => {
   const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string, productImage?: string) => {
     setLoading(true);
     try {
-      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, productImage });
+      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, productImage }, { timeout: 120000 });
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
