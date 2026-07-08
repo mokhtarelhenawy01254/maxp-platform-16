@@ -53,6 +53,18 @@ class AgentTemplate(Base):
 
     agents: Mapped[list["Agent"]] = relationship("Agent", back_populates="template")
 
+    @property
+    def soul(self) -> str | None:
+        return self.instructions_soul
+
+    @property
+    def rules(self) -> str | None:
+        return self.instructions_agents
+
+    @property
+    def persona(self) -> dict[str, Any]:
+        return self.persona_meta
+
 
 class Agent(Base):
     """Unified agent model — the single source of truth for runtime agent
