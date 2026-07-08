@@ -48,13 +48,12 @@ class TestSkillRegistry:
     def test_resolve_unknown_returns_none(self):
         assert self.r.resolve("nonexistent") is None
 
-    def test_register_skill_convert_to_function_tool(self):
+    def test_register_skill_converts_to_function_tool(self):
         skill = make_skill("test_skill")
         self.r.register(skill)
         resolved = self.r.resolve("test_skill")
         assert resolved is not None
         assert resolved.name == "test_skill"
-        # Should be a FunctionTool, not a Skill
         assert isinstance(resolved, FunctionTool)
 
     def test_get_all_tools_includes_both(self):
@@ -68,7 +67,7 @@ class TestSkillRegistry:
         assert "skill_a" in names
         assert len(all_tools) == 3
 
-    def test_duplicate_register_does_not_duplicate(self):
+    def test_duplicate_register_no_duplication(self):
         self.r.register_tool(make_tool("dup"))
         self.r.register_tool(make_tool("dup"))
         assert len(self.r.get_all_tools()) == 1
@@ -98,15 +97,23 @@ class TestSkillRegistry:
 
 
 class TestGlobalRegistry:
-    def test_global_registry_is_singleton(self):
+    def test_singleton(self):
         r1 = get_skill_registry()
         r2 = get_skill_registry()
         assert r1 is r2
 
-    def test_global_registry_has_tools_after_import(self):
+    def test_all_tools_accessible_via_registry(self):
         from src.tools.registry import ALL_TOOLS
         r = get_skill_registry()
-        # Should have the same count (minus duplicates if any)
-        resolved_count = len([n for n in ALL_TOOLS if r.resolve(n) is not None])
-        assert resolved_count > 0
-        assert resolved_count == len(ALL_TOOLS)
+        for name in ALL_TOOLS:
+            resolved = r.resolve(name)
+            assert resolved is not None, f"Tool '{name}' not found in SkillRegistry"
+            assert resolved.name == name
+
+    def test_get_all_tools_matches_all_tools(self):
+        from src.tools.registry import ALL_TOOLS
+        r = get_skill_registry()
+        registry_tools = r.get_all_tools()
+        registry_names = {t.name for t in registry_tools}
+        for name in ALL_TOOLS:
+            assert name in registry_names, f"Tool '{name}' missing from get_all_tools()"

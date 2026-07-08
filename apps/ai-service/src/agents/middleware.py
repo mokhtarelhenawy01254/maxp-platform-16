@@ -92,9 +92,10 @@ class MaxPAgentRuntimeMiddleware(AgentMiddleware):
 class MaxPFunctionAuditMiddleware(FunctionMiddleware):
     """SDK function middleware for MaxP tool-call observability metadata."""
 
-    def __init__(self, *, company_id: str, agent_role: str) -> None:
+    def __init__(self, *, company_id: str, agent_role: str, agent_name: str | None = None) -> None:
         self.company_id = company_id
         self.agent_role = agent_role
+        self.agent_name = agent_name
 
     async def process(
         self,
@@ -105,6 +106,8 @@ class MaxPFunctionAuditMiddleware(FunctionMiddleware):
         context.metadata["company_id"] = self.company_id
         context.metadata["agent_role"] = self.agent_role
         context.metadata["tool_name"] = tool_name
+        if self.agent_name:
+            context.metadata["agent_name"] = self.agent_name
 
         logger.debug(
             "sdk function middleware before tool",
@@ -127,10 +130,10 @@ class MaxPFunctionAuditMiddleware(FunctionMiddleware):
 
 
 
-def build_maxp_function_middleware(company_id: str, agent_role: str) -> list[Any]:
+def build_maxp_function_middleware(company_id: str, agent_role: str, agent_name: str | None = None) -> list[Any]:
     return [
         MaxPAgentRuntimeMiddleware(company_id=company_id, agent_role=agent_role),
-        MaxPFunctionAuditMiddleware(company_id=company_id, agent_role=agent_role),
+        MaxPFunctionAuditMiddleware(company_id=company_id, agent_role=agent_role, agent_name=agent_name),
     ]
 
 

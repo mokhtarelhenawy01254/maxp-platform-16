@@ -98,7 +98,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-green-500 to-emerald-600',
     sectionIds: ['whatsapp'],
     category: 'communication',
-    requiredApps: ['whatsapp-integration'],
+    requiredApps: ['whatsapp-business'],
   },
   {
     id: 'telegram',

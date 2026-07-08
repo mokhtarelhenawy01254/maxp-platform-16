@@ -45,6 +45,7 @@ const getAllAppointments = async (req, res) => {
       doctorId: a.doctorId, serviceId: a.serviceId, serviceName: a.serviceName,
       source: a.source, paymentRequired: a.paymentRequired, paymentStatus: a.paymentStatus,
       meetingLink: a.meetingLink, notes: a.notes,
+      createdById: a.createdById, createdByType: a.createdByType, createdByName: a.createdByName,
       confirmedAt: a.confirmedAt, createdAt: a.createdAt.toISOString()
     }));
 
@@ -207,9 +208,12 @@ const createAppointment = async (req, res) => {
         startTime, endTime, duration,
         status: 'pending', type: type || 'consultation',
         location: branch.name || null,
-        source: source || 'dashboard',
+        source: source || (req.user.role === 'AI_SERVICE' ? 'ai-service' : 'dashboard'),
         notes, paymentRequired: paymentRequired || false,
-        paymentStatus: paymentRequired ? 'pending' : null
+        paymentStatus: paymentRequired ? 'pending' : null,
+        createdById: req.user.id,
+        createdByType: req.user.role === 'AI_SERVICE' ? 'ai_service' : 'user',
+        createdByName: req.user.role === 'AI_SERVICE' ? (body.createdByName || 'AI Service') : `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim()
       },
       include: { branch: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } }
     });
@@ -227,6 +231,9 @@ const createAppointment = async (req, res) => {
       duration: appointment.duration, status: appointment.status,
       source: appointment.source,
       paymentRequired: appointment.paymentRequired, paymentStatus: appointment.paymentStatus,
+      createdById: appointment.createdById,
+      createdByType: appointment.createdByType,
+      createdByName: appointment.createdByName,
       createdAt: appointment.createdAt.toISOString()
     };
 

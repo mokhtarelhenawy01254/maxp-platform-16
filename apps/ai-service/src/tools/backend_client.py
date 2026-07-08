@@ -490,9 +490,12 @@ class BackendClient:
         return await self._request("POST", "/api/v1/customers", json_body={**data, "companyId": company_id})
 
     async def create_booking_appointment(
-        self, company_id: str, data: dict[str, Any]
+        self, company_id: str, data: dict[str, Any], agent_name: str | None = None
     ) -> dict[str, Any]:
-        return await self._request("POST", "/api/v1/booking/appointments", json_body={**data, "companyId": company_id})
+        body = {**data, "companyId": company_id}
+        if agent_name:
+            body["createdByName"] = agent_name
+        return await self._request("POST", "/api/v1/booking/appointments", json_body=body)
 
     async def confirm_booking_appointment(
         self, company_id: str, appointment_id: str

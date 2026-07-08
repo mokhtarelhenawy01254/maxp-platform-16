@@ -333,7 +333,7 @@ class BaseAgent:
             instructions=instructions,
             tools=tools,
             context_providers=context_providers,
-            middleware=build_maxp_function_middleware(self.company_id, self.role),
+            middleware=build_maxp_function_middleware(self.company_id, self.role, agent_name=self.name),
             default_options=default_options,
         )
         self.client = client
@@ -586,7 +586,7 @@ class BaseAgent:
     @property
     def middleware(self) -> list[Any]:
         """Expose the function and agent middleware."""
-        return build_maxp_function_middleware(self.company_id, self.role)
+        return build_maxp_function_middleware(self.company_id, self.role, agent_name=self.name)
 
     def _load_skills_block(self) -> str:
         """Read SKILL.md from disk for each allowed skill and return a <skills> block."""

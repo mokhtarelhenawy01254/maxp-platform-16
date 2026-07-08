@@ -8226,6 +8226,9 @@ model Appointment {
   location        String?
   meetingLink     String?
   notes           String?
+  createdById     String?
+  createdByType   String?   /// ai_service / user (human dashboard user)
+  createdByName   String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)

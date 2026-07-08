@@ -42,8 +42,11 @@ async def booking_slots(input_data: SlotsInput) -> dict[str, Any]:
     """Returns available time slots for a date."""
     return await booking_tools.get_slots(input_data.company_id, input_data.date, input_data.gender)
 
-async def booking_reserve(input_data: ReserveInput) -> dict[str, Any]:
+async def booking_reserve(input_data: ReserveInput, ctx: Any = None) -> dict[str, Any]:
     """Books an appointment using structured patient and booking details."""
+    agent_name = None
+    if ctx is not None and hasattr(ctx, 'metadata'):
+        agent_name = ctx.metadata.get('agent_name')
     return await booking_tools.reserve_appointment(
         company_id=input_data.company_id,
         patient_name=input_data.patient_name,
@@ -53,6 +56,7 @@ async def booking_reserve(input_data: ReserveInput) -> dict[str, Any]:
         branch_name=input_data.branch_name,
         appointment_date=input_data.appointment_date,
         appointment_time=input_data.appointment_time,
+        agent_name=agent_name,
     )
 
 async def booking_status(input_data: StatusInput) -> dict[str, Any]:

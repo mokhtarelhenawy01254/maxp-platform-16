@@ -1,141 +1,22 @@
-## AI Consumption Dashboard — Prisma Schema Fields (2026-07-08)
-- The `Company` model in Prisma has NO `nameEn` field — only `name`.
-- When querying with `.findMany({ select: {...} })`, any field not in the actual Prisma schema causes a runtime 500 error.
-- Always verify field names against actual Prisma schema files (in `prisma/schema/*.prisma`).
-- `AiProviderLog.metadata` is a Text field containing JSON like `{"tokens": {"prompt_tokens": ..., "completion_tokens": ...}}` — needs `JSON.parse()`.
-- Model costs are configured in `config/modelCosts.js` (per 1M tokens), not in the database.
+# Learned Patterns
 
-## Vite Chunk 404 After Deploy — `rsync --delete` + `immutable` Cache (2026-07-07)
-- **Issue:** `AppDashboardPage-Bdn6Gg1x.js` 404 on production after `96106ac7` refactor. Browser had cached old `route-storefront-CjTr7twW.js` (immutable max-age=31536000) which referenced old chunk name.
-- **Root cause:** Nginx serves `/assets/` with `immutable` (1yr). Browser never revalidates. `deploy-remote.sh` used `rsync --delete` removing old chunks. New `index.html` only references new hashes. Cached JS referencing old hashes → 404.
-- **Fix (two-part):** (1) Removed `--delete` from second rsync in `sync_frontend_dist()` — old chunks stay on disk only referenced by cached clients, harmless. (2) Added `vite:preloadError` event listener in `AppContent` (App.tsx:1363-1372) — Vite's recommended pattern — prevents React error + reloads page when a stale dynamic import fails.
-- **Lesson:** Vite code-split chunks + immutable cache + delete-on-deploy = guaranteed 404 for returning users with cached JS. Either keep old chunks or handle `vite:preloadError`.
+## 2026-07-08 — Skill/Tool System Unification
 
-## Order Status 400 Bad Request with Custom Status IDs (2026-07-07)
-- **Issue:** Changing an order status to a custom status failed with 400 Bad Request.
-- **Cause:** The frontend passes the custom status ID (a CUID) to the endpoint. The backend aggressively uppercased the status string via normalizeOrderStatusCode(). Because CUIDs are case-sensitive and stored lowercase in Prisma, the workflow service failed to find the uppercased CUID in the database.
-- **Fix:** Added a defense-in-depth check in orderService.js to intercept CUIDs (length > 20) and resolve them to their uppercase status code before processing. Also updated orderWorkflowService.evaluateStatusChange to try a lowercased ID lookup if the first uppercase lookup fails, and strictly use workflowResult.nextStatusCode to update the DB.
+### Problem
+MaxP had two parallel systems: `ALL_TOOLS` (47 FunctionTools from `definitions/`) and `SkillRegistry` (19 Skills from `register_all.py`). Pipeline used fallback chain: `registry.get()` → `ALL_TOOLS.get()`. This caused silent failures and registration gaps.
 
-## Late Cancellation — Dynamic Statuses (2026-07-04)
+### Solution
+Unified both systems into `SkillRegistry` as single source of truth:
+- `SkillRegistry.register_tool(FunctionTool)` — new method
+- `SkillRegistry.resolve(name)` — single lookup, converts Skill → FunctionTool automatically
+- Pipeline `_execute_one()` uses `registry.resolve()` only — no fallback
+- ALL_TOOLS kept as deprecated dict for backward-compatible re-exports
 
-- `LateCancellationSettings.tsx` had a hardcoded `PREPARATION_STATUSES` array that didn't match actual company statuses
-- Fixed by fetching from `GET /api/v1/order-status?statusType=order` + `?statusType=preparation`
-- Terminal statuses excluded: CANCELLED, PENDING_CANCELLATION, TRASH, DRAFT, DUPLICATE_ORDER, RETURNED, REFUNDED, EXCHANGED, etc.
-- Company settings (late cancellation config) stored in `company.settings` JSON field, accessed via `PUT /api/v1/order-settings` (requires `order-invoicing` app access)
-- Order statuses fetched from `GET /api/v1/order-status` (requires `order-core` app access)
+### Key Files Changed
+- `apps/ai-service/src/skills/registry.py` — expanded with FunctionTool support
+- `apps/ai-service/src/tools/registry.py` — auto-registers tools, updated consumers
+- `apps/ai-service/src/pipeline/stages/skills_pipeline.py` — removed ALL_TOOLS fallback + import
+- `scripts/validate-agent-skills.js` — unified CI validation (23 agents, 31 skills, 0 errors)
 
-## Cross-Layer Feature Pattern: Python → Express → React (2026-07-05)
-- New super-admin features follow the chain: Python schema/model → Python endpoint → Express admin client method → Express route → Frontend component
-- For Python endpoints accessed via `aiAdminProxyRoute`, the Frontend uses `/ai-admin/{path}` which proxies to `/admin/{path}` on the Python service
-- For dedicated Express routes, the Frontend uses `/super-admin/{path}` which maps to `superAdminRoutes.js`
-- `AgentTemplate` has a slug PK used everywhere; `Agent` has an `id` (auto-generated) + `company_id` FK
-- Company-specific agent overrides are stored on the `Agent` record in `ai.agents` and compared to `AgentTemplate` defaults at query time (not stored as diffs)
-- Per-field diff strategy: simple equality for scalar fields (model, soul, rules), set comparison for list fields (allowed_tools, allowed_skills, channels)
-
-## Agent Vision — Follow-Up Fallback Missing (2026-07-05)
-- `_raw_llm_call` (follow-up call after tool execution) had no vision fallback — images in the follow-up user message were sent to non-vision models
-- `_llm_call` had the fallback (checks `supports_vision`, switches to Gemini), but `_raw_llm_call` didn't
-- Fixed: detect `image_url` in messages list, apply same Gemini fallback in `_raw_llm_call`
-- Placeholder: tests for the follow-up vision path (needs `_raw_llm_call` invocation with mocking); coverage is manual/QA for now
-
-## Agent System Prompt — Follow-Up Phase Contamination (2026-07-05)
-- `_technical_formatting_constraints()` instructs the LLM to leave text empty when calling tools — must NOT be injected into follow-up (message-generation) calls
-- Follow-up calls need a positive instruction: what TO do, not what NOT to do
-- Fallback chain `final_response.text or _format_tool_results(executed) or 'تم البحث...'` must never let generic fallback text reach the customer — every tool result in `_format_tool_results` should produce a meaningful message
-
-## Deploy Workflow — SSH Timeout Retry (2026-07-04)
-- `Deploy to Server` workflow sometimes fails at `Test SSH Connection (with retry)` step with `Connection timed out` (exit code 255)
-- This is a transient SSH connectivity issue — re-running the workflow from GitHub UI typically succeeds
-- GitHub Actions runner IP changes each run, so whitelisting a single IP won't fix it permanently
-- If persistent across multiple retries, check server firewall (ufw/iptables) or GitHub Actions meta IP range at `https://api.github.com/meta`
-
-## Order Workflow — `isOverride` Required (2026-07-04)
-- Companies with `orderWorkflowConfig.enabled: true` + `enforceTransitions: true` block direct status changes
-- The `POST /api/v1/order-workflow/change-status` endpoint requires `isOverride: true` in the request body to bypass transition validation
-- Without `isOverride`, the backend throws "الحالة المستهدفة غير موجودة في تعريفات المسار"
-- Also: backend's `findStatusByCode` only matches DB-defined `OrderStatusDefinition` records. For raw Prisma enum values, a fallback to `VALID_STATUSES` array is needed in the route handler. See `routes/orderWorkflowRoutes.js:154`
-
-## Order Workflow — Missing System Statuses Fallback (2026-07-06)
-- The issue where changing order status returns 400 Bad Request with "الحالة المستهدفة غير موجودة في تعريفات المسار" was caused by `orderWorkflowService.validateStatusChange` strictly looking for `OrderStatusDefinition` records in the database.
-- It did not properly fallback to valid system statuses (like `PENDING`, `CONFIRMED`, etc.) for companies with `orderWorkflowConfig.enabled: true` that hadn't explicitly defined them.
-- Fixed in `evaluateStatusChange` by introducing a `VALID_STATUSES` array as a fallback when `findStatusByCode` fails to find the status definition.
-- Also fixed an issue where `isOverride` was not bypassing the `config.enforceTransitions` check if a transition rule wasn't found.
-
-## CI Workflow Audit — Secrets & Dead Code (2026-07-06)
-- 11 workflows → 6 remaining (deploy.yml, deploy-staging.yml, storefront-validation.yml, migrate-agents.yml, trigger-embedding-backfill.yml, mirror-to-maxp4.yml)
-- `--testPathPatterns` must be `--testPathPattern` (no trailing 's') — Jest silently skips with wrong flag
-- `cancel-in-progress: true` with DB migrations is dangerous — set to `false` for production CI
-- Breaking inline SSH scripts into `scripts/deploy-remote.sh` reduces deploy.yml from 941→292 lines
-- `appleboy/ssh-action` handles its own SSH key setup; don't add a separate `setup-ssh` step before it
-- `request_pty: true` with `appleboy/ssh-action` causes issues — avoid
-- `actions/cache` for node_modules significantly speeds up CI (2-3min saved)
-- For `paths-ignore`, use `'*.md'` not `'./*.md'` — glob is relative to repo root
-
-## Agent Tool Gender Inference — Don't Hardcode Name Lists in Tools (2026-07-07)
-
-- Initial fix put `AR_MALE_NAMES` / `AR_FEMALE_NAMES` / `AMBIGUOUS_NAMES` and `_infer_gender_from_name()` inside `booking_tools.py`
-- This violates the **Structured Parameters / No Brittle Text Extraction** rule from `AGENTS.md`: tools should not do keyword-based NLP on names
-- Hardcoded lists limit the agent (only covers listed names), create maintenance burden, and remove the LLM's own reasoning capability
-- Correct pattern: keep `gender` optional in the tool; if missing and the backend branch has `genderDays`, return a polite slot-filling request; let the **agent's SOUL.md** decide whether to infer gender from the name using its own knowledge
-- Updated 6 medical agent personas (`medical-center-agent`, `dental-care-specialist`, `aesthetic-advisor`, `physio-coordinator`, `mental-health-counselor`, `medical-lab-analyst`) with the rule: infer only if confident, leave `gender` empty if ambiguous, don't ask at all if branch has no `genderDays`
-
-## Codebase Secrets Audit — 50+ Hardcoded Credentials (2026-07-06)
-- This repo is private, but hardcoded secrets were pervasive: 30+ files with `postgres:0165676135@localhost`, scripts with production DB credentials (92.113.22.70), live JWT tokens and signing secrets, a GitHub PAT in `scripts/upload-github-secrets.js`, and SSH root password in `services/check_replies.py`
-- Fix strategy: delete the ad-hoc scripts entirely rather than refactoring to env vars (they were one-off debug tools, not part of the running service)
-- Result: 133 files changed, 9458 lines deleted
-- The production service (Express backend, Python AI service) uses proper `.env`-based configuration — the secrets were only in ad-hoc/debug scripts
-- Action: if credentials were rotated, update the production .env files and inform the team
-
-## React.lazy() + Conditional Rendering = Missing Suspense Boundary (2026-07-07)
-- **Issue:** Navigating to `/apps` crashed with `Cannot read properties of undefined (reading 'default')` on production.
-- **Root cause:** `AppDashboardPage` is `React.lazy()` loaded. It was rendered in 3 different locations in `Layout.tsx` based on layout mode. The first location had `<React.Suspense>`, the other two did not.
-- **Fix:** Wrap ALL rendering locations of a lazy component with `<React.Suspense>`.
-- **Pattern:** When a component is `React.lazy()` and used conditionally in multiple layout branches, every branch that renders it needs its own Suspense boundary. A single Suspense wrapping the parent won't work because each conditional branch is a separate render path.
-- **Checklist for lazy components:** Search for all JSX usages of the lazy component name. If it appears in multiple conditional blocks, each needs Suspense.
-
-## OpenRouter Image Generation — Response Data Nesting (2026-07-08)
-- Backend returns `{ success: true, data: { imageUrl, model, usage } }` (nested `data` object)
-- Frontend axios receives this as `res.data` = the full JSON body. So `res.data.data.imageUrl` is correct, NOT `res.data.imageUrl`.
-- **Rule**: Always check the backend's actual `res.status().json()` structure against frontend response reads.
-
-## Gemini Flash Image — `msg.images` Can Be `null` (2026-07-08)
-- OpenRouter Gemini Flash Image response has `choices[0].message.images = null` even when image IS generated
-- `Array.isArray(null)` → `false` → extraction code is silently skipped
-- Extraction succeeds via `msg.images[0].image_url.url` only when `msg.images` is an actual array
-- **Fix**: Check `msg.images` for truthiness first, then try `Array.isArray()`, fallback to `Object.values()` for array-like objects
-
-## Product Image References via OpenRouter Chat Completions (2026-07-08)
-- To pass a reference product image to Gemini Flash Image / GPT Image via OpenRouter:
-  - Convert File to base64 on frontend via `FileReader.readAsDataURL()`
-  - Send as `productImage` in POST body
-  - Backend constructs user message as array of content parts: `[{ type: "text", text: prompt }, { type: "image_url", image_url: { url: productImage } }]`
-  - System prompt must explicitly instruct the model to USE the reference image (e.g., "Use it as the primary visual — place the actual product from the reference image")
-
-## AI Image Gallery — Deploy Wipes `uploads/ai-images/` (2026-07-08)
-- `deploy-remote.sh` backs up `uploads/` via `--exclude uploads` in rsync, then `cp` + restore cycle
-- But if `uploads/ai-images/` never existed before the deploy (fresh dir created by runtime after previous deploy), the backup won't include it
-- **Fix**: Either create empty dir in repo, or ensure first-generation creates it before deploy runs
-
-## PM2 Logs for Backend Debugging (2026-07-08)
-- Backend `console.log()` goes to `/var/www/backend2/logs/out-1.log`
-- Backend `console.error()` goes to `/var/www/backend2/logs/err-1.log`
-- PM2 in-memory tool may be out of date — use `pm2 update` on server to sync, but logs are still in the file paths above
-- `gh run watch` sometimes 404s even when `gh run list` shows the run — use `gh run list` polling instead
-
-## DeepSeek Tool Hallucination — MEDICAL_CENTER_MANAGER (2026-07-08){newline}- **Issue:** `booking_reserve` hallucination — agent said "تم الحجز بنجاح" with fake code but never called the tool. Only happened with `MEDICAL_CENTER_MANAGER` agent (شيماء), not with `PHYSIOTHERAPY` agent (أحمد).{newline}- **Root Cause 1:** Missing `skill.json` + `SKILL.md` at `apps/ai-service/skills/medical-center-management/`. The pipeline's `_iter_allowed_skills_meta()` uses file-based skill dirs to look up tool names and inject skill instructions. Without a directory, the pipeline skipped this skill entirely — no instructions injected, no tool filtering applied from the skill.{newline}- **Root Cause 2:** Pipeline ignored agent's `config.tool_choice` in `_llm_call()`. The medical-center-manager `agent.json` has `"config": { "toolChoice": "required" }` but `skills_pipeline.py:_llm_call()` never read it — always passed `None` → defaulted to `"auto"`. With 23 tools (vs physio-coordinator's 6), DeepSeek in `"auto"` mode chose text replies.{newline}- **Fixes:**{newline}  - Fix 1: Created `apps/ai-service/skills/medical-center-management/skill.json` + `SKILL.md` matching the agent's `allowedTools`.{newline}  - Fix 2: Modified `skills_pipeline.py:_llm_call()` (line 323 area) to read `ctx.agent.config.tool_choice` and pass it as `tool_choice` to `client.generate()`.{newline}  - Fix 3 (earlier): Fixed `branches` param type mismatch — Python sends `list[str]` but Node controller expected `list[{branchId}]`. Fixed in both `bookingServicesController.js:47` and `booking_admin.py:173-175`.{newline}- **Verification:** Post-fix, شيماء successfully called `booking_slots` → `booking_reserve` → created real appointment (ID confirmed in DB) → `booking_status` with `cancel` → status changed to `cancelled` successfully.{newline}- **Lesson:** Any new agent role with write tools needs: (1) file-based skill dir at `apps/ai-service/skills/<slug>/`, (2) tool_choice check in pipeline, (3) param type alignment between Python Pydantic models and Node.js controllers.{newline}{newline}## AI Agent Architecture Doc Was Completely Wrong (2026-07-06)
-- `ai-agent-system.md` described a Node.js-based system (`backend/services/aiAgent/BaseAgent.js`, `CEOAgent.js`, etc.) that **does not exist**
-- The real architecture: Node.js Express → HTTP proxy → Python FastAPI + Microsoft Agent Framework
-- 21 agents defined (not 5 as documented)
-- Tools are Pydantic modules auto-discovered, not JSON files
-- MCP is integrated Python client, not a separate directory
-- The doc has been fully rewritten with the actual architecture
-
-## Missing OrderItem productName causing grouping failure (2026-07-08)
-- In the Status Summary Report, some companies were missing product details in the drill-down table.
-- The frontend groups items by productName|productColor|productSize. If productName is null, all unnamed items group into a single blank row.
-- Fixed getStatusSummaryItems in backend to include the product: { select: { name: true, sku: true } } relation and use item.productName || item.product?.name || '???? ??? ?????' as a fallback.
-
-## Pagination bug in frontend grouping logic (2026-07-08)
-- The Status Summary Report frontend was grouping raw items returned by the API (inlineItems).
-- Because the API enforced a pagination limit of 50, the frontend was only grouping the first 50 items. For companies with > 50 items, the grouped summary was incomplete and scattered across pages, causing users to report that the data was missing or 'not appearing' for large companies.
-- Fix: Increased the pagination limit for the items drill-down to 5000 in the frontend (limit: mode === 'items' ? '5000' : '50') and removed the Math.min(200) clamp in the backend getStatusSummaryItems to allow the frontend to group all items at once.
+### Lesson
+Single-registry pattern matches 2026 industry standard (OpenAI Agents SDK, Microsoft Agent Framework). DeepSeek V4 API compatible (same OpenAI wire format).

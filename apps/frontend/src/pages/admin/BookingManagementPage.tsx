@@ -63,6 +63,7 @@ interface BookingAppointment {
   duration: number; status: string; source?: string;
   paymentRequired: boolean; paymentStatus?: string;
   notes: string; confirmedAt?: string; createdAt: string;
+  createdById?: string; createdByType?: string; createdByName?: string;
 }
 
 type TabId = "dashboard" | "branches" | "doctors" | "services" | "appointments" | "calendar";
@@ -532,6 +533,20 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
               </select>
             </div>
           </div>
+          {appointment?.id && (
+            <>
+              {appointment.createdByName && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">المسجل: </span>
+                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${appointment.createdByType === 'ai_service' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                    <span>{appointment.createdByType === 'ai_service' ? 'أجنت' : 'موظف'}</span>
+                    <span>{appointment.createdByName}</span>
+                  </span>
+                </div>
+              )}
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+            </>
+          )}
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
@@ -1152,6 +1167,11 @@ export default function BookingManagementPage() {
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.branchName || "—"}</span>
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.appointmentDate}</span>
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.startTime}</span>
+              {a.createdByName && (
+                <span className={`px-2 py-1 rounded-lg text-xs ${a.createdByType === 'ai_service' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                  {a.createdByType === 'ai_service' ? 'أجنت: ' : 'موظف: '}{a.createdByName}
+                </span>
+              )}
             </div>
             <div className="flex gap-2">
               {a.status === "pending" && (
@@ -1176,7 +1196,7 @@ export default function BookingManagementPage() {
               <input type="checkbox" checked={selectedIds.size === appointments.length && appointments.length > 0} onChange={toggleSelectAll}
                 className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
             </th>
-            {["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}
+            {["العميل", "الهاتف", "الفرع", "التاريخ", "الوقت", "المسجل", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}
           </tr></thead>
           <tbody>
             {loading ? (
@@ -1194,6 +1214,14 @@ export default function BookingManagementPage() {
                 <td className="py-3 px-4">{a.branchName || "—"}</td>
                 <td className="py-3 px-4">{a.appointmentDate}</td>
                 <td className="py-3 px-4">{a.startTime}</td>
+                <td className="py-3 px-4 text-xs">
+                  {a.createdByName ? (
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${a.createdByType === 'ai_service' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                      <span className="text-[10px] opacity-70">{a.createdByType === 'ai_service' ? 'أجنت' : 'موظف'}</span>
+                      <span>{a.createdByName}</span>
+                    </span>
+                  ) : <span className="text-gray-400">—</span>}
+                </td>
                 <td className="py-3 px-4">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span>
                 </td>

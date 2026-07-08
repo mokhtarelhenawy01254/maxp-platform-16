@@ -284,8 +284,9 @@ async function ensureCompanyAppInstalled(tx, {
   );
   const isExpired = existing && existing.validUntil && new Date(existing.validUntil) < new Date();
   const canTransition = existing && existing.activePricingModel === 'PAY_PER_USE' && requestedPricingModel === 'SUBSCRIPTION';
+  const isInactive = existing && !ACTIVE_STATUSES.includes(existing.status);
 
-  if (existing && existing.status !== 'CANCELLED' && !isExpired && !canTransition) {
+  if (existing && !isInactive && !isExpired && !canTransition) {
     if (!allowAlreadyInstalled) {
       throw createAlreadyInstalledError(existing);
     }

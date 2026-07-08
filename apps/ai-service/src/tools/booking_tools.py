@@ -118,7 +118,8 @@ async def reserve_appointment(
     service_name: str = "",
     branch_name: str = "",
     appointment_date: str = "",
-    appointment_time: str = ""
+    appointment_time: str = "",
+    agent_name: str | None = None
 ) -> dict[str, Any]:
     """Create an appointment using structured parameters."""
     if not company_id:
@@ -241,7 +242,7 @@ async def reserve_appointment(
         "appointmentDate": date_str, "startTime": time_str, "serviceName": service_label,
     }
     try:
-        result = await client.create_booking_appointment(company_id, data)
+        result = await client.create_booking_appointment(company_id, data, agent_name=agent_name)
     except Exception as e:
         err = str(e)
         if "محجوز بالفعل" in err:
