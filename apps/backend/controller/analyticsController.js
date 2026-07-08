@@ -3951,7 +3951,22 @@ const getStatusSummaryOrders = async (req, res) => {
           paymentMethod: true,
           sourceType: true,
           createdAt: true,
-          customer: { select: { firstName: true, lastName: true, phone: true } }
+          customer: { select: { firstName: true, lastName: true, phone: true } },
+          orderItems: {
+            select: {
+              id: true,
+              quantity: true,
+              price: true,
+              total: true,
+              productName: true,
+              productColor: true,
+              productSize: true,
+              productSku: true,
+              product: {
+                select: { name: true, sku: true }
+              }
+            }
+          }
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -4005,7 +4020,7 @@ const getStatusSummaryItems = async (req, res) => {
     }
 
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
+    const limitNum = Math.max(1, parseInt(limit) || 50);
     const skip = (pageNum - 1) * limitNum;
 
     const dateFilter = {};
@@ -4034,6 +4049,12 @@ const getStatusSummaryItems = async (req, res) => {
         productColor: true,
         productSize: true,
         productSku: true,
+        product: {
+          select: {
+            name: true,
+            sku: true
+          }
+        },
         order: {
           select: {
             id: true,
@@ -4054,10 +4075,10 @@ const getStatusSummaryItems = async (req, res) => {
       orderStatus: item.order?.status || 'UNKNOWN',
       createdAt: item.order?.createdAt || new Date(),
       itemId: item.id,
-      productName: item.productName,
+      productName: item.productName || item.product?.name || 'منتج غير معروف',
       productColor: item.productColor,
       productSize: item.productSize,
-      productSku: item.productSku,
+      productSku: item.productSku || item.product?.sku,
       quantity: item.quantity,
       price: Number(item.price) || 0,
       total: Number(item.total) || 0

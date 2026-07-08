@@ -80,3 +80,13 @@
 - Tools are Pydantic modules auto-discovered, not JSON files
 - MCP is integrated Python client, not a separate directory
 - The doc has been fully rewritten with the actual architecture
+
+## Missing OrderItem productName causing grouping failure (2026-07-08)
+- In the Status Summary Report, some companies were missing product details in the drill-down table.
+- The frontend groups items by productName|productColor|productSize. If productName is null, all unnamed items group into a single blank row.
+- Fixed getStatusSummaryItems in backend to include the product: { select: { name: true, sku: true } } relation and use item.productName || item.product?.name || '???? ??? ?????' as a fallback.
+
+## Pagination bug in frontend grouping logic (2026-07-08)
+- The Status Summary Report frontend was grouping raw items returned by the API (inlineItems).
+- Because the API enforced a pagination limit of 50, the frontend was only grouping the first 50 items. For companies with > 50 items, the grouped summary was incomplete and scattered across pages, causing users to report that the data was missing or 'not appearing' for large companies.
+- Fix: Increased the pagination limit for the items drill-down to 5000 in the frontend (limit: mode === 'items' ? '5000' : '50') and removed the Math.min(200) clamp in the backend getStatusSummaryItems to allow the frontend to group all items at once.
