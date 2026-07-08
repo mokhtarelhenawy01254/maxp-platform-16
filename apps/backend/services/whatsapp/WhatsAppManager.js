@@ -2080,24 +2080,19 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
 
                             console.log(`🟢 [BAILEYS-DEBOUNCE] Processing ${entries.length} debounced message(s)`);
 
-                            // ponytail: admin routing via companyLifecycleAdminPhones
+                            // ponytail: admin routing — match sender phone against company admin users
                             let channel = 'WHATSAPP';
                             try {
                                 const senderPhone = first.remoteJid.split('@')[0].replace(/\D/g, '');
                                 const prisma = getSharedPrismaClient();
-                                const notifSettings = await prisma.whatsAppNotificationSettings.findUnique({
-                                    where: { companyId: first.companyId },
-                                    select: { companyLifecycleAdminPhones: true },
+                                const adminUsers = await prisma.user.findMany({
+                                    where: { companyId: first.companyId, role: { in: ['COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
+                                    select: { phone: true },
                                 });
-                                if (notifSettings?.companyLifecycleAdminPhones) {
-                                    const adminPhones = notifSettings.companyLifecycleAdminPhones
-                                        .split(/[\r\n,;،]+/)
-                                        .map(s => s.trim().replace(/\D/g, ''))
-                                        .filter(Boolean);
-                                    if (adminPhones.includes(senderPhone)) {
-                                        channel = 'WHATSAPP_ADMIN';
-                                        console.log(`🔵 [BAILEYS-DEBOUNCE] Sender ${senderPhone} is admin → routing to ${channel}`);
-                                    }
+                                const adminPhones = adminUsers.map(u => u.phone.replace(/\D/g, '')).filter(Boolean);
+                                if (adminPhones.includes(senderPhone)) {
+                                    channel = 'WHATSAPP_ADMIN';
+                                    console.log(`🔵 [BAILEYS-DEBOUNCE] Sender ${senderPhone} is admin → routing to WHATSAPP_ADMIN`);
                                 }
                             } catch (e) {
                                 console.warn('⚠️ [BAILEYS-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);

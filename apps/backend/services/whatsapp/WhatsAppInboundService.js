@@ -299,39 +299,20 @@ async function saveIncomingMessage(payload) {
 
           console.log(`🟢 [WA-DEBOUNCE] Processing ${entries.length} debounced message(s) as one request`);
 
-          // ponytail: admin routing — if sender is in companyLifecycleAdminPhones, route to WHATSAPP_ADMIN channel
+          // ponytail: admin routing — match sender phone against company admin users
           let channel = 'WHATSAPP';
           try {
-            // raw JID may be @lid (multi-device) — try resolved phone first
-            let senderPhone = first.normalizedJid.split('@')[0].replace(/\D/g, '');
-            console.log(`🔍 [WA-DEBOUNCE] sender JID=${first.normalizedJid} extractedPhone=${senderPhone}`);
-            const notifSettings = await prisma.whatsAppNotificationSettings.findUnique({
-              where: { companyId: first.companyId },
-              select: { companyLifecycleAdminPhones: true },
+            const senderPhone = first.normalizedJid.split('@')[0].replace(/\D/g, '');
+            const adminUsers = await prisma.user.findMany({
+              where: { companyId: first.companyId, role: { in: ['COMPANY_ADMIN', 'MANAGER'] }, phone: { not: null } },
+              select: { phone: true },
             });
-            if (notifSettings?.companyLifecycleAdminPhones) {
-              const adminPhones = notifSettings.companyLifecycleAdminPhones
-                .split(/[\r\n,;،]+/)
-                .map(s => s.trim().replace(/\D/g, ''))
-                .filter(Boolean);
-              // @lid opaque ID won't match — try resolve via customer table
-              if (!adminPhones.includes(senderPhone) && first.customerId) {
-                const customer = await prisma.customer.findUnique({
-                  where: { id: first.customerId },
-                  select: { phone: true, whatsappId: true },
-                });
-                const altPhone = (customer?.phone || customer?.whatsappId || '').replace(/\D/g, '');
-                if (altPhone && adminPhones.includes(altPhone)) {
-                  senderPhone = altPhone;
-                  console.log(`🔍 [WA-DEBOUNCE] resolved via customer table → ${altPhone}`);
-                }
-              }
-              if (adminPhones.includes(senderPhone)) {
-                channel = 'WHATSAPP_ADMIN';
-                console.log(`🔵 [WA-DEBOUNCE] Sender ${senderPhone} is admin → routing to ${channel}`);
-              } else {
-                console.log(`⚪ [WA-DEBOUNCE] Sender ${senderPhone} not in admin whitelist → WHATSAPP`);
-              }
+            const adminPhones = adminUsers.map(u => u.phone.replace(/\D/g, '')).filter(Boolean);
+            if (adminPhones.includes(senderPhone)) {
+              channel = 'WHATSAPP_ADMIN';
+              console.log(`🔵 [WA-DEBOUNCE] Sender ${senderPhone} is admin → routing to WHATSAPP_ADMIN`);
+            } else {
+              console.log(`⚪ [WA-DEBOUNCE] Sender ${senderPhone} not in admin users → WHATSAPP`);
             }
           } catch (e) {
             console.warn('⚠️ [WA-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);
