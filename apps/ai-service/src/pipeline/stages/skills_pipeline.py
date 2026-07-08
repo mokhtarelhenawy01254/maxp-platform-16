@@ -292,14 +292,21 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         if tname not in skill_names and tname in ALL_TOOLS:
             tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
 
+    tool_choice = None
+    if ctx.agent and hasattr(ctx.agent, "config"):
+        agent_tc = getattr(ctx.agent.config, "tool_choice", None) or getattr(ctx.agent.config, "config", {}).get("toolChoice")
+        if agent_tc:
+            tool_choice = agent_tc
+
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
         temperature=0.3,
+        tool_choice=tool_choice,
     )
 
 
-async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list | None = None, tool_choice: str | None = "auto") -> ProviderResponse:
+async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list | None = None, tool_choice: str | None = None) -> ProviderResponse:
     """Make a follow-up LLM call (with or without tools)."""
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if not client:
@@ -343,11 +350,17 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
             except Exception as e:
                 logger.warning("followup_vision_fallback_unavailable", error=str(e))
 
+    if tool_choice is None:
+        if ctx.agent and hasattr(ctx.agent, "config"):
+            agent_tc = getattr(ctx.agent.config, "tool_choice", None) or getattr(ctx.agent.config, "config", {}).get("toolChoice")
+            if agent_tc:
+                tool_choice = agent_tc
+
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
         temperature=0.3,
-        tool_choice=tool_choice,
+        tool_choice=tool_choice or "auto",
     )
 
 
