@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import ARRAY, ENUM as PG_ENUM, JSONB, TIMESTAMP, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.base import Base
@@ -39,22 +39,13 @@ class AiKey(Base):
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     provider: Mapped[str] = mapped_column(
-        PG_ENUM(
-            "GOOGLE", "DEEPSEEK", "OPENAI", "ANTHROPIC", "HUGGINGFACE",
-            "OLLAMA", "GROQ", "OPENROUTER", "NVIDIA", "CEREBRAS",
-            "GITHUB", "SAMBANOVA", "MISTRAL",
-            name="ai_keys_provider", create_type=False,
-        ),
+        String(50),
         nullable=False,
     )
     api_key: Mapped[str] = mapped_column("apiKey", Text, nullable=False)
     base_url: Mapped[str | None] = mapped_column("baseUrl", Text, nullable=True)
     is_active: Mapped[bool] = mapped_column("isActive", Boolean, nullable=False, default=True)
-    key_type: Mapped[str] = mapped_column(
-        "keyType",
-        PG_ENUM("CENTRAL", "COMPANY", name="ai_keys_keyType", create_type=False),
-        nullable=False, default="CENTRAL",
-    )
+    key_type: Mapped[str] = mapped_column("keyType", String(20), nullable=False, default="CENTRAL")
     company_id: Mapped[str | None] = mapped_column("companyId", String(100), nullable=True, index=True)
     max_requests_per_day: Mapped[int] = mapped_column("maxRequestsPerDay", Integer, nullable=False, default=1500)
     current_usage: Mapped[int] = mapped_column("currentUsage", Integer, nullable=False, default=0)

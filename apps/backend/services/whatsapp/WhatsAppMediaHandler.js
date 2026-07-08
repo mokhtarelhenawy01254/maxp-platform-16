@@ -89,10 +89,6 @@ async function initMediaDirectory() {
  * @returns {Promise<Buffer>} buffer ogg
  */
 async function convertWebmToOgg(inputBuffer, sourceMime) {
-    if (!inputBuffer || inputBuffer.length < 500) {
-        throw new Error('الملف الصوتي فارغ أو تالف (صغير جداً)');
-    }
-
     const tempDir = path.join(MEDIA_DIR, 'temp');
     await fs.mkdir(tempDir, { recursive: true });
 
@@ -107,7 +103,6 @@ async function convertWebmToOgg(inputBuffer, sourceMime) {
     try {
         await new Promise((resolve, reject) => {
             execFile('ffmpeg', [
-                '-fflags', '+genpts',
                 '-i', inputPath,
                 '-c:a', 'libopus',
                 '-b:a', '16k',

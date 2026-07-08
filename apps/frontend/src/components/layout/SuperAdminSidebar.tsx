@@ -48,7 +48,6 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.sidebar.signupCoupons"), icon: <Tag className="size-5" />, path: "/super-admin/platform-signup-coupons" },
   ]},
   { title: t("superAdmin.evaluation.aiModels"), icon: <Brain className="size-5" />, items: [
-    { text: "استهلاك الشركات", icon: <BarChart3 className="size-4" />, path: "/super-admin/ai-consumption" },
     { text: "AI Keys (New)", icon: <Key className="size-4" />, path: "/super-admin/ai-key-manager" },
     { text: "سجل المفاتيح", icon: <History className="size-4" />, path: "/super-admin/ai-key-logs" },
     { text: "AI Playground", icon: <Play className="size-4" />, path: "/super-admin/ai-playground" },

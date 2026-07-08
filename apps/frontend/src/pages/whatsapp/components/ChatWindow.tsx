@@ -19,7 +19,6 @@ import {
   Plus,
   Store,
   ClipboardList,
-  FileText,
   X,
 } from "lucide-react";
 
@@ -69,7 +68,6 @@ interface ChatWindowProps {
   onOpenLocation: () => void;
   onOpenOrder: () => void;
   onOpenTasks?: () => void;
-  onOpenTemplate?: () => void;
   onBackToList?: () => void;
   onTouchStart?: (e: ReactTouchEvent) => void;
   onTouchEnd?: (e: ReactTouchEvent) => void;
@@ -117,7 +115,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onOpenLocation,
   onOpenOrder,
   onOpenTasks,
-  onOpenTemplate,
   onBackToList,
   onTouchStart,
   onTouchEnd,
@@ -470,17 +467,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     title={t("whatsapp.tooltips.task")}
                   >
                     <ClipboardList className="size-4" />
-                  </Button>
-                )}
-                {onOpenTemplate && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full"
-                    onClick={onOpenTemplate}
-                    title={t("whatsapp.tooltips.template")}
-                  >
-                    <FileText className="size-4" />
                   </Button>
                 )}
                   </div>

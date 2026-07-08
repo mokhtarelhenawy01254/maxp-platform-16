@@ -29,10 +29,9 @@ const api = (path: string) => {
 };
 
 interface BookingBranch {
-  id: string; name: string; address: string; phone: string; phones?: string[];
+  id: string; name: string; address: string; phone: string;
   workingDays: string; workStart: string; workEnd: string;
   isActive: boolean; createdAt: string;
-  maxBookingsPerSlot?: number;
 }
 
 interface BookingDoctor {
@@ -107,134 +106,71 @@ const fetchJson = async (url: string, options?: RequestInit, retries = 2): Promi
 const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
 const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
 
-  const BranchModal = ({ branch, onClose, onSave }: {
-    branch?: Partial<BookingBranch> | null;
-    onClose: () => void;
-    onSave: (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string }) => Promise<void>;
-  }) => {
-    const days = [
-      { value: "sat", label: "السبت" }, { value: "sun", label: "الأحد" },
-      { value: "mon", label: "الإثنين" }, { value: "tue", label: "الثلاثاء" },
-      { value: "wed", label: "الأربعاء" }, { value: "thu", label: "الخميس" },
-      { value: "fri", label: "الجمعة" },
-    ];
-    const tryParseGenderDays = (v: unknown): { male: string[]; female: string[] } | null => {
-      if (!v) return null;
-      const obj = typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch { return null; } })() : v;
-      if (!obj || typeof obj !== 'object') return null;
-      return { male: obj.male || [], female: obj.female || [] };
+const BranchModal = ({ branch, onClose, onSave }: {
+  branch?: Partial<BookingBranch> | null;
+  onClose: () => void;
+  onSave: (d: Partial<BookingBranch>) => Promise<void>;
+}) => {
+  const initForm = () => {
+    const defaults = { name: "", address: "", phone: "", workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", isActive: true };
+    if (!branch?.workingDays || typeof branch.workingDays === 'string') {
+      return { ...defaults, ...branch };
+    }
+    const obj = branch.workingDays as Record<string, string>;
+    const dayKeys = Object.keys(obj).filter(k => obj[k]);
+    const times = dayKeys.length > 0 ? obj[dayKeys[0]].split('-') : [];
+    return {
+      ...defaults, ...branch,
+      workingDays: dayKeys.join(","),
+      workStart: times[0] || "09:00",
+      workEnd: times[1] || "22:00",
     };
-    const initForm = () => {
-      const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true, maxBookingsPerSlot: 1 };
-      let initialPhones = (branch?.phones || []).filter(Boolean);
-      if (initialPhones.length === 0 && branch?.phone) initialPhones = [branch.phone];
-      if (!branch?.workingDays || typeof branch.workingDays === 'string') {
-        const gd = tryParseGenderDays(branch?.genderDays);
-        return { ...defaults, ...branch, phones: initialPhones, maleDays: gd?.male || [], femaleDays: gd?.female || [] };
-      }
-      const obj = branch.workingDays as Record<string, string>;
-      const dayKeys = Object.keys(obj).filter(k => obj[k]);
-      const times = dayKeys.length > 0 ? obj[dayKeys[0]].split('-') : [];
-      const gd = tryParseGenderDays(branch.genderDays);
-      return {
-        ...defaults, ...branch,
-        workingDays: dayKeys.join(","),
-        workStart: times[0] || "09:00",
-        workEnd: times[1] || "22:00",
-        phones: initialPhones,
-        maleDays: gd?.male || [],
-        femaleDays: gd?.female || [],
-      };
-    };
-    const [form, setForm] = useState(initForm);
-    const toggleWorkingDay = (d: string) => {
-      const current = (form.workingDays || "").split(",").filter(Boolean);
-      const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
-      setForm({ ...form, workingDays: next.join(",") });
-    };
-    const toggleGenderDay = (type: "male" | "female", d: string) => {
-      const key = type === "male" ? "maleDays" : "femaleDays";
-      const current = form[key] || [];
-      const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
-      setForm({ ...form, [key]: next });
-    };
-    return (
-      <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-        <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold">{branch?.id ? "تعديل فرع" : "إضافة فرع"}</h3>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
-          </div>
-          <div className="space-y-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أرقام الهاتف</label>
-              <div className="space-y-2">
-                {(form.phones || []).map((p: string, i: number) => (
-                  <div key={i} className="flex gap-2">
-                    <input className={`${MODAL_INPUT_CLS} flex-1`} dir="ltr" placeholder="010xxxxxxxx" value={p} onChange={e => {
-                      const next = [...(form.phones || [])];
-                      next[i] = e.target.value;
-                      setForm({ ...form, phones: next });
-                    }} />
-                    <button onClick={() => setForm({ ...form, phones: (form.phones || []).filter((_, idx) => idx !== i) })} className="px-2 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف الرقم"><TrashIcon className="w-4 h-4" /></button>
-                  </div>
-                ))}
-                <button onClick={() => setForm({ ...form, phones: [...(form.phones || []), ""] })} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700">+ إضافة رقم هاتف</button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أيام العمل</label>
-              <div className="flex flex-wrap gap-2">
-                {days.map(d => (
-                  <button key={d.value} onClick={() => toggleWorkingDay(d.value)}
-                    className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.workingDays || "").split(",").includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">بداية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workStart} onChange={e => setForm({ ...form, workStart: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نهاية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workEnd} onChange={e => setForm({ ...form, workEnd: e.target.value })} /></div>
-            </div>
-            <div className="border-t dark:border-gray-700 pt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">فصل الحجز حسب الجنس (اختياري)</label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">اتركهم فاضيين لو الفرع بيستقبل الرجال والسيدات في كل الأيام.</p>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 block">أيام الرجال</span>
-                  <div className="flex flex-wrap gap-2">
-                    {days.map(d => (
-                      <button key={d.value} onClick={() => toggleGenderDay("male", d.value)}
-                        className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.maleDays || []).includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-pink-600 dark:text-pink-400 mb-1 block">أيام السيدات</span>
-                  <div className="flex flex-wrap gap-2">
-                    {days.map(d => (
-                      <button key={d.value} onClick={() => toggleGenderDay("female", d.value)}
-                        className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.femaleDays || []).includes(d.value) ? "bg-pink-600 text-white border-pink-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="border-t dark:border-gray-700 pt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحد الأقصى للحجوزات لكل وقت</label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">عدد الحجوزات المسموح بها في نفس الساعة (الافتراضي: ١)</p>
-              <input type="number" min={1} max={99} className={MODAL_INPUT_CLS} value={form.maxBookingsPerSlot ?? 1} onChange={e => setForm({ ...form, maxBookingsPerSlot: Math.max(1, Number(e.target.value)) })} />
+  };
+  const [form, setForm] = useState(initForm);
+  const days = [
+    { value: "sat", label: "السبت" }, { value: "sun", label: "الأحد" },
+    { value: "mon", label: "الإثنين" }, { value: "tue", label: "الثلاثاء" },
+    { value: "wed", label: "الأربعاء" }, { value: "thu", label: "الخميس" },
+    { value: "fri", label: "الجمعة" },
+  ];
+  const toggleDay = (d: string) => {
+    const current = (form.workingDays || "").split(",").filter(Boolean);
+    const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
+    setForm({ ...form, workingDays: next.join(",") });
+  };
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">{branch?.id ? "تعديل فرع" : "إضافة فرع"}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+        </div>
+        <div className="space-y-4">
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><input className={MODAL_INPUT_CLS} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الهاتف</label><input className={MODAL_INPUT_CLS} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أيام العمل</label>
+            <div className="flex flex-wrap gap-2">
+              {days.map(d => (
+                <button key={d.value} onClick={() => toggleDay(d.value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.workingDays || "").split(",").includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
+              ))}
             </div>
           </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-            <button onClick={() => onSave(form)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">بداية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workStart} onChange={e => setForm({ ...form, workStart: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نهاية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workEnd} onChange={e => setForm({ ...form, workEnd: e.target.value })} /></div>
           </div>
         </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
+          <button onClick={() => onSave(form)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
+        </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 const DoctorModal = ({ doctor, branches, onClose, onSave }: {
   doctor?: Partial<BookingDoctor> | null;
@@ -378,13 +314,6 @@ const ServiceModal = ({ service, branches, onClose, onSave }: {
   );
 };
 
-const InfoBlock = ({ label, value, dir, fullWidth }: { label: string; value: string; dir?: string; fullWidth?: boolean }) => (
-  <div className={fullWidth ? "col-span-2" : ""}>
-    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">{label}</label>
-    <p className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${dir === "ltr" ? "dir-ltr text-left" : ""}`}>{value}</p>
-  </div>
-);
-
 const AppointmentModal = ({ appointment, branches, branchDoctors, services, onClose, onSave }: {
   appointment?: Partial<BookingAppointment> | null;
   branches: BookingBranch[];
@@ -422,72 +351,11 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
 
   const doctors = branchDoctors.filter(d => d.branchId === form.branchId && d.isActive);
 
-  const branchName = appointment?.branchName || branches.find(b => b.id === (appointment?.branchId || form.branchId))?.name || "";
-  const serviceName = appointment?.serviceName || services.find(s => s.id === (appointment?.serviceId || form.serviceId))?.name || "";
-  const doctorName = appointment?.doctorName || branchDoctors.find(d => d.id === (appointment?.doctorId || form.doctorId))?.name || "";
-
-  // ── Detail view for existing appointments ──
-  if (appointment?.id) {
-    return (
-      <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold">تفاصيل الموعد</h3>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
-          </div>
-
-          <div className="space-y-4">
-            {/* Status badge */}
-            <div className="flex justify-center mb-2">
-              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${STATUS_MAP[appointment.status || ""]?.color || ""}`}>
-                {STATUS_MAP[appointment.status || ""]?.label || appointment.status}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <InfoBlock label="العميل" value={appointment.customerName} />
-              <InfoBlock label="الهاتف" value={appointment.customerPhone || "—"} dir="ltr" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoBlock label="الجنس" value={appointment.customerGender === "female" ? "أنثى" : "ذكر"} />
-              <InfoBlock label="المصدر" value={appointment.source || "dashboard"} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoBlock label="الفرع" value={branchName} />
-              <InfoBlock label="الخدمة" value={serviceName || "—"} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoBlock label="الطبيب" value={doctorName || "أي طبيب"} />
-              <InfoBlock label="المدة" value={`${appointment.duration || 30} دقيقة`} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoBlock label="التاريخ" value={appointment.appointmentDate} />
-              <InfoBlock label="الوقت" value={`${appointment.startTime} - ${appointment.endTime || "—"}`} />
-            </div>
-            {(appointment.paymentRequired || appointment.paymentStatus) && (
-              <div className="grid grid-cols-2 gap-4">
-                <InfoBlock label="مطلوب دفع" value={appointment.paymentRequired ? "نعم" : "لا"} />
-                <InfoBlock label="حالة الدفع" value={appointment.paymentStatus || "—"} />
-              </div>
-            )}
-            {appointment.notes && <InfoBlock label="ملاحظات" value={appointment.notes} fullWidth />}
-            <InfoBlock label="تاريخ الإنشاء" value={appointment.createdAt ? new Date(appointment.createdAt).toLocaleString("ar-EG") : "—"} fullWidth />
-          </div>
-
-          <div className="flex justify-end mt-6">
-            <button onClick={onClose} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">إغلاق</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Create form ──
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">حجز موعد</h3>
+          <h3 className="text-lg font-bold">{appointment?.id ? "تفاصيل الموعد" : "حجز موعد"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
@@ -532,10 +400,13 @@ const AppointmentModal = ({ appointment, branches, branchDoctors, services, onCl
               </select>
             </div>
           </div>
+          {appointment?.id && (
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+          )}
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={() => onSave(form)} disabled={!form.customerName || !form.branchId || !form.appointmentDate || !form.startTime} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حجز</button>
+          {!appointment?.id && <button onClick={() => onSave(form)} disabled={!form.customerName || !form.branchId || !form.appointmentDate || !form.startTime} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حجز</button>}
         </div>
       </div>
     </div>
@@ -626,7 +497,6 @@ export default function BookingManagementPage() {
   const [filters, setFilters] = useState({ status: "", branchId: "", dateFrom: "", dateTo: "" });
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
-  const [serviceFilterStatus, setServiceFilterStatus] = useState<"all" | "active" | "inactive">("active");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchAll(); }, []);
@@ -676,29 +546,21 @@ export default function BookingManagementPage() {
     try { setAppointments(await fetchJson(api(`appointments?${params}`))); } catch (e: any) { console.error("fetchAppointments", e); setAppointments([]); throw e; }
   };
 
-  const saveBranch = async (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string; maxBookingsPerSlot?: number }) => {
+  const saveBranch = async (d: Partial<BookingBranch>) => {
     const isEdit = !!d.id;
     const url = isEdit ? api(`branches/${d.id}`) : api("branches");
-    const phones = (d.phones || []).map(p => String(p).trim()).filter(Boolean);
-    const body: Record<string, unknown> = { name: d.name, address: d.address, phone: phones[0] || d.phone || "", phones, isActive: d.isActive };
-    if (d.workingDays) {
-      const days = d.workingDays.split(",").filter(Boolean);
+    const body: Record<string, unknown> = { name: d.name, address: d.address, phone: d.phone, isActive: d.isActive };
+    const raw = d as any;
+    if (raw.workingDays) {
+      const days = raw.workingDays.split(",").filter(Boolean);
       if (days.length > 0) {
-        const start = d.workStart || "09:00";
-        const end = d.workEnd || "22:00";
+        const start = raw.workStart || "09:00";
+        const end = raw.workEnd || "22:00";
         const wd: Record<string, string> = {};
         days.forEach((day: string) => { wd[day] = `${start}-${end}`; });
         body.workingDays = wd;
       }
     }
-    const maleDays = (d.maleDays || []).sort();
-    const femaleDays = (d.femaleDays || []).sort();
-    if (maleDays.length > 0 || femaleDays.length > 0) {
-      body.genderDays = { male: maleDays, female: femaleDays };
-    } else {
-      body.genderDays = { male: [], female: [] };
-    }
-    if (d.maxBookingsPerSlot !== undefined) body.maxBookingsPerSlot = d.maxBookingsPerSlot;
     const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const data = await res.json();
     if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
@@ -926,18 +788,7 @@ export default function BookingManagementPage() {
               </div>
               <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex flex-wrap gap-1">{(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{p}</span>) || "—"}</div>
-            {(() => {
-              const gd = typeof b.genderDays === 'string' ? (() => { try { return JSON.parse(b.genderDays); } catch { return null; } })() : b.genderDays;
-              if (!gd || (!gd.male?.length && !gd.female?.length)) return null;
-              const dayNames: Record<string, string> = {sat:"سبت",sun:"أحد",mon:"اثنين",tue:"ثلاثاء",wed:"أربعاء",thu:"خميس",fri:"جمعة"};
-              return (
-                <div className="text-xs mb-3 space-y-1">
-                  {gd.male?.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 الرجال: {gd.male.map((d: string) => dayNames[d] || d).join("، ")}</div>}
-                  {gd.female?.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 السيدات: {gd.female.map((d: string) => dayNames[d] || d).join("، ")}</div>}
-                </div>
-              );
-            })()}
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">{b.phone || "—"}</div>
             <div className="flex gap-2">
               <button onClick={() => setBranchModal(b)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3 h-3 inline ml-1" />تعديل</button>
               <button onClick={() => toggleActive("branches", b.id, b.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${b.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{b.isActive ? "تعطيل" : "تفعيل"}</button>
@@ -950,16 +801,12 @@ export default function BookingManagementPage() {
       {/* Desktop table */}
       <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full">
-          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الهاتف", "أيام العمل", "الجنس", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
+          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الهاتف", "أيام العمل", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
           <tbody>{branches.map(b => (
             <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
               <td className="py-3 px-4 font-medium">{b.name}</td>
               <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
-              <td className="py-3 px-4">
-                <div className="flex flex-wrap gap-1">
-                  {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="text-xs inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">{p}</span>) || "—"}
-                </div>
-              </td>
+              <td className="py-3 px-4">{b.phone || "—"}</td>
                             <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">{
                 (() => {
                   try {
@@ -969,19 +816,6 @@ export default function BookingManagementPage() {
                     const days = Object.entries(wd).filter(([k,v]) => v).map(([k,v]) => `${dayNames[k]||k} (${v})`);
                     return days.join(" / ") || "—";
                   } catch(e) { return "—"; }
-                })()
-              }</td>
-              <td className="py-3 px-4 text-xs">{
-                (() => {
-                  const gd = typeof b.genderDays === 'string' ? (() => { try { return JSON.parse(b.genderDays); } catch { return null; } })() : b.genderDays;
-                  if (!gd || (!gd.male?.length && !gd.female?.length)) return <span className="text-gray-400 dark:text-gray-500">—</span>;
-                  const dayNames: Record<string,string> = {sat:"سبت",sun:"أحد",mon:"اثنين",tue:"ثلاثاء",wed:"أربعاء",thu:"خميس",fri:"جمعة"};
-                  return (
-                    <div className="space-y-1">
-                      {gd.male?.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 {gd.male.map((d: string) => dayNames[d] || d).join("، ")}</div>}
-                      {gd.female?.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 {gd.female.map((d: string) => dayNames[d] || d).join("، ")}</div>}
-                    </div>
-                  );
                 })()
               }</td>
               <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span></td>
@@ -1037,21 +871,12 @@ export default function BookingManagementPage() {
   };
 
   const renderServices = () => {
-    const filtered = services.filter(s => {
-      const matchesSearch = !searchService || s.name.includes(searchService);
-      const matchesStatus = serviceFilterStatus === "all" || (serviceFilterStatus === "active" && s.isActive) || (serviceFilterStatus === "inactive" && !s.isActive);
-      return matchesSearch && matchesStatus;
-    });
+    const filtered = services.filter(s => !searchService || s.name.includes(searchService));
     return (
       <div>
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
           <h2 className="text-xl font-bold">إدارة الخدمات</h2>
           <div className="flex gap-3">
-            <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={serviceFilterStatus} onChange={e => setServiceFilterStatus(e.target.value as "all" | "active" | "inactive")}>
-              <option value="active">النشطة</option>
-              <option value="inactive">غير النشطة</option>
-              <option value="all">الكل</option>
-            </select>
             <div className="relative"><MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" /><input className="border dark:border-gray-600 rounded-lg pr-9 pl-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={searchService} onChange={e => setSearchService(e.target.value)} /></div>
             <button onClick={() => setServiceModal({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة خدمة</button>
           </div>

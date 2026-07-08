@@ -5,6 +5,15 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup SSH Key
+        shell: bash
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
+          chmod 600 "$HOME/.ssh/maxp_deploy_key"
+
       - name: Trigger Product Embedding Backfill
         uses: appleboy/ssh-action@v1.0.3
         with:

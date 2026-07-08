@@ -59,7 +59,6 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
   const [cancellationReasonOptionsLoading, setCancellationReasonOptionsLoading] =
     useState(false);
   const [cancellationAdditionalNotes, setCancellationAdditionalNotes] = useState("");
-  const [isOverride, setIsOverride] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const fallbackStatuses: StatusOption[] = [
@@ -221,7 +220,6 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         {
           status: normalizedStatus,
           notes: trimmedNotes,
-          isOverride,
         },
       );
 
@@ -670,21 +668,6 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                     </option>
                   ))}
                 </select>
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    id="override-checkbox-modal"
-                    type="checkbox"
-                    checked={isOverride}
-                    onChange={(e) => setIsOverride(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <label
-                    htmlFor="override-checkbox-modal"
-                    className="text-sm text-gray-600 dark:text-gray-400"
-                  >
-                    تجاوز قواعد المسار (Override)
-                  </label>
-                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

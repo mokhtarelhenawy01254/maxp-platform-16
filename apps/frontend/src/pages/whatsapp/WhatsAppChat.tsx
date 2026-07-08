@@ -14,7 +14,6 @@ import {
   Copy,
   Forward,
   List as ListIcon,
-  FileText,
   Loader2,
   MapPin,
   MousePointerSquare,
@@ -81,7 +80,6 @@ import { useStatuses, usePostStatus } from '../../hooks/useWhatsAppStatuses'; //
 import {
   useSendMessage,
   useSendMedia,
-  useSendTemplate,
   useMarkAsRead,
   useDeleteConversation,
   useArchiveConversation
@@ -334,14 +332,6 @@ const WhatsAppChatContent: React.FC = () => {
   // Location
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [locationData, setLocationData] = useState({ latitude: '', longitude: '', address: '' });
-
-  // Template Messages
-  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
-  const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
-  const sendTemplateMutation = useSendTemplate();
 
   // Quick Order Modal (same as Facebook inbox)
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
@@ -1677,85 +1667,6 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
-  const handleOpenTemplateDialog = useCallback(async () => {
-    if (!selectedSession) return;
-    const sessionId = selectedContact?.sessionId || (selectedSession === 'all' ? null : selectedSession);
-    if (!sessionId) {
-      toast.error('الرجاء اختيار جلسة واتساب محددة');
-      return;
-    }
-    setTemplateDialogOpen(true);
-    setLoadingTemplates(true);
-    try {
-      const res = await api.get('/whatsapp-templates/templates', {
-        params: { sessionId }
-      });
-      const allTemplates = res.data?.templates || res.data?.data || [];
-      setTemplates(allTemplates.filter((t: any) => t.status === 'APPROVED'));
-    } catch (error) {
-      toast.error('فشل تحميل القوالب');
-      setTemplates([]);
-    } finally {
-      setLoadingTemplates(false);
-    }
-  }, [selectedSession, selectedContact]);
-
-  const handleSelectTemplate = (tmpl: any) => {
-    setSelectedTemplate(tmpl);
-    const body = tmpl.components?.find((c: any) => c.type === 'BODY');
-    if (body?.text) {
-      const vars: Record<string, string> = {};
-      const matches = body.text.match(/\{\{(\d+)\}\}/g);
-      if (matches) {
-        matches.forEach((m: string) => {
-          vars[m] = '';
-        });
-      }
-      setTemplateVariables(vars);
-    } else {
-      setTemplateVariables({});
-    }
-  };
-
-  const handleSendTemplate = async () => {
-    if (!selectedSession || !selectedContact || !selectedTemplate) return;
-    const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
-    if (!targetSessionId) return toast.error('الرجاء اختيار جلسة واتساب محددة');
-    const bodyComponent = selectedTemplate.components?.find((c: any) => c.type === 'BODY');
-    const params: Record<string, any> = {
-      name: selectedTemplate.name,
-      language: selectedTemplate.language || 'en',
-      languageCode: selectedTemplate.language || 'en',
-    };
-    if (bodyComponent?.text && Object.keys(templateVariables).length > 0) {
-      const varParams = Object.keys(templateVariables)
-        .sort((a, b) => parseInt(a.replace(/\D/g, '')) - parseInt(b.replace(/\D/g, '')))
-        .map((key) => ({ type: 'text', text: templateVariables[key] }));
-      params.components = [{ type: 'BODY', parameters: varParams }];
-    } else {
-      params.components = [];
-    }
-    const bodyText = bodyComponent?.text || '';
-    const templateBody = bodyText && Object.keys(templateVariables).length > 0
-      ? bodyText.replace(/\{\{(\d+)\}\}/g, (_, n) => templateVariables[`{{${n}}}`] || `{{${n}}}`)
-      : bodyText;
-    try {
-      await sendTemplateMutation.mutateAsync({
-        sessionId: targetSessionId,
-        to: selectedContact.jid,
-        templateId: selectedTemplate.name,
-        parameters: params,
-        templateBody,
-      });
-      toast.success('تم إرسال القالب');
-      setTemplateDialogOpen(false);
-      setSelectedTemplate(null);
-      setTemplateVariables({});
-    } catch (error) {
-      toast.error('فشل إرسال القالب');
-    }
-  };
-
   const handleBlockContact = async (contact: Contact) => {
     if (!window.confirm(`هل أنت متأكد من حظر ${getContactName(contact)}؟`)) return;
     try {
@@ -1991,7 +1902,6 @@ const WhatsAppChatContent: React.FC = () => {
         onOpenLocation={() => setLocationDialogOpen(true)}
         onOpenOrder={() => setShowQuickOrderModal(true)}
         onOpenTasks={() => setShowQuickCreateTaskModal(true)}
-        onOpenTemplate={handleOpenTemplateDialog}
         onBackToList={() => {
           if (typeof document.startViewTransition === 'function') {
             document.startViewTransition(() => setSelectedContact(null));
@@ -3034,154 +2944,6 @@ const WhatsAppChatContent: React.FC = () => {
             >
               إرسال الموقع
             </UiButton>
-          </UiDialogFooter>
-        </UiDialogContent>
-      </UiDialog>
-
-      {/* Template Message Dialog */}
-      <UiDialog open={templateDialogOpen} onOpenChange={(open) => {
-        setTemplateDialogOpen(open);
-        if (!open) {
-          setSelectedTemplate(null);
-          setTemplateVariables({});
-        }
-      }}>
-        <UiDialogContent
-          showCloseButton={false}
-          className="max-w-2xl gap-0 rounded-[28px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0"
-        >
-          <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
-            <UiDialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
-              <FileText className="size-5 text-[color:var(--color-primary)]" />
-              {selectedTemplate ? 'تعبئة متغيرات القالب' : 'إرسال قالب'}
-            </UiDialogTitle>
-            <UiDialogDescription>
-              {selectedTemplate
-                ? `املأ المتغيرات للقالب: ${selectedTemplate.name}`
-                : 'اختر قالباً معتمداً لإرساله إلى المحادثة الحالية'}
-            </UiDialogDescription>
-          </UiDialogHeader>
-
-          <div className="max-h-[28rem] space-y-3 overflow-y-auto px-6 py-6">
-            {loadingTemplates ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="size-6 animate-spin text-[color:var(--color-muted-foreground)]" />
-              </div>
-            ) : !selectedTemplate ? (
-              templates.length === 0 ? (
-                <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                  لا توجد قوالب معتمدة متاحة
-                </p>
-              ) : (
-                templates.map((tmpl: any) => (
-                  <button
-                    key={tmpl.name}
-                    type="button"
-                    onClick={() => handleSelectTemplate(tmpl)}
-                    className="flex w-full items-start gap-3 rounded-[20px] border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] p-4 text-right transition-all hover:border-[color:var(--color-primary)] hover:shadow-sm"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[color:var(--color-foreground)]">
-                        {tmpl.name}
-                      </p>
-                      <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
-                        {tmpl.language} · {tmpl.category}
-                      </p>
-                      {tmpl.components?.find((c: any) => c.type === 'BODY')?.text && (
-                        <p className="mt-1 line-clamp-2 text-sm text-[color:var(--color-muted-foreground)]">
-                          {tmpl.components.find((c: any) => c.type === 'BODY').text}
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                ))
-              )
-            ) : (
-              <div className="space-y-4">
-                <div className="rounded-[20px] border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] p-4">
-                  <p className="mb-2 text-sm font-semibold text-[color:var(--color-foreground)]">
-                    {selectedTemplate.name}
-                  </p>
-                  {selectedTemplate.components?.map((comp: any, idx: number) => (
-                    <div key={idx} className="mb-2 last:mb-0">
-                      {comp.type === 'HEADER' && comp.text && (
-                        <p className="text-sm font-medium text-[color:var(--color-primary)]">
-                          {comp.text}
-                        </p>
-                      )}
-                      {comp.type === 'BODY' && (
-                        <p className="whitespace-pre-wrap text-sm leading-6 text-[color:var(--color-foreground)]">
-                          {comp.text?.replace(/\{\{(\d+)\}\}/g, (_, num) =>
-                            templateVariables[`{{${num}}}`] || `{{${num}}}`
-                          )}
-                        </p>
-                      )}
-                      {comp.type === 'FOOTER' && comp.text && (
-                        <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
-                          {comp.text}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {Object.keys(templateVariables).length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                      المتغيرات
-                    </p>
-                    {Object.keys(templateVariables).sort((a, b) => {
-                      const numA = parseInt(a.replace(/\D/g, ''));
-                      const numB = parseInt(b.replace(/\D/g, ''));
-                      return numA - numB;
-                    }).map((key) => (
-                      <UiInput
-                        key={key}
-                        value={templateVariables[key]}
-                        onChange={(e) =>
-                          setTemplateVariables((prev) => ({ ...prev, [key]: e.target.value }))
-                        }
-                        className="h-11 rounded-[18px] bg-[var(--whatsapp-surface-strong)]"
-                        placeholder={`المتغير ${key}`}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {Object.keys(templateVariables).length === 0 && (
-                  <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                    هذا القالب لا يحتوي على متغيرات
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <UiDialogFooter className="border-t border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)]">
-            <UiButton variant="outline" onClick={() => {
-              if (selectedTemplate) {
-                setSelectedTemplate(null);
-                setTemplateVariables({});
-              } else {
-                setTemplateDialogOpen(false);
-              }
-            }}>
-              {selectedTemplate ? 'رجوع' : 'إلغاء'}
-            </UiButton>
-            {selectedTemplate && (
-              <UiButton
-                onClick={handleSendTemplate}
-                disabled={sendTemplateMutation.isPending || (
-                  Object.keys(templateVariables).length > 0 &&
-                  Object.values(templateVariables).some((v) => !v.trim())
-                )}
-              >
-                {sendTemplateMutation.isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : null}
-                إرسال القالب
-              </UiButton>
-            )}
           </UiDialogFooter>
         </UiDialogContent>
       </UiDialog>

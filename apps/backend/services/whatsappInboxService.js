@@ -21,7 +21,6 @@ const {
   getNormalizedSettings
 } = require('./whatsappInboxSettingsService');
 const { sendText } = require('./whatsapp/WhatsAppMessageHandler');
-const { computeWindowStatus } = require('./whatsapp/WhatsAppWindowService');
 
 const SUPERVISOR_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'];
 const STATUS_OPTIONS = ['NEW', 'QUEUED', 'ASSIGNED', 'ACTIVE', 'PENDING', 'WAITING_CUSTOMER', 'ESCALATED', 'CLOSED', 'ARCHIVED'];
@@ -100,28 +99,8 @@ class WhatsAppInboxService {
       getNormalizedSettings(companyId, prisma)
     ]);
 
-    const customerIds = conversations
-      .filter((c) => c.customerId)
-      .map((c) => c.customerId);
-
-    let windowByCustomerId = {};
-    if (customerIds.length > 0) {
-      const contacts = await prisma.whatsAppContact.findMany({
-        where: { customerId: { in: customerIds }, sessionId },
-        select: { customerId: true, lastCustomerMessageAt: true }
-      });
-      for (const contact of contacts) {
-        if (contact.customerId) {
-          windowByCustomerId[contact.customerId] = computeWindowStatus(contact);
-        }
-      }
-    }
-
     return {
-      conversations: conversations.map((conversation) => ({
-        ...this._formatConversationSummary(conversation),
-        window: windowByCustomerId[conversation.customerId] || computeWindowStatus(null)
-      })),
+      conversations: conversations.map((conversation) => this._formatConversationSummary(conversation)),
       pagination: {
         page,
         limit,
@@ -183,18 +162,6 @@ class WhatsAppInboxService {
     }
 
     const sessionId = getSessionIdFromMetadata(conversation.metadata);
-
-    let window = computeWindowStatus(null);
-    if (sessionId && conversation.customerId) {
-      const contact = await prisma.whatsAppContact.findFirst({
-        where: { customerId: conversation.customerId, sessionId },
-        select: { lastCustomerMessageAt: true }
-      });
-      if (contact) {
-        window = computeWindowStatus(contact);
-      }
-    }
-
     const [moderatorPool, settings] = await Promise.all([
       sessionId ? whatsappAssignmentEngineService.getSessionModeratorPool(companyId, sessionId) : Promise.resolve([]),
       getNormalizedSettings(companyId, prisma)
@@ -206,8 +173,7 @@ class WhatsAppInboxService {
       flags: getConversationFlags(conversation),
       queueKey: buildQueueKeyFromStatus(conversation.status),
       canTransfer: SUPERVISOR_ROLES.includes(normalizedRole) || settings.ownershipConfig.allowModeratorTransferRequest,
-      availableModerators: moderatorPool.map((candidate) => this._formatModeratorPoolItem(candidate)),
-      window
+      availableModerators: moderatorPool.map((candidate) => this._formatModeratorPoolItem(candidate))
     };
   }
 

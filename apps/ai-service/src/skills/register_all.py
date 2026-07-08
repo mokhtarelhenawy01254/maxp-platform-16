@@ -22,7 +22,6 @@ from src.skills.products.inventory import inventory_check
 from src.skills.customer.info import customer_info
 from src.skills.facebook.reply import facebook_reply
 from src.skills.promotions.offers_list import offers_list_active_skill
-from src.skills.medical_center_management.report import medical_center_management_skill
 
 
 def register_all_skills() -> None:
@@ -46,4 +45,3 @@ def register_all_skills() -> None:
     registry.register(customer_info)
     registry.register(facebook_reply)
     registry.register(offers_list_active_skill)
-    registry.register(medical_center_management_skill)

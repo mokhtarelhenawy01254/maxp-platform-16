@@ -1,5 +1,4 @@
 const whatsappInboxService = require('../services/whatsappInboxService');
-const { computeWindowStatus } = require('../services/whatsapp/WhatsAppWindowService');
 
 /**
  * @route GET /api/v1/whatsapp-inbox/sessions
@@ -201,64 +200,5 @@ exports.getSessionDetail = async (req, res) => {
   } catch (error) {
     console.error('[InboxController] getSessionDetail error:', error.message);
     res.status(500).json({ error: 'Failed to fetch session' });
-  }
-};
-
-/**
- * @route GET /api/v1/whatsapp-inbox/sessions/:sessionId/contacts/:phone/window
- * @desc Get 24-hour messaging window status for a contact
- */
-exports.getContactWindow = async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    let phone = req.params.phone;
-
-    // Normalize phone
-    phone = phone.replace(/\D/g, '');
-
-    const prisma = require('../services/sharedDatabase').getSharedPrismaClient();
-
-    // Look up the contact by session + phone
-    const contact = await prisma.whatsAppContact.findFirst({
-      where: {
-        sessionId,
-        OR: [
-          { phoneNumber: { contains: phone } },
-          { jid: { contains: phone } }
-        ]
-      },
-      select: {
-        id: true,
-        jid: true,
-        phoneNumber: true,
-        name: true,
-        pushName: true,
-        lastCustomerMessageAt: true,
-        customerId: true
-      }
-    });
-
-    if (!contact) {
-      return res.status(404).json({
-        success: false,
-        error: 'Contact not found in this session'
-      });
-    }
-
-    const window = computeWindowStatus(contact);
-
-    res.json({
-      success: true,
-      contact: {
-        id: contact.id,
-        jid: contact.jid,
-        phoneNumber: contact.phoneNumber,
-        name: contact.name || contact.pushName || null
-      },
-      window
-    });
-  } catch (error) {
-    console.error('[InboxController] getContactWindow error:', error.message);
-    res.status(500).json({ error: 'Failed to fetch window status' });
   }
 };

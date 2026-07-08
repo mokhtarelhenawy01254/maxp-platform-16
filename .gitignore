@@ -343,9 +343,6 @@ apps/ai-service/.env*
 .claude/
 .kilo/
 
-# OpenCode secrets (stored in home dir, but just in case)
-.opencode/secrets.json
-
 # Archived code (1.5GB local snapshot of an older backend layout)
 # Lives outside apps/ at the repo root
 _archive/

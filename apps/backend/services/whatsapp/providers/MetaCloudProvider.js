@@ -6,7 +6,6 @@
 const axios = require('axios');
 const { getSharedPrismaClient } = require('../../sharedDatabase');
 const { getMetaGraphApiVersion } = require('../../../config/metaApi');
-const { mapError } = require('../whatsappErrorCodes');
 
 async function getSession(sessionId) {
   return await getSharedPrismaClient().whatsAppSession.findUnique({
@@ -39,33 +38,17 @@ function normalizePhone(to) {
   return to.replace(/\D/g, '');
 }
 
-async function apiCall(fn) {
-  try {
-    return await fn();
-  } catch (err) {
-    const mapped = mapError(err);
-    const error = new Error(mapped.apiMessage || mapped.reason || 'WhatsApp API error');
-    error.code = mapped.code;
-    error.reason = mapped.reason;
-    error.retryable = mapped.retryable;
-    error.details = mapped.details;
-    error.httpStatus = mapped.httpStatus;
-    error.originalError = err;
-    throw error;
-  }
-}
-
 async function postMessage(session, payload) {
   const { apiVersion, accessToken, phoneNumberId } = resolveConfig(session);
   const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
 
-  const response = await apiCall(() => axios.post(url, payload, {
+  const response = await axios.post(url, payload, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
     },
     timeout: 30000
-  }));
+  });
 
   const messageId = response.data?.messages?.[0]?.id || response.data?.message_id || null;
   return {
@@ -87,12 +70,12 @@ async function listTemplates(sessionId) {
   }
 
   const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`;
-  const response = await apiCall(() => axios.get(url, {
+  const response = await axios.get(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`
     },
     timeout: 30000
-  }));
+  });
 
   return response.data?.data || [];
 }
@@ -141,7 +124,7 @@ async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
   form.append('file', fileBuffer, { filename, contentType: mimetype });
   form.append('type', mimetype);
 
-  const response = await apiCall(() => axios.post(url, form, {
+  const response = await axios.post(url, form, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       ...form.getHeaders()
@@ -149,7 +132,7 @@ async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
     timeout: 30000,
     maxContentLength: Infinity,
     maxBodyLength: Infinity
-  }));
+  });
 
   return response.data?.id || null;
 }
@@ -340,7 +323,7 @@ async function checkContact(sessionId, phoneNumbers) {
   const normalizedNumbers = numbers.map(n => normalizePhone(n));
 
   try {
-    const response = await apiCall(() => axios.post(url, {
+    const response = await axios.post(url, {
       messaging_product: 'whatsapp',
       contacts: normalizedNumbers
     }, {
@@ -349,14 +332,12 @@ async function checkContact(sessionId, phoneNumbers) {
         'Content-Type': 'application/json'
       },
       timeout: 30000
-    }));
+    });
 
     return response.data?.contacts || [];
   } catch (err) {
     console.error('❌ MetaCloud checkContact error:', {
-      status: err.httpStatus || err.response?.status,
-      code: err.code,
-      reason: err.reason,
+      status: err.response?.status,
       data: JSON.stringify(err.response?.data),
       url,
       phoneNumberId,
@@ -390,13 +371,13 @@ async function createTemplate(sessionId, templateData) {
   }
 
   const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`;
-  const response = await apiCall(() => axios.post(url, payload, {
+  const response = await axios.post(url, payload, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
     },
     timeout: 30000
-  }));
+  });
 
   return response.data;
 }
@@ -415,13 +396,13 @@ async function updateTemplate(sessionId, templateName, templateData) {
   if (templateData.category) payload.category = templateData.category;
 
   const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
-  const response = await apiCall(() => axios.post(url, payload, {
+  const response = await axios.post(url, payload, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
     },
     timeout: 30000
-  }));
+  });
 
   return response.data;
 }
@@ -435,12 +416,12 @@ async function deleteTemplate(sessionId, templateName) {
   if (!wabaId) throw new Error('Missing Meta WABA ID for session');
 
   const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
-  const response = await apiCall(() => axios.delete(url, {
+  const response = await axios.delete(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`
     },
     timeout: 30000
-  }));
+  });
 
   return response.data;
 }

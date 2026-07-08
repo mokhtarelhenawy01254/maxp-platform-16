@@ -255,11 +255,8 @@ class LLMClient:
         metadata: dict | None,
     ) -> None:
         try:
-            from src.db.session import async_session as _async_session
+            from src.db.session import async_session
             from sqlalchemy import text
-
-            if _async_session is None:
-                return
 
             provider_name = self.provider
             if not provider_name:
@@ -267,7 +264,7 @@ class LLMClient:
 
             log_id = "apl_" + uuid.uuid4().hex[:22]
 
-            async with _async_session() as db:
+            async with async_session() as db:
                 await db.execute(
                     text("""
                         INSERT INTO public.ai_provider_logs
@@ -394,7 +391,6 @@ class LLMClient:
             }
             if self.provider in ("DEEPSEEK", "OPENAI"):
                 tool_def["function"]["strict"] = True
-                params.setdefault("additionalProperties", False)
             sanitized.append(tool_def)
         return sanitized
 

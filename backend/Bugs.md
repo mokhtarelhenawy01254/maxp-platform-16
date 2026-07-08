@@ -1,28 +1,5 @@
 # Backend Bugs Log
 
-### [FIX] WhatsApp Voice Note Truncated to 1-Second / Silent Message
-- **Date**: 2026-07-08
-- **Description**: Voice notes sent from the WhatsApp chat UI were delivered to customers as silent/empty messages with exactly a 1-second duration.
-- **Root Cause**: Two issues:
-  1. **Premature Track Stopping (Frontend)**: In `useAudioRecorder.ts`, the audio stream tracks were stopped immediately inside `stopRecording()` synchronously after calling `MediaRecorder.stop()`. This terminated the stream before the asynchronous MediaRecorder finished encoding and flushing the remaining audio buffers, resulting in empty/truncated recordings.
-  2. **WebM Missing Duration Metadata (Backend)**: WebM audio files recorded by browser clients (like Chrome) do not write duration metadata, causing FFmpeg during Ogg/Opus conversion to incorrectly read or truncate the stream.
-- **Resolution**:
-  - Moved the `mediaStreamRef.current.getTracks().forEach(track => track.stop())` track closing logic from `stopRecording()` into the `recorder.onstop` and `recorder.onerror` event handlers, ensuring the stream is only terminated after encoding completes.
-  - Added `-fflags +genpts` to FFmpeg execution in `WhatsAppMediaHandler.js` to regenerate presentation timestamps.
-  - Added frontend and backend validations to reject audio payloads smaller than 500 bytes and disable sending when recording time is under 1 second.
-- **Files Modified**:
-  - `apps/frontend/src/hooks/useAudioRecorder.ts`
-  - `apps/frontend/src/pages/whatsapp/components/AudioRecorder.tsx`
-  - `apps/backend/services/whatsapp/WhatsAppMediaHandler.js`
-
-### [FIX] reportWebVitals Adblocker Crash Loop in Storefronts
-- **Date**: 2026-07-07
-- **Description**: Public storefronts (like `swan.maxp.online`) would load in an infinite refresh/redirect loop with query parameter `?__maxp_cache_recovery=...` and console errors like `TypeError: Cannot destructure property 'reportWebVitals' of 'undefined' as it is undefined` or `TypeError: Failed to fetch dynamically imported module`.
-- **Root Cause**: In production, `main.tsx` dynamically imported `./utils/reportWebVitals` via `import("./utils/reportWebVitals")` to track Core Web Vitals. Because the chunk name contains the word "vitals", it gets blocked by adblockers (Safari content blockers, uBlock Origin, etc.). When blocked, the import throws a dynamic import fetch failure. The global error recovery handler (`chunk-recovery.js` / `vite:preloadError` listener) caught this failure, classified it as a critical Vite chunk load failure, and redirected the page with a cache-busting timestamp `?__maxp_cache_recovery=...` in an attempt to recover. Since the blocker kept blocking the URL on subsequent reloads, the page was trapped in an infinite reload loop.
-- **Resolution**: Removed the unused performance monitoring dynamic import of `reportWebVitals` from `apps/frontend/src/main.tsx`. The performance reporter did nothing in production anyway since its actual logging/sending calls were commented out, making it safe to completely decommission.
-- **Files Modified**:
-  - `apps/frontend/src/main.tsx`
-
 ### [FIX] WhatsApp Voice Note 500 Error — Missing ffmpeg + Raw Mimetype in sendAudio
 - **Date**: 2026-07-05
 - **Description**: Voice notes sent from the WhatsApp chat UI returned HTTP 500 on production (`/whatsapp/messages/upload-send`).

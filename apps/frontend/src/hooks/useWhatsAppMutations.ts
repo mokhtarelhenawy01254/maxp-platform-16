@@ -54,14 +54,6 @@ interface ArchiveConversationParams {
   isArchived: boolean;
 }
 
-interface SendTemplateParams {
-  sessionId: string;
-  to: string;
-  templateId: string;
-  parameters?: Record<string, any>;
-  templateBody?: string;
-}
-
 const updateAllConversationCaches = (
   queryClient: ReturnType<typeof useQueryClient>,
   remoteJid: string,
@@ -409,34 +401,6 @@ export const useArchiveConversation = (
     },
     onSuccess: (_data, variables) => {
       // Invalidate to ensure consistency
-      queryClient.invalidateQueries({
-        queryKey: ["whatsapp", "conversations"],
-      });
-    },
-    ...options,
-  });
-};
-
-/**
- * Hook to send a template message
- */
-export const useSendTemplate = (
-  options?: Omit<
-    UseMutationOptions<any, Error, SendTemplateParams>,
-    "mutationFn"
-  >,
-) => {
-  const queryClient = useQueryClient();
-
-  return useMutation<any, Error, SendTemplateParams>({
-    mutationFn: async (params) => {
-      const response = await api.post("/whatsapp/messages/send-template", params);
-      return response.data;
-    },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["whatsapp", "messages", variables.to, variables.sessionId],
-      });
       queryClient.invalidateQueries({
         queryKey: ["whatsapp", "conversations"],
       });

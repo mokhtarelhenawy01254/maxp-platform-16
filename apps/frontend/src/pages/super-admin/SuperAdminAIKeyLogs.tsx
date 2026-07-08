@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { Badge } from "../../components/ui/badge";
 import {
   Select,
@@ -21,24 +21,19 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import {
   Search,
   RefreshCw,
+  CheckCircle2,
+  XCircle,
   Clock,
-  Download,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { companyAwareApi } from "../../services/companyAwareApi";
 import { useAiKeyLogs } from "../../hooks/useAiKeyLogs";
 import { useAiKeys } from "../../hooks/useAiAdminData";
 import type { AiKeyLog } from "../../types/ai-admin";
 
-const PAGE_SIZE = 25;
-
 const ACTION_LABELS: Record<string, string> = {
-  generation_success: "توليد رد",
-  generation_failed: "فشل توليد",
+  "generation_success": "توليد رد",
+  "generation_failed": "فشل توليد",
   "key.created": "إنشاء مفتاح",
   "key.updated": "تحديث مفتاح",
   "key.test": "اختبار مفتاح",
@@ -60,12 +55,10 @@ function statusColor(status?: string) {
 
 function formatTime(iso: string) {
   const d = new Date(iso);
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return d.toLocaleString("ar-EG", {
+  return d.toLocaleString("ar-SA", {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit",
-    hour12: false,
-  }) + " " + tz;
+  });
 }
 
 function SuperAdminAIKeyLogs() {
@@ -82,88 +75,30 @@ function KeyLogsContent() {
   const [providerFilter, setProviderFilter] = useState("");
   const [keyFilter, setKeyFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [page, setPage] = useState(0);
-
-  const [refreshTick, setRefreshTick] = useState(0);
-
-  const { data: companies } = useQuery({
-    queryKey: ["super-admin", "companies"],
-    queryFn: () => companyAwareApi.getAllCompanies(),
-    staleTime: 300_000,
-    select: (res) => res.data?.data?.companies ?? [],
-  });
-
-  const companyNameMap = useMemo(() => {
-    if (!Array.isArray(companies)) return {};
-    const map: Record<string, string> = {};
-    for (const c of companies) map[c.id] = c.name;
-    return map;
-  }, [companies]);
-
   const { data: logs, isLoading, error } = useAiKeyLogs({
     provider: providerFilter || undefined,
     key_id: keyFilter || undefined,
     status: statusFilter || undefined,
     limit: 200,
-  }, refreshTick);
+  });
 
+  const [refreshTick, setRefreshTick] = useState(0);
   function handleRefresh() {
     setRefreshTick((t) => t + 1);
-    setPage(0);
   }
-
-  const keyNameMap = useMemo(() => {
-    if (!Array.isArray(keys)) return {};
-    const map: Record<string, string> = {};
-    for (const k of keys) map[k.id] = k.name;
-    return map;
-  }, [keys]);
 
   const providerList = useMemo(() => {
     if (!Array.isArray(keys)) return [];
-    return [...new Set(keys.map((k) => k.provider).filter(Boolean))];
+    const names = keys.map((k) => k.provider).filter(Boolean);
+    return [...new Set(names)];
   }, [keys]);
 
   const keyOptions = useMemo(() => {
     if (!Array.isArray(keys)) return [];
-    return keys.filter((k) => !providerFilter || k.provider === providerFilter)
-      .map((k) => ({ id: k.id, name: k.name }));
+    return keys
+      .filter((k) => !providerFilter || k.provider === providerFilter)
+      .map((k) => ({ id: k.id, name: k.name, provider: k.provider }));
   }, [keys, providerFilter]);
-
-  const filtered = useMemo(() => {
-    if (!Array.isArray(logs)) return [];
-    let result = logs;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      result = result.filter((l) =>
-        l.provider?.toLowerCase().includes(q) ||
-        l.action?.toLowerCase().includes(q) ||
-        l.model?.toLowerCase().includes(q) ||
-        l.key_id?.toLowerCase().includes(q) ||
-        keyNameMap[l.key_id || ""]?.toLowerCase().includes(q)
-      );
-    }
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      result = result.filter((l) => new Date(l.created_at) >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setDate(to.getDate() + 1);
-      result = result.filter((l) => new Date(l.created_at) < to);
-    }
-    return result;
-  }, [logs, searchTerm, dateFrom, dateTo, keyNameMap]);
-
-  const paged = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   const stats = useMemo(() => {
     if (!Array.isArray(logs)) return { total: 0, success: 0, failed: 0, avgLatency: 0 };
@@ -173,21 +108,6 @@ function KeyLogsContent() {
     const avgLatency = latencies.length ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
     return { total: logs.length, success, failed, avgLatency };
   }, [logs]);
-
-  const exportCSV = useCallback(() => {
-    if (!Array.isArray(logs) || logs.length === 0) return;
-    const header = "الوقت,المزود,المفتاح,الإجراء,الحالة,النموذج,الزمن (ms)\n";
-    const rows = logs.map((l) =>
-      `"${formatTime(l.created_at)}","${l.provider}","${keyNameMap[l.key_id || ""] || l.key_id || ""}","${ACTION_LABELS[l.action] || l.action}","${STATUS_LABELS[l.status] || l.status}","${l.model || ""}","${l.latency_ms ?? ""}"`
-    ).join("\n");
-    const blob = new Blob(["\uFEFF" + header + rows], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ai-key-logs-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [logs, keyNameMap]);
 
   if (error) {
     return (
@@ -221,10 +141,9 @@ function KeyLogsContent() {
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input className="pr-9" placeholder="بحث..." value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }} />
+          <Input className="pr-9" placeholder="بحث..." disabled />
         </div>
-        <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); setKeyFilter(""); setPage(0); }}>
+        <Select value={providerFilter} onValueChange={setProviderFilter}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="كل المزودين" />
           </SelectTrigger>
@@ -235,7 +154,7 @@ function KeyLogsContent() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={keyFilter} onValueChange={(v) => { setKeyFilter(v); setPage(0); }}>
+        <Select value={keyFilter} onValueChange={setKeyFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="كل المفاتيح" />
           </SelectTrigger>
@@ -246,7 +165,7 @@ function KeyLogsContent() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="كل الحالات" />
           </SelectTrigger>
@@ -256,16 +175,8 @@ function KeyLogsContent() {
             <SelectItem value="failed">فشل</SelectItem>
           </SelectContent>
         </Select>
-        <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
-          className="h-9 rounded border px-2 text-sm bg-background" title="من تاريخ" />
-        <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
-          className="h-9 rounded border px-2 text-sm bg-background" title="إلى تاريخ" />
         <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث">
           <RefreshCw className="size-4" />
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportCSV} title="تصدير CSV"
-          disabled={!logs || logs.length === 0}>
-          <Download className="size-4 ml-1" /> CSV
         </Button>
       </div>
 
@@ -281,7 +192,6 @@ function KeyLogsContent() {
                 <TableHead>الوقت</TableHead>
                 <TableHead>المزود</TableHead>
                 <TableHead>المفتاح</TableHead>
-                <TableHead>الشركة</TableHead>
                 <TableHead>الإجراء</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>النموذج</TableHead>
@@ -289,33 +199,25 @@ function KeyLogsContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.length === 0 ? (
+              {!logs || logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     لا توجد سجلات
                   </TableCell>
                 </TableRow>
               ) : (
-                paged.map((log) => (
-                    <TableRow key={log.id}>
+                logs.map((log) => (
+                  <TableRow key={log.id}>
                     <TableCell className="text-xs whitespace-nowrap">{formatTime(log.created_at)}</TableCell>
                     <TableCell>
                       <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.provider}</span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {log.key_id ? (
-                        <span title={keyNameMap[log.key_id] || log.key_id}>
-                          {(keyNameMap[log.key_id] || log.key_id).substring(0, 12)}{log.key_id.length > 12 ? "..." : ""}
-                        </span>
-                      ) : "—"}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {log.company_id ? (companyNameMap[log.company_id] || log.company_id.substring(0, 8) + "…") : "—"}
+                      {log.key_id ? log.key_id.substring(0, 8) + "..." : "—"}
                     </TableCell>
                     <TableCell className="text-xs">{ACTION_LABELS[log.action] || log.action}</TableCell>
                     <TableCell>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${statusColor(log.status)}`}
-                        title={log.error || undefined}>
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${statusColor(log.status)}`}>
                         {STATUS_LABELS[log.status] || log.status}
                       </span>
                     </TableCell>
@@ -333,20 +235,6 @@ function KeyLogsContent() {
               )}
             </TableBody>
           </Table>
-        </div>
-      )}
-
-      {filtered.length > PAGE_SIZE && (
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-            <ChevronRight className="size-4 ml-1" /> السابق
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            صفحة {page + 1} من {totalPages} ({filtered.length} سجل)
-          </span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
-            التالي <ChevronLeft className="size-4 mr-1" />
-          </Button>
         </div>
       )}
     </div>

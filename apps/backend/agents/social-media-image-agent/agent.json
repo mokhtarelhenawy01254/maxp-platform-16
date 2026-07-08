@@ -4,8 +4,8 @@
   "role": "MARKETING",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "openai/gpt-image-2",
-    "fallback": "google/gemini-3.1-flash-image"
+    "default": "google/gemini-3.1-flash-image",
+    "fallback": "openai/gpt-image-2"
   },
   "instructions": {
     "agents": "AGENTS.md",

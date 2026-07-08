@@ -44,20 +44,11 @@ async function syncPagePosts(pageId) {
   return { synced: allPosts.length, pageName: page.pageName };
 }
 
-async function setProduct(postId, productId) {
+async function toggleProductLabel(postId, isProduct) {
   const prisma = getSharedPrismaClient();
-  const data = {};
-  if (productId) {
-    data.productId = productId;
-    data.isProduct = true;
-  } else {
-    data.productId = null;
-    data.isProduct = false;
-  }
   return prisma.facebookPost.update({
     where: { id: postId },
-    data,
-    include: { product: { select: { id: true, name: true, mainImage: true, sku: true } } },
+    data: { isProduct },
   });
 }
 
@@ -72,11 +63,8 @@ async function getPosts(companyId, filters = {}) {
     orderBy: { postedAt: 'desc' },
     take: filters.limit || 100,
     skip: filters.offset || 0,
-    include: {
-      page: { select: { pageName: true } },
-      product: { select: { id: true, name: true, mainImage: true, sku: true } },
-    },
+    include: { page: { select: { pageName: true } } },
   });
 }
 
-module.exports = { syncPagePosts, setProduct, getPosts };
+module.exports = { syncPagePosts, toggleProductLabel, getPosts };

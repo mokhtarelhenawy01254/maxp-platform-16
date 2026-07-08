@@ -25,18 +25,6 @@ interface StatusSummaryData {
   totals: { ordersCount: number; itemsCount: number; productsValue: number; shippingValue: number };
 }
 
-interface OrderItem {
-  id: string;
-  productName: string | null;
-  productColor: string | null;
-  productSize: string | null;
-  productSku: string | null;
-  quantity: number;
-  price: number;
-  total: number;
-  product?: { name: string; sku: string } | null;
-}
-
 interface OrderDetail {
   id: string;
   orderNumber: string;
@@ -49,7 +37,6 @@ interface OrderDetail {
   sourceType: string | null;
   createdAt: string;
   customer?: { firstName: string; lastName: string; phone: string } | null;
-  orderItems?: OrderItem[];
 }
 
 interface ItemDetail {
@@ -66,18 +53,13 @@ interface ItemDetail {
   createdAt: string;
 }
 
-interface GroupedVariation {
+interface GroupedItem {
+  productName: string | null;
   productColor: string | null;
   productSize: string | null;
   quantity: number;
   total: number;
-}
-
-interface GroupedItem {
-  productName: string | null;
-  quantity: number;
-  total: number;
-  variations: GroupedVariation[];
+  orders: { orderNumber: string; orderId: string }[];
 }
 
 interface Pagination {
@@ -108,10 +90,7 @@ const StatusSummaryReport: React.FC = () => {
   const [inlinePagination, setInlinePagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, totalPages: 0 });
   const [inlineLoading, setInlineLoading] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
-
-  // Expanded rows
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadStatuses = async () => {
@@ -152,11 +131,6 @@ const StatusSummaryReport: React.FC = () => {
       setInlineExpanded(false);
       return;
     }
-    // Reset expanded rows when switching modes
-    if (mode !== inlineMode) {
-      setExpandedOrders(new Set());
-      setExpandedGroups(new Set());
-    }
     setInlineMode(mode);
     setInlineExpanded(true);
     setInlineLoading(true);
@@ -165,7 +139,7 @@ const StatusSummaryReport: React.FC = () => {
       const params: Record<string, string> = {
         statuses: selectedStatuses.join(","),
         page: String(pageNum),
-        limit: mode === "items" ? "5000" : "50",
+        limit: "50",
       };
       if (dateRange.start) params.startDate = dateRange.start;
       if (dateRange.end) params.endDate = dateRange.end;
@@ -216,37 +190,22 @@ const StatusSummaryReport: React.FC = () => {
   const groupedItems = useMemo(() => {
     const groups = new Map<string, GroupedItem>();
     for (const item of inlineItems) {
-      const key = item.productName || "بدون اسم";
+      const key = `${item.productName || ""}|${item.productColor || ""}|${item.productSize || ""}`;
       if (groups.has(key)) {
         const g = groups.get(key)!;
         g.quantity += item.quantity;
         g.total += item.total;
-        
-        const varKey = `${item.productColor || ""}|${item.productSize || ""}`;
-        const existingVar = g.variations.find(v => `${v.productColor || ""}|${v.productSize || ""}` === varKey);
-        
-        if (existingVar) {
-          existingVar.quantity += item.quantity;
-          existingVar.total += item.total;
-        } else {
-          g.variations.push({
-            productColor: item.productColor,
-            productSize: item.productSize,
-            quantity: item.quantity,
-            total: item.total,
-          });
+        if (!g.orders.find((o) => o.orderNumber === item.orderNumber)) {
+          g.orders.push({ orderNumber: item.orderNumber, orderId: item.orderId });
         }
       } else {
         groups.set(key, {
-          productName: item.productName || "بدون اسم",
+          productName: item.productName,
+          productColor: item.productColor,
+          productSize: item.productSize,
           quantity: item.quantity,
           total: item.total,
-          variations: [{
-            productColor: item.productColor,
-            productSize: item.productSize,
-            quantity: item.quantity,
-            total: item.total,
-          }],
+          orders: [{ orderNumber: item.orderNumber, orderId: item.orderId }],
         });
       }
     }
@@ -258,15 +217,6 @@ const StatusSummaryReport: React.FC = () => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      return next;
-    });
-  };
-
-  const toggleOrder = (orderId: string) => {
-    setExpandedOrders((prev) => {
-      const next = new Set(prev);
-      if (next.has(orderId)) next.delete(orderId);
-      else next.add(orderId);
       return next;
     });
   };
@@ -421,7 +371,7 @@ const StatusSummaryReport: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr
+                  <tr 
                     className="border-b border-gray-100 bg-white transition-colors hover:bg-gray-50/50 cursor-pointer dark:border-gray-700/50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
                     onClick={() => openDrillDown("orders")}
                   >
@@ -475,129 +425,31 @@ const StatusSummaryReport: React.FC = () => {
                                     <tr className="sticky top-0 z-10 border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">رقم الطلب</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">العميل</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التليفون</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الحالة</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المحافظة</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">التاريخ</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {inlineOrders.map((o: any) => {
-                                      const isExpanded = expandedOrders.has(o.id);
-                                      return (
-                                        <React.Fragment key={o.id}>
-                                          <tr
-                                            onClick={() => toggleOrder(o.id)}
-                                            className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:hover:bg-indigo-900/20"
-                                          >
-                                            <td className="px-4 py-3 font-medium text-indigo-600 dark:text-indigo-400">
-                                              <span className="inline-flex items-center gap-1">
-                                                {isExpanded ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" />}
-                                                {o.orderNumber}
-                                              </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                                              {o.customer ? `${o.customer.firstName} ${o.customer.lastName}`.trim() || "—" : "—"}
-                                            </td>
-                                            <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
-                                              {o.customer?.phone || "—"}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                              <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                                {statusLabel(o.status)}
-                                              </span>
-                                            </td>
-                                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(o.total)}</td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.governorate || o.city || "—"}</td>
-                                            <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{formatDate(o.createdAt)}</td>
-                                            <td className="px-4 py-3">
-                                              <div className="flex items-center gap-2">
-                                                <button
-                                                  type="button"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleOrder(o.id);
-                                                  }}
-                                                  className="whitespace-nowrap text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
-                                                >
-                                                  {isExpanded ? "إخفاء" : `القطع (${o.orderItems?.length ?? 0})`}
-                                                </button>
-                                                <span className="text-gray-300 dark:text-gray-600">|</span>
-                                                <button
-                                                  type="button"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/orders/${o.orderNumber}`);
-                                                  }}
-                                                  className="whitespace-nowrap text-sm font-medium text-teal-600 transition-colors hover:text-teal-800 hover:underline dark:text-teal-400 dark:hover:text-teal-300"
-                                                >
-                                                  فتح الطلب
-                                                </button>
-                                              </div>
-                                            </td>
-                                          </tr>
-                                          {isExpanded && (
-                                            <tr className="bg-indigo-50/30 dark:bg-indigo-900/10">
-                                              <td colSpan={8} className="p-0">
-                                                <div className="border-y border-indigo-100 px-6 py-3 dark:border-indigo-900/30">
-                                                  {o.orderItems && o.orderItems.length > 0 ? (
-                                                    <table className="w-full text-right text-xs">
-                                                      <thead>
-                                                        <tr className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                                                          <th className="px-3 py-2 font-semibold">المنتج</th>
-                                                          <th className="px-3 py-2 font-semibold">الباركود / SKU</th>
-                                                          <th className="px-3 py-2 font-semibold">اللون</th>
-                                                          <th className="px-3 py-2 font-semibold">المقاس</th>
-                                                          <th className="px-3 py-2 font-semibold">الكمية</th>
-                                                          <th className="px-3 py-2 font-semibold">سعر الوحدة</th>
-                                                          <th className="px-3 py-2 font-semibold">الإجمالي</th>
-                                                        </tr>
-                                                      </thead>
-                                                      <tbody>
-                                                        {o.orderItems.map((item: any, iidx: number) => (
-                                                          <tr
-                                                            key={item.id || iidx}
-                                                            className="border-t border-gray-100 dark:border-gray-700/30"
-                                                          >
-                                                            <td className="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">
-                                                              {item.productName || item.product?.name || "—"}
-                                                            </td>
-                                                            <td className="px-3 py-2 font-mono text-gray-500 dark:text-gray-400">
-                                                              {item.productSku || item.product?.sku || "—"}
-                                                            </td>
-                                                            <td className="px-3 py-2">
-                                                              {item.productColor ? (
-                                                                <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                                                  {item.productColor}
-                                                                </span>
-                                                              ) : "—"}
-                                                            </td>
-                                                            <td className="px-3 py-2">
-                                                              {item.productSize ? (
-                                                                <span className="inline-flex rounded-md bg-blue-50 px-2 py-0.5 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                                                  {item.productSize}
-                                                                </span>
-                                                              ) : "—"}
-                                                            </td>
-                                                            <td className="px-3 py-2 font-bold text-gray-900 dark:text-gray-100">{item.quantity}</td>
-                                                            <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{formatEGP(item.price)}</td>
-                                                            <td className="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">{formatEGP(item.total)}</td>
-                                                          </tr>
-                                                        ))}
-                                                      </tbody>
-                                                    </table>
-                                                  ) : (
-                                                    <p className="py-3 text-center text-xs text-gray-500">لا توجد قطع في هذا الطلب</p>
-                                                  )}
-                                                </div>
-                                              </td>
-                                            </tr>
-                                          )}
-                                        </React.Fragment>
-                                      );
-                                    })}
+                                    {inlineOrders.map((o) => (
+                                      <tr
+                                        key={o.id}
+                                        onClick={() => navigate(`/orders/details/${o.orderNumber}`)}
+                                        className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:hover:bg-indigo-900/20"
+                                      >
+                                        <td className="px-4 py-3 font-medium text-indigo-600 dark:text-indigo-400">{o.orderNumber}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.customer ? `${o.customer.firstName} ${o.customer.lastName}`.trim() || "—" : "—"}</td>
+                                        <td className="px-4 py-3">
+                                          <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                            {statusLabel(o.status)}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(o.total)}</td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.governorate || o.city || "—"}</td>
+                                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{formatDate(o.createdAt)}</td>
+                                      </tr>
+                                    ))}
                                   </tbody>
                                 </table>
                               )
@@ -609,90 +461,101 @@ const StatusSummaryReport: React.FC = () => {
                                   <thead>
                                     <tr className="sticky top-0 z-10 border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المنتج</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">عدد الألوان/المقاسات</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الكمية الكلية</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">اللون</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">المقاس</th>
+                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الكمية</th>
                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجمالي</th>
-                                      <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {groupedItems.map((group, idx) => {
-                                      const groupKey = `${group.productName || ""}|${idx}`;
-                                      const isExpanded = expandedGroups.has(groupKey);
-                                      return (
-                                        <React.Fragment key={groupKey}>
-                                          <tr
-                                            onClick={() => toggleGroup(groupKey)}
-                                            className="cursor-pointer border-b border-gray-100 bg-white transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:bg-gray-800 dark:hover:bg-indigo-900/20"
-                                          >
-                                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                                              <span className="inline-flex items-center gap-1">
-                                                {isExpanded ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" />}
-                                                {group.productName || "—"}
-                                              </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatNumber(group.variations.length)}</td>
-                                            <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">{formatNumber(group.quantity)}</td>
-                                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(group.total)}</td>
-                                            <td className="px-4 py-3">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  toggleGroup(groupKey);
-                                                }}
-                                                className="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
-                                              >
-                                                {isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
-                                              </button>
-                                            </td>
-                                          </tr>
-                                          {isExpanded && (
-                                            <tr className="bg-gray-50/50 dark:bg-gray-800/50">
-                                              <td colSpan={5} className="p-0">
-                                                <div className="border-b border-gray-100 bg-gray-50/30 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/30">
-                                                  <table className="w-full text-right text-xs">
-                                                    <thead>
-                                                      <tr className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                                                        <th className="px-3 py-2 font-semibold">اللون</th>
-                                                        <th className="px-3 py-2 font-semibold">المقاس</th>
-                                                        <th className="px-3 py-2 font-semibold">الكمية المطلوبة</th>
-                                                        <th className="px-3 py-2 font-semibold">الإجمالي</th>
-                                                      </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                      {group.variations.map((v, vidx) => (
-                                                        <tr
-                                                          key={vidx}
-                                                          className="border-t border-gray-100 transition-colors hover:bg-indigo-50/30 dark:border-gray-700/30 dark:hover:bg-indigo-900/10"
-                                                        >
-                                                          <td className="px-3 py-2">
-                                                            {v.productColor ? (
-                                                              <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                                                {v.productColor}
-                                                              </span>
-                                                            ) : "—"}
-                                                          </td>
-                                                          <td className="px-3 py-2">
-                                                            {v.productSize ? (
-                                                              <span className="inline-flex rounded-md bg-blue-50 px-2 py-0.5 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                                                {v.productSize}
-                                                              </span>
-                                                            ) : "—"}
-                                                          </td>
-                                                          <td className="px-3 py-2 font-bold text-gray-900 dark:text-gray-100">{v.quantity}</td>
-                                                          <td className="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">{formatEGP(v.total)}</td>
-                                                        </tr>
-                                                      ))}
-                                                    </tbody>
-                                                  </table>
-                                                </div>
-                                              </td>
-                                            </tr>
-                                          )}
-                                        </React.Fragment>
-                                      );
-                                    })}
+                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">عدد الطلبات</th>
+                                       <th className="px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">الإجراء</th>
+                                     </tr>
+                                   </thead>
+                                   <tbody>
+                                     {groupedItems.map((group, idx) => {
+                                       const groupKey = `${group.productName || ""}|${group.productColor || ""}|${group.productSize || ""}|${idx}`;
+                                       const isExpanded = expandedGroups.has(groupKey);
+                                       return (
+                                         <React.Fragment key={groupKey}>
+                                           <tr
+                                             onClick={() => toggleGroup(groupKey)}
+                                             className="cursor-pointer border-b border-gray-100 bg-white transition-colors hover:bg-indigo-50/50 dark:border-gray-700/50 dark:bg-gray-800 dark:hover:bg-indigo-900/20"
+                                           >
+                                             <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                                               <span className="inline-flex items-center gap-1">
+                                                 {isExpanded ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" />}
+                                                 {group.productName || "—"}
+                                               </span>
+                                             </td>
+                                             <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{group.productColor || "—"}</td>
+                                             <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{group.productSize || "—"}</td>
+                                             <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{formatNumber(group.quantity)}</td>
+                                             <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatEGP(group.total)}</td>
+                                             <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatNumber(group.orders.length)}</td>
+                                             <td className="px-4 py-3">
+                                               <button
+                                                 type="button"
+                                                 onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   toggleGroup(groupKey);
+                                                 }}
+                                                 className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                               >
+                                                 {isExpanded ? "إخفاء" : "عرض الطلبات"}
+                                               </button>
+                                             </td>
+                                           </tr>
+                                           {isExpanded && (
+                                             <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                                               <td colSpan={7} className="p-0">
+                                                 <div className="border-b border-gray-100 bg-gray-50/30 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30">
+                                                   <table className="w-full text-right text-xs">
+                                                     <thead>
+                                                       <tr className="text-gray-500 dark:text-gray-400">
+                                                         <th className="px-3 py-2 font-semibold">رقم الطلب</th>
+                                                         <th className="px-3 py-2 font-semibold">السعر</th>
+                                                         <th className="px-3 py-2 font-semibold">التاريخ</th>
+                                                         <th className="px-3 py-2 font-semibold">الإجراء</th>
+                                                       </tr>
+                                                     </thead>
+                                                     <tbody>
+                                                       {inlineItems
+                                                         .filter(
+                                                           (item) =>
+                                                             (item.productName || "") === (group.productName || "") &&
+                                                             (item.productColor || "") === (group.productColor || "") &&
+                                                             (item.productSize || "") === (group.productSize || "")
+                                                         )
+                                                         .map((item, iidx) => (
+                                                           <tr
+                                                             key={`${item.itemId}-${iidx}`}
+                                                             onClick={() => navigate(`/orders/${item.orderNumber}`)}
+                                                             className="cursor-pointer border-t border-gray-100 transition-colors hover:bg-indigo-50/30 dark:border-gray-700/30 dark:hover:bg-indigo-900/10"
+                                                           >
+                                                             <td className="px-3 py-2 font-medium text-indigo-600 dark:text-indigo-400">{item.orderNumber}</td>
+                                                             <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{formatEGP(item.price)}</td>
+                                                             <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{item.createdAt ? formatDate(item.createdAt) : "—"}</td>
+                                                             <td className="px-3 py-2">
+                                                               <button
+                                                                 type="button"
+                                                                 onClick={(e) => {
+                                                                   e.stopPropagation();
+                                                                   navigate(`/orders/${item.orderNumber}`);
+                                                                 }}
+                                                                 className="text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                               >
+                                                                 عرض التفاصيل
+                                                               </button>
+                                                             </td>
+                                                           </tr>
+                                                         ))}
+                                                     </tbody>
+                                                   </table>
+                                                 </div>
+                                               </td>
+                                             </tr>
+                                           )}
+                                         </React.Fragment>
+                                       );
+                                     })}
                                   </tbody>
                                 </table>
                               )

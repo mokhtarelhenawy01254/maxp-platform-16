@@ -478,9 +478,7 @@ async function sendManualNotification(req, res) {
       res.status(400).json({
         success: false,
         error: result.reason,
-        errorCode: result.errorCode || null,
-        retryable: result.retryable || false,
-        message: getErrorMessage(result.reason, result.retryable)
+        message: getErrorMessage(result.reason)
       });
     }
   } catch (error) {
@@ -647,9 +645,7 @@ async function sendTestNotification(req, res) {
       res.status(400).json({
         success: false,
         error: result.reason,
-        errorCode: result.errorCode || null,
-        retryable: result.retryable || false,
-        message: getErrorMessage(result.reason, result.retryable),
+        message: getErrorMessage(result.reason),
         details: result.error
       });
     }
@@ -758,14 +754,11 @@ function getCategoryForEvent(eventType) {
   return 'MARKETING';
 }
 
-function getErrorMessage(reason, retryable = false) {
+function getErrorMessage(reason) {
   const { t } = require('../services/i18n');
   const key = `whatsapp.${reason}`;
   const translated = t(key);
-  if (translated !== key) {
-    const hint = retryable ? t('whatsapp.retry_hint') : t('whatsapp.no_retry_hint');
-    return `${translated}. ${hint}`;
-  }
+  if (translated !== key) return translated;
   return t('whatsapp.unknown_error') || 'حدث خطأ غير معروف';
 }
 

@@ -261,6 +261,46 @@ AGENTS.md أصبح **المعيار الفعلي** لتوجيه AI coding agents
 - **Skills** — progressive disclosure للـ capabilities (مش كل الأدوات محملة طول الوقت)
 - **Multi-agent orchestration** — manager-agent, handoff, group chat patterns
 
+## eCart Tools — Profitability Engine Analysis
+### Source: https://tools.e-cart.academy/profitability-engine (2026-07-07)
+### Creator: Osama Gamal — eCart Solutions Founder
+### Stack: React 18, Vite, Recharts, Tailwind CSS
+### Type: Monthly P&L Simulator for COD eCommerce
+
+### 11 Inputs
+- **Revenue & Volume**: AOV (100-5000), Daily Orders (1-500), Confirmation Rate (20-100%), Delivery Rate (20-100%)
+- **Variable Costs**: COGS (10-2000), Packing (5-200), Shipping (20-300), RTO Fee (10-200)
+- **Fixed & Marketing**: Monthly Fixed Costs (0-1M), Ad Mode (CPP/Order vs Total Budget), CPP value or Total Budget
+
+### Core Calculation
+```
+monthlyPlaced = ordersPerDay * 30
+confirmed = monthlyPlaced * (confirmationRate / 100)
+delivered = confirmed * (deliveryRate / 100)
+RTO = confirmed - delivered
+revenue = delivered * AOV
+varCostDelivered = delivered * (COGS + Packing + Shipping)
+varCostRTO = RTO * (Packing + RTO_Fee)
+adSpend = monthlyPlaced * CPP (or flat budget in Total Budget mode)
+grossProfit = revenue - varCostDelivered - varCostRTO - adSpend
+netProfit = grossProfit - fixedCosts
+contributionPerOrder = grossProfit / monthlyPlaced
+breakEvenOrders = fixedCosts / contributionPerOrder
+daysToBreakEven = breakEvenOrders / ordersPerDay
+bevCAC = grossProfit / monthlyPlaced
+safeCAC = bevCAC * 0.8
+```
+
+### 3 Preset Profiles
+- **Conservative**: AOV=700, Orders=30, Conf=65%, Delivery=75%, COGS=300, Fixed=100K, CPP=150
+- **Balanced**: AOV=900, Orders=50, Conf=70%, Delivery=80%, COGS=350, Fixed=150K, CPP=200
+- **Aggressive**: AOV=1,200, Orders=100, Conf=75%, Delivery=85%, COGS=400, Fixed=250K, CPP=250
+
+### Currencies: EGP=1, SAR=0.12, USD=0.02
+### Scenario Save: Max 4 scenarios with name + inputs + results snapshot
+### CAC Health Zone: Safe (CPP <= safeCAC), Warning (safeCAC < CPP <= netBreakEvenCPP), Danger (CPP > netBreakEvenCPP)
+### Key Components: Order Funnel, Net Profit Card, KPI Grid, P&L Table, Waterfall Chart (Recharts), CAC Zone, Smart Alerts
+
 ### Model Trends (2025-2026)
 - Frontier models بتقدر تدخل في "code mode" (multi-turn autonomous execution)
 - Reasoning models (o-series, thinking tokens) للـ complex planning

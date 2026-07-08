@@ -107,14 +107,6 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             else:
                 arguments = arguments_str
 
-            # Auto-inject image_bytes into product_search when base64 image attachments are present.
-            # Only skip if a real HTTP image_url was passed (embedding will use the URL directly).
-            # If image_url is a data-URI or hallucinated string, we override with the real bytes.
-            if func_name == "product_search" and ctx.attachments and not arguments.get("image_bytes"):
-                _iu = arguments.get("image_url") or ""
-                if not _iu or not str(_iu).startswith(("http://", "https://")):
-                    _inject_image_to_product_search(arguments, ctx.attachments)
-
             skill = registry.get(func_name)
             if not skill:
                 # Fallback: try native tool definitions
@@ -268,8 +260,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             logger.error("no_llm_client_available", error=str(e))
             raise
 
-    # If message has images but current model doesn't support vision:
-    # Use Gemini ONLY for image description, then keep DeepSeek for tool calling
+    # If message has images but current model doesn't support vision, switch to Gemini
     has_images = bool(ctx.attachments)
     if has_images:
         from src.llm.model_capabilities import supports_vision
@@ -282,34 +273,15 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
                 vision_model = "gemini-2.5-flash"
                 routing = await model_manager.get_next_key(vision_model, ctx.company_id)
-                vision_client = LLMClient(
+                client = LLMClient(
                     provider=routing.provider,
                     model=routing.model,
                     api_key=routing.api_key,
                     base_url=routing.base_url,
                 )
-                # Call Gemini WITHOUT tools just for image description
-                vision_msgs = [
-                    {"role": "system", "content": "صف المنتجات في الصورة بالتفصيل بالعربي: نوع المنتج، اللون، الشكل، أي نصوص أو علامات تجارية."},
-                    {"role": "user", "content": user_content},
-                ]
-                desc_response = await vision_client.generate(messages=vision_msgs, tools=None, temperature=0.1)
-                if desc_response.text:
-                    desc = desc_response.text.strip()
-                    logger.info("vision_description_extracted", chars=len(desc))
-                    # Inject description into user message for tool-calling LLM (DeepSeek)
-                    base_text = ctx.message
-                    for att in (ctx.attachments or []):
-                        url = ""
-                        if att.get("type") == "image_url" and isinstance(att.get("image_url"), dict):
-                            url = att["image_url"].get("url", "")
-                        if url and url.startswith(("http://", "https://")):
-                            base_text += "\n[image_url: " + url + "]"
-                    base_text += "\n[وصف الصورة: " + desc + "]"
-                    messages[-1] = {"role": "user", "content": base_text}
-                logger.info("vision_two_step", original_model=client_model, vision=vision_model)
+                logger.info("vision_fallback_switched", original_model=client_model, new_model=vision_model)
             except Exception as e:
-                logger.warning("vision_description_failed", error=str(e))
+                logger.warning("vision_fallback_unavailable", error=str(e))
 
     tool_dicts = [s.to_openai_tool() for s in skills]
 
@@ -320,14 +292,10 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         if tname not in skill_names and tname in ALL_TOOLS:
             tool_dicts.append(ALL_TOOLS[tname].to_json_schema_spec())
 
-    tool_choice = getattr(ctx.agent.config, "tool_choice", None) if ctx.agent and hasattr(ctx.agent, "config") else None
-    if tool_choice == "required" and client and getattr(client, "provider", None) == "DEEPSEEK":
-        tool_choice = None
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
         temperature=0.3,
-        tool_choice=tool_choice,
     )
 
 
@@ -546,45 +514,6 @@ async def _build_followup_messages(
             )
 
     return messages
-
-
-def _inject_image_to_product_search(arguments: dict, attachments: list[dict]) -> None:
-    """Inject image_bytes/mime_type into product_search args from context attachments.
-
-    Called when the LLM calls product_search without image context even though the
-    user message included an image attachment. This ensures embedding (vector) search
-    runs instead of falling back to text-only search.
-    """
-    import re as _re
-    _DATA_URL_RE = _re.compile(r"^data:(?P<mime>[^;,]+);base64,(?P<data>.+)$", _re.IGNORECASE | _re.DOTALL)
-    for att in attachments:
-        if not isinstance(att, dict):
-            continue
-        # Check direct base64 payload keys first
-        b64 = (
-            att.get("image_bytes") or att.get("imageBytes")
-            or att.get("base64_data") or att.get("base64Data")
-            or ""
-        ).strip()
-        if b64:
-            mime = (
-                att.get("mime_type") or att.get("mimeType")
-                or att.get("content_type") or att.get("contentType")
-                or "image/jpeg"
-            ).strip() or "image/jpeg"
-            arguments["image_bytes"] = b64
-            arguments["mime_type"] = mime
-            logger.info("product_search_image_bytes_injected", mime=mime, bytes_len=len(b64))
-            return
-        # Check already-converted OpenAI image_url format with data URI
-        if att.get("type") == "image_url" and isinstance(att.get("image_url"), dict):
-            url = att["image_url"].get("url", "")
-            m = _DATA_URL_RE.match(url)
-            if m:
-                arguments["mime_type"] = m.group("mime")
-                arguments["image_bytes"] = m.group("data")
-                logger.info("product_search_image_bytes_injected_from_data_url", mime=m.group("mime"))
-                return
 
 
 def get_agent_instructions(agent: Any) -> str:

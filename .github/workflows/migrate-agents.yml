@@ -5,21 +5,8 @@ on:
       command:
         description: 'Command to run via SSH on the server'
         required: true
-        type: choice
-        options:
-          - 'echo "OK"'
-          - 'pm2 list'
-          - 'pm2 status'
-          - 'pm2 logs maxp-ai-service --lines 30 --nostream'
-          - 'pm2 logs maxp-backend --lines 30 --nostream'
-          - 'node scripts/migrate_agents_tool_registry.js'
-          - 'node scripts/migrate_agents_to_new_memory.js'
-          - 'ls -la /var/www/backend2/scripts/'
-          - 'ls -la /var/www/ai-service/'
-          - 'df -h'
-          - 'free -m'
-          - 'tail -50 /var/www/backend2/logs/err.log'
-          - 'tail -50 /var/www/backend2/logs/out.log'
+        default: 'echo "hello"'
+        type: string
 
 jobs:
   ssh:
@@ -31,11 +18,16 @@ jobs:
           token: ${{ secrets.MAXP3_CHECKOUT_TOKEN || github.token }}
 
       - name: Prepare SSH Key
-        uses: ./.github/actions/setup-ssh
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.SERVER_PORT || '22' }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
+          chmod 600 "$HOME/.ssh/maxp_deploy_key"
+          ssh-keyscan -p "${{ secrets.SERVER_PORT || '22' }}" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
 
       - name: Execute Command
         shell: bash
@@ -57,5 +49,5 @@ jobs:
           )
 
           echo "🚀 Running command on server..."
-          timeout 15m ssh "${SSH_OPTS[@]}" "$SERVER_USER@$SERVER_HOST" "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\" && export PATH=\"\$(dirname \"\$(command -v node)\"):/root/.local/bin:\$PATH\" && $CMD"
+          timeout 15m ssh "${SSH_OPTS[@]}" "$SERVER_USER@$SERVER_HOST" "export PATH=\"/root/.nvm/versions/node/v20.19.5/bin:/root/.local/bin:\$PATH\" && $CMD"
           echo "✅ Command completed"

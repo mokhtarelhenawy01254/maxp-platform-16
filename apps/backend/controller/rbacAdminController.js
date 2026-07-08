@@ -264,21 +264,16 @@ exports.updateUserRole = async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
-    const validRoles = ['AGENT', 'MANAGER', 'COMPANY_ADMIN', 'OWNER'];
+    const validRoles = ['AGENT', 'MANAGER', 'COMPANY_ADMIN'];
 
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
     }
 
     const prisma = getSharedPrismaClient();
-    const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
-
-    // SUPER_ADMIN has no companyId on their token — look up by userId only
-    const userWhere = isSuperAdmin
-      ? { id: userId }
-      : { id: userId, companyId: req.user.companyId };
-
-    const user = await prisma.user.findFirst({ where: userWhere });
+    const user = await prisma.user.findFirst({
+      where: { id: userId, companyId: req.user.companyId }
+    });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -288,14 +283,11 @@ exports.updateUserRole = async (req, res) => {
       data: { role }
     });
 
-    // Also update UserCompany role (use user's actual companyId for SUPER_ADMIN)
-    const targetCompanyId = isSuperAdmin ? user.companyId : req.user.companyId;
-    if (targetCompanyId) {
-      await prisma.userCompany.updateMany({
-        where: { userId, companyId: targetCompanyId },
-        data: { role: role }
-      });
-    }
+    // Also update UserCompany role
+    await prisma.userCompany.updateMany({
+      where: { userId, companyId: req.user.companyId },
+      data: { role: role }
+    });
 
     res.json({
       success: true,
@@ -321,26 +313,18 @@ exports.toggleUserStatus = async (req, res) => {
   try {
     const { userId } = req.params;
     const { isActive } = req.body;
-    const isSuperAdmin = req.user.role === 'SUPER_ADMIN';
 
     const prisma = getSharedPrismaClient();
-
-    // SUPER_ADMIN has no companyId on their token — look up by userId only
-    const userWhere = isSuperAdmin
-      ? { id: userId }
-      : { id: userId, companyId: req.user.companyId };
-
-    const user = await prisma.user.findFirst({ where: userWhere });
+    const user = await prisma.user.findFirst({
+      where: { id: userId, companyId: req.user.companyId }
+    });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Toggle if no explicit value provided
-    const nextIsActive = typeof isActive === 'boolean' ? isActive : !user.isActive;
-
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { isActive: nextIsActive }
+      data: { isActive }
     });
 
     res.json({

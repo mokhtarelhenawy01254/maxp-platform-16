@@ -818,7 +818,6 @@ module.exports = {
   reorderStatuses,
   initializeStatuses,
   getStatusStats,
-  initializeDefaultStatuses,
-  DEFAULT_ORDER_STATUSES
+  initializeDefaultStatuses
 };
 

@@ -2244,19 +2244,11 @@ async function sendNotification(options) {
         data: {
           status: 'FAILED',
           failedAt: new Date(),
-          failureReason: sendError.code ? `[${sendError.code}] ${sendError.message}` : sendError.message,
-          errorCode: sendError.code ? String(sendError.code) : null,
+          failureReason: sendError.message
         }
       }));
 
-      return {
-        success: false,
-        reason: sendError.reason || 'send_failed',
-        error: sendError.message,
-        errorCode: sendError.code || null,
-        retryable: sendError.retryable || false,
-        errorDetails: sendError.details || null,
-      };
+      return { success: false, reason: 'send_failed', error: sendError.message };
     }
 
   } catch (error) {

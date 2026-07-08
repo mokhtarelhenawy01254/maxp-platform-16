@@ -597,7 +597,7 @@ model FacebookCatalogProduct {
   createdAt              DateTime               @default(now())
   updatedAt              DateTime @updatedAt
   facebookProductCatalog FacebookProductCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
-  product                Product?               @relation("FacebookCatalogProduct", fields: [productId], references: [id])
+  product                Product?               @relation(fields: [productId], references: [id])
 
   @@unique([catalogId, productId])
   @@unique([catalogId, sku])
@@ -769,19 +769,16 @@ model FacebookPost {
   permalink   String?
   postedAt    DateTime
   isProduct   Boolean   @default(false)
-  productId   String?
   syncStatus  String    @default("synced")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   page    FacebookPage @relation(fields: [pageId], references: [pageId])
   company Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  product Product?    @relation("FacebookPostProduct", fields: [productId], references: [id])
 
   @@index([pageId])
   @@index([companyId])
   @@index([isProduct])
-  @@index([productId])
   @@index([postedAt])
   @@map("facebook_posts")
 }
@@ -905,7 +902,6 @@ model WhatsAppNotificationLog {
   readAt                          DateTime?
   failedAt                        DateTime?
   failureReason                   String?
-  errorCode                       String?
   clicked                         Boolean                               @default(false)
   clickedAt                       DateTime?
   responded                       Boolean                               @default(false)

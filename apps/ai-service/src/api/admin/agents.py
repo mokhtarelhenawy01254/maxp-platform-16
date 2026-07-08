@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import case, func, select, text
+from sqlalchemy import case, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -269,7 +269,6 @@ def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
             "guardrails": agent.guardrails or {},
             "budget": agent.budget or {},
         },
-        "custom_instructions": dict(getattr(agent, "custom_instructions", None) or {}),
         "allowed_tools": agent.allowed_tools or [],
         "allowed_skills": agent.allowed_skills or [],
         "allowed_channels": _safe_list(agent.channels),
@@ -316,7 +315,6 @@ def _normalize_agent_config(
         "allowed_channels": list(_first_present(config, "allowed_channels", "allowedChannels", default=[]) or []),
         "status": str(_first_present(config, "status", default="ACTIVE") or "ACTIVE"),
         "instructions": _instructions_from_persona(persona),
-        "custom_instructions": dict(_first_present(config, "custom_instructions", default={}) or {}),
         "version": _first_present(config, "version"),
         "parent_id": _first_present(config, "parent_id", "parentId"),
     }
@@ -424,7 +422,6 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         "allowed_tools": allowed_tools,
         "allowed_skills": allowed_skills,
         "instructions": cfg.get("instructions") or {},
-        "custom_instructions": cfg.get("custom_instructions") or {},
         "status": cfg.get("status") or "ACTIVE",
         "version": cfg.get("version"),
         "parent_id": cfg.get("parent_id"),
@@ -461,24 +458,7 @@ async def list_agent_templates(
 ) -> list[AgentTemplateList]:
     """List agent templates. Default: active only. Use ?all=true to include inactive."""
     templates = await list_templates(session, active_only=not include_inactive)
-
-    count_result = await session.execute(
-        select(
-            AgentModel.template_slug,
-            func.count().label("cnt"),
-        ).where(
-            AgentModel.template_slug.isnot(None),
-            AgentModel.status != "ARCHIVED",
-        ).group_by(AgentModel.template_slug)
-    )
-    counts = {row.template_slug: row.cnt for row in count_result}
-
-    result: list[AgentTemplateList] = []
-    for t in templates:
-        item = AgentTemplateList.model_validate(t)
-        item.companies_count = counts.get(t.slug, 0)
-        result.append(item)
-    return result
+    return [AgentTemplateList.model_validate(t) for t in templates]
 
 
 @router.get("/templates/{slug}", response_model=AgentTemplateRead)
@@ -686,9 +666,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         template_slug=template_slug,
         status="ACTIVE",
         model=model,
-        soul=body.soul or (template.soul if template else None),
-        rules=body.rules or (template.rules if template else None),
-        persona=(template.persona if template else {}) | (body.persona or {}),
+        persona=body.persona or {},
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
         channels=body.allowed_channels or (template.channels if template else []),
@@ -696,7 +674,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         budget=body.budget or (template.budget if template else {}),
         parent_id=body.parent_id,
         version=template.version if template else "1.0.0",
-        config=(template.config if template else {}) | (body.config or {}),
+        config=body.config or {},
     )
     session.add(agent)
     try:
@@ -1241,8 +1219,6 @@ async def update_agent(
         agent.budget = body.budget
     if body.config is not None:
         agent.config = body.config
-    if body.custom_instructions is not None:
-        agent.custom_instructions = body.custom_instructions
 
     await session.commit()
     await session.refresh(agent)
@@ -1311,22 +1287,12 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     if not template:
         raise HTTPException(status_code=404, detail=f"Template not found: {agent.template_slug}")
 
-    # Migrate existing config.soul_custom to custom_instructions before clearing
-    existing_custom = dict(agent.custom_instructions or {})
-    config_soul_custom = (agent.config or {}).get("soul_custom")
-    if config_soul_custom and not existing_custom.get("soul"):
-        existing_custom["soul"] = config_soul_custom
-    agent.custom_instructions = existing_custom
-
     agent.allowed_tools = template.allowed_tools
     agent.allowed_skills = template.allowed_skills
     agent.channels = template.channels
     agent.guardrails = template.guardrails
     agent.budget = template.budget
     agent.version = template.version
-    agent.soul = None
-    agent.rules = None
-    agent.persona = {}
 
     await session.commit()
     await session.refresh(agent)

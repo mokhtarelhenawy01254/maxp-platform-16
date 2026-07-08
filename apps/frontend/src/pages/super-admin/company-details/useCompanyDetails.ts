@@ -303,7 +303,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
 
   const handleUpdateUserRole = async (userId: string, role: string): Promise<void> => {
     try {
-      const response: any = await apiClient.patch(`/admin/rbac/users/${userId}/role`, { role });
+      const response: any = await apiClient.patch(`/admin/users/${userId}/role`, { role });
       if (response.data?.success) { toast.success("تم تحديث صلاحية العضو"); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تحديث الصلاحية");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تحديث الصلاحية")); }
@@ -311,7 +311,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
 
   const handleToggleUserStatus = async (userId: string): Promise<void> => {
     try {
-      const response: any = await apiClient.patch(`/admin/rbac/users/${userId}/status`);
+      const response: any = await apiClient.patch(`/admin/users/${userId}/status`);
       if (response.data?.success) { toast.success("تم تغيير حالة العضو"); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تغيير الحالة");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تغيير الحالة")); }

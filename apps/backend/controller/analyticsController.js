@@ -3709,77 +3709,28 @@ const getAvailableStatuses = async (req, res) => {
     const { statusType } = req.query;
     const prisma = getSharedPrismaClient();
 
-    let finalStatuses = [];
+    const whereClause = {
+      companyId: String(companyId),
+      isActive: true,
+      ...(statusType ? { statusType: String(statusType) } : {})
+    };
 
-    if (statusType === 'order' || !statusType) {
-      const { DEFAULT_ORDER_STATUSES } = require('./orderStatusController');
-      
-      // 1. Get standard statuses
-      const standardMap = new Map();
-      if (DEFAULT_ORDER_STATUSES) {
-        DEFAULT_ORDER_STATUSES.forEach(s => standardMap.set(s.code, s));
-      }
-
-      // 2. Get statuses configured in the DB for this company
-      const dbStatuses = await prisma.orderStatusConfig.findMany({
-        where: {
-          companyId: String(companyId),
-          isActive: true,
-          statusType: 'order'
-        },
-        select: {
-          code: true,
-          name: true,
-          nameEn: true,
-          color: true,
-          icon: true,
-          sortOrder: true
-        }
-      });
-      dbStatuses.forEach(s => standardMap.set(s.code, s));
-
-      // 3. Get any distinct statuses actually used in orders to catch unconfigured ones
-      const usedStatuses = await prisma.order.findMany({
-        where: { companyId: String(companyId) },
-        select: { status: true },
-        distinct: ['status']
-      });
-
-      usedStatuses.forEach(s => {
-        if (!standardMap.has(s.status)) {
-          standardMap.set(s.status, {
-            code: s.status,
-            name: s.status, // Fallback to code as name
-            nameEn: s.status,
-            sortOrder: 99
-          });
-        }
-      });
-
-      finalStatuses = Array.from(standardMap.values()).sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99));
-    } else {
-      // Fallback for other status types
-      finalStatuses = await prisma.orderStatusConfig.findMany({
-        where: {
-          companyId: String(companyId),
-          isActive: true,
-          statusType: String(statusType)
-        },
-        select: {
-          code: true,
-          name: true,
-          nameEn: true,
-          color: true,
-          icon: true,
-          sortOrder: true
-        },
-        orderBy: { sortOrder: 'asc' }
-      });
-    }
+    const statuses = await prisma.orderStatusConfig.findMany({
+      where: whereClause,
+      select: {
+        code: true,
+        name: true,
+        nameEn: true,
+        color: true,
+        icon: true,
+        sortOrder: true
+      },
+      orderBy: { sortOrder: 'asc' }
+    });
 
     res.json({
       success: true,
-      data: finalStatuses
+      data: statuses
     });
   } catch (error) {
     console.error('Error in getAvailableStatuses:', error);

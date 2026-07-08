@@ -22,7 +22,7 @@ class ReserveInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
     patient_name: str = Field(..., description="اسم المريض بالكامل")
     patient_phone: str = Field(..., description="رقم هاتف المريض")
-    gender: str = Field(default="", description="جنس المريض (MALE أو FEMALE). اختياري. الآيجنت يقرر تمريره إذا كان واضحًا من الاسم؛ لو غير واضح يتركه فاضي والأداة تطلب التوضيح بلطف.")
+    gender: str = Field(..., description="جنس المريض (MALE أو FEMALE)")
     service_name: str = Field(..., description="اسم الخدمة الطبية المطلوبة (مثل: علاج طبيعي، حجامة)")
     branch_name: str = Field(default="", description="اسم فرع المركز الطبي (مثل: التجمع، الدقي)")
     appointment_date: str = Field(default="", description="تاريخ الحجز بصيغة YYYY-MM-DD")
