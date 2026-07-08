@@ -32,7 +32,7 @@ async function getOpenRouterKey() {
 exports.generateImage = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size } = req.body;
+    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size, productImage } = req.body;
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ success: false, message: "الصورة مطلوب" });
@@ -45,6 +45,7 @@ exports.generateImage = async (req, res) => {
 
     const systemPrompt = [
       "You are a professional social media image designer. Generate a high-quality image based on the user's request.",
+      productImage ? "The user has provided a reference product image. Use it as the primary visual — place the actual product from the reference image into the design. Do NOT ignore the reference or invent a different product." : "",
       style ? `Style: ${style}.` : "",
       negativePrompt ? `Avoid: ${negativePrompt}.` : "",
       "Ensure the image is suitable for social media use with clear composition and appropriate colors.",
@@ -61,13 +62,20 @@ exports.generateImage = async (req, res) => {
 
     const dims = size || supportedAspectRatios[aspectRatio] || supportedAspectRatios["1:1"];
 
+    const userContent = productImage
+      ? [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: productImage } },
+        ]
+      : prompt;
+
     const response = await axios.post(
       `${OPENROUTER_BASE}/chat/completions`,
       {
         model,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
+          { role: "user", content: userContent },
         ],
         response_format: { type: "image" },
         ...(dims ? { width: dims.width, height: dims.height } : {}),

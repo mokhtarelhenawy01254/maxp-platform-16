@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ImageIcon,
-  Loader2,
+  X,
   Sparkles,
+  Loader2,
   Download,
   ChevronDown,
   ChevronUp,
@@ -15,6 +15,7 @@ import {
   Info,
   Wand2,
   RotateCcw,
+  ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -199,6 +200,50 @@ const FONTS = [
   "Tajawal",
 ];
 
+const TEMPLATES: Record<string, Partial<FormData>> = {
+  sale_promotion: {
+    purpose: "sale_promotion",
+    mood: "energetic",
+    theme: "gradient",
+    layout: "product_centered",
+    headline: "خصم 50% لفترة محدودة",
+    subheadline: "أفضل العروض على كل المنتجات",
+    cta: "تسوق الآن",
+    urgency: "limited_time",
+    hashtags: "خصومات, عروض, تسوق",
+  },
+  new_product_launch: {
+    purpose: "new_product_launch",
+    mood: "modern",
+    theme: "product_hero",
+    layout: "product_centered",
+    headline: "وصل حديثاً",
+    subheadline: "اكتشف المجموعة الجديدة الآن",
+    cta: "اعرف المزيد",
+    hashtags: "جديد, منتج, إطلاق",
+  },
+  brand_awareness: {
+    purpose: "brand_awareness",
+    mood: "professional",
+    theme: "modern",
+    layout: "full_bleed_image",
+    headline: "ثقة تستحقها",
+    subheadline: "جودة وخدمة في كل تفصيلة",
+    cta: "تواصل معنا",
+    hashtags: "علامة_تجارية, جودة, ثقة",
+  },
+  engagement: {
+    purpose: "engagement",
+    mood: "playful",
+    theme: "lifestyle",
+    layout: "split_screen",
+    headline: "شاركنا رأيك",
+    subheadline: "إيه أكتر حاجة عجبتك في الشهر ده؟",
+    cta: "علق الآن",
+    hashtags: "تفاعل, رأيك_يهم, مجتمع",
+  },
+};
+
 interface ModelConfigResponse {
   model?: string;
 }
@@ -217,6 +262,10 @@ interface BrandIdentityResponse {
 interface GenerateResponse {
   imageUrl?: string;
   message?: string;
+  data?: {
+    imageUrl?: string;
+    message?: string;
+  };
 }
 
 interface FormData {
@@ -253,6 +302,8 @@ interface FormData {
   format: string;
   quality: number;
   transparentBg: boolean;
+  avoidPrompt: string;
+  editablePrompt: string;
 }
 
 const initialForm: FormData = {
@@ -289,6 +340,8 @@ const initialForm: FormData = {
   format: "png",
   quality: 90,
   transparentBg: false,
+  avoidPrompt: "",
+  editablePrompt: "",
 };
 
 function Field({
@@ -369,7 +422,11 @@ const AIImageGenerator: React.FC = () => {
   const [gallery, setGallery] = useState<any[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; url: string; filename: string }>({ open: false, url: "", filename: "" });
-  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string } | null>(null);
+  const [promptTouched, setPromptTouched] = useState(false);
+  const [primaryImagePreview, setPrimaryImagePreview] = useState<string>("");
+  const [galleryFilter, setGalleryFilter] = useState<string>("all");
+  const [gallerySearch, setGallerySearch] = useState<string>("");
+  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string; productImage?: string } | null>(null);
 
   const selectValue = <K extends keyof FormData>(key: K) => (value: string | null) => {
     if (value !== null) update(key, value as FormData[K]);
@@ -409,6 +466,12 @@ const AIImageGenerator: React.FC = () => {
   }, [message]);
 
   useEffect(() => {
+    if (!promptTouched) {
+      setForm((prev) => ({ ...prev, editablePrompt: buildPromptText() }));
+    }
+  }, [form.platform, form.aspectRatio, form.brandName, form.primaryColor, form.secondaryColor, form.accentColor, form.headingFont, form.productName, form.tagline, form.description, form.price, form.currency, form.discountBadge, form.headline, form.subheadline, form.bodyText, form.cta, form.customCta, form.hashtags, form.textPosition, form.textAlignment, form.mood, form.theme, form.layout, form.borderRadius, form.shadow, form.purpose, form.urgency, primaryImage]);
+
+  useEffect(() => {
     if (!imageUrl) return;
     document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [imageUrl]);
@@ -429,6 +492,16 @@ const AIImageGenerator: React.FC = () => {
       setGalleryLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!primaryImage) {
+      setPrimaryImagePreview("");
+      return;
+    }
+    const url = URL.createObjectURL(primaryImage);
+    setPrimaryImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [primaryImage]);
 
   const update = <K extends keyof FormData>(key: K, val: FormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -489,6 +562,9 @@ const AIImageGenerator: React.FC = () => {
         quality: form.quality,
         transparentBg: form.transparentBg,
       },
+      constraints: {
+        avoid: form.avoidPrompt,
+      },
     };
   };
 
@@ -535,10 +611,23 @@ const AIImageGenerator: React.FC = () => {
       `Use brand colors: primary ${form.primaryColor}, secondary ${form.secondaryColor}, accent ${form.accentColor}.`,
     );
 
+    if (form.avoidPrompt.trim()) {
+      parts.push(`Avoid: ${form.avoidPrompt.trim()}.`);
+    }
+
     return parts.join(" ");
   };
 
-  const handleGenerate = () => {
+  const getBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+  };
+
+  const handleGenerate = async () => {
     if (!canGenerate) {
       toast.error("من فضلك أدخل اسم المنتج أو العنوان الرئيسي");
       setMessage({ type: "error", text: "من فضلك أدخل اسم المنتج أو العنوان الرئيسي" });
@@ -548,38 +637,38 @@ const AIImageGenerator: React.FC = () => {
     setImageUrl("");
     setMessage(null);
 
-    const prompt = buildPromptText();
-    const params = {
+    const prompt = (promptTouched && form.editablePrompt.trim()) ? form.editablePrompt.trim() : buildPromptText();
+    const productImage = primaryImage ? await getBase64(primaryImage) : undefined;
+    const params: Record<string, any> = {
       prompt,
       model: agentModel,
       aspectRatio: form.aspectRatio,
       style: form.mood || form.theme || undefined,
+      productImage,
     };
     setLastParams(params);
 
-    apiClient
-      .post<GenerateResponse>("/ai-image/generate", {
+    try {
+      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", {
         structured: buildPromptJson(),
         ...params,
-      })
-      .then((res) => {
-        if (res.data?.data?.imageUrl) {
-          setImageUrl(res.data.data.imageUrl);
-          toast.success("تم توليد الصورة بنجاح");
-          setMessage({ type: "success", text: "تم توليد الصورة بنجاح" });
-          fetchGallery();
-        } else {
-          const text = res.data?.data?.message || res.data?.message || "لم يتم استلام الصورة من الموديل";
-          toast.error(text);
-          setMessage({ type: "error", text });
-        }
-      })
-      .catch((err: any) => {
-        const text = err?.response?.data?.message || err?.response?.data?.data?.message || err.message || "فشل في توليد الصورة";
+      });
+      if (res.data?.data?.imageUrl) {
+        setImageUrl(res.data.data.imageUrl);
+        toast.success("تم توليد الصورة بنجاح");
+        fetchGallery();
+      } else {
+        const text = res.data?.data?.message || res.data?.message || "لم يتم استلام الصورة من الموديل";
         toast.error(text);
         setMessage({ type: "error", text });
-      })
-      .finally(() => setLoading(false));
+      }
+    } catch (err: any) {
+      const text = err?.response?.data?.message || err?.response?.data?.data?.message || err.message || "فشل في توليد الصورة";
+      toast.error(text);
+      setMessage({ type: "error", text });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDownload = () => {
@@ -610,17 +699,16 @@ const AIImageGenerator: React.FC = () => {
     if (!lastParams) return;
     setImageUrl("");
     setMessage(null);
-    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style), 100);
+    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style, lastParams.productImage), 100);
   };
 
-  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string) => {
+  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string, productImage?: string) => {
     setLoading(true);
     try {
-      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style });
+      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, productImage });
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         toast.success("تم توليد الصورة بنجاح");
-        setMessage({ type: "success", text: "تم توليد الصورة بنجاح" });
         fetchGallery();
       } else {
         const text = res.data?.data?.message || res.data?.message || "لم يتم استلام الصورة من الموديل";
@@ -652,7 +740,26 @@ const AIImageGenerator: React.FC = () => {
     setImageUrl("");
     setMessage(null);
     setPrimaryImage(null);
+    setPromptTouched(false);
+    setGalleryFilter("all");
+    setGallerySearch("");
     toast.info("تم تصفير النموذج");
+  };
+
+  const filteredGallery = useMemo(() => {
+    return gallery.filter((img) => {
+      if (galleryFilter !== "all" && img.platform !== galleryFilter) return false;
+      if (gallerySearch.trim() && !img.filename.toLowerCase().includes(gallerySearch.trim().toLowerCase())) return false;
+      return true;
+    });
+  }, [gallery, galleryFilter, gallerySearch]);
+
+  const applyTemplate = (template: string) => {
+    const t = TEMPLATES[template];
+    if (!t) return;
+    setForm((prev) => ({ ...prev, ...t }));
+    setPromptTouched(false);
+    setTimeout(() => setForm((prev) => ({ ...prev, editablePrompt: buildPromptText() })), 0);
   };
 
   const inputCls = "bg-white dark:bg-gray-900";
@@ -668,6 +775,26 @@ const AIImageGenerator: React.FC = () => {
 
       <div className="px-5 pb-5 sm:px-6">
         <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
+
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">قوالب سريعة:</span>
+          {[
+            { key: "sale_promotion", label: "عرض / خصم" },
+            { key: "new_product_launch", label: "إطلاق منتج" },
+            { key: "brand_awareness", label: "تعريف بالعلامة" },
+            { key: "engagement", label: "تفاعل" },
+          ].map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => applyTemplate(t.key)}
+              className="inline-flex items-center gap-1 rounded-full border bg-card px-3 py-1 text-xs font-medium text-foreground hover:border-primary hover:bg-primary/5"
+            >
+              <Sparkles className="size-3" />
+              {t.label}
+            </button>
+          ))}
+        </div>
 
         <Tabs defaultValue="platform" className="mt-4">
           <TabsList variant="line" className="mb-5 flex-wrap gap-1">
@@ -812,12 +939,30 @@ const AIImageGenerator: React.FC = () => {
                     />
                   </Field>
                   <Field label="صورة المنتج" hint="اختياري — الصورة هتساعد الموديل يحافظ على الشكل">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setPrimaryImage(e.target.files?.[0] || null)}
-                      className={inputCls}
-                    />
+                    {!primaryImagePreview ? (
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setPrimaryImage(e.target.files?.[0] || null)}
+                        className={inputCls}
+                      />
+                    ) : (
+                      <div className="relative w-fit">
+                        <img
+                          src={primaryImagePreview}
+                          alt="Product preview"
+                          className="h-24 w-24 rounded-lg border object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPrimaryImage(null)}
+                          className="absolute -right-2 -top-2 rounded-full border bg-background p-1 shadow-sm hover:bg-muted"
+                          title="إزالة الصورة"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    )}
                   </Field>
                 </div>
               </CardContent>
@@ -1065,6 +1210,17 @@ const AIImageGenerator: React.FC = () => {
                   </Field>
                 </div>
 
+                <Field label="ما يجب تجنبه في الصورة" hint="مثلاً: أشخاص، نصوص إنجليزية، خلفيات مشوشة">
+                  <Textarea
+                    dir="auto"
+                    placeholder="اكتب كل ما لا تريد ظهوره..."
+                    value={form.avoidPrompt}
+                    onChange={(e) => update("avoidPrompt", e.target.value)}
+                    rows={2}
+                    className={inputCls}
+                  />
+                </Field>
+
                 <Field label="الـ Layout">
                   <Select value={form.layout} onValueChange={selectValue("layout")}>
                     <SelectTrigger>
@@ -1251,15 +1407,29 @@ const AIImageGenerator: React.FC = () => {
           </TabsContent>
         </Tabs>
 
-        <div className="mt-6 space-y-4">
-          <button
-            type="button"
-            onClick={() => setShowJson(!showJson)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-            {showJson ? "إخفاء" : "عرض"} تفاصيل البرومبت
-          </button>
+        <div className="mt-6 space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">البرومبت النهائي (يمكنك تعديله قبل التوليد)</Label>
+            <button
+              type="button"
+              onClick={() => setShowJson(!showJson)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+              {showJson ? "إخفاء JSON" : "عرض JSON"}
+            </button>
+          </div>
+          <Textarea
+            dir="auto"
+            value={form.editablePrompt}
+            onChange={(e) => {
+              update("editablePrompt", e.target.value);
+              setPromptTouched(true);
+            }}
+            rows={4}
+            className={inputCls}
+            placeholder="سيظهر البرومبت النهائي هنا بعد ملء الحقول..."
+          />
           {showJson && (
             <pre className="max-h-64 overflow-auto rounded-lg border bg-slate-50 p-4 text-xs dark:bg-gray-950">
               {JSON.stringify(buildPromptJson(), null, 2)}
@@ -1273,6 +1443,7 @@ const AIImageGenerator: React.FC = () => {
             className="gap-2"
             onClick={handleGenerate}
             disabled={loading || !canGenerate}
+            title={!canGenerate ? "اكتب اسم المنتج أو عنوان رئيسي أولاً" : undefined}
           >
             {loading ? (
               <>
@@ -1280,7 +1451,7 @@ const AIImageGenerator: React.FC = () => {
               </>
             ) : (
               <>
-                <Wand2 className="size-4" /> توليد الصورة
+                <Wand2 className="size-4" /> {!canGenerate ? "اكتب بيانات أولاً" : "توليد الصورة"}
               </>
             )}
           </Button>
@@ -1293,11 +1464,6 @@ const AIImageGenerator: React.FC = () => {
           >
             <RotateCcw className="size-4" /> تصفير
           </Button>
-          {!canGenerate && (
-            <p className="text-xs text-muted-foreground">
-              اكتب اسم المنتج أو عنوان رئيسي في تبويب "المنتج" أو "النص" لتفعيل التوليد
-            </p>
-          )}
         </div>
 
         <div id="ai-generated-result" className="mt-6">
@@ -1377,16 +1543,18 @@ const AIImageGenerator: React.FC = () => {
               تحديث
             </Button>
           </div>
-          {gallery.length === 0 ? (
+          {filteredGallery.length === 0 ? (
             <div className="flex min-h-[160px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
               <div className="text-center text-slate-400">
                 <ImageIcon className="mx-auto size-10" />
-                <p className="mt-2 text-sm">لا توجد صور بعد. أول صورة هتظهر هنا.</p>
+                <p className="mt-2 text-sm">
+                  {gallerySearch || galleryFilter !== "all" ? "لا توجد نتائج مطابقة للبحث" : "لا توجد صور بعد. أول صورة هتظهر هنا."}
+                </p>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {gallery.map((img) => (
+              {filteredGallery.map((img) => (
                 <div
                   key={img.filename}
                   className="group relative overflow-hidden rounded-lg border bg-slate-50 dark:bg-gray-900"
