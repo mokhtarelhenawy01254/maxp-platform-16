@@ -2080,13 +2080,36 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
 
                             console.log(`🟢 [BAILEYS-DEBOUNCE] Processing ${entries.length} debounced message(s)`);
 
+                            // ponytail: admin routing via companyLifecycleAdminPhones
+                            let channel = 'WHATSAPP';
+                            try {
+                                const senderPhone = first.remoteJid.split('@')[0].replace(/\D/g, '');
+                                const prisma = getSharedPrismaClient();
+                                const notifSettings = await prisma.whatsAppNotificationSettings.findUnique({
+                                    where: { companyId: first.companyId },
+                                    select: { companyLifecycleAdminPhones: true },
+                                });
+                                if (notifSettings?.companyLifecycleAdminPhones) {
+                                    const adminPhones = notifSettings.companyLifecycleAdminPhones
+                                        .split(/[\r\n,;،]+/)
+                                        .map(s => s.trim().replace(/\D/g, ''))
+                                        .filter(Boolean);
+                                    if (adminPhones.includes(senderPhone)) {
+                                        channel = 'WHATSAPP_ADMIN';
+                                        console.log(`🔵 [BAILEYS-DEBOUNCE] Sender ${senderPhone} is admin → routing to ${channel}`);
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('⚠️ [BAILEYS-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);
+                            }
+
                             const aiSdkClient = require('../aiSdkClient');
                             const result = await aiSdkClient.sendChatMessage({
                                 companyId: first.companyId,
                                 customerId: first.customerId,
                                 message: combinedMessage,
                                 threadId: first.conversationId,
-                                channel: 'WHATSAPP',
+                                channel,
                                 memoryContext: null,
                             });
 
