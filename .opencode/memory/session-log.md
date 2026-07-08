@@ -1,3 +1,25 @@
+# Session Log — 2026-07-08 — AI Image Generator UX Refactor
+
+## Work
+1. Inspected `/admin/ai-image-generator` and identified 10 design flaws
+2. Created `PRODUCT.md` and `DESIGN.md` for `impeccable` context gates
+3. Refactored `apps/frontend/src/pages/admin/AIImageGenerator.tsx`:
+   - RTL-first Arabic labels and tab order (platform → product → brand → copy → style → campaign → output)
+   - Grouped fields with helper hints and required/validation states
+   - Arabic select options for CTA, mood, theme, layout, text position
+   - Live aspect-ratio preview with pixel dimensions
+   - Generate/reset action row moved below the form with inline validation message
+   - Transparent-background switch disabled unless PNG
+   - Toast feedback via sonner and auto-scroll to result
+   - Improved empty state and gallery with image error handling + hover actions
+   - Delete confirmation dialog with preview
+
+## Verification
+- `tsc` clean on `AIImageGenerator.tsx`
+- Dev server smoke test: login + navigate + full-page screenshot shows new RTL layout
+
+---
+
 # Session Log — 2026-07-08 — AI Company Consumption Dashboard
 
 ## New Feature: Super Admin AI Consumption Dashboard

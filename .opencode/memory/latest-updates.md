@@ -1,5 +1,50 @@
 # Latest Updates
 
+## 2026-07-08: AI Image Generator — Full UX + Gallery
+
+### New Features
+- **Image Gallery** — grid of generated images (up to 5 cols), hover overlay for view/open/delete
+- **Delete confirmation dialog** — shows image thumbnail, confirm/cancel
+- **Copy URL** — copies permanent image URL to clipboard
+- **Open in new tab** — opens image URL directly
+- **Regenerate** — re-sends last prompt with same params without refilling form
+- **Gallery auto-refresh** after each successful generation
+
+### Backend
+- `GET /api/v1/ai-image/history` — reads `uploads/ai-images/{companyId}/` dir, returns sorted file list with metadata
+- `DELETE /api/v1/ai-image/:filename` — deletes file with path traversal protection
+
+### Frontend
+- `AIImageGenerator.tsx` — added gallery section + preview action buttons + delete dialog + regenerate
+
+### Images saved to disk
+- `uploads/ai-images/{companyId}/{timestamp}-{random}.{jpg|png}` — permanent URL returned instead of data URL
+
+### Deploy
+- Commit `410e3efa` → pushed to `main` → Run #448 ✅ (~5 min)
+
+## 2026-07-08: AI Image Generator — UX Refactor
+
+### Improvements
+- **RTL-first Arabic UI** — all labels, tabs, selects, helper hints in Arabic, right-to-left
+- **Tab order optimized** — platform → product → brand → copy → style → campaign → output
+- **Field grouping** — related controls grouped with `Field` helper and hint text
+- **Inline validation** — generate disabled until product name or headline provided; helper message explains why
+- **Live aspect preview** — aspect ratio shows pixel dimensions and preview indicator per platform
+- **Action row redesign** — generate + reset placed below form, reset styled as outline
+- **Result area** — auto-scroll on generation, improved empty state with current dimensions
+- **Transparent background guard** — switch disabled unless format is PNG, with hint
+- **Gallery polish** — image error handling, hover overlay actions, badge count, refresh button
+- **Delete dialog** — shows image preview before confirming deletion
+
+### Technical
+- Fixed TypeScript issues in `AIImageGenerator.tsx` (`tsc` clean)
+- Added `PRODUCT.md` / `DESIGN.md` for `impeccable` context gates
+
+### Files Modified
+- `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
+- `PRODUCT.md`, `DESIGN.md`
+
 ## 2026-07-04: AI Skills & Tools Merchant Sidebar Section — Bug Fix
 
 ### Root Cause
