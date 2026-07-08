@@ -519,8 +519,8 @@ const AIImageGenerator: React.FC = () => {
   const fetchGallery = async () => {
     setGalleryLoading(true);
     try {
-      const res = await apiClient.get<any[]>("/ai-image/history");
-      if (Array.isArray(res.data)) setGallery(res.data);
+      const res = await apiClient.get<any>("/ai-image/history");
+      if (res.data?.success && Array.isArray(res.data.data)) setGallery(res.data.data);
     } catch {
       // silent
     } finally {
