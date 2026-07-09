@@ -472,9 +472,16 @@
 
 /* ── 26. Custom Messages Area Background ── */
 .whatsapp-messages-area {
-  background-color: #efeae2 !important; /* Warm WhatsApp gray-beige in light mode */
-  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0) !important;
-  background-size: 20px 20px !important;
+  background-color: #ffffff !important; /* Pure white in light mode */
+  background-image: none !important;
+}
+
+:root {
+  --whatsapp-message-incoming: #f0f2f5;
+}
+
+.dark {
+  --whatsapp-message-incoming: #1f2c33 !important;
 }
 
 .dark .whatsapp-messages-area {

@@ -1907,7 +1907,7 @@ const WhatsAppChatContent: React.FC = () => {
   return (
     <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
-      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-lg sm:rounded-2xl lg:flex-row">
+      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
       {/* Sidebar */}
       <ChatSidebar
         className={cn("wa-panel-sidebar", selectedContact && "max-lg:hidden")}

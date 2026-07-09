@@ -450,155 +450,145 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         className,
       )}
     >
-      <div className="wa-sidebar-header-compact border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-2 py-1.5 sm:py-2">
+      <div className="flex h-14 items-center justify-between border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-3 py-2 shrink-0">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onOpenProfile}
             className="rounded-full transition-transform hover:scale-[1.02]"
           >
-            <Avatar>
+            <Avatar className="size-9">
               <AvatarImage src={currentUserProfile?.profilePicUrl || undefined} />
-              <AvatarFallback className="bg-primary/10 text-xs font-semibold text-[color:var(--color-primary)]">
+              <AvatarFallback className="bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] to-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)] text-xs font-semibold text-[color:var(--color-primary)]">
                 {getContactInitials(currentUserProfile?.name || "WA")}
               </AvatarFallback>
             </Avatar>
           </button>
-
-            <div className="min-w-0 flex-1 space-y-0">
-              <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)]">
-                {currentUserProfile?.name || "WhatsApp Workspace"}
-              </p>
-              {showArchived ? (
-                <Badge
-                  variant="outline"
-                  className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-muted-foreground)]"
-                >
-                  الأرشيف
-                </Badge>
-              ) : null}
-              <p className="wa-sidebar-status-text mt-0.5 hidden truncate text-[11px] text-[color:var(--color-muted-foreground)] sm:block">
-                {currentUserProfile?.status ||
-                  "صندوق تشغيل موحد للجلسات والمحادثات المباشرة."}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onOpenNewChat}
-              className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
-              title="محادثة"
-            >
-              <MessageSquarePlus className="size-4" />
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
-                  title="المزيد"
-                  aria-label="المزيد"
-                >
-                  <MoreVertical className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align={i18n.dir() === "rtl" ? "start" : "end"}
-                className="w-52"
-              >
-                <DropdownMenuItem
-                  onClick={onOpenNewGroup}
-                >
-                  <Users className="size-4" />
-                  <span>{t("whatsapp.sidebar.newGroup")}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={onOpenBroadcast}
-                >
-                  <Megaphone className="size-4" />
-                  <span>إرسال بث</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={onOpenLabels}
-                >
-                  <Tags className="size-4" />
-                  <span>التصنيفات</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={onOpenProfile}
-                >
-                  <User className="size-4" />
-                  <span>{t("whatsapp.sidebar.profile")}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={onOpenBusinessProfile}
-                >
-                  <Store className="size-4" />
-                  <span>{t("whatsapp.sidebar.settings")}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={onOpenPrivacySettings}
-                >
-                  <Shield className="size-4" />
-                  <span>{t("whatsapp.sidebar.settings")}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={onOpenCheckNumber}
-                >
-                  <Search className="size-4" />
-                  <span>فحص الرقم</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  checked={showArchived}
-                  onCheckedChange={(checked) => setShowArchived(Boolean(checked))}
-                >
-                  {showArchived
-                    ? t("whatsapp.sidebar.all")
-                    : t("whatsapp.sidebar.archive")}
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-        {sessionOptions.length > 0 ? (
-          <div className="mt-2 flex items-center gap-2">
-            <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
-              <SelectTrigger className="h-8 min-w-0 flex-1 rounded-xl bg-[var(--whatsapp-surface)] text-[11px]">
-                <span className="truncate font-medium text-[color:var(--color-foreground)]">
-                  {resolvedSessionValue === "all"
-                    ? t("whatsapp.sidebar.all")
-                    : sessionOptions.find((s) => s.id === resolvedSessionValue)?.name || resolvedSessionValue}
-                </span>
-              </SelectTrigger>
-              <SelectContent align={i18n.dir() === "rtl" ? "start" : "end"}>
-                <SelectItem value="all">{t("whatsapp.sidebar.all")}</SelectItem>
-                {sessionOptions.map((session) => (
-                  <SelectItem key={session.id} value={session.id}>
-                    {session.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {showArchived ? (
             <Badge
               variant="outline"
-              className={cn(
-                "h-9 shrink-0 gap-1 rounded-xl border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-2 text-[10px]",
-                isSelectedSessionConnected ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400",
-              )}
+              className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-muted-foreground)] px-2 py-0.5"
             >
-              {isSelectedSessionConnected ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-              {isSelectedSessionConnected ? "متاح" : "يتطلب اتصال"}
+              الأرشيف
             </Badge>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onOpenNewChat}
+            className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+            title="محادثة"
+          >
+            <MessageSquarePlus className="size-4" />
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+                title="المزيد"
+                aria-label="المزيد"
+              >
+                <MoreVertical className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align={i18n.dir() === "rtl" ? "start" : "end"}
+              className="w-52"
+            >
+              <DropdownMenuItem
+                onClick={onOpenNewGroup}
+              >
+                <Users className="size-4" />
+                <span>{t("whatsapp.sidebar.newGroup")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onOpenBroadcast}
+              >
+                <Megaphone className="size-4" />
+                <span>إرسال بث</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onOpenLabels}
+              >
+                <Tags className="size-4" />
+                <span>التصنيفات</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onOpenProfile}
+              >
+                <User className="size-4" />
+                <span>{t("whatsapp.sidebar.profile")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onOpenBusinessProfile}
+              >
+                <Store className="size-4" />
+                <span>{t("whatsapp.sidebar.settings")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onOpenPrivacySettings}
+              >
+                <Shield className="size-4" />
+                <span>{t("whatsapp.sidebar.settings")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onOpenCheckNumber}
+              >
+                <Search className="size-4" />
+                <span>فحص الرقم</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={showArchived}
+                onCheckedChange={(checked) => setShowArchived(Boolean(checked))}
+              >
+                {showArchived
+                  ? t("whatsapp.sidebar.all")
+                  : t("whatsapp.sidebar.archive")}
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
+
+      {sessionOptions.length > 0 ? (
+        <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] bg-[color:var(--color-muted)]/50 px-3 py-1.5 flex items-center gap-2 shrink-0">
+          <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
+            <SelectTrigger className="h-8 min-w-0 flex-1 rounded-xl bg-[var(--whatsapp-surface)] text-[11px]">
+              <span className="truncate font-medium text-[color:var(--color-foreground)]">
+                {resolvedSessionValue === "all"
+                  ? t("whatsapp.sidebar.all")
+                  : sessionOptions.find((s) => s.id === resolvedSessionValue)?.name || resolvedSessionValue}
+              </span>
+            </SelectTrigger>
+            <SelectContent align={i18n.dir() === "rtl" ? "start" : "end"}>
+              <SelectItem value="all">{t("whatsapp.sidebar.all")}</SelectItem>
+              {sessionOptions.map((session) => (
+                <SelectItem key={session.id} value={session.id}>
+                  {session.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Badge
+            variant="outline"
+            className={cn(
+              "h-8 shrink-0 gap-1 rounded-xl border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-2 text-[10px]",
+              isSelectedSessionConnected ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400",
+            )}
+          >
+            {isSelectedSessionConnected ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
+            {isSelectedSessionConnected ? "متاح" : "يتطلب اتصال"}
+          </Badge>
+        </div>
+      ) : null}
 
       <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-1.5 sm:py-2">
         <div className="relative">
