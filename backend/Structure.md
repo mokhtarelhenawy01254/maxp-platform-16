@@ -19,10 +19,12 @@ No API endpoints were modified or added, but:
 15. The AI Service agent model resolution logic (`_resolve_agent_model` in `agent_registry.py`) was updated to prioritize the company-specific model override (`db_agent.model`) over the template's default model policy (`template.model_policy.get("default")`), ensuring company-level customizations are correctly respected.
 
 ### Frontend Pages & Redesigns
-1. **AI Image Generator Redesign (`/admin/ai-image-generator`)**: Re-architected the page to feature a balanced `grid-cols-12` split layout:
-   - **Configuration Column (7 cols)**: Integrates essential product/ad details (name, price, discount, headlines) at the top, and encapsulates advanced styling, branding, campaign details, and output parameters in collapsible accordion panels.
-   - **Preview & Actions Column (5 cols)**: Sticky control panel containing the prompt generator, model selection dropdown, trigger controls, and a real-time responsive `AspectPreview` mockup simulating social media cards based on brand colors and typography.
-   - **Full-Width Gallery Section (12 cols)**: Renders previously generated images at the bottom, showcasing original aspect ratios and introducing a "Clone Settings" shortcut to restore image configuration parameters back to the live form.
+1. **AI Image Generator Redesign (`/admin/ai-image-generator`)**: Re-architected the page to feature a balanced, borderless 12-column split-canvas layout conforming to 2026 aesthetics:
+   - **Page Header**: Removed the heavy decorative hero banner (`SettingsPageHero`) and the outer white bordered shell (`SettingsPageShell`) to let the workspace blend directly on the page background, starting with a clean, low-profile text header.
+   - **Configuration Column (7 cols)**: Renders the "Core Product Information" form fields directly onto the page canvas without enclosing Card borders. Replaces heavy nested card sections with borderless, flat macOS/iOS-style collapsible accordion sections separated by thin dividers (`border-b border-slate-100`). Restructured the presets into a borderless row of clean tags (Chips) that transition smoothly on hover.
+   - **Preview & Actions Column (5 cols)**: Sticky control panel styled as a floating glassmorphic pane (`backdrop-blur-md bg-white/70 dark:bg-slate-900/40`) with soft shadows instead of qausi-cards. The responsive advertisement mockup (`AspectPreview`) floats as a borderless canvas widget with multi-level soft shadows.
+   - **Full-Width Gallery Section (12 cols)**: Renders previously generated images in a borderless grid layout with rounded corners, aspect ratio indicators, hover scale effects, and the "Clone Settings" metadata restoration shortcut.
+
 
 ### Database Schema Models
 No database models or Prisma schemas were modified. However, the database seeding script for the `ai.skills` table (`seed.py`) was corrected to map `triggerPhrases` from `skill.json` to the database column `trigger_phrases`, enabling SQL intent routing.

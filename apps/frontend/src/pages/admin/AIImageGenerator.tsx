@@ -30,13 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 import {
   Dialog,
   DialogContent,
@@ -46,8 +40,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  SettingsPageShell,
-  SettingsPageHero,
   SettingsStatusAlert,
 } from "../settings/components/SettingsPagePrimitives";
 import { apiClient } from "../../services/apiClient";
@@ -560,27 +552,27 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 shadow-sm transition-all duration-300 dark:border-slate-800/60 dark:bg-slate-900/70">
+    <div className="border-b border-slate-100 dark:border-slate-800/50 py-3 transition-colors">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-5 py-4 text-right transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+        className="flex w-full items-center justify-between py-3 text-right group"
       >
         <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400">
-            <Icon className="size-4.5" />
+          <div className="flex size-8 items-center justify-center rounded-lg bg-slate-50 text-slate-500 group-hover:bg-sky-50 group-hover:text-sky-600 dark:bg-slate-800/50 dark:text-slate-400 dark:group-hover:bg-sky-950/30 dark:group-hover:text-sky-400 transition-colors">
+            <Icon className="size-4" />
           </div>
-          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{title}</span>
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{title}</span>
         </div>
         {isOpen ? (
-          <ChevronUp className="size-4 text-slate-400" />
+          <ChevronUp className="size-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
         ) : (
-          <ChevronDown className="size-4 text-slate-400" />
+          <ChevronDown className="size-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
         )}
       </button>
       <div
         className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isOpen ? "max-h-[2000px] border-t border-slate-100 p-5 dark:border-slate-800/80" : "max-h-0"
+          isOpen ? "max-h-[2000px] pt-4 pb-2 px-1" : "max-h-0"
         }`}
       >
         {children}
@@ -1133,21 +1125,24 @@ const AIImageGenerator: React.FC = () => {
   const inputCls = "bg-white dark:bg-gray-900 border-slate-200 dark:border-slate-800 rounded-xl";
 
   return (
-    <SettingsPageShell>
-      <SettingsPageHero
-        badgeIcon={Sparkles}
-        badgeLabel="AI SOCIAL DESIGNER"
-        title="مصمم صور السوشيال ميديا"
-        description="أنشئ تصميمات إعلانية احترافية لمنتجاتك بهوية بصرية متكاملة — بالاعتماد على ذكاء النمذجة المنظمة دون الحاجة لصياغة برومبت معقد."
-      />
+    <div dir="rtl" className="space-y-6 text-right w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      
+      {/* Sleek 2026 low-profile Page Header */}
+      <div className="flex flex-col gap-1 pb-4 pt-2 border-b border-slate-100 dark:border-slate-800/80">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+          <Sparkles className="size-5 text-sky-500 animate-pulse" />
+          مصمم صور السوشيال ميديا
+        </h1>
+        <p className="text-xs text-muted-foreground">أنشئ إعلانات احترافية لمنتجاتك بهوية بصرية متكاملة دون الحاجة لبرومبت معقد</p>
+      </div>
 
-      <div className="px-5 pb-6 sm:px-6 space-y-6">
+      <div className="space-y-6">
         <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
 
-        {/* Quick Presets Section */}
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/40 p-4 dark:border-slate-800/40 dark:bg-slate-900/40">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">قوالب إعلانية جاهزة:</span>
+        {/* Quick Presets Section (Flat macOS-style chips list) */}
+        <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/50">
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 ml-2">قوالب إعلانية جاهزة:</span>
+          <div className="flex flex-wrap items-center gap-1.5">
             {[
               { key: "sale_promotion", label: "عرض / تخفيضات" },
               { key: "new_product_launch", label: "إطلاق منتج جديد" },
@@ -1158,7 +1153,7 @@ const AIImageGenerator: React.FC = () => {
                 key={t.key}
                 type="button"
                 onClick={() => applyTemplate(t.key)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:border-sky-500 hover:bg-sky-50/30 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-sky-400 dark:hover:bg-sky-950/20 transition-all shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors"
               >
                 <Sparkles className="size-3 text-sky-500" />
                 {t.label}
@@ -1173,16 +1168,17 @@ const AIImageGenerator: React.FC = () => {
           {/* Right Column: Configuration Form (lg:col-span-7) */}
           <div className="space-y-5 lg:col-span-7">
             
-            {/* Core Product Information Card */}
-            <Card className="border-slate-200/60 shadow-sm rounded-2xl bg-white/90">
-              <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-sky-500" />
+            {/* Core Product Information (Flat layout) */}
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1 pb-2 border-b border-slate-100 dark:border-slate-800/80">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-sky-500" />
                   بيانات المنتج والإعلان الأساسية
-                </CardTitle>
-                <CardDescription className="text-xs">المعلومات الضرورية التي ستبنى عليها الصورة</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
+                </h3>
+                <p className="text-[11px] text-muted-foreground">المعلومات الضرورية التي ستبنى عليها الصورة</p>
+              </div>
+
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field label="اسم المنتج" required hint="الاسم الأساسي الذي سيظهر بالتصميم">
                     <Input
@@ -1316,8 +1312,8 @@ const AIImageGenerator: React.FC = () => {
                     />
                   </Field>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Collapsible Advanced Panels */}
             <div className="space-y-4">
@@ -1784,16 +1780,16 @@ const AIImageGenerator: React.FC = () => {
           {/* Left Column: Sticky Control Panel & Image Output (lg:col-span-5) */}
           <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
             
-            {/* AI Control Card (Model selection + Prompt builder + Actions) */}
-            <Card className="border-sky-200/50 dark:border-sky-950/40 shadow-sm rounded-2xl bg-gradient-to-br from-white to-sky-50/10 dark:from-gray-900 dark:to-slate-950/20">
-              <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Wand2 className="size-4.5 text-sky-500" />
+            {/* AI Control Panel (Glassmorphism & ambient shadows) */}
+            <div className="rounded-2xl border border-sky-100/50 dark:border-sky-950/20 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md p-5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] space-y-5">
+              <div className="pb-3 border-b border-slate-100 dark:border-slate-800/60">
+                <div className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <Wand2 className="size-4 text-sky-500" />
                   مربع التحكم الذكي
-                </CardTitle>
-                <CardDescription className="text-xs">البرومبت المولد وإجراءات التوليد</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5">البرومبت المولد وإجراءات التوليد</p>
+              </div>
+              <div className="space-y-4">
 
                 {/* Prompt Output View */}
                 <div className="space-y-1.5">
@@ -1863,20 +1859,20 @@ const AIImageGenerator: React.FC = () => {
                   </div>
                 )}
 
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            {/* Output Visualizer Card (Generated image OR Mockup Preview) */}
-            <Card className="border-slate-200/60 shadow-sm rounded-2xl bg-white/90 overflow-hidden">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">المعاينة وتفاصيل الإخراج</span>
+            {/* Output Visualizer Panel */}
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] space-y-4">
+              <div className="pb-3 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">المعاينة وتفاصيل الإخراج</span>
                 {imageUrl && !loading && (
                   <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
                     جاهز للتحميل
                   </span>
                 )}
               </div>
-              <div className="p-5" id="ai-generated-result">
+              <div id="ai-generated-result">
                 
                 {loading ? (
                   <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-sky-100 bg-sky-50/5 dark:border-slate-800 dark:bg-slate-950/10 p-6 text-center animate-pulse">
@@ -1926,7 +1922,7 @@ const AIImageGenerator: React.FC = () => {
                 )}
 
               </div>
-            </Card>
+            </div>
 
           </div>
 
@@ -2000,13 +1996,13 @@ const AIImageGenerator: React.FC = () => {
                 return (
                   <div
                     key={img.filename}
-                    className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-gray-900 hover:shadow-md transition-all duration-300 hover:border-sky-300 dark:hover:border-sky-800/80 shadow-sm"
+                    className="group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300"
                   >
-                    <div className="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-100 dark:border-slate-800">
+                    <div className="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center overflow-hidden">
                       <img
                         src={img.url}
                         alt=""
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
@@ -2139,7 +2135,7 @@ const AIImageGenerator: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SettingsPageShell>
+    </div>
   );
 };
 

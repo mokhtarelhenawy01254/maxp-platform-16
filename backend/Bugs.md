@@ -1,20 +1,24 @@
 # Backend Bugs Log
 
-### [FIX] AI Image Generator Layout Cramping, Dormant Aspect Preview, and Mobile CTA Hiding
+### [FIX] AI Image Generator Layout Cramping, Dormant Aspect Preview, Mobile CTA Hiding, and UI De-nesting
 - **Date**: 2026-07-09
 - **Description**: The AI Image Generator page (`/admin/ai-image-generator`) had multiple layout, responsiveness, and control issues:
   1. The 5 configuration tabs were cramped inside a narrow 380px column, making fields difficult to read.
   2. The `AspectPreview` component was dormant and never rendered, leaving users without visual aspect ratio feedback.
   3. On mobile viewports, the stacked column order pushed the prompt editor and the primary "Generate" button to the very bottom, forcing excessive scrolling.
   4. The gallery cropped all generated images to squares, distorting 9:16 and 16:9 layouts.
-  5. There was no UI selector to choose between the 7 backend-supported image models.
-- **Root Cause**: Poor column balance, incomplete integration of preview components, missing model-policy mapping, and sub-optimal flex/grid layouts.
+  5. The interface had multiple nested bordered cards ("box-in-a-box" style), causing heavy visual load.
+  6. The visual model selector dropdown conflicted with the backend agent-template policy, and the frontend allowedModels API request was redundant.
+- **Root Cause**: Poor column balance, incomplete integration of preview components, nested Card wrappers, and redundant client-side model overrides.
 - **Resolution**:
   - Re-architected the layout to a balanced `grid-cols-12`, making the configuration panel span 7 columns and the preview/actions panel span 5 columns (sticky on large screens).
-  - Restructured the 5 tabs into a primary Core Details Card and 4 collapsible advanced panels to reduce cognitive load.
-  - Activated and enhanced `AspectPreview` to dynamically draw a live advertisement mockup reflecting brand colors, text, price, badge, and ratio selections in real-time.
-  - Implemented a model selector dropdown mapping backend image models (Gemini 3 Pro, Grok, GPT-5.4, DALL-E) to user-friendly Arabic descriptions.
-  - Placed the gallery as a full-width section at the bottom, added original aspect ratio badge indicators, and implemented a "Clone Settings" feature that applies metadata back to the form state.
+  - Removed the hero banner (`SettingsPageHero`) and the outer white bordered shell (`SettingsPageShell`) to let the page breathe directly on the canvas background.
+  - Eliminated the nested `Card` wrapper around "Core Product Information" to render form elements flat on the page canvas.
+  - Redesigned `CollapsibleSection` into borderless, flat accordion sections separated by thin, clean dividers (`border-b border-slate-100`).
+  - Replaced the boxed Presets container with flat, background-filled tags (Chips) that transition smoothly on hover.
+  - Upgraded the preview and control panels on the left to floating glassmorphic panes (`backdrop-blur-md bg-white/70 dark:bg-slate-900/40`) with soft shadows.
+  - Removed the AI Model Selector dropdown, corresponding state (`agentModel`, `allowedModels`), and `DEFAULT_MODELS`/`MODEL_DETAILS` constant maps, forcing the frontend to rely entirely on the backend agent template's model config.
+  - Placed the gallery as a full-width section at the bottom, removed card borders from gallery items, added aspect ratio badge indicators, and implemented a "Clone Settings" feature that applies metadata back to the form state.
 - **Files Modified**:
   - `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
 
