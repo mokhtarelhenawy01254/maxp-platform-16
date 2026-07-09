@@ -2021,6 +2021,58 @@ async function clearChat(req, res) {
  * حذف محادثة
  * POST /api/whatsapp/chats/delete
  */
+async function deleteChatsBulk(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId, jids } = req.body;
+
+        if (!sessionId || !jids || !Array.isArray(jids) || jids.length === 0) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id: targetSessionId, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        // Delete from Baileys for each JID
+        const activeSession = WhatsAppManager.getSession(targetSessionId);
+        if (activeSession?.status === 'connected') {
+            for (const jid of jids) {
+                try {
+                    await activeSession.sock.chatModify({
+                        delete: true,
+                        lastMessages: [{
+                            key: { remoteJid: jid, fromMe: true, id: 'AAA' },
+                            messageTimestamp: Math.floor(Date.now() / 1000)
+                        }]
+                    }, jid);
+                } catch (baileysError) {
+                    console.error(`⚠️ Error deleting chat ${jid} from Baileys (continuing with DB delete):`, baileysError);
+                }
+            }
+        }
+
+        // Delete from DB
+        await getSharedPrismaClient().whatsAppMessage.deleteMany({
+            where: { sessionId: targetSessionId, remoteJid: { in: jids } }
+        });
+
+        await getSharedPrismaClient().whatsAppContact.deleteMany({
+            where: { sessionId: targetSessionId, jid: { in: jids } }
+        });
+
+        res.json({ success: true, deletedCount: jids.length });
+    } catch (error) {
+        console.error('❌ Error deleting chats bulk:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء حذف المحادثات' });
+    }
+}
+
 async function deleteChat(req, res) {
     try {
         const { companyId } = req.user;
@@ -3706,6 +3758,7 @@ module.exports = {
     markChatUnread,
     clearChat,
     deleteChat,
+    deleteChatsBulk,
 
     // Migration
     migrateAuthToDatabase,

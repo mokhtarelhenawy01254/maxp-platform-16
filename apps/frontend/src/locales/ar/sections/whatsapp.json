@@ -55,6 +55,13 @@
   "dialogs": {
     "deleteChatTitle": "حذف المحادثة",
     "deleteChatContent": "هل أنت متأكد من حذف هذه المحادثة نهائياً؟",
+    "deleteChatsBulkTitle": "حذف المحادثات المحددة",
+    "deleteChatsBulkContent": "هل أنت متأكد من حذف {{count}} محادثة نهائياً؟",
+    "deleteChatsBulkSuccess": "تم حذف {{count}} محادثة بنجاح",
+    "selectedCount": "محدد {{count}}",
+    "selectAll": "تحديد الكل",
+    "deselectAll": "إلغاء الكل",
+    "bulkDelete": "حذف متعدد",
     "clearChatTitle": "مسح محتوى المحادثة",
     "clearChatContent": "هل أنت متأكد من مسح جميع الرسائل في هذه المحادثة؟",
     "confirm": "تأكيد",

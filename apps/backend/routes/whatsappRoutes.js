@@ -490,6 +490,9 @@ router.post('/chats/unread', verifyToken.authenticateToken, checkAppAccess('what
 // حذف محادثة
 router.post('/chats/delete', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteChat);
 
+// حذف محادثات متعددة
+router.post('/chats/delete-bulk', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteChatsBulk);
+
 // مسح محتوى المحادثة
 router.post('/chats/clear', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.clearChat);
 
