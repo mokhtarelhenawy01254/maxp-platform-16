@@ -2030,17 +2030,34 @@ async function deleteChatsBulk(req, res) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
-        });
+        // Look up session in DB only — no active-connection requirement for delete
+        const targetSessionId = sessionId && sessionId !== 'all'
+            ? sessionId
+            : null;
 
-        if (!session) {
-            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        let session = null;
+        if (targetSessionId) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: targetSessionId, companyId }
+            });
         }
 
-        // Delete from Baileys for each JID
-        const activeSession = WhatsAppManager.getSession(targetSessionId);
+        // Fallback: find any session belonging to this company (even disconnected)
+        if (!session) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId },
+                orderBy: { lastConnectedAt: 'desc' }
+            });
+        }
+
+        if (!session) {
+            return res.status(404).json({ error: 'لا توجد جلسة واتساب لهذه الشركة' });
+        }
+
+        const resolvedSessionId = session.id;
+
+        // Delete from Baileys for each JID (best-effort)
+        const activeSession = WhatsAppManager.getSession(resolvedSessionId);
         if (activeSession?.status === 'connected') {
             for (const jid of jids) {
                 try {
@@ -2059,11 +2076,11 @@ async function deleteChatsBulk(req, res) {
 
         // Delete from DB
         await getSharedPrismaClient().whatsAppMessage.deleteMany({
-            where: { sessionId: targetSessionId, remoteJid: { in: jids } }
+            where: { sessionId: resolvedSessionId, remoteJid: { in: jids } }
         });
 
         await getSharedPrismaClient().whatsAppContact.deleteMany({
-            where: { sessionId: targetSessionId, jid: { in: jids } }
+            where: { sessionId: resolvedSessionId, jid: { in: jids } }
         });
 
         res.json({ success: true, deletedCount: jids.length });
