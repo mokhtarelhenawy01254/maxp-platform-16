@@ -637,8 +637,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             {headerBlock}
 
              <main
-                 className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
-                   shouldRemovePadding ? "p-0" : "p-4 md:p-6"
+                 className={`business-shell-main flex-1 flex flex-col ${
+                   shouldRemovePadding ? "p-0 overflow-hidden min-h-0" : "p-4 md:p-6 overflow-y-auto"
                  } hr-theme`}
                >
                  {location.pathname === '/apps' ? (
@@ -717,8 +717,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                {headerBlock}
 
                <main
-                  className={`business-shell-main flex-1 flex flex-col overflow-y-auto ${
-                    shouldRemovePadding ? "p-0" : "p-4 md:p-6"
+                  className={`business-shell-main flex-1 flex flex-col ${
+                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0" : "p-4 md:p-6 overflow-y-auto"
                   } hr-theme`}
                >
                  {location.pathname === '/apps' ? (
