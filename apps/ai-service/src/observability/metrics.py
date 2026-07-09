@@ -56,6 +56,48 @@ ACTIVE_THREADS = Counter(
     ["company_id"],
 )
 
+PARSER_PARSE_ATTEMPTS = Counter(
+    "parser_parse_attempts_total",
+    "Total parser parse attempts",
+    ["parser", "provider"],
+)
+
+PARSER_PARSE_SUCCESS = Counter(
+    "parser_parse_success_total",
+    "Parser parse successes (tool calls extracted)",
+    ["parser", "provider"],
+)
+
+PARSER_PARSE_FAILURE = Counter(
+    "parser_parse_failure_total",
+    "Parser parse failures (no calls extracted when expected)",
+    ["parser", "provider"],
+)
+
+PARSER_PARSE_FALLBACK = Counter(
+    "parser_parse_fallback_total",
+    "Parser fallback events (new→legacy)",
+    ["parser", "provider"],
+)
+
+PARSER_AB_MISMATCH = Counter(
+    "parser_ab_mismatch_total",
+    "Parser A/B comparison mismatches",
+    ["parser", "provider"],
+)
+
+PARSER_TEMPLATE_VALIDATION_ERROR = Counter(
+    "parser_template_validation_error_total",
+    "Template validation errors before send",
+    ["parser", "reason"],
+)
+
+PARSER_OUTPUT_VALIDATION_ERROR = Counter(
+    "parser_output_validation_error_total",
+    "Output validation errors after parse",
+    ["parser", "reason"],
+)
+
 
 class MetricsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:

@@ -58,7 +58,7 @@ def test_provider_response_supports_reasoning_content():
 
 
 def test_parse_dsml_tool_calls_xml_format():
-    from src.llm.client import _parse_dsml_tool_calls
+    from src.llm.tool_parsers.deepseek_v4 import _parse_dsml_tool_calls
     import json
 
     # Standard XML format with fullwidth pipes
@@ -93,7 +93,7 @@ def test_parse_dsml_tool_calls_xml_format():
 
 
 def test_parse_dsml_tool_calls_types():
-    from src.llm.client import _parse_dsml_tool_calls
+    from src.llm.tool_parsers.deepseek_v4 import _parse_dsml_tool_calls
     import json
 
     text = """
@@ -124,7 +124,7 @@ def test_parse_dsml_tool_calls_types():
 
 
 def test_parse_dsml_tool_calls_legacy_json_fallback():
-    from src.llm.client import _parse_dsml_tool_calls
+    from src.llm.tool_parsers.deepseek_v4 import _parse_dsml_tool_calls
     import json
 
     text_legacy = """

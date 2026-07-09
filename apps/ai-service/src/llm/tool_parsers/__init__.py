@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.llm.tool_parsers.base import BaseToolParser
+from src.llm.tool_parsers.base import BaseToolParser, ToolDefinition
 from src.llm.tool_parsers.openai_compat import OpenAIToolParser
 
 _PARSER_CACHE: dict[str, BaseToolParser] = {}

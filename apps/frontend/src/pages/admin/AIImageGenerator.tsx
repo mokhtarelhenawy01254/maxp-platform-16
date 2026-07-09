@@ -450,6 +450,7 @@ const AIImageGenerator: React.FC = () => {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showJson, setShowJson] = useState(false);
   const [primaryImage, setPrimaryImage] = useState<File | null>(null);
+  const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentityResponse>({});
   const [agentModel, setAgentModel] = useState("google/gemini-3.1-flash-image");
 
@@ -458,9 +459,10 @@ const AIImageGenerator: React.FC = () => {
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; url: string; filename: string }>({ open: false, url: "", filename: "" });
   const [promptTouched, setPromptTouched] = useState(false);
   const [primaryImagePreview, setPrimaryImagePreview] = useState<string>("");
+  const [referenceImagePreview, setReferenceImagePreview] = useState<string>("");
   const [galleryFilter, setGalleryFilter] = useState<string>("all");
   const [gallerySearch, setGallerySearch] = useState<string>("");
-  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string; productImage?: string } | null>(null);
+  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string; productImage?: string; referenceImage?: string } | null>(null);
   const [usage, setUsage] = useState<{ prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null>(null);
 
   const selectValue = <K extends keyof FormData>(key: K) => (value: string | null) => {
@@ -538,8 +540,27 @@ const AIImageGenerator: React.FC = () => {
     return () => URL.revokeObjectURL(url);
   }, [primaryImage]);
 
+  useEffect(() => {
+    if (!referenceImage) {
+      setReferenceImagePreview("");
+      return;
+    }
+    const url = URL.createObjectURL(referenceImage);
+    setReferenceImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [referenceImage]);
+
   const setPrimaryImageAndDraft = (file: File | null) => {
     setPrimaryImage(file);
+    setForm((prev) => {
+      const next = { ...prev };
+      saveDraft(next);
+      return next;
+    });
+  };
+
+  const setReferenceImageAndDraft = (file: File | null) => {
+    setReferenceImage(file);
     setForm((prev) => {
       const next = { ...prev };
       saveDraft(next);
@@ -687,12 +708,14 @@ const AIImageGenerator: React.FC = () => {
 
     const prompt = (promptTouched && form.editablePrompt.trim()) ? form.editablePrompt.trim() : buildPromptText();
     const productImage = primaryImage ? await getBase64(primaryImage) : undefined;
+    const referenceImageData = referenceImage ? await getBase64(referenceImage) : undefined;
     const params: Record<string, any> = {
       prompt,
       model: agentModel,
       aspectRatio: form.aspectRatio,
       style: form.mood || form.theme || undefined,
       productImage,
+      referenceImage: referenceImageData,
     };
     setLastParams(params);
 
@@ -748,13 +771,13 @@ const AIImageGenerator: React.FC = () => {
     if (!lastParams) return;
     setImageUrl("");
     setMessage(null);
-    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style, lastParams.productImage), 100);
+    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style, lastParams.productImage, lastParams.referenceImage), 100);
   };
 
-  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string, productImage?: string) => {
+  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string, productImage?: string, referenceImage?: string) => {
     setLoading(true);
     try {
-      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, productImage }, { timeout: 120000 });
+      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, productImage, referenceImage }, { timeout: 120000 });
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
@@ -791,6 +814,7 @@ const AIImageGenerator: React.FC = () => {
     setImageUrl("");
     setMessage(null);
     setPrimaryImage(null);
+    setReferenceImage(null);
     setPromptTouched(false);
     setGalleryFilter("all");
     setGallerySearch("");
@@ -1295,6 +1319,33 @@ const AIImageGenerator: React.FC = () => {
                     rows={2}
                     className={inputCls}
                   />
+                </Field>
+
+                <Field label="صورة مرجعية / Style Reference" hint="اختياري — ارفع صورة عشان الموديل يقلد الستايل والألوان">
+                  {!referenceImagePreview ? (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setReferenceImageAndDraft(e.target.files?.[0] || null)}
+                      className={inputCls}
+                    />
+                  ) : (
+                    <div className="relative w-fit">
+                      <img
+                        src={referenceImagePreview}
+                        alt="Style reference preview"
+                        className="h-24 w-24 rounded-lg border object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setReferenceImageAndDraft(null)}
+                        className="absolute -right-2 -top-2 rounded-full border bg-background p-1 shadow-sm hover:bg-muted"
+                        title="إزالة الصورة"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  )}
                 </Field>
 
                 <Field label="الـ Layout">

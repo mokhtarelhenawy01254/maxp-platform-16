@@ -32,7 +32,7 @@ async function getOpenRouterKey() {
 exports.generateImage = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size, productImage } = req.body;
+    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size, productImage, referenceImage } = req.body;
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ success: false, message: "الصورة مطلوب" });
@@ -47,6 +47,7 @@ exports.generateImage = async (req, res) => {
       "You are a professional social media image designer. Your ONLY output MUST be a valid image. NEVER return text descriptions.",
       "Generate a high-quality social media image based on the user's brief below.",
       productImage ? "The user has provided a reference product image. Use it as the primary visual — place the actual product from the reference image into the design. Do NOT ignore the reference or invent a different product." : "",
+      referenceImage ? "The user has provided a style reference image. Follow its stylistic approach — colors, composition, lighting, mood, typography choices, and overall aesthetic — while incorporating the brand's product, copy, and colors specified below." : "",
       style ? `Style: ${style}.` : "",
       negativePrompt ? `Avoid: ${negativePrompt}.` : "",
       "The image must be in 1:1 square format suitable for Instagram. Use the brand colors and typography specified. Ensure text is readable and well-positioned over the background.",
@@ -64,12 +65,10 @@ exports.generateImage = async (req, res) => {
 
     const dims = size || supportedAspectRatios[aspectRatio] || supportedAspectRatios["1:1"];
 
-    const userContent = productImage
-      ? [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: productImage } },
-        ]
-      : prompt;
+    const contentParts = [{ type: "text", text: prompt }];
+    if (productImage) contentParts.push({ type: "image_url", image_url: { url: productImage } });
+    if (referenceImage) contentParts.push({ type: "image_url", image_url: { url: referenceImage } });
+    const userContent = contentParts.length > 1 ? contentParts : prompt;
 
     const headers = {
       Authorization: `Bearer ${apiKey}`,

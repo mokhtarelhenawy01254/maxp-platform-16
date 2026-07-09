@@ -8,12 +8,6 @@ import structlog
 
 from src.config import get_settings
 from src.llm.client import LLMClient
-from src.llm.gemma_chat_template import is_gemma_model
-from src.llm.gemma_client import build_gemma_client
-
-
-def _should_skip_gemma_client(settings: Any) -> bool:
-    return settings.use_tool_parser and not settings.use_legacy_gemma_client
 
 logger = structlog.get_logger(__name__)
 
@@ -134,17 +128,6 @@ def build_agent_client(
 ) -> Any:
     if not model:
         raise ValueError("model is required for LLM client creation")
-    if is_gemma_model(model) and not _should_skip_gemma_client(settings):
-        gemma = build_gemma_client(
-            api_key=getattr(settings, "google_api_key", ""),
-            model=model,
-            tools=tools,
-            system_prompt=system_prompt,
-        )
-        if gemma is not None:
-            logger.info("agent_client.routed", provider="gemma", model=model)
-            return gemma
-    # ponytail: sync env fallback for tests; replace with proper async when all callers migrate
     api_key = getattr(settings, "google_api_key", None) or os.getenv("GOOGLE_API_KEY")
     if api_key:
         logger.info("agent_client.sync_env_fallback", model=model)
@@ -167,17 +150,6 @@ async def build_agent_client_async(
 ) -> Any:
     if not model:
         raise ValueError("model is required for LLM client creation")
-    gemma_settings = getattr(settings, "google_api_key", "") or os.getenv("GOOGLE_API_KEY", "")
-    if is_gemma_model(model) and gemma_settings and not _should_skip_gemma_client(settings):
-        gemma = build_gemma_client(
-            api_key=gemma_settings,
-            model=model,
-            tools=tools,
-            system_prompt=system_prompt,
-        )
-        if gemma is not None:
-            logger.info("agent_client.routed", provider="gemma", model=model)
-            return gemma
     client = await _resolve_and_build(model, company_id)
     if client is None:
         logger.error("no_active_provider", model=model, company_id=company_id)
@@ -197,20 +169,6 @@ async def build_provider_client_async(
 ) -> Any:
     if not model:
         raise ValueError("model is required for LLM client creation")
-    if is_gemma_model(model) and provider_type.upper() in ("GOOGLE", "GEMINI"):
-        settings = get_settings()
-        if _should_skip_gemma_client(settings):
-            pass
-        else:
-            gemma = build_gemma_client(
-            api_key=settings.google_api_key,
-            model=model,
-            tools=tools,
-            system_prompt=system_prompt,
-        )
-            if gemma is not None:
-                logger.info("agent_client.provider_client", provider="gemma", model=model)
-                return gemma
     client = await _resolve_and_build(model, company_id, preferred_provider=provider_type, key_id=key_id)
     if client is None:
         raise ValueError(f"Provider '{provider_type}' is not configured for model '{model}'")

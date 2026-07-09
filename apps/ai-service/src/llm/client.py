@@ -13,7 +13,18 @@ from dataclasses import dataclass, field
 from src.config import get_settings
 from src.llm.model_capabilities import supports_vision
 from src.llm.tool_parsers import get_parser
-from src.llm.tool_parsers.deepseek_v4 import _parse_dsml_tool_calls  # noqa: F401
+from src.llm.tool_parsers.base import ToolDefinition, tool_names_set
+from src.llm.tool_parsers.rollback import is_disabled, record_failure, record_success
+from src.observability.metrics import (
+    PARSER_AB_MISMATCH,
+    PARSER_OUTPUT_VALIDATION_ERROR,
+    PARSER_PARSE_ATTEMPTS,
+    PARSER_PARSE_FAILURE,
+    PARSER_PARSE_FALLBACK,
+    PARSER_PARSE_SUCCESS,
+    PARSER_TEMPLATE_VALIDATION_ERROR,
+)
+
 
 logger = structlog.get_logger(__name__)
 
@@ -29,8 +40,6 @@ class ProviderResponse:
     finish_reason: str | None = None
     reasoning_content: str | None = None
 
-_SAFE_TOOL_NAME_RE = re.compile(r"[^a-zA-Z0-9_-]")
-
 OPENAI_COMPAT_PROVIDERS: dict[str, str] = {
     "GROQ": "https://api.groq.com/openai/v1",
     "OPENROUTER": "https://openrouter.ai/api/v1",
@@ -44,24 +53,6 @@ OPENAI_COMPAT_PROVIDERS: dict[str, str] = {
     "SAMBANOVA": "https://api.sambanova.ai/v1",
     "MISTRAL": "https://api.mistral.ai/v1",
 }
-
-
-def _safe_provider_tool_name(native_name: str, seen: dict[str, str]) -> str:
-    existing = seen.get(native_name)
-    if existing:
-        return existing
-    safe = _SAFE_TOOL_NAME_RE.sub("_", native_name).strip("_") or "tool"
-    safe = safe[:64]
-    if safe not in seen:
-        seen[native_name] = safe
-        return safe
-    suffix = 2
-    while True:
-        candidate = f"{safe[:59]}_{suffix}"
-        if candidate not in seen:
-            seen[native_name] = candidate
-            return candidate
-        suffix += 1
 
 
 def _openai_schema_name(name: str | None) -> str:
@@ -190,35 +181,80 @@ class LLMClient:
         try:
             settings = get_settings()
             parser = None
+            parser_key = None
             if settings.use_tool_parser:
                 parser = get_parser(self.model, self.provider)
+                parser_key = parser.model_key()
                 logger.info(
                     "tool_parser.active",
-                    parser=parser.model_key(),
+                    parser=parser_key,
                     model=self.model,
                     provider=self.provider,
                     has_tools=tools is not None,
                 )
+
+                if is_disabled(parser_key, self.provider):
+                    logger.warning("tool_parser.skipped_auto_disabled", parser=parser_key)
+                    parser = None
+
+            # Template / input validation
+            if parser and tools:
+                err = parser.validate_tools(tools)
+                if err:
+                    PARSER_TEMPLATE_VALIDATION_ERROR.labels(
+                        parser=parser_key, reason=err,
+                    ).inc()
+                    logger.error("tool_parser.template_validation_error", error=err)
+                    raise ValueError(err)
 
             if self.provider == "GOOGLE":
                 response = await self._generate_google(messages, tools, options, parser=parser)
             else:
                 response = await self._generate_openai_compat(messages, tools, options)
 
-            if parser and settings.log_parser_a_b_comparison and response.text:
-                parsed = parser.parse_calls(response.text)
-                if parsed and not response.tool_calls:
-                    logger.info(
-                        "tool_parser.recovered_calls",
-                        parser=parser.model_key(),
-                        count=len(parsed),
-                    )
-                elif response.tool_calls and not parsed:
-                    logger.info(
-                        "tool_parser.api_returned_calls",
-                        parser=parser.model_key(),
-                        count=len(response.tool_calls),
-                    )
+            # Parse + metrics + output validation
+            if parser:
+                tool_names = tool_names_set(tools)
+                if response.tool_calls:
+                    PARSER_PARSE_ATTEMPTS.labels(parser=parser_key, provider=self.provider).inc()
+                    PARSER_PARSE_SUCCESS.labels(parser=parser_key, provider=self.provider).inc()
+                    record_success(parser_key, self.provider)
+                    err = parser.validate_output(response.tool_calls, tool_names)
+                    if err:
+                        PARSER_OUTPUT_VALIDATION_ERROR.labels(
+                            parser=parser_key, reason=err,
+                        ).inc()
+                        logger.warning("tool_parser.output_validation_error", error=err)
+
+                # A/B comparison: try parsing text for missed/mismatched calls
+                if settings.log_parser_a_b_comparison and response.text:
+                    parsed = parser.parse_calls(response.text)
+                    if parsed and not response.tool_calls:
+                        PARSER_PARSE_ATTEMPTS.labels(parser=parser_key, provider=self.provider).inc()
+                        PARSER_PARSE_SUCCESS.labels(parser=parser_key, provider=self.provider).inc()
+                        record_success(parser_key, self.provider)
+                        logger.info(
+                            "tool_parser.recovered_calls",
+                            parser=parser_key,
+                            count=len(parsed),
+                        )
+                    elif not parsed and not response.tool_calls and tools:
+                        PARSER_PARSE_FAILURE.labels(parser=parser_key, provider=self.provider).inc()
+                        record_failure(parser_key, self.provider)
+                    elif response.tool_calls and not parsed:
+                        logger.info(
+                            "tool_parser.api_returned_calls",
+                            parser=parser_key,
+                            count=len(response.tool_calls),
+                        )
+                    elif parsed and response.tool_calls:
+                        PARSER_AB_MISMATCH.labels(parser=parser_key, provider=self.provider).inc()
+                        logger.warning(
+                            "tool_parser.ab_mismatch",
+                            parser=parser_key,
+                            api_calls=len(response.tool_calls),
+                            parser_calls=len(parsed),
+                        )
 
             _latency_ms = int((time.monotonic() - _t0) * 1000)
             await self._write_provider_log(
@@ -227,8 +263,8 @@ class LLMClient:
                 latency_ms=_latency_ms,
                 metadata={
                     "tokens": response.usage,
-                    "parser": parser.model_key() if parser else None,
-                } if response.usage else {"parser": parser.model_key() if parser else None},
+                    "parser": parser_key,
+                } if response.usage else {"parser": parser_key},
             )
             return response
         except Exception as exc:
@@ -290,30 +326,23 @@ class LLMClient:
         seen: dict[str, str] = {}
         sanitized = []
         for tool in tools:
-            func = tool.get("function", tool)
-            native_name = str(func.get("name") or "").strip()
-            if not native_name:
+            t = ToolDefinition.from_dict(tool)
+            if not t.name:
                 continue
-            provider_name = _safe_provider_tool_name(native_name, seen)
-            params = func.get("parameters", {})
-            if hasattr(params, "model_json_schema"):
-                params = params.model_json_schema()
-            if not isinstance(params, dict):
-                params = {"type": "object"}
+            safe = ToolDefinition.sanitize_name(t.name, seen)
+            params = t.parameters
             params.setdefault("type", "object")
             tool_def = {
                 "type": "function",
                 "function": {
-                    "name": provider_name,
-                    "description": str(func.get("description") or ""),
+                    "name": safe,
+                    "description": t.description,
                     "parameters": params,
                 },
             }
             if self.provider in ("DEEPSEEK", "OPENAI"):
                 params.setdefault("additionalProperties", False)
                 tool_def["function"]["strict"] = True
-            if self.provider == "OLLAMA":
-                params.setdefault("additionalProperties", False)
             elif self.provider == "OLLAMA":
                 tool_def["function"].pop("strict", None)
             else:
@@ -372,11 +401,7 @@ class LLMClient:
 
         # DeepSeek sometimes returns tool calls as DSML text instead of structured JSON
         if not raw_tool_calls and text and (self.provider == "DEEPSEEK" or "deepseek" in self.model.lower() or ("<" in text and "DSML" in text)):
-            settings = get_settings()
-            if settings.use_tool_parser and not settings.use_legacy_dsml_parser:
-                dsml_calls = get_parser(self.model, self.provider).parse_calls(text)
-            else:
-                dsml_calls = _parse_dsml_tool_calls(text)
+            dsml_calls = get_parser(self.model, self.provider).parse_calls(text)
             if dsml_calls:
                 logger.info("dsml_tool_calls_parsed", count=len(dsml_calls))
                 raw_tool_calls = dsml_calls
