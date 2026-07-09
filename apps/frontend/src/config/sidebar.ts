@@ -846,6 +846,7 @@ export const getSidebarConfig = (
                 { to: '/tools/pricing-strategy', icon: TagIcon, label: t('sidebar.pricingStrategy') },
                 { to: '/tools/profitability-engine', icon: CalculatorIcon, label: t('sidebar.profitabilityEngine') },
                 { to: '/tools/ad-budget-planner', icon: CurrencyDollarIcon, label: t('sidebar.adBudgetPlanner') },
+                { to: '/tools/discount-impact', icon: TagIcon, label: t('sidebar.discountImpact') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])

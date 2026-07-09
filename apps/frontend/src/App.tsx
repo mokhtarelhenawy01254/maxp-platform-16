@@ -95,6 +95,9 @@ const PricingStrategyCalculator = React.lazy(
 const AdBudgetPlanner = React.lazy(
   () => import("./pages/marketing/AdBudgetPlanner"),
 );
+const DiscountImpactCalculator = React.lazy(
+  () => import("./pages/marketing/DiscountImpactCalculator"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2637,6 +2640,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AdBudgetPlanner />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/discount-impact"
+                  element={
+                    <Layout>
+                      <DiscountImpactCalculator />
                     </Layout>
                   }
                 />
