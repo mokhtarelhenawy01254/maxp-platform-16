@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CalculatorIcon, CurrencyDollarIcon, ChartBarIcon,
+  CalculatorIcon, ChartBarIcon,
   ExclamationTriangleIcon, InformationCircleIcon, ArrowTrendingUpIcon,
   BookmarkIcon as SaveIcon, TrashIcon,
-  SparklesIcon, CheckCircleIcon, XCircleIcon,
-  Cog6ToothIcon, ArrowPathIcon, ScaleIcon,
-  RocketLaunchIcon, ShoppingCartIcon, GiftIcon,
+  SparklesIcon, CheckCircleIcon,
+  ArrowPathIcon, ScaleIcon,
+  ShoppingCartIcon, GiftIcon,
   TruckIcon, CubeIcon, TagIcon,
 } from "@heroicons/react/24/outline";
 
@@ -61,8 +61,8 @@ const getProductPresets = (p: Preset): Pick<Inputs, "originalPrice" | "cogs" | "
 const DEFAULTS: Inputs = { originalPrice: 800, aov: 1200, cogs: 300, cogsPerItem: 250, itemsPerOrder: 2, shipping: 70, adCost: 150, discountPct: 20, currentOrders: 150, expectedLift: 50 };
 
 const STORAGE_KEY = "maxp_discount_impact_saved";
-const fmt = (n: number) => Math.round(n).toLocaleString();
-const fmt1 = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmt = (n: number) => Number.isFinite(n) ? Math.round(n).toLocaleString() : "—";
+const fmt1 = (n: number) => Number.isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "—";
 
 function compute(inputs: Inputs, tab: DiscountTab): Results {
   const { originalPrice, aov, cogs, cogsPerItem, itemsPerOrder, shipping, adCost, discountPct, currentOrders, expectedLift } = inputs;
@@ -240,7 +240,7 @@ export default function DiscountImpactCalculator() {
     }
 
     return R;
-  }, [r, inputs, tab, currency, conversionRate, T, compute]);
+  }, [r, inputs, tab, currency, conversionRate, T]);
 
   const saveScenario = () => {
     if (saved.length >= 3) return;
@@ -401,7 +401,7 @@ export default function DiscountImpactCalculator() {
               {tab !== "order" && (
                 <Slider label={T("adCost")} value={inputs.adCost} min={0} max={1000} step={10} onChange={set("adCost")} />
               )}
-              {tab !== "bogo" && tab !== "freeShipping" && tab !== "quantity" && (
+              {tab !== "bogo" && tab !== "freeShipping" && (
                 <Slider label={T("discountPct")} value={inputs.discountPct} min={1} max={70} step={1} isPercent onChange={set("discountPct")} />
               )}
               {tab === "bogo" && (
