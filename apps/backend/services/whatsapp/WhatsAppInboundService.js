@@ -360,6 +360,23 @@ async function saveIncomingMessage(payload) {
     });
   }
 
+  // ── Lead Follow-up: enroll on first message if customer is LEAD ──────────
+  if (syncedCustomer && syncedCustomer.status === 'LEAD') {
+    setImmediate(async () => {
+      try {
+        const existingEnrollment = await getSharedPrismaClient().leadFollowUpEnrollment.findFirst({
+          where: { whatsappContactId: contact.id, status: 'ACTIVE' }
+        });
+        if (!existingEnrollment) {
+          const LeadFollowUpService = require('./LeadFollowUpService');
+          await LeadFollowUpService.enrollLead(syncedCustomer.companyId, syncedCustomer.id, contact.id);
+        }
+      } catch (e) {
+        console.error('[LEAD-FOLLOWUP] Error enrolling lead:', e.message);
+      }
+    });
+  }
+
   return savedMessage;
 }
 

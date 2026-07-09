@@ -462,7 +462,7 @@ const AIImageGenerator: React.FC = () => {
   const [referenceImagePreview, setReferenceImagePreview] = useState<string>("");
   const [galleryFilter, setGalleryFilter] = useState<string>("all");
   const [gallerySearch, setGallerySearch] = useState<string>("");
-  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string; productImage?: string; referenceImage?: string } | null>(null);
+  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string; quality?: number; productImage?: string; referenceImage?: string } | null>(null);
   const [usage, setUsage] = useState<{ prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null>(null);
 
   const selectValue = <K extends keyof FormData>(key: K) => (value: string | null) => {
@@ -714,6 +714,7 @@ const AIImageGenerator: React.FC = () => {
       model: agentModel,
       aspectRatio: form.aspectRatio,
       style: form.mood || form.theme || undefined,
+      quality: form.quality,
       productImage,
       referenceImage: referenceImageData,
     };
@@ -771,13 +772,13 @@ const AIImageGenerator: React.FC = () => {
     if (!lastParams) return;
     setImageUrl("");
     setMessage(null);
-    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style, lastParams.productImage, lastParams.referenceImage), 100);
+    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style, lastParams.quality, lastParams.productImage, lastParams.referenceImage), 100);
   };
 
-  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string, productImage?: string, referenceImage?: string) => {
+  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string, quality?: number, productImage?: string, referenceImage?: string) => {
     setLoading(true);
     try {
-      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, productImage, referenceImage }, { timeout: 120000 });
+      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, quality, productImage, referenceImage }, { timeout: 120000 });
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
@@ -876,7 +877,87 @@ const AIImageGenerator: React.FC = () => {
       <div className="px-5 pb-5 sm:px-6">
         <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
 
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr]">
+          <div className="space-y-4">
+
+        {/* Platform */}
+        <div>
+          <Label className="mb-1.5 text-xs text-muted-foreground">المنصة</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {PLATFORMS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => {
+                  update("platform", p.value);
+                  if (p.ratios.length > 0 && !p.ratios.includes(form.aspectRatio)) {
+                    update("aspectRatio", p.ratios[0] as FormData["aspectRatio"]);
+                  }
+                }}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
+                  form.platform === p.value
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border text-muted-foreground hover:border-muted-foreground/30"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Aspect + Format + Transparent */}
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Label className="mb-1 text-xs text-muted-foreground">نسبة الأبعاد</Label>
+            <Select value={form.aspectRatio} onValueChange={selectValue("aspectRatio")}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ASPECT_RATIOS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-24">
+            <Label className="mb-1 text-xs text-muted-foreground">الصيغة</Label>
+            <Select value={form.format} onValueChange={(v) => {
+              if (v === null) return;
+              update("format", v);
+              if (v !== "png") update("transparentBg", false);
+            }}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="png">PNG</SelectItem>
+                <SelectItem value="jpg">JPG</SelectItem>
+                <SelectItem value="webp">WebP</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5 pb-1">
+            <Switch
+              checked={form.transparentBg}
+              onCheckedChange={(v) => update("transparentBg", v)}
+              disabled={form.format !== "png"}
+            />
+            <span className="text-xs text-muted-foreground">شفاف</span>
+          </div>
+        </div>
+
+        {/* Quality */}
+        <div>
+          <Label className="mb-1 text-xs text-muted-foreground">الجودة: {form.quality}%</Label>
+          <input
+            type="range"
+            min={60}
+            max={100}
+            value={form.quality}
+            onChange={(e) => update("quality", Number(e.target.value))}
+            className="w-full"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground">قوالب سريعة:</span>
           {[
             { key: "sale_promotion", label: "عرض / خصم" },
@@ -896,83 +977,24 @@ const AIImageGenerator: React.FC = () => {
           ))}
         </div>
 
-        <Tabs defaultValue="platform" className="mt-4">
-          <TabsList variant="line" className="mb-5 flex-wrap gap-1">
-            <TabsTrigger value="platform">المنصة</TabsTrigger>
+        <Tabs defaultValue="product">
+          <TabsList variant="line" className="flex-wrap gap-0.5 text-xs">
             <TabsTrigger value="product">المنتج</TabsTrigger>
             <TabsTrigger value="brand">العلامة</TabsTrigger>
             <TabsTrigger value="copy">النص</TabsTrigger>
             <TabsTrigger value="style">التصميم</TabsTrigger>
             <TabsTrigger value="campaign">الحملة</TabsTrigger>
-            <TabsTrigger value="output">المخرجات</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="platform">
-            <Card>
-              <CardHeader>
-                <CardTitle>المنصة والأبعاد</CardTitle>
-                <CardDescription>اختر المنصة ونوع المنشور أولاً عشان نحدد المقاس المثالي</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-                  {PLATFORMS.map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => {
-                        update("platform", p.value);
-                        if (p.ratios.length > 0 && !p.ratios.includes(form.aspectRatio)) {
-                          update("aspectRatio", p.ratios[0] as FormData["aspectRatio"]);
-                        }
-                      }}
-                      className={`rounded-xl border-2 p-3 text-center text-sm font-medium transition-all ${
-                        form.platform === p.value
-                          ? "border-primary bg-primary/5 text-primary dark:border-primary dark:bg-primary/10 dark:text-primary"
-                          : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30 dark:border-border dark:bg-gray-900 dark:text-muted-foreground"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="نسبة الأبعاد">
-                    <Select value={form.aspectRatio} onValueChange={selectValue("aspectRatio")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ASPECT_RATIOS.map((r) => (
-                          <SelectItem key={r.value} value={r.value}>
-                            {r.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">معاينة المقاس</Label>
-                    <AspectPreview ratio={form.aspectRatio} platformLabel={platformLabel} />
-                  </div>
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  الأبعاد المقترحة لـ {platformLabel}:{" "}
-                  {PLATFORMS.find((p) => p.value === form.platform)?.ratios.join(" · ")}
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="product">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle>بيانات المنتج</CardTitle>
                 <CardDescription>صور المنتج وتفاصيله</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field label="اسم المنتج" required hint="الاسم اللي هيظهر في الصورة">
                     <Input
@@ -1071,11 +1093,11 @@ const AIImageGenerator: React.FC = () => {
 
           <TabsContent value="brand">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle>الهوية البصرية</CardTitle>
                 <CardDescription>العلامة التجارية والألوان</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 {Object.keys(brandIdentity).length > 0 && (
                   <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
                     <Info className="size-4 shrink-0" />
@@ -1166,11 +1188,11 @@ const AIImageGenerator: React.FC = () => {
 
           <TabsContent value="copy">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle>النص والرسالة</CardTitle>
                 <CardDescription>العنوان، دعوة الإجراء، الهاشتاجات</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <Field label="العنوان الرئيسي" required hint="الجملة الأهم اللي بتجذب الانتباه">
                   <Input
                     dir="auto"
@@ -1274,11 +1296,11 @@ const AIImageGenerator: React.FC = () => {
 
           <TabsContent value="style">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle>التصميم البصري</CardTitle>
                 <CardDescription>المود، الثيم، والـ Layout</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field label="المود / الجو العام">
                     <Select value={form.mood} onValueChange={selectValue("mood")}>
@@ -1398,11 +1420,11 @@ const AIImageGenerator: React.FC = () => {
 
           <TabsContent value="campaign">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle>الحملة</CardTitle>
                 <CardDescription>الهدف، الاستعجال، الرابط</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field label="الهدف من الصورة">
                     <Select value={form.purpose} onValueChange={selectValue("purpose")}>
@@ -1458,143 +1480,72 @@ const AIImageGenerator: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="output">
-            <Card>
-              <CardHeader>
-                <CardTitle>المخرجات</CardTitle>
-                <CardDescription>الموديل، الجودة، الصيغة</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="محرك التوليد (من إعدادات الأجنت)">
-                    <div className="flex h-10 items-center gap-2 rounded-lg border bg-muted px-3 text-sm">
-                      <span className="size-2 rounded-full bg-green-500" />
-                      <span className="font-mono text-xs">{agentModel}</span>
-                    </div>
-                  </Field>
-                  <Field label="الأبعاد">
-                    <Select value={form.aspectRatio} onValueChange={selectValue("aspectRatio")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ASPECT_RATIOS.map((r) => (
-                          <SelectItem key={r.value} value={r.value}>
-                            {r.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <Field label="صيغة الملف">
-                    <Select
-                      value={form.format}
-                      onValueChange={(v) => {
-                        if (v === null) return;
-                        update("format", v);
-                        if (v !== "png") update("transparentBg", false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="png">PNG</SelectItem>
-                        <SelectItem value="jpg">JPG</SelectItem>
-                        <SelectItem value="webp">WebP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label={`الجودة (${form.quality}%)`}>
-                    <input
-                      type="range"
-                      min={60}
-                      max={100}
-                      value={form.quality}
-                      onChange={(e) => update("quality", Number(e.target.value))}
-                      className="w-full"
-                    />
-                  </Field>
-                  <Field
-                    label="خلفية شفافة"
-                    hint={form.format !== "png" ? "متاحة فقط مع صيغة PNG" : ""}
-                  >
-                    <Switch
-                      checked={form.transparentBg}
-                      onCheckedChange={(v) => update("transparentBg", v)}
-                      disabled={form.format !== "png"}
-                    />
-                  </Field>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
-
-        <div className="mt-6 space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">البرومبت النهائي (يمكنك تعديله قبل التوليد)</Label>
-            <button
-              type="button"
-              onClick={() => setShowJson(!showJson)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-              {showJson ? "إخفاء JSON" : "عرض JSON"}
-            </button>
           </div>
-          <Textarea
-            dir="auto"
-            value={form.editablePrompt}
-            onChange={(e) => {
-              update("editablePrompt", e.target.value);
-              setPromptTouched(true);
-            }}
-            rows={4}
-            className={inputCls}
-            placeholder="سيظهر البرومبت النهائي هنا بعد ملء الحقول..."
-          />
-          {showJson && (
-            <pre className="max-h-64 overflow-auto rounded-lg border bg-slate-50 p-4 text-xs dark:bg-gray-950">
-              {JSON.stringify(buildPromptJson(), null, 2)}
-            </pre>
-          )}
-        </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Button
-            size="lg"
-            className="gap-2"
-            onClick={handleGenerate}
-            disabled={loading || !canGenerate}
-            title={!canGenerate ? "اكتب اسم المنتج أو عنوان رئيسي أولاً" : undefined}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="size-4 animate-spin" /> جاري التوليد...
-              </>
-            ) : (
-              <>
-                <Wand2 className="size-4" /> {!canGenerate ? "اكتب بيانات أولاً" : "توليد الصورة"}
-              </>
+          <div className="space-y-6">
+
+        {/* Generate bar */}
+        <div className="flex items-start gap-3">
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">البرومبت</Label>
+              <button
+                type="button"
+                onClick={() => setShowJson(!showJson)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                {showJson ? "إخفاء JSON" : "عرض JSON"}
+              </button>
+            </div>
+            <Textarea
+              dir="auto"
+              value={form.editablePrompt}
+              onChange={(e) => {
+                update("editablePrompt", e.target.value);
+                setPromptTouched(true);
+              }}
+              rows={2}
+              className={inputCls}
+              placeholder="البرومبت هيتولد تلقائياً من البيانات..."
+            />
+            {showJson && (
+              <pre className="max-h-48 overflow-auto rounded-lg border bg-slate-50 p-3 text-xs dark:bg-gray-950">
+                {JSON.stringify(buildPromptJson(), null, 2)}
+              </pre>
             )}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="gap-2"
-            onClick={handleReset}
-            disabled={loading}
-          >
-            <RotateCcw className="size-4" /> تصفير
-          </Button>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 pt-5">
+            <Button
+              size="default"
+              className="gap-2"
+              onClick={handleGenerate}
+              disabled={loading || !canGenerate}
+              title={!canGenerate ? "اكتب اسم المنتج أو عنوان رئيسي أولاً" : undefined}
+            >
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Wand2 className="size-4" />
+              )}
+              {loading ? "جاري..." : "توليد"}
+            </Button>
+            <Button
+              variant="outline"
+              size="default"
+              className="gap-2"
+              onClick={handleReset}
+              disabled={loading}
+            >
+              <RotateCcw className="size-4" /> تصفير
+            </Button>
+          </div>
         </div>
 
         {usage && (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">استخدام الموديل:</span>
             {usage.prompt_tokens !== undefined && <span>prompt: {usage.prompt_tokens.toLocaleString()}</span>}
             {usage.completion_tokens !== undefined && <span>completion: {usage.completion_tokens.toLocaleString()}</span>}
@@ -1602,7 +1553,7 @@ const AIImageGenerator: React.FC = () => {
           </div>
         )}
 
-        <div id="ai-generated-result" className="mt-6">
+        <div id="ai-generated-result">
           {loading ? (
             <div className="flex min-h-[400px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
               <div className="text-center">
@@ -1661,7 +1612,7 @@ const AIImageGenerator: React.FC = () => {
           )}
         </div>
 
-        <div className="mt-8 border-t pt-6">
+        <div className="border-t pt-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-lg font-semibold">
               <Grid3X3 className="size-5 text-sky-600" />
@@ -1749,12 +1700,14 @@ const AIImageGenerator: React.FC = () => {
                         setImageUrl(img.url);
                         document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
                       }}
+                      aria-label="عرض"
                       title="عرض"
                     >
                       <ImageIcon className="size-4" />
                     </button>
                     <button
                       type="button"
+                      aria-label="فتح في تبويب جديد"
                       className="rounded bg-white/20 p-1.5 text-white hover:bg-white/40"
                       onClick={() => window.open(img.url, "_blank")}
                       title="فتح"
@@ -1763,6 +1716,7 @@ const AIImageGenerator: React.FC = () => {
                     </button>
                     <button
                       type="button"
+                      aria-label="حذف الصورة"
                       className="rounded bg-red-500/60 p-1.5 text-white hover:bg-red-500/80"
                       onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
                       title="حذف"
@@ -1774,6 +1728,8 @@ const AIImageGenerator: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+          </div>
         </div>
       </div>
 

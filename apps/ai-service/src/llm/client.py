@@ -576,13 +576,18 @@ class LLMClient:
     def _parse_gemini_response(self, data: dict[str, Any]) -> ProviderResponse:
         text = ""
         tool_calls: list[dict[str, Any]] = []
+        reasoning_parts: list[str] = []
         candidates = data.get("candidates", [])
         if candidates:
             content = candidates[0].get("content", {})
             parts = content.get("parts", [])
             for part in parts:
+                is_thought = part.get("thought", False)
                 if "text" in part and part["text"] is not None:
-                    text += str(part["text"])
+                    if is_thought:
+                        reasoning_parts.append(str(part["text"]))
+                    else:
+                        text += str(part["text"])
                 if "functionCall" in part:
                     fc = part["functionCall"]
                     tool_calls.append({
@@ -597,6 +602,7 @@ class LLMClient:
         return ProviderResponse(
             text=text,
             tool_calls=tool_calls,
+            reasoning_content="\n".join(reasoning_parts) if reasoning_parts else None,
             usage=usage,
             model=data.get("model", self.model),
             provider="GOOGLE",
@@ -636,6 +642,9 @@ class LLMClient:
             config_kwargs["top_p"] = options["top_p"]
         if options.get("top_k") is not None:
             config_kwargs["top_k"] = options["top_k"]
+        tc = options.get("thinking_config")
+        if tc is not None:
+            config_kwargs["thinking_config"] = types.ThinkingConfig(**tc) if isinstance(tc, dict) else tc
         if system_instruction:
             config_kwargs["system_instruction"] = system_instruction
         if gemini_tools:

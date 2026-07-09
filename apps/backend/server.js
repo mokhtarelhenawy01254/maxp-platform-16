@@ -366,6 +366,7 @@ const billingRoutes = require("./routes/billingRoutes");
 const billingCronService = require("./services/billingCronService");
 const whatsappNotificationRoutes = require("./routes/whatsappNotificationRoutes");
 const whatsappMetaTemplateRoutes = require("./routes/whatsappMetaTemplateRoutes");
+const leadFollowUpRoutes = require("./routes/leadFollowUpRoutes");
 const WhatsAppNotificationService = require("./services/whatsapp/WhatsAppNotificationService");
 const errorRoutes = require("./routes/errorRoutes");
 
@@ -679,6 +680,7 @@ app.use("/api/v1/telegram-advanced", telegramAdvancedRoutes);
 app.use("/api/v1/userbot", userbotRoutes);
 app.use("/api/v1/whatsapp-notifications", whatsappNotificationRoutes);
 app.use("/api/v1/whatsapp-templates", whatsappMetaTemplateRoutes);
+app.use("/api/v1/whatsapp/lead-followup", leadFollowUpRoutes);
 
 // ─── WhatsApp Inbox CRM (Number-Based Permissions) ──────────────
 app.use("/api/v1/whatsapp-inbox", whatsappInboxRoutes);
@@ -989,6 +991,15 @@ try {
   console.log("✅ [EMBEDDING-CRON] Product embedding cron started");
 } catch (error) {
   console.error("❌ [EMBEDDING-CRON] Failed to start product embedding cron:", error);
+}
+
+// Start Lead Follow-Up scheduler — every 15 minutes
+try {
+  const { startLeadFollowUpScheduler } = require("./cron/leadFollowUpCron");
+  startLeadFollowUpScheduler();
+  console.log("✅ [LEAD-FOLLOWUP-CRON] Lead follow-up scheduler started (runs every 15 min)");
+} catch (error) {
+  console.error("❌ [LEAD-FOLLOWUP-CRON] Failed to start lead follow-up scheduler:", error);
 }
 
 // Start WhatsApp Journey scheduler — follow-up messages

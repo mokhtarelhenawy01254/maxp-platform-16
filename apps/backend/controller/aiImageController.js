@@ -32,7 +32,7 @@ async function getOpenRouterKey() {
 exports.generateImage = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size, productImage, referenceImage } = req.body;
+    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage } = req.body;
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ success: false, message: "الصورة مطلوب" });
@@ -81,21 +81,27 @@ exports.generateImage = async (req, res) => {
     const isOpenAIModel = model.startsWith("openai/");
 
     if (isOpenAIModel) {
+      const q = quality >= 91 ? "high" : quality >= 76 ? "medium" : "low";
+      const outputFormat = req.body.structured?.output?.format || "png";
+      const inpRefs = [];
+      if (productImage) inpRefs.push({ type: "image_url", image_url: { url: productImage } });
+      if (referenceImage) inpRefs.push({ type: "image_url", image_url: { url: referenceImage } });
+
       const resp = await axios.post(
-        `${OPENROUTER_BASE}/images/generations`,
+        `${OPENROUTER_BASE}/images`,
         {
           model,
           prompt,
           n: 1,
-          size: `${dims.width}x${dims.height}`,
+          quality: q,
+          aspect_ratio: aspectRatio,
+          output_format: outputFormat === "jpg" ? "jpeg" : outputFormat,
+          ...(inpRefs.length ? { input_references: inpRefs } : {}),
         },
         { headers, timeout: 180000 }
       );
       result = resp.data;
-      console.log("[AI-IMAGE-OPENAI] result keys:", Object.keys(result).join(","));
-      console.log("[AI-IMAGE-OPENAI] result sample:", JSON.stringify(result).slice(0, 3000));
-      imageUrl = result?.data?.[0]?.url || result?.url || "";
-      if (!imageUrl && Array.isArray(result?.data)) imageUrl = result.data[0].b64_json ? `data:image/png;base64,${result.data[0].b64_json}` : "";
+      imageUrl = result?.data?.[0]?.b64_json ? `data:${result.data[0].media_type || "image/png"};base64,${result.data[0].b64_json}` : "";
     } else {
       const resp = await axios.post(
         `${OPENROUTER_BASE}/chat/completions`,
