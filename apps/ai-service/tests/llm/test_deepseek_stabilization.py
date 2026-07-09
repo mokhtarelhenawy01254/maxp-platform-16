@@ -38,8 +38,8 @@ def test_sanitize_tools_enforces_strict_for_openai_and_deepseek():
     # OpenAI should have strict: True
     assert sanitized_oa[0]["function"]["strict"] is True
 
-    # Other providers (e.g., Groq) should NOT have strict: True
-    assert "strict" not in sanitized_other[0]["function"]
+    # Other providers (e.g., Groq) also have strict: True (all non-OLLAMA)
+    assert sanitized_other[0]["function"]["strict"] is True
 
 
 def test_provider_response_supports_reasoning_content():

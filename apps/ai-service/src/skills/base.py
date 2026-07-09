@@ -35,7 +35,6 @@ class Skill:
                 "name": self.name,
                 "description": self.description,
                 "parameters": schema,
-                "strict": True,
             }
         }
 

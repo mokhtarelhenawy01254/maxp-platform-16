@@ -124,6 +124,23 @@ class Settings(BaseSettings):
         description="Use MagenticBuilder for CEO orchestration (requires agent-framework-orchestrations)",
     )
 
+    use_tool_parser: bool = Field(
+        default=True,
+        description="Enable tool-calling abstraction layer (BaseToolParser)",
+    )
+    use_legacy_gemma_client: bool = Field(
+        default=False,
+        description="Fall back to GemmaClient for Gemma 4 models (instead of tool parsers)",
+    )
+    use_legacy_dsml_parser: bool = Field(
+        default=False,
+        description="Fall back to inline DSML parser in client.py (instead of DeepSeekV4ToolParser)",
+    )
+    log_parser_a_b_comparison: bool = Field(
+        default=True,
+        description="Log A/B comparison results between old and new parsers",
+    )
+
     log_level: str = "INFO"
     cors_origins: list[str] = Field(default_factory=list)
 

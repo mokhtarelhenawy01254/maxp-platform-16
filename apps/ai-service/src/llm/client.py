@@ -6,6 +6,16 @@ import time
 import uuid
 from typing import Any
 
+import structlog
+
+from dataclasses import dataclass, field
+
+from src.config import get_settings
+from src.llm.model_capabilities import supports_vision
+from src.llm.tool_parsers import get_parser
+
+logger = structlog.get_logger(__name__)
+
 # DeepSeek DSML tool-call format.
 # Standard XML format:
 # <｜DSML｜tool_calls>
@@ -122,13 +132,7 @@ def _parse_dsml_tool_calls(text: str) -> list[dict]:
     except (json.JSONDecodeError, KeyError, TypeError):
         return []
 
-from dataclasses import dataclass, field
 
-import structlog
-
-from src.llm.model_capabilities import supports_vision
-
-logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -302,16 +306,47 @@ class LLMClient:
     ) -> ProviderResponse:
         _t0 = time.monotonic()
         try:
+            settings = get_settings()
+            parser = None
+            if settings.use_tool_parser:
+                parser = get_parser(self.model, self.provider)
+                logger.info(
+                    "tool_parser.active",
+                    parser=parser.model_key(),
+                    model=self.model,
+                    provider=self.provider,
+                    has_tools=tools is not None,
+                )
+
             if self.provider == "GOOGLE":
                 response = await self._generate_google(messages, tools, options)
             else:
                 response = await self._generate_openai_compat(messages, tools, options)
+
+            if parser and settings.log_parser_a_b_comparison and response.text:
+                parsed = parser.parse_calls(response.text)
+                if parsed and not response.tool_calls:
+                    logger.info(
+                        "tool_parser.recovered_calls",
+                        parser=parser.model_key(),
+                        count=len(parsed),
+                    )
+                elif response.tool_calls and not parsed:
+                    logger.info(
+                        "tool_parser.api_returned_calls",
+                        parser=parser.model_key(),
+                        count=len(response.tool_calls),
+                    )
+
             _latency_ms = int((time.monotonic() - _t0) * 1000)
             await self._write_provider_log(
                 action="generation_success",
                 status="success",
                 latency_ms=_latency_ms,
-                metadata={"tokens": response.usage} if response.usage else None,
+                metadata={
+                    "tokens": response.usage,
+                    "parser": parser.model_key() if parser else None,
+                } if response.usage else {"parser": parser.model_key() if parser else None},
             )
             return response
         except Exception as exc:
@@ -392,9 +427,11 @@ class LLMClient:
                     "parameters": params,
                 },
             }
-            if self.provider in ("DEEPSEEK", "OPENAI", "OLLAMA"):
+            if self.provider in ("DEEPSEEK", "OPENAI"):
                 params.setdefault("additionalProperties", False)
                 tool_def["function"]["strict"] = True
+            if self.provider == "OLLAMA":
+                params.setdefault("additionalProperties", False)
             elif self.provider == "OLLAMA":
                 tool_def["function"].pop("strict", None)
             else:
