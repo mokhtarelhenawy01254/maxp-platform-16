@@ -246,7 +246,7 @@ router.post('/sessions/:id/disconnect', verifyToken.authenticateToken, checkAppA
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب المحادثات
-router.get('/conversations', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getConversations);
+router.get('/conversations', verifyToken.authenticateToken, whatsappController.getConversations);
 
 // جلب رسائل محادثة
 router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getMessages);
