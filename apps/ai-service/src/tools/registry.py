@@ -47,16 +47,12 @@ def _discover_domain_tools() -> list[FunctionTool]:
 _ALL_DOMAIN_TOOLS = _discover_domain_tools()
 
 # -- Register all tools in SkillRegistry ----------------------------------
-# ALL_TOOLS is deprecated — kept temporarily for backward-compatible re-exports.
-# All consumers should use SkillRegistry directly.
 
-ALL_TOOLS: dict[str, FunctionTool] = {}
 _registry = get_skill_registry()
 for _t in _ALL_DOMAIN_TOOLS + list(SKILL_TOOLS):
-    ALL_TOOLS[_t.name] = _t
     _registry.register_tool(_t)
 
-# -- Tool groupings (name-based, resolved from ALL_TOOLS) ---------------------
+# -- Tool groupings ----------------------------------------------------------
 
 CORE_TOOL_NAMES: set[str] = {
     "product_search",
@@ -157,58 +153,58 @@ WRITE_TOOLS: list[FunctionTool] = _resolve_tool_set(WRITE_TOOL_NAMES)
 # -- Backward-compatible re-exports ------------------------------------------
 # Import individual tool instances so that existing code doing
 #   from src.tools.registry import product_search_tool
-# still works. These are resolved from ALL_TOOLS by canonical name.
+# still works. These are resolved from SkillRegistry by canonical name.
 
-product_search_tool = ALL_TOOLS.get("product_search")
-product_create_tool = ALL_TOOLS.get("product_create")
-product_low_stock_tool = ALL_TOOLS.get("product_low_stock")
-product_top_selling_tool = ALL_TOOLS.get("product_top_selling")
-product_update_price_tool = ALL_TOOLS.get("product_update_price")
-product_performance_tool = ALL_TOOLS.get("product_performance")
-category_list_tool = ALL_TOOLS.get("category_list")
-order_lookup_tool = ALL_TOOLS.get("order_lookup")
-order_create_draft_tool = ALL_TOOLS.get("order_create_draft")
-order_create_confirmed_tool = ALL_TOOLS.get("order_create_confirmed")
-order_summary_tool = ALL_TOOLS.get("order_summary")
-order_recent_list_tool = ALL_TOOLS.get("order_recent_list")
-order_cancel_tool = ALL_TOOLS.get("order_cancel")
-order_refund_tool = ALL_TOOLS.get("order_refund")
-customer_info_tool = ALL_TOOLS.get("customer_info")
-customer_top_buyers_tool = ALL_TOOLS.get("customer_top_buyers")
-inventory_check_tool = ALL_TOOLS.get("inventory_check")
-inventory_adjust_tool = ALL_TOOLS.get("inventory_adjust")
-sales_revenue_tool = ALL_TOOLS.get("sales_revenue")
-company_snapshot_tool = ALL_TOOLS.get("company_snapshot")
-discount_create_tool = ALL_TOOLS.get("discount_create")
-discount_create_draft_tool = ALL_TOOLS.get("discount_create_draft")
-whatsapp_send_tool = ALL_TOOLS.get("whatsapp_send")
-competitor_search_tool = ALL_TOOLS.get("competitor_search")
-competitor_get_products_tool = ALL_TOOLS.get("competitor_get_products")
-competitor_price_compare_tool = ALL_TOOLS.get("competitor_price_compare")
-competitor_get_ads_tool = ALL_TOOLS.get("competitor_get_ads")
-competitor_generate_report_tool = ALL_TOOLS.get("competitor_generate_report")
-knowledge_search_tool = ALL_TOOLS.get("knowledge_search")
-scheduler_create_job_tool = ALL_TOOLS.get("scheduler_create_job")
-knowledge_create_faq_tool = ALL_TOOLS.get("knowledge_create_faq")
-knowledge_create_policy_tool = ALL_TOOLS.get("knowledge_create_policy")
-facebook_ad_create_draft_tool = ALL_TOOLS.get("facebook_ad_create_draft")
-message_broadcast_tool = ALL_TOOLS.get("message_broadcast")
-agent_spawn_tool = ALL_TOOLS.get("agent_spawn")
-agent_handoff_to_tool = ALL_TOOLS.get("agent_handoff_to")
-audit_read_tool = ALL_TOOLS.get("audit_read")
-hr_attendance_today_tool = ALL_TOOLS.get("hr_attendance_today")
-unlock_advanced_tools_tool = ALL_TOOLS.get("unlock_advanced_tools")
+product_search_tool = _registry.resolve("product_search")
+product_create_tool = _registry.resolve("product_create")
+product_low_stock_tool = _registry.resolve("product_low_stock")
+product_top_selling_tool = _registry.resolve("product_top_selling")
+product_update_price_tool = _registry.resolve("product_update_price")
+product_performance_tool = _registry.resolve("product_performance")
+category_list_tool = _registry.resolve("category_list")
+order_lookup_tool = _registry.resolve("order_lookup")
+order_create_draft_tool = _registry.resolve("order_create_draft")
+order_create_confirmed_tool = _registry.resolve("order_create_confirmed")
+order_summary_tool = _registry.resolve("order_summary")
+order_recent_list_tool = _registry.resolve("order_recent_list")
+order_cancel_tool = _registry.resolve("order_cancel")
+order_refund_tool = _registry.resolve("order_refund")
+customer_info_tool = _registry.resolve("customer_info")
+customer_top_buyers_tool = _registry.resolve("customer_top_buyers")
+inventory_check_tool = _registry.resolve("inventory_check")
+inventory_adjust_tool = _registry.resolve("inventory_adjust")
+sales_revenue_tool = _registry.resolve("sales_revenue")
+company_snapshot_tool = _registry.resolve("company_snapshot")
+discount_create_tool = _registry.resolve("discount_create")
+discount_create_draft_tool = _registry.resolve("discount_create_draft")
+whatsapp_send_tool = _registry.resolve("whatsapp_send")
+competitor_search_tool = _registry.resolve("competitor_search")
+competitor_get_products_tool = _registry.resolve("competitor_get_products")
+competitor_price_compare_tool = _registry.resolve("competitor_price_compare")
+competitor_get_ads_tool = _registry.resolve("competitor_get_ads")
+competitor_generate_report_tool = _registry.resolve("competitor_generate_report")
+knowledge_search_tool = _registry.resolve("knowledge_search")
+scheduler_create_job_tool = _registry.resolve("scheduler_create_job")
+knowledge_create_faq_tool = _registry.resolve("knowledge_create_faq")
+knowledge_create_policy_tool = _registry.resolve("knowledge_create_policy")
+facebook_ad_create_draft_tool = _registry.resolve("facebook_ad_create_draft")
+message_broadcast_tool = _registry.resolve("message_broadcast")
+agent_spawn_tool = _registry.resolve("agent_spawn")
+agent_handoff_to_tool = _registry.resolve("agent_handoff_to")
+audit_read_tool = _registry.resolve("audit_read")
+hr_attendance_today_tool = _registry.resolve("hr_attendance_today")
+unlock_advanced_tools_tool = _registry.resolve("unlock_advanced_tools")
 # Promotion / Offer tools
-offers_list_active_tool = ALL_TOOLS.get("offers_list_active")
-coupon_validate_tool = ALL_TOOLS.get("coupon_validate")
+offers_list_active_tool = _registry.resolve("offers_list_active")
+coupon_validate_tool = _registry.resolve("coupon_validate")
 
 # Smart Seller tools
-lead_score_tool = ALL_TOOLS.get("lead_score")
-abandoned_carts_tool = ALL_TOOLS.get("abandoned_carts")
-pipeline_overview_tool = ALL_TOOLS.get("pipeline_overview")
-followup_suggestions_tool = ALL_TOOLS.get("followup_suggestions")
-deal_params_tool = ALL_TOOLS.get("deal_params")
-purchase_prediction_tool = ALL_TOOLS.get("purchase_prediction")
+lead_score_tool = _registry.resolve("lead_score")
+abandoned_carts_tool = _registry.resolve("abandoned_carts")
+pipeline_overview_tool = _registry.resolve("pipeline_overview")
+followup_suggestions_tool = _registry.resolve("followup_suggestions")
+deal_params_tool = _registry.resolve("deal_params")
+purchase_prediction_tool = _registry.resolve("purchase_prediction")
 
 # Backward-compatible re-exports of Input models from definitions modules.
 from src.tools.definitions.product import (  # noqa: E402 F401

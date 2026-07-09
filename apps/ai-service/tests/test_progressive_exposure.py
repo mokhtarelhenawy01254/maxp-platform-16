@@ -7,9 +7,9 @@ from agent_framework import FunctionInvocationContext
 
 from src.agents.base import BaseAgent, BaseAgentConfig
 from src.tools.gateway import ToolGateway, ToolResultStatus
+from src.skills.registry import get_skill_registry
 from src.tools.registry import (
     ADVANCED_TOOLS,
-    ALL_TOOLS,
     CORE_TOOLS,
     DiscountCreateInput,
     ProductSearchInput,
@@ -153,18 +153,21 @@ class TestGatewayCtxInjection:
 class TestSDKGatewayWrapping:
     """Verify wrap_tool_for_gateway produces correct approval behavior."""
 
+    def _resolve(self, name: str):
+        return get_skill_registry().resolve(name)
+
     def test_write_tool_is_gateway_managed(self):
-        write_tool = ALL_TOOLS.get("discount_create")
+        write_tool = self._resolve("discount_create")
         assert write_tool is not None
         assert is_gateway_managed_tool(write_tool) is True
 
     def test_write_tool_requires_sdk_approval(self):
-        write_tool = ALL_TOOLS.get("discount_create")
+        write_tool = self._resolve("discount_create")
         assert write_tool is not None
         assert requires_sdk_approval(write_tool) is True
 
     def test_read_tool_does_not_require_sdk_approval(self):
-        read_tool = ALL_TOOLS.get("product_search")
+        read_tool = self._resolve("product_search")
         assert read_tool is not None
         assert requires_sdk_approval(read_tool) is False
 
@@ -172,7 +175,7 @@ class TestSDKGatewayWrapping:
     async def test_write_tool_wrapped_returns_awaiting_approval(self):
         """Write tools routed through gateway return awaiting_approval
         because approval_granted is False -- they need merchant approval."""
-        write_tool = ALL_TOOLS.get("discount_create")
+        write_tool = self._resolve("discount_create")
         wrapped = wrap_tool_for_gateway(
             write_tool,
             company_id="test_co",
@@ -194,7 +197,7 @@ class TestSDKGatewayWrapping:
     async def test_read_tool_wrapped_executes_normally(self):
         """Read tools routed through gateway execute normally
         because approval_granted is True for read tools."""
-        read_tool = ALL_TOOLS.get("product_search")
+        read_tool = self._resolve("product_search")
         wrapped = wrap_tool_for_gateway(
             read_tool,
             company_id="test_co",

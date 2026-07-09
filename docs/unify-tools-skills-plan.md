@@ -262,35 +262,41 @@ for _name in WRITE_TOOL_NAMES:
 
 ---
 
-## Sprint 5: تنظيف وحذف ALL_TOOLS
+## Sprint 5: تنظيف وحذف ALL_TOOLS ✅
 
 **Goal**: إزالة `ALL_TOOLS` dict بالكامل — ولا import له
 **Risk**: Medium — أي import منسي في أي ملف يسبب runtime error
+**Status**: ✅ Completed 2026-07-09
 
-### Task 5.1: البحث عن ALL_TOOLS imports
+### Task 5.1: البحث عن ALL_TOOLS imports ✅
 
 - **Location**: كل الـ repo
 - **Description**: `grep -r "ALL_TOOLS" --include="*.py" apps/ai-service/`
 
-**Expected findings (بعد التنفيذ)**:
-- `/src/tools/registry.py` — التعريف نفسه + backward-compat layer
-- `/src/skills/registry.py` — ممكن reference
-- أي ملفات خارج الـ 3 الأساسيين (skills_pipeline, base, registry) لازم يتحدثوا
+**Result**: 0 matches في `src/`. تم تحديث ملفين في tests:
+- `tests/tools/test_registry.py` → يستخدم `get_skill_registry().resolve()`
+- `tests/test_progressive_exposure.py` → يستخدم `get_skill_registry().resolve()`
 
-### Task 5.2: إزالة `ALL_TOOLS` dict
+### Task 5.2: إزالة `ALL_TOOLS` dict ✅
 
-- **Location**: `apps/ai-service/src/tools/registry.py:48-52`
+- **Location**: `apps/ai-service/src/tools/registry.py`
 - **Description**: إزالة `ALL_TOOLS: dict[str, FunctionTool] = {}` وخط البناء
-- استبدال بـ SkillRegistry auto-registration
+- استبدال بـ `_registry.register_tool(_t)` مباشرة
 
-### Task 5.3: تحديث `get_all_tools()` في tools/registry.py
+### Task 5.3: تحديث backward-compat re-exports ✅
 
-- **Location**: `apps/ai-service/src/tools/registry.py:340-342`
-- **Description**: تغيير `list(ALL_TOOLS.values())` → `registry.get_all_tools()`
+- **Location**: `apps/ai-service/src/tools/registry.py`
+- **Description**: كل `ALL_TOOLS.get("...")` → `_registry.resolve("...")`
 
 **Acceptance Criteria**:
-- `get_all_tools()` يرجع نفس القائمة before/after
-- `from src.tools.registry import product_search_tool` يفضل شغال
+- ✅ `get_all_tools()` يرجع نفس القائمة (من SkillRegistry)
+- ✅ `from src.tools.registry import product_search_tool` يفضل شغال
+- ✅ صفر imports لـ `ALL_TOOLS` في كل src/
+
+### Task 5.4: تحديث Sprint 7 test files ✅
+
+- **Location**: `tests/pipeline/test_registry_integration.py`, `tests/agents/test_tool_resolution.py`
+- **Description**: استبدال `ALL_TOOLS` بـ SkillRegistry في comments (كانت مجرد تعليقات)
 
 ---
 

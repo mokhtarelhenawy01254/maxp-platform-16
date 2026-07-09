@@ -211,6 +211,22 @@ class GemmaClient:
             body["generationConfig"] = gen_config
         return body
 
+    async def generate(
+        self,
+        messages: list[Any],
+        tools: list[Any] | None = None,
+        temperature: float | None = None,
+        tool_choice: str | None = None,
+        **kwargs: Any,
+    ) -> GemmaResponse:
+        """Adapter for pipeline compatibility — delegates to get_response."""
+        options: dict[str, Any] = {}
+        if temperature is not None:
+            options["temperature"] = temperature
+        if tool_choice is not None:
+            options["tool_choice"] = tool_choice
+        return await self.get_response(messages, options=options, tools=tools)
+
     async def get_response(
         self,
         messages: list[Any],

@@ -4,7 +4,6 @@ import pytest
 from agent_framework import FunctionTool
 
 from src.tools.registry import (
-    ALL_TOOLS,
     CORE_TOOLS,
     READ_TOOLS,
     WRITE_TOOLS,
@@ -238,9 +237,15 @@ def test_helpers_executed_result():
     assert result["result"]["orderNumber"] == "ORD-1"
 
 
-def test_registry_has_42_tools():
-    """After auto-discovery, registry should find all 42 tools (including skill tools)."""
-    assert len(ALL_TOOLS) >= 35  # domain tools + skill tools + unlock
+def test_registry_has_all_tools():
+    """After auto-discovery, SkillRegistry should have all tools registered."""
+    from src.skills.registry import get_skill_registry
+    r = get_skill_registry()
+    tools = r.get_all_tools()
+    assert len(tools) >= 47  # domain tools + skill tools + unlock
+    names = {t.name for t in tools}
+    assert "product_search" in names
+    assert "order_lookup" in names
 
 
 def test_write_tool_approval_modes():
@@ -251,8 +256,10 @@ def test_write_tool_approval_modes():
 
 def test_direct_write_tools_dont_require_approval():
     """Direct write tools (order_create_confirmed) should never require approval."""
+    from src.skills.registry import get_skill_registry
     from src.tools.registry import DIRECT_WRITE_TOOL_NAMES
+    r = get_skill_registry()
     for name in DIRECT_WRITE_TOOL_NAMES:
-        tool = ALL_TOOLS.get(name)
+        tool = r.resolve(name)
         assert tool is not None, f"Direct write tool {name} should exist"
         assert tool.approval_mode == "never_require", f"{name} should not require approval"
