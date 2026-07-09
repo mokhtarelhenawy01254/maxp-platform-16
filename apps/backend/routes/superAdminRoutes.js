@@ -878,6 +878,47 @@ router.get("/global-search", superAdminController.globalSearch);
 // 📊 AI Company Consumption — aggregated AI usage per company
 const { calculateCost, MODEL_COSTS_PER_M } = require("../config/modelCosts");
 
+// AI Playground — proxied to Python ai-service
+router.post("/ai/playground/chat", checkPermission("canAccessSettings"), async (req, res) => {
+  try {
+    const result = await aiServiceAdminClient.playgroundChat(req.body);
+    return res.json({ success: result.success, data: result, message: result.error || undefined });
+  } catch (error) {
+    console.error("[SA] playground chat error:", error.message);
+    return res.status(502).json({ success: false, error: error.message });
+  }
+});
+router.get("/ai/playground/chat/stream", checkPermission("canAccessSettings"), async (req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  try {
+    const result = await aiServiceAdminClient.playgroundChat({
+      provider: req.query.provider,
+      model: req.query.model,
+      prompt: req.query.prompt,
+      systemPrompt: req.query.systemPrompt,
+      temperature: req.query.temperature,
+      maxTokens: req.query.maxTokens,
+    });
+    if (!result.success) {
+      res.write(`data: ${JSON.stringify({ error: result.error || "Playground request failed" })}\n\n`);
+      return res.end();
+    }
+    const reply = result.reply || "";
+    res.write(`data: ${JSON.stringify({ chunk: reply, reply })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true, latencyMs: result.latencyMs, provider: result.provider, model: result.model, finalChunk: "" })}\n\n`);
+    res.end();
+  } catch (error) {
+    console.error("[SA] playground stream error:", error.message);
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.end();
+  }
+});
+
 router.get("/ai/company-consumption", checkPermission("canViewReports"), async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();

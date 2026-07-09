@@ -321,6 +321,17 @@ async function updateGlobalFilterSettings(companyId, data) {
   return request('PUT', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`, data);
 }
 
+async function playgroundChat({ provider, model, prompt, systemPrompt, temperature, maxTokens }) {
+  return request('POST', '/admin/playground/chat', {
+    provider,
+    model: model || undefined,
+    prompt,
+    systemPrompt: systemPrompt || undefined,
+    temperature: temperature != null ? temperature : undefined,
+    maxTokens: maxTokens || undefined,
+  });
+}
+
 module.exports = {
   listTools,
   listSkills,
@@ -359,6 +370,7 @@ module.exports = {
   triggerKnowledgeEmbeddingSync,
   embedKnowledgeItem,
   deleteKnowledgeEmbeddingItem,
+  playgroundChat,
   getGuardrails,
   updateGuardrails,
   getAutoReply,
