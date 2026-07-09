@@ -395,7 +395,10 @@ class LLMClient:
             if self.provider in ("DEEPSEEK", "OPENAI"):
                 params.setdefault("additionalProperties", False)
                 tool_def["function"]["strict"] = True
-                params.setdefault("additionalProperties", False)
+            elif self.provider == "OLLAMA":
+                tool_def["function"].pop("strict", None)
+            else:
+                tool_def["function"]["strict"] = True
             sanitized.append(tool_def)
         return sanitized
 
