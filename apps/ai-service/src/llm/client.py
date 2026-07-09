@@ -392,7 +392,7 @@ class LLMClient:
                     "parameters": params,
                 },
             }
-            if self.provider in ("DEEPSEEK", "OPENAI"):
+            if self.provider in ("DEEPSEEK", "OPENAI", "OLLAMA"):
                 params.setdefault("additionalProperties", False)
                 tool_def["function"]["strict"] = True
             elif self.provider == "OLLAMA":
