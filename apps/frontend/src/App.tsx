@@ -92,6 +92,9 @@ const ProfitabilityEngine = React.lazy(
 const PricingStrategyCalculator = React.lazy(
   () => import("./pages/marketing/PricingStrategyCalculator"),
 );
+const AdBudgetPlanner = React.lazy(
+  () => import("./pages/marketing/AdBudgetPlanner"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2626,6 +2629,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <PricingStrategyCalculator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/ad-budget-planner"
+                  element={
+                    <Layout>
+                      <AdBudgetPlanner />
                     </Layout>
                   }
                 />
