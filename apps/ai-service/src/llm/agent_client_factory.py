@@ -162,9 +162,10 @@ async def build_agent_client_async(
 ) -> Any:
     if not model:
         raise ValueError("model is required for LLM client creation")
-    if is_gemma_model(model):
+    gemma_settings = getattr(settings, "google_api_key", "") or os.getenv("GOOGLE_API_KEY", "")
+    if is_gemma_model(model) and gemma_settings:
         gemma = build_gemma_client(
-            api_key=getattr(settings, "google_api_key", ""),
+            api_key=gemma_settings,
             model=model,
             tools=tools,
             system_prompt=system_prompt,
@@ -191,7 +192,7 @@ async def build_provider_client_async(
 ) -> Any:
     if not model:
         raise ValueError("model is required for LLM client creation")
-    if is_gemma_model(model):
+    if is_gemma_model(model) and provider_type.upper() in ("GOOGLE", "GEMINI"):
         settings = get_settings()
         gemma = build_gemma_client(
             api_key=settings.google_api_key,
