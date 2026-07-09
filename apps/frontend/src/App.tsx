@@ -98,6 +98,9 @@ const AdBudgetPlanner = React.lazy(
 const DiscountImpactCalculator = React.lazy(
   () => import("./pages/marketing/DiscountImpactCalculator"),
 );
+const ShippingOptimizer = React.lazy(
+  () => import("./pages/marketing/ShippingOptimizer"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2648,6 +2651,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <DiscountImpactCalculator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/shipping-optimizer"
+                  element={
+                    <Layout>
+                      <ShippingOptimizer />
                     </Layout>
                   }
                 />
