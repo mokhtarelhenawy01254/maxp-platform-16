@@ -318,13 +318,11 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     if tool_choice == "required" and provider == "DEEPSEEK":
         tool_choice = None
 
-    tool_choice = getattr(ctx.agent.config, "tool_choice", None) if ctx.agent and hasattr(ctx.agent, "config") else None
-    if tool_choice == "required" and client and getattr(client, "provider", None) == "DEEPSEEK":
-        tool_choice = None
+    temperature = 1.0 if provider == "OLLAMA" else 0.3
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
-        temperature=0.3,
+        temperature=temperature,
         tool_choice=tool_choice,
     )
 
@@ -379,10 +377,12 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
             if agent_tc:
                 tool_choice = agent_tc
 
+    provider = (getattr(client, "provider", None) or "").upper()
+    temperature = 1.0 if provider == "OLLAMA" else 0.3
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
-        temperature=0.3,
+        temperature=temperature,
         tool_choice=tool_choice or "auto",
     )
 
