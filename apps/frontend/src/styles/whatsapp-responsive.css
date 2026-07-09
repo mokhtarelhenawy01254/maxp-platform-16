@@ -193,7 +193,7 @@
 
 @container wa-messages (min-width: 1024px) {
   .wa-bubble {
-    max-width: 62%;
+    max-width: 55%;
   }
 }
 

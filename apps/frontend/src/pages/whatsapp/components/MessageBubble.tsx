@@ -100,35 +100,35 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         switch (message.messageType) {
           case "IMAGE":
             return (
-              <div className="space-y-3">
+              <div className="space-y-1.5">
                 <a href={fullMediaUrl} target="_blank" rel="noreferrer">
                   <img
                     src={fullMediaUrl}
                     alt="Message media"
                     loading="lazy"
-                    className="max-h-[14rem] max-w-full rounded-xl object-cover sm:max-h-[20rem]"
+                    className="max-h-[12rem] max-w-full rounded-lg object-cover sm:max-h-[18rem]"
                   />
                 </a>
                 {message.content ? (
                   <LinkifiedText
                     text={message.content}
-                    className="block whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]"
+                    className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
                   />
                 ) : null}
               </div>
             );
           case "VIDEO":
             return (
-              <div className="space-y-3">
+              <div className="space-y-1">
                 <video
                   src={fullMediaUrl}
                   controls
-                  className="max-h-[14rem] max-w-full rounded-xl sm:max-h-[20rem]"
+                  className="max-h-[12rem] max-w-full rounded-lg sm:max-h-[18rem]"
                 />
                 {message.content ? (
                   <LinkifiedText
                     text={message.content}
-                    className="block whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]"
+                    className="block whitespace-pre-wrap text-[13px] leading-[1.35] text-[color:var(--color-foreground)]"
                   />
                 ) : null}
               </div>
@@ -213,7 +213,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
           return (
             <LinkifiedText
               text={message.content}
-              className="block whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]"
+              className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
             />
           );
         }
@@ -244,7 +244,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
             {bodyContent ? (
               <LinkifiedText
                 text={bodyContent}
-                className="block whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]"
+                className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
               />
             ) : null}
           </div>
@@ -254,13 +254,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
       return (
         <LinkifiedText
           text={message.content}
-          className="block whitespace-pre-wrap text-[0.95rem] leading-7 text-[color:var(--color-foreground)]"
+          className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
         />
       );
     };
 
     return (
-      <div className="w-full px-2 py-1">
+      <div className="w-full px-2 py-0.5">
         {shouldShowDateSeparator(message, previousMessage) ? (
           <div className="mb-2 flex justify-center">
             <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-1 text-xs text-[color:var(--color-muted-foreground)] shadow-sm">
@@ -271,13 +271,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
 
         <div
           className={cn(
-            "flex w-full px-2",
+            "flex w-full px-1.5",
             message.fromMe ? "justify-end" : "justify-start",
           )}
         >
           <div
             className={cn(
-              "wa-bubble wa-bubble-enter min-w-[7rem] cursor-context-menu rounded-2xl px-3 py-2.5 shadow-sm sm:px-4 sm:py-3",
+              "wa-bubble wa-bubble-enter min-w-[5rem] cursor-context-menu rounded-xl px-2.5 py-1.5 shadow-sm sm:px-3 sm:py-2",
               "border border-transparent",
               message.fromMe
               ? "rounded-tr-[6px] bg-[var(--whatsapp-message-outgoing)] text-[var(--whatsapp-message-outgoing-text)]"
@@ -342,7 +342,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
 
             {renderMessageContent()}
 
-            <div className="mt-3 flex items-center justify-end gap-2">
+            <div className="mt-1 flex items-center justify-end gap-1.5">
               <span className="text-[11px] text-[color:var(--color-muted-foreground)]">
                 {format(new Date(message.timestamp), "HH:mm")}
               </span>
