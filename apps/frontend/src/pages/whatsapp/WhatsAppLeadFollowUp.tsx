@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle,
@@ -20,13 +20,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
-import { apiClient } from "../../services/apiClient";
-import { useCompanyConfig } from "../../hooks/useCompanyConfig";
+import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
 import { WhatsAppPageShell } from "./components/WhatsAppPageShell";
 
-const WhatsAppLeadFollowUp: React.FC = () => {
+const WhatsAppLeadFollowUp: React.FC<{
+  companyId?: string;
+}> = ({ companyId }) => {
   const { t } = useTranslation();
-  const { withCompanyConfig } = useCompanyConfig();
+  const withCompanyConfig = useCallback(
+    (config: ApiRequestConfig = {}) =>
+      companyId ? { ...config, _companyId: companyId } : config,
+    [companyId],
+  );
 
   const [settings, setSettings] = useState<{
     isEnabled: boolean;
