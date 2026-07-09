@@ -246,7 +246,7 @@ router.post('/sessions/:id/disconnect', verifyToken.authenticateToken, checkAppA
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب المحادثات
-router.get('/conversations', verifyToken.authenticateToken, whatsappController.getConversations);
+router.get('/conversations', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getConversations);
 
 // جلب رسائل محادثة
 router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getMessages);
@@ -490,8 +490,8 @@ router.post('/chats/unread', verifyToken.authenticateToken, checkAppAccess('what
 // حذف محادثة
 router.post('/chats/delete', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteChat);
 
-// حذف محادثات متعددة (بدون checkAppAccess للسماح بالحذف حتى مع الاشتراك المنتهي)
-router.post('/chats/delete-bulk', verifyToken.authenticateToken, whatsappController.deleteChatsBulk);
+// حذف محادثات متعددة
+router.post('/chats/delete-bulk', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.deleteChatsBulk);
 
 // مسح محتوى المحادثة
 router.post('/chats/clear', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.clearChat);
