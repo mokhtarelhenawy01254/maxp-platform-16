@@ -448,6 +448,9 @@ class LLMClient:
 
         raw_tool_calls = message.tool_calls or []
 
+        if raw_tool_calls:
+            logger.info("ollama_raw_tool_calls", raw=[tc.model_dump() if hasattr(tc, "model_dump") else tc for tc in raw_tool_calls])
+
         # DeepSeek sometimes returns tool calls as DSML text instead of structured JSON
         if not raw_tool_calls and text and (self.provider == "DEEPSEEK" or "deepseek" in self.model.lower() or "<" in text and "DSML" in text):
             dsml_calls = _parse_dsml_tool_calls(text)
