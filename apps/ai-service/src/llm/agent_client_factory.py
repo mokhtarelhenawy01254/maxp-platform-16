@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -9,6 +10,10 @@ from src.config import get_settings
 from src.llm.client import LLMClient
 from src.llm.gemma_chat_template import is_gemma_model
 from src.llm.gemma_client import build_gemma_client
+
+
+def _should_skip_gemma_client(settings: Any) -> bool:
+    return settings.use_tool_parser and not settings.use_legacy_gemma_client
 
 logger = structlog.get_logger(__name__)
 
@@ -129,7 +134,7 @@ def build_agent_client(
 ) -> Any:
     if not model:
         raise ValueError("model is required for LLM client creation")
-    if is_gemma_model(model):
+    if is_gemma_model(model) and not _should_skip_gemma_client(settings):
         gemma = build_gemma_client(
             api_key=getattr(settings, "google_api_key", ""),
             model=model,
@@ -163,7 +168,7 @@ async def build_agent_client_async(
     if not model:
         raise ValueError("model is required for LLM client creation")
     gemma_settings = getattr(settings, "google_api_key", "") or os.getenv("GOOGLE_API_KEY", "")
-    if is_gemma_model(model) and gemma_settings:
+    if is_gemma_model(model) and gemma_settings and not _should_skip_gemma_client(settings):
         gemma = build_gemma_client(
             api_key=gemma_settings,
             model=model,
@@ -194,15 +199,18 @@ async def build_provider_client_async(
         raise ValueError("model is required for LLM client creation")
     if is_gemma_model(model) and provider_type.upper() in ("GOOGLE", "GEMINI"):
         settings = get_settings()
-        gemma = build_gemma_client(
+        if _should_skip_gemma_client(settings):
+            pass
+        else:
+            gemma = build_gemma_client(
             api_key=settings.google_api_key,
             model=model,
             tools=tools,
             system_prompt=system_prompt,
         )
-        if gemma is not None:
-            logger.info("agent_client.provider_client", provider="gemma", model=model)
-            return gemma
+            if gemma is not None:
+                logger.info("agent_client.provider_client", provider="gemma", model=model)
+                return gemma
     client = await _resolve_and_build(model, company_id, preferred_provider=provider_type, key_id=key_id)
     if client is None:
         raise ValueError(f"Provider '{provider_type}' is not configured for model '{model}'")

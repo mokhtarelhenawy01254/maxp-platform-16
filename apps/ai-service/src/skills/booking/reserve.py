@@ -25,7 +25,7 @@ async def reserve_booking(params: BookingReserveInput) -> dict:
     return result
 
 booking_reserve = Skill(
-    name="booking_reserve",
+    name="booking_reserve_skill",
     description="Reserve a medical appointment or service booking. Use when customer wants to book a doctor, clinic appointment, or service.",
     input_schema=BookingReserveInput,
     handler=reserve_booking,

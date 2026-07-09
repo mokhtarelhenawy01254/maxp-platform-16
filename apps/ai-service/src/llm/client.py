@@ -13,127 +13,9 @@ from dataclasses import dataclass, field
 from src.config import get_settings
 from src.llm.model_capabilities import supports_vision
 from src.llm.tool_parsers import get_parser
+from src.llm.tool_parsers.deepseek_v4 import _parse_dsml_tool_calls  # noqa: F401
 
 logger = structlog.get_logger(__name__)
-
-# DeepSeek DSML tool-call format.
-# Standard XML format:
-# <｜DSML｜tool_calls>
-#     <｜DSML｜invoke name="TOOL_NAME">
-#         <｜DSML｜parameter name="PARAMETER_NAME" string="true|false">PARAMETER_VALUE</｜DSML｜parameter>
-#     </｜DSML｜invoke>
-# </｜DSML｜tool_calls>
-# Handles standard fullwidth ｜ (U+FF5C), regular | variants, and loose spaces.
-
-# Regex to capture invoke blocks. Handles varying spaces and pipe characters.
-_DSML_INVOKE_RE = re.compile(
-    r"<[｜| \t]*DSML[｜| \t]*invoke\s+name=(?P<quote>['\"])(?P<name>[a-zA-Z0-9_-]+)(?P=quote)[｜| \t]*>(?P<content>.*?)<[｜| \t/]*DSML[｜| \t]*invoke[｜| \t/]*>",
-    re.DOTALL
-)
-
-# Regex to capture parameters inside invoke block.
-_DSML_PARAM_RE = re.compile(
-    r"<[｜| \t]*DSML[｜| \t]*parameter\s+name=(?P<quote>['\"])(?P<param_name>[a-zA-Z0-9_-]+)(?P=quote)(?:\s+string=(?P<s_quote>['\"])(?P<is_string>true|false)(?P=s_quote))?[｜| \t]*>(?P<param_value>.*?)<[｜| \t/]*DSML[｜| \t]*parameter[｜| \t/]*>",
-    re.DOTALL
-)
-
-# Legacy JSON-in-DSML format fallback regex
-_DSML_JSON_RE = re.compile(
-    r"<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>(.*?)<[｜|]{1,2}DSML[｜|]{1,2}tool_calls>",
-    re.DOTALL,
-)
-
-
-def _parse_param_value(val_str: str, is_string: str | None) -> Any:
-    """Parse parameter value string into correct Python type."""
-    val_str = val_str.strip()
-    if is_string == "true":
-        return val_str
-    if is_string == "false":
-        if val_str.lower() == "true":
-            return True
-        if val_str.lower() == "false":
-            return False
-        if val_str.lower() in ("null", "none"):
-            return None
-        try:
-            if "." in val_str:
-                return float(val_str)
-            return int(val_str)
-        except ValueError:
-            return val_str
-            
-    # Auto-detect type if string attribute is missing
-    if val_str.lower() == "true":
-        return True
-    if val_str.lower() == "false":
-        return False
-    if val_str.lower() in ("null", "none"):
-        return None
-    try:
-        if "." in val_str:
-            return float(val_str)
-        return int(val_str)
-    except ValueError:
-        return val_str
-
-
-def _parse_dsml_tool_calls(text: str) -> list[dict]:
-    """Extract tool calls from DeepSeek DSML format (both XML-like and legacy JSON configurations)."""
-    # 1. Try parsing XML-like format first
-    xml_calls = []
-    for match in _DSML_INVOKE_RE.finditer(text):
-        name = match.group("name")
-        content = match.group("content")
-        
-        arguments = {}
-        for p_match in _DSML_PARAM_RE.finditer(content):
-            p_name = p_match.group("param_name")
-            p_val = p_match.group("param_value")
-            is_str = p_match.group("is_string")
-            arguments[p_name] = _parse_param_value(p_val, is_str)
-            
-        xml_calls.append({
-            "id": f"dsml_{uuid.uuid4().hex[:8]}",
-            "type": "function",
-            "function": {
-                "name": name,
-                "arguments": json.dumps(arguments, ensure_ascii=False)
-            }
-        })
-        
-    if xml_calls:
-        return xml_calls
-
-    # 2. Fallback to legacy JSON format
-    m = _DSML_JSON_RE.search(text)
-    if not m:
-        return []
-    try:
-        raw = json.loads(m.group(1).strip())
-        if not isinstance(raw, list):
-            return []
-        result = []
-        for item in raw:
-            if not isinstance(item, dict):
-                continue
-            func = item.get("function") or {}
-            if not func.get("name"):
-                continue
-            result.append({
-                "id": item.get("id") or f"dsml_{uuid.uuid4().hex[:8]}",
-                "type": "function",
-                "function": {
-                    "name": func.get("name", ""),
-                    "arguments": func.get("arguments") if isinstance(func.get("arguments"), str) else json.dumps(func.get("arguments") or {}, ensure_ascii=False) if func.get("arguments") is not None else "{}",
-                },
-            })
-        return result
-    except (json.JSONDecodeError, KeyError, TypeError):
-        return []
-
-
-
 
 @dataclass
 class ProviderResponse:
@@ -319,7 +201,7 @@ class LLMClient:
                 )
 
             if self.provider == "GOOGLE":
-                response = await self._generate_google(messages, tools, options)
+                response = await self._generate_google(messages, tools, options, parser=parser)
             else:
                 response = await self._generate_openai_compat(messages, tools, options)
 
@@ -489,8 +371,12 @@ class LLMClient:
             logger.info("ollama_raw_tool_calls", raw=[tc.model_dump() if hasattr(tc, "model_dump") else tc for tc in raw_tool_calls])
 
         # DeepSeek sometimes returns tool calls as DSML text instead of structured JSON
-        if not raw_tool_calls and text and (self.provider == "DEEPSEEK" or "deepseek" in self.model.lower() or "<" in text and "DSML" in text):
-            dsml_calls = _parse_dsml_tool_calls(text)
+        if not raw_tool_calls and text and (self.provider == "DEEPSEEK" or "deepseek" in self.model.lower() or ("<" in text and "DSML" in text)):
+            settings = get_settings()
+            if settings.use_tool_parser and not settings.use_legacy_dsml_parser:
+                dsml_calls = get_parser(self.model, self.provider).parse_calls(text)
+            else:
+                dsml_calls = _parse_dsml_tool_calls(text)
             if dsml_calls:
                 logger.info("dsml_tool_calls_parsed", count=len(dsml_calls))
                 raw_tool_calls = dsml_calls
@@ -697,6 +583,7 @@ class LLMClient:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None,
         options: dict[str, Any],
+        parser: Any = None,
     ) -> ProviderResponse:
         import google.genai as genai
         from google.genai import types
@@ -704,7 +591,16 @@ class LLMClient:
         client = genai.Client(api_key=self.api_key)
 
         system_instruction, contents = self._gemini_contents(messages)
-        gemini_tools = self._gemini_tools(tools) if tools else None
+
+        is_gemma4_parser = parser is not None and parser.model_key() == "gemma4"
+
+        if is_gemma4_parser and tools:
+            rendered = parser.render_tools(tools)
+            if rendered:
+                system_instruction = (system_instruction + "\n\n" + rendered) if system_instruction else rendered
+            gemini_tools = None
+        else:
+            gemini_tools = self._gemini_tools(tools) if tools else None
 
         config_kwargs: dict[str, Any] = {}
         if options.get("temperature") is not None:
@@ -739,7 +635,15 @@ class LLMClient:
         )
 
         raw = response.model_dump() if hasattr(response, "model_dump") else {}
-        return self._parse_gemini_response(raw)
+        result = self._parse_gemini_response(raw)
+
+        if is_gemma4_parser and not result.tool_calls and result.text:
+            tool_calls = parser.parse_calls(result.text)
+            if tool_calls:
+                result.tool_calls = tool_calls
+                result.text = ""
+
+        return result
 
 
 def genai_tools_from_dicts(tool_list: list[dict[str, Any]]) -> list[Any]:
