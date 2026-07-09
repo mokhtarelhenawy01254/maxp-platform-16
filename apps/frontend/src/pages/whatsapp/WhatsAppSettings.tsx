@@ -29,7 +29,6 @@ import {
   Users,
   Video,
   XCircle,
-  Zap,
   HelpCircle,
   Briefcase,
   Key,
@@ -412,11 +411,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const [sessions, setSessions] = useState<Session[]>([]);
   const [settings, setSettings] = useState<WorkspaceSettings | null>(null);
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
-  const [leadFollowUpSettings, setLeadFollowUpSettings] = useState<{
-    isEnabled: boolean;
-    delayHours: number;
-    message: string;
-  } | null>(null);
   const [businessProfile, setBusinessProfile] =
     useState<BusinessProfileState | null>(null);
   const [loadingBusiness, setLoadingBusiness] = useState(false);
@@ -594,12 +588,11 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [sessionsResponse, settingsResponse, quickRepliesResponse, leadFollowUpResponse] =
+      const [sessionsResponse, settingsResponse, quickRepliesResponse] =
         await Promise.allSettled([
           apiClient.get("/whatsapp/sessions", withCompanyConfig()),
           apiClient.get("/whatsapp/settings", withCompanyConfig()),
           apiClient.get("/whatsapp/quick-replies", withCompanyConfig()),
-          apiClient.get("/whatsapp/lead-followup/settings", withCompanyConfig()),
         ]);
 
       if (sessionsResponse.status === "fulfilled") {
@@ -630,12 +623,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           quickRepliesResponse.reason,
           t("whatsappSettings.dialogs.errorLoading"),
         );
-      }
-
-      if (leadFollowUpResponse.status === "fulfilled") {
-        setLeadFollowUpSettings(leadFollowUpResponse.value.data.data || null);
-      } else {
-        setLeadFollowUpSettings(null);
       }
     } finally {
       setLoading(false);
@@ -1088,9 +1075,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     try {
       setSaving(true);
       await apiClient.put("/whatsapp/settings", settings, withCompanyConfig());
-      if (leadFollowUpSettings) {
-        await apiClient.put("/whatsapp/lead-followup/settings", leadFollowUpSettings, withCompanyConfig());
-      }
       toast.success(t("whatsappSettings.dialogs.settingsSaved"));
     } catch (error) {
       showError(error, t("common.error"));
@@ -1659,73 +1643,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               </div>
             </div>
           </div>
-        </WhatsAppSurfaceCard>
-
-        <WhatsAppSurfaceCard
-          title="Lead Follow-up"
-          description="Auto-follow up with leads who message you on WhatsApp"
-        >
-          {leadFollowUpSettings ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-2xl bg-[color:var(--shell-control-bg)] px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-amber-500 text-white">
-                    <Zap className="size-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Enable Lead Follow-up</p>
-                    <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                      Automatically send a message to new leads
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={leadFollowUpSettings.isEnabled}
-                  onCheckedChange={(checked) =>
-                    setLeadFollowUpSettings((prev) =>
-                      prev ? { ...prev, isEnabled: checked } : prev,
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Delay (hours)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={168}
-                  value={leadFollowUpSettings.delayHours}
-                  onChange={(e) =>
-                    setLeadFollowUpSettings((prev) =>
-                      prev
-                        ? { ...prev, delayHours: Number(e.target.value) }
-                        : prev,
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Message</Label>
-                <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                  Available variables: {"{firstName}"}, {"{lastName}"}, {"{customerName}"}
-                </p>
-                <Textarea
-                  value={leadFollowUpSettings.message}
-                  onChange={(e) =>
-                    setLeadFollowUpSettings((prev) =>
-                      prev ? { ...prev, message: e.target.value } : prev,
-                    )
-                  }
-                  rows={4}
-                  placeholder="Hi {firstName}, thanks for reaching out! How can I help you today?"
-                />
-              </div>
-            </div>
-          ) : (
-            <Skeleton className="h-32 w-full rounded-2xl" />
-          )}
         </WhatsAppSurfaceCard>
 
         <Button
