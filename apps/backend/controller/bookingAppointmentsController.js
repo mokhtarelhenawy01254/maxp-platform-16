@@ -159,7 +159,9 @@ const createAppointment = async (req, res) => {
     let customerName = body.customerName || 'مريض';
     let appointmentDate = body.appointmentDate || new Date().toISOString().split('T')[0];
     let startTime = body.startTime || '00:00';
-    const { customerPhone, customerEmail, customerGender, branchId, doctorId, serviceId, serviceName, title, description, type, source, notes, paymentRequired } = body;
+    let { customerPhone, customerEmail, customerGender, branchId, doctorId, serviceId, serviceName, title, description, type, source, notes, paymentRequired } = body;
+    if (doctorId === '') doctorId = undefined;
+    if (serviceId === '') serviceId = undefined;
     if (!branchId) return res.status(400).json({ success: false, error: 'الفرع مطلوب' });
 
     // Verify branch and check gender day rules
