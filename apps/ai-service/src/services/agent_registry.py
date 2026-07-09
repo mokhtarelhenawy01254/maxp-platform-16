@@ -32,7 +32,7 @@ async def _resolve_agent_model(db_agent: Agent, session: AsyncSession) -> str | 
         try:
             template = await get_template(db_agent.template_slug, session)
             if template and template.model_policy:
-                return template.model_policy.get("default") or db_agent.model
+                return db_agent.model or template.model_policy.get("default")
         except Exception:
             logger.warning("template_resolve_failed", template_slug=db_agent.template_slug)
     return db_agent.model

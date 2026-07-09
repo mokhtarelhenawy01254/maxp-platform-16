@@ -114,3 +114,37 @@ async def test_ensure_client_all_fail() -> None:
         with pytest.raises(RuntimeError) as exc_info:
             await agent.ensure_client()
         assert "No LLM client available" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_resolve_agent_model_precedence() -> None:
+    """Test that _resolve_agent_model prioritizes the db_agent.model override over the template default."""
+    from src.services.agent_registry import _resolve_agent_model
+    from src.db.models.agent import Agent, AgentTemplate
+
+    db_agent = Agent(
+        id="agent_123",
+        template_slug="test-template",
+        model="company-override-model"
+    )
+
+    mock_template = AgentTemplate(
+        slug="test-template",
+        model_policy={"default": "template-default-model"}
+    )
+
+    # When template has a default model but db_agent overrides it
+    with patch("src.agents.loader.get_template", AsyncMock(return_value=mock_template)):
+        resolved = await _resolve_agent_model(db_agent, AsyncMock())
+        assert resolved == "company-override-model"
+
+    # When db_agent has NO model set, it should fall back to template default
+    db_agent_no_model = Agent(
+        id="agent_123",
+        template_slug="test-template",
+        model=None
+    )
+    with patch("src.agents.loader.get_template", AsyncMock(return_value=mock_template)):
+        resolved = await _resolve_agent_model(db_agent_no_model, AsyncMock())
+        assert resolved == "template-default-model"
+

@@ -1,5 +1,8 @@
 # Team Sync Updates
 
+## 2026-07-09 / 2026-03-09
+- **AI Agent Model Override Precedence (FIX)**: Fixed a bug where custom model configurations for specific company agents were ignored in favor of the template's default model policy. Flipped the resolution order in `agent_registry.py` to check `db_agent.model` first before falling back to `template.model_policy.get("default")`. Added corresponding unit tests in `test_model_resolution.py`.
+
 ## 2026-07-08 / 2026-03-09
 - **WhatsApp Voice Note Truncated to 1-Second / Silent Message (FIX)**: Fixed a critical bug where recorded WhatsApp voice notes were sent as empty/silent 1-second messages.
   1. **Frontend Stream Lifecycle Fix**: In `useAudioRecorder.ts`, moved track stopping logic from `stopRecording` into `onstop` and `onerror` handlers, preventing stream termination before the MediaRecorder completes encoding.

@@ -15,6 +15,7 @@ No API endpoints were modified or added, but:
 8. The backend sandbox chat endpoint `/api/v1/ai-sandbox/chat` (handled by `aiSandboxController.sendChatMessage` / `runSelectedAgentInPython`) was updated to map `compiled_system_prompt` from the Python response to `result.compiledSystemPrompt`, enabling system prompt visualization in the Sandbox UI.
 9. The backend endpoint `/api/v1/whatsapp/messages/upload-send` (handled by `whatsappRoutes.js`) was updated to support explicit `ptt` flag and override media classification to `'audio'` when file name is `'voice_note.webm'`, ensuring playable push-to-talk voice messages are delivered to WhatsApp.
 10. The backend endpoint `/api/v1/whatsapp/messages/upload-send` MIME types whitelist was expanded to support common browser/client recording formats (`audio/wav`, `audio/x-wav`, `audio/wave`, `audio/x-pn-wav`, `audio/x-m4a`, `audio/aac`, `audio/x-aac`, `application/zip`, `application/x-zip-compressed`, `application/rar`, `application/x-rar-compressed`, `application/octet-stream`), and detailed console error logging was added to Multer's `fileFilter` for rejections.
+11. The AI Service agent model resolution logic (`_resolve_agent_model` in `agent_registry.py`) was updated to prioritize the company-specific model override (`db_agent.model`) over the template's default model policy (`template.model_policy.get("default")`), ensuring company-level customizations are correctly respected.
 
 
 ### Database Schema Models

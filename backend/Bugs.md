@@ -1,5 +1,14 @@
 # Backend Bugs Log
 
+### [FIX] AI Agent Model Override Ignored Due to Template Precedence
+- **Date**: 2026-07-09
+- **Description**: Configuring a custom AI model for a specific company's agent (e.g., via the "Companies" tab in the Super Admin Template page) had no effect, and the agent continued using the template's default model.
+- **Root Cause**: In `apps/ai-service/src/services/agent_registry.py`, the helper `_resolve_agent_model` evaluated the template's default model policy first: `return template.model_policy.get("default") or db_agent.model`. Since the template almost always has a default model (e.g. `deepseek-v4-flash`), the custom override `db_agent.model` was never reached.
+- **Resolution**: Flipped the resolution order so that `db_agent.model` takes precedence over `template.model_policy.get("default")`: `return db_agent.model or template.model_policy.get("default")`. Added a unit test to verify precedence.
+- **Files Modified**:
+  - `apps/ai-service/src/services/agent_registry.py`
+  - `apps/ai-service/tests/unit/test_model_resolution.py`
+
 ### [FIX] WhatsApp Voice Note Truncated to 1-Second / Silent Message
 - **Date**: 2026-07-08
 - **Description**: Voice notes sent from the WhatsApp chat UI were delivered to customers as silent/empty messages with exactly a 1-second duration.
