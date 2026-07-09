@@ -555,7 +555,6 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/meta-templates', icon: GlobeAltIcon, label: t('sidebar.whatsappMetaTemplates') },
                 { to: '/whatsapp/template-broadcast', icon: MegaphoneIcon, label: t('sidebar.whatsappTemplateBroadcast') },
                 { to: '/whatsapp/analytics', icon: ChartBarIcon, label: t('sidebar.whatsappAnalytics') },
-                { to: '/whatsapp/lead-followup', icon: BoltIcon, label: t('sidebar.whatsappLeadFollowup') },
                 { to: '/whatsapp/customer-journey', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.whatsappCustomerJourney') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل

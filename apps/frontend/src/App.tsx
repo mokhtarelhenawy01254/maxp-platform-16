@@ -1130,9 +1130,6 @@ const WhatsAppMetaTemplates = React.lazy(
 const WhatsAppTemplateBroadcast = React.lazy(
   () => import("./pages/whatsapp/WhatsAppTemplateBroadcast"),
 );
-const WhatsAppLeadFollowUp = React.lazy(
-  () => import("./pages/whatsapp/WhatsAppLeadFollowUp"),
-);
 
 // HR Module
 const HRDashboard = React.lazy(() =>
@@ -5500,14 +5497,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppTemplateBroadcast />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/lead-followup"
-                  element={
-                    <Layout>
-                      <WhatsAppLeadFollowUp />
                     </Layout>
                   }
                 />

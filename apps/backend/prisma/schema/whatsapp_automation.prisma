@@ -26,52 +26,35 @@ model WhatsAppFollowUpStep {
   @@map("whatsapp_follow_up_steps")
 }
 
-model LeadFollowUpFlow {
-  id          String                  @id @default(cuid())
-  companyId   String
-  name        String
-  isEnabled   Boolean                 @default(true)
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
-  company     Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  steps       LeadFollowUpStep[]
-  enrollments LeadFollowUpEnrollment[]
-
-  @@map("lead_follow_up_flows")
-}
-
-model LeadFollowUpStep {
-  id          String            @id @default(cuid())
-  flowId      String
-  delayHours  Int               @default(24)
-  content     String            @db.Text
+model LeadFollowUpSettings {
+  id          String    @id @default(cuid())
+  companyId   String    @unique
+  isEnabled   Boolean   @default(false)
+  delayHours  Int       @default(24)
+  message     String    @db.Text
   mediaUrl    String?
-  stepOrder   Int               @default(1)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  flow        LeadFollowUpFlow  @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@map("lead_follow_up_steps")
+  @@map("lead_follow_up_settings")
 }
 
 model LeadFollowUpEnrollment {
-  id                String            @id @default(cuid())
+  id                String          @id @default(cuid())
   companyId         String
   customerId        String
   whatsappContactId String
-  flowId            String
-  currentStep       Int               @default(0) // 0=not started, 1=step1 sent, etc.
-  status            String            @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  status            String          @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
   nextSendAt        DateTime
   lastSentAt        DateTime?
-  firstMessageAt    DateTime          @default(now())
-  logs              String?           @db.Text
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer          Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  whatsAppContact   WhatsAppContact   @relation(fields: [whatsappContactId], references: [id], onDelete: Cascade)
-  flow              LeadFollowUpFlow  @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  firstMessageAt    DateTime        @default(now())
+  logs              String?         @db.Text
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer          Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  whatsAppContact   WhatsAppContact @relation(fields: [whatsappContactId], references: [id], onDelete: Cascade)
 
   @@index([companyId, status, nextSendAt])
   @@index([customerId])

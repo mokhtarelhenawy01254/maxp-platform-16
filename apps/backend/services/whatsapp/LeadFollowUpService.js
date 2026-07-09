@@ -10,17 +10,12 @@ class LeadFollowUpService {
         try {
             console.log(`[LEAD-FOLLOWUP] Attempting to enroll lead ${customerId} for company ${companyId}`);
 
-            const flow = await this.prisma.leadFollowUpFlow.findFirst({
-                where: { companyId, isEnabled: true },
-                include: {
-                    steps: {
-                        orderBy: { stepOrder: 'asc' }
-                    }
-                }
+            const settings = await this.prisma.leadFollowUpSettings.findUnique({
+                where: { companyId }
             });
 
-            if (!flow || flow.steps.length === 0) {
-                console.log(`[LEAD-FOLLOWUP] No active flow found for company ${companyId}`);
+            if (!settings || !settings.isEnabled || !settings.message) {
+                console.log(`[LEAD-FOLLOWUP] Lead follow-up not configured or disabled for company ${companyId}`);
                 return;
             }
 
@@ -28,7 +23,6 @@ class LeadFollowUpService {
                 where: {
                     companyId,
                     whatsappContactId,
-                    flowId: flow.id,
                     status: 'ACTIVE'
                 }
             });
@@ -38,24 +32,21 @@ class LeadFollowUpService {
                 return;
             }
 
-            const firstStep = flow.steps[0];
             const nextSendAt = new Date();
-            nextSendAt.setHours(nextSendAt.getHours() + firstStep.delayHours);
+            nextSendAt.setHours(nextSendAt.getHours() + settings.delayHours);
 
             await this.prisma.leadFollowUpEnrollment.create({
                 data: {
                     companyId,
                     customerId,
                     whatsappContactId,
-                    flowId: flow.id,
-                    currentStep: 0,
                     status: 'ACTIVE',
                     nextSendAt,
-                    logs: `Started lead follow-up: ${flow.name} at ${new Date().toISOString()}`
+                    logs: `Enrolled in lead follow-up at ${new Date().toISOString()}`
                 }
             });
 
-            console.log(`[LEAD-FOLLOWUP] Enrolled lead successfully in flow: ${flow.name}`);
+            console.log(`[LEAD-FOLLOWUP] Enrolled lead successfully`);
         } catch (error) {
             console.error('[LEAD-FOLLOWUP-ERROR] Enrollment failed:', error);
         }
@@ -71,10 +62,7 @@ class LeadFollowUpService {
                 },
                 include: {
                     customer: true,
-                    whatsAppContact: true,
-                    flow: {
-                        include: { steps: { orderBy: { stepOrder: 'asc' } } }
-                    }
+                    whatsAppContact: true
                 }
             });
 
@@ -83,26 +71,27 @@ class LeadFollowUpService {
             console.log(`[LEAD-FOLLOWUP] Processing ${enrollments.length} pending enrollments...`);
 
             for (const enrollment of enrollments) {
-                await this.sendNextStep(enrollment);
+                await this.sendFollowUp(enrollment);
             }
         } catch (error) {
             console.error('[LEAD-FOLLOWUP-ERROR] Processing enrollments failed:', error);
         }
     }
 
-    async sendNextStep(enrollment) {
-        const stepIndex = enrollment.currentStep;
-        const step = enrollment.flow.steps[stepIndex];
-
-        if (!step) {
-            await this.prisma.leadFollowUpEnrollment.update({
-                where: { id: enrollment.id },
-                data: { status: 'COMPLETED' }
-            });
-            return;
-        }
-
+    async sendFollowUp(enrollment) {
         try {
+            const settings = await this.prisma.leadFollowUpSettings.findUnique({
+                where: { companyId: enrollment.companyId }
+            });
+
+            if (!settings || !settings.isEnabled) {
+                await this.prisma.leadFollowUpEnrollment.update({
+                    where: { id: enrollment.id },
+                    data: { status: 'CANCELLED' }
+                });
+                return;
+            }
+
             const result = await WhatsAppNotificationService.sendNotification({
                 companyId: enrollment.companyId,
                 recipientPhone: enrollment.whatsAppContact.phoneNumber,
@@ -110,7 +99,7 @@ class LeadFollowUpService {
                 recipientType: 'CUSTOMER',
                 category: 'MARKETING',
                 eventType: 'LEAD_FOLLOWUP',
-                contentOverride: step.content,
+                contentOverride: settings.message,
                 variables: {
                     firstName: enrollment.customer.firstName || '',
                     lastName: enrollment.customer.lastName || '',
@@ -120,32 +109,17 @@ class LeadFollowUpService {
             });
 
             if (result.success) {
-                const nextStepIndex = stepIndex + 1;
-                const nextStep = enrollment.flow.steps[nextStepIndex];
-
-                const updateData = {
-                    currentStep: nextStepIndex,
-                    lastSentAt: new Date(),
-                    logs: (enrollment.logs || '') + `\nSent step ${stepIndex + 1} at ${new Date().toISOString()}`
-                };
-
-                if (!nextStep) {
-                    updateData.status = 'COMPLETED';
-                } else {
-                    const nextSendAt = new Date();
-                    nextSendAt.setHours(nextSendAt.getHours() + nextStep.delayHours);
-                    updateData.nextSendAt = nextSendAt;
-                }
-
                 await this.prisma.leadFollowUpEnrollment.update({
                     where: { id: enrollment.id },
-                    data: updateData
+                    data: {
+                        status: 'COMPLETED',
+                        lastSentAt: new Date(),
+                        logs: (enrollment.logs || '') + `\nSent follow-up at ${new Date().toISOString()}`
+                    }
                 });
-
-                console.log(`[LEAD-FOLLOWUP] Step ${stepIndex + 1} sent to ${enrollment.whatsAppContact.phone}`);
+                console.log(`[LEAD-FOLLOWUP] Follow-up sent to ${enrollment.whatsAppContact.phone}`);
             } else {
-                console.error(`[LEAD-FOLLOWUP] Failed to send step ${stepIndex + 1}:`, result.reason);
-
+                console.error(`[LEAD-FOLLOWUP] Failed to send follow-up:`, result.reason);
                 const retryAt = new Date();
                 retryAt.setHours(retryAt.getHours() + 1);
                 await this.prisma.leadFollowUpEnrollment.update({
@@ -168,18 +142,18 @@ class LeadFollowUpService {
                             companyId: enrollment.companyId,
                             userId: admin.userId,
                             title: 'فشل إرسال رسالة متابعة عميل محتمل',
-                            message: `فشل أو تأخر إرسال الخطوة رقم ${stepIndex + 1} للعميل ${enrollment.customer.firstName || ''}. سيتم المحاولة مرة أخرى.`,
+                            message: `فشل إرسال رسالة المتابعة للعميل ${enrollment.customer.firstName || ''}. سيتم المحاولة مرة أخرى.`,
                             type: 'SYSTEM',
                             data: { enrollmentId: enrollment.id, reason: result.reason }
                         }));
                         await this.prisma.notification.createMany({ data: notificationsData });
                     }
                 } catch(notifyErr) {
-                    console.error('[LEAD-FOLLOWUP] Failed to notify admins about step failure:', notifyErr.message);
+                    console.error('[LEAD-FOLLOWUP] Failed to notify admins:', notifyErr.message);
                 }
             }
         } catch (error) {
-            console.error('[LEAD-FOLLOWUP-ERROR] Failed to send step:', error);
+            console.error('[LEAD-FOLLOWUP-ERROR] Failed to send follow-up:', error);
         }
     }
 }
