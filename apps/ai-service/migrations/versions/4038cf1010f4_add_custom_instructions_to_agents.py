@@ -91,25 +91,26 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_ai_ai_agent_tasks_agent_id'), 'ai_agent_tasks', ['agent_id'], unique=False, schema='ai')
     op.create_index(op.f('ix_ai_ai_agent_tasks_company_id'), 'ai_agent_tasks', ['company_id'], unique=False, schema='ai')
-    op.create_table('ai_settings',
-    sa.Column('id', sa.String(), nullable=False),
-    sa.Column('companyId', sa.String(), nullable=False),
-    sa.Column('autoReplyEnabled', sa.Boolean(), nullable=False),
-    sa.Column('promptTemplate', sa.Text(), nullable=True),
-    sa.Column('responseRules', sa.Text(), nullable=True),
-    sa.Column('modelSettings', sa.Text(), nullable=True),
-    sa.Column('writeToolScopes', sa.Text(), nullable=True),
-    sa.Column('humanApprovalRequiredForWrite', sa.Boolean(), nullable=False),
-    sa.Column('maxRepliesPerCustomer', sa.Integer(), nullable=False),
-    sa.Column('autoFilterEnabled', sa.Boolean(), nullable=False),
-    sa.Column('negativeKeywords', sa.Text(), nullable=True),
-    sa.Column('negativeCommentAction', sa.String(), nullable=False),
-    sa.Column('createdAt', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updatedAt', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    schema='ai'
-    )
-    op.create_index(op.f('ix_ai_ai_settings_companyId'), 'ai_settings', ['companyId'], unique=True, schema='ai')
+    if not inspector.has_table('ai_settings', schema='ai'):
+        op.create_table('ai_settings',
+        sa.Column('id', sa.String(), nullable=False),
+        sa.Column('companyId', sa.String(), nullable=False),
+        sa.Column('autoReplyEnabled', sa.Boolean(), nullable=False),
+        sa.Column('promptTemplate', sa.Text(), nullable=True),
+        sa.Column('responseRules', sa.Text(), nullable=True),
+        sa.Column('modelSettings', sa.Text(), nullable=True),
+        sa.Column('writeToolScopes', sa.Text(), nullable=True),
+        sa.Column('humanApprovalRequiredForWrite', sa.Boolean(), nullable=False),
+        sa.Column('maxRepliesPerCustomer', sa.Integer(), nullable=False),
+        sa.Column('autoFilterEnabled', sa.Boolean(), nullable=False),
+        sa.Column('negativeKeywords', sa.Text(), nullable=True),
+        sa.Column('negativeCommentAction', sa.String(), nullable=False),
+        sa.Column('createdAt', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updatedAt', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        schema='ai'
+        )
+        op.create_index(op.f('ix_ai_ai_settings_companyId'), 'ai_settings', ['companyId'], unique=True, schema='ai')
     op.create_table('global_ai_config',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('default_provider', sa.String(length=50), nullable=True),
