@@ -1,12 +1,22 @@
 # Backend Bugs Log
 
-### [FIX] Ollama Gemma4 Model Routed to Google API Instead of Ollama
+### [FIX] AI Image Generator Layout Cramping, Dormant Aspect Preview, and Mobile CTA Hiding
 - **Date**: 2026-07-09
-- **Description**: Ollama-style Gemma models (e.g. `gemma4:31b-cloud`) were being routed to Google's Generative Language API instead of the Ollama provider, resulting in `404 Not Found` errors.
-- **Root Cause**: `is_gemma_model()` in `gemma_chat_template.py` matched any model name containing `gemma4`, including Ollama-format names with `:` tags.
-- **Resolution**: Added a guard in `is_gemma_model()` to return `False` for model names containing `:` (Ollama tag format), allowing them to fall through to the normal provider pipeline.
+- **Description**: The AI Image Generator page (`/admin/ai-image-generator`) had multiple layout, responsiveness, and control issues:
+  1. The 5 configuration tabs were cramped inside a narrow 380px column, making fields difficult to read.
+  2. The `AspectPreview` component was dormant and never rendered, leaving users without visual aspect ratio feedback.
+  3. On mobile viewports, the stacked column order pushed the prompt editor and the primary "Generate" button to the very bottom, forcing excessive scrolling.
+  4. The gallery cropped all generated images to squares, distorting 9:16 and 16:9 layouts.
+  5. There was no UI selector to choose between the 7 backend-supported image models.
+- **Root Cause**: Poor column balance, incomplete integration of preview components, missing model-policy mapping, and sub-optimal flex/grid layouts.
+- **Resolution**:
+  - Re-architected the layout to a balanced `grid-cols-12`, making the configuration panel span 7 columns and the preview/actions panel span 5 columns (sticky on large screens).
+  - Restructured the 5 tabs into a primary Core Details Card and 4 collapsible advanced panels to reduce cognitive load.
+  - Activated and enhanced `AspectPreview` to dynamically draw a live advertisement mockup reflecting brand colors, text, price, badge, and ratio selections in real-time.
+  - Implemented a model selector dropdown mapping backend image models (Gemini 3 Pro, Grok, GPT-5.4, DALL-E) to user-friendly Arabic descriptions.
+  - Placed the gallery as a full-width section at the bottom, added original aspect ratio badge indicators, and implemented a "Clone Settings" feature that applies metadata back to the form state.
 - **Files Modified**:
-  - `apps/ai-service/src/llm/gemma_chat_template.py`
+  - `apps/frontend/src/pages/admin/AIImageGenerator.tsx`
 
 ### [FIX] AI Agent Model Override Ignored Due to Template Precedence
 - **Date**: 2026-07-09

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  X,
   Sparkles,
   Loader2,
   Download,
@@ -31,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -244,9 +242,7 @@ const TEMPLATES: Record<string, Partial<FormData>> = {
   },
 };
 
-interface ModelConfigResponse {
-  model?: string;
-}
+// ModelConfigResponse removed — model selection is handled by the backend agent template.
 
 interface BrandIdentityResponse {
   brandName?: string;
@@ -398,43 +394,196 @@ function Field({
   );
 }
 
-function SectionHeader({
-  title,
-  description,
+
+
+function AspectPreview({
+  formData,
+  platformLabel,
 }: {
-  title: string;
-  description?: string;
+  formData: FormData;
+  platformLabel: string;
 }) {
+  const ratio = formData.aspectRatio;
+  let aspectVal = 1;
+  if (ratio.includes(":")) {
+    const parts = ratio.split(":").map(Number);
+    const w = parts[0];
+    const h = parts[1];
+    if (w !== undefined && h !== undefined && !isNaN(w) && !isNaN(h) && h !== 0) {
+      aspectVal = w / h;
+    }
+  } else {
+    const val = Number(ratio);
+    if (!isNaN(val)) aspectVal = val;
+  }
+
+  const radiusMap: Record<string, string> = {
+    none: "rounded-none",
+    subtle: "rounded-md",
+    rounded: "rounded-2xl",
+    pill: "rounded-[32px]",
+  };
+
+  const shadowMap: Record<string, string> = {
+    none: "shadow-none",
+    soft: "shadow-sm",
+    medium: "shadow-md",
+    hard: "shadow-lg",
+    glow: "shadow-[0_0_15px_rgba(56,189,248,0.25)]",
+  };
+
+  const positionMap: Record<string, string> = {
+    "top-left": "justify-start items-start text-left",
+    "top-center": "justify-start items-center text-center",
+    "top-right": "justify-start items-end text-right",
+    "center": "justify-center items-center text-center",
+    "bottom-left": "justify-end items-start text-left",
+    "bottom-center": "justify-end items-center text-center",
+    "bottom-right": "justify-end items-end text-right",
+  };
+
+  const alignmentClass =
+    formData.textAlignment === "left"
+      ? "text-left"
+      : formData.textAlignment === "right"
+      ? "text-right"
+      : "text-center";
+
   return (
-    <div className="space-y-1">
-      <h4 className="text-sm font-semibold text-foreground">{title}</h4>
-      {description ? (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      ) : null}
+    <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200/50 bg-slate-50/50 p-5 dark:border-slate-800/50 dark:bg-slate-900/50">
+      <div className="relative flex min-h-[240px] w-full items-center justify-center p-2">
+        <div
+          style={{
+            aspectRatio: aspectVal,
+            maxHeight: "260px",
+            maxWidth: "100%",
+            backgroundColor: formData.primaryColor || "#0f172a",
+            color: formData.secondaryColor || "#ffffff",
+          }}
+          className={`relative flex flex-col justify-between p-4 transition-all duration-300 w-full overflow-hidden border border-slate-200/20 dark:border-slate-800/20 ${
+            radiusMap[formData.borderRadius] || "rounded-xl"
+          } ${shadowMap[formData.shadow] || "shadow-md"}`}
+        >
+          <div
+            style={{ backgroundColor: formData.accentColor || "#38bdf8" }}
+            className="absolute -right-10 -top-10 size-28 rounded-full opacity-20 blur-xl"
+          />
+
+          <div className="flex items-center justify-between border-b border-white/10 pb-1.5 text-[10px] opacity-80">
+            <span className="font-bold tracking-wider">
+              {formData.brandName || "اسم العلامة"}
+            </span>
+            <span className="rounded bg-white/20 px-1.5 py-0.5 text-[8px] uppercase font-semibold">
+              {platformLabel}
+            </span>
+          </div>
+
+          <div
+            className={`flex flex-1 flex-col py-2 ${
+              positionMap[formData.textPosition] || "justify-center items-center text-center"
+            }`}
+          >
+            <div className={`space-y-1 w-full ${alignmentClass}`}>
+              {formData.discountBadge && (
+                <span
+                  style={{
+                    backgroundColor: formData.accentColor || "#38bdf8",
+                    color: formData.primaryColor || "#0f172a",
+                  }}
+                  className="inline-block rounded-full px-2 py-0.5 text-[9px] font-bold"
+                >
+                  {formData.discountBadge}
+                </span>
+              )}
+              <h5 className="text-xs font-bold leading-tight line-clamp-2">
+                {formData.headline || "العنوان الرئيسي للإعلان"}
+              </h5>
+              {formData.subheadline && (
+                <p className="text-[10px] leading-tight opacity-90 line-clamp-1">
+                  {formData.subheadline}
+                </p>
+              )}
+              {formData.productName && (
+                <div className="mt-1 flex items-center justify-center gap-1.5 text-[10px]">
+                  <span className="font-medium underline decoration-accent decoration-2">
+                    {formData.productName}
+                  </span>
+                  {formData.price && (
+                    <span className="rounded bg-black/30 px-1.5 py-0.5 font-bold text-accent">
+                      {formData.price} {formData.currency}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-1 flex items-center justify-between pt-1 text-[9px] opacity-90">
+            <span className="truncate text-[8px] text-white/50">{formData.tagline || ""}</span>
+            {(formData.cta || formData.customCta) && (
+              <span
+                style={{
+                  backgroundColor: formData.accentColor || "#38bdf8",
+                  color: formData.primaryColor || "#0f172a",
+                }}
+                className="rounded px-2.5 py-1 font-bold text-[9px] shadow-sm hover:scale-105 transition-transform"
+              >
+                {formData.cta === "custom" ? formData.customCta : formData.cta}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="w-full border-t border-slate-200/50 pt-2.5 text-center text-xs dark:border-slate-800/50">
+        <p className="font-medium text-slate-700 dark:text-slate-300">
+          معاينة المقاس: <span className="font-mono text-sky-600 dark:text-sky-400">{ratio}</span>
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-0.5">
+          الأبعاد التقريبية: {ASPECT_SIZES[ratio] || ""} بكسل
+        </p>
+      </div>
     </div>
   );
 }
 
-function AspectPreview({
-  ratio,
-  platformLabel,
+function CollapsibleSection({
+  title,
+  icon: Icon,
+  isOpen,
+  onToggle,
+  children,
 }: {
-  ratio: string;
-  platformLabel: string;
+  title: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
 }) {
-  const [w, h] = ratio.split(":").map(Number);
   return (
-    <div className="flex items-center gap-4">
-      <div className="w-40 rounded-xl border-2 border-dashed border-border bg-muted/40 p-1.5">
-        <div
-          style={{ aspectRatio: `${w}/${h}` }}
-          className="rounded-lg bg-gradient-to-br from-sky-100 to-sky-50 dark:from-sky-950 dark:to-slate-900"
-        />
-      </div>
-      <div className="space-y-0.5 text-sm">
-        <p className="font-semibold text-foreground">{ratio}</p>
-        <p className="text-muted-foreground">{ASPECT_SIZES[ratio] || ""}</p>
-        <p className="text-xs text-muted-foreground">مناسب لـ {platformLabel}</p>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 shadow-sm transition-all duration-300 dark:border-slate-800/60 dark:bg-slate-900/70">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-5 py-4 text-right transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400">
+            <Icon className="size-4.5" />
+          </div>
+          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{title}</span>
+        </div>
+        {isOpen ? (
+          <ChevronUp className="size-4 text-slate-400" />
+        ) : (
+          <ChevronDown className="size-4 text-slate-400" />
+        )}
+      </button>
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isOpen ? "max-h-[2000px] border-t border-slate-100 p-5 dark:border-slate-800/80" : "max-h-0"
+        }`}
+      >
+        {children}
       </div>
     </div>
   );
@@ -452,30 +601,55 @@ const AIImageGenerator: React.FC = () => {
   const [primaryImage, setPrimaryImage] = useState<File | null>(null);
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentityResponse>({});
-  const [agentModel, setAgentModel] = useState("google/gemini-3.1-flash-image");
+
 
   const [gallery, setGallery] = useState<any[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; url: string; filename: string }>({ open: false, url: "", filename: "" });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; url: string; filename: string }>({
+    open: false,
+    url: "",
+    filename: "",
+  });
   const [promptTouched, setPromptTouched] = useState(false);
   const [primaryImagePreview, setPrimaryImagePreview] = useState<string>("");
   const [referenceImagePreview, setReferenceImagePreview] = useState<string>("");
   const [galleryFilter, setGalleryFilter] = useState<string>("all");
   const [gallerySearch, setGallerySearch] = useState<string>("");
-  const [lastParams, setLastParams] = useState<{ prompt: string; model: string; aspectRatio: string; style?: string; quality?: number; productImage?: string; referenceImage?: string } | null>(null);
-  const [usage, setUsage] = useState<{ prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null>(null);
+  const [lastParams, setLastParams] = useState<{
+    prompt: string;
+    aspectRatio: string;
+    style?: string;
+    quality?: number;
+    productImage?: string;
+    referenceImage?: string;
+  } | null>(null);
+  const [usage, setUsage] = useState<{
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  } | null>(null);
+
+  const [openSections, setOpenSections] = useState<{
+    branding: boolean;
+    layout: boolean;
+    campaign: boolean;
+    output: boolean;
+  }>({
+    branding: false,
+    layout: false,
+    campaign: false,
+    output: false,
+  });
+
+  const toggleSection = (section: "branding" | "layout" | "campaign" | "output") => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const selectValue = <K extends keyof FormData>(key: K) => (value: string | null) => {
     if (value !== null) update(key, value as FormData[K]);
   };
 
   useEffect(() => {
-    apiClient
-      .get<ModelConfigResponse>("/ai-image/model-config")
-      .then((res) => {
-        if (res.data?.data?.model) setAgentModel(res.data.data.model);
-      })
-      .catch(() => {});
     apiClient
       .get<BrandIdentityResponse>("/settings/brand-identity")
       .then((res) => {
@@ -506,7 +680,37 @@ const AIImageGenerator: React.FC = () => {
     if (!promptTouched) {
       setForm((prev) => ({ ...prev, editablePrompt: buildPromptText() }));
     }
-  }, [form.platform, form.aspectRatio, form.brandName, form.primaryColor, form.secondaryColor, form.accentColor, form.headingFont, form.productName, form.tagline, form.description, form.price, form.currency, form.discountBadge, form.headline, form.subheadline, form.bodyText, form.cta, form.customCta, form.hashtags, form.textPosition, form.textAlignment, form.mood, form.theme, form.layout, form.borderRadius, form.shadow, form.purpose, form.urgency, primaryImage]);
+  }, [
+    form.platform,
+    form.aspectRatio,
+    form.brandName,
+    form.primaryColor,
+    form.secondaryColor,
+    form.accentColor,
+    form.headingFont,
+    form.productName,
+    form.tagline,
+    form.description,
+    form.price,
+    form.currency,
+    form.discountBadge,
+    form.headline,
+    form.subheadline,
+    form.bodyText,
+    form.cta,
+    form.customCta,
+    form.hashtags,
+    form.textPosition,
+    form.textAlignment,
+    form.mood,
+    form.theme,
+    form.layout,
+    form.borderRadius,
+    form.shadow,
+    form.purpose,
+    form.urgency,
+    primaryImage,
+  ]);
 
   useEffect(() => {
     if (!imageUrl) return;
@@ -515,7 +719,7 @@ const AIImageGenerator: React.FC = () => {
 
   const canGenerate = useMemo(
     () => Boolean(form.productName.trim() || form.headline.trim()),
-    [form.productName, form.headline],
+    [form.productName, form.headline]
   );
 
   const fetchGallery = async () => {
@@ -578,7 +782,7 @@ const AIImageGenerator: React.FC = () => {
 
   const platformLabel = useMemo(
     () => PLATFORMS.find((p) => p.value === form.platform)?.label || form.platform,
-    [form.platform],
+    [form.platform]
   );
 
   const buildPromptJson = () => {
@@ -608,7 +812,10 @@ const AIImageGenerator: React.FC = () => {
         bodyText: form.bodyText || undefined,
         cta: form.cta === "custom" ? form.customCta : form.cta || undefined,
         hashtags: form.hashtags
-          ? form.hashtags.split(",").map((h) => h.trim()).filter(Boolean)
+          ? form.hashtags
+              .split(",")
+              .map((h) => h.trim())
+              .filter(Boolean)
           : [],
         textPosition: form.textPosition,
         textAlignment: form.textAlignment,
@@ -645,7 +852,9 @@ const AIImageGenerator: React.FC = () => {
     if (form.brandName) parts.push(`Brand: ${form.brandName}.`);
     if (form.productName)
       parts.push(
-        `Product: ${form.productName}${form.tagline ? ` — ${form.tagline}` : ""}${form.price ? ` at ${form.price} ${form.currency}` : ""}.`,
+        `Product: ${form.productName}${form.tagline ? ` — ${form.tagline}` : ""}${
+          form.price ? ` at ${form.price} ${form.currency}` : ""
+        }.`
       );
     if (form.description) parts.push(`Description: ${form.description}.`);
     if (form.discountBadge) parts.push(`Show discount badge: ${form.discountBadge}.`);
@@ -653,8 +862,7 @@ const AIImageGenerator: React.FC = () => {
     if (form.headline) parts.push(`Headline: "${form.headline}".`);
     if (form.subheadline) parts.push(`Subheadline: "${form.subheadline}".`);
     if (form.bodyText) parts.push(`Body text: "${form.bodyText}".`);
-    if (form.cta)
-      parts.push(`Call to action: "${form.cta === "custom" ? form.customCta : form.cta}".`);
+    if (form.cta) parts.push(`Call to action: "${form.cta === "custom" ? form.customCta : form.cta}".`);
     if (form.hashtags) parts.push(`Hashtags: ${form.hashtags}.`);
     parts.push(`Text position: ${form.textPosition}, alignment: ${form.textAlignment}.`);
 
@@ -674,10 +882,10 @@ const AIImageGenerator: React.FC = () => {
     if (brandIdentity["visualGuidelines"]) parts.push(`Visual guidelines: ${brandIdentity["visualGuidelines"]}.`);
 
     parts.push(
-      "Design must be in Arabic, professional, suitable for social media, with clear typography and strong visual hierarchy.",
+      "Design must be in Arabic, professional, suitable for social media, with clear typography and strong visual hierarchy."
     );
     parts.push(
-      `Use brand colors: primary ${form.primaryColor}, secondary ${form.secondaryColor}, accent ${form.accentColor}.`,
+      `Use brand colors: primary ${form.primaryColor}, secondary ${form.secondaryColor}, accent ${form.accentColor}.`
     );
 
     if (form.avoidPrompt.trim()) {
@@ -706,12 +914,12 @@ const AIImageGenerator: React.FC = () => {
     setImageUrl("");
     setMessage(null);
 
-    const prompt = (promptTouched && form.editablePrompt.trim()) ? form.editablePrompt.trim() : buildPromptText();
+    const prompt =
+      promptTouched && form.editablePrompt.trim() ? form.editablePrompt.trim() : buildPromptText();
     const productImage = primaryImage ? await getBase64(primaryImage) : undefined;
     const referenceImageData = referenceImage ? await getBase64(referenceImage) : undefined;
-    const params: Record<string, any> = {
+    const params = {
       prompt,
-      model: agentModel,
       aspectRatio: form.aspectRatio,
       style: form.mood || form.theme || undefined,
       quality: form.quality,
@@ -721,10 +929,14 @@ const AIImageGenerator: React.FC = () => {
     setLastParams(params);
 
     try {
-      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", {
-        structured: buildPromptJson(),
-        ...params,
-      }, { timeout: 120000 });
+      const res = await apiClient.post<GenerateResponse>(
+        "/ai-image/generate",
+        {
+          structured: buildPromptJson(),
+          ...params,
+        },
+        { timeout: 120000 }
+      );
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
@@ -736,7 +948,11 @@ const AIImageGenerator: React.FC = () => {
         setMessage({ type: "error", text });
       }
     } catch (err: any) {
-      const text = err?.response?.data?.message || err?.response?.data?.data?.message || err.message || "فشل في توليد الصورة";
+      const text =
+        err?.response?.data?.message ||
+        err?.response?.data?.data?.message ||
+        err.message ||
+        "فشل في توليد الصورة";
       toast.error(text);
       setMessage({ type: "error", text });
     } finally {
@@ -772,13 +988,35 @@ const AIImageGenerator: React.FC = () => {
     if (!lastParams) return;
     setImageUrl("");
     setMessage(null);
-    setTimeout(() => handleGenerateFrom(lastParams.prompt, lastParams.model, lastParams.aspectRatio, lastParams.style, lastParams.quality, lastParams.productImage, lastParams.referenceImage), 100);
+    setTimeout(
+      () =>
+        handleGenerateFrom(
+          lastParams.prompt,
+          lastParams.aspectRatio,
+          lastParams.style,
+          lastParams.quality,
+          lastParams.productImage,
+          lastParams.referenceImage
+        ),
+      100
+    );
   };
 
-  const handleGenerateFrom = async (prompt: string, model: string, aspectRatio: string, style?: string, quality?: number, productImage?: string, referenceImage?: string) => {
+  const handleGenerateFrom = async (
+    prompt: string,
+    aspectRatio: string,
+    style?: string,
+    quality?: number,
+    productImage?: string,
+    referenceImage?: string
+  ) => {
     setLoading(true);
     try {
-      const res = await apiClient.post<GenerateResponse>("/ai-image/generate", { prompt, model, aspectRatio, style, quality, productImage, referenceImage }, { timeout: 120000 });
+      const res = await apiClient.post<GenerateResponse>(
+        "/ai-image/generate",
+        { prompt, aspectRatio, style, quality, productImage, referenceImage },
+        { timeout: 120000 }
+      );
       if (res.data?.data?.imageUrl) {
         setImageUrl(res.data.data.imageUrl);
         setUsage(res.data?.data?.usage || null);
@@ -790,7 +1028,11 @@ const AIImageGenerator: React.FC = () => {
         setMessage({ type: "error", text });
       }
     } catch (err: any) {
-      const text = err?.response?.data?.message || err?.response?.data?.data?.message || err.message || "فشل في توليد الصورة";
+      const text =
+        err?.response?.data?.message ||
+        err?.response?.data?.data?.message ||
+        err.message ||
+        "فشل في توليد الصورة";
       toast.error(text);
       setMessage({ type: "error", text });
     } finally {
@@ -825,10 +1067,29 @@ const AIImageGenerator: React.FC = () => {
 
   const formatDate = (date: string | Date) => {
     try {
-      return new Intl.DateTimeFormat("ar-SA", { dateStyle: "short", timeStyle: "short" }).format(new Date(date));
+      return new Intl.DateTimeFormat("ar-SA", { dateStyle: "short", timeStyle: "short" }).format(
+        new Date(date)
+      );
     } catch {
       return "";
     }
+  };
+
+  const handleApplySettings = (img: any) => {
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        platform: img.platform || prev.platform,
+        aspectRatio: img.aspectRatio || prev.aspectRatio,
+        purpose: img.purpose || prev.purpose,
+        editablePrompt: img.prompt || prev.editablePrompt,
+      };
+      saveDraft(next);
+      return next;
+    });
+
+    setPromptTouched(true);
+    toast.success("تم تطبيق إعدادات الصورة المحددة للنموذج والبرومبت");
   };
 
   const filteredGallery = useMemo(() => {
@@ -842,7 +1103,9 @@ const AIImageGenerator: React.FC = () => {
         img.purpose || "",
         img.aspectRatio || "",
         formatDate(img.createdAt),
-      ].join(" ").toLowerCase();
+      ]
+        .join(" ")
+        .toLowerCase();
       return hay.includes(q);
     });
   }, [gallery, galleryFilter, gallerySearch]);
@@ -856,156 +1119,81 @@ const AIImageGenerator: React.FC = () => {
       return next;
     });
     setPromptTouched(false);
-    setTimeout(() => setForm((prev) => {
-      const next = { ...prev, editablePrompt: buildPromptText() };
-      saveDraft(next);
-      return next;
-    }), 0);
+    setTimeout(
+      () =>
+        setForm((prev) => {
+          const next = { ...prev, editablePrompt: buildPromptText() };
+          saveDraft(next);
+          return next;
+        }),
+      0
+    );
   };
 
-  const inputCls = "bg-white dark:bg-gray-900";
+  const inputCls = "bg-white dark:bg-gray-900 border-slate-200 dark:border-slate-800 rounded-xl";
 
   return (
     <SettingsPageShell>
       <SettingsPageHero
         badgeIcon={Sparkles}
-        badgeLabel="AI"
+        badgeLabel="AI SOCIAL DESIGNER"
         title="مصمم صور السوشيال ميديا"
-        description="صمم صور احترافية ببيانات منتظمة — منغير ما تكتب برومبت خام"
+        description="أنشئ تصميمات إعلانية احترافية لمنتجاتك بهوية بصرية متكاملة — بالاعتماد على ذكاء النمذجة المنظمة دون الحاجة لصياغة برومبت معقد."
       />
 
-      <div className="px-5 pb-5 sm:px-6">
+      <div className="px-5 pb-6 sm:px-6 space-y-6">
         <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr]">
-          <div className="space-y-4">
-
-        {/* Platform */}
-        <div>
-          <Label className="mb-1.5 text-xs text-muted-foreground">المنصة</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {PLATFORMS.map((p) => (
+        {/* Quick Presets Section */}
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/40 p-4 dark:border-slate-800/40 dark:bg-slate-900/40">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">قوالب إعلانية جاهزة:</span>
+            {[
+              { key: "sale_promotion", label: "عرض / تخفيضات" },
+              { key: "new_product_launch", label: "إطلاق منتج جديد" },
+              { key: "brand_awareness", label: "تعريف بالعلامة" },
+              { key: "engagement", label: "تفاعل الجمهور" },
+            ].map((t) => (
               <button
-                key={p.value}
+                key={t.key}
                 type="button"
-                onClick={() => {
-                  update("platform", p.value);
-                  if (p.ratios.length > 0 && !p.ratios.includes(form.aspectRatio)) {
-                    update("aspectRatio", p.ratios[0] as FormData["aspectRatio"]);
-                  }
-                }}
-                className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
-                  form.platform === p.value
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-border text-muted-foreground hover:border-muted-foreground/30"
-                }`}
+                onClick={() => applyTemplate(t.key)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:border-sky-500 hover:bg-sky-50/30 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-300 dark:hover:border-sky-400 dark:hover:bg-sky-950/20 transition-all shadow-sm"
               >
-                {p.label}
+                <Sparkles className="size-3 text-sky-500" />
+                {t.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Aspect + Format + Transparent */}
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <Label className="mb-1 text-xs text-muted-foreground">نسبة الأبعاد</Label>
-            <Select value={form.aspectRatio} onValueChange={selectValue("aspectRatio")}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ASPECT_RATIOS.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-24">
-            <Label className="mb-1 text-xs text-muted-foreground">الصيغة</Label>
-            <Select value={form.format} onValueChange={(v) => {
-              if (v === null) return;
-              update("format", v);
-              if (v !== "png") update("transparentBg", false);
-            }}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="png">PNG</SelectItem>
-                <SelectItem value="jpg">JPG</SelectItem>
-                <SelectItem value="webp">WebP</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5 pb-1">
-            <Switch
-              checked={form.transparentBg}
-              onCheckedChange={(v) => update("transparentBg", v)}
-              disabled={form.format !== "png"}
-            />
-            <span className="text-xs text-muted-foreground">شفاف</span>
-          </div>
-        </div>
-
-        {/* Quality */}
-        <div>
-          <Label className="mb-1 text-xs text-muted-foreground">الجودة: {form.quality}%</Label>
-          <input
-            type="range"
-            min={60}
-            max={100}
-            value={form.quality}
-            onChange={(e) => update("quality", Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">قوالب سريعة:</span>
-          {[
-            { key: "sale_promotion", label: "عرض / خصم" },
-            { key: "new_product_launch", label: "إطلاق منتج" },
-            { key: "brand_awareness", label: "تعريف بالعلامة" },
-            { key: "engagement", label: "تفاعل" },
-          ].map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => applyTemplate(t.key)}
-              className="inline-flex items-center gap-1 rounded-full border bg-card px-3 py-1 text-xs font-medium text-foreground hover:border-primary hover:bg-primary/5"
-            >
-              <Sparkles className="size-3" />
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <Tabs defaultValue="product">
-          <TabsList variant="line" className="flex-wrap gap-0.5 text-xs">
-            <TabsTrigger value="product">المنتج</TabsTrigger>
-            <TabsTrigger value="brand">العلامة</TabsTrigger>
-            <TabsTrigger value="copy">النص</TabsTrigger>
-            <TabsTrigger value="style">التصميم</TabsTrigger>
-            <TabsTrigger value="campaign">الحملة</TabsTrigger>
-          </TabsList>
-
-
-
-          <TabsContent value="product">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>بيانات المنتج</CardTitle>
-                <CardDescription>صور المنتج وتفاصيله</CardDescription>
+        {/* Main Grid: Config (Right) & Live Preview (Left) */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          
+          {/* Right Column: Configuration Form (lg:col-span-7) */}
+          <div className="space-y-5 lg:col-span-7">
+            
+            {/* Core Product Information Card */}
+            <Card className="border-slate-200/60 shadow-sm rounded-2xl bg-white/90">
+              <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-sky-500" />
+                  بيانات المنتج والإعلان الأساسية
+                </CardTitle>
+                <CardDescription className="text-xs">المعلومات الضرورية التي ستبنى عليها الصورة</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="pt-4 space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="اسم المنتج" required hint="الاسم اللي هيظهر في الصورة">
+                  <Field label="اسم المنتج" required hint="الاسم الأساسي الذي سيظهر بالتصميم">
                     <Input
                       dir="auto"
-                      placeholder="شنطة جلدية فاخرة"
+                      placeholder="مثال: حقيبة جلدية كلاسيكية"
                       value={form.productName}
                       onChange={(e) => update("productName", e.target.value)}
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="السعر" hint="اتركه فاضي لو مش عايز تظهر السعر">
+                  <Field label="السعر والعملة" hint="اتركه فارغاً لإخفاء السعر">
                     <div className="flex gap-2">
                       <Input
                         placeholder="199"
@@ -1014,7 +1202,7 @@ const AIImageGenerator: React.FC = () => {
                         className={inputCls}
                       />
                       <Select value={form.currency} onValueChange={selectValue("currency")}>
-                        <SelectTrigger className="w-28 shrink-0">
+                        <SelectTrigger className="w-28 shrink-0 rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1029,20 +1217,52 @@ const AIImageGenerator: React.FC = () => {
                   </Field>
                 </div>
 
-                <Field label="شعار / Tagline" hint="جملة قصيرة توضح قيمة المنتج">
-                  <Input
-                    dir="auto"
-                    placeholder="فخامة تبدأ من هنا"
-                    value={form.tagline}
-                    onChange={(e) => update("tagline", e.target.value)}
-                    className={inputCls}
-                  />
-                </Field>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Field label="العنوان الرئيسي للإعلان" required hint="الجملة الأهم لجذب انتباه العميل">
+                    <Input
+                      dir="auto"
+                      placeholder="مثال: خصم 50% لفترة محدودة"
+                      value={form.headline}
+                      onChange={(e) => update("headline", e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="العنوان الفرعي" hint="تفاصيل داعمة للعنوان الرئيسي">
+                    <Input
+                      dir="auto"
+                      placeholder="مثال: التوصيل مجاني لكل مناطق المملكة"
+                      value={form.subheadline}
+                      onChange={(e) => update("subheadline", e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
 
-                <Field label="وصف المنتج">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Field label="شعار قصير / Tagline" hint="عبارة توضح قيمة المنتج الأساسية">
+                    <Input
+                      dir="auto"
+                      placeholder="مثال: الأناقة والجودة في تصميم واحد"
+                      value={form.tagline}
+                      onChange={(e) => update("tagline", e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="شارة الخصم" hint="مثال: 50% OFF أو عرض خاص">
+                    <Input
+                      dir="auto"
+                      placeholder="خصم 30%"
+                      value={form.discountBadge}
+                      onChange={(e) => update("discountBadge", e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+
+                <Field label="وصف المنتج التفصيلي" hint="وصف يوضح تفاصيل ومزايا الموديل المراد توليده">
                   <Textarea
                     dir="auto"
-                    placeholder="وصف مختصر للمنتج..."
+                    placeholder="حقيبة مصنوعة من الجلد الطبيعي المقاوم للماء بمقبض يدوي مريح..."
                     value={form.description}
                     onChange={(e) => update("description", e.target.value)}
                     rows={3}
@@ -1051,718 +1271,870 @@ const AIImageGenerator: React.FC = () => {
                 </Field>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="شارة تخفيض" hint="مثلاً: خصم 50%">
-                    <Input
-                      dir="auto"
-                      placeholder="50% OFF"
-                      value={form.discountBadge}
-                      onChange={(e) => update("discountBadge", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                  <Field label="صورة المنتج" hint="اختياري — الصورة هتساعد الموديل يحافظ على الشكل">
+                  <Field label="صورة المنتج (Reference Image)" hint="اختياري — ارفع صورة منتجك الحقيقي ليدمجها بالذكاء الاصطناعي">
                     {!primaryImagePreview ? (
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setPrimaryImageAndDraft(e.target.files?.[0] || null)}
-                        className={inputCls}
-                      />
+                      <div className="relative flex items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 p-2 dark:bg-slate-900/50">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setPrimaryImageAndDraft(e.target.files?.[0] || null)}
+                          className="opacity-0 absolute inset-0 cursor-pointer h-full w-full z-10"
+                        />
+                        <div className="text-center pointer-events-none py-1">
+                          <ImageIcon className="mx-auto size-5 text-slate-400 mb-1" />
+                          <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة المنتج</span>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="relative w-fit">
+                      <div className="relative flex items-center gap-3 rounded-xl border p-2 bg-slate-50 dark:bg-slate-900 w-fit">
                         <img
                           src={primaryImagePreview}
                           alt="Product preview"
-                          className="h-24 w-24 rounded-lg border object-cover"
+                          className="h-12 w-12 rounded-lg border object-cover bg-white"
                         />
+                        <div className="text-xs pr-1">
+                          <p className="font-semibold text-slate-700 dark:text-slate-300">تم اختيار صورة المنتج</p>
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryImageAndDraft(null)}
+                            className="text-red-500 hover:underline mt-0.5"
+                          >
+                            إزالة الصورة
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </Field>
+
+                  <Field label="نص إضافي قصير" hint="نص يظهر في زاوية أو هامش التصميم">
+                    <Input
+                      dir="auto"
+                      placeholder="متوفر الآن بألوان متعددة"
+                      value={form.bodyText}
+                      onChange={(e) => update("bodyText", e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Collapsible Advanced Panels */}
+            <div className="space-y-4">
+              
+              {/* Section 1: Brand & Identity */}
+              <CollapsibleSection
+                title="الهوية البصرية وألوان العلامة"
+                icon={Info}
+                isOpen={openSections.branding}
+                onToggle={() => toggleSection("branding")}
+              >
+                <div className="space-y-4 pt-1">
+                  {Object.keys(brandIdentity).length > 0 && (
+                    <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/40 px-3.5 py-2.5 text-xs text-emerald-800 dark:border-emerald-950/30 dark:bg-emerald-950/20 dark:text-emerald-400">
+                      <span className="flex size-2 rounded-full bg-emerald-500" />
+                      <span>تم استيراد ألوان وهوية العلامة التجارية تلقائياً من الإعدادات العامة.</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field label="اسم العلامة التجارية">
+                      <Input
+                        dir="auto"
+                        placeholder="متجر أزياء أونلاين"
+                        value={form.brandName}
+                        onChange={(e) => update("brandName", e.target.value)}
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label="الخط المستهدف">
+                      <Select value={form.headingFont} onValueChange={selectValue("headingFont")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FONTS.map((f) => (
+                            <SelectItem key={f} value={f}>
+                              {f}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <Label className="mb-2 block text-xs font-semibold text-slate-500">لوحة ألوان الهوية</Label>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <Field label="اللون الأساسي">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={form.primaryColor}
+                            onChange={(e) => update("primaryColor", e.target.value)}
+                            className="size-9 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent p-0.5"
+                          />
+                          <Input
+                            value={form.primaryColor}
+                            onChange={(e) => update("primaryColor", e.target.value)}
+                            className={`flex-1 font-mono text-xs ${inputCls} h-9`}
+                          />
+                        </div>
+                      </Field>
+                      <Field label="اللون الثانوي">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={form.secondaryColor}
+                            onChange={(e) => update("secondaryColor", e.target.value)}
+                            className="size-9 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent p-0.5"
+                          />
+                          <Input
+                            value={form.secondaryColor}
+                            onChange={(e) => update("secondaryColor", e.target.value)}
+                            className={`flex-1 font-mono text-xs ${inputCls} h-9`}
+                          />
+                        </div>
+                      </Field>
+                      <Field label="لون الإشارة / التوهج">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={form.accentColor}
+                            onChange={(e) => update("accentColor", e.target.value)}
+                            className="size-9 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent p-0.5"
+                          />
+                          <Input
+                            value={form.accentColor}
+                            onChange={(e) => update("accentColor", e.target.value)}
+                            className={`flex-1 font-mono text-xs ${inputCls} h-9`}
+                          />
+                        </div>
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              {/* Section 2: Layout & Aesthetics */}
+              <CollapsibleSection
+                title="تنسيق ومقاس الإعلان"
+                icon={Grid3X3}
+                isOpen={openSections.layout}
+                onToggle={() => toggleSection("layout")}
+              >
+                <div className="space-y-4 pt-1">
+                  {/* Platform selection */}
+                  <div>
+                    <Label className="mb-2 block text-xs font-semibold text-slate-500">المنصة الإعلانية المستهدفة</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {PLATFORMS.map((p) => (
                         <button
+                          key={p.value}
                           type="button"
-                          onClick={() => setPrimaryImageAndDraft(null)}
-                          className="absolute -right-2 -top-2 rounded-full border bg-background p-1 shadow-sm hover:bg-muted"
-                          title="إزالة الصورة"
+                          onClick={() => {
+                            update("platform", p.value);
+                            if (p.ratios.length > 0 && !p.ratios.includes(form.aspectRatio)) {
+                              update("aspectRatio", p.ratios[0] as FormData["aspectRatio"]);
+                            }
+                          }}
+                          className={`rounded-xl border px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm ${
+                            form.platform === p.value
+                              ? "border-sky-500 bg-sky-500/10 text-sky-600 dark:border-sky-400 dark:text-sky-400"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-gray-900 dark:text-slate-400"
+                          }`}
                         >
-                          <X className="size-3" />
+                          {p.label}
                         </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field label="نسبة أبعاد الصورة">
+                      <Select value={form.aspectRatio} onValueChange={selectValue("aspectRatio")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASPECT_RATIOS.map((r) => (
+                            <SelectItem key={r.value} value={r.value}>
+                              {r.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+
+                    <Field label="توزيع العناصر (Layout)">
+                      <Select value={form.layout} onValueChange={selectValue("layout")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="اختر التوزيع الافتراضي" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LAYOUTS.map((l) => (
+                            <SelectItem key={l.value} value={l.value}>
+                              {l.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <Field label="المود / الجو العام">
+                      <Select value={form.mood} onValueChange={selectValue("mood")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="اختر المود البصري" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MOODS.map((m) => (
+                            <SelectItem key={m.value} value={m.value}>
+                              {m.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="ثيم التصميم">
+                      <Select value={form.theme} onValueChange={selectValue("theme")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="اختر الثيم الفني" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {THEMES.map((t) => (
+                            <SelectItem key={t.value} value={t.value}>
+                              {t.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="دعوة للإجراء (CTA)">
+                      <Select value={form.cta} onValueChange={selectValue("cta")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="زر الإجراء" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CTAS.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+
+                  {form.cta === "custom" && (
+                    <Field label="نص الزر المخصص">
+                      <Input
+                        dir="auto"
+                        placeholder="مثال: خصم خاص لك"
+                        value={form.customCta}
+                        onChange={(e) => update("customCta", e.target.value)}
+                        className={inputCls}
+                      />
+                    </Field>
+                  )}
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field label="مكان تموضع النصوص">
+                      <Select value={form.textPosition} onValueChange={selectValue("textPosition")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TEXT_POSITIONS.map((p) => (
+                            <SelectItem key={p.value} value={p.value}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="محاذاة النصوص">
+                      <Select value={form.textAlignment} onValueChange={selectValue("textAlignment")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="right">يمين</SelectItem>
+                          <SelectItem value="center">منتصف</SelectItem>
+                          <SelectItem value="left">يسار</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <Field label="نمط الزوايا">
+                      <Select value={form.borderRadius} onValueChange={selectValue("borderRadius")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">حادة (لا توجد زوايا)</SelectItem>
+                          <SelectItem value="subtle">ناعمة قليلاً (Subtle)</SelectItem>
+                          <SelectItem value="rounded">دائرية مريحة (Rounded)</SelectItem>
+                          <SelectItem value="pill">بيضاوي كامل (Pill)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="نمط الظل البصري">
+                      <Select value={form.shadow} onValueChange={selectValue("shadow")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون ظل (Flat)</SelectItem>
+                          <SelectItem value="soft">ظل ناعم وخفيف</SelectItem>
+                          <SelectItem value="medium">ظل متوسط</SelectItem>
+                          <SelectItem value="hard">ظل حاد وبارز</SelectItem>
+                          <SelectItem value="glow">ظل متوهج مضيء</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              {/* Section 3: Campaign details */}
+              <CollapsibleSection
+                title="تفاصيل الحملة والتسويق"
+                icon={Sparkles}
+                isOpen={openSections.campaign}
+                onToggle={() => toggleSection("campaign")}
+              >
+                <div className="space-y-4 pt-1">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field label="الهدف الإعلاني للمنشور">
+                      <Select value={form.purpose} onValueChange={selectValue("purpose")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="اختر الهدف التسويقي" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PURPOSES.map((p) => (
+                            <SelectItem key={p.value} value={p.value}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="اسم الحملة التسويقية">
+                      <Input
+                        dir="auto"
+                        placeholder="مثال: حملة تخفيضات صيف 2026"
+                        value={form.campaignName}
+                        onChange={(e) => update("campaignName", e.target.value)}
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field label="عنصر الاستعجال الزمني">
+                      <Select value={form.urgency} onValueChange={selectValue("urgency")}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="نوع الاستعجال" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {URGENCIES.map((u) => (
+                            <SelectItem key={u.value} value={u.value}>
+                              {u.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="رابط الاستهداف (URL)">
+                      <Input
+                        dir="ltr"
+                        placeholder="https://example.com/promo"
+                        value={form.url}
+                        onChange={(e) => update("url", e.target.value)}
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+
+                  <Field label="الهاشتاجات المفضلة" hint="افصل بينها بفاصلة (,). ستظهر أسفل التصميم إن وجد متسع">
+                    <Input
+                      dir="auto"
+                      placeholder="موضة_شتاء, خصم_مميز, متجرنا"
+                      value={form.hashtags}
+                      onChange={(e) => update("hashtags", e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              </CollapsibleSection>
+
+              {/* Section 4: Advanced specifications */}
+              <CollapsibleSection
+                title="خيارات التوليد الفنية والتجنب"
+                icon={Wand2}
+                isOpen={openSections.output}
+                onToggle={() => toggleSection("output")}
+              >
+                <div className="space-y-4 pt-1">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 items-end">
+                    <div>
+                      <Label className="mb-2 block text-xs font-semibold text-slate-500">صيغة الصورة</Label>
+                      <Select
+                        value={form.format}
+                        onValueChange={(v) => {
+                          if (v === null) return;
+                          update("format", v);
+                          if (v !== "png") update("transparentBg", false);
+                        }}
+                      >
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="png">PNG</SelectItem>
+                          <SelectItem value="jpg">JPG</SelectItem>
+                          <SelectItem value="webp">WebP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="sm:px-3">
+                      <Label className="mb-2 block text-xs font-semibold text-slate-500">
+                        جودة الضغط: {form.quality}%
+                      </Label>
+                      <input
+                        type="range"
+                        min={60}
+                        max={100}
+                        value={form.quality}
+                        onChange={(e) => update("quality", Number(e.target.value))}
+                        className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2.5 pb-2">
+                      <Switch
+                        checked={form.transparentBg}
+                        onCheckedChange={(v) => update("transparentBg", v)}
+                        disabled={form.format !== "png"}
+                        id="transparent-switch"
+                      />
+                      <Label htmlFor="transparent-switch" className="text-xs font-semibold text-slate-600 cursor-pointer">
+                        خلفية شفافة (PNG فقط)
+                      </Label>
+                    </div>
+                  </div>
+
+                  <Field label="أشياء يفضل تجنبها بالرسم" hint="مثال: نصوص إنجليزية عشوائية، أشخاص مشوشين، إلخ.">
+                    <Textarea
+                      dir="auto"
+                      placeholder="كتابة نصوص غير مفهومة، أيدي مشوهة، خلفية فوضوية..."
+                      value={form.avoidPrompt}
+                      onChange={(e) => update("avoidPrompt", e.target.value)}
+                      rows={2}
+                      className={inputCls}
+                    />
+                  </Field>
+
+                  <Field label="صورة مرجعية للستايل (Style Reference)" hint="اختياري — ارفع صورة فنية ليحاكي الذكاء الاصطناعي ألوانها وتكوينها">
+                    {!referenceImagePreview ? (
+                      <div className="relative flex items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 p-3 dark:bg-slate-900/50">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setReferenceImageAndDraft(e.target.files?.[0] || null)}
+                          className="opacity-0 absolute inset-0 cursor-pointer h-full w-full z-10"
+                        />
+                        <div className="text-center pointer-events-none py-1">
+                          <Sparkles className="mx-auto size-5 text-slate-400 mb-1" />
+                          <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة ستايل مرجعية</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative flex items-center gap-3 rounded-xl border p-2 bg-slate-50 dark:bg-slate-900 w-fit">
+                        <img
+                          src={referenceImagePreview}
+                          alt="Style reference preview"
+                          className="h-12 w-12 rounded-lg border object-cover bg-white"
+                        />
+                        <div className="text-xs pr-1">
+                          <p className="font-semibold text-slate-700 dark:text-slate-300">تم اختيار الصورة المرجعية</p>
+                          <button
+                            type="button"
+                            onClick={() => setReferenceImageAndDraft(null)}
+                            className="text-red-500 hover:underline mt-0.5"
+                          >
+                            إزالة الصورة
+                          </button>
+                        </div>
                       </div>
                     )}
                   </Field>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </CollapsibleSection>
 
-          <TabsContent value="brand">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>الهوية البصرية</CardTitle>
-                <CardDescription>العلامة التجارية والألوان</CardDescription>
+            </div>
+
+          </div>
+
+          {/* Left Column: Sticky Control Panel & Image Output (lg:col-span-5) */}
+          <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
+            
+            {/* AI Control Card (Model selection + Prompt builder + Actions) */}
+            <Card className="border-sky-200/50 dark:border-sky-950/40 shadow-sm rounded-2xl bg-gradient-to-br from-white to-sky-50/10 dark:from-gray-900 dark:to-slate-950/20">
+              <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Wand2 className="size-4.5 text-sky-500" />
+                  مربع التحكم الذكي
+                </CardTitle>
+                <CardDescription className="text-xs">البرومبت المولد وإجراءات التوليد</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.keys(brandIdentity).length > 0 && (
-                  <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
-                    <Info className="size-4 shrink-0" />
-                    <span>تم استيراد ألوان وهوية العلامة التجارية تلقائياً</span>
+              <CardContent className="pt-4 space-y-4">
+
+                {/* Prompt Output View */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-slate-500">نص البرومبت الموجه للذكاء الاصطناعي</Label>
+                    <button
+                      type="button"
+                      onClick={() => setShowJson(!showJson)}
+                      className="text-xs text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                      {showJson ? "إخفاء JSON" : "عرض JSON"}
+                    </button>
+                  </div>
+                  <Textarea
+                    dir="auto"
+                    value={form.editablePrompt}
+                    onChange={(e) => {
+                      update("editablePrompt", e.target.value);
+                      setPromptTouched(true);
+                    }}
+                    rows={4}
+                    className={`${inputCls} text-xs leading-relaxed focus-visible:ring-sky-500`}
+                    placeholder="سيتم كتابة البرومبت ديناميكياً من الخيارات المدخلة..."
+                  />
+                  {showJson && (
+                    <pre className="max-h-48 overflow-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-[10px] font-mono dark:border-slate-800 dark:bg-gray-950/75">
+                      {JSON.stringify(buildPromptJson(), null, 2)}
+                    </pre>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={loading || !canGenerate}
+                    className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold gap-2 py-5 shadow-md shadow-sky-200 dark:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="size-4" />
+                    )}
+                    {loading ? "جاري التوليد..." : "توليد الصورة"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleReset}
+                    disabled={loading}
+                    className="rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 font-semibold gap-2 py-5"
+                  >
+                    <RotateCcw className="size-4" /> تصفير الحقول
+                  </Button>
+                </div>
+
+                {usage && (
+                  <div className="flex flex-wrap items-center justify-between rounded-xl border border-sky-100 bg-sky-50/20 px-3 py-2 text-[10px] text-slate-500 dark:border-slate-800 dark:bg-slate-950/20">
+                    <span className="font-bold text-slate-700 dark:text-slate-300">استخدام الـ Token:</span>
+                    <div className="flex gap-2 font-mono">
+                      <span>prompt: {usage.prompt_tokens?.toLocaleString()}</span>
+                      <span>completion: {usage.completion_tokens?.toLocaleString()}</span>
+                      <span className="font-bold text-sky-600 dark:text-sky-400">
+                        الإجمالي: {usage.total_tokens?.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="اسم العلامة التجارية">
-                    <Input
-                      dir="auto"
-                      placeholder="متجر أزياء أونلاين"
-                      value={form.brandName}
-                      onChange={(e) => update("brandName", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                  <Field label="الخط الرئيسي">
-                    <Select value={form.headingFont} onValueChange={selectValue("headingFont")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FONTS.map((f) => (
-                          <SelectItem key={f} value={f}>
-                            {f}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-
-                <SectionHeader
-                  title="ألوان العلامة"
-                  description="الألوان الأساسية اللي هيتم بناء التصميم عليها"
-                />
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <Field label="اللون الأساسي">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={form.primaryColor}
-                        onChange={(e) => update("primaryColor", e.target.value)}
-                        className="size-10 cursor-pointer rounded-lg border"
-                      />
-                      <Input
-                        value={form.primaryColor}
-                        onChange={(e) => update("primaryColor", e.target.value)}
-                        className={`flex-1 font-mono text-xs ${inputCls}`}
-                      />
-                    </div>
-                  </Field>
-                  <Field label="اللون الثانوي">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={form.secondaryColor}
-                        onChange={(e) => update("secondaryColor", e.target.value)}
-                        className="size-10 cursor-pointer rounded-lg border"
-                      />
-                      <Input
-                        value={form.secondaryColor}
-                        onChange={(e) => update("secondaryColor", e.target.value)}
-                        className={`flex-1 font-mono text-xs ${inputCls}`}
-                      />
-                    </div>
-                  </Field>
-                  <Field label="لون الإشارة">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={form.accentColor}
-                        onChange={(e) => update("accentColor", e.target.value)}
-                        className="size-10 cursor-pointer rounded-lg border"
-                      />
-                      <Input
-                        value={form.accentColor}
-                        onChange={(e) => update("accentColor", e.target.value)}
-                        className={`flex-1 font-mono text-xs ${inputCls}`}
-                      />
-                    </div>
-                  </Field>
-                </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="copy">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>النص والرسالة</CardTitle>
-                <CardDescription>العنوان، دعوة الإجراء، الهاشتاجات</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Field label="العنوان الرئيسي" required hint="الجملة الأهم اللي بتجذب الانتباه">
-                  <Input
-                    dir="auto"
-                    placeholder="أجمل تشكيلة شتوية"
-                    value={form.headline}
-                    onChange={(e) => update("headline", e.target.value)}
-                    className={inputCls}
-                  />
-                </Field>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="عنوان فرعي" hint="تفاصيل إضافية أو عرض">
-                    <Input
-                      dir="auto"
-                      placeholder="تسوق الآن ووفر 50%"
-                      value={form.subheadline}
-                      onChange={(e) => update("subheadline", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                  <Field label="دعوة للإجراء (CTA)">
-                    <Select value={form.cta} onValueChange={selectValue("cta")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر CTA" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CTAS.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-
-                {form.cta === "custom" && (
-                  <Field label="CTA مخصص">
-                    <Input
-                      dir="auto"
-                      placeholder="ادخل النص..."
-                      value={form.customCta}
-                      onChange={(e) => update("customCta", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
+            {/* Output Visualizer Card (Generated image OR Mockup Preview) */}
+            <Card className="border-slate-200/60 shadow-sm rounded-2xl bg-white/90 overflow-hidden">
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">المعاينة وتفاصيل الإخراج</span>
+                {imageUrl && !loading && (
+                  <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    جاهز للتحميل
+                  </span>
                 )}
-
-                <Field label="نص إضافي">
-                  <Textarea
-                    dir="auto"
-                    placeholder="نص قصير يظهر في الصورة..."
-                    value={form.bodyText}
-                    onChange={(e) => update("bodyText", e.target.value)}
-                    rows={2}
-                    className={inputCls}
-                  />
-                </Field>
-
-                <Field label="هاشتاجات (مفصولة بفاصلة)">
-                  <Input
-                    dir="auto"
-                    placeholder="موضة, تخفيضات, تسوق"
-                    value={form.hashtags}
-                    onChange={(e) => update("hashtags", e.target.value)}
-                    className={inputCls}
-                  />
-                </Field>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="مكان النص">
-                    <Select value={form.textPosition} onValueChange={selectValue("textPosition")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TEXT_POSITIONS.map((p) => (
-                          <SelectItem key={p.value} value={p.value}>
-                            {p.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="محاذاة النص">
-                    <Select value={form.textAlignment} onValueChange={selectValue("textAlignment")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="right">يمين</SelectItem>
-                        <SelectItem value="center">وسط</SelectItem>
-                        <SelectItem value="left">يسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="style">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>التصميم البصري</CardTitle>
-                <CardDescription>المود، الثيم، والـ Layout</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="المود / الجو العام">
-                    <Select value={form.mood} onValueChange={selectValue("mood")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر المود" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MOODS.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>
-                            {m.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="الثيم">
-                    <Select value={form.theme} onValueChange={selectValue("theme")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر الثيم" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {THEMES.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-
-                <Field label="ما يجب تجنبه في الصورة" hint="مثلاً: أشخاص، نصوص إنجليزية، خلفيات مشوشة">
-                  <Textarea
-                    dir="auto"
-                    placeholder="اكتب كل ما لا تريد ظهوره..."
-                    value={form.avoidPrompt}
-                    onChange={(e) => update("avoidPrompt", e.target.value)}
-                    rows={2}
-                    className={inputCls}
-                  />
-                </Field>
-
-                <Field label="صورة مرجعية / Style Reference" hint="اختياري — ارفع صورة عشان الموديل يقلد الستايل والألوان">
-                  {!referenceImagePreview ? (
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setReferenceImageAndDraft(e.target.files?.[0] || null)}
-                      className={inputCls}
-                    />
-                  ) : (
-                    <div className="relative w-fit">
+              </div>
+              <div className="p-5" id="ai-generated-result">
+                
+                {loading ? (
+                  <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-sky-100 bg-sky-50/5 dark:border-slate-800 dark:bg-slate-950/10 p-6 text-center animate-pulse">
+                    <Loader2 className="size-10 animate-spin text-sky-500" />
+                    <p className="mt-3.5 text-sm font-semibold text-slate-700 dark:text-slate-300">جاري إطلاق الذكاء الاصطناعي لتوليد إعلانك...</p>
+                    <p className="mt-1 text-xs text-slate-400">قد يستغرق ذلك ما بين 10 إلى 40 ثانية طبقاً للموديل</p>
+                  </div>
+                ) : imageUrl ? (
+                  <div className="space-y-4">
+                    <div className="relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-gray-900 shadow-inner flex items-center justify-center p-2">
                       <img
-                        src={referenceImagePreview}
-                        alt="Style reference preview"
-                        className="h-24 w-24 rounded-lg border object-cover"
+                        src={imageUrl}
+                        alt="AI generated social post"
+                        className="max-h-[380px] w-full rounded-xl object-contain bg-white dark:bg-gray-900 shadow-sm transition-transform duration-300 group-hover:scale-[1.01]"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setReferenceImageAndDraft(null)}
-                        className="absolute -right-2 -top-2 rounded-full border bg-background p-1 shadow-sm hover:bg-muted"
-                        title="إزالة الصورة"
-                      >
-                        <X className="size-3" />
-                      </button>
                     </div>
-                  )}
-                </Field>
-
-                <Field label="الـ Layout">
-                  <Select value={form.layout} onValueChange={selectValue("layout")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر التوزيع" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LAYOUTS.map((l) => (
-                        <SelectItem key={l.value} value={l.value}>
-                          {l.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="الزوايا">
-                    <Select value={form.borderRadius} onValueChange={selectValue("borderRadius")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">حادة</SelectItem>
-                        <SelectItem value="subtle">ناعمة قليلاً</SelectItem>
-                        <SelectItem value="rounded">مدورة</SelectItem>
-                        <SelectItem value="pill">دائرية</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="الظل">
-                    <Select value={form.shadow} onValueChange={selectValue("shadow")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">بدون</SelectItem>
-                        <SelectItem value="soft">خفيف</SelectItem>
-                        <SelectItem value="medium">متوسط</SelectItem>
-                        <SelectItem value="hard">قوي</SelectItem>
-                        <SelectItem value="glow">توهج</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="campaign">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>الحملة</CardTitle>
-                <CardDescription>الهدف، الاستعجال، الرابط</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="الهدف من الصورة">
-                    <Select value={form.purpose} onValueChange={selectValue("purpose")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر الهدف" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PURPOSES.map((p) => (
-                          <SelectItem key={p.value} value={p.value}>
-                            {p.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="اسم الحملة">
-                    <Input
-                      dir="auto"
-                      placeholder="مثلاً: حملة الشتاء 2026"
-                      value={form.campaignName}
-                      onChange={(e) => update("campaignName", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="الاستعجال">
-                    <Select value={form.urgency} onValueChange={selectValue("urgency")}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {URGENCIES.map((u) => (
-                          <SelectItem key={u.value} value={u.value}>
-                            {u.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="الرابط">
-                    <Input
-                      dir="ltr"
-                      placeholder="https://example.com"
-                      value={form.url}
-                      onChange={(e) => update("url", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-
-        </Tabs>
-          </div>
-
-          <div className="space-y-6">
-
-        {/* Generate bar */}
-        <div className="flex items-start gap-3">
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">البرومبت</Label>
-              <button
-                type="button"
-                onClick={() => setShowJson(!showJson)}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-              >
-                {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-                {showJson ? "إخفاء JSON" : "عرض JSON"}
-              </button>
-            </div>
-            <Textarea
-              dir="auto"
-              value={form.editablePrompt}
-              onChange={(e) => {
-                update("editablePrompt", e.target.value);
-                setPromptTouched(true);
-              }}
-              rows={2}
-              className={inputCls}
-              placeholder="البرومبت هيتولد تلقائياً من البيانات..."
-            />
-            {showJson && (
-              <pre className="max-h-48 overflow-auto rounded-lg border bg-slate-50 p-3 text-xs dark:bg-gray-950">
-                {JSON.stringify(buildPromptJson(), null, 2)}
-              </pre>
-            )}
-          </div>
-          <div className="flex shrink-0 flex-col gap-2 pt-5">
-            <Button
-              size="default"
-              className="gap-2"
-              onClick={handleGenerate}
-              disabled={loading || !canGenerate}
-              title={!canGenerate ? "اكتب اسم المنتج أو عنوان رئيسي أولاً" : undefined}
-            >
-              {loading ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Wand2 className="size-4" />
-              )}
-              {loading ? "جاري..." : "توليد"}
-            </Button>
-            <Button
-              variant="outline"
-              size="default"
-              className="gap-2"
-              onClick={handleReset}
-              disabled={loading}
-            >
-              <RotateCcw className="size-4" /> تصفير
-            </Button>
-          </div>
-        </div>
-
-        {usage && (
-          <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">استخدام الموديل:</span>
-            {usage.prompt_tokens !== undefined && <span>prompt: {usage.prompt_tokens.toLocaleString()}</span>}
-            {usage.completion_tokens !== undefined && <span>completion: {usage.completion_tokens.toLocaleString()}</span>}
-            {usage.total_tokens !== undefined && <span className="font-semibold">الإجمالي: {usage.total_tokens.toLocaleString()} token</span>}
-          </div>
-        )}
-
-        <div id="ai-generated-result">
-          {loading ? (
-            <div className="flex min-h-[400px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
-              <div className="text-center">
-                <Loader2 className="mx-auto size-10 animate-spin text-sky-600" />
-                <p className="mt-3 text-sm text-slate-500">جاري توليد الصورة...</p>
-              </div>
-            </div>
-          ) : imageUrl ? (
-            <div className="space-y-4">
-              <div className="overflow-hidden rounded-xl border bg-slate-50 dark:bg-gray-900">
-                <img
-                  src={imageUrl}
-                  alt="Generated"
-                  className="mx-auto max-h-[500px] w-full object-contain"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-2" onClick={handleDownload}>
-                  <Download className="size-4" /> تحميل
-                </Button>
-                <Button variant="outline" className="gap-2" onClick={handleCopyUrl}>
-                  <Copy className="size-4" /> نسخ الرابط
-                </Button>
-                <Button variant="outline" className="gap-2" onClick={handleOpenTab}>
-                  <ExternalLink className="size-4" /> فتح في تبويب
-                </Button>
-                {lastParams && (
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={handleRegenerate}
-                    disabled={loading}
-                  >
-                    <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> توليد مماثل
-                  </Button>
+                    
+                    {/* Image Actions Toolbar */}
+                    <div className="flex flex-wrap gap-2 justify-center border-t border-slate-100 pt-3 dark:border-slate-800">
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs" onClick={handleDownload}>
+                        <Download className="size-3.5" /> تحميل
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs" onClick={handleCopyUrl}>
+                        <Copy className="size-3.5" /> نسخ الرابط
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs" onClick={handleOpenTab}>
+                        <ExternalLink className="size-3.5" /> فتح بتبويب جديد
+                      </Button>
+                      {lastParams && (
+                        <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs text-sky-600 dark:text-sky-400" onClick={handleRegenerate}>
+                          <RefreshCw className="size-3.5" /> توليد مماثل
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 rounded-xl text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        onClick={() => setImageUrl("")}
+                      >
+                        <Trash2 className="size-3.5" /> مسح المعاينة
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Live Dynamic Aspect Preview
+                  <AspectPreview formData={form} platformLabel={platformLabel} />
                 )}
-                <Button
-                  variant="ghost"
-                  className="gap-2 text-red-500"
-                  onClick={() => setImageUrl("")}
-                >
-                  <Trash2 className="size-4" /> مسح
-                </Button>
+
               </div>
-            </div>
-          ) : (
-            <div className="flex min-h-[300px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
-              <div className="text-center text-slate-400">
-                <ImageIcon className="mx-auto size-16" />
-                <p className="mt-3 text-sm">الصورة هتظهر هنا بعد التوليد</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  المقاس الحالي: {form.aspectRatio} · {ASPECT_SIZES[form.aspectRatio] || ""}
-                </p>
-              </div>
-            </div>
-          )}
+            </Card>
+
+          </div>
+
         </div>
 
-        <div className="border-t pt-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-lg font-semibold">
-              <Grid3X3 className="size-5 text-sky-600" />
-              الصور المُنشأة
-              <Badge variant="secondary">{gallery.length}</Badge>
-            </h3>
+        {/* Bottom Section: Full Width Created Images Gallery */}
+        <div className="border-t border-slate-200/70 pt-8 dark:border-slate-800">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100">
+                <Grid3X3 className="size-5 text-sky-500" />
+                معرض تصاميم السوشيال ميديا المُنشأة
+                <Badge variant="secondary" className="rounded-full px-2.5 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  {gallery.length} تصميم
+                </Badge>
+              </h3>
+              <p className="text-xs text-muted-foreground">تصفح تصاميمك السابقة وقارن بين المقاسات والبرومبتس المستعملة</p>
+            </div>
+            
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1 text-xs"
+              className="gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 border"
               onClick={fetchGallery}
               disabled={galleryLoading}
             >
-              <RefreshCw className={`size-3 ${galleryLoading ? "animate-spin" : ""}`} />
-              تحديث
+              <RefreshCw className={`size-3.5 ${galleryLoading ? "animate-spin" : ""}`} />
+              تحديث المعرض
             </Button>
           </div>
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+          {/* Filters and search in gallery */}
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 p-3 rounded-2xl border border-slate-100 dark:bg-slate-900/30 dark:border-slate-800/80">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">المنصة:</span>
+              <span className="text-xs font-bold text-slate-500">منصة الفلترة:</span>
               <Select value={galleryFilter} onValueChange={(v) => setGalleryFilter(v || "all")}>
-                <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectTrigger className="h-8 w-36 text-xs rounded-xl bg-white dark:bg-gray-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="all">الكل (بدون فلتر)</SelectItem>
                   {PLATFORMS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <Input
-              placeholder="ابحث باسم الملف، البرومبت، التاريخ..."
+              placeholder="ابحث بالبرومبت، المقاس، الهدف، التاريخ..."
               value={gallerySearch}
               onChange={(e) => setGallerySearch(e.target.value)}
-              className={`h-8 sm:w-72 ${inputCls}`}
+              className={`h-8 sm:w-80 ${inputCls} text-xs`}
             />
           </div>
 
+          {/* Gallery Grid */}
           {filteredGallery.length === 0 ? (
-            <div className="flex min-h-[160px] items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 dark:bg-gray-900">
-              <div className="text-center text-slate-400">
-                <ImageIcon className="mx-auto size-10" />
-                <p className="mt-2 text-sm">
-                  {gallerySearch || galleryFilter !== "all" ? "لا توجد نتائج مطابقة للبحث" : "لا توجد صور بعد. أول صورة هتظهر هنا."}
-                </p>
-              </div>
+            <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/10 p-6 text-center text-slate-400">
+              <ImageIcon className="mx-auto size-9 text-slate-300" />
+              <p className="mt-2.5 text-sm font-medium">
+                {gallerySearch || galleryFilter !== "all"
+                  ? "لم نجد تصاميم مطابقة لبحثك"
+                  : "لا توجد صور منشأة بعد. أول صور تنشئها ستظهر هنا."}
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {filteredGallery.map((img) => (
-                <div
-                  key={img.filename}
-                  className="group relative overflow-hidden rounded-lg border bg-slate-50 dark:bg-gray-900"
-                >
-                  <img
-                    src={img.url}
-                    alt=""
-                    className="aspect-square w-full object-cover"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                  {(img.platform || img.aspectRatio || img.purpose) && (
-                    <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                      {img.platform && <Badge variant="secondary" className="text-[10px]">{PLATFORMS.find((p) => p.value === img.platform)?.label || img.platform}</Badge>}
-                      {img.aspectRatio && <Badge variant="outline" className="text-[10px]">{img.aspectRatio}</Badge>}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {filteredGallery.map((img) => {
+                return (
+                  <div
+                    key={img.filename}
+                    className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-gray-900 hover:shadow-md transition-all duration-300 hover:border-sky-300 dark:hover:border-sky-800/80 shadow-sm"
+                  >
+                    <div className="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-100 dark:border-slate-800">
+                      <img
+                        src={img.url}
+                        alt=""
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      
+                      {/* Metas info badge overlay */}
+                      <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 opacity-90">
+                        {img.platform && (
+                          <Badge variant="secondary" className="text-[8px] px-1 py-0 px-1.5 rounded-md font-semibold bg-white/90 text-slate-800 dark:bg-slate-950/90 dark:text-slate-200 shadow-sm">
+                            {PLATFORMS.find((p) => p.value === img.platform)?.label || img.platform}
+                          </Badge>
+                        )}
+                        {img.aspectRatio && (
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 px-1.5 rounded-md font-semibold bg-slate-950/70 text-white border-none shadow-sm">
+                            {img.aspectRatio}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {img.prompt && (
-                    <div
-                      title={img.prompt}
-                      className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/70 to-transparent px-2 pt-6 pb-2 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      {img.prompt}
+
+                    {/* Meta/details container below image card */}
+                    <div className="p-2.5 text-right space-y-1">
+                      {img.purpose && (
+                        <p className="text-[9px] font-bold text-sky-600 dark:text-sky-400">
+                          {PURPOSES.find((p) => p.value === img.purpose)?.label || img.purpose}
+                        </p>
+                      )}
+                      <p className="text-[9px] text-muted-foreground truncate leading-tight" title={img.prompt}>
+                        {img.prompt || "تصميم بدون عنوان"}
+                      </p>
+                      <p className="text-[8px] text-slate-400/80 font-mono">
+                        {formatDate(img.createdAt)}
+                      </p>
                     </div>
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      className="rounded bg-white/20 p-1.5 text-white hover:bg-white/40"
-                      onClick={() => {
-                        setImageUrl(img.url);
-                        document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}
-                      aria-label="عرض"
-                      title="عرض"
-                    >
-                      <ImageIcon className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="فتح في تبويب جديد"
-                      className="rounded bg-white/20 p-1.5 text-white hover:bg-white/40"
-                      onClick={() => window.open(img.url, "_blank")}
-                      title="فتح"
-                    >
-                      <ExternalLink className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="حذف الصورة"
-                      className="rounded bg-red-500/60 p-1.5 text-white hover:bg-red-500/80"
-                      onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
-                      title="حذف"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+
+                    {/* Action hover overlay grid */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-20">
+                      <button
+                        type="button"
+                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/45 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        onClick={() => {
+                          setImageUrl(img.url);
+                          document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                        aria-label="عرض"
+                        title="عرض بالتفاصيل"
+                      >
+                        <ImageIcon className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="فتح بتبويب جديد"
+                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/45 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        onClick={() => window.open(img.url, "_blank")}
+                        title="فتح في متصفح خارجي"
+                      >
+                        <ExternalLink className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="استنساخ الخيارات"
+                        className="rounded-lg bg-sky-500/70 p-2 text-white hover:bg-sky-500 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        onClick={() => handleApplySettings(img)}
+                        title="نسخ الخيارات للنموذج"
+                      >
+                        <Copy className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="حذف الصورة"
+                        className="rounded-lg bg-red-500/70 p-2 text-white hover:bg-red-500 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
+                        title="حذف من المعرض"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-          </div>
-        </div>
+
       </div>
 
+      {/* Delete Dialog */}
       <Dialog
         open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog(open ? deleteDialog : { open: false, url: "", filename: "" })}
+        onOpenChange={(open) =>
+          setDeleteDialog(open ? deleteDialog : { open: false, url: "", filename: "" })
+        }
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="size-5 text-red-500" /> حذف الصورة
+        <DialogContent className="rounded-2xl max-w-sm">
+          <DialogHeader className="text-right">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <AlertCircle className="size-5 text-red-500" />
+              حذف الصورة من المعرض
             </DialogTitle>
-            <DialogDescription>متأكد إنك عايز تحذف الصورة دي؟ مش هتقدر ترجعها بعد كدا.</DialogDescription>
+            <DialogDescription className="text-xs">
+              هل أنت متأكد من رغبتك في حذف هذا التصميم نهائياً؟ لا يمكن التراجع عن هذا الإجراء.
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-center">
+          <div className="flex justify-center p-2 bg-slate-50 dark:bg-slate-900 rounded-xl my-2">
             <img
               src={deleteDialog.url}
               alt=""
-              className="max-h-48 rounded-lg object-contain"
+              className="max-h-40 rounded-lg object-contain bg-white dark:bg-gray-950"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
             />
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 justify-end">
             <Button
               variant="outline"
               onClick={() => setDeleteDialog({ open: false, url: "", filename: "" })}
+              className="rounded-xl text-xs h-9"
             >
-              إلغاء
+              إلغاء الأمر
             </Button>
-            <Button variant="destructive" onClick={() => handleDeleteImage(deleteDialog.filename)}>
-              حذف
+            <Button
+              variant="destructive"
+              onClick={() => handleDeleteImage(deleteDialog.filename)}
+              className="rounded-xl text-xs h-9 font-bold"
+            >
+              نعم، احذفها
             </Button>
           </DialogFooter>
         </DialogContent>
