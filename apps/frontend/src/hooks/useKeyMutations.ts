@@ -51,12 +51,7 @@ export function useDeleteKey() {
 
 export function useTestKey() {
   return useMutation({
-    mutationFn: ({
-      provider,
-      apiKey,
-    }: {
-      provider: string;
-      apiKey: string;
-    }): Promise<AiTestResult> => aiAdminService.testKey(provider, apiKey),
+    mutationFn: (keyId: string): Promise<AiTestResult> =>
+      aiAdminService.testKeyById(keyId),
   });
 }

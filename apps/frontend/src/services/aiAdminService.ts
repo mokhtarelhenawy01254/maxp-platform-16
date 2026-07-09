@@ -37,6 +37,13 @@ export const aiAdminService = {
     return response.data;
   },
 
+  testKeyById: async (id: string): Promise<AiTestResult> => {
+    const response = await apiClient.post<AiTestResult>(
+      `/ai-admin/keys/${encodeURIComponent(id)}/test`,
+    );
+    return response.data;
+  },
+
   testKey: async (provider: string, apiKey: string): Promise<AiTestResult> => {
     const response = await apiClient.post<AiTestResult>("/ai-admin/test", {
       provider,

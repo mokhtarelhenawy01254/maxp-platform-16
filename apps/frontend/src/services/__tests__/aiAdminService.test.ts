@@ -108,6 +108,24 @@ describe("aiAdminService", () => {
     });
   });
 
+  it("testKeyById posts to the correct endpoint and returns result", async () => {
+    const testResult = { ok: true, latency_ms: 200, model: "gpt-4", reply: "Hello" };
+    mockPost.mockResolvedValue({ data: testResult });
+
+    const result = await aiAdminService.testKeyById("key-1");
+
+    expect(result).toEqual(testResult);
+    expect(mockPost).toHaveBeenCalledWith("/ai-admin/keys/key-1/test");
+  });
+
+  it("testKeyById encodes the id in the URL", async () => {
+    mockPost.mockResolvedValue({ data: {} });
+
+    await aiAdminService.testKeyById("key/id+1");
+
+    expect(mockPost).toHaveBeenCalledWith("/ai-admin/keys/key%2Fid%2B1/test");
+  });
+
   it("getKeys returns an empty array when API returns empty", async () => {
     mockGet.mockResolvedValue({ data: [] });
 

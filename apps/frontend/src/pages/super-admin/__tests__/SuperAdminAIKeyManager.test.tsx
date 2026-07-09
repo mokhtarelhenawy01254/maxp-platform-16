@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router-dom";
 import SuperAdminAIKeyManager from "../SuperAdminAIKeyManager";
@@ -43,7 +43,7 @@ const mockKeys = [
     id: "k1",
     name: "Production GPT-4",
     provider: "OPENAI",
-    api_key: "sk-prod-abc123",
+    api_key_masked: "sk-****...c123",
     key_type: "CENTRAL",
     is_active: true,
   },
@@ -51,7 +51,7 @@ const mockKeys = [
     id: "k2",
     name: "Dev Claude",
     provider: "ANTHROPIC",
-    api_key: "sk-dev-xyz789",
+    api_key_masked: "sk-****...789",
     key_type: "CENTRAL",
     is_active: false,
   },
@@ -89,6 +89,10 @@ function mockDataState(providers = mockProviders, keys = mockKeys) {
 describe("SuperAdminAIKeyManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it("renders page title in Arabic", async () => {
@@ -241,6 +245,96 @@ describe("SuperAdminAIKeyManager", () => {
     await waitFor(() => {
       const names = screen.getAllByText("Dev Claude");
       expect(names.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it("shows masked api_key in each key row", async () => {
+    mockDataState();
+    const { container } = render(
+      <BrowserRouter>
+        <SuperAdminAIKeyManager />
+      </BrowserRouter>,
+    );
+
+    await waitFor(() => {
+      const cells = container.querySelectorAll(".font-mono.text-xs");
+      const maskedKeys = Array.from(cells).map((c) => c.textContent);
+      expect(maskedKeys.filter((k) => k?.startsWith("sk-")).length).toBe(2);
+      expect(maskedKeys.some((k) => k === "sk-****...c123")).toBe(true);
+    });
+  });
+
+  it("renders test buttons for each key", async () => {
+    mockDataState();
+    const { container } = render(
+      <BrowserRouter>
+        <SuperAdminAIKeyManager />
+      </BrowserRouter>,
+    );
+
+    await waitFor(() => {
+      const testButtons = container.querySelectorAll('button[title="اختبار المفتاح"]');
+      expect(testButtons.length).toBe(2);
+    });
+  });
+
+  it("shows test result dialog on successful test", async () => {
+    const testResult = { ok: true, latency_ms: 200, model: "gpt-4", reply: "Hello" };
+    const testMutation = buildMockMutation({
+      mutate: vi.fn((_keyId, { onSuccess }) => {
+        onSuccess(testResult);
+      }),
+    });
+    mockDataState();
+    mockUseTestKey.mockReturnValue(testMutation);
+    const { container } = render(
+      <BrowserRouter>
+        <SuperAdminAIKeyManager />
+      </BrowserRouter>,
+    );
+
+    let testBtn: HTMLElement | null = null;
+    await waitFor(() => {
+      testBtn = container.querySelector('button[title="اختبار المفتاح"]');
+      expect(testBtn).not.toBeNull();
+    });
+
+    await userEvent.click(testBtn!);
+
+    expect(testMutation.mutate).toHaveBeenCalledWith("k1", expect.any(Object));
+
+    await waitFor(() => {
+      expect(screen.getByText("نتيجة الاختبار — Production GPT-4")).toBeInTheDocument();
+      expect(screen.getByText("نجاح")).toBeInTheDocument();
+      expect(screen.getByText("200ms")).toBeInTheDocument();
+      expect(screen.getByText("gpt-4")).toBeInTheDocument();
+    });
+  });
+
+  it("shows test error in result dialog", async () => {
+    const testMutation = buildMockMutation({
+      mutate: vi.fn((_keyId, { onError }) => {
+        onError(new Error("Connection refused"));
+      }),
+    });
+    mockDataState();
+    mockUseTestKey.mockReturnValue(testMutation);
+    const { container } = render(
+      <BrowserRouter>
+        <SuperAdminAIKeyManager />
+      </BrowserRouter>,
+    );
+
+    let testBtn: HTMLElement | null = null;
+    await waitFor(() => {
+      testBtn = container.querySelector('button[title="اختبار المفتاح"]');
+      expect(testBtn).not.toBeNull();
+    });
+
+    await userEvent.click(testBtn!);
+
+    await waitFor(() => {
+      expect(screen.getByText("Connection refused")).toBeInTheDocument();
     });
   });
 });

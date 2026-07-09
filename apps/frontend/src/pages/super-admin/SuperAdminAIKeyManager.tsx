@@ -135,21 +135,14 @@ function KeyManagerContent() {
   }
 
   function handleTest(key: AiKey) {
-    if (!key.api_key) {
-      toast.error("المفتاح الحقيقي غير متاح للاختبار (الـ API لا تعيد المفتاح الكامل)");
-      return;
-    }
-    testKeyMutation.mutate(
-      { provider: key.provider, apiKey: key.api_key },
-      {
-        onSuccess: (result) => {
-          setTestTarget({ key, result });
-        },
-        onError: (err: any) => {
-          setTestTarget({ key, error: err?.message || "فشل الاختبار" });
-        },
+    testKeyMutation.mutate(key.id, {
+      onSuccess: (result) => {
+        setTestTarget({ key, result });
       },
-    );
+      onError: (err: any) => {
+        setTestTarget({ key, error: err?.message || "فشل الاختبار" });
+      },
+    });
   }
 
   function handleCopyKey(apiKey?: string, masked?: string) {
