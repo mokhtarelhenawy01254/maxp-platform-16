@@ -89,7 +89,6 @@ jobs:
             frontend-node-
 
       - name: Install Backend Test Dependencies
-        if: steps.cache-backend.outputs.cache-hit != 'true'
         working-directory: ./apps/backend
         run: |
           npm ci
@@ -100,7 +99,6 @@ jobs:
         continue-on-error: false
 
       - name: Generate Prisma Client
-        if: steps.cache-backend.outputs.cache-hit != 'true'
         working-directory: ./apps/backend
         run: |
           npx prisma generate --schema=prisma/schema
@@ -109,7 +107,7 @@ jobs:
       - name: Run Facebook Ads Regression Tests
         working-directory: ./apps/backend
         run: |
-          npx jest tests/controller/facebookAdsController.fullAd.test.js --runInBand --testTimeout=30000 --forceExit
+          npm test -- --testPathPattern="tests/controller/facebookAdsController.fullAd.test.js"
         continue-on-error: false
 
       # Build Frontend
