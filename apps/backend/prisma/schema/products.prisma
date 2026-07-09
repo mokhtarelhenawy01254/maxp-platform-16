@@ -40,6 +40,7 @@ model Customer {
   whatsAppContacts               WhatsAppContact[]
   whatsapp_notification_logs     WhatsAppNotificationLog[]
   customerJourneys               CustomerJourney[]
+  leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wholesaleCustomerPriceLists    WholesaleCustomerPriceList[]
    wholesaleCustomer              WholesaleCustomer?
     educationStudents               EducationStudent[]

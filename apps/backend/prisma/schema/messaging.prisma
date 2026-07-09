@@ -172,6 +172,7 @@ model WhatsAppContact {
   updatedAt              DateTime        @updatedAt
   customer               Customer?       @relation(fields: [customerId], references: [id])
   whatsAppSession        WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  leadFollowUpEnrollments LeadFollowUpEnrollment[]
 
   @@unique([sessionId, jid])
   @@index([category])

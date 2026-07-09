@@ -244,6 +244,8 @@ model Company {
   whatsAppSettings                WhatsAppSettings?
   whatsappFollowUpFlows           WhatsAppFollowUpFlow[]
   customerJourneys                CustomerJourney[]
+  leadFollowUpFlows               LeadFollowUpFlow[]
+  leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wishlists                       Wishlist[]
   woocommerceSettings             WoocommerceSettings[]
   woocommerceSyncLogs             WoocommerceSyncLog[]
