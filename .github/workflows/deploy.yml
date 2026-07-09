@@ -139,6 +139,10 @@ jobs:
           VITE_BUILD_MINIFY: 'esbuild'
         continue-on-error: false
 
+      - name: Validate i18n Sections
+        run: node scripts/validate-i18n.js
+        continue-on-error: false
+
       # Strip dev dependencies after tests (deps already installed above)
       - name: Prune Dev Dependencies
         working-directory: ./apps/backend
