@@ -937,24 +937,8 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId,
   const agentConfig = agentId ? await getAgentConfig(companyId, agentId) : null;
   const agentModel = getAgentModelHints(agentConfig);
 
-  if (agentModel.model) {
-    const shouldUseAgentModel =
-      agentModel.model !== requestedModel ||
-      (agentModel.provider && agentModel.provider !== requestedProvider) ||
-      (agentModel.keyId && agentModel.keyId !== requestedKeyId);
-
-    if (shouldUseAgentModel || !requestedProvider || !requestedModel) {
-      let resolveProvider = agentModel.provider || requestedProvider;
-      if (!agentModel.provider && agentModel.model !== requestedModel) {
-        const allKeys = await listTenantAIKeys(companyId, false);
-        const allModelConfigs = await getSharedPrismaClient().aiModelConfig.findMany({
-          where: { isEnabled: true, modelName: agentModel.model },
-          select: { keyId: true },
-        });
-        const configKeyIds = new Set(allModelConfigs.map(c => c.keyId));
-        const matchingKey = allKeys.find(k => configKeyIds.has(k.id));
-        if (matchingKey) resolveProvider = matchingKey.provider;
-      }
+  if (agentModel.model && !requestedProvider && !requestedModel) {
+      let resolveProvider = agentModel.provider || '';
       const selection = await resolveRequestedSandboxModelSelection(companyId, {
         provider: resolveProvider,
         model: agentModel.model,
@@ -963,10 +947,9 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId,
       return {
         ...selection,
         source: 'agent',
-        requestedModel: requestedModel || null,
-        requestedProvider: requestedProvider || null,
+        requestedModel: null,
+        requestedProvider: null,
       };
-    }
   }
 
   return resolveRequestedSandboxModelSelection(companyId, { provider, model, keyId });
