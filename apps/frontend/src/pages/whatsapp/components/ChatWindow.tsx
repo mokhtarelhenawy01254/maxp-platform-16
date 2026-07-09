@@ -164,13 +164,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="wa-glass-header flex items-center justify-between gap-3 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-3 py-2 sm:px-4 sm:py-2.5">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <div className="wa-glass-header flex items-center justify-between gap-2 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-3 py-1.5">
+        <div className="flex min-w-0 items-center gap-2">
           {onBackToList ? (
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon-sm"
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)] lg:hidden"
+              className="size-8 rounded-full hover:bg-[var(--whatsapp-surface-hover)] lg:hidden"
               onClick={onBackToList}
               title={t("whatsapp.sidebar.all")}
             >
@@ -180,45 +180,42 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="sr-only">{t("whatsapp.sidebar.all")}</span>
             </Button>
           ) : null}
-          <Avatar className="shadow-md">
+          <Avatar className="size-8">
             <AvatarImage src={selectedContact.profilePicUrl || undefined} />
-            <AvatarFallback className="bg-primary/10 text-[color:var(--color-primary)]">
+            <AvatarFallback className="bg-primary/10 text-xs text-[color:var(--color-primary)]">
               {getContactName(selectedContact).slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)]">
                 {getContactName(selectedContact)}
               </p>
               {selectedContact.isGroup ? (
                 <Badge
                   variant="outline"
-                  className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[10px] text-[color:var(--color-muted-foreground)]"
+                  className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[9px] text-[color:var(--color-muted-foreground)] px-1 py-0"
                 >
                   {t("whatsapp.window.group")}
                 </Badge>
               ) : null}
               {selectedContact.unreadCount > 0 ? (
-                <Badge className="bg-[color:var(--color-primary)] text-white">
+                <Badge className="bg-[color:var(--color-primary)] text-white text-[10px] h-4 min-w-4 px-1">
                   {selectedContact.unreadCount}
                 </Badge>
               ) : null}
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-muted-foreground)]">
-              <span dir="ltr">
-                {getContactDisplayPhone(selectedContact)}
+              <span className="hidden text-[11px] text-[color:var(--color-muted-foreground)] sm:inline" dir="ltr">
+                · {getContactDisplayPhone(selectedContact)}
               </span>
-              {selectedContact.isMuted ? <span>مكتوم</span> : null}
-              {selectedContact.isPinned ? <span>مثبت</span> : null}
+              {selectedContact.isMuted ? <span className="text-[10px] text-[color:var(--color-muted-foreground)]">مكتوم</span> : null}
             </div>
           </div>
         </div>
 
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon-sm"
-          className="rounded-full border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)]"
+          className="size-8 shrink-0 rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
           onClick={onOpenContactInfo}
         >
           <Info className="size-4" />

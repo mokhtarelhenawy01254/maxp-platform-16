@@ -151,17 +151,17 @@ function FilterPill({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-full border px-2.5 text-[11px] font-medium transition-colors sm:h-6 sm:px-1.5 sm:text-[10px]",
+        "inline-flex h-6 min-w-0 items-center justify-center gap-1 rounded-full border px-2 text-[10px] font-medium transition-colors",
         active
           ? "border-[color:var(--color-primary)] bg-primary/10 text-[color:var(--color-primary)]"
           : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)] hover:text-[color:var(--color-foreground)]",
       )}
     >
       <span className="truncate">{label}</span>
-      {typeof count === "number" ? (
+      {typeof count === "number" && count > 0 ? (
         <span
           className={cn(
-            "inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[9px] font-semibold leading-none",
+            "inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full px-0.5 text-[8px] font-semibold leading-none",
             active
               ? "bg-[color:var(--color-primary)]/12 text-[color:var(--color-primary)]"
               : "bg-[var(--whatsapp-surface-muted)] text-[color:var(--color-muted-foreground)]",
@@ -450,36 +450,64 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         className,
       )}
     >
-      <div className="flex h-14 items-center justify-between border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-3 py-2 shrink-0">
+      <div className="flex h-12 items-center justify-between border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-3 shrink-0">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onOpenProfile}
-            className="rounded-full transition-transform hover:scale-[1.02]"
+            className="relative rounded-full transition-transform hover:scale-[1.02]"
           >
-            <Avatar className="size-9">
+            <Avatar className="size-8">
               <AvatarImage src={currentUserProfile?.profilePicUrl || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] to-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)] text-xs font-semibold text-[color:var(--color-primary)]">
+              <AvatarFallback className="bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] to-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)] text-[10px] font-semibold text-[color:var(--color-primary)]">
                 {getContactInitials(currentUserProfile?.name || "WA")}
               </AvatarFallback>
             </Avatar>
+            {/* Connection status dot */}
+            <span
+              className={cn(
+                "absolute -bottom-0.5 -end-0.5 size-2.5 rounded-full border-2 border-[color:var(--color-muted)]",
+                isSelectedSessionConnected ? "bg-emerald-500" : "bg-amber-500",
+              )}
+              title={isSelectedSessionConnected ? "متاح" : "يتطلب اتصال"}
+            />
           </button>
           {showArchived ? (
             <Badge
               variant="outline"
-              className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-muted-foreground)] px-2 py-0.5"
+              className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-muted-foreground)] px-1.5 py-0"
             >
               الأرشيف
             </Badge>
           ) : null}
+          {/* Inline session selector — compact */}
+          {sessionOptions.length > 1 ? (
+            <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
+              <SelectTrigger className="h-7 min-w-0 max-w-[9rem] rounded-lg bg-[var(--whatsapp-surface)] text-[10px] px-2 gap-1">
+                <span className="truncate font-medium text-[color:var(--color-foreground)]">
+                  {resolvedSessionValue === "all"
+                    ? t("whatsapp.sidebar.all")
+                    : sessionOptions.find((s) => s.id === resolvedSessionValue)?.name || resolvedSessionValue}
+                </span>
+              </SelectTrigger>
+              <SelectContent align={i18n.dir() === "rtl" ? "start" : "end"}>
+                <SelectItem value="all">{t("whatsapp.sidebar.all")}</SelectItem>
+                {sessionOptions.map((session) => (
+                  <SelectItem key={session.id} value={session.id}>
+                    {session.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={onOpenNewChat}
-            className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+            className="size-8 rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
             title="محادثة"
           >
             <MessageSquarePlus className="size-4" />
@@ -490,7 +518,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+                className="size-8 rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
                 title="المزيد"
                 aria-label="المزيد"
               >
@@ -558,101 +586,70 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
       </div>
 
-      {sessionOptions.length > 0 ? (
-        <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] bg-[color:var(--color-muted)]/50 px-3 py-1.5 flex items-center gap-2 shrink-0">
-          <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
-            <SelectTrigger className="h-8 min-w-0 flex-1 rounded-xl bg-[var(--whatsapp-surface)] text-[11px]">
-              <span className="truncate font-medium text-[color:var(--color-foreground)]">
-                {resolvedSessionValue === "all"
-                  ? t("whatsapp.sidebar.all")
-                  : sessionOptions.find((s) => s.id === resolvedSessionValue)?.name || resolvedSessionValue}
-              </span>
-            </SelectTrigger>
-            <SelectContent align={i18n.dir() === "rtl" ? "start" : "end"}>
-              <SelectItem value="all">{t("whatsapp.sidebar.all")}</SelectItem>
-              {sessionOptions.map((session) => (
-                <SelectItem key={session.id} value={session.id}>
-                  {session.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Badge
-            variant="outline"
-            className={cn(
-              "h-8 shrink-0 gap-1 rounded-xl border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-2 text-[10px]",
-              isSelectedSessionConnected ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400",
-            )}
-          >
-            {isSelectedSessionConnected ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-            {isSelectedSessionConnected ? "متاح" : "يتطلب اتصال"}
-          </Badge>
+      <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-1.5 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={t("whatsapp.sidebar.searchPlaceholder")}
+              aria-label={t("whatsapp.sidebar.searchPlaceholder")}
+              className="whatsapp-search-input h-7 rounded-lg bg-[var(--whatsapp-surface)] ps-8 pe-8 text-[11px]"
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() =>
+                setFilterType((current) =>
+                  current === "unread" ? "all" : "unread",
+                )
+              }
+              className={cn(
+                "absolute end-0.5 top-0.5 size-6 rounded-lg",
+                filterType === "unread"
+                  ? "bg-primary/10 text-[color:var(--color-primary)] hover:bg-primary/12"
+                  : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
+              )}
+              title={t("whatsapp.sidebar.unread")}
+            >
+              <Filter className="size-3.5" />
+            </Button>
+          </div>
+          {/* Filter pills inline with search on desktop */}
+          <div className="wa-filter-strip shrink-0">
+            <FilterPill
+              active={filterType === "all" && !showArchived}
+              label={t("whatsapp.sidebar.all")}
+              count={conversations.length}
+              onClick={() => { setFilterType("all"); setShowArchived(false); }}
+            />
+            <FilterPill
+              active={filterType === "unread"}
+              label={t("whatsapp.sidebar.unread")}
+              count={unreadCount}
+              onClick={() => { setFilterType("unread"); setShowArchived(false); }}
+            />
+            <FilterPill
+              active={filterType === "groups"}
+              label={t("whatsapp.sidebar.groups")}
+              count={groupCount}
+              onClick={() => { setFilterType("groups"); setShowArchived(false); }}
+            />
+            <FilterPill
+              active={showArchived}
+              label={t("whatsapp.sidebar.archive") || "الأرشيف"}
+              count={conversations.filter(c => c.isArchived).length}
+              onClick={() => { setShowArchived(true); if (filterType === "statuses") setFilterType("all"); }}
+            />
+            <FilterPill
+              active={filterType === "statuses"}
+              label={t("whatsapp.sidebar.statuses")}
+              count={statuses.length}
+              onClick={() => { setFilterType("statuses"); setShowArchived(false); }}
+            />
+          </div>
         </div>
-      ) : null}
-
-      <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-1.5 sm:py-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
-          <Input
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder={t("whatsapp.sidebar.searchPlaceholder")}
-            aria-label={t("whatsapp.sidebar.searchPlaceholder")}
-            className="whatsapp-search-input h-9 rounded-xl bg-[var(--whatsapp-surface)] ps-9 pe-10 text-xs"
-          />
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() =>
-              setFilterType((current) =>
-                current === "unread" ? "all" : "unread",
-              )
-            }
-            className={cn(
-              "absolute end-1 top-1 rounded-xl",
-              filterType === "unread"
-                ? "bg-primary/10 text-[color:var(--color-primary)] hover:bg-primary/12"
-                : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
-            )}
-            title={t("whatsapp.sidebar.unread")}
-          >
-            <Filter className="size-4" />
-          </Button>
-        </div>
-
-        <div className="wa-filter-strip mt-1.5 sm:mt-2">
-          <FilterPill
-            active={filterType === "all" && !showArchived}
-            label={t("whatsapp.sidebar.all")}
-            count={conversations.length}
-            onClick={() => { setFilterType("all"); setShowArchived(false); }}
-          />
-          <FilterPill
-            active={filterType === "unread"}
-            label={t("whatsapp.sidebar.unread")}
-            count={unreadCount}
-            onClick={() => { setFilterType("unread"); setShowArchived(false); }}
-          />
-          <FilterPill
-            active={filterType === "groups"}
-            label={t("whatsapp.sidebar.groups")}
-            count={groupCount}
-            onClick={() => { setFilterType("groups"); setShowArchived(false); }}
-          />
-          <FilterPill
-            active={showArchived}
-            label={t("whatsapp.sidebar.archive") || "الأرشيف"}
-            count={conversations.filter(c => c.isArchived).length}
-            onClick={() => { setShowArchived(true); if (filterType === "statuses") setFilterType("all"); }}
-          />
-          <FilterPill
-            active={filterType === "statuses"}
-            label={t("whatsapp.sidebar.statuses")}
-            count={statuses.length}
-            onClick={() => { setFilterType("statuses"); setShowArchived(false); }}
-          />
-        </div>
-
       </div>
 
       <div className="wa-slim-scroll wa-safe-bottom min-h-0 flex-1 overflow-y-auto px-2 py-1.5 sm:py-2" onScroll={handleScroll}>
