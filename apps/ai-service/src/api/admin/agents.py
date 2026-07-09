@@ -1327,6 +1327,9 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     agent.soul = None
     agent.rules = None
     agent.persona = {}
+    agent.model_policy = template.model_policy
+    if template.model_policy.get("default"):
+        agent.model = template.model_policy["default"]
 
     await session.commit()
     await session.refresh(agent)
