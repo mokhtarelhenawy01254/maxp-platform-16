@@ -1304,6 +1304,35 @@ function startMemoryMonitor() {
   }, CHECK_INTERVAL);
 }
 
+// Graceful shutdown — disconnect WhatsApp sessions before exit
+async function shutdownGracefully(signal) {
+  console.log(`\n🛑 [SERVER] Received ${signal}, starting graceful shutdown...`);
+
+  const timeout = setTimeout(() => {
+    console.error('⚠️ [SERVER] Forced shutdown after timeout');
+    process.exit(1);
+  }, 15000);
+
+  try {
+    const WhatsAppManager = require("./services/whatsapp/WhatsAppManager");
+    const sessionCount = WhatsAppManager.getAllSessions()?.length || 0;
+    if (sessionCount > 0) {
+      console.log(`📱 [SERVER] Disconnecting ${sessionCount} WhatsApp session(s)...`);
+      await WhatsAppManager.disconnectAllSessions();
+      console.log('✅ [SERVER] All WhatsApp sessions disconnected');
+    }
+  } catch (err) {
+    console.error('⚠️ [SERVER] Error during WhatsApp shutdown:', err.message);
+  }
+
+  clearTimeout(timeout);
+  console.log('✅ [SERVER] Graceful shutdown complete');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdownGracefully('SIGTERM'));
+process.on('SIGINT', () => shutdownGracefully('SIGINT'));
+
 if (require.main === module) {
   startMemoryMonitor();
   startServer();

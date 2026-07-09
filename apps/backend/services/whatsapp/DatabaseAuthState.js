@@ -133,8 +133,9 @@ function isValidAuthState(authData) {
     if (!authData.creds) return false;
     // A registered Baileys creds should have 'me' field with the user's JID
     if (!authData.creds.me && !authData.creds.registered) return false;
-    // Check for required signal keys
-    if (!authData.creds.signedKeyName && !authData.keys) return false;
+    // Check for required signal keys — {} is truthy but empty, don't discard for that
+    // ponytail: global lock, per-account locks if throughput matters
+    if (!authData.creds.signedKeyName && (!authData.keys || Object.keys(authData.keys).length === 0)) return false;
     return true;
 }
 
@@ -225,70 +226,49 @@ async function useDatabaseAuthState(sessionId) {
         return authData;
     }
 
+    // دالة الحفظ الفعلية
+    const doSave = async () => {
+        try {
+            const currentCreds = JSON.parse(JSON.stringify(state.creds, BufferJSON.replacer), BufferJSON.reviver);
+            const currentKeys = JSON.parse(JSON.stringify(keysData, BufferJSON.replacer), BufferJSON.reviver);
+            hardening.pruneAuthKeys(currentKeys);
+
+            const dataToSave = { creds: currentCreds, keys: currentKeys };
+            const serialized = hardening.serializeAndCap(dataToSave, { replacer: BufferJSON.replacer });
+
+            await getSharedPrismaClient().whatsAppSession.update({
+                where: { id: sessionId },
+                data: { authState: serialized, updatedAt: new Date() }
+            });
+
+            setCachedAuthState(sessionId, dataToSave);
+            AUTH_LOG.ok(sessionId, `Auth state saved (${serialized.length} bytes, keys cats: ${Object.keys(currentKeys).length})`);
+        } catch (error) {
+            if (isPermissionError(error)) {
+                if (process.env.NODE_ENV === 'development') {
+                    AUTH_LOG.warn(sessionId, `Permission error saving auth state: ${getPermissionErrorMessage(error)}`);
+                }
+            } else {
+                AUTH_LOG.error(sessionId, `Error saving auth state:`, error.message);
+            }
+        }
+    };
+
     // دالة حفظ الحالة في قاعدة البيانات (مع debouncing محسّن)
     async function saveAuthState(immediate = false) {
-        // إلغاء الـ timer السابق إن وجد
         if (saveTimers.has(sessionId)) {
             clearTimeout(saveTimers.get(sessionId));
             saveTimers.delete(sessionId);
         }
-        let timer = null;
-
-        // دالة الحفظ الفعلية
-        const saveFunction = async () => {
-            try {
-                // أخذ snapshot متسق من creds و keys
-                // ⚠️ MUST use JSON clone with BufferJSON — structuredClone converts Buffer→Uint8Array which breaks Baileys crypto
-                const currentCreds = JSON.parse(JSON.stringify(state.creds, BufferJSON.replacer), BufferJSON.reviver);
-                const currentKeys = JSON.parse(JSON.stringify(keysData, BufferJSON.replacer), BufferJSON.reviver);
-                hardening.pruneAuthKeys(currentKeys);
-
-                const dataToSave = {
-                    creds: currentCreds,
-                    keys: currentKeys
-                };
-
-                const serialized = hardening.serializeAndCap(dataToSave, { replacer: BufferJSON.replacer });
-
-                await getSharedPrismaClient().whatsAppSession.update({
-                    where: { id: sessionId },
-                    data: {
-                        authState: serialized,
-                        updatedAt: new Date()
-                    }
-                });
-
-                // تحديث الـ cache بالبيانات المحفوظة فعلياً
-                setCachedAuthState(sessionId, dataToSave);
-
-                AUTH_LOG.ok(sessionId, `Auth state saved (${serialized.length} bytes, keys cats: ${Object.keys(currentKeys).length})`);
-            } catch (error) {
-                if (isPermissionError(error)) {
-                    if (process.env.NODE_ENV === 'development') {
-                        AUTH_LOG.warn(sessionId, `Permission error saving auth state: ${getPermissionErrorMessage(error)}`);
-                    }
-                } else {
-                    AUTH_LOG.error(sessionId, `Error saving auth state:`, error.message);
-                }
-            } finally {
-                // Only delete if this is still the current timer (prevent race with new session)
-                const currentTimer = saveTimers.get(sessionId);
-                if (currentTimer === timer) {
-                    saveTimers.delete(sessionId);
-                }
-            }
-        };
 
         if (immediate) {
-            // للحالات الفورية: استخدام debounce قصير جداً بدلاً من الحفظ الفوري المتكرر
-            // هذا يمنع تعدد عمليات الحفظ المتزامنة عند تحديث creds سريعاً
             const timer = setTimeout(async () => {
                 saveTimers.delete(sessionId);
-                await saveFunction();
+                await doSave();
             }, SAVE_IMMEDIATE_DEBOUNCE_MS);
             saveTimers.set(sessionId, timer);
         } else {
-            const timer = setTimeout(saveFunction, SAVE_DEBOUNCE_MS);
+            const timer = setTimeout(doSave, SAVE_DEBOUNCE_MS);
             saveTimers.set(sessionId, timer);
         }
     }
@@ -325,8 +305,23 @@ async function useDatabaseAuthState(sessionId) {
     state.keys = keys;
 
     // دالة حفظ بيانات المصادقة (فوري - بدون debounce)
+    let pendingSave = false;
     const saveCreds = async () => {
-        await saveAuthState(true); // immediate = true
+        if (pendingSave) return;
+        pendingSave = true;
+        try {
+            await saveAuthState(true);
+        } finally {
+            pendingSave = false;
+        }
+    };
+
+    saveCreds.flush = async () => {
+        if (saveTimers.has(sessionId)) {
+            clearTimeout(saveTimers.get(sessionId));
+            saveTimers.delete(sessionId);
+        }
+        await doSave();
     };
 
     return {
