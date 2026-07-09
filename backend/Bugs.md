@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [FIX] Ollama Gemma4 Model Routed to Google API Instead of Ollama
+- **Date**: 2026-07-09
+- **Description**: Ollama-style Gemma models (e.g. `gemma4:31b-cloud`) were being routed to Google's Generative Language API instead of the Ollama provider, resulting in `404 Not Found` errors.
+- **Root Cause**: `is_gemma_model()` in `gemma_chat_template.py` matched any model name containing `gemma4`, including Ollama-format names with `:` tags.
+- **Resolution**: Added a guard in `is_gemma_model()` to return `False` for model names containing `:` (Ollama tag format), allowing them to fall through to the normal provider pipeline.
+- **Files Modified**:
+  - `apps/ai-service/src/llm/gemma_chat_template.py`
+
 ### [FIX] AI Agent Model Override Ignored Due to Template Precedence
 - **Date**: 2026-07-09
 - **Description**: Configuring a custom AI model for a specific company's agent (e.g., via the "Companies" tab in the Super Admin Template page) had no effect, and the agent continued using the template's default model.

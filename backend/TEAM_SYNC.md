@@ -2,6 +2,7 @@
 
 ## 2026-07-09 / 2026-03-09
 - **AI Agent Model Override Precedence (FIX)**: Fixed a bug where custom model configurations for specific company agents were ignored in favor of the template's default model policy. Flipped the resolution order in `agent_registry.py` to check `db_agent.model` first before falling back to `template.model_policy.get("default")`. Added corresponding unit tests in `test_model_resolution.py`.
+- **Ollama Gemma4 Model Routing (FIX)**: Fixed `is_gemma_model()` in `gemma_chat_template.py` incorrectly routing Ollama-style Gemma models (e.g. `gemma4:31b-cloud`) to Google's Generative Language API instead of the Ollama provider. Added a `:` guard to exclude Ollama tag-format model names.
 
 ## 2026-07-08 / 2026-03-09
 - **WhatsApp Voice Note Truncated to 1-Second / Silent Message (FIX)**: Fixed a critical bug where recorded WhatsApp voice notes were sent as empty/silent 1-second messages.

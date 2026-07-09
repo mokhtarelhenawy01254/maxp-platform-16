@@ -272,6 +272,11 @@ def is_gemma_model(model_name: str | None) -> bool:
     if not model_name:
         return False
     name = model_name.strip().lower()
+    # Ollama-style model names use "name:tag" format (e.g. "gemma4:31b-cloud")
+    # and must be routed through the normal provider pipeline (OLLAMA), not the
+    # native Gemini API GemmaClient.
+    if ":" in name:
+        return False
     return "gemma-4" in name or "gemma4" in name
 
 
