@@ -280,8 +280,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               "wa-bubble wa-bubble-enter min-w-[7rem] cursor-context-menu rounded-2xl px-3 py-2.5 shadow-sm sm:px-4 sm:py-3",
               "border border-transparent",
               message.fromMe
-              ? "rounded-tr-[6px] bg-[#d9fdd3] dark:bg-[var(--whatsapp-message-outgoing)]"
-              : "rounded-tl-[6px] bg-white/95 dark:bg-[var(--whatsapp-message-incoming)]",
+              ? "rounded-tr-[6px] bg-[var(--whatsapp-message-outgoing)] text-[var(--whatsapp-message-outgoing-text)]"
+              : "rounded-tl-[6px] bg-[var(--whatsapp-message-incoming)] text-[var(--whatsapp-message-incoming-text)]",
           highlighted && "wa-highlight",
         )}
             onContextMenu={(event) => onContextMenu(event, message)}

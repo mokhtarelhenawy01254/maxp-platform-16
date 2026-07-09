@@ -80,10 +80,6 @@ interface ChatWindowProps {
   onRetryMessages?: () => void;
 }
 
-const backgroundStyle: React.CSSProperties = {
-  backgroundColor: "var(--color-muted)",
-};
-
 const ChatWindow: React.FC<ChatWindowProps> = ({
   className,
   selectedContact,
@@ -233,7 +229,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <div
         ref={messagesContainerRef}
         className="wa-messages-scroll wa-messages-container wa-slim-scroll whatsapp-messages-area relative min-h-0 flex-1 overflow-auto px-2 py-3 sm:px-4 sm:py-4"
-        style={backgroundStyle}
       >
         {messagesError ? (
           <div className="flex h-full min-h-[18rem] flex-col items-center justify-center gap-4 px-6">
@@ -364,35 +359,33 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </>
             ) : null}
 
-            <div className="order-1 flex shrink-0 items-center gap-1">
+            <div className="order-1 flex shrink-0 items-center gap-0.5">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon-sm"
                 className={cn(
-                  "rounded-full border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)]",
-                  showEmojiPicker && "bg-primary/10",
+                  "rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
+                  showEmojiPicker && "bg-primary/10 text-[color:var(--color-primary)]",
                 )}
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               >
                 <Smile className="size-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon-sm"
-                className="rounded-full border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)]"
+                className="rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
                 onClick={() => fileInputRef.current?.click()}
                 title={t("whatsapp.tooltips.attach")}
               >
                 <Paperclip className="size-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon-sm"
                 className={cn(
-                  "rounded-full border-[color:var(--shell-control-border)]",
-                  showRichTools
-                    ? "bg-primary/10 text-[color:var(--color-primary)]"
-                    : "bg-[var(--whatsapp-surface)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
+                  "rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
+                  showRichTools && "bg-primary/10 text-[color:var(--color-primary)]",
                 )}
                 onClick={() => setShowRichTools(!showRichTools)}
                 title="أدوات إضافية"
@@ -495,7 +488,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               onChange={(event) => setNewMessage(event.target.value)}
               placeholder={t("whatsapp.window.inputPlaceholder")}
               aria-label={t("whatsapp.window.inputPlaceholder")}
-              className="wa-auto-textarea order-2 min-h-[2.5rem] min-w-[10rem] flex-1 resize-none rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-input-bg)] px-3 py-2 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3 sm:min-h-[2.75rem] sm:min-w-[14rem] sm:py-2.5"
+              className="wa-auto-textarea order-2 min-h-[2.5rem] min-w-[10rem] flex-1 resize-none rounded-xl border border-[color:var(--shell-control-border)] bg-background dark:bg-[var(--whatsapp-surface-strong)] px-3.5 py-2 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3 sm:min-h-[2.5rem] sm:min-w-[14rem] sm:py-2"
               rows={1}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -507,7 +500,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
             {newMessage.trim() ? (
               <Button
-                className="order-4 rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
+                className="order-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white w-10 h-10 p-0 shrink-0 flex items-center justify-center shadow-sm"
                 onClick={onSendMessage}
                 disabled={isSendingMessage}
               >
@@ -519,7 +512,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </Button>
             ) : (
               <Button
-                className="order-4 rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
+                variant="ghost"
+                className="order-4 rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)] w-10 h-10 p-0 shrink-0 flex items-center justify-center"
                 onClick={() => setIsRecording(true)}
               >
                 <Mic className="size-4" />

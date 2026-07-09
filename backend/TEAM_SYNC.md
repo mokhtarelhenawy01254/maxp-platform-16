@@ -1,6 +1,7 @@
 # Team Sync Updates
 
 ## 2026-07-09 / 2026-03-09
+- **WhatsApp Workspace UI/UX Overhaul (IMPROVEMENT)**: Redesigned the WhatsApp chat window and sidebar components for an improved desktop/laptop experience. Reduced spacing and padding to compact the conversation list, replaced the high-contrast green time limit badge with a soft transparent pill, updated the fallback avatars with color-mix gradients, and added a signature warm WhatsApp chat background with a subtle dotted pattern. Also, restructured the bottom message input area to clean up button grouping, remove borders, and make the voice note button transparent, mimicking native chat applications.
 - **AI Agent Model Override Precedence (FIX)**: Fixed a bug where custom model configurations for specific company agents were ignored in favor of the template's default model policy. Flipped the resolution order in `agent_registry.py` to check `db_agent.model` first before falling back to `template.model_policy.get("default")`. Added corresponding unit tests in `test_model_resolution.py`.
 - **Ollama Gemma4 Model Routing (FIX)**: Fixed `is_gemma_model()` in `gemma_chat_template.py` incorrectly routing Ollama-style Gemma models (e.g. `gemma4:31b-cloud`) to Google's Generative Language API instead of the Ollama provider. Added a `:` guard to exclude Ollama tag-format model names.
 

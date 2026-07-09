@@ -470,3 +470,16 @@
   }
 }
 
+/* ── 26. Custom Messages Area Background ── */
+.whatsapp-messages-area {
+  background-color: #efeae2 !important; /* Warm WhatsApp gray-beige in light mode */
+  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0) !important;
+  background-size: 20px 20px !important;
+}
+
+.dark .whatsapp-messages-area {
+  background-color: #0b141a !important; /* Dark WhatsApp slate-green */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 0) !important;
+  background-size: 20px 20px !important;
+}
+

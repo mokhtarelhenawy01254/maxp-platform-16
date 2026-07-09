@@ -426,16 +426,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
   const renderLoadingRows = () => (
-    <div className="space-y-3 p-3">
+    <div className="space-y-0 px-2">
       {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
-          className="flex items-center gap-3 rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-3"
+          className="flex items-center gap-3 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] px-3 py-2.5"
         >
-          <Skeleton className="size-12 rounded-full" />
+          <Skeleton className="size-10 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-4 w-32 rounded-full" />
-            <Skeleton className="h-3 w-full rounded-full" />
+            <Skeleton className="h-3 w-32 rounded-full" />
+            <Skeleton className="h-2 w-full rounded-full" />
           </div>
         </div>
       ))}
@@ -815,19 +815,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       });
                     }}
                     className={cn(
-                      "wa-conversation-item min-h-[4rem] w-full rounded-2xl border px-3 py-2 text-start transition-all duration-150 sm:min-h-[4.5rem] sm:py-2.5",
+                      "wa-conversation-item min-h-[3.25rem] w-full border-b border-t-0 border-x-0 border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] px-3 py-1.5 text-start transition-all duration-150 sm:min-h-[3.5rem] sm:py-2 rounded-none",
                       isSelected
-                        ? "border-[color:var(--color-primary)] bg-primary/10"
-                        : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] hover:bg-[var(--whatsapp-surface-hover)]",
+                        ? "bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-background))]"
+                        : "bg-transparent hover:bg-[var(--whatsapp-surface-hover)]",
                     )}
                     style={{
                       transform: isSwiped ? `translateX(${swipeOffset}px)` : 'translateX(0px)',
                     }}
                   >
-                    <div className="flex items-start gap-3">
-                      <Avatar>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="size-10 sm:size-10">
                         <AvatarImage src={contact.profilePicUrl || undefined} />
-                        <AvatarFallback className="bg-primary/8 text-xs font-semibold text-[color:var(--color-primary)]">
+                        <AvatarFallback className="bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] to-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)] text-xs font-semibold text-[color:var(--color-primary)]">
                           {getContactInitials(contactName)}
                         </AvatarFallback>
                       </Avatar>
@@ -883,12 +883,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               </span>
                             ) : null}
                             {contact.window ? (
-                              <span className={`inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                              <span className={cn(
+                                "inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
                                 contact.window.isOpen
-                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200'
-                                  : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-200'
-                              }`}>
-                                {contact.window.isOpen ? '⏱' : '✕'} {contact.window.remainingLabel}
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
+                                  : "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400"
+                              )}>
+                                <span className="text-[9px]">{contact.window.isOpen ? '⏱' : '✕'}</span>
+                                <span>{contact.window.remainingLabel}</span>
                               </span>
                             ) : null}
                           </div>

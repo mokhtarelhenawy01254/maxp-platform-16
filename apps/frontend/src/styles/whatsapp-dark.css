@@ -132,8 +132,7 @@
 
 /* ── Messages Area ── */
 .dark .whatsapp-messages-area {
-  background-color: color-mix(in srgb, var(--color-background) 86%, black 14%);
-  background-image: none;
+  background-color: #0b141a;
 }
 
 /* ── Message Bubbles ── */
