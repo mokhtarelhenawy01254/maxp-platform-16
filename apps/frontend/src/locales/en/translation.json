@@ -5651,8 +5651,8 @@
     "whatsappInboxSettings": "Inbox Settings",
     "whatsappAnalytics": "WhatsApp Analytics",
     "whatsappMetaTemplates": "Meta Templates",
-    "whatsappTemplateBroadcast": "Template Broadcast",
     "whatsappLeadFollowup": "Lead Follow-up",
+    "whatsappTemplateBroadcast": "Template Broadcast",
     "whatsappCustomerJourney": "Customer Journey",
     "whatsappJourney": "Post-Delivery Follow-up",
     "whatsappNotifications": "WhatsApp Notifications",
@@ -7165,6 +7165,76 @@
       "tip1": "Make the first message about customer satisfaction.",
       "tip2": "Add a discount code in later steps to encourage repeat orders.",
       "tip3": "Use variables like {firstName} to make messages feel personal."
+    }
+  },
+  "whatsappLeadFollowup": {
+    "title": "Lead Follow-up",
+    "subtitle": "Automatically follow up with leads who message you on WhatsApp",
+    "tabs": {
+      "flows": "Follow-up Flows",
+      "monitoring": "Lead Enrollments"
+    },
+    "stats": {
+      "activeEnrollments": "Active Leads",
+      "totalSent": "Total Messages Sent",
+      "completionRate": "Completion Rate",
+      "totalEnrollments": "Total Enrolled"
+    },
+    "flows": {
+      "addNew": "Create New Flow",
+      "edit": "Edit Flow",
+      "empty": "No lead follow-up flows yet",
+      "emptyDesc": "Create your first flow to automatically follow up with new leads who send a WhatsApp message.",
+      "name": "Flow Name",
+      "steps": "Steps",
+      "status": "Status",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "activeLeads": "{{count}} Active"
+    },
+    "steps": {
+      "title": "Flow Steps",
+      "add": "Add Step",
+      "edit": "Edit Step",
+      "delay": "Delay: {{hours}} hours",
+      "hour": "1 Hour",
+      "hours": "{{count}} Hours",
+      "content": "Message Content",
+      "variables": "Available Variables",
+      "preview": "Message Preview"
+    },
+    "monitoring": {
+      "customer": "Customer",
+      "currentStep": "Current Step",
+      "nextMessage": "Next Message",
+      "status": "Status",
+      "lastSent": "Last Sent",
+      "notStarted": "Pending",
+      "completed": "Completed",
+      "active": "Active",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "inactive": "Inactive",
+      "details": "Enrollment Details",
+      "step": "Step {{current}} of {{total}}"
+    },
+    "dialogs": {
+      "deleteFlowTitle": "Delete Flow",
+      "deleteFlowContent": "Are you sure you want to delete this flow? It will stop for all enrolled leads.",
+      "deleteStepTitle": "Delete Step",
+      "deleteStepContent": "Are you sure you want to delete this step?"
+    },
+    "actions": {
+      "saveSuccess": "Saved successfully",
+      "saveError": "Failed to save data",
+      "deleteSuccess": "Deleted successfully",
+      "deleteError": "Delete failed"
+    },
+    "hints": {
+      "title": "Smart Tips",
+      "tip1": "Send first follow-up within 24 hours while the conversation is fresh.",
+      "tip2": "Ask about their needs or offer help to start a conversation.",
+      "tip3": "Use {firstName} to personalize the message."
     }
   },
   "whatsappNotifications": {

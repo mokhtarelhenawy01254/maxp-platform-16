@@ -146,7 +146,7 @@ export default function DiscountImpactCalculator() {
   }, []);
 
   const persist = useCallback((list: SavedScenario[]) => {
-    setSaved(list); localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    setSaved(list); try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
   }, []);
 
   const set = (field: keyof Inputs) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -181,10 +181,13 @@ export default function DiscountImpactCalculator() {
       }
       return compute(mod, tab);
     };
+    const half = make("halfDiscount");
+    const dbl = make("doubleLift");
+    const cost = make("reduceCosts");
     return {
-      halfDiscount: { result: make("halfDiscount"), impact: make("halfDiscount").requiredLiftPct - r.requiredLiftPct },
-      doubleLift: { result: make("doubleLift"), impact: make("doubleLift").totalProfitAfter - r.totalProfitAfter },
-      reduceCosts: { result: make("reduceCosts"), impact: make("reduceCosts").profitPerUnitAfter - r.profitPerUnitAfter },
+      halfDiscount: { result: half, impact: half.requiredLiftPct - r.requiredLiftPct },
+      doubleLift: { result: dbl, impact: dbl.totalProfitAfter - r.totalProfitAfter },
+      reduceCosts: { result: cost, impact: cost.profitPerUnitAfter - r.profitPerUnitAfter },
     };
   }, [inputs, tab, r.requiredLiftPct, r.totalProfitAfter, r.profitPerUnitAfter]);
 
@@ -589,7 +592,7 @@ export default function DiscountImpactCalculator() {
                       [T("step5"), `${fmtCurr(Math.round(r.profitPerUnitBefore))} × ${inputs.currentOrders}`, fmtCurr(Math.round(r.totalProfitBefore))],
                       [T("step6"), `${fmtCurr(Math.round(r.profitPerUnitAfter))} × (${inputs.currentOrders} × (1 + ${inputs.expectedLift}%))`, fmtCurr(Math.round(r.totalProfitAfter))],
                       [T("step7"), `${fmtCurr(Math.round(r.totalProfitBefore))} ÷ ${fmtCurr(Math.round(r.profitPerUnitAfter))}`, fmt(r.breakEvenOrders)],
-                      [T("step8"), `(${r.breakEvenOrders} ÷ ${inputs.currentOrders} − 1) × 100`, `${fmt(r.requiredLiftPct)}%`],
+                      [T("step8"), `(${fmt(r.breakEvenOrders)} ÷ ${inputs.currentOrders} − 1) × 100`, `${fmt(r.requiredLiftPct)}%`],
                     ].map(([step, formula, result], i) => (
                       <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-gray-400">{i + 1}</td>
