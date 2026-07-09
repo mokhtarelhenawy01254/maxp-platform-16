@@ -33,6 +33,7 @@ interface BookingBranch {
   workingDays: string; workStart: string; workEnd: string;
   isActive: boolean; createdAt: string;
   maxBookingsPerSlot?: number;
+  location?: string; landmarkImage?: string;
 }
 
 interface BookingDoctor {
@@ -169,6 +170,15 @@ const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600
           <div className="space-y-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الموقع</label><input className={MODAL_INPUT_CLS} placeholder="رابط الخريطة أو عنوان الموقع" value={form.location || ""} onChange={e => setForm({ ...form, location: e.target.value })} /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">صورة علامة مميزة</label>
+              <input type="file" accept="image/*" className={MODAL_INPUT_CLS} onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) { const reader = new FileReader(); reader.onloadend = () => setForm({ ...form, landmarkImage: reader.result as string }); reader.readAsDataURL(file); }
+              }} />
+              {form.landmarkImage && <div className="mt-2 relative inline-block"><img src={form.landmarkImage} className="h-20 w-20 object-cover rounded border dark:border-gray-600" alt="علامة مميزة" /><button onClick={() => setForm({ ...form, landmarkImage: undefined })} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>}
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أرقام الهاتف</label>
               <div className="space-y-2">
@@ -714,6 +724,8 @@ export default function BookingManagementPage() {
       body.genderDays = { male: [], female: [] };
     }
     if (d.maxBookingsPerSlot !== undefined) body.maxBookingsPerSlot = d.maxBookingsPerSlot;
+    if (d.location !== undefined) body.location = d.location;
+    if (d.landmarkImage !== undefined) body.landmarkImage = d.landmarkImage;
     const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const data = await res.json();
     if (!data.success) { alert(data.error || "فشل الحفظ"); return; }
@@ -942,6 +954,7 @@ export default function BookingManagementPage() {
               <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex flex-wrap gap-1">{(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{p}</span>) || "—"}</div>
+            {b.location && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 truncate" title={b.location}>📍 {b.location}</p>}
             {(() => {
               const gd = typeof b.genderDays === 'string' ? (() => { try { return JSON.parse(b.genderDays); } catch { return null; } })() : b.genderDays;
               if (!gd || (!gd.male?.length && !gd.female?.length)) return null;
@@ -965,11 +978,12 @@ export default function BookingManagementPage() {
       {/* Desktop table */}
       <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full">
-          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الهاتف", "أيام العمل", "الجنس", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
+          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الموقع", "الهاتف", "أيام العمل", "الجنس", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
           <tbody>{branches.map(b => (
             <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
               <td className="py-3 px-4 font-medium">{b.name}</td>
               <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
+              <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400 max-w-[150px] truncate" title={b.location}>{b.location || "—"}</td>
               <td className="py-3 px-4">
                 <div className="flex flex-wrap gap-1">
                   {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="text-xs inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">{p}</span>) || "—"}

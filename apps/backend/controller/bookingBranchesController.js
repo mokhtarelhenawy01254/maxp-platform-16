@@ -23,7 +23,7 @@ const createBranch = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    let { name, address, phone, phones, workingDays, genderDays, maxBookingsPerSlot } = req.body;
+    let { name, address, phone, phones, workingDays, genderDays, maxBookingsPerSlot, location, landmarkImage } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم الفرع مطلوب' });
 
     if (typeof workingDays === 'string') { try { workingDays = JSON.parse(workingDays); } catch (e) {} }
@@ -31,7 +31,7 @@ const createBranch = async (req, res) => {
     if (typeof phones === 'string') { try { phones = JSON.parse(phones); } catch (e) {} }
 
     const branch = await getSharedPrismaClient().bookingBranch.create({
-      data: { companyId, name: name.trim(), address, phone, phones, workingDays, genderDays, maxBookingsPerSlot: maxBookingsPerSlot ?? 1 }
+      data: { companyId, name: name.trim(), address, phone, phones, workingDays, genderDays, maxBookingsPerSlot: maxBookingsPerSlot ?? 1, location, landmarkImage }
     });
     res.json({ success: true, data: branch });
   } catch (error) {
@@ -46,7 +46,7 @@ const updateBranch = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    let { name, address, phone, phones, workingDays, genderDays, isActive, maxBookingsPerSlot } = req.body;
+    let { name, address, phone, phones, workingDays, genderDays, isActive, maxBookingsPerSlot, location, landmarkImage } = req.body;
 
     const existing = await getSharedPrismaClient().bookingBranch.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الفرع غير موجود' });
@@ -57,7 +57,7 @@ const updateBranch = async (req, res) => {
 
     const branch = await getSharedPrismaClient().bookingBranch.update({
       where: { id },
-      data: { name, address, phone, phones, workingDays, genderDays, isActive, maxBookingsPerSlot }
+      data: { name, address, phone, phones, workingDays, genderDays, isActive, maxBookingsPerSlot, location, landmarkImage }
     });
     res.json({ success: true, data: branch });
   } catch (error) {
