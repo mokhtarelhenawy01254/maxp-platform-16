@@ -556,10 +556,20 @@ async def get_template_companies(slug: str, session: SessionDep) -> AgentTemplat
             diffs.append(AgentTemplateCompanyDiff(field="guardrails", type="modified"))
         if agent.budget and agent.budget != template.budget:
             diffs.append(AgentTemplateCompanyDiff(field="budget", type="modified"))
-        _agent_persona = dict(agent.persona or {})
-        _tmpl_persona = dict(template.persona_meta or {})
-        if _agent_persona != _tmpl_persona:
-            diffs.append(AgentTemplateCompanyDiff(field="persona", type="modified", template_value=_tmpl_persona, agent_value=_agent_persona))
+        _agent_instr = {
+            "soul": (agent.persona or {}).get("soulInstructions") or "",
+            "persona": (agent.persona or {}).get("personaInstructions") or "",
+            "agents": (agent.persona or {}).get("agentInstructions") or "",
+            "tools": (agent.persona or {}).get("toolsInstructions") or "",
+        }
+        _tmpl_instr = {
+            "soul": template.instructions_soul or "",
+            "persona": template.instructions_persona or "",
+            "agents": template.instructions_agents or "",
+            "tools": template.instructions_tools or "",
+        }
+        if _agent_instr != _tmpl_instr:
+            diffs.append(AgentTemplateCompanyDiff(field="persona", type="modified", template_value=_tmpl_instr, agent_value=_agent_instr))
         if agent.version != template.version:
             diffs.append(AgentTemplateCompanyDiff(field="version", type="modified", template_value=template.version, agent_value=agent.version))
 
@@ -688,7 +698,16 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         model=model,
         soul=body.soul or (template.soul if template else None),
         rules=body.rules or (template.rules if template else None),
-        persona=(template.persona if template else {}) | (body.persona or {}),
+        persona=(
+            {
+                "soulInstructions": template.instructions_soul or "",
+                "personaInstructions": template.instructions_persona or "",
+                "agentInstructions": template.instructions_agents or "",
+                "toolsInstructions": template.instructions_tools or "",
+            }
+            if template
+            else {}
+        ) | (body.persona or {}),
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
         channels=body.allowed_channels or (template.channels if template else []),

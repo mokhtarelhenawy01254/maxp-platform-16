@@ -139,9 +139,9 @@ async def _resolve_channel_agent(
             if matches:
                 db_agent = matches[0]
                 resolved_model = await _resolve_agent_model(db_agent, session)
-                # Fetch template instructions (soul/persona) if agent has none
+                # Fetch template instructions for fallback (persona, agents, tools)
                 tmpl_instr = None
-                if db_agent.template_slug and not (db_agent.soul or (db_agent.persona or {}).get("soulInstructions")):
+                if db_agent.template_slug:
                     try:
                         tmpl = await get_template(db_agent.template_slug, session)
                         if tmpl:
