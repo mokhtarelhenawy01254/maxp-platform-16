@@ -286,14 +286,14 @@ async def _log_search_analytic(
         sf = _db_mod.async_session
         async with sf() as sess:
             await sess.execute(
-                _text("""
+                _text('''
                     INSERT INTO search_analytics
-                        (id, company_id, query, results_count, was_successful,
-                         response_time, intent, metadata, customer_id)
+                        (id, "companyId", query, "resultsCount", "wasSuccessful",
+                         "responseTime", intent, metadata, "customerId")
                     VALUES
                         (:id, :cid, :query, :count, :ok,
                          :latency, :intent, :meta, NULL)
-                """),
+                '''),
                 {
                     "id": str(int(time.time() * 1_000_000)),
                     "cid": company_id,
