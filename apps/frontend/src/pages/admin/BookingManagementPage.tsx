@@ -280,15 +280,6 @@ export default function BookingManagementPage() {
         <h1 className="text-3xl font-bold mb-2">إدارة النظام الطبي</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm max-w-2xl">نظام إدارة المواعيد والخدمات الطبية</p>
       </div>
-      <div className="mb-4">
-        <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm w-full sm:w-64 dark:bg-gray-800 dark:text-gray-100" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
-          <option value="">كل الفروع</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
-        {selectedBranchId && (
-          <button onClick={() => setSelectedBranchId("")} className="mr-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700">إزالة الفلتر</button>
-        )}
-      </div>
       <div className="flex flex-wrap gap-2 mb-8 md:flex-nowrap md:border-b md:dark:border-gray-700 md:overflow-x-auto">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
