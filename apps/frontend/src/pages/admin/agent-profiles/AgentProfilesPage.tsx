@@ -311,7 +311,6 @@ export default function AgentProfilesPage() {
                 "رسالة الترحيب": "soul_welcome",
                 "عندما لا تعرف الإجابة": "soul_escalation",
                 "لغة الرد": "soul_language",
-                "تعليمات إضافية": "soul_custom",
               };
               for (const [section, key] of Object.entries(sectionMap)) {
                 const re = new RegExp(`## ${section}\\n([\\s\\S]*?)(?=\\n## |\\n?$)`);
@@ -329,10 +328,6 @@ export default function AgentProfilesPage() {
               };
               if (parsedConfig.soul_escalation && escRev[parsedConfig.soul_escalation]) parsedConfig.soul_escalation = escRev[parsedConfig.soul_escalation];
             }
-          }
-          if (!parsedConfig.soul_custom && data.files?.["SOUL.md"]) {
-            const m2 = data.files["SOUL.md"].match(/## تعليمات إضافية\n([\s\S]*?)(?=\n## |\n?$)/);
-            if (m2) parsedConfig.soul_custom = m2[1].trim();
           }
           setDraftConfig(parsedConfig);
           if (parsedConfig.soul_persona) generateSoulFromConfig(parsedConfig);
@@ -392,7 +387,6 @@ export default function AgentProfilesPage() {
       icon: draftIcon,
       config: draftConfig,
       files: draftFiles,
-      customInstructions: draftConfig.soul_custom ? { soul: draftConfig.soul_custom } : undefined,
     };
     const data = await tryApiFetch<{ success: boolean } & Record<string, unknown>>(
       `/agent/agents/${selectedId}/files`,
@@ -946,17 +940,6 @@ export default function AgentProfilesPage() {
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
                       </div>
 
-                      <hr className="border-t border-border/50" />
-
-                      {/* تعليمات إضافية */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.customPrompt")}</label>
-                        <p className={`text-sm whitespace-pre-wrap font-mono ${draftConfig.soul_custom ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                          {draftConfig.soul_custom || "—"}
-                        </p>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
-                      </div>
-
                       {/* PERSONA.md - شخصية الوكيل */}
                       <div>
                         <label className="block text-sm font-medium text-foreground/70 mb-1">شخصية الوكيل (PERSONA.md)</label>
@@ -1006,20 +989,6 @@ export default function AgentProfilesPage() {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
-                      </div>
-
-                      <hr className="border-t border-border/50" />
-
-                      {/* تعليمات إضافية */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.customPrompt")}
-                          {isCustomPromptLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Textarea value={draftConfig.soul_custom || ""} onChange={(e) => handleSoulFieldChange("soul_custom", e.target.value)}
-                          disabled={isCustomPromptLocked}
-                          placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[80px] resize-y font-mono text-xs" />
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
                       </div>
 
                       {/* PERSONA.md - شخصية الوكيل */}
