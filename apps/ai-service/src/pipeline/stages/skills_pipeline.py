@@ -182,11 +182,17 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             ctx.llm_response = ""
 
     # Auto-populate response_attachments from landmarkImage in tool evidence
+    import logging as _log
+    _log.warning("AUTO-POPULATE: tool_evidence=%s", str(ctx.tool_evidence)[:500])
     for evidence in ctx.tool_evidence:
         result = evidence.get("result", {})
+        _log.warning("AUTO-POPULATE: evidence.tool=%s result.type=%s has_branches=%s", evidence.get("tool"), type(result).__name__, "branches" in result if isinstance(result, dict) else "N/A")
         if isinstance(result, dict):
-            for branch in (result.get("branches") or []):
+            branches = result.get("branches") or []
+            _log.warning("AUTO-POPULATE: branches_count=%d", len(branches))
+            for branch in branches:
                 img = (branch.get("landmarkImage") or "")
+                _log.warning("AUTO-POPULATE: branch=%s has_img=%s img_starts=%s", branch.get("name"), bool(img), img[:50] if img else "NONE")
                 if img and img.startswith("data:"):
                     ctx.response_attachments.append({
                         "type": "image",
@@ -194,6 +200,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         "source": "tool_result",
                         "tool": evidence.get("tool", "booking_info"),
                     })
+                    _log.warning("AUTO-POPULATE: APPENDED image len=%d", len(img))
+    _log.warning("AUTO-POPULATE: final response_attachments=%s", str(ctx.response_attachments))
 
     ctx.llm_result = provider_response
     return ctx
