@@ -35,14 +35,15 @@ const getById = async (req, res) => {
 
 const createPublic = async (req, res) => {
   try {
-    const { companyId, serviceId, customerName, phone, description, referenceFiles } = req.body;
-    if (!companyId || !serviceId || !customerName || !phone) {
+    const cid = req.body.companyId || req.user?.companyId;
+    const { serviceId, customerName, phone, description, referenceFiles } = req.body;
+    if (!cid || !serviceId || !customerName || !phone) {
       return res.status(400).json({ success: false, error: 'جميع الحقول المطلوبة: الشركة، الخدمة، الاسم، الهاتف' });
     }
-    const service = await getSharedPrismaClient().service.findFirst({ where: { id: serviceId, companyId, isActive: true } });
+    const service = await getSharedPrismaClient().service.findFirst({ where: { id: serviceId, companyId: cid, isActive: true } });
     if (!service) return res.status(404).json({ success: false, error: 'الخدمة غير موجودة' });
     const data = await getSharedPrismaClient().serviceOrder.create({
-      data: { companyId, serviceId, customerName, phone, description, referenceFiles: referenceFiles || [] }
+      data: { companyId: cid, serviceId, customerName, phone, description, referenceFiles: referenceFiles || [] }
     });
     res.json({ success: true, data });
   } catch (error) {
