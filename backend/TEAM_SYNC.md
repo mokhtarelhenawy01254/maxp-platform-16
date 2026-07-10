@@ -8,6 +8,12 @@
   4. Moved the Branch filter dropdown from the collapsible advanced panel to the top filters row next to "تصفية متقدمة", making it always visible for quick access with a clean, compact appearance.
   5. Restored vertical scrolling on the booking management page by adding `h-full overflow-y-auto` to the outer container in `BookingManagementPage.tsx`, fixing viewport clipping caused by the parent layout shell's `overflow-hidden` on the `<main>` wrapper.
   6. Removed redundant top page header ("إدارة النظام الطبي / نظام إدارة المواعيد والخدمات الطبية") and page-level tabs list from `BookingManagementPage.tsx`, as they duplicated the primary sidebar navigation.
+- **Branches Management UI/UX & Modal Usability Overhaul (UI/UX / FEATURE)**: Redesigned the branches tab (`/admin/booking/branches`) and the branch form modal to align with 2026 UI aesthetics and address several functional constraints:
+  1. Resolved viewport clipping on mobile/small displays by implementing a scroll container with a max height limit (`max-h-[90vh] overflow-y-auto`) and a `backdrop-blur-sm` overlay for the modal backdrop container.
+  2. Upgraded the file upload field from a standard browser file input to a custom, modern Arabic-first card (with clear visual hints, a clickable choose button, and size limits verification).
+  3. Formatted working days in desktop and mobile views from a verbose plain text column to compact, interactive circular day badges (`س`, `ح`, `ن`, `ث`, `ر`, `خ`, `ج`) with dynamic hover tooltips.
+  4. Parsed location field URLs to display inline `📍 فتح الخريطة` buttons opening in a new browser tab.
+  5. Resolved strict TypeScript compilation errors across `shared.ts`, `BranchModal.tsx`, `BranchesTab.tsx`, and `BookingManagementPage.tsx`.
 
 ## 2026-07-09 / 2026-03-09
 - **Company Dashboard Welcome State Removal (UI/UX)**: Removed the `DashboardWelcomeState` component and its import/rendering rules from the main dashboard (`MainDashboardPage.tsx`) so that the core dashboard metrics and charts are always visible to new users or companies without the ecommerce application active. Deleted the unused `DashboardWelcomeState.tsx` file.

@@ -732,10 +732,7 @@
       "rag": "Knowledge Base",
       "tools": "Tools",
       "skills": "Skills",
-    "services": "Service Requests",
-    "serviceOrders": "Orders",
-    "newServiceRequest": "New Service Request",
-    "scheduler": "Scheduler",
+      "scheduler": "Scheduler",
       "routing": "Channel Routing"
     },
     "channelRouting": {
@@ -5480,6 +5477,9 @@
     "loyaltyMembers": "Loyalty Members",
     "loyaltyPrograms": "Loyalty Programs",
     "loyaltyTiers": "Loyalty Tiers",
+    "newServiceRequest": "New Service Request",
+    "services": "Services",
+    "serviceOrders": "Requests",
     "educationModule": "Education",
     "educationDashboard": "Dashboard",
     "educationSubjects": "Subjects",

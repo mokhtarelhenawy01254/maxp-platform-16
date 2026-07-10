@@ -25,6 +25,10 @@ No API endpoints were modified or added, but:
    - **Configuration Column (7 cols)**: Renders the "Core Product Information" form fields directly onto the page canvas without enclosing Card borders. Replaces heavy nested card sections with borderless, flat macOS/iOS-style collapsible accordion sections separated by thin dividers (`border-b border-slate-100`). Restructured the presets into a borderless row of clean tags (Chips) that transition smoothly on hover.
    - **Preview & Actions Column (5 cols)**: Sticky control panel styled as a floating glassmorphic pane (`backdrop-blur-md bg-white/70 dark:bg-slate-900/40`) with soft shadows instead of qausi-cards. The responsive advertisement mockup (`AspectPreview`) floats as a borderless canvas widget with multi-level soft shadows.
    - **Full-Width Gallery Section (12 cols)**: Renders previously generated images in a borderless grid layout with rounded corners, aspect ratio indicators, hover scale effects, and the "Clone Settings" metadata restoration shortcut.
+3. **Branches Management Page Overhaul (`/admin/booking/branches`)**: Re-architected and polished the branches layout and management popup for premium UX:
+   - **Branch working days**: Circular badges for working days (desktop/mobile) with dynamic hover tooltips showing hours.
+   - **Branch modal**: Embedded scrollable container to support viewport constraints, customized file upload container widget, and active days dependency constraints for gender selection.
+   - **Unified Header Filter**: Positioned a global branch selector dropdown next to advanced filtering options on the Booking Management Page.
 
 
 ### Database Schema Models

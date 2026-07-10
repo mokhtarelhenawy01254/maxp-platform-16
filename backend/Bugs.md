@@ -1,5 +1,25 @@
 # Backend Bugs Log
 
+### [FIX] Branch Modal Overflow, Custom Upload Container, Working Days Badges, Map URLs and Strict TypeScript Checks in Branches Management
+- **Date**: 2026-07-10
+- **Description**:
+  1. Resolved modal height overflow on small viewports in `BranchModal.tsx` by introducing `max-h-[90vh] overflow-y-auto` scrolling container.
+  2. Added `backdrop-blur-sm` overlay to the modal backdrop container for enhanced design aesthetics.
+  3. Replaced standard browser-native file input with a custom, polished upload card designed specifically for Arabic layout (📸 + clickable choose button).
+  4. Added `type="button"` attributes to dynamic sub-elements (phones list, day toggle tags) inside `BranchModal.tsx` to prevent accidental form submit actions.
+  5. Implemented regex phone number validation (`/^[0-9+\-\s]+$/`) to reject arbitrary text inputs.
+  6. Disabled gender-specific day buttons (men/women working days) unless those days are first selected as branch working days, adding a helpful explanation tooltip.
+  7. Formatted branch working days list into compact, interactive circular badges (`س`, `ح`, `ن`, `ث`, `ر`, `خ`, `ج`) in both desktop table and mobile card views inside `BranchesTab.tsx` with detailed timing tooltips.
+  8. Parsed geographic location links to display interactive `📍 فتح الخريطة` buttons opening in a new browser tab.
+  9. Resolved strict TypeScript compile errors (`TS6133` unused variables, `TS4111` index signature dot-access, `TS2345` undefined params) in `BookingManagementPage.tsx`.
+- **Root Cause**: Missing overflow configuration on container, primitive default HTML file inputs, form-submission side effects of standard button elements inside form layouts, loose phone input validation, and strict Vite/React compiler flags.
+- **Resolution**: Implemented scrolling modals, custom file input widgets, type-safe validations, visual day badges, and converted object property dot access to bracket access for strict TypeScript compliance.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/booking/shared.ts`
+  - `apps/frontend/src/pages/admin/booking/BranchModal.tsx`
+  - `apps/frontend/src/pages/admin/booking/BranchesTab.tsx`
+  - `apps/frontend/src/pages/admin/BookingManagementPage.tsx`
+
 ### [FIX] Modeless Undo Notification, Visual Time-Slot Grid, Scrolling Restore, Branch Filter Relocation, and Redundant Header/Tabs Removal in Appointments Booking
 - **Date**: 2026-07-10
 - **Description**:
