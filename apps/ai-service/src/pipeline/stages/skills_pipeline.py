@@ -191,7 +191,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 img = (branch.get("landmarkImage") or "")
                 if not img:
                     continue
-                if img.startswith("data:"):
+                if img.startswith("data:") or img.startswith("http"):
                     ctx.response_attachments.append({
                         "type": "image",
                         "url": img,
