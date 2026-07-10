@@ -463,7 +463,7 @@ async def list_logs(
     total = total_orm + total_pub
 
     fetch_limit = offset + limit
-    stmt = select(ProviderLog).order_by(ProviderLog.created_at.desc())
+    stmt = select(ProviderLog).order_by(ProviderLog.created_at.desc(), ProviderLog.id.desc())
     if provider:
         stmt = stmt.where(ProviderLog.provider == provider)
     if key_id:
@@ -483,7 +483,7 @@ async def list_logs(
                    "companyId" AS company_id, "createdAt" AS created_at
             FROM public.ai_provider_logs
             WHERE {clause}
-            ORDER BY "createdAt" DESC LIMIT :lim
+            ORDER BY "createdAt" DESC, id DESC LIMIT :lim
         """), pp)
         rows.extend(LogEntry.model_validate(r) for r in pub.mappings().all())
         rows.sort(key=lambda r: r.created_at, reverse=True)

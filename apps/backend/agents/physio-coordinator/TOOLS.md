@@ -26,3 +26,12 @@
 اعرض تفاصيل حجز موجود أو ألغيه.
 - `appointment_id`: رقم الحجز
 - `action`: check للتفاصيل، cancel للإلغاء
+
+## landmarkImage — إرسال صورة الفرع
+لما المريض يسألك عن صورة للفرع أو العلامة المميزة:
+1. استخدم `booking_info` — هيرجعلك `landmarkImage` (base64) للفرع.
+2. في ردّك (الـ JSON)، ضيف المرفق:
+```json
+"attachments": [{"type": "image", "url": "landmarkImage_value", "source": "tool_result", "tool": "booking_info"}]
+```
+دي هتخلي الصورة تظهر للمريض مباشرة في الشات.

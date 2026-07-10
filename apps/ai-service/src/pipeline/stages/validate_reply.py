@@ -106,7 +106,8 @@ async def _correct_validation_error(
         '  "action_taken": "اسم الإجراء المتخذ أو null",\n'
         '  "escalation_needed": false, // قيمة منطقية\n'
         '  "escalation_reason": "سبب التصعيد أو null",\n'
-        '  "metadata": {} // كائن يحتوي على أي بيانات إضافية\n'
+        '  "metadata": {}, // كائن يحتوي على أي بيانات إضافية\n'
+        '  "attachments": [] // قائمة المرفقات: [{type: "image", url: "data:...", source: "tool_result", tool: "tool_name"}]\n'
         "}\n"
     )
     correction_msg = (
@@ -206,6 +207,8 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
             validated = AgentResponse(**response_data)
             ctx.response_contract = validated
             ctx.final_reply = validated.reply
+            if validated.attachments:
+                ctx.response_attachments = validated.attachments
             ctx.llm_response = reply
             break  # Validation succeeded!
         except Exception as exc:

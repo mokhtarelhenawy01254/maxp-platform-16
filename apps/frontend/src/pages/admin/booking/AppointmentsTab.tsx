@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import {
-  XMarkIcon, EyeIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon
+  XMarkIcon, EyeIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon, CalendarDaysIcon
 } from "@heroicons/react/24/outline";
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService,
@@ -80,53 +80,64 @@ export default function AppointmentsTab({
 
   return (
     <div>
+      {/* Row 1: header + search + add */}
       <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
         <h2 className="text-xl font-bold">المواعيد</h2>
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex items-center gap-2">
           <div className="relative">
             <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input type="text" placeholder="بحث باسم أو هاتف..."
-              className={`${MODAL_INPUT_CLS} pr-9 w-48`}
+              className={`${MODAL_INPUT_CLS} pr-9${filters.search ? ' pl-8' : ''} w-48`}
               value={filters.search}
               onChange={e => onFiltersChange({ ...filters, search: e.target.value })} />
+            {filters.search && (
+              <button onClick={() => onFiltersChange({ ...filters, search: '' })}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            )}
           </div>
-          <select className={MODAL_INPUT_CLS} value={filters.status} onChange={e => onFiltersChange({ ...filters, status: e.target.value })}>
-            <option value="">كل الحالات</option>
-            {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
-          <select className={MODAL_INPUT_CLS} value={filters.branchId} onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}>
-            <option value="">كل الفروع</option>
-            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-          <input type="date" className={MODAL_INPUT_CLS} value={filters.dateFrom} onChange={e => onFiltersChange({ ...filters, dateFrom: e.target.value })} />
-          <input type="date" className={MODAL_INPUT_CLS} value={filters.dateTo} onChange={e => onFiltersChange({ ...filters, dateTo: e.target.value })} />
           <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />حجز موعد</button>
         </div>
       </div>
-      {/* Quick date filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => setQuickDate(0)}
-          className={`text-xs px-3 py-1.5 rounded-lg font-medium border ${isToday ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>اليوم</button>
-        <button onClick={() => setQuickDate(7)}
-          className={`text-xs px-3 py-1.5 rounded-lg font-medium border ${isThisWeek ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>آخر 7 أيام</button>
-        <button onClick={() => setQuickDate(30)}
-          className="text-xs px-3 py-1.5 rounded-lg font-medium border bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">آخر 30 يوم</button>
-        {(filters.dateFrom || filters.dateTo) && (
+      {/* Row 2: filters */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <select className={`${MODAL_INPUT_CLS} w-auto`} value={filters.status} onChange={e => onFiltersChange({ ...filters, status: e.target.value })}>
+          <option value="">كل الحالات</option>
+          {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+        <select className={`${MODAL_INPUT_CLS} w-auto`} value={filters.branchId} onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}>
+          <option value="">كل الفروع</option>
+          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        <span className="text-xs text-gray-500 dark:text-gray-400 mx-1 hidden sm:inline">الفترة:</span>
+        <input type="date" className={`${MODAL_INPUT_CLS} w-auto`} value={filters.dateFrom} onChange={e => onFiltersChange({ ...filters, dateFrom: e.target.value })} />
+        <span className="text-gray-400 dark:text-gray-500">—</span>
+        <input type="date" className={`${MODAL_INPUT_CLS} w-auto`} value={filters.dateTo} onChange={e => onFiltersChange({ ...filters, dateTo: e.target.value })} />
+        <div className="flex gap-1">
+          <button onClick={() => setQuickDate(0)}
+            className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${isToday ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>اليوم</button>
+          <button onClick={() => setQuickDate(7)}
+            className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${isThisWeek ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>٧ أيام</button>
+          <button onClick={() => setQuickDate(30)}
+            className="text-xs px-2 py-1.5 rounded-lg font-medium border bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">٣٠ يوم</button>
           <button onClick={() => onFiltersChange({ ...filters, dateFrom: '', dateTo: '' })}
-            className="text-xs px-3 py-1.5 rounded-lg font-medium text-red-600 border border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">إزالة الفلتر</button>
-        )}
+            className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${filters.dateFrom || filters.dateTo ? 'text-red-600 border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-300 border-gray-200 dark:text-gray-600 dark:border-gray-700 cursor-default'}`}>
+            <XMarkIcon className="w-3 h-3" />
+          </button>
+        </div>
       </div>
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300 ml-2">{selectedIds.size} موعد محدد</span>
-          <button onClick={() => onBulkUpdateStatus("confirmed")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60">تأكيد</button>
-          <button onClick={() => onBulkUpdateStatus("cancelled")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60">إلغاء</button>
-          <button onClick={() => onBulkUpdateStatus("completed")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60">إتمام</button>
-          <button onClick={() => onBulkUpdateStatus("no_show")} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">لم يحضر</button>
-          <span className="w-px h-5 bg-blue-200 dark:bg-blue-800"></span>
-          <button onClick={onBulkDelete} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60">حذف</button>
-          <button onClick={onClearSelection} className="text-xs px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">إلغاء التحديد</button>
+        <div className="flex flex-wrap items-center gap-1.5 mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <span className="text-xs font-medium text-blue-700 dark:text-blue-300 ml-2">{selectedIds.size} محدد</span>
+          <button onClick={() => onBulkUpdateStatus("confirmed")} className="text-xs px-2 py-1 rounded font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-200">تأكيد</button>
+          <button onClick={() => onBulkUpdateStatus("cancelled")} className="text-xs px-2 py-1 rounded font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200">إلغاء</button>
+          <button onClick={() => onBulkUpdateStatus("completed")} className="text-xs px-2 py-1 rounded font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200">إتمام</button>
+          <button onClick={() => onBulkUpdateStatus("no_show")} className="text-xs px-2 py-1 rounded font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200">لم يحضر</button>
+          <span className="w-px h-4 bg-blue-200 dark:bg-blue-800"></span>
+          <button onClick={onBulkDelete} className="text-xs px-2 py-1 rounded font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200">حذف</button>
+          <button onClick={onClearSelection} className="text-xs px-2 py-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border dark:border-gray-600 rounded hover:bg-gray-50">إلغاء</button>
         </div>
       )}
       {/* Mobile card view */}
@@ -134,7 +145,10 @@ export default function AppointmentsTab({
         {loading ? (
           <p className="text-center py-12 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
         ) : appointments.length === 0 ? (
-          <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</p>
+          <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+            <CalendarDaysIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>لا توجد مواعيد</p>
+          </div>
         ) : appointments.map(a => (
           <div key={a.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
             <div className="flex justify-between items-start mb-2">
@@ -152,22 +166,24 @@ export default function AppointmentsTab({
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.branchName || "—"}</span>
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.appointmentDate}</span>
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.startTime}</span>
-              {a.serviceName && <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-lg">{a.serviceName}</span>}
-              {a.createdByName && (
+              {a.serviceName && <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg font-medium">الخدمة: {a.serviceName}</span>}
+              {a.createdByName ? (
                 <span className={`px-2 py-1 rounded-lg text-xs ${a.createdByType === 'ai_service' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
-                  {a.createdByType === 'ai_service' ? 'أجنت: ' : 'موظف: '}{a.createdByName}
+                  {a.createdByType === 'ai_service' ? 'أجنت' : 'موظف'}: {a.createdByName}
                 </span>
+              ) : (
+                <span className="bg-gray-100 dark:bg-gray-700 text-gray-400 px-2 py-1 rounded-lg">المسجل: —</span>
               )}
             </div>
             <div className="flex gap-2">
               {a.status === "pending" && (
                 <>
-                  <button onClick={() => confirmAndUpdate(a.id, "confirmed", "مؤكد")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50"><CheckIcon className="w-3 h-3 inline ml-1" />تأكيد</button>
-                  <button onClick={() => confirmAndUpdate(a.id, "cancelled", "ملغي")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50"><XMarkIcon className="w-3 h-3 inline ml-1" />إلغاء</button>
+                  <button onClick={() => confirmAndUpdate(a.id, "confirmed", "مؤكد")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50">{updatingId === a.id ? 'جاري...' : <><CheckIcon className="w-3 h-3 inline ml-1" />تأكيد</>}</button>
+                  <button onClick={() => confirmAndUpdate(a.id, "cancelled", "ملغي")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50">{updatingId === a.id ? 'جاري...' : <><XMarkIcon className="w-3 h-3 inline ml-1" />إلغاء</>}</button>
                 </>
               )}
               {a.status === "confirmed" && (
-                <button onClick={() => confirmAndUpdate(a.id, "completed", "مكتمل")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50"><CheckIcon className="w-3 h-3 inline ml-1" />إتمام</button>
+                <button onClick={() => confirmAndUpdate(a.id, "completed", "مكتمل")} disabled={updatingId === a.id} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50">{updatingId === a.id ? 'جاري...' : <><CheckIcon className="w-3 h-3 inline ml-1" />إتمام</>}</button>
               )}
               <button onClick={() => onEdit(a)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><EyeIcon className="w-3 h-3 inline ml-1" />عرض</button>
             </div>
@@ -188,9 +204,12 @@ export default function AppointmentsTab({
             {loading ? (
               <tr><td colSpan={9} className="text-center py-12 text-gray-400 dark:text-gray-500">جاري التحميل...</td></tr>
             ) : appointments.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد مواعيد</td></tr>
-            ) : appointments.map(a => (
-              <tr key={a.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${selectedIds.has(a.id) ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}>
+              <tr><td colSpan={9} className="text-center py-12 text-gray-400 dark:text-gray-500">
+                <CalendarDaysIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                لا توجد مواعيد
+              </td></tr>
+            ) : appointments.map((a, idx) => (
+              <tr key={a.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm${idx % 2 ? ' bg-gray-50/50 dark:bg-gray-800/20' : ''} ${selectedIds.has(a.id) ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}>
                 <td className="py-3 px-4">
                   <input type="checkbox" checked={selectedIds.has(a.id)} onChange={() => onToggleSelect(a.id)}
                     className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
@@ -233,20 +252,20 @@ export default function AppointmentsTab({
       </div>
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
-          <span>إجمالي {total} موعد — الصفحة {page} من {totalPages}</span>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4 text-sm text-gray-600 dark:text-gray-400">
+          <span className="text-xs sm:text-sm">إجمالي {total} موعد — الصفحة {page} من {totalPages}</span>
           <div className="flex gap-1">
             <button disabled={page <= 1} onClick={() => onPageChange?.(page - 1)}
-              className="px-3 py-1.5 border rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600">السابق</button>
+              className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600">السابق</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => Math.abs(p - page) <= 1 || p === 1 || p === totalPages).map((p, idx, arr) => (
               <span key={p} className="flex">
-                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 self-center">...</span>}
+                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 self-center text-xs">...</span>}
                 <button onClick={() => onPageChange?.(p)}
-                  className={`px-3 py-1.5 border rounded-lg ${p === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600'}`}>{p}</button>
+                  className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm border rounded-lg ${p === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600'}`}>{p}</button>
               </span>
             ))}
             <button disabled={page >= totalPages} onClick={() => onPageChange?.(page + 1)}
-              className="px-3 py-1.5 border rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600">التالي</button>
+              className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600">التالي</button>
           </div>
         </div>
       )}

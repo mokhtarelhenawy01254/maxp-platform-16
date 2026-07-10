@@ -181,6 +181,20 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             ctx.final_reply = ""
             ctx.llm_response = ""
 
+    # Auto-populate response_attachments from landmarkImage in tool evidence
+    for evidence in ctx.tool_evidence:
+        result = evidence.get("result", {})
+        if isinstance(result, dict):
+            for branch in (result.get("branches") or []):
+                img = (branch.get("landmarkImage") or "")
+                if img and img.startswith("data:"):
+                    ctx.response_attachments.append({
+                        "type": "image",
+                        "url": img,
+                        "source": "tool_result",
+                        "tool": evidence.get("tool", "booking_info"),
+                    })
+
     ctx.llm_result = provider_response
     return ctx
 
