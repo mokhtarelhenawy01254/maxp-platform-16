@@ -2,10 +2,10 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const getAll = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const companyId = req.query.companyId || req.user?.companyId;
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId مطلوب' });
     const data = await getSharedPrismaClient().service.findMany({
-      where: { companyId },
+      where: { companyId, isActive: true },
       orderBy: { name: 'asc' }
     });
     res.json({ success: true, data });

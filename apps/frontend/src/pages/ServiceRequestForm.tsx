@@ -12,20 +12,20 @@ export default function ServiceRequestForm() {
   const [form, setForm] = useState({ companyId: "", serviceId: "", customerName: "", phone: "", description: "" });
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) setForm(f => ({ ...f, companyId: localStorage.getItem("companyId") || "" }));
+    const params = new URLSearchParams(window.location.search);
+    const cid = params.get("companyId") || localStorage.getItem("companyId") || "";
+    setForm(f => ({ ...f, companyId: cid }));
     fetchServices();
   }, []);
 
   const fetchServices = async () => {
     const token = localStorage.getItem("token");
-    if (!token) { setLoading(false); return; }
     try {
-      const r = await fetch(`/api/v1/services`, {
-        headers: { Authorization: `Bearer ${token}` } as any
+      const r = await fetch(`/api/v1/services${token ? `?companyId=${localStorage.getItem("companyId") || ""}` : ""}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } as any : undefined
       });
       const d = await r.json();
-      if (d.success) setServices(d.data.filter((s: any) => s.isActive));
+      if (d.success) setServices(d.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
