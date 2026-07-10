@@ -40,7 +40,7 @@ class MerchantRuleGuardrail(BaseGuardrail):
         agent_id: str,
         message: str,
         top_k: int = 5,
-        threshold: float = 0.75,
+        threshold: float = 0.65,
     ) -> list[dict[str, Any]]:
         """Fetch top-K semantically matching guardrail rules for the given message.
 
