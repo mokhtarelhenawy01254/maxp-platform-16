@@ -6496,7 +6496,11 @@ const AppContent = () => {
                 />
                 <Route
                   path="/request-service"
-                  element={<ServiceRequestForm />}
+                  element={
+                    <Layout fullWidth>
+                      <ServiceRequestForm />
+                    </Layout>
+                  }
                 />
                 <Route
                   path="/admin/education/funnel"

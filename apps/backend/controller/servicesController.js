@@ -19,10 +19,10 @@ const create = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
-    const { name, description, icon, category, price } = req.body;
+    const { name, description, icon, category, price, samples } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم الخدمة مطلوب' });
     const data = await getSharedPrismaClient().service.create({
-      data: { companyId, name: name.trim(), description, icon, category: category || 'other', price: price ? parseFloat(price) : null }
+      data: { companyId, name: name.trim(), description, icon, category: category || 'other', price: price ? parseFloat(price) : null, samples: samples || [] }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -36,12 +36,12 @@ const update = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
     const { id } = req.params;
-    const { name, description, icon, category, price, isActive } = req.body;
+    const { name, description, icon, category, price, isActive, samples } = req.body;
     const existing = await getSharedPrismaClient().service.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الخدمة غير موجودة' });
     const data = await getSharedPrismaClient().service.update({
       where: { id },
-      data: { name, description, icon, category, price: price !== undefined ? parseFloat(price) : undefined, isActive }
+      data: { name, description, icon, category, price: price !== undefined ? parseFloat(price) : undefined, isActive, samples }
     });
     res.json({ success: true, data });
   } catch (error) {

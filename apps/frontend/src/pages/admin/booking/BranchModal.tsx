@@ -39,6 +39,16 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
     if (!form.name.trim()) e.name = "الاسم مطلوب";
     if (!form.address.trim()) e.address = "العنوان مطلوب";
     if (!(form.workingDays || "").split(",").filter(Boolean).length) e.workingDays = "اختر يوم عمل على الأقل";
+    
+    const validPhones = (form.phones || []).map(p => p.trim()).filter(Boolean);
+    const phoneRegex = /^[0-9+\-\s]+$/;
+    for (const p of validPhones) {
+      if (!phoneRegex.test(p)) {
+        e.phones = "يرجى إدخال أرقام هواتف صالحة فقط (أرقام، مسافات، علامة + أو -)";
+        break;
+      }
+    }
+    
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -52,7 +62,7 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
     }
     const obj = branch.workingDays as Record<string, string>;
     const dayKeys = Object.keys(obj).filter(k => obj[k]);
-    const times = dayKeys.length > 0 ? obj[dayKeys[0]].split('-') : [];
+    const times = dayKeys.length > 0 && dayKeys[0] ? (obj[dayKeys[0]] || "").split('-') : [];
     const gd = tryParseGenderDays(branch.genderDays);
     return {
       ...defaults, ...branch,
@@ -64,21 +74,21 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
       femaleDays: gd?.female || [],
     };
   };
-  const [form, setForm] = useState(initForm);
+  const [form, setForm] = useState<BranchFormData>(() => initForm() as unknown as BranchFormData);
   const toggleWorkingDay = (d: string) => {
-    const current = (form.workingDays || "").split(",").filter(Boolean);
-    const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
+    const current = ((form.workingDays as string) || "").split(",").filter(Boolean);
+    const next = current.includes(d) ? current.filter((x: string) => x !== d) : [...current, d];
     setForm({ ...form, workingDays: next.join(",") });
   };
   const toggleGenderDay = (type: "male" | "female", d: string) => {
     const key = type === "male" ? "maleDays" : "femaleDays";
     const current = form[key] || [];
-    const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
+    const next = current.includes(d) ? current.filter((x: string) => x !== d) : [...current, d];
     setForm({ ...form, [key]: next });
   };
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
+      <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">{branch?.id ? "تعديل فرع" : "إضافة فرع"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
@@ -88,16 +98,26 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => { setForm({ ...form, address: e.target.value }); if (errors.address) setErrors({ ...errors, address: "" }); }} />{errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}</div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الموقع</label><input className={MODAL_INPUT_CLS} placeholder="رابط الخريطة أو عنوان الموقع" value={form.location || ""} onChange={e => setForm({ ...form, location: e.target.value })} /></div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">صورة علامة مميزة</label>
-            <input type="file" accept="image/*" className={MODAL_INPUT_CLS} onChange={async e => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              if (file.size > 2 * 1024 * 1024) { toast.error('الصورة كبيرة جدًا. الحد الأقصى 2MB'); return; }
-              if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('يرجى اختيار صورة JPG أو PNG'); return; }
-              try { setForm({ ...form, landmarkImage: await compressImage(file) }); }
-              catch { toast.error('فشل معالجة الصورة'); }
-            }} />
-            {form.landmarkImage && <div className="mt-2 relative inline-block"><img src={form.landmarkImage} className="h-20 w-20 object-cover rounded border dark:border-gray-600" alt="علامة مميزة" /><button onClick={() => setForm({ ...form, landmarkImage: undefined })} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">صورة علامة مميزة</label>
+            <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/40 transition cursor-pointer flex flex-col items-center justify-center gap-1">
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={async e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) { toast.error('الصورة كبيرة جدًا. الحد الأقصى 2MB'); return; }
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('يرجى اختيار صورة JPG أو PNG أو WEBP'); return; }
+                try { setForm({ ...form, landmarkImage: await compressImage(file) }); }
+                catch { toast.error('فشل معالجة الصورة'); }
+              }} />
+              <span className="text-gray-400 dark:text-gray-500 text-2xl">📸</span>
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">انقر هنا لاختيار صورة</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">الحد الأقصى للتحميل 2MB (JPG/PNG/WEBP)</span>
+            </div>
+            {form.landmarkImage && (
+              <div className="mt-3 relative inline-block">
+                <img src={form.landmarkImage} className="h-24 w-24 object-cover rounded-xl border-2 border-blue-500 shadow-sm" alt="علامة مميزة" />
+                <button type="button" onClick={() => setForm({ ...form, landmarkImage: undefined })} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center shadow hover:bg-red-600 transition">✕</button>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أرقام الهاتف</label>
@@ -108,11 +128,13 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
                     const next = [...(form.phones || [])];
                     next[i] = e.target.value;
                     setForm({ ...form, phones: next });
+                    if (errors.phones) setErrors({ ...errors, phones: "" });
                   }} />
-                  <button onClick={() => setForm({ ...form, phones: (form.phones || []).filter((_, idx) => idx !== i) })} className="px-2 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف الرقم"><TrashIcon className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => setForm({ ...form, phones: (form.phones || []).filter((_, idx) => idx !== i) })} className="px-2 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف الرقم"><TrashIcon className="w-4 h-4" /></button>
                 </div>
               ))}
-              <button onClick={() => setForm({ ...form, phones: [...(form.phones || []), ""] })} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700">+ إضافة رقم هاتف</button>
+              <button type="button" onClick={() => setForm({ ...form, phones: [...(form.phones || []), ""] })} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700">+ إضافة رقم هاتف</button>
+              {errors.phones && <p className="text-xs text-red-500 mt-1">{errors.phones}</p>}
             </div>
           </div>
           <div>
@@ -120,7 +142,7 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
             {errors.workingDays && <p className="text-xs text-red-500 mb-1">{errors.workingDays}</p>}
             <div className="flex flex-wrap gap-2">
               {DAYS.map(d => (
-                <button key={d.value} onClick={() => toggleWorkingDay(d.value)}
+                <button type="button" key={d.value} onClick={() => toggleWorkingDay(d.value)}
                   className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.workingDays || "").split(",").includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
               ))}
             </div>
@@ -136,19 +158,27 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
               <div>
                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 block">أيام الرجال</span>
                 <div className="flex flex-wrap gap-2">
-                  {DAYS.map(d => (
-                    <button key={d.value} onClick={() => toggleGenderDay("male", d.value)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.maleDays || []).includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
-                  ))}
+                  {DAYS.map(d => {
+                    const isWorkingDay = (form.workingDays || "").split(",").includes(d.value);
+                    return (
+                      <button type="button" key={d.value} disabled={!isWorkingDay} onClick={() => toggleGenderDay("male", d.value)}
+                        title={!isWorkingDay ? "يجب اختيار هذا اليوم كأحد أيام العمل أولاً" : ""}
+                        className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 disabled:opacity-40 disabled:cursor-not-allowed ${(form.maleDays || []).includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
+                    );
+                  })}
                 </div>
               </div>
               <div>
                 <span className="text-sm font-medium text-pink-600 dark:text-pink-400 mb-1 block">أيام السيدات</span>
                 <div className="flex flex-wrap gap-2">
-                  {DAYS.map(d => (
-                    <button key={d.value} onClick={() => toggleGenderDay("female", d.value)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.femaleDays || []).includes(d.value) ? "bg-pink-600 text-white border-pink-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
-                  ))}
+                  {DAYS.map(d => {
+                    const isWorkingDay = (form.workingDays || "").split(",").includes(d.value);
+                    return (
+                      <button type="button" key={d.value} disabled={!isWorkingDay} onClick={() => toggleGenderDay("female", d.value)}
+                        title={!isWorkingDay ? "يجب اختيار هذا اليوم كأحد أيام العمل أولاً" : ""}
+                        className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 disabled:opacity-40 disabled:cursor-not-allowed ${(form.femaleDays || []).includes(d.value) ? "bg-pink-600 text-white border-pink-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

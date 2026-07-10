@@ -64,19 +64,19 @@ export default function ServiceRequestForm() {
   };
 
   if (done) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4" dir="rtl">
+    <div className="flex items-center justify-center p-12" dir="rtl">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 max-w-md text-center">
         <div className="text-5xl mb-4">✅</div>
-        <h1 className="text-2xl font-bold mb-2">تم استلام طلبك!</h1>
-        <p className="text-gray-500 dark:text-gray-400">سنقوم بالتواصل معك قريباً</p>
+        <h1 className="text-2xl font-bold mb-2">تم استلام الطلب!</h1>
+        <p className="text-gray-500 dark:text-gray-400">سيتم متابعته من فريق الخدمات</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4" dir="rtl">
-      <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mt-8">
-        <h1 className="text-2xl font-bold mb-6 text-center">طلب خدمة</h1>
+    <div className="p-6" dir="rtl">
+      <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        <h1 className="text-2xl font-bold mb-6">طلب خدمة جديد</h1>
 
         {loading ? <p className="text-center text-gray-500">جاري التحميل...</p> : (
           <div className="space-y-4">

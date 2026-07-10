@@ -124,7 +124,7 @@ export const DAYS = [
   { value: "fri", label: "الجمعة" },
 ];
 
-export const DAY_NAMES: Record<string, string> = {sat:"سبت",sun:"أحد",mon:"اثنين",tue:"ثلاثاء",wed:"أربعاء",thu:"خميس",fri:"جمعة"};
+export const DAY_NAMES: Record<string, string> = {sat:"السبت",sun:"الأحد",mon:"الإثنين",tue:"الثلاثاء",wed:"الأربعاء",thu:"الخميس",fri:"الجمعة"};
 
 export const fetchJson = async <T>(url: string, options?: RequestInit, retries = 2): Promise<T> => {
   for (let attempt = 0; attempt <= retries; attempt++) {

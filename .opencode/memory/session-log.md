@@ -1,3 +1,20 @@
+# Session Log — 2026-07-10 — WhatsApp Business Trial Reset Fix
+
+## What Happened
+1. **Problem**: WhatsApp page kept returning 403 "انتهت الفترة التجريبية لـ WhatsApp Business API" after every deploy.
+2. **Root cause**: `marketplaceSeed.js:1171-1190` migration code copies `whatsapp-integration` CompanyApp → `whatsapp-business` on every deploy. PostgreSQL `updateMany` returns MATCHED count (7), not MODIFIED count, so guard `if (count > 0)` always passes → overwrites `whatsapp-business` status='TRIAL' and expired `trialEndsAt` each deploy.
+3. **Fix**: Added `isActive: true` to `updateMany` WHERE clause so it only matches apps NOT already hidden. All 7 old apps are `isActive: false` → migration skipped forever.
+4. **Server fix**: Manually set `whatsapp-business` CompanyApp to `ACTIVE` with null `trialEndsAt`.
+5. **Deploy**: Commit `c205ba18` → run 29070510073 ✅ (6m12s). Confirmed stable after deploy.
+
+## Key Files Modified
+- `apps/backend/prisma/seeds/marketplaceSeed.js` — added `isActive: true` to updateMany guard
+
+## Key Decision
+- Recorded in `decisions.md` as WhatsApp Seed Guard Pattern
+
+---
+
 # Session Log — 2026-07-10 — Appointments Booking Page UI/UX Enhancements
 
 ## What Happened

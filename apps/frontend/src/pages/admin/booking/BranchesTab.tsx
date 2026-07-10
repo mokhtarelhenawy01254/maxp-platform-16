@@ -58,7 +58,51 @@ export default function BranchesTab({ branches, selectedBranchId, onEdit, onTogg
               <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex flex-wrap gap-1">{(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{p}</span>) || "—"}</div>
-            {b.location && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 truncate" title={b.location}>📍 {b.location}</p>}
+            
+            {/* Working days circular badges */}
+            <div className="flex gap-1 justify-start mb-3">
+              {(() => {
+                const wd = typeof b.workingDays === 'object' ? b.workingDays : null;
+                const DAYS_ORDER = ["sat", "sun", "mon", "tue", "wed", "thu", "fri"];
+                const DAY_INITIALS: Record<string, string> = { sat: "س", sun: "ح", mon: "ن", tue: "ث", wed: "ر", thu: "خ", fri: "ج" };
+                return DAYS_ORDER.map(d => {
+                  const isActive = wd && wd[d];
+                  const hours = wd ? wd[d] : "";
+                  return (
+                    <div
+                      key={d}
+                      title={isActive ? `${DAY_NAMES[d]}: ${hours}` : `${DAY_NAMES[d]}: مغلق`}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold select-none border transition-all ${
+                        isActive
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                          : "bg-gray-50 dark:bg-gray-800/40 text-gray-400 dark:text-gray-600 border-gray-100 dark:border-gray-800"
+                      }`}
+                    >
+                      {DAY_INITIALS[d]}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {b.location && (
+              <div className="text-xs mb-3">
+                {/^https?:\/\//.test(b.location) ? (
+                  <a
+                    href={b.location}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    📍 فتح الموقع الجغرافي
+                  </a>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400 truncate block" title={b.location}>
+                    📍 {b.location}
+                  </span>
+                )}
+              </div>
+            )}
             {(() => {
               const gd = b.genderDays ? (typeof b.genderDays === 'string' ? null : b.genderDays) : null;
               if (!gd || (!gd.male.length && !gd.female.length)) return null;
@@ -85,20 +129,57 @@ export default function BranchesTab({ branches, selectedBranchId, onEdit, onTogg
             <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
               <td className="py-3 px-4 font-medium">{b.name}</td>
               <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
-              <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400 max-w-[150px] truncate" title={b.location}>{b.location || "—"}</td>
+              <td className="py-3 px-4 text-xs">
+                {b.location ? (
+                  /^https?:\/\//.test(b.location) ? (
+                    <a
+                      href={b.location}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all font-semibold"
+                    >
+                      📍 فتح الخريطة
+                    </a>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400 max-w-[150px] truncate block" title={b.location}>
+                      📍 {b.location}
+                    </span>
+                  )
+                ) : (
+                  <span className="text-gray-400 dark:text-gray-500">—</span>
+                )}
+              </td>
               <td className="py-3 px-4">
                 <div className="flex flex-wrap gap-1">
                   {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="text-xs inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">{p}</span>) || "—"}
                 </div>
               </td>
-              <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">{
-                (() => {
-                  const wd = typeof b.workingDays === 'object' ? b.workingDays : null;
-                  if (!wd) return "—";
-                  const days = Object.entries(wd).filter(([k,v]) => v).map(([k,v]) => `${DAY_NAMES[k]||k} (${v})`);
-                  return days.join(" / ") || "—";
-                })()
-              }</td>
+              <td className="py-3 px-4">
+                <div className="flex gap-1 justify-start">
+                  {(() => {
+                    const wd = typeof b.workingDays === 'object' ? b.workingDays : null;
+                    const DAYS_ORDER = ["sat", "sun", "mon", "tue", "wed", "thu", "fri"];
+                    const DAY_INITIALS: Record<string, string> = { sat: "س", sun: "ح", mon: "ن", tue: "ث", wed: "ر", thu: "خ", fri: "ج" };
+                    return DAYS_ORDER.map(d => {
+                      const isActive = wd && wd[d];
+                      const hours = wd ? wd[d] : "";
+                      return (
+                        <div
+                          key={d}
+                          title={isActive ? `${DAY_NAMES[d]}: ${hours}` : `${DAY_NAMES[d]}: مغلق`}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold select-none border transition-all ${
+                            isActive
+                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                              : "bg-gray-50 dark:bg-gray-800/40 text-gray-400 dark:text-gray-600 border-gray-100 dark:border-gray-800"
+                          }`}
+                        >
+                          {DAY_INITIALS[d]}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </td>
               <td className="py-3 px-4 text-xs">{
                 (() => {
                   const gd = b.genderDays ? (typeof b.genderDays === 'string' ? null : b.genderDays) : null;

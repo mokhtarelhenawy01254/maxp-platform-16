@@ -7,8 +7,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BookingBranch, BookingDoctor, BookingAppointment, BookingService,
-  BranchFormData, ServiceFormData, ServiceBranchAssignment,
-  TabId, TABS, fetchJson, api, getAuthHeaders, normalizeBranch, MODAL_INPUT_CLS
+  BranchFormData, ServiceFormData,
+  TabId, fetchJson, api, getAuthHeaders, normalizeBranch, MODAL_INPUT_CLS
 } from "./booking/shared";
 import BranchesTab from "./booking/BranchesTab";
 import DashboardTab from "./booking/DashboardTab";
@@ -21,10 +21,8 @@ import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function BookingManagementPage() {
   const { "*": path } = useParams();
-  const navigate = useNavigate();
-  const urlTab = (path || "").split("/")[0];
+  const urlTab = (path || "").split("/")[0] || "";
   const activeTab = (["dashboard", "appointments", "calendar", "branches", "doctors", "services"].includes(urlTab) ? urlTab : "dashboard") as TabId;
-  const setActiveTab = (tab: TabId) => navigate(`/admin/booking/${tab === "dashboard" ? "" : tab}`);
 
   const [branches, setBranches] = useState<BookingBranch[]>([]);
   const [doctors, setDoctors] = useState<BookingDoctor[]>([]);
@@ -76,6 +74,7 @@ export default function BookingManagementPage() {
       const sp = new URLSearchParams();
       if (filters.status) sp.set("status", filters.status);
       if (filters.branchId) sp.set("branchId", filters.branchId);
+      else if (selectedBranchId) sp.set("branchId", selectedBranchId);
       if (filters.dateFrom) sp.set("dateFrom", filters.dateFrom);
       if (filters.dateTo) sp.set("dateTo", filters.dateTo);
       if (filters.search) sp.set("search", filters.search);
@@ -83,8 +82,10 @@ export default function BookingManagementPage() {
       const qs = sp.toString();
       window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
       fetchAppointments();
+    } else if (activeTab === "calendar" || activeTab === "dashboard") {
+      fetchAppointments();
     }
-  }, [filters, page, activeTab]);
+  }, [filters, page, activeTab, selectedBranchId]);
 
   useEffect(() => {
     if (selectedBranchId) {
@@ -152,15 +153,15 @@ export default function BookingManagementPage() {
       if (days.length > 0) {
         const wd: Record<string, string> = {};
         days.forEach(day => { wd[day] = `${d.workStart || "09:00"}-${d.workEnd || "22:00"}`; });
-        body.workingDays = wd;
+        body["workingDays"] = wd;
       }
     }
     const maleDays = d.maleDays.sort();
     const femaleDays = d.femaleDays.sort();
-    body.genderDays = { male: maleDays, female: femaleDays };
-    if (d.maxBookingsPerSlot !== undefined) body.maxBookingsPerSlot = d.maxBookingsPerSlot;
-    if (d.location !== undefined) body.location = d.location;
-    if (d.landmarkImage !== undefined) body.landmarkImage = d.landmarkImage;
+    body["genderDays"] = { male: maleDays, female: femaleDays };
+    if (d.maxBookingsPerSlot !== undefined) body["maxBookingsPerSlot"] = d.maxBookingsPerSlot;
+    if (d.location !== undefined) body["location"] = d.location;
+    if (d.landmarkImage !== undefined) body["landmarkImage"] = d.landmarkImage;
     const data = await apiCall(url, isEdit ? "PUT" : "POST", body);
     if (data !== false) { setBranchModal(undefined); fetchBranches(); }
   };
@@ -191,7 +192,7 @@ export default function BookingManagementPage() {
       }
     } else {
       const payload: Record<string, unknown> = { name: d.name, description: d.description };
-      if (d.branches?.length) payload.branches = d.branches.map(b => ({ branchId: b.branchId, packages: b.packages?.filter(p => p.count > 0) || null }));
+      if (d.branches?.length) payload["branches"] = d.branches.map(b => ({ branchId: b.branchId, packages: b.packages?.filter(p => p.count > 0) || null }));
       const data = await apiCall(api("services"), "POST", payload);
       if (data === false) return;
     }
@@ -269,13 +270,31 @@ export default function BookingManagementPage() {
     });
   };
 
-  const branchAppointments = useMemo(() =>
-    selectedBranchId ? appointments.filter(a => a.branchId === selectedBranchId) : appointments,
-    [appointments, selectedBranchId]
-  );
+  // branchAppointments is not used as filtering is now reactive through the global branch selector
 
   return (
     <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto">
+      {/* Global page header with unified branch filter */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">نظام إدارة الحجوزات</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">تحكم متكامل في المواعيد، الفروع، الأطباء والخدمات</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">الفرع الحالي:</label>
+          <select
+            value={selectedBranchId}
+            onChange={e => setSelectedBranchId(e.target.value)}
+            className="border dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-w-[200px]"
+          >
+            <option value="">جميع الفروع</option>
+            {branches.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {error ? (
         <div className="text-center py-16">
           <div className="text-red-500 dark:text-red-400 text-lg mb-2">⚠️ فشل تحميل البيانات</div>

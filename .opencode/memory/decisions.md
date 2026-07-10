@@ -49,6 +49,12 @@
 - Rationale: These were one-off debug scripts, not part of the running service. The production service already uses `.env` properly. 133 files, 9458 lines removed.
 - Rejected: Refactoring each script to use env vars — 50+ scripts, most were single-use debug tools. Not worth the effort.
 
+## 2026-07-10 — WhatsApp Seed Guard: `updateMany` returns MATCHED, not MODIFIED
+- **Context:** `marketplaceSeed.js` migration code guarded by `if (count > 0)` based on `updateMany` result. PostgreSQL's `updateMany` returns the number of rows MATCHED by the WHERE clause, not the number actually MODIFIED. So even after all rows were already `isActive: false`, `count = 7` always → migration ran every deploy.
+- **Decision:** Added `isActive: true` to the `updateMany` WHERE clause so it only matches rows that are still active. Since all deprecated apps are already `isActive: false`, `count = 0` → migration skipped forever.
+- **Rationale:** Minimal change, prevents any deploy from overwriting existing CompanyApp records.
+- **Rejected:** Removing the migration code entirely (still needed for first-time deploy on fresh DB); adding a one-time migration flag table (overkill for a single guard).
+
 ## 2026-07-06 — Dockerize Deferred (Ponytail)
 - Context: CI/CD currently uses tarball SCP + SSH script (deploy-remote.sh). Considered containerization.
 - Decision: Defer Docker. Current system works reliably, handles all edge cases (blue-green frontend, .env backup/restore, health checks).
