@@ -246,6 +246,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
     ctx.system_prompt = system_prompt
     enriched_prompt = await assembler.build_system_prompt(ctx)
+    ctx.system_prompt = enriched_prompt
 
     messages = [
         {"role": "system", "content": enriched_prompt},
