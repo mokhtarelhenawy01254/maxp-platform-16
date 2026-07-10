@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [FIX] Landmark Image Auto-Population: Unwanted Branch Images Sent Unconditionally
+- **Date**: 2026-07-10
+- **Description**:
+  1. Resolved an issue in the AI service pipeline (`skills_pipeline.py`) where branch landmark images (`landmarkImage`) were automatically and unconditionally appended to `response_attachments` and sent via WhatsApp/Facebook every time the `booking_info` tool was called.
+  2. Modified the auto-population logic to check if the image URL/path or its filename is explicitly present in the agent's text response (`ctx.final_reply`).
+  3. Added new unit tests `test_landmark_image_auto_populate_conditional_negative` and `test_landmark_image_auto_populate_conditional_positive` to prevent regressions.
+- **Root Cause**: The pipeline unconditionally grabbed the `landmarkImage` from `booking_info` tool evidence whenever the tool was executed, bypassing the agent's actual decision/intent to show it.
+- **Resolution**: Added a conditional guard checking for the image's presence in `ctx.final_reply` before auto-populating.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+  - `apps/ai-service/tests/pipeline/test_skills_pipeline.py`
+
 ### [FIX] WhatsApp Baileys Stability: Disconnection Loops, Credentials Wiping, and 48-Hour Number Bans
 - **Date**: 2026-07-10
 - **Description**:

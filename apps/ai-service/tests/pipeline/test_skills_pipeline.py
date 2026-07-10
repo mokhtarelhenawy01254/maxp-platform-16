@@ -203,3 +203,90 @@ async def test_followup_empty_no_tools_returns_empty(ctx: PipelineContext) -> No
 
     assert result.final_reply == ""
     assert result.llm_response == ""
+
+
+@pytest.mark.asyncio
+async def test_landmark_image_auto_populate_conditional_negative(ctx: PipelineContext) -> None:
+    """If the LLM response doesn't mention the landmarkImage, it should NOT be auto-populated."""
+    from src.pipeline.stages.skills_pipeline import process_with_skills
+    ctx.agent = MagicMock()
+    ctx.agent.allowed_skills = None
+    ctx.agent.model = "gemini-2.5-flash"
+    ctx.system_prompt = None
+    ctx.tool_evidence = [
+        {
+            "tool": "booking_info",
+            "result": {
+                "branches": [
+                    {"landmarkImage": "/uploads/booking-branches/test_landmark_123.jpg"}
+                ]
+            }
+        }
+    ]
+    ctx.response_attachments = []
+
+    with (
+        patch("src.pipeline.stages.skills_pipeline.get_skill_registry") as mock_registry,
+        patch("src.pipeline.stages.skills_pipeline._raw_llm_call") as mock_raw,
+        patch("src.pipeline.stages.skills_pipeline._llm_call") as mock_llm,
+    ):
+        skill = MagicMock()
+        skill.name = "product_search"
+        skill.to_openai_tool.return_value = {"type": "function", "function": {"name": "product_search"}}
+        mock_registry.return_value.get_all.return_value = [skill]
+        
+        first_response = MagicMock()
+        first_response.text = "Hello! The clinic is open today."
+        first_response.tool_calls = None
+        first_response.reasoning_content = None
+        mock_llm.return_value = first_response
+        mock_raw.return_value = first_response
+
+        ctx.llm_client = AsyncMock()
+        result = await process_with_skills(ctx)
+
+    assert len(result.response_attachments) == 0
+
+
+@pytest.mark.asyncio
+async def test_landmark_image_auto_populate_conditional_positive(ctx: PipelineContext) -> None:
+    """If the LLM response mentions the landmarkImage, it SHOULD be auto-populated."""
+    from src.pipeline.stages.skills_pipeline import process_with_skills
+    ctx.agent = MagicMock()
+    ctx.agent.allowed_skills = None
+    ctx.agent.model = "gemini-2.5-flash"
+    ctx.system_prompt = None
+    ctx.tool_evidence = [
+        {
+            "tool": "booking_info",
+            "result": {
+                "branches": [
+                    {"landmarkImage": "/uploads/booking-branches/test_landmark_123.jpg"}
+                ]
+            }
+        }
+    ]
+    ctx.response_attachments = []
+
+    with (
+        patch("src.pipeline.stages.skills_pipeline.get_skill_registry") as mock_registry,
+        patch("src.pipeline.stages.skills_pipeline._raw_llm_call") as mock_raw,
+        patch("src.pipeline.stages.skills_pipeline._llm_call") as mock_llm,
+    ):
+        skill = MagicMock()
+        skill.name = "product_search"
+        skill.to_openai_tool.return_value = {"type": "function", "function": {"name": "product_search"}}
+        mock_registry.return_value.get_all.return_value = [skill]
+        
+        first_response = MagicMock()
+        first_response.text = "Here is the map image: test_landmark_123.jpg"
+        first_response.tool_calls = None
+        first_response.reasoning_content = None
+        mock_llm.return_value = first_response
+        mock_raw.return_value = first_response
+
+        ctx.llm_client = AsyncMock()
+        result = await process_with_skills(ctx)
+
+    assert len(result.response_attachments) == 1
+    assert "test_landmark_123.jpg" in result.response_attachments[0]["url"]

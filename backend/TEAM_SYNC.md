@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-10 / 2026-03-09
+- **Conditional Landmark Image Auto-Population in AI Pipeline (FIX / IMPROVEMENT)**: Fixed a bug where branch landmark images were unconditionally sent to the user as WhatsApp/Facebook attachments every time the `booking_info` tool was executed (e.g., when the user just greeted the bot or asked for working hours):
+  1. Updated `skills_pipeline.py` to check if the image URL/path or its filename is explicitly present in the final reply text (`ctx.final_reply`) before populating `ctx.response_attachments`.
+  2. Added unit tests `test_landmark_image_auto_populate_conditional_negative` and `test_landmark_image_auto_populate_conditional_positive` inside `test_skills_pipeline.py` to verify this behavior.
+  3. Deployed the fix to the production server (`maxp-ai-service`) and verified successful operation.
 - **WhatsApp Baileys Stability & Reconnection Overhaul (IMPROVEMENT / STABILITY)**: Hardened the unofficial WhatsApp integration (`@whiskeysockets/baileys`) against connection drops, pairing failures, and rate limits:
   1. Upgraded `@whiskeysockets/baileys` package version to `6.7.23` (latest stable 6.x release) and updated the hardcoded fallback version to `[6, 7, 23]`.
   2. Fixed a critical session wipe bug in `isValidAuthState` validator where the credentials cache was completely deleted from the database if the session was reloaded during the pairing phase (`QR_PENDING` / `CONNECTING`). The validator now preserves the initial keys.

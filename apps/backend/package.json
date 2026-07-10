@@ -54,7 +54,8 @@
     "catalog:deactivate-old": "node scripts/deactivate_old_marketplace_apps.js",
     "seed:permissions": "node prisma/seeds/seedPermissions.js",
     "seed:migrate-roles": "node prisma/seeds/migrateCustomRoles.js",
-    "seed:link-roles": "node prisma/seeds/linkUserRoles.js"
+    "seed:link-roles": "node prisma/seeds/linkUserRoles.js",
+    "postinstall": "node ../../patch-telegram-updates.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

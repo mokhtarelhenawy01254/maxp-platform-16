@@ -191,6 +191,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 img = (branch.get("landmarkImage") or "")
                 if not img:
                     continue
+                # Only auto-populate if the image URL/path or its filename is present in the final reply text,
+                # meaning the LLM explicitly intended to display/refer to the image.
+                img_filename = os.path.basename(img)
+                if not ctx.final_reply or (img not in ctx.final_reply and img_filename not in ctx.final_reply):
+                    continue
                 if img.startswith("data:") or img.startswith("http"):
                     ctx.response_attachments.append({
                         "type": "image",
