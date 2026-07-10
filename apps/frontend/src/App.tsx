@@ -1739,6 +1739,8 @@ const AppContent = () => {
             />
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
+            {/* Public Service Request Form */}
+            <Route path="/request-service" element={<ServiceRequestForm />} />
             {isAuthenticated && (
               <>
             <Route
@@ -6493,10 +6495,6 @@ const AppContent = () => {
                       <ServiceOrdersPage />
                     </Layout>
                   }
-                />
-                <Route
-                  path="/request-service"
-                  element={<ServiceRequestForm />}
                 />
                 <Route
                   path="/admin/education/funnel"

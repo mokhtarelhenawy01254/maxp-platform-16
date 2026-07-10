@@ -19,9 +19,10 @@ export default function ServiceRequestForm() {
   }, []);
 
   const fetchServices = async () => {
+    const cid = form.companyId || localStorage.getItem("companyId");
     const token = localStorage.getItem("token");
     try {
-      const r = await fetch(`/api/v1/services${token ? `?companyId=${localStorage.getItem("companyId") || ""}` : ""}`, {
+      const r = await fetch(`/api/v1/services${cid ? `?companyId=${cid}` : ""}`, {
         headers: token ? { Authorization: `Bearer ${token}` } as any : undefined
       });
       const d = await r.json();
