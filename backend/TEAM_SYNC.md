@@ -12,6 +12,9 @@
   8. Built `AgentGuardrailsTab.tsx` frontend dashboard component with rule CRUD grid, conflict detection dialog, and inline sandbox chat playground.
   9. Integrated the tab into `AgentProfilesPage.tsx` as "القواعد والتعلم" with Lucide Lock icon, passing `agentId`, `companyId`, and model config.
   10. Created unit tests (`test_merchant_rules.py`) for cosine similarity, prompt formatting, and conflict detection — 3/3 passing.
+  11. Lowered the default similarity threshold to `0.65` inside `MerchantRuleGuardrail` to ensure robust matching against Egyptian dialect messages on production.
+  12. Fixed database commit rollback bug by adding `await session.commit()` in the guardrail REST API routes.
+  13. Fixed compiled system prompt logging by re-assigning the fully assembled system prompt (`enriched_prompt`) back to the `PipelineContext.system_prompt` field in `skills_pipeline.py`.
 - **Conditional Landmark Image Auto-Population in AI Pipeline (FIX / IMPROVEMENT)**: Fixed a bug where branch landmark images were unconditionally sent to the user as WhatsApp/Facebook attachments every time the `booking_info` tool was executed (e.g., when the user just greeted the bot or asked for working hours):
   1. Updated `skills_pipeline.py` to check if the image URL/path or its filename is explicitly present in the final reply text (`ctx.final_reply`) before populating `ctx.response_attachments`.
   2. Added unit tests `test_landmark_image_auto_populate_conditional_negative` and `test_landmark_image_auto_populate_conditional_positive` inside `test_skills_pipeline.py` to verify this behavior.

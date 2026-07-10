@@ -73,5 +73,8 @@
 - **Distributed Sweep Coordination**: Background monitor sweeps utilize PostgreSQL session-level advisory locks (`pg_try_advisory_lock`) to coordinate single-instance execution across PM2 cluster nodes.
 - **Assignment-Relative SLA Cooldown**: Implemented a 5-minute cooldown and assignment-relative SLA timeout calculation based on `lastAssignedAt` to eliminate 60-second reassignment ping-pong loops between moderators.
 - **GramJS Unhandled Rejection Alert Loop Isolation**: Added `isGramJsResolveError` helper in `recoverableUnhandledRejection.js` to identify and ignore `resolve() called for non-request instance` errors from the GramJS library, preventing an infinite feedback loop where unhandled rejections trigger Telegram alerts, which in turn generate new Telegram updates and trigger new errors.
+- **Merchant Guardrails Similarity Matching Threshold**: Lowered the default cosine similarity threshold inside `MerchantRuleGuardrail.get_relevant_rules` from 0.75 to 0.65 to ensure reliable semantic matching against customer messages featuring colloquial dialect variations.
+- **Compiled System Prompt Observability & Context Pipeline**: Refactored `_llm_call` in the skills pipeline to re-assign the fully-assembled system prompt (`enriched_prompt`) back to the `PipelineContext.system_prompt` field, ensuring it is propagated correctly to sandbox logs and database session traces.
+
 
 

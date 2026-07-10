@@ -689,3 +689,16 @@
   - `.github/workflows/seed-quick-profiles.yml` [DELETE]
   - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx` [MODIFY]
 
+### [FIX] Missing FastAPI session.commit() in Guardrail Operations & Prompt Logging
+- **Date**: 2026-03-09
+- **Description**: Guardrail rules created, updated, or deactivated via the FastAPI admin endpoints were not persisted to the database and rolled back upon session closure. Also, the compiled system prompt returned in sandbox API responses and logs was empty/unpopulated with the assembled sections.
+- **Root Cause**:
+  1. The DB session was flushed via `session.flush()` inside the repository but was never committed via `await session.commit()` in the FastAPI endpoints inside `guardrails.py`.
+  2. The assembled `enriched_prompt` was not assigned back to `ctx.system_prompt` inside `skills_pipeline.py`, leaving the context system prompt unpopulated.
+- **Resolution**:
+  1. Added `await session.commit()` calls before invalidating Redis cache inside create, update, and delete endpoints in `apps/ai-service/src/api/admin/guardrails.py`.
+  2. Assigned `enriched_prompt` to `ctx.system_prompt` inside `_llm_call` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py`.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/guardrails.py`
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
