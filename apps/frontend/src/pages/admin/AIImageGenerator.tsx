@@ -19,6 +19,7 @@ import {
   Hash,
   Type,
   MessageSquare,
+  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   SettingsStatusAlert,
 } from "../settings/components/SettingsPagePrimitives";
@@ -765,12 +772,11 @@ const AIImageGenerator: React.FC = () => {
     key: SectionKey;
     title: string;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    description?: string;
   }[] = [
-    { key: "branding", title: "الهوية البصرية وألوان العلامة", icon: Info, description: "ألوان، خط، واسم العلامة" },
-    { key: "layout", title: "تنسيق ومقاس الإعلان", icon: Grid3X3, description: "المنصة، المقاس، المود، التنسيق" },
-    { key: "campaign", title: "تفاصيل الحملة والتسويق", icon: Sparkles, description: "الهدف، الاستعجال، الهاشتاجات" },
-    { key: "output", title: "خيارات التوليد الفنية والتجنب", icon: Wand2, description: "الصيغة، الجودة، تجنب" },
+    { key: "branding", title: "الهوية", icon: Info },
+    { key: "layout", title: "التنسيق", icon: Grid3X3 },
+    { key: "campaign", title: "الحملة", icon: Sparkles },
+    { key: "output", title: "التوليد", icon: Wand2 },
   ];
 
   const [activeSection, setActiveSection] = useState<SectionKey>("branding");
@@ -1311,10 +1317,10 @@ const AIImageGenerator: React.FC = () => {
     <div dir="rtl" className="space-y-6 text-right w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full overflow-y-auto">
 
       {/* Sleek 2026 low-profile Page Header */}
-      <div className="flex flex-col gap-4 pb-4 pt-2 border-b border-slate-100 dark:border-slate-800/80">
+      <div className="flex flex-col gap-4 pt-2">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <Sparkles className="size-5 text-sky-500 animate-pulse" />
+            <Sparkles className="size-5 text-sky-500" />
             مصمم صور السوشيال ميديا
           </h1>
           <p className="text-xs text-muted-foreground">
@@ -1322,9 +1328,9 @@ const AIImageGenerator: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-slate-50/60 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/60 p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">نوع النشاط:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">نوع النشاط</span>
             <Select
               value={form.vertical}
               onValueChange={(v) => {
@@ -1344,7 +1350,7 @@ const AIImageGenerator: React.FC = () => {
                 setVerticalLocked(true);
               }}
             >
-              <SelectTrigger className="h-8 w-44 text-xs rounded-xl bg-white dark:bg-gray-900">
+              <SelectTrigger className="h-8 w-40 text-xs rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1358,7 +1364,7 @@ const AIImageGenerator: React.FC = () => {
           </div>
           {company && (
             <p className="text-[10px] text-muted-foreground">
-              تم الكشف تلقائياً بناءً على تطبيقات الشركة المفعلة.
+              تم الكشف تلقائياً بناءً على تطبيقات الشركة المفعلة
             </p>
           )}
         </div>
@@ -1373,167 +1379,149 @@ const AIImageGenerator: React.FC = () => {
           {/* Right Column: Configuration Form (lg:col-span-7) */}
           <div className="space-y-5 lg:col-span-7">
             
-            {/* Core Product Information (Flat layout) */}
+            {/* Core Product Section (no header) */}
             <div className="space-y-4">
-              <div className="flex flex-col gap-1 pb-2 border-b border-slate-100 dark:border-slate-800/80">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-sky-500" />
-                  بيانات المنتج والإعلان الأساسية
-                </h3>
-                <p className="text-[11px] text-muted-foreground">المعلومات الضرورية التي ستبنى عليها الصورة</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label={vc.productNameLabel} required hint="الاسم الأساسي الذي سيظهر بالتصميم">
-                    <Input
-                      dir="auto"
-                      placeholder={vc.productNamePlaceholder}
-                      value={form.productName}
-                      onChange={(e) => update("productName", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                  <Field label={vc.priceLabel} hint={vc.priceHint}>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="199"
-                        value={form.price}
-                        onChange={(e) => update("price", e.target.value)}
-                        className={inputCls}
-                      />
-                      <Select value={form.currency} onValueChange={selectValue("currency")}>
-                        <SelectTrigger className="w-28 shrink-0 rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CURRENCIES.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label={vc.headlineLabel} required hint="الجملة الأهم لجذب انتباه العميل">
-                    <Input
-                      dir="auto"
-                      placeholder={vc.headlinePlaceholder}
-                      value={form.headline}
-                      onChange={(e) => update("headline", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                  <Field label="العنوان الفرعي" hint="تفاصيل داعمة للعنوان الرئيسي">
-                    <Input
-                      dir="auto"
-                      placeholder={vc.subheadlinePlaceholder}
-                      value={form.subheadline}
-                      onChange={(e) => update("subheadline", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label={vc.taglineLabel} hint="عبارة توضح قيمة المحتوى الأساسية">
-                    <Input
-                      dir="auto"
-                      placeholder={vc.taglinePlaceholder}
-                      value={form.tagline}
-                      onChange={(e) => update("tagline", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                  <Field label={vc.discountBadgeLabel} hint="مثال: 50% OFF أو عرض خاص">
-                    <Input
-                      dir="auto"
-                      placeholder={vc.discountBadgePlaceholder}
-                      value={form.discountBadge}
-                      onChange={(e) => update("discountBadge", e.target.value)}
-                      className={inputCls}
-                    />
-                  </Field>
-                </div>
-
-                <Field label={vc.descriptionLabel} hint="وصف يوضح تفاصيل ومزايا التصميم المراد توليده">
-                  <Textarea
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field label={vc.productNameLabel} required>
+                  <Input
                     dir="auto"
-                    placeholder={vc.descriptionPlaceholder}
-                    value={form.description}
-                    onChange={(e) => update("description", e.target.value)}
-                    rows={3}
+                    placeholder={vc.productNamePlaceholder}
+                    value={form.productName}
+                    onChange={(e) => update("productName", e.target.value)}
                     className={inputCls}
                   />
                 </Field>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="صورة المنتج (Reference Image)" hint="اختياري — ارفع صورة منتجك الحقيقي ليدمجها بالذكاء الاصطناعي">
-                    {!primaryImagePreview ? (
-                      <div className="relative flex items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 p-2 dark:bg-slate-900/50">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setPrimaryImageAndDraft(e.target.files?.[0] || null)}
-                          className="opacity-0 absolute inset-0 cursor-pointer h-full w-full z-10"
-                        />
-                        <div className="text-center pointer-events-none py-1">
-                          <ImageIcon className="mx-auto size-5 text-slate-400 mb-1" />
-                          <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة المنتج</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative flex items-center gap-3 rounded-xl border p-2 bg-slate-50 dark:bg-slate-900 w-fit">
-                        <img
-                          src={primaryImagePreview}
-                          alt="Product preview"
-                          className="h-12 w-12 rounded-lg border object-cover bg-white"
-                        />
-                        <div className="text-xs pr-1">
-                          <p className="font-semibold text-slate-700 dark:text-slate-300">تم اختيار صورة المنتج</p>
-                          <button
-                            type="button"
-                            onClick={() => setPrimaryImageAndDraft(null)}
-                            className="text-red-500 hover:underline mt-0.5"
-                          >
-                            إزالة الصورة
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </Field>
-
-                  <Field label="نص إضافي قصير" hint="نص يظهر في زاوية أو هامش التصميم">
+                <Field label={vc.priceLabel}>
+                  <div className="flex gap-2">
                     <Input
-                      dir="auto"
-                      placeholder="متوفر الآن بألوان متعددة"
-                      value={form.bodyText}
-                      onChange={(e) => update("bodyText", e.target.value)}
+                      placeholder="199"
+                      value={form.price}
+                      onChange={(e) => update("price", e.target.value)}
                       className={inputCls}
                     />
-                  </Field>
-                </div>
+                    <Select value={form.currency} onValueChange={selectValue("currency")}>
+                      <SelectTrigger className="w-28 shrink-0 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field label={vc.headlineLabel} required>
+                  <Input
+                    dir="auto"
+                    placeholder={vc.headlinePlaceholder}
+                    value={form.headline}
+                    onChange={(e) => update("headline", e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="العنوان الفرعي">
+                  <Input
+                    dir="auto"
+                    placeholder={vc.subheadlinePlaceholder}
+                    value={form.subheadline}
+                    onChange={(e) => update("subheadline", e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field label={vc.taglineLabel}>
+                  <Input
+                    dir="auto"
+                    placeholder={vc.taglinePlaceholder}
+                    value={form.tagline}
+                    onChange={(e) => update("tagline", e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label={vc.discountBadgeLabel}>
+                  <Input
+                    dir="auto"
+                    placeholder={vc.discountBadgePlaceholder}
+                    value={form.discountBadge}
+                    onChange={(e) => update("discountBadge", e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+
+              <Field label={vc.descriptionLabel}>
+                <Textarea
+                  dir="auto"
+                  placeholder={vc.descriptionPlaceholder}
+                  value={form.description}
+                  onChange={(e) => update("description", e.target.value)}
+                  rows={3}
+                  className={inputCls}
+                />
+              </Field>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field label="صورة المنتج">
+                  {!primaryImagePreview ? (
+                    <div className="relative flex items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 p-2 dark:bg-slate-900/50">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setPrimaryImageAndDraft(e.target.files?.[0] || null)}
+                        className="opacity-0 absolute inset-0 cursor-pointer h-full w-full z-10"
+                      />
+                      <div className="text-center pointer-events-none py-1">
+                        <ImageIcon className="mx-auto size-5 text-slate-400 mb-1" />
+                        <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة المنتج</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative flex items-center gap-3 rounded-xl border p-2 bg-slate-50 dark:bg-slate-900 w-fit">
+                      <img
+                        src={primaryImagePreview}
+                        alt="Product preview"
+                        className="h-12 w-12 rounded-lg border object-cover bg-white"
+                      />
+                      <div className="text-xs pr-1">
+                        <p className="font-semibold text-slate-700 dark:text-slate-300">تم اختيار صورة المنتج</p>
+                        <button
+                          type="button"
+                          onClick={() => setPrimaryImageAndDraft(null)}
+                          className="text-red-500 hover:underline mt-0.5"
+                        >
+                          إزالة
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </Field>
+
+                <Field label="نص إضافي قصير">
+                  <Input
+                    dir="auto"
+                    placeholder="متوفر الآن بألوان متعددة"
+                    value={form.bodyText}
+                    onChange={(e) => update("bodyText", e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
               </div>
             </div>
 
             {/* Advanced Panels - Sidebar Navigation */}
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1 pb-2 border-b border-slate-100 dark:border-slate-800/80">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-sky-500" />
-                  الإعدادات المتقدمة
-                </h3>
-                <p className="text-[11px] text-muted-foreground">اختر قسمًا من القائمة الجانبية لتعديل إعداداته</p>
-              </div>
-
+            <div className="pt-2">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 {/* Sidebar */}
-                <div className="lg:col-span-4 space-y-2">
-                  <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+                <div className="lg:col-span-3">
+                  <div className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0">
                     {SECTIONS.map((s) => {
                       const Icon = s.icon;
                       const isActive = activeSection === s.key;
@@ -1542,19 +1530,14 @@ const AIImageGenerator: React.FC = () => {
                           key={s.key}
                           type="button"
                           onClick={() => setActiveSection(s.key)}
-                          className={`flex items-center gap-3 text-right rounded-xl border px-3 py-2.5 transition-all whitespace-nowrap lg:whitespace-normal ${
+                          className={`flex items-center gap-2.5 text-right rounded-lg px-3 py-2 transition-colors whitespace-nowrap ${
                             isActive
-                              ? "border-sky-500 bg-sky-500/10 text-sky-700 dark:border-sky-400 dark:bg-sky-900/20 dark:text-sky-300"
-                              : "border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                              ? "bg-sky-500/10 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60"
                           }`}
                         >
-                          <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${isActive ? "bg-sky-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"}`}>
-                            <Icon className="size-4" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold">{s.title}</span>
-                            {s.description && <span className="text-[10px] opacity-70 hidden lg:block">{s.description}</span>}
-                          </div>
+                          <Icon className={`size-4 shrink-0 ${isActive ? "text-sky-500" : ""}`} />
+                          <span className="text-xs font-bold">{s.title}</span>
                         </button>
                       );
                     })}
@@ -1562,48 +1545,32 @@ const AIImageGenerator: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <div className="lg:col-span-8">
-                  <div className="rounded-2xl border border-slate-100 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 p-4 space-y-4">
+                <div className="lg:col-span-9">
+                  <div className="rounded-2xl bg-slate-50/50 dark:bg-slate-900/30 p-4 space-y-4">
 
                     {/* Section 1: Brand & Identity */}
                     {activeSection === "branding" && (
-                <div className="space-y-4 pt-1">
-                  <div className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/50 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-900/40">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-                        {brandKitLoading ? (
-                          <Loader2 className="size-3.5 animate-spin text-sky-500" />
-                        ) : isBrandKitLoaded ? (
-                          <span className="flex size-2 rounded-full bg-emerald-500" />
-                        ) : (
-                          <span className="flex size-2 rounded-full bg-slate-300 dark:bg-slate-600" />
-                        )}
-                        <span>
-                          {brandKitLoading
-                            ? "جاري تحميل هوية العلامة..."
-                            : isBrandKitLoaded
-                            ? "تم استيراد ألوان وهوية العلامة التجارية تلقائياً."
-                            : "لم يتم العثور على هوية علامة محفوظة."}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          id="brand-kit-auto"
-                          checked={form.brandKitAutoApply}
-                          onCheckedChange={(v) => update("brandKitAutoApply", v)}
-                          disabled={!isBrandKitLoaded || brandKitLoading}
-                        />
-                        <Label htmlFor="brand-kit-auto" className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
-                          تطبيق تلقائي
-                        </Label>
-                      </div>
-                    </div>
-                    {isBrandKitLoaded && (
-                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-                        {brandIdentity.brandName && <span>العلامة: {brandIdentity.brandName}</span>}
-                        {brandIdentity.primaryColor && (
-                          <span className="flex items-center gap-1">
-                            ألوان:
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white dark:bg-slate-900/60 px-3 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      {brandKitLoading ? (
+                        <Loader2 className="size-3.5 animate-spin text-sky-500" />
+                      ) : isBrandKitLoaded ? (
+                        <span className="flex size-2 rounded-full bg-emerald-500" />
+                      ) : (
+                        <span className="flex size-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                      )}
+                      <span>
+                        {brandKitLoading
+                          ? "جاري تحميل الهوية..."
+                          : isBrandKitLoaded
+                          ? "هوية العلامة محمّلة"
+                          : "لا توجد هوية محفوظة"}
+                      </span>
+                      {isBrandKitLoaded && (
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+                          {brandIdentity.brandName && <span className="mx-1">· {brandIdentity.brandName}</span>}
+                          {brandIdentity.primaryColor && (
                             <span className="inline-flex gap-0.5">
                               {brandIdentity.primaryColor !== "#000000" && (
                                 <span className="size-3 rounded-full border" style={{ backgroundColor: brandIdentity.primaryColor }} />
@@ -1615,15 +1582,25 @@ const AIImageGenerator: React.FC = () => {
                                 <span className="size-3 rounded-full border" style={{ backgroundColor: brandIdentity.accentColor }} />
                               )}
                             </span>
-                          </span>
-                        )}
-                        {brandIdentity.headingFont && brandIdentity.headingFont !== "Cairo" && <span>الخط: {brandIdentity.headingFont}</span>}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="brand-kit-auto"
+                        checked={form.brandKitAutoApply}
+                        onCheckedChange={(v) => update("brandKitAutoApply", v)}
+                        disabled={!isBrandKitLoaded || brandKitLoading}
+                      />
+                      <Label htmlFor="brand-kit-auto" className="text-[10px] text-slate-500 cursor-pointer">
+                        تطبيق تلقائي
+                      </Label>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field label="اسم العلامة التجارية">
+                    <Field label="اسم العلامة">
                       <Input
                         dir="auto"
                         placeholder="متجر أزياء أونلاين"
@@ -1632,7 +1609,7 @@ const AIImageGenerator: React.FC = () => {
                         className={inputCls}
                       />
                     </Field>
-                    <Field label="الخط المستهدف">
+                    <Field label="الخط">
                       <Select value={form.headingFont} onValueChange={selectValue("headingFont")}>
                         <SelectTrigger className="rounded-xl">
                           <SelectValue />
@@ -1648,10 +1625,10 @@ const AIImageGenerator: React.FC = () => {
                     </Field>
                   </div>
 
-                  <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
-                    <Label className="mb-2 block text-xs font-semibold text-slate-500">لوحة ألوان الهوية</Label>
+                  <div>
+                    <Label className="mb-2 block text-[10px] font-semibold text-slate-500">الألوان</Label>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      <Field label="اللون الأساسي">
+                      <Field label="أساسي">
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
@@ -1666,7 +1643,7 @@ const AIImageGenerator: React.FC = () => {
                           />
                         </div>
                       </Field>
-                      <Field label="اللون الثانوي">
+                      <Field label="ثانوي">
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
@@ -1681,7 +1658,7 @@ const AIImageGenerator: React.FC = () => {
                           />
                         </div>
                       </Field>
-                      <Field label="لون الإشارة / التوهج">
+                      <Field label="تركيز">
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
@@ -1703,7 +1680,7 @@ const AIImageGenerator: React.FC = () => {
 
               {/* Section 2: Layout & Aesthetics */}
               {activeSection === "layout" && (
-                <div className="space-y-4 pt-1">
+                <div className="space-y-4">
                   {/* Platform selection */}
                   <div>
                     <Label className="mb-2 block text-xs font-semibold text-slate-500">المنصة الإعلانية المستهدفة</Label>
@@ -1848,7 +1825,7 @@ const AIImageGenerator: React.FC = () => {
                     </Field>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field label="نمط الزوايا">
                       <Select value={form.borderRadius} onValueChange={selectValue("borderRadius")}>
                         <SelectTrigger className="rounded-xl">
@@ -1882,7 +1859,7 @@ const AIImageGenerator: React.FC = () => {
 
               {/* Section 3: Campaign details */}
               {activeSection === "campaign" && (
-                <div className="space-y-4 pt-1">
+                <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field label="الهدف الإعلاني للمنشور">
                       <Select value={form.purpose} onValueChange={selectValue("purpose")}>
@@ -1935,7 +1912,7 @@ const AIImageGenerator: React.FC = () => {
                     </Field>
                   </div>
 
-                  <Field label="الهاشتاجات المفضلة" hint="افصل بينها بفاصلة (,). ستظهر أسفل التصميم إن وجد متسع">
+                  <Field label="الهاشتاجات">
                     <Input
                       dir="auto"
                       placeholder="موضة_شتاء, خصم_مميز, متجرنا"
@@ -1949,7 +1926,7 @@ const AIImageGenerator: React.FC = () => {
 
               {/* Section 4: Advanced specifications */}
               {activeSection === "output" && (
-                <div className="space-y-4 pt-1">
+                <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 items-end">
                     <div>
                       <Label className="mb-2 block text-xs font-semibold text-slate-500">صيغة الصورة</Label>
@@ -1999,7 +1976,7 @@ const AIImageGenerator: React.FC = () => {
                     </div>
                   </div>
 
-                  <Field label="أشياء يفضل تجنبها بالرسم (Negative Prompt)" hint="مثال: نصوص إنجليزية عشوائية، أشخاص مشوشين، إلخ.">
+                  <Field label="تجنّب في الرسم">
                     <Textarea
                       dir="auto"
                       placeholder="كتابة نصوص غير مفهومة، أيدي مشوهة، خلفية فوضوية..."
@@ -2010,7 +1987,7 @@ const AIImageGenerator: React.FC = () => {
                     />
                   </Field>
 
-                  <Field label="صورة مرجعية للستايل (Style Reference)" hint="اختياري — ارفع صورة فنية ليحاكي الذكاء الاصطناعي ألوانها وتكوينها">
+                  <Field label="صورة مرجعية للستايل">
                     {!referenceImagePreview ? (
                       <div className="relative flex items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 p-3 dark:bg-slate-900/50">
                         <Input
@@ -2021,7 +1998,7 @@ const AIImageGenerator: React.FC = () => {
                         />
                         <div className="text-center pointer-events-none py-1">
                           <Sparkles className="mx-auto size-5 text-slate-400 mb-1" />
-                          <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة ستايل مرجعية</span>
+                          <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold">ارفع صورة مرجعية</span>
                         </div>
                       </div>
                     ) : (
@@ -2032,13 +2009,13 @@ const AIImageGenerator: React.FC = () => {
                           className="h-12 w-12 rounded-lg border object-cover bg-white"
                         />
                         <div className="text-xs pr-1">
-                          <p className="font-semibold text-slate-700 dark:text-slate-300">تم اختيار الصورة المرجعية</p>
+                          <p className="font-semibold text-slate-700 dark:text-slate-300">الصورة المرجعية جاهزة</p>
                           <button
                             type="button"
                             onClick={() => setReferenceImageAndDraft(null)}
                             className="text-red-500 hover:underline mt-0.5"
                           >
-                            إزالة الصورة
+                            إزالة
                           </button>
                         </div>
                       </div>
@@ -2057,210 +2034,182 @@ const AIImageGenerator: React.FC = () => {
           {/* Left Column: Sticky Control Panel & Image Output (lg:col-span-5) */}
           <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
             
-            {/* AI Control Panel (Glassmorphism & ambient shadows) */}
-            <div className="rounded-2xl border border-sky-100/50 dark:border-sky-950/20 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md p-5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] space-y-5">
-              <div className="pb-3 border-b border-slate-100 dark:border-slate-800/60">
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <Wand2 className="size-4 text-sky-500" />
-                  مربع التحكم الذكي
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">البرومبت المولد وإجراءات التوليد</p>
+            {/* AI Control Panel (compact, no nested card) */}
+            <div className="rounded-2xl bg-white dark:bg-slate-900/60 p-4 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-semibold text-slate-500">البرومبت المولّد</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowJson(!showJson)}
+                  className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
+                >
+                  {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                  {showJson ? "إخفاء JSON" : "عرض JSON"}
+                </button>
               </div>
-              <div className="space-y-4">
+              <Textarea
+                dir="auto"
+                value={form.editablePrompt}
+                onChange={(e) => {
+                  update("editablePrompt", e.target.value);
+                  setPromptTouched(true);
+                }}
+                rows={3}
+                className={`${inputCls} text-xs leading-relaxed focus-visible:ring-sky-500`}
+                placeholder="سيتم كتابة البرومبت ديناميكياً من الخيارات المدخلة..."
+              />
+              {showJson && (
+                <pre className="max-h-48 overflow-auto rounded-lg bg-slate-50 dark:bg-gray-950 p-2.5 text-[10px] font-mono">
+                  {JSON.stringify(buildPromptJson(), null, 2)}
+                </pre>
+              )}
 
-                {/* Prompt Output View */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-slate-500">نص البرومبت الموجه للذكاء الاصطناعي</Label>
-                    <button
-                      type="button"
-                      onClick={() => setShowJson(!showJson)}
-                      className="text-xs text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-                      {showJson ? "إخفاء JSON" : "عرض JSON"}
-                    </button>
-                  </div>
-                  <Textarea
-                    dir="auto"
-                    value={form.editablePrompt}
-                    onChange={(e) => {
-                      update("editablePrompt", e.target.value);
-                      setPromptTouched(true);
-                    }}
-                    rows={4}
-                    className={`${inputCls} text-xs leading-relaxed focus-visible:ring-sky-500`}
-                    placeholder="سيتم كتابة البرومبت ديناميكياً من الخيارات المدخلة..."
-                  />
-                  {showJson && (
-                    <pre className="max-h-48 overflow-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-[10px] font-mono dark:border-slate-800 dark:bg-gray-950/75">
-                      {JSON.stringify(buildPromptJson(), null, 2)}
-                    </pre>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={loading || !canGenerate}
-                    className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold gap-2 py-5 shadow-md shadow-sky-200 dark:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="size-4" />
-                    )}
-                    {loading ? "جاري التوليد..." : "توليد الصورة"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleReset}
-                    disabled={loading}
-                    className="rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 font-semibold gap-2 py-5"
-                  >
-                    <RotateCcw className="size-4" /> تصفير الحقول
-                  </Button>
-                </div>
-
-                {usage && (
-                  <div className="flex flex-wrap items-center justify-between rounded-xl border border-sky-100 bg-sky-50/20 px-3 py-2 text-[10px] text-slate-500 dark:border-slate-800 dark:bg-slate-950/20">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">استخدام الـ Token:</span>
-                    <div className="flex gap-2 font-mono">
-                      <span>prompt: {usage.prompt_tokens?.toLocaleString()}</span>
-                      <span>completion: {usage.completion_tokens?.toLocaleString()}</span>
-                      <span className="font-bold text-sky-600 dark:text-sky-400">
-                        الإجمالي: {usage.total_tokens?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
+              <div className="flex gap-2 pt-1">
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading || !canGenerate}
+                  className="flex-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold gap-2 py-5 shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-transform disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
+                  {loading ? "جاري التوليد..." : "توليد الصورة"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleReset}
+                  disabled={loading}
+                  className="rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 px-3"
+                  title="تصفير الحقول"
+                >
+                  <RotateCcw className="size-4" />
+                </Button>
               </div>
+
+              {usage && (
+                <div className="flex flex-wrap items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-900/60 px-2.5 py-1.5 text-[10px] text-slate-500">
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Token usage</span>
+                  <div className="flex gap-2 font-mono">
+                    <span>prompt: {usage.prompt_tokens?.toLocaleString()}</span>
+                    <span>completion: {usage.completion_tokens?.toLocaleString()}</span>
+                    <span className="font-bold text-sky-600 dark:text-sky-400">
+                      total: {usage.total_tokens?.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Output Visualizer Panel */}
-            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] space-y-4">
-              <div className="pb-3 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">المعاينة وتفاصيل الإخراج</span>
-                {imageUrl && !loading && (
-                  <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    جاهز للتحميل
-                  </span>
-                )}
-              </div>
-              <div id="ai-generated-result">
-                
+            {/* Output Visualizer */}
+            <div className="rounded-2xl bg-white dark:bg-slate-900/60 p-4 shadow-sm">
+              <div id="ai-generated-result" className="space-y-3">
                 {loading ? (
-                  <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-sky-100 bg-sky-50/5 dark:border-slate-800 dark:bg-slate-950/10 p-6 text-center animate-pulse">
-                    <Loader2 className="size-10 animate-spin text-sky-500" />
-                    <p className="mt-3.5 text-sm font-semibold text-slate-700 dark:text-slate-300">جاري إطلاق الذكاء الاصطناعي لتوليد إعلانك...</p>
-                    <p className="mt-1 text-xs text-slate-400">قد يستغرق ذلك ما بين 10 إلى 40 ثانية طبقاً للموديل</p>
+                  <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-sky-200/50 dark:border-slate-800 p-6 text-center animate-pulse">
+                    <Loader2 className="size-9 animate-spin text-sky-500" />
+                    <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">جاري توليد إعلانك...</p>
+                    <p className="mt-1 text-[10px] text-slate-400">10–40 ثانية</p>
                   </div>
                 ) : imageUrl ? (
-                  <div className="space-y-4">
-                    <div className="relative group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-gray-900 shadow-inner flex items-center justify-center p-2">
+                  <div className="space-y-3">
+                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-gray-900 flex items-center justify-center p-2">
                       <img
                         src={imageUrl}
                         alt="AI generated social post"
-                        className="max-h-[380px] w-full rounded-xl object-contain bg-white dark:bg-gray-900 shadow-sm transition-transform duration-300 group-hover:scale-[1.01]"
+                        className="max-h-[380px] w-full rounded-lg object-contain bg-white dark:bg-gray-900"
                       />
                     </div>
-                    
-                    {/* Image Actions Toolbar */}
-                    <div className="flex flex-wrap gap-2 justify-center border-t border-slate-100 pt-3 dark:border-slate-800">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 rounded-xl text-xs border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:text-sky-400"
-                        onClick={generateCaption}
-                        disabled={!canGenerate}
-                      >
+
+                    {/* Image Actions */}
+                    <div className="flex flex-wrap gap-1.5">
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={generateCaption} disabled={!canGenerate}>
                         <MessageSquare className="size-3.5" /> كابشن
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs" onClick={handleDownload}>
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={handleDownload}>
                         <Download className="size-3.5" /> تحميل
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs" onClick={handleCopyUrl}>
+                      <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={handleCopyUrl}>
                         <Copy className="size-3.5" /> نسخ الرابط
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs" onClick={handleOpenTab}>
-                        <ExternalLink className="size-3.5" /> فتح بتبويب جديد
-                      </Button>
                       {lastParams && (
-                        <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs text-sky-600 dark:text-sky-400" onClick={handleRegenerate}>
-                          <RefreshCw className="size-3.5" /> توليد مماثل
+                        <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-xs" onClick={handleRegenerate}>
+                          <RefreshCw className="size-3.5" /> إعادة
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1.5 rounded-xl text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                        onClick={() => setImageUrl("")}
-                      >
-                        <Trash2 className="size-3.5" /> مسح المعاينة
-                      </Button>
-                      {generatedCaption && (
-                        <div className="w-full mt-3 space-y-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-                          {generatedCaption.headline && (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
-                                <Type className="size-3" /> العنوان المقترح
-                              </div>
-                              <div className="text-xs text-slate-800 dark:text-slate-200">{generatedCaption.headline}</div>
-                            </div>
-                          )}
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
-                              <FileText className="size-3" /> الكابشن
-                            </div>
-                            <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">{generatedCaption.caption}</div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-semibold text-slate-500">CTA مقترح:</span>
-                            <span className="text-xs font-medium text-sky-700 dark:text-sky-400">{generatedCaption.cta}</span>
-                          </div>
-                          {generatedCaption.hashtags.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <Hash className="size-3 text-slate-400" />
-                              {generatedCaption.hashtags.map((h) => (
-                                <Badge
-                                  key={h}
-                                  variant="secondary"
-                                  className="cursor-pointer text-[10px] rounded-md"
-                                  onClick={() => handleCopyCaption(h)}
-                                  title="نسخ الهاشتاج"
-                                >
-                                  #{h}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full gap-1.5 rounded-xl text-xs text-slate-500 hover:text-sky-600"
-                            onClick={() => {
-                              const text = [
-                                generatedCaption.headline,
-                                generatedCaption.caption,
-                                generatedCaption.cta,
-                                generatedCaption.hashtags.map((h) => `#${h}`).join(" "),
-                              ].filter(Boolean).join("\n\n");
-                              void handleCopyCaption(text);
-                            }}
-                          >
-                            <Copy className="size-3.5" /> نسخ كل النصوص
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="rounded-lg text-slate-500 px-2">
+                            <MoreVertical className="size-4" />
                           </Button>
-                        </div>
-                      )}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handleOpenTab}>
+                            <ExternalLink className="size-3.5 ml-1.5" /> فتح بتبويب
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setImageUrl("")} className="text-red-500 focus:text-red-500">
+                            <Trash2 className="size-3.5 ml-1.5" /> مسح المعاينة
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
+
+                    {generatedCaption && (
+                      <div className="space-y-2 rounded-lg bg-slate-50/60 dark:bg-slate-900/60 p-3 text-xs">
+                        {generatedCaption.headline && (
+                          <div className="flex items-start gap-1.5">
+                            <Type className="size-3 mt-0.5 text-slate-400" />
+                            <div>
+                              <div className="text-[10px] font-semibold text-slate-500">عنوان</div>
+                              <div className="text-slate-800 dark:text-slate-200">{generatedCaption.headline}</div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-start gap-1.5">
+                          <FileText className="size-3 mt-0.5 text-slate-400" />
+                          <div>
+                            <div className="text-[10px] font-semibold text-slate-500">كابشن</div>
+                            <div className="text-slate-800 dark:text-slate-200 leading-relaxed">{generatedCaption.caption}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-semibold text-slate-500">CTA:</span>
+                          <span className="font-medium text-sky-700 dark:text-sky-400">{generatedCaption.cta}</span>
+                        </div>
+                        {generatedCaption.hashtags.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1">
+                            <Hash className="size-3 text-slate-400" />
+                            {generatedCaption.hashtags.map((h) => (
+                              <Badge
+                                key={h}
+                                variant="secondary"
+                                className="cursor-pointer text-[10px] rounded"
+                                onClick={() => handleCopyCaption(h)}
+                                title="نسخ"
+                              >
+                                #{h}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full gap-1.5 rounded-lg text-[10px] text-slate-500 hover:text-sky-600 h-7"
+                          onClick={() => {
+                            const text = [
+                              generatedCaption.headline,
+                              generatedCaption.caption,
+                              generatedCaption.cta,
+                              generatedCaption.hashtags.map((h) => `#${h}`).join(" "),
+                            ].filter(Boolean).join("\n\n");
+                            void handleCopyCaption(text);
+                          }}
+                        >
+                          <Copy className="size-3" /> نسخ كل النصوص
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  // Live Dynamic Aspect Preview
                   <AspectPreview formData={form} platformLabel={platformLabel} />
                 )}
-
               </div>
             </div>
 
@@ -2269,41 +2218,23 @@ const AIImageGenerator: React.FC = () => {
         </div>
 
         {/* Bottom Section: Full Width Created Images Gallery */}
-        <div className="border-t border-slate-200/70 pt-8 dark:border-slate-800">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100">
-                <Grid3X3 className="size-5 text-sky-500" />
-                معرض تصاميم السوشيال ميديا المُنشأة
-                <Badge variant="secondary" className="rounded-full px-2.5 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  {gallery.length} تصميم
-                </Badge>
-              </h3>
-              <p className="text-xs text-muted-foreground">تصفح تصاميمك السابقة وقارن بين المقاسات والبرومبتس المستعملة</p>
-            </div>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 border"
-              onClick={fetchGallery}
-              disabled={galleryLoading}
-            >
-              <RefreshCw className={`size-3.5 ${galleryLoading ? "animate-spin" : ""}`} />
-              تحديث المعرض
-            </Button>
-          </div>
+        <div className="pt-8">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+              <Grid3X3 className="size-4 text-slate-400" />
+              معرض التصاميم
+              <Badge variant="secondary" className="rounded-full px-2 text-[10px]">
+                {gallery.length}
+              </Badge>
+            </h3>
 
-          {/* Filters and search in gallery */}
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 p-3 rounded-2xl border border-slate-100 dark:bg-slate-900/30 dark:border-slate-800/80">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-slate-500">منصة الفلترة:</span>
+            <div className="flex items-center gap-2">
               <Select value={galleryFilter} onValueChange={(v) => setGalleryFilter(v || "all")}>
-                <SelectTrigger className="h-8 w-36 text-xs rounded-xl bg-white dark:bg-gray-900">
+                <SelectTrigger className="h-8 w-32 text-xs rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل (بدون فلتر)</SelectItem>
+                  <SelectItem value="all">كل المنصات</SelectItem>
                   {PLATFORMS.map((p) => (
                     <SelectItem key={p.value} value={p.value}>
                       {p.label}
@@ -2311,63 +2242,69 @@ const AIImageGenerator: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Input
+                placeholder="ابحث..."
+                value={gallerySearch}
+                onChange={(e) => setGallerySearch(e.target.value)}
+                className={`h-8 w-44 text-xs ${inputCls}`}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500"
+                onClick={fetchGallery}
+                disabled={galleryLoading}
+                title="تحديث"
+              >
+                <RefreshCw className={`size-3.5 ${galleryLoading ? "animate-spin" : ""}`} />
+              </Button>
             </div>
-            <Input
-              placeholder="ابحث بالبرومبت، المقاس، الهدف، التاريخ..."
-              value={gallerySearch}
-              onChange={(e) => setGallerySearch(e.target.value)}
-              className={`h-8 sm:w-80 ${inputCls} text-xs`}
-            />
           </div>
 
           {/* Gallery Grid */}
           {filteredGallery.length === 0 ? (
-            <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/10 p-6 text-center text-slate-400">
-              <ImageIcon className="mx-auto size-9 text-slate-300" />
-              <p className="mt-2.5 text-sm font-medium">
-                {gallerySearch || galleryFilter !== "all"
-                  ? "لم نجد تصاميم مطابقة لبحثك"
-                  : "لا توجد صور منشأة بعد. أول صور تنشئها ستظهر هنا."}
+            <div className="flex min-h-[160px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-slate-400">
+              <ImageIcon className="size-7 text-slate-300" />
+              <p className="mt-2 text-xs">
+                {gallerySearch || galleryFilter !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد تصاميم بعد"}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
               {filteredGallery.map((img) => {
                 return (
                   <div
                     key={img.filename}
-                    className="group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300"
+                    className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:shadow-sm transition-all"
                   >
                     <div className="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center overflow-hidden">
                       <img
                         src={img.url}
                         alt=""
-                        className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                        className="h-full w-full object-cover"
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
                       />
-                      
-                      {/* Metas info badge overlay */}
-                      <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 opacity-90">
+
+                      <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                         {img.platform && (
-                          <Badge variant="secondary" className="text-[8px] px-1 py-0 px-1.5 rounded-md font-semibold bg-white/90 text-slate-800 dark:bg-slate-950/90 dark:text-slate-200 shadow-sm">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded font-semibold bg-white/90 text-slate-800 dark:bg-slate-950/90 dark:text-slate-200">
                             {PLATFORMS.find((p) => p.value === img.platform)?.label || img.platform}
                           </Badge>
                         )}
                         {img.aspectRatio && (
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 px-1.5 rounded-md font-semibold bg-slate-950/70 text-white border-none shadow-sm">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded font-semibold bg-slate-950/70 text-white border-none">
                             {img.aspectRatio}
                           </Badge>
                         )}
                       </div>
                     </div>
 
-                    {/* Meta/details container below image card */}
-                    <div className="p-2.5 text-right space-y-1">
+                    <div className="p-2 text-right space-y-0.5">
                       {img.purpose && (
-                        <p className="text-[9px] font-bold text-sky-600 dark:text-sky-400">
+                        <p className="text-[11px] font-bold text-sky-600 dark:text-sky-400">
                           {VERTICAL_CONFIG[(img.vertical as Vertical) || "general"].purposeOptions.find(
                             (p) => p.value === img.purpose
                           )?.label ||
@@ -2375,52 +2312,51 @@ const AIImageGenerator: React.FC = () => {
                             img.purpose}
                         </p>
                       )}
-                      <p className="text-[9px] text-muted-foreground truncate leading-tight" title={img.prompt}>
+                      <p className="text-[11px] text-muted-foreground truncate leading-tight" title={img.prompt}>
                         {img.prompt || "تصميم بدون عنوان"}
                       </p>
-                      <p className="text-[8px] text-slate-400/80 font-mono">
+                      <p className="text-[10px] text-slate-400 font-mono">
                         {formatDate(img.createdAt)}
                       </p>
                     </div>
 
-                    {/* Action hover overlay grid */}
-                    <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-20">
+                    <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100 z-20">
                       <button
                         type="button"
-                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/45 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
                         onClick={() => {
                           setImageUrl(img.url);
                           document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
                         }}
                         aria-label="عرض"
-                        title="عرض بالتفاصيل"
+                        title="عرض"
                       >
                         <ImageIcon className="size-4" />
                       </button>
                       <button
                         type="button"
-                        aria-label="فتح بتبويب جديد"
-                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/45 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        aria-label="فتح"
+                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
                         onClick={() => window.open(img.url, "_blank")}
-                        title="فتح في متصفح خارجي"
+                        title="فتح"
                       >
                         <ExternalLink className="size-4" />
                       </button>
                       <button
                         type="button"
-                        aria-label="استنساخ الخيارات"
-                        className="rounded-lg bg-sky-500/70 p-2 text-white hover:bg-sky-500 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        aria-label="استنساخ"
+                        className="rounded-lg bg-sky-500/70 p-2 text-white hover:bg-sky-500 transition-colors"
                         onClick={() => handleApplySettings(img)}
-                        title="نسخ الخيارات للنموذج"
+                        title="نسخ الخيارات"
                       >
                         <Copy className="size-4" />
                       </button>
                       <button
                         type="button"
-                        aria-label="حذف الصورة"
-                        className="rounded-lg bg-red-500/70 p-2 text-white hover:bg-red-500 hover:scale-110 active:scale-95 transition-all shadow-sm"
+                        aria-label="حذف"
+                        className="rounded-lg bg-red-500/70 p-2 text-white hover:bg-red-500 transition-colors"
                         onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
-                        title="حذف من المعرض"
+                        title="حذف"
                       >
                         <Trash2 className="size-4" />
                       </button>
