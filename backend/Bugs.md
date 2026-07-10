@@ -1,5 +1,37 @@
 # Backend Bugs Log
 
+### [FIX] Duplicate `/admin` Prefix in Guardrail FastAPI Endpoints
+- **Date**: 2026-07-10
+- **Description**: Resolved a 404 Not Found error when calling guardrail API routes (e.g. listing, creating, check-conflict, or update/delete rules) via the Express backend proxy.
+- **Root Cause**: The FastAPI `admin_router` already has a prefix of `/admin` registered in `main.py` (`app.include_router(admin_router, prefix="/admin")`). Inside `guardrails.py`, the endpoints were decorated with `@router.get("/admin/agents/{agent_id}/guardrails")`, resulting in actual paths containing double `/admin` prefixes (`/admin/admin/agents/...`). The Express proxy and frontend expected `/admin/agents/...`, causing a mismatch and resulting in a 404 response.
+- **Resolution**: Removed the redundant `/admin` prefix from all route decorators in `guardrails.py` so they are successfully mounted under `/admin/agents/...`.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/guardrails.py`
+
+### [FIX] Merchant User 403 Forbidden Access to AI Admin Proxy
+- **Date**: 2026-07-10
+- **Description**: Resolved an access denied/403 Forbidden issue when merchant users (`OWNER` or `COMPANY_ADMIN` in the database) clicked the "القواعد والتعلم" (Guardrails) tab.
+- **Root Cause**: The Express backend router `aiAdminProxyRoute.js` had a global `router.use(requireSuperAdmin)` middleware, which blocked any request that did not belong to a system-level Super Admin. Merchant users have company-specific administrative roles but do not hold system-wide roles, causing their requests to be denied.
+- **Resolution**: Removed the global `requireSuperAdmin` middleware from `aiAdminProxyRoute.js` and replaced it with `allowMerchantOrSystemAdmin` which allows system-level admins OR merchant users holding `OWNER` or `COMPANY_ADMIN` role within a company to pass through to the proxy safely.
+- **Files Modified**:
+  - `apps/backend/routes/aiAdminProxyRoute.js`
+
+### [FIX] Compiled System Prompt Observable Value Not Saved
+- **Date**: 2026-07-10
+- **Description**: The `compiled_system_prompt` field in chat/sandbox api response was empty/unpopulated in responses.
+- **Root Cause**: In `skills_pipeline.py`, after calling `assembler.build_system_prompt(ctx)`, the resulting string was assigned to a local variable `enriched_prompt`, but it was never assigned back to `ctx.system_prompt`, leaving the final prompt empty in logs and response payloads.
+- **Resolution**: Re-assigned `enriched_prompt` back to `ctx.system_prompt` to ensure the compiled value is saved and returned.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
+### [FIX] Guardrail Rules Not Persisted on Creation/Update
+- **Date**: 2026-07-10
+- **Description**: Guardrail rules added or modified by merchants did not persist in PostgreSQL.
+- **Root Cause**: The FastAPI endpoints in `guardrails.py` created and modified SQLAlchemy model instances but forgot to execute `await session.commit()`.
+- **Resolution**: Added explicit commits after database modifications.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/guardrails.py`
+
 ### [FIX] TS2367 Tab Literal Overlap Error in AgentProfilesPage
 - **Date**: 2026-07-10
 - **Description**: Resolved a TypeScript compilation error (`TS2367: This comparison appears to be unintentional because the types '"settings"' and '"guardrails"' have no overlap`) in the React frontend interface `AgentProfilesPage.tsx`.

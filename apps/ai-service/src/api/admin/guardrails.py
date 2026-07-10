@@ -60,7 +60,7 @@ class ConflictCheckResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-@router.get("/admin/agents/{agent_id}/guardrails", response_model=list[GuardrailRuleResponse])
+@router.get("/agents/{agent_id}/guardrails", response_model=list[GuardrailRuleResponse])
 async def list_guardrails(
     agent_id: str,
     session: SessionDep,
@@ -84,7 +84,7 @@ async def list_guardrails(
     ]
 
 
-@router.post("/admin/agents/{agent_id}/guardrails", response_model=GuardrailRuleResponse)
+@router.post("/agents/{agent_id}/guardrails", response_model=GuardrailRuleResponse)
 async def create_guardrail(
     agent_id: str,
     body: GuardrailRuleCreate,
@@ -133,7 +133,7 @@ async def create_guardrail(
     )
 
 
-@router.put("/admin/agents/{agent_id}/guardrails/{rule_id}", response_model=GuardrailRuleResponse)
+@router.put("/agents/{agent_id}/guardrails/{rule_id}", response_model=GuardrailRuleResponse)
 async def update_guardrail(
     agent_id: str,
     rule_id: str,
@@ -180,7 +180,7 @@ async def update_guardrail(
     )
 
 
-@router.delete("/admin/agents/{agent_id}/guardrails/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/agents/{agent_id}/guardrails/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_guardrail(
     agent_id: str,
     rule_id: str,
@@ -201,7 +201,7 @@ async def delete_guardrail(
         await redis_client.delete(f"guardrails:{agent_id}")
 
 
-@router.post("/admin/agents/{agent_id}/guardrails/conflict-check", response_model=ConflictCheckResponse)
+@router.post("/agents/{agent_id}/guardrails/conflict-check", response_model=ConflictCheckResponse)
 async def check_guardrail_conflict(
     agent_id: str,
     body: ConflictCheckRequest,

@@ -1,13 +1,14 @@
 # System Structure & Architecture
 
 ### API Endpoints
-1. Added FastAPI REST admin API endpoints for agent guardrails under `/admin/agents/{agent_id}/guardrails`:
-   - `GET /admin/agents/{agent_id}/guardrails` (List active rules)
-   - `POST /admin/agents/{agent_id}/guardrails` (Create and translate raw feedback text to structured Excuse/Rebuttal/Action JSON via LLM + generate embeddings)
-   - `PUT /admin/agents/{agent_id}/guardrails/{rule_id}` (Edit rule details/state)
-   - `DELETE /admin/agents/{agent_id}/guardrails/{rule_id}` (Soft delete/deactivate rule)
-   - `POST /admin/agents/{agent_id}/guardrails/conflict-check` (Check semantic similarity conflicts against existing rules with 0.85 threshold)
-   These endpoints are automatically consumed on the frontend via the Express `/api/v1/ai-admin` dynamic proxy route.
+1. Added FastAPI REST admin API endpoints for agent guardrails (mounted under the FastAPI `/admin` router prefix):
+   - `GET /agents/{agent_id}/guardrails` (List active rules)
+   - `POST /agents/{agent_id}/guardrails` (Create and translate raw feedback text to structured Excuse/Rebuttal/Action JSON via LLM + generate embeddings)
+   - `PUT /agents/{agent_id}/guardrails/{rule_id}` (Edit rule details/state)
+   - `DELETE /agents/{agent_id}/guardrails/{rule_id}` (Soft delete/deactivate rule)
+   - `POST /agents/{agent_id}/guardrails/conflict-check` (Check semantic similarity conflicts against existing rules with 0.85 threshold)
+   These endpoints are proxied dynamically on the frontend via the Express `/api/v1/ai-admin` route.
+
 2. The backend endpoint `/api/v1/ai-image/model-config` (handled by `getModelConfig` in `aiImageController.js`) now has its `allowedModels` payload fully consumed by the newly introduced model selection dropdown in the AI Image Generator interface.
 3. The backend template creation endpoint `/api/v1/whatsapp-templates/templates` (handled by `whatsappMetaTemplateController.createMetaTemplate`) was updated to propagate Meta's detailed API error payloads (including `error_user_title`, `error_user_msg`, and Meta subcodes) with the correct HTTP status code instead of swallowing them with a generic 500 status.
 4. The backend authentication endpoints `/auth/login`, `/auth/me`, `/auth/companies` (handled by `getUserCompanies`), and `/auth/switch-company/:companyId` were updated to select and include the `roleRef` relation inside `userCompanies` queries, ensuring that role resolution prefers custom/assigned role keys (`uc.roleRef?.key || uc.role`) over the database default enum (`AGENT`), preserving administrative and owner access on page reload or switch. Additionally, `/auth/login` and `/auth/switch-company/:companyId` now load and return user permissions consistently via `permissionService.getUserPermissions`, and return the context-aware selected company object (including role and activeApps) to prevent frontend sidebar collapsing or inconsistency on reload/switch.
