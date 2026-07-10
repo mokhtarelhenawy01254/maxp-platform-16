@@ -691,49 +691,6 @@ function AspectPreview({
   );
 }
 
-function CollapsibleSection({
-  title,
-  icon: Icon,
-  isOpen,
-  onToggle,
-  children,
-}: {
-  title: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="border-b border-slate-100 dark:border-slate-800/50 py-3 transition-colors">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between py-3 text-right group"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-slate-50 text-slate-500 group-hover:bg-sky-50 group-hover:text-sky-600 dark:bg-slate-800/50 dark:text-slate-400 dark:group-hover:bg-sky-950/30 dark:group-hover:text-sky-400 transition-colors">
-            <Icon className="size-4" />
-          </div>
-          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{title}</span>
-        </div>
-        {isOpen ? (
-          <ChevronUp className="size-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-        ) : (
-          <ChevronDown className="size-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-        )}
-      </button>
-      <div
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isOpen ? "max-h-[2000px] pt-4 pb-2 px-1" : "max-h-0"
-        }`}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
 const detectVerticalFromCompany = (company: any | null): Vertical => {
   if (!company) return "general";
   const activeApps = company.activeApps || [];
@@ -802,21 +759,21 @@ const AIImageGenerator: React.FC = () => {
   const vc = VERTICAL_CONFIG[vertical];
   const isBrandKitLoaded = Object.keys(brandIdentity).length > 0;
 
-  const [openSections, setOpenSections] = useState<{
-    branding: boolean;
-    layout: boolean;
-    campaign: boolean;
-    output: boolean;
-  }>({
-    branding: false,
-    layout: false,
-    campaign: false,
-    output: false,
-  });
+  type SectionKey = "branding" | "layout" | "campaign" | "output";
 
-  const toggleSection = (section: "branding" | "layout" | "campaign" | "output") => {
-    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  };
+  const SECTIONS: {
+    key: SectionKey;
+    title: string;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    description?: string;
+  }[] = [
+    { key: "branding", title: "الهوية البصرية وألوان العلامة", icon: Info, description: "ألوان، خط، واسم العلامة" },
+    { key: "layout", title: "تنسيق ومقاس الإعلان", icon: Grid3X3, description: "المنصة، المقاس، المود، التنسيق" },
+    { key: "campaign", title: "تفاصيل الحملة والتسويق", icon: Sparkles, description: "الهدف، الاستعجال، الهاشتاجات" },
+    { key: "output", title: "خيارات التوليد الفنية والتجنب", icon: Wand2, description: "الصيغة، الجودة، تجنب" },
+  ];
+
+  const [activeSection, setActiveSection] = useState<SectionKey>("branding");
 
   const selectValue = <K extends keyof FormData>(key: K) => (value: string | null) => {
     if (value !== null) update(key, value as FormData[K]);
@@ -1563,16 +1520,53 @@ const AIImageGenerator: React.FC = () => {
               </div>
             </div>
 
-            {/* Collapsible Advanced Panels */}
+            {/* Advanced Panels - Sidebar Navigation */}
             <div className="space-y-4">
-              
-              {/* Section 1: Brand & Identity */}
-              <CollapsibleSection
-                title="الهوية البصرية وألوان العلامة"
-                icon={Info}
-                isOpen={openSections.branding}
-                onToggle={() => toggleSection("branding")}
-              >
+              <div className="flex flex-col gap-1 pb-2 border-b border-slate-100 dark:border-slate-800/80">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-sky-500" />
+                  الإعدادات المتقدمة
+                </h3>
+                <p className="text-[11px] text-muted-foreground">اختر قسمًا من القائمة الجانبية لتعديل إعداداته</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                {/* Sidebar */}
+                <div className="lg:col-span-4 space-y-2">
+                  <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+                    {SECTIONS.map((s) => {
+                      const Icon = s.icon;
+                      const isActive = activeSection === s.key;
+                      return (
+                        <button
+                          key={s.key}
+                          type="button"
+                          onClick={() => setActiveSection(s.key)}
+                          className={`flex items-center gap-3 text-right rounded-xl border px-3 py-2.5 transition-all whitespace-nowrap lg:whitespace-normal ${
+                            isActive
+                              ? "border-sky-500 bg-sky-500/10 text-sky-700 dark:border-sky-400 dark:bg-sky-900/20 dark:text-sky-300"
+                              : "border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                          }`}
+                        >
+                          <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${isActive ? "bg-sky-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"}`}>
+                            <Icon className="size-4" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold">{s.title}</span>
+                            {s.description && <span className="text-[10px] opacity-70 hidden lg:block">{s.description}</span>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="lg:col-span-8">
+                  <div className="rounded-2xl border border-slate-100 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 p-4 space-y-4">
+
+                    {/* Section 1: Brand & Identity */}
+                    {activeSection === "branding" && (
                 <div className="space-y-4 pt-1">
                   <div className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/50 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-900/40">
                     <div className="flex items-center justify-between gap-2">
@@ -1705,15 +1699,10 @@ const AIImageGenerator: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </CollapsibleSection>
+              )}
 
               {/* Section 2: Layout & Aesthetics */}
-              <CollapsibleSection
-                title="تنسيق ومقاس الإعلان"
-                icon={Grid3X3}
-                isOpen={openSections.layout}
-                onToggle={() => toggleSection("layout")}
-              >
+              {activeSection === "layout" && (
                 <div className="space-y-4 pt-1">
                   {/* Platform selection */}
                   <div>
@@ -1889,15 +1878,10 @@ const AIImageGenerator: React.FC = () => {
                     </Field>
                   </div>
                 </div>
-              </CollapsibleSection>
+              )}
 
               {/* Section 3: Campaign details */}
-              <CollapsibleSection
-                title="تفاصيل الحملة والتسويق"
-                icon={Sparkles}
-                isOpen={openSections.campaign}
-                onToggle={() => toggleSection("campaign")}
-              >
+              {activeSection === "campaign" && (
                 <div className="space-y-4 pt-1">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field label="الهدف الإعلاني للمنشور">
@@ -1961,15 +1945,10 @@ const AIImageGenerator: React.FC = () => {
                     />
                   </Field>
                 </div>
-              </CollapsibleSection>
+              )}
 
               {/* Section 4: Advanced specifications */}
-              <CollapsibleSection
-                title="خيارات التوليد الفنية والتجنب"
-                icon={Wand2}
-                isOpen={openSections.output}
-                onToggle={() => toggleSection("output")}
-              >
+              {activeSection === "output" && (
                 <div className="space-y-4 pt-1">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 items-end">
                     <div>
@@ -2066,8 +2045,11 @@ const AIImageGenerator: React.FC = () => {
                     )}
                   </Field>
                 </div>
-              </CollapsibleSection>
+              )}
 
+                  </div>
+                </div>
+              </div>
             </div>
 
           </div>
