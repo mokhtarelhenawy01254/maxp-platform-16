@@ -150,6 +150,14 @@ roles:
     - agent_handoff_to
     - knowledge_search
 
+  PHYSIOTHERAPY:
+    - booking_info
+    - booking_slots
+    - booking_reserve
+    - booking_status
+    - agent_handoff_to
+    - knowledge_search
+
   EDUCATION_CENTER:
     - education_info
     - education_enroll
