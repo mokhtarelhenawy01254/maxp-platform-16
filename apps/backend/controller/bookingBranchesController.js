@@ -63,7 +63,14 @@ const getAllBranches = async (req, res) => {
       where: { companyId },
       orderBy: { name: 'asc' }
     });
-    branches = branches.map(b => ({ ...b, workingDays: tryParse(b.workingDays), genderDays: tryParse(b.genderDays), phones: tryParse(b.phones) }));
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    branches = branches.map(b => ({
+      ...b,
+      workingDays: tryParse(b.workingDays),
+      genderDays: tryParse(b.genderDays),
+      phones: tryParse(b.phones),
+      landmarkImage: b.landmarkImage?.startsWith('/uploads/') ? `${baseUrl}${b.landmarkImage}` : b.landmarkImage,
+    }));
     res.json({ success: true, data: branches });
   } catch (error) {
     console.error('Error fetching branches:', error);
