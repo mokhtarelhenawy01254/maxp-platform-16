@@ -1351,8 +1351,8 @@ const AIImageGenerator: React.FC = () => {
   const inputCls = "bg-white dark:bg-gray-900 border-slate-200 dark:border-slate-800 rounded-xl";
 
   return (
-    <div dir="rtl" className="space-y-6 text-right w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      
+    <div dir="rtl" className="space-y-6 text-right w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full overflow-y-auto">
+
       {/* Sleek 2026 low-profile Page Header */}
       <div className="flex flex-col gap-4 pb-4 pt-2 border-b border-slate-100 dark:border-slate-800/80">
         <div className="flex flex-col gap-1">
