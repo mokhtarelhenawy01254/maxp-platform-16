@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
   History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, 
   Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
-  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers, Bell,
+  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers, Bell, Image,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -54,6 +54,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: "AI Playground", icon: <Play className="size-4" />, path: "/super-admin/ai-playground" },
     { text: t("superAdmin.evaluation.aiTemplates"), icon: <Layers className="size-4" />, path: "/super-admin/ai-templates" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },
+    { text: "سجل البحث بالصورة", icon: <Image className="size-4" />, path: "/super-admin/visual-search-logs" },
     { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/super-admin/ai-hub?tab=skills" },
     { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/super-admin/ai-hub?tab=tools" },
     { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/super-admin/ai-hub?tab=rag" },

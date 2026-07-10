@@ -4,9 +4,12 @@ Supports hybrid search (image_embedding + text_embedding) with RRF fusion.
 """
 from __future__ import annotations
 
+import asyncio
+import base64
 import json
 import math
 import re
+import time
 from typing import Any
 
 import structlog
@@ -263,6 +266,55 @@ async def _run_pgvector_search(
     return [_format_product(r) for r in raw if float(r.get("score", 0)) >= min_score]
 
 
+async def _log_search_analytic(
+    company_id: str,
+    query: str,
+    results: list[dict[str, Any]],
+    latency_ms: int,
+    image_present: bool,
+    embedding_provider: str,
+    mime_type: str | None = None,
+) -> None:
+    """Log a visual search event to the search_analytics table."""
+    if not company_id:
+        return
+    top_score = max((float(r.get("score", 0)) for r in results), default=0.0)
+    try:
+        import src.db.session as _db_mod
+        from sqlalchemy import text as _text
+
+        sf = _db_mod.async_session
+        async with sf() as sess:
+            await sess.execute(
+                _text("""
+                    INSERT INTO search_analytics
+                        (id, company_id, query, results_count, was_successful,
+                         response_time, intent, metadata, customer_id)
+                    VALUES
+                        (:id, :cid, :query, :count, :ok,
+                         :latency, :intent, :meta, NULL)
+                """),
+                {
+                    "id": str(int(time.time() * 1_000_000)),
+                    "cid": company_id,
+                    "query": (query or "")[:500],
+                    "count": len(results),
+                    "ok": len(results) > 0,
+                    "latency": latency_ms,
+                    "intent": "visual_search",
+                    "meta": json.dumps({
+                        "top_score": round(top_score, 4),
+                        "image_present": image_present,
+                        "mime_type": mime_type,
+                        "embedding_provider": embedding_provider,
+                    }, ensure_ascii=False),
+                },
+            )
+            await sess.commit()
+    except Exception as exc:
+        logger.warning("search_analytic_log_failed", error=str(exc))
+
+
 async def vector_product_search(
     company_id: str,
     query: str,
@@ -288,6 +340,7 @@ async def vector_product_search(
     Returns:
         List of {name, price, sku, status, image_url, score}
     """
+    _start = time.monotonic()
     if not company_id or (not query and not image_bytes):
         return []
 
@@ -295,12 +348,23 @@ async def vector_product_search(
     kw = keywords or (_extract_keywords(query) if query else None)
 
     # Generate ONE multimodal embedding from text + image (or text-only, or image-only)
-    q_emb = await _generate_embedding(
-        text=query or None,
-        image_bytes=image_bytes,
-        mime_type=mime_type,
-    )
-    if not q_emb:
+    _emb_provider = "unknown"
+    try:
+        from src.memory.episodic_memory import EpisodicMemoryService
+        svc = EpisodicMemoryService()
+        emb_result = await svc.generate_embedding_with_provider(
+            text=query or None,
+            image_bytes=base64.b64encode(image_bytes).decode() if image_bytes else None,
+            mime_type=mime_type,
+            task_type="RETRIEVAL_QUERY",
+        )
+        q_emb = emb_result.get("vector")
+        _emb_provider = emb_result.get("provider", "unknown")
+        if not q_emb:
+            return []
+        if emb_result.get("is_pseudo"):
+            logger.warning("vector_search: using position-hash pseudo embedding query vector. Results will have no semantic meaning.")
+    except Exception:
         return []
 
     fetch_k = max(limit * 3, 15)
@@ -342,8 +406,18 @@ async def vector_product_search(
         if url and not (url.startswith("http://") or url.startswith("https://")):
             r["image_url"] = ""
 
+    _latency = int((time.monotonic() - _start) * 1000)
     logger.info("vector_search results", query=query, company=company_id, count=len(results),
                 top=results[0]["name"] if results else None)
+    asyncio.ensure_future(_log_search_analytic(
+        company_id=company_id,
+        query=query or "",
+        results=results,
+        latency_ms=_latency,
+        image_present=image_bytes is not None,
+        embedding_provider=_emb_provider or "unknown",
+        mime_type=mime_type,
+    ))
     return results
 
 
