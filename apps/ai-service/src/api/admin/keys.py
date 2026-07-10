@@ -8,7 +8,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import String, cast, select
+from sqlalchemy import String, cast, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,7 @@ from src.api.admin.schemas import (
     GlobalConfigRead,
     GlobalConfigUpdate,
     LogEntry,
+    LogListResponse,
     ProviderPriorityUpdate,
     ProviderRead,
 )
@@ -429,15 +430,39 @@ async def get_dashboard(
     )
 
 
-@router.get("/logs", response_model=list[LogEntry])
+@router.get("/logs", response_model=LogListResponse)
 async def list_logs(
     session: SessionDep,
     provider: str | None = None,
     key_id: str | None = None,
     status: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     admin: dict | None = Depends(verify_admin_jwt),
-) -> list[LogEntry]:
+) -> LogListResponse:
+    count_stmt = select(func.count(ProviderLog.id))
+    if provider:
+        count_stmt = count_stmt.where(ProviderLog.provider == provider)
+    if key_id:
+        count_stmt = count_stmt.where(ProviderLog.key_id == key_id)
+    if status:
+        count_stmt = count_stmt.where(ProviderLog.status == status)
+    total_orm = (await session.execute(count_stmt)).scalar() or 0
+
+    clause, p = _build_public_filters(provider, key_id, status)
+    total_pub = 0
+    try:
+        from sqlalchemy import text as _t
+        total_result = await session.execute(
+            _t(f"SELECT COUNT(*) FROM public.ai_provider_logs WHERE {clause}"), p
+        )
+        total_pub = total_result.scalar() or 0
+    except Exception:
+        pass
+
+    total = total_orm + total_pub
+
+    fetch_limit = offset + limit
     stmt = select(ProviderLog).order_by(ProviderLog.created_at.desc())
     if provider:
         stmt = stmt.where(ProviderLog.provider == provider)
@@ -445,14 +470,12 @@ async def list_logs(
         stmt = stmt.where(ProviderLog.key_id == key_id)
     if status:
         stmt = stmt.where(ProviderLog.status == status)
-    stmt = stmt.limit(limit)
+    stmt = stmt.limit(fetch_limit)
     result = await session.execute(stmt)
     rows = [LogEntry.model_validate(r) for r in result.scalars().all()]
 
     try:
-        clause, p = _build_public_filters(provider, key_id, status)
-        p["lim"] = limit
-        from sqlalchemy import text as _t
+        pp = {**p, "lim": fetch_limit}
         pub = await session.execute(_t(f"""
             SELECT id, provider, "keyId" AS key_id, action, status,
                    model, "latencyMs" AS latency_ms,
@@ -461,13 +484,14 @@ async def list_logs(
             FROM public.ai_provider_logs
             WHERE {clause}
             ORDER BY "createdAt" DESC LIMIT :lim
-        """), p)
+        """), pp)
         rows.extend(LogEntry.model_validate(r) for r in pub.mappings().all())
         rows.sort(key=lambda r: r.created_at, reverse=True)
-        rows[:] = rows[:limit]
+        rows = rows[offset:offset + limit]
     except Exception as _pub_exc:
         logger.warning("public_logs_query_failed", error=str(_pub_exc))
-    return rows
+
+    return LogListResponse(items=rows, total=total)
 
 
 def _build_public_filters(

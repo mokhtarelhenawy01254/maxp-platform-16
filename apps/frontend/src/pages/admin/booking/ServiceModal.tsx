@@ -1,18 +1,17 @@
 import { useState } from "react";
 import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { BookingService, BookingBranch, BookingBranchServiceInfo } from "./shared";
+import { BookingService, BookingBranch, ServiceFormData, MODAL_CONTENT_CLS, MODAL_INPUT_CLS } from "./shared";
 
 interface Props {
   service?: Partial<BookingService> | null;
   branches: BookingBranch[];
   onClose: () => void;
-  onSave: (d: any) => Promise<void>;
+  onSave: (d: ServiceFormData) => Promise<void>;
 }
 
 interface BranchPkg { count: number; price: number }
 
-const CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto";
-const INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
+
 
 export default function ServiceModal({ service, branches, onClose, onSave }: Props) {
   const initBranchAssignments = () => {
@@ -63,14 +62,14 @@ export default function ServiceModal({ service, branches, onClose, onSave }: Pro
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className={CONTENT_CLS} onClick={e => e.stopPropagation()}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-2xl max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">{service?.id ? "تعديل خدمة" : "إضافة خدمة"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={INPUT_CLS} value={name} onChange={e => setName(e.target.value)} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label><textarea className={INPUT_CLS} rows={2} value={desc} onChange={e => setDesc(e.target.value)} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={name} onChange={e => setName(e.target.value)} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label><textarea className={MODAL_INPUT_CLS} rows={2} value={desc} onChange={e => setDesc(e.target.value)} /></div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الفروع المقدمة فيها الخدمة</label>
             {!hasBranches && <p className="text-sm text-gray-400 dark:text-gray-500 mb-2">اختر فرعاً واحداً على الأقل</p>}

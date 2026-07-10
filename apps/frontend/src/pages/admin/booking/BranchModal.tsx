@@ -1,11 +1,28 @@
 import { useState } from "react";
 import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { BookingBranch, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DAYS } from "./shared";
+import { toast } from "sonner";
+import { BookingBranch, BranchFormData, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DAYS } from "./shared";
+
+const compressImage = (file: File, maxW = 1200, quality = 0.8): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      if (width > maxW) { height = (height * maxW) / width; width = maxW; }
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('فشل تحميل الصورة')); };
+    img.src = URL.createObjectURL(file);
+  });
 
 interface Props {
   branch?: Partial<BookingBranch> | null;
   onClose: () => void;
-  onSave: (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string }) => Promise<void>;
+  onSave: (d: BranchFormData) => Promise<void>;
 }
 
 const tryParseGenderDays = (v: unknown): { male: string[]; female: string[] } | null => {
@@ -16,6 +33,15 @@ const tryParseGenderDays = (v: unknown): { male: string[]; female: string[] } | 
 };
 
 export default function BranchModal({ branch, onClose, onSave }: Props) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "الاسم مطلوب";
+    if (!form.address.trim()) e.address = "العنوان مطلوب";
+    if (!(form.workingDays || "").split(",").filter(Boolean).length) e.workingDays = "اختر يوم عمل على الأقل";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
   const initForm = () => {
     const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true, maxBookingsPerSlot: 1 };
     let initialPhones = (branch?.phones || []).filter(Boolean);
@@ -58,14 +84,18 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); if (errors.name) setErrors({ ...errors, name: "" }); }} />{errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}</div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => { setForm({ ...form, address: e.target.value }); if (errors.address) setErrors({ ...errors, address: "" }); }} />{errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}</div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الموقع</label><input className={MODAL_INPUT_CLS} placeholder="رابط الخريطة أو عنوان الموقع" value={form.location || ""} onChange={e => setForm({ ...form, location: e.target.value })} /></div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">صورة علامة مميزة</label>
-            <input type="file" accept="image/*" className={MODAL_INPUT_CLS} onChange={e => {
+            <input type="file" accept="image/*" className={MODAL_INPUT_CLS} onChange={async e => {
               const file = e.target.files?.[0];
-              if (file) { const reader = new FileReader(); reader.onloadend = () => setForm({ ...form, landmarkImage: reader.result as string }); reader.readAsDataURL(file); }
+              if (!file) return;
+              if (file.size > 2 * 1024 * 1024) { toast.error('الصورة كبيرة جدًا. الحد الأقصى 2MB'); return; }
+              if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('يرجى اختيار صورة JPG أو PNG'); return; }
+              try { setForm({ ...form, landmarkImage: await compressImage(file) }); }
+              catch { toast.error('فشل معالجة الصورة'); }
             }} />
             {form.landmarkImage && <div className="mt-2 relative inline-block"><img src={form.landmarkImage} className="h-20 w-20 object-cover rounded border dark:border-gray-600" alt="علامة مميزة" /><button onClick={() => setForm({ ...form, landmarkImage: undefined })} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>}
           </div>
@@ -87,6 +117,7 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أيام العمل</label>
+            {errors.workingDays && <p className="text-xs text-red-500 mb-1">{errors.workingDays}</p>}
             <div className="flex flex-wrap gap-2">
               {DAYS.map(d => (
                 <button key={d.value} onClick={() => toggleWorkingDay(d.value)}
@@ -130,7 +161,7 @@ export default function BranchModal({ branch, onClose, onSave }: Props) {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={() => onSave(form)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
+          <button onClick={() => { if (validate()) onSave(form); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
         </div>
       </div>
     </div>

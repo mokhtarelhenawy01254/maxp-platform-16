@@ -32,8 +32,9 @@ export const aiAdminService = {
     key_id?: string;
     status?: string;
     limit?: number;
-  }): Promise<AiKeyLog[]> => {
-    const response = await apiClient.get<AiKeyLog[]>("/ai-admin/logs", { params });
+    offset?: number;
+  }): Promise<{ items: AiKeyLog[]; total: number }> => {
+    const response = await apiClient.get<{ items: AiKeyLog[]; total: number }>("/ai-admin/logs", { params });
     return response.data;
   },
 

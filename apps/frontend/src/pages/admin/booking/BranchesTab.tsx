@@ -1,27 +1,54 @@
+import { useState, useMemo } from "react";
 import { PencilIcon, TrashIcon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { BookingBranch, DAY_NAMES, tryParseJSON } from "./shared";
+import { BookingBranch, BranchFormData, DAY_NAMES } from "./shared";
 import BranchModal from "./BranchModal";
 
 interface Props {
   branches: BookingBranch[];
+  selectedBranchId?: string;
   onEdit: (b: Partial<BookingBranch>) => void;
   onToggleActive: (id: string, current: boolean) => void;
   onDelete: (id: string) => void;
   modalBranch: Partial<BookingBranch> | null | undefined;
   onModalClose: () => void;
-  onSave: (d: any) => Promise<void>;
+  onSave: (d: BranchFormData) => Promise<void>;
 }
 
-export default function BranchesTab({ branches, onEdit, onToggleActive, onDelete, modalBranch, onModalClose, onSave }: Props) {
+const PAGE_SIZE = 10;
+
+export default function BranchesTab({ branches, selectedBranchId, onEdit, onToggleActive, onDelete, modalBranch, onModalClose, onSave }: Props) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+
+  const filtered = useMemo(() => {
+    let list = branches;
+    if (selectedBranchId) list = list.filter(b => b.id === selectedBranchId);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(b => b.name.toLowerCase().includes(q) || (b.address || "").toLowerCase().includes(q));
+    }
+    return list;
+  }, [branches, selectedBranchId, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h2 className="text-xl font-bold">إدارة الفروع</h2>
-        <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة فرع</button>
+        <div className="flex gap-2">
+          <input className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
+          <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة فرع</button>
+        </div>
       </div>
+      {filtered.length === 0 ? (
+        <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد فروع</p>
+      ) : (<>
       {/* Mobile card view */}
       <div className="block md:hidden space-y-3">
-        {branches.map(b => (
+        {paged.map(b => (
           <div key={b.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -33,12 +60,12 @@ export default function BranchesTab({ branches, onEdit, onToggleActive, onDelete
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex flex-wrap gap-1">{(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{p}</span>) || "—"}</div>
             {b.location && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 truncate" title={b.location}>📍 {b.location}</p>}
             {(() => {
-              const gd = tryParseJSON<{ male: string[]; female: string[] }>(b.genderDays);
-              if (!gd || (!gd.male?.length && !gd.female?.length)) return null;
+              const gd = b.genderDays ? (typeof b.genderDays === 'string' ? null : b.genderDays) : null;
+              if (!gd || (!gd.male.length && !gd.female.length)) return null;
               return (
                 <div className="text-xs mb-3 space-y-1">
-                  {gd.male?.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 الرجال: {gd.male.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
-                  {gd.female?.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 السيدات: {gd.female.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
+                  {gd.male.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 الرجال: {gd.male.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
+                  {gd.female.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 السيدات: {gd.female.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
                 </div>
               );
             })()}
@@ -49,13 +76,12 @@ export default function BranchesTab({ branches, onEdit, onToggleActive, onDelete
             </div>
           </div>
         ))}
-        {branches.length === 0 && <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد فروع</p>}
       </div>
       {/* Desktop table */}
       <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full">
           <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الموقع", "الهاتف", "أيام العمل", "الجنس", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
-          <tbody>{branches.map(b => (
+          <tbody>{paged.map(b => (
             <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
               <td className="py-3 px-4 font-medium">{b.name}</td>
               <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
@@ -67,22 +93,20 @@ export default function BranchesTab({ branches, onEdit, onToggleActive, onDelete
               </td>
               <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">{
                 (() => {
-                  try {
-                    const wd = tryParseJSON<Record<string, string>>(b.workingDays);
-                    if (!wd || typeof wd !== 'object') return "—";
-                    const days = Object.entries(wd).filter(([k,v]) => v).map(([k,v]) => `${DAY_NAMES[k]||k} (${v})`);
-                    return days.join(" / ") || "—";
-                  } catch(e) { return "—"; }
+                  const wd = typeof b.workingDays === 'object' ? b.workingDays : null;
+                  if (!wd) return "—";
+                  const days = Object.entries(wd).filter(([k,v]) => v).map(([k,v]) => `${DAY_NAMES[k]||k} (${v})`);
+                  return days.join(" / ") || "—";
                 })()
               }</td>
               <td className="py-3 px-4 text-xs">{
                 (() => {
-                  const gd = tryParseJSON<{ male: string[]; female: string[] }>(b.genderDays);
-                  if (!gd || (!gd.male?.length && !gd.female?.length)) return <span className="text-gray-400 dark:text-gray-500">—</span>;
+                  const gd = b.genderDays ? (typeof b.genderDays === 'string' ? null : b.genderDays) : null;
+                  if (!gd || (!gd.male.length && !gd.female.length)) return <span className="text-gray-400 dark:text-gray-500">—</span>;
                   return (
                     <div className="space-y-1">
-                      {gd.male?.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 {gd.male.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
-                      {gd.female?.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 {gd.female.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
+                      {gd.male.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 {gd.male.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
+                      {gd.female.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 {gd.female.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
                     </div>
                   );
                 })()
@@ -99,6 +123,14 @@ export default function BranchesTab({ branches, onEdit, onToggleActive, onDelete
           ))}</tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3 mt-4">
+          <button disabled={safePage <= 0} onClick={() => setPage(safePage - 1)} className="px-4 py-2 border rounded-lg text-sm disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:cursor-default">السابق</button>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{safePage + 1} / {totalPages}</span>
+          <button disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)} className="px-4 py-2 border rounded-lg text-sm disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:cursor-default">التالي</button>
+        </div>
+      )}
+      </>)}
       {modalBranch !== undefined && <BranchModal branch={modalBranch} onClose={onModalClose} onSave={onSave} />}
     </div>
   );

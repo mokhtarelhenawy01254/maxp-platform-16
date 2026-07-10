@@ -22,6 +22,7 @@ const InfoBlock = ({ label, value, dir, fullWidth }: { label: string; value: str
 );
 
 export default function AppointmentModal({ appointment, branches, branchDoctors, services, onClose, onSave }: Props) {
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Partial<BookingAppointment>>({
     customerName: "", customerPhone: "", customerGender: "male",
     branchId: "", doctorId: "", serviceId: "",
@@ -44,7 +45,7 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
       serviceId: form.serviceId!, duration: "30",
     });
     try {
-      const data = await fetchJson(api(`appointments/available-slots?${params}`));
+      const data = await fetchJson<{ startTime: string; endTime: string; available: boolean }[]>(api(`appointments/available-slots?${params}`));
       setSlots(Array.isArray(data) ? data : []);
     } catch (e) { console.error("fetchSlots", e); setSlots([]); } finally { setLoadingSlots(false); }
   };
@@ -55,11 +56,11 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
   const serviceName = appointment?.serviceName || services.find(s => s.id === (appointment?.serviceId || form.serviceId))?.name || "";
   const doctorName = appointment?.doctorName || branchDoctors.find(d => d.id === (appointment?.doctorId || form.doctorId))?.name || "";
 
-  // Detail view for existing appointments
-  if (appointment?.id) {
+  // Detail view for existing appointments (not editing)
+  if (appointment?.id && !isEditing) {
     return (
       <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold">تفاصيل الموعد</h3>
             <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
@@ -99,7 +100,8 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
             {appointment.notes && <InfoBlock label="ملاحظات" value={appointment.notes} fullWidth />}
             <InfoBlock label="تاريخ الإنشاء" value={appointment.createdAt ? new Date(appointment.createdAt).toLocaleString("ar-EG") : "—"} fullWidth />
           </div>
-          <div className="flex justify-end mt-6">
+          <div className="flex justify-end gap-3 mt-6">
+            <button onClick={() => { setIsEditing(true); setForm({ ...appointment }); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">تعديل</button>
             <button onClick={onClose} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">إغلاق</button>
           </div>
         </div>
@@ -107,10 +109,11 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
     );
   }
 
-  // Create form
+  // Create / Edit form
+  const isEditMode = isEditing || !appointment?.id;
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">حجز موعد</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
@@ -157,20 +160,7 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
               </select>
             </div>
           </div>
-          {appointment?.id && (
-            <>
-              {appointment.createdByName && (
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-medium text-gray-700 dark:text-gray-300">المسجل: </span>
-                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${appointment.createdByType === 'ai_service' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
-                    <span>{appointment.createdByType === 'ai_service' ? 'أجنت' : 'موظف'}</span>
-                    <span>{appointment.createdByName}</span>
-                  </span>
-                </div>
-              )}
-              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea className={MODAL_INPUT_CLS} rows={2} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-            </>
-          )}
+
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>

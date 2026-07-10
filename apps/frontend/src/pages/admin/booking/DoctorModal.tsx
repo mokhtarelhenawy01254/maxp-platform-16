@@ -34,7 +34,7 @@ export default function DoctorModal({ doctor, branches, onClose, onSave }: Props
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-          <button onClick={() => onSave(form)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
+          <button onClick={() => { if (!form.name?.trim() || !form.branchId) return; onSave(form); }} disabled={!form.name?.trim() || !form.branchId} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
         </div>
       </div>
     </div>

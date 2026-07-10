@@ -9,7 +9,7 @@ const getAllAppointments = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { status, branchId, doctorId, serviceId, customerGender, dateFrom, dateTo } = req.query;
+    const { status, branchId, doctorId, serviceId, customerGender, dateFrom, dateTo, search, page, limit, sortBy, sortOrder } = req.query;
     const where = { companyId };
     if (status) where.status = status;
     if (branchId) where.branchId = branchId;
@@ -21,16 +21,39 @@ const getAllAppointments = async (req, res) => {
       if (dateFrom) where.appointmentDate.gte = new Date(dateFrom);
       if (dateTo) where.appointmentDate.lte = new Date(dateTo);
     }
+    if (search) {
+      where.OR = [
+        { customerName: { contains: search, mode: 'insensitive' } },
+        { customerPhone: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-    const appointments = await getSharedPrismaClient().appointment.findMany({
-      where,
-      include: {
-        customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-        branch: { select: { id: true, name: true } },
-        service: { select: { id: true, name: true } }
-      },
-      orderBy: { appointmentDate: 'desc' }
-    });
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    let orderBy = { appointmentDate: 'desc' };
+    if (sortBy) {
+      const safeFields = ['appointmentDate', 'startTime', 'customerName', 'status', 'createdAt'];
+      if (safeFields.includes(sortBy)) {
+        orderBy = { [sortBy]: sortOrder === 'asc' ? 'asc' : 'desc' };
+      }
+    }
+
+    const [appointments, total] = await Promise.all([
+      getSharedPrismaClient().appointment.findMany({
+        where,
+        include: {
+          customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+          branch: { select: { id: true, name: true } },
+          service: { select: { id: true, name: true } }
+        },
+        orderBy,
+        skip,
+        take: limitNum,
+      }),
+      getSharedPrismaClient().appointment.count({ where }),
+    ]);
 
     const formatted = appointments.map(a => ({
       id: a.id, customerId: a.customerId || '', customerName: a.customerName,
@@ -49,7 +72,7 @@ const getAllAppointments = async (req, res) => {
       confirmedAt: a.confirmedAt, createdAt: a.createdAt.toISOString()
     }));
 
-    res.json({ success: true, data: formatted });
+    res.json({ success: true, data: formatted, total, page: pageNum, limit: limitNum });
   } catch (error) {
     console.error('Error fetching appointments:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب المواعيد' });
@@ -246,6 +269,51 @@ const createAppointment = async (req, res) => {
   }
 };
 
+const updateAppointment = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id } = req.params;
+    const existing = await getSharedPrismaClient().appointment.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الموعد غير موجود' });
+
+    const allowedFields = ['customerName', 'customerPhone', 'customerEmail', 'customerGender', 'appointmentDate', 'startTime', 'endTime', 'branchId', 'doctorId', 'serviceId', 'serviceName', 'title', 'description', 'notes', 'status'];
+    const data = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) data[field] = req.body[field];
+    }
+    if (data.appointmentDate) data.appointmentDate = new Date(data.appointmentDate);
+    if (data.status === 'confirmed') data.confirmedAt = new Date();
+
+    const appointment = await getSharedPrismaClient().appointment.update({
+      where: { id },
+      data,
+      include: { branch: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } }
+    });
+
+    const formatted = {
+      id: appointment.id, customerName: appointment.customerName,
+      customerEmail: appointment.customerEmail, customerPhone: appointment.customerPhone,
+      customerGender: appointment.customerGender,
+      branchId: appointment.branchId, branchName: appointment.branch?.name || '',
+      doctorId: appointment.doctorId, serviceId: appointment.serviceId,
+      serviceName: appointment.serviceName,
+      title: appointment.title, description: appointment.description,
+      appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
+      startTime: appointment.startTime, endTime: appointment.endTime,
+      duration: appointment.duration, status: appointment.status,
+      notes: appointment.notes,
+      createdAt: appointment.createdAt.toISOString()
+    };
+
+    res.json({ success: true, data: formatted });
+  } catch (error) {
+    console.error('Error updating appointment:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الموعد' });
+  }
+};
+
 const updateAppointmentStatus = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -346,4 +414,4 @@ const bulkDelete = async (req, res) => {
   }
 };
 
-module.exports = { getAllAppointments, getAvailableSlots, createAppointment, updateAppointmentStatus, confirmAppointment, bulkUpdateStatus, bulkDelete };
+module.exports = { getAllAppointments, getAvailableSlots, createAppointment, updateAppointment, updateAppointmentStatus, confirmAppointment, bulkUpdateStatus, bulkDelete };

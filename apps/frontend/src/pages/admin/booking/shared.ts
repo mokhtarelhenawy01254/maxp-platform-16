@@ -25,14 +25,44 @@ export const api = (path: string) => {
   return url.toString();
 };
 
+export type WorkingDaysMap = Record<string, string>;
+export type GenderDaysMap = { male: string[]; female: string[] };
+
 export interface BookingBranch {
   id: string; name: string; address: string; phone: string; phones?: string[];
-  workingDays: string; workStart: string; workEnd: string;
+  workingDays: WorkingDaysMap | string;
+  workStart: string; workEnd: string;
   isActive: boolean; createdAt: string;
   maxBookingsPerSlot?: number;
   location?: string; landmarkImage?: string;
-  genderDays?: string;
+  genderDays?: GenderDaysMap | string;
 }
+
+export interface BranchFormData {
+  id?: string; name: string; address: string; phone?: string;
+  phones: string[]; workingDays: string;
+  workStart: string; workEnd: string;
+  maleDays: string[]; femaleDays: string[];
+  isActive: boolean; maxBookingsPerSlot: number;
+  location?: string; landmarkImage?: string;
+}
+
+export interface ServiceBranchAssignment {
+  branchId: string;
+  packages: Array<{ count: number; price: number }>;
+}
+
+export interface ServiceFormData {
+  id?: string; name: string; description: string;
+  assignedBranchIds?: string[];
+  branches: ServiceBranchAssignment[];
+}
+
+export const normalizeBranch = (b: BookingBranch): BookingBranch => ({
+  ...b,
+  workingDays: typeof b.workingDays === 'string' ? tryParseJSON<WorkingDaysMap>(b.workingDays) || {} as WorkingDaysMap : b.workingDays,
+  genderDays: b.genderDays && typeof b.genderDays === 'string' ? tryParseJSON<GenderDaysMap>(b.genderDays) ?? undefined : b.genderDays,
+});
 
 export interface BookingDoctor {
   id: string; title: string; name: string; branchId: string; branchName?: string;
@@ -96,7 +126,7 @@ export const DAYS = [
 
 export const DAY_NAMES: Record<string, string> = {sat:"سبت",sun:"أحد",mon:"اثنين",tue:"ثلاثاء",wed:"أربعاء",thu:"خميس",fri:"جمعة"};
 
-export const fetchJson = async (url: string, options?: RequestInit, retries = 2): Promise<any> => {
+export const fetchJson = async <T>(url: string, options?: RequestInit, retries = 2): Promise<T> => {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, { headers: getAuthHeaders(), ...options });
@@ -107,10 +137,13 @@ export const fetchJson = async (url: string, options?: RequestInit, retries = 2)
       const data = await res.json();
       if (!data.success) throw new Error(data.error || data.message || "فشل العملية");
       return data.data;
-    } catch (e: any) {
-      if (attempt < retries && (e.message?.includes("502") || e.message?.includes("503") || e.message?.includes("fetch"))) {
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        continue;
+    } catch (e: unknown) {
+      if (attempt < retries) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.includes("502") || msg.includes("503") || msg.includes("fetch")) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
       }
       throw e;
     }

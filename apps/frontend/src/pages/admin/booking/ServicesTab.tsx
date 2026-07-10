@@ -1,5 +1,6 @@
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { BookingService, BookingBranch } from "./shared";
+import { useMemo } from "react";
+import { MagnifyingGlassIcon, PencilIcon, DocumentDuplicateIcon, EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { BookingService, BookingBranch, ServiceFormData } from "./shared";
 import ServiceModal from "./ServiceModal";
 import ServiceDetailModal from "./ServiceDetailModal";
 
@@ -16,7 +17,7 @@ interface Props {
   onClone: (s: BookingService) => void;
   modalService: Partial<BookingService> | null | undefined;
   onModalClose: () => void;
-  onSave: (d: any) => Promise<void>;
+  onSave: (d: ServiceFormData) => Promise<void>;
   detailService: BookingService | null;
   onDetailClose: () => void;
 }
@@ -28,11 +29,11 @@ export default function ServicesTab({
   modalService, onModalClose, onSave,
   detailService, onDetailClose
 }: Props) {
-  const filtered = services.filter(s => {
+  const filtered = useMemo(() => services.filter(s => {
     const matchesSearch = !search || s.name.includes(search);
     const matchesStatus = filterStatus === "all" || (filterStatus === "active" && s.isActive) || (filterStatus === "inactive" && !s.isActive);
     return matchesSearch && matchesStatus;
-  });
+  }), [services, search, filterStatus]);
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
@@ -76,7 +77,7 @@ export default function ServicesTab({
                 <button onClick={() => onDetail(s)} className="text-xs px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />عرض</button>
                 <button onClick={() => onEdit(s)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
                 <button onClick={() => onToggleActive(s.id, s.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${s.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{s.isActive ? "تعطيل" : "تفعيل"}</button>
-                <button onClick={() => onClone(s)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />استنساخ</button>
+                <button onClick={() => onClone(s)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><DocumentDuplicateIcon className="w-3.5 h-3.5 inline ml-1" />استنساخ</button>
               </div>
             </div>
           );

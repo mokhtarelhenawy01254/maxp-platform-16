@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Badge } from "../../components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -17,16 +16,15 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import {
-  Search,
-  RefreshCw,
-  Clock,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { Input } from "../../components/ui/input";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../../components/ui/dialog";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { RefreshCw, Clock, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { companyAwareApi } from "../../services/companyAwareApi";
@@ -58,6 +56,12 @@ function statusColor(status?: string) {
   return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
 }
 
+function latencyColor(ms: number) {
+  if (ms < 1000) return "text-green-600";
+  if (ms < 5000) return "text-yellow-600";
+  return "text-red-600";
+}
+
 function formatTime(iso: string) {
   const d = new Date(iso);
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -82,16 +86,15 @@ function KeyLogsContent() {
   const [providerFilter, setProviderFilter] = useState("");
   const [keyFilter, setKeyFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(0);
 
   const [refreshTick, setRefreshTick] = useState(0);
 
+  const [selectedLog, setSelectedLog] = useState<AiKeyLog | null>(null);
+
   const { data: companies } = useQuery({
     queryKey: ["super-admin", "companies"],
-    queryFn: () => companyAwareApi.getAllCompanies(),
+    queryFn: () => companyAwareApi.getAllCompanies({ pageSize: 0 }),
     staleTime: 300_000,
     select: (res) => res.data?.data?.companies ?? [],
   });
@@ -103,16 +106,21 @@ function KeyLogsContent() {
     return map;
   }, [companies]);
 
-  const { data: logs, isLoading, error } = useAiKeyLogs({
+  const offset = page * PAGE_SIZE;
+
+  const { data: logsRes, isLoading, isFetching, error, refetch } = useAiKeyLogs({
     provider: providerFilter || undefined,
     key_id: keyFilter || undefined,
     status: statusFilter || undefined,
-    limit: 200,
+    limit: PAGE_SIZE,
+    offset,
   }, refreshTick);
+
+  const logs = logsRes?.items;
+  const total = logsRes?.total ?? 0;
 
   function handleRefresh() {
     setRefreshTick((t) => t + 1);
-    setPage(0);
   }
 
   const keyNameMap = useMemo(() => {
@@ -133,37 +141,7 @@ function KeyLogsContent() {
       .map((k) => ({ id: k.id, name: k.name }));
   }, [keys, providerFilter]);
 
-  const filtered = useMemo(() => {
-    if (!Array.isArray(logs)) return [];
-    let result = logs;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      result = result.filter((l) =>
-        l.provider?.toLowerCase().includes(q) ||
-        l.action?.toLowerCase().includes(q) ||
-        l.model?.toLowerCase().includes(q) ||
-        l.key_id?.toLowerCase().includes(q) ||
-        keyNameMap[l.key_id || ""]?.toLowerCase().includes(q)
-      );
-    }
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      result = result.filter((l) => new Date(l.created_at) >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setDate(to.getDate() + 1);
-      result = result.filter((l) => new Date(l.created_at) < to);
-    }
-    return result;
-  }, [logs, searchTerm, dateFrom, dateTo, keyNameMap]);
-
-  const paged = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const stats = useMemo(() => {
     if (!Array.isArray(logs)) return { total: 0, success: 0, failed: 0, avgLatency: 0 };
@@ -176,9 +154,9 @@ function KeyLogsContent() {
 
   const exportCSV = useCallback(() => {
     if (!Array.isArray(logs) || logs.length === 0) return;
-    const header = "الوقت,المزود,المفتاح,الإجراء,الحالة,النموذج,الزمن (ms)\n";
+    const header = "الوقت,المزود,المفتاح,الإجراء,الحالة,النموذج,الزمن (ms),الخطأ\n";
     const rows = logs.map((l) =>
-      `"${formatTime(l.created_at)}","${l.provider}","${keyNameMap[l.key_id || ""] || l.key_id || ""}","${ACTION_LABELS[l.action] || l.action}","${STATUS_LABELS[l.status] || l.status}","${l.model || ""}","${l.latency_ms ?? ""}"`
+      `"${formatTime(l.created_at)}","${l.provider}","${keyNameMap[l.key_id || ""] || l.key_id || ""}","${ACTION_LABELS[l.action] || l.action}","${STATUS_LABELS[l.status] || l.status}","${l.model || ""}","${l.latency_ms ?? ""}","${(l.error || "").replace(/"/g, '""')}"`
     ).join("\n");
     const blob = new Blob(["\uFEFF" + header + rows], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -191,9 +169,14 @@ function KeyLogsContent() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>فشل تحميل السجل. يرجى المحاولة مرة أخرى.</AlertDescription>
-      </Alert>
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertDescription>فشل تحميل السجل. يرجى المحاولة مرة أخرى.</AlertDescription>
+        </Alert>
+        <Button variant="outline" onClick={() => refetch()}>
+          <RefreshCw className="size-4 ml-1" /> إعادة المحاولة
+        </Button>
+      </div>
     );
   }
 
@@ -202,14 +185,14 @@ function KeyLogsContent() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">إجمالي</p>
-          <p className="text-xl font-bold">{stats.total}</p>
+          <p className="text-xl font-bold">{total.toLocaleString()}</p>
         </CardContent></Card>
         <Card><CardContent className="p-3">
-          <p className="text-xs text-muted-foreground">ناجح</p>
+          <p className="text-xs text-muted-foreground">ناجح (هذه الصفحة)</p>
           <p className="text-xl font-bold text-green-600">{stats.success}</p>
         </CardContent></Card>
         <Card><CardContent className="p-3">
-          <p className="text-xs text-muted-foreground">فاشل</p>
+          <p className="text-xs text-muted-foreground">فاشل (هذه الصفحة)</p>
           <p className="text-xl font-bold text-red-600">{stats.failed}</p>
         </CardContent></Card>
         <Card><CardContent className="p-3">
@@ -219,11 +202,6 @@ function KeyLogsContent() {
       </div>
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input className="pr-9" placeholder="بحث..." value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }} />
-        </div>
         <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); setKeyFilter(""); setPage(0); }}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="كل المزودين" />
@@ -256,17 +234,14 @@ function KeyLogsContent() {
             <SelectItem value="failed">فشل</SelectItem>
           </SelectContent>
         </Select>
-        <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
-          className="h-9 rounded border px-2 text-sm bg-background" title="من تاريخ" />
-        <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
-          className="h-9 rounded border px-2 text-sm bg-background" title="إلى تاريخ" />
-        <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث">
+        <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث" className={isFetching ? "animate-spin" : ""}>
           <RefreshCw className="size-4" />
         </Button>
         <Button variant="outline" size="sm" onClick={exportCSV} title="تصدير CSV"
           disabled={!logs || logs.length === 0}>
           <Download className="size-4 ml-1" /> CSV
         </Button>
+        {isFetching && <span className="text-xs text-muted-foreground">جاري التحديث…</span>}
       </div>
 
       {isLoading ? (
@@ -289,15 +264,17 @@ function KeyLogsContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.length === 0 ? (
+              {!logs || logs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     لا توجد سجلات
                   </TableCell>
                 </TableRow>
               ) : (
-                paged.map((log) => (
-                    <TableRow key={log.id}>
+                logs.map((log) => (
+                  <TableRow key={log.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setSelectedLog(log)}>
                     <TableCell className="text-xs whitespace-nowrap">{formatTime(log.created_at)}</TableCell>
                     <TableCell>
                       <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.provider}</span>
@@ -322,7 +299,7 @@ function KeyLogsContent() {
                     <TableCell className="text-xs text-muted-foreground">{log.model || "—"}</TableCell>
                     <TableCell className="text-xs">
                       {log.latency_ms != null ? (
-                        <span className="flex items-center gap-1">
+                        <span className={`flex items-center gap-1 ${latencyColor(log.latency_ms)}`}>
                           <Clock className="size-3" />
                           {log.latency_ms}ms
                         </span>
@@ -336,19 +313,78 @@ function KeyLogsContent() {
         </div>
       )}
 
-      {filtered.length > PAGE_SIZE && (
+      {total > PAGE_SIZE && (
         <div className="flex items-center justify-center gap-3 mt-4">
           <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
             <ChevronRight className="size-4 ml-1" /> السابق
           </Button>
           <span className="text-sm text-muted-foreground">
-            صفحة {page + 1} من {totalPages} ({filtered.length} سجل)
+            صفحة {page + 1} من {totalPages} ({total.toLocaleString()} سجل)
           </span>
           <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
             التالي <ChevronLeft className="size-4 mr-1" />
           </Button>
         </div>
       )}
+
+      <Dialog open={!!selectedLog} onOpenChange={(o) => { if (!o) setSelectedLog(null); }}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل السجل</DialogTitle>
+            <DialogDescription>معلومات كاملة عن طلب المزود</DialogDescription>
+          </DialogHeader>
+          {selectedLog && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">الوقت</span>
+                <span className="col-span-2">{formatTime(selectedLog.created_at)}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">المزود</span>
+                <span className="col-span-2">{selectedLog.provider}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">المفتاح</span>
+                <span className="col-span-2">{keyNameMap[selectedLog.key_id || ""] || selectedLog.key_id || "—"}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">الشركة</span>
+                <span className="col-span-2">{selectedLog.company_id ? (companyNameMap[selectedLog.company_id] || selectedLog.company_id) : "—"}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">الإجراء</span>
+                <span className="col-span-2">{ACTION_LABELS[selectedLog.action] || selectedLog.action}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">الحالة</span>
+                <span className="col-span-2">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${statusColor(selectedLog.status)}`}>
+                    {STATUS_LABELS[selectedLog.status] || selectedLog.status}
+                  </span>
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">النموذج</span>
+                <span className="col-span-2">{selectedLog.model || "—"}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-muted-foreground">الزمن</span>
+                <span className={`col-span-2 flex items-center gap-1 ${selectedLog.latency_ms != null ? latencyColor(selectedLog.latency_ms) : ""}`}>
+                  {selectedLog.latency_ms != null ? <><Clock className="size-3" /> {selectedLog.latency_ms}ms</> : "—"}
+                </span>
+              </div>
+              {selectedLog.error && (
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-muted-foreground">الخطأ</span>
+                  <span className="col-span-2 text-red-600 break-words bg-red-50 dark:bg-red-950 p-2 rounded text-xs font-mono" dir="ltr">
+                    {selectedLog.error}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

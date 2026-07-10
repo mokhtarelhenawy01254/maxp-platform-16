@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { MagnifyingGlassIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { BookingDoctor, BookingBranch } from "./shared";
 import DoctorModal from "./DoctorModal";
@@ -20,7 +21,7 @@ export default function DoctorsTab({
   onEdit, onToggleActive, onDelete,
   modalDoctor, onModalClose, onSave
 }: Props) {
-  const filtered = doctors.filter(d => !search || (d.name || '').includes(search) || (d.specialty || '').includes(search));
+  const filtered = useMemo(() => doctors.filter(d => !search || (d.name || '').includes(search) || (d.specialty || '').includes(search)), [doctors, search]);
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
