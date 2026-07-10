@@ -1,6 +1,13 @@
 # Team Sync Updates
 
 ## 2026-07-10 / 2026-03-09
+- **Merchant Agent Guardrails & Dynamic Learning System (FEATURE / WORK IN PROGRESS)**: Completed the core backend and AI matching engine for merchant-defined conversational guardrails:
+  1. Created `AgentGuardrailRule` SQLAlchemy model in `guardrail.py` and registered it in the models package.
+  2. Implemented `GuardrailRepository` for CRUD and retrieval operations.
+  3. Developed `MerchantRuleGuardrail` for vector-based similarity matching, caching (via Redis), and markdown prompt assembly.
+  4. Created `GuardrailTranslator` to auto-translate plain Arabic dialect merchant feedback to structured JSON and detect rule conflicts.
+  5. Integrated rule injection into the `ContextAssembler` compilation pipeline.
+  6. Added all tasks roadmap to `task.md` and verified import execution in virtual environment.
 - **Conditional Landmark Image Auto-Population in AI Pipeline (FIX / IMPROVEMENT)**: Fixed a bug where branch landmark images were unconditionally sent to the user as WhatsApp/Facebook attachments every time the `booking_info` tool was executed (e.g., when the user just greeted the bot or asked for working hours):
   1. Updated `skills_pipeline.py` to check if the image URL/path or its filename is explicitly present in the final reply text (`ctx.final_reply`) before populating `ctx.response_attachments`.
   2. Added unit tests `test_landmark_image_auto_populate_conditional_negative` and `test_landmark_image_auto_populate_conditional_positive` inside `test_skills_pipeline.py` to verify this behavior.

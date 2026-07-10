@@ -243,6 +243,28 @@ You are continuing an existing conversation on Facebook Messenger that was previ
             f"</current_datetime>"
         ))
 
+        # 1.5 Merchant Guardrails (Dynamic rules matching)
+        _agent = ctx.agent
+        if _agent and ctx.session:
+            try:
+                from src.guardrails.merchant_rules import MerchantRuleGuardrail
+                guardrail = MerchantRuleGuardrail()
+                matched_rules = await guardrail.get_relevant_rules(
+                    session=ctx.session,
+                    agent_id=_agent.id,
+                    message=ctx.message,
+                    top_k=5,
+                )
+                if matched_rules:
+                    guardrails_block = guardrail.format_as_prompt_block(matched_rules)
+                    sections.append(("merchant_guardrails", f"\n{guardrails_block}"))
+                    
+                    if ctx.session_state is None:
+                        ctx.session_state = {}
+                    ctx.session_state["applied_guardrail_ids"] = [r["id"] for r in matched_rules]
+            except Exception as e:
+                logger.warning("failed to fetch merchant guardrails", error=str(e))
+
         # 1. Customer profile
         customer = await self.fetch_customer_profile(ctx)
         if customer:

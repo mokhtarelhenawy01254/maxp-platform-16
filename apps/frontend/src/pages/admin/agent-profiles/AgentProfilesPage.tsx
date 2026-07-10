@@ -946,6 +946,15 @@ export default function AgentProfilesPage() {
                         </p>
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
                       </div>
+
+                      {/* PERSONA.md - شخصية الوكيل */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1">شخصية الوكيل (PERSONA.md)</label>
+                        <p className={`text-sm whitespace-pre-wrap font-mono ${draftFiles["PERSONA.md"] ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
+                          {draftFiles["PERSONA.md"] || "—"}
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">تعليمات إضافية لشخصية الوكيل تضاف فوق القالب الأساسي ولا تؤثر على SOUL.md</p>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-6">
@@ -1001,6 +1010,18 @@ export default function AgentProfilesPage() {
                           disabled={isCustomPromptLocked}
                           placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[80px] resize-y font-mono text-xs" />
                         <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
+                      </div>
+
+                      {/* PERSONA.md - شخصية الوكيل */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                          شخصية الوكيل (PERSONA.md)
+                          {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                        </label>
+                        <Textarea value={draftFiles["PERSONA.md"] || ""} onChange={(e) => setDraftFiles(prev => ({...prev, "PERSONA.md": e.target.value}))}
+                          disabled={isPersonaLocked}
+                          placeholder='اكتب شخصية الوكيل، أسلوب الرد، نبرة الصوت، أو أي تعليمات براند إضافية...' className="text-sm min-h-[120px] resize-y font-mono text-xs" />
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">هذا المحتوى يضاف كـ PERSONA.md فوق القالب الأساسي ولا يمس SOUL.md</p>
                       </div>
                     </div>
                   )}
