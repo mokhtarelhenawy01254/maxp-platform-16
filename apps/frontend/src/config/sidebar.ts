@@ -71,6 +71,7 @@ import {
     GlobeAltIcon,
     GiftIcon,
     HeartIcon,
+    DocumentPlusIcon,
 } from '@heroicons/react/24/outline';
 
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
@@ -987,6 +988,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/admin/services', icon: WrenchScrewdriverIcon, label: t('sidebar.services') },
                 { to: '/admin/service-orders', icon: ClipboardDocumentListIcon, label: t('sidebar.serviceOrders') },
+                { to: '/request-service', icon: DocumentPlusIcon, label: t('sidebar.newServiceRequest') },
             ]
         },
 

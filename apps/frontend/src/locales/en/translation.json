@@ -732,7 +732,10 @@
       "rag": "Knowledge Base",
       "tools": "Tools",
       "skills": "Skills",
-      "scheduler": "Scheduler",
+    "services": "Service Requests",
+    "serviceOrders": "Orders",
+    "newServiceRequest": "New Service Request",
+    "scheduler": "Scheduler",
       "routing": "Channel Routing"
     },
     "channelRouting": {
