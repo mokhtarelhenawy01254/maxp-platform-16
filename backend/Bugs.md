@@ -1,5 +1,21 @@
 # Backend Bugs Log
 
+### [FIX] WhatsApp Baileys Stability: Disconnection Loops, Credentials Wiping, and 48-Hour Number Bans
+- **Date**: 2026-07-10
+- **Description**:
+  1. Resolved a major bug in the `isValidAuthState` validator where the credentials cache was completely wiped from the database if the session was reloaded during the pairing phase (`QR_PENDING` / `CONNECTING`). The validator now preserves the initial keys.
+  2. Refactored disconnect recovery logic in `getDisconnectRecoveryDecision` to treat `403` (Forbidden/Rate Limit) and `Bad MAC` (Decryption failure) disconnects as transient errors instead of terminal logouts, preventing destructive session wipes.
+  3. Added undefined check guards for `statusCode` in `getDisconnectRecoveryDecision` to prevent false positive logouts when both `statusCode` and `DisconnectReason` are undefined.
+  4. Modified `scheduleReconnectSession` to retry indefinitely with a capped exponential backoff of 5 minutes (300,000 ms), preventing connections from giving up completely after 5 attempts.
+  5. Upgraded `@whiskeysockets/baileys` package version to `6.7.23` (latest stable 6.x release) and updated the hardcoded fallback version to `[6, 7, 23]`.
+- **Root Cause**: Over-aggressive session wiping on transient websocket status codes, strict initialization validation rejecting unpaired session keys, lack of undefined guards for status code comparisons, and a capped reconnect limit of 5 attempts.
+- **Resolution**: Preserved keys for unpaired sessions, handled 403 and Bad MAC as reconnectable errors with exponential backoff, guarded undefined status codes, and enabled infinite reconnection attempts.
+- **Files Modified**:
+  - `apps/backend/package.json`
+  - `apps/backend/services/whatsapp/DatabaseAuthState.js`
+  - `apps/backend/services/whatsapp/WhatsAppManager.js`
+  - `apps/backend/tests/services/WhatsAppManager.messageCapture.test.js`
+
 ### [FIX] Branch Modal Overflow, Custom Upload Container, Working Days Badges, Map URLs and Strict TypeScript Checks in Branches Management
 - **Date**: 2026-07-10
 - **Description**:

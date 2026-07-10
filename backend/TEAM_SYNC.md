@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-10 / 2026-03-09
+- **WhatsApp Baileys Stability & Reconnection Overhaul (IMPROVEMENT / STABILITY)**: Hardened the unofficial WhatsApp integration (`@whiskeysockets/baileys`) against connection drops, pairing failures, and rate limits:
+  1. Upgraded `@whiskeysockets/baileys` package version to `6.7.23` (latest stable 6.x release) and updated the hardcoded fallback version to `[6, 7, 23]`.
+  2. Fixed a critical session wipe bug in `isValidAuthState` validator where the credentials cache was completely deleted from the database if the session was reloaded during the pairing phase (`QR_PENDING` / `CONNECTING`). The validator now preserves the initial keys.
+  3. Refactored disconnect recovery logic in `getDisconnectRecoveryDecision` to treat `403` (Forbidden/Rate Limit) and `Bad MAC` (Decryption failure) disconnects as transient errors instead of terminal logouts, preventing destructive session wipes.
+  4. Added undefined check guards for `statusCode` in `getDisconnectRecoveryDecision` to prevent false positive logouts when both `statusCode` and `DisconnectReason` are undefined.
+  5. Overhauled `scheduleReconnectSession` to retry indefinitely with an exponential backoff capped at 5 minutes (300,000 ms), preventing connections from giving up completely after 5 attempts.
 - **Appointments Management UI/UX & Visual Slot Picker (UI/UX / IMPROVEMENT)**: Refactored the appointments page (`/admin/booking/appointments`) and the booking modal to resolve space utilization and usability issues:
   1. Replaced browser-native blocking `window.confirm` alerts for status transitions (confirming, cancelling, completing bookings) with clean, non-blocking toast notifications (via `toast` from `sonner`) featuring a **تراجع (Undo)** action for immediate and frictionless state recovery.
   2. Redesigned the available slots selector in `AppointmentModal.tsx` to display as an interactive grid of buttons grouped side-by-side, replacing the primitive HTML select dropdown. Styled unavailable slots with line-throughs and muted backgrounds, and styled selected slots with high-contrast active backgrounds.

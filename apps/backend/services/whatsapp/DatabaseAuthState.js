@@ -131,11 +131,14 @@ async function clearDatabaseAuthState(sessionId) {
 function isValidAuthState(authData) {
     if (!authData) return false;
     if (!authData.creds) return false;
-    // A registered Baileys creds should have 'me' field with the user's JID
-    if (!authData.creds.me && !authData.creds.registered) return false;
-    // Check for required signal keys — {} is truthy but empty, don't discard for that
-    // ponytail: global lock, per-account locks if throughput matters
-    if (!authData.creds.signedKeyName && (!authData.keys || Object.keys(authData.keys).length === 0)) return false;
+    
+    // We should NOT require creds.me or creds.registered to be present to consider the auth state valid.
+    // During the pairing phase (QR_PENDING), these are not set yet, but the keys are initialized.
+    // Discarding them causes connection failures and WhatsApp bans on retry loops.
+    // Instead, we verify that the basic noiseKey or signedIdentityKey is generated.
+    if (!authData.creds.noiseKey && !authData.creds.signedIdentityKey) {
+        return false;
+    }
     return true;
 }
 
