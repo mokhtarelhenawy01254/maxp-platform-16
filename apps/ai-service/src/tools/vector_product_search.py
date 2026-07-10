@@ -279,6 +279,10 @@ async def _log_search_analytic(
     if not company_id:
         return
     top_score = max((float(r.get("score", 0)) for r in results), default=0.0)
+    import hashlib
+    _dedup_key = hashlib.sha256(
+        f"{company_id}:{query}:{image_present}:{int(time.time() / 60)}".encode()
+    ).hexdigest()[:24]
     try:
         import src.db.session as _db_mod
         from sqlalchemy import text as _text
@@ -293,9 +297,10 @@ async def _log_search_analytic(
                     VALUES
                         (:id, :cid, :query, :count, :ok,
                          :latency, :intent, :meta, NULL)
+                    ON CONFLICT (id) DO NOTHING
                 '''),
                 {
-                    "id": str(int(time.time() * 1_000_000)),
+                    "id": _dedup_key,
                     "cid": company_id,
                     "query": (query or "")[:500],
                     "count": len(results),
