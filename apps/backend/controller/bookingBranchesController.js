@@ -1,8 +1,23 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
 const VALID_DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
 const PHONE_RE = /^01\d{9}$/;
+
+const saveBase64AsFile = (dataUri) => {
+  const matches = dataUri.match(/^data:image\/(\w+);base64,(.+)$/);
+  if (!matches) return null;
+  const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+  const buffer = Buffer.from(matches[2], 'base64');
+  const uploadsDir = path.join(__dirname, '..', 'uploads', 'booking-branches');
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  const filename = `branch-${uuidv4()}.${ext}`;
+  fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+  return `/uploads/booking-branches/${filename}`;
+};
 
 const tryParse = (v) => {
   if (!v || typeof v !== 'string') return v;
@@ -48,7 +63,13 @@ const sanitizeBranchData = (raw) => {
   if (raw.location !== undefined) data.location = sanitizeString(raw.location);
   if (raw.isActive !== undefined) data.isActive = raw.isActive;
   if (raw.maxBookingsPerSlot !== undefined) data.maxBookingsPerSlot = Math.max(1, parseInt(raw.maxBookingsPerSlot, 10) || 1);
-  if (raw.landmarkImage !== undefined) data.landmarkImage = sanitizeString(raw.landmarkImage);
+  if (raw.landmarkImage !== undefined) {
+    data.landmarkImage = raw.landmarkImage;
+    if (typeof data.landmarkImage === 'string' && data.landmarkImage.startsWith('data:image/')) {
+      const filePath = saveBase64AsFile(data.landmarkImage);
+      if (filePath) data.landmarkImage = filePath;
+    }
+  }
   if (raw.workingDays) data.workingDays = raw.workingDays;
   if (raw.genderDays) data.genderDays = raw.genderDays;
   return data;
@@ -64,12 +85,23 @@ const getAllBranches = async (req, res) => {
       orderBy: { name: 'asc' }
     });
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    branches = branches.map(b => ({
-      ...b,
-      workingDays: tryParse(b.workingDays),
-      genderDays: tryParse(b.genderDays),
-      phones: tryParse(b.phones),
-      landmarkImage: b.landmarkImage?.startsWith('/uploads/') ? `${baseUrl}${b.landmarkImage}` : b.landmarkImage,
+    const prisma = getSharedPrismaClient();
+    branches = await Promise.all(branches.map(async (b) => {
+      let li = b.landmarkImage;
+      if (li && li.startsWith('data:image/')) {
+        const filePath = saveBase64AsFile(li);
+        if (filePath) {
+          await prisma.bookingBranch.update({ where: { id: b.id }, data: { landmarkImage: filePath } });
+          li = filePath;
+        }
+      }
+      return {
+        ...b,
+        workingDays: tryParse(b.workingDays),
+        genderDays: tryParse(b.genderDays),
+        phones: tryParse(b.phones),
+        landmarkImage: li?.startsWith('/uploads/') ? `${baseUrl}${li}` : li,
+      };
     }));
     res.json({ success: true, data: branches });
   } catch (error) {
