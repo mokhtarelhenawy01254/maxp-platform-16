@@ -151,14 +151,36 @@ export default function AppointmentModal({ appointment, branches, branchDoctors,
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">التاريخ</label><input type="date" className={MODAL_INPUT_CLS} value={form.appointmentDate} onChange={e => setForm({ ...form, appointmentDate: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوقت</label>
-              <select className={MODAL_INPUT_CLS} value={form.startTime || ""} onChange={e => setForm({ ...form, startTime: e.target.value })}>
-                <option value="">اختر الوقت</option>
-                {loadingSlots && <option disabled>جاري تحميل الأوقات...</option>}
-                {!loadingSlots && slots.length === 0 && <option disabled>لا توجد أوقات متاحة</option>}
-                {slots.filter(s => s.available).map(s => <option key={s.startTime} value={s.startTime}>{s.startTime}</option>)}
-              </select>
-            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الوقت المتاح</label>
+            {loadingSlots ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-2">جاري تحميل الأوقات المتاحة...</p>
+            ) : !form.appointmentDate || !form.branchId || !form.serviceId ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500 py-2">يرجى تحديد الفرع والخدمة والتاريخ أولاً لعرض الأوقات المتاحة.</p>
+            ) : slots.length === 0 ? (
+              <p className="text-sm text-red-500 dark:text-red-400 py-2">لا توجد أوقات متاحة لهذا اليوم.</p>
+            ) : (
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-36 overflow-y-auto p-2 border dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/40">
+                {slots.map(s => (
+                  <button
+                    key={s.startTime}
+                    type="button"
+                    disabled={!s.available}
+                    onClick={() => setForm({ ...form, startTime: s.startTime })}
+                    className={`px-2 py-1.5 text-xs font-semibold rounded-lg border text-center transition-all ${
+                      !s.available
+                        ? "bg-gray-100 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700 cursor-not-allowed line-through"
+                        : form.startTime === s.startTime
+                        ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 dark:text-gray-200 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/30"
+                    }`}
+                  >
+                    {s.startTime}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

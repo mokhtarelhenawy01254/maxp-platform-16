@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import {
   XMarkIcon, EyeIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon, CalendarDaysIcon,
-  ChevronUpIcon, ChevronDownIcon
+  ChevronUpIcon, ChevronDownIcon, FunnelIcon
 } from "@heroicons/react/24/outline";
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService,
@@ -52,14 +53,34 @@ export default function AppointmentsTab({
   modalAppointment, onModalClose, onSave
 }: Props) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => {
+    return !!(filters.status || filters.branchId || filters.dateFrom || filters.dateTo);
+  });
+
+  const activeFiltersCount = [
+    filters.status,
+    filters.branchId,
+    filters.dateFrom || filters.dateTo ? "date" : "",
+  ].filter(Boolean).length;
 
   const confirmAndUpdate = useCallback((id: string, status: string, label: string) => {
-    if (window.confirm(`تأكيد تغيير الحالة إلى "${label}"؟`)) {
-      setUpdatingId(id);
-      onUpdateStatus(id, status);
-      setTimeout(() => setUpdatingId(null), 2000);
-    }
-  }, [onUpdateStatus]);
+    const appt = appointments.find(a => a.id === id);
+    if (!appt) return;
+    const oldStatus = appt.status;
+
+    setUpdatingId(id);
+    onUpdateStatus(id, status);
+    setTimeout(() => setUpdatingId(null), 2000);
+
+    toast.success(`تم تغيير حالة الموعد إلى "${label}"`, {
+      action: {
+        label: "تراجع",
+        onClick: () => {
+          onUpdateStatus(id, oldStatus);
+        }
+      }
+    });
+  }, [appointments, onUpdateStatus]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -101,47 +122,85 @@ export default function AppointmentsTab({
 
   return (
     <div>
-      {/* Filters row — compact single row */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <h2 className="text-xl font-bold ml-2">المواعيد</h2>
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input type="text" placeholder="بحث..."
-            className={`${MODAL_INPUT_CLS} pr-7${filters.search ? ' pl-7' : ''} w-32 sm:w-40 text-sm`}
-            value={filters.search}
-            onChange={e => onFiltersChange({ ...filters, search: e.target.value })} />
-          {filters.search && (
-            <button onClick={() => onFiltersChange({ ...filters, search: '' })}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <XMarkIcon className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-        <select className={`${MODAL_INPUT_CLS} w-auto text-sm py-1.5`} value={filters.status} onChange={e => onFiltersChange({ ...filters, status: e.target.value })}>
-          <option value="">كل الحالات</option>
-          {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-        <select className={`${MODAL_INPUT_CLS} w-auto text-sm py-1.5`} value={filters.branchId} onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}>
-          <option value="">كل الفروع</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
-        <input type="date" className={`${MODAL_INPUT_CLS} w-36 sm:w-40 text-sm py-1.5`} value={filters.dateFrom} onChange={e => onFiltersChange({ ...filters, dateFrom: e.target.value })} />
-        <span className="text-gray-400 dark:text-gray-500 -ml-1.5 -mr-1.5">—</span>
-        <input type="date" className={`${MODAL_INPUT_CLS} w-36 sm:w-40 text-sm py-1.5`} value={filters.dateTo} onChange={e => onFiltersChange({ ...filters, dateTo: e.target.value })} />
-        <div className="flex gap-0.5">
-          <button onClick={() => setQuickDate(0)}
-            className={`text-xs px-1.5 py-1 rounded font-medium border ${isToday ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>اليوم</button>
-          <button onClick={() => setQuickDate(7)}
-            className={`text-xs px-1.5 py-1 rounded font-medium border ${isThisWeek ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>٧أ</button>
-          <button onClick={() => setQuickDate(30)}
-            className="text-xs px-1.5 py-1 rounded font-medium border bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">٣٠أ</button>
-          <button onClick={() => onFiltersChange({ ...filters, dateFrom: '', dateTo: '' })}
-            className={`text-xs px-1.5 py-1 rounded font-medium border ${filters.dateFrom || filters.dateTo ? 'text-red-600 border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-300 border-gray-200 dark:text-gray-600 dark:border-gray-700 cursor-default'}`}>
-            <XMarkIcon className="w-3 h-3" />
+      {/* Top filters row: Search & Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-xl font-bold ml-2">المواعيد</h2>
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" placeholder="بحث باسم العميل أو الهاتف..."
+              className={`${MODAL_INPUT_CLS} pr-8${filters.search ? ' pl-8' : ''} w-48 sm:w-64 text-sm`}
+              value={filters.search}
+              onChange={e => onFiltersChange({ ...filters, search: e.target.value })} />
+            {filters.search && (
+              <button onClick={() => onFiltersChange({ ...filters, search: '' })}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
+              showAdvancedFilters 
+                ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
+                : "bg-white border-gray-300 hover:bg-gray-50 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+            }`}
+          >
+            <FunnelIcon className="w-4 h-4" />
+            <span>تصفية متقدمة</span>
+            {activeFiltersCount > 0 && (
+              <span className="flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
         </div>
-        <button onClick={() => onEdit({})} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><PlusIcon className="w-3.5 h-3.5" />حجز</button>
+        <button onClick={() => onEdit({})} className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-semibold shadow-sm"><PlusIcon className="w-4 h-4" />حجز موعد</button>
       </div>
+
+      {/* Advanced Filters Panel */}
+      {showAdvancedFilters && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 mb-4 bg-gray-50/50 dark:bg-gray-800/20 border dark:border-gray-700 rounded-xl transition-all duration-200">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الحالة</label>
+            <select className={`${MODAL_INPUT_CLS} text-sm py-1.5`} value={filters.status} onChange={e => onFiltersChange({ ...filters, status: e.target.value })}>
+              <option value="">كل الحالات</option>
+              {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الفرع</label>
+            <select className={`${MODAL_INPUT_CLS} text-sm py-1.5`} value={filters.branchId} onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}>
+              <option value="">كل الفروع</option>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الفترة الزمنية</label>
+            <div className="flex items-center gap-2">
+              <input type="date" className={`${MODAL_INPUT_CLS} text-sm py-1.5 w-full`} value={filters.dateFrom} onChange={e => onFiltersChange({ ...filters, dateFrom: e.target.value })} />
+              <span className="text-gray-400 dark:text-gray-500">—</span>
+              <input type="date" className={`${MODAL_INPUT_CLS} text-sm py-1.5 w-full`} value={filters.dateTo} onChange={e => onFiltersChange({ ...filters, dateTo: e.target.value })} />
+              <div className="flex gap-1 shrink-0">
+                <button onClick={() => setQuickDate(0)}
+                  className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${isToday ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>اليوم</button>
+                <button onClick={() => setQuickDate(7)}
+                  className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${isThisWeek ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>٧أ</button>
+                <button onClick={() => setQuickDate(30)}
+                  className="text-xs px-2 py-1.5 rounded-lg font-medium border bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">٣٠أ</button>
+                {(filters.dateFrom || filters.dateTo) && (
+                  <button onClick={() => onFiltersChange({ ...filters, dateFrom: '', dateTo: '' })}
+                    className="text-xs px-2 py-1.5 rounded-lg font-medium border text-red-600 border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30">
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">

@@ -1,3 +1,19 @@
+# Session Log — 2026-07-10 — Appointments Booking Page UI/UX Enhancements
+
+## What Happened
+1. **Design Review**: Reviewed layout, filters row, and time-slot selection in the Appointments admin page (`/admin/booking/appointments`).
+2. **Modeless Notification (Undo Pattern)**: Replaced primitive browser-native `window.confirm` for status changes in `AppointmentsTab.tsx` with a modern, non-blocking toast notification (`toast` from `sonner`) supporting a **تراجع (Undo)** action.
+3. **Visual Time-Slot Picker**: Overhauled the time-slot picker in `AppointmentModal.tsx` by replacing the standard HTML select dropdown with a premium visual grid of slot buttons. Styled unavailable/occupied slots with line-throughs and muted backgrounds, and styled selected slots with high-contrast active backgrounds.
+4. **Collapsible Advanced Filters**: Cleaned up the filters header in `AppointmentsTab.tsx` by wrapping secondary filters (status, branch, dates, quick dates) in a collapsible advanced filters drawer toggled via a brand button with active filters count.
+
+## Key Files Modified
+- `apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx`
+- `apps/frontend/src/pages/admin/booking/AppointmentModal.tsx`
+- `backend/Bugs.md`
+- `backend/TEAM_SYNC.md`
+
+---
+
 # Session Log — 2026-07-08 — Swan AI Image Generation Test + Debugging
 
 ## What Happened

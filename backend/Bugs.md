@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [FIX] Modeless Undo Notification and Visual Time-Slot Grid in Appointments Booking
+- **Date**: 2026-07-10
+- **Description**:
+  1. Replaced primitive browser-native `window.confirm` for status changes in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) with a modern, non-blocking toast notification system (using `toast` from `sonner`) supporting a **تراجع (Undo)** action.
+  2. Overhauled the time-slot picker in [AppointmentModal.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentModal.tsx) by replacing the standard HTML select dropdown with a premium visual grid of slot buttons. Disabled/unavailable slots are styled with a clean line-through and muted background, and selected/active slots are emphasized using brand styling.
+  3. Redesigned the filters layout in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) to be collapsible, wrapping secondary controls (status, branch, dates) in an advanced filters drawer toggled via a brand button with active filters count.
+- **Root Cause**: Non-intuitive select list time picker, modal-blocking browser confirmations, and a cluttered filters header layout.
+- **Resolution**: Implemented collapsible advanced filters row, custom toast-based undo action, and visually styled slot grid buttons.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx`
+  - `apps/frontend/src/pages/admin/booking/AppointmentModal.tsx`
+
 ### [FIX] AI Image Generator Layout Cramping, Dormant Aspect Preview, Mobile CTA Hiding, and UI De-nesting
 - **Date**: 2026-07-09
 - **Description**: The AI Image Generator page (`/admin/ai-image-generator`) had multiple layout, responsiveness, and control issues:
