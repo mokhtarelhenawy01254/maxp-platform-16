@@ -2134,15 +2134,20 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 await WhatsAppMessageHandler.sendText(first.sessionId, first.remoteJid, replyText, { isAIResponse: true });
                             }
                             const attachments = result?.response_attachments || result?.responseAttachments;
+                            console.log(`[BAILEYS-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
                             if (Array.isArray(attachments)) {
                                 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
                                 for (const att of attachments) {
                                     if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                                        console.log(`[BAILEYS-AI-ATTACHMENT] sending image: ${att.url.substring(0, 80)}...`);
                                         try {
                                             await WhatsAppMessageHandler.sendImage(first.sessionId, first.remoteJid, { url: att.url }, '', { isAIResponse: true });
+                                            console.log('[BAILEYS-AI-ATTACHMENT] image sent successfully');
                                         } catch (e) {
                                             console.error('[BAILEYS-AI-ATTACHMENT] Failed to send image:', e.message);
                                         }
+                                    } else {
+                                        console.log(`[BAILEYS-AI-ATTACHMENT] skipping attachment type=${att.type} url=${(att.url || '').substring(0, 40)}...`);
                                     }
                                 }
                             }

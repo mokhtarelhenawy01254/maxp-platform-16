@@ -206,6 +206,13 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         "tool": evidence.get("tool", "booking_info"),
                     })
 
+    if ctx.response_attachments:
+        logger.info(
+            "landmark_image_attachments_auto_populated",
+            count=len(ctx.response_attachments),
+            urls=[a.get("url", "")[:120] for a in ctx.response_attachments],
+        )
+
     ctx.llm_result = provider_response
     return ctx
 

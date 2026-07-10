@@ -2214,17 +2214,21 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
                   // 7b. Send image attachments from AI response
                   const attachments = result.response_attachments || result.responseAttachments;
+                  console.log(`[FB-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
                   if (Array.isArray(attachments)) {
                     for (const att of attachments) {
                       if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                        console.log(`[FB-AI-ATTACHMENT] sending image: ${att.url.substring(0, 80)}...`);
                         try {
                           const imgResult = await sendFacebookMessage(first.senderId, att.url, 'IMAGE', first.messagePageId, first.fbMessageId);
                           if (imgResult.success) {
-                            console.log(`✅ [AI-AUTOREPLY] AI image attachment sent to Facebook.`);
+                            console.log(`✅ [FB-AI-ATTACHMENT] AI image attachment sent to Facebook.`);
                           }
                         } catch (e) {
                           console.error('[FB-AI-ATTACHMENT] Failed to send image:', e.message);
                         }
+                      } else {
+                        console.log(`[FB-AI-ATTACHMENT] skipping attachment type=${att.type} url=${(att.url || '').substring(0, 40)}...`);
                       }
                     }
                   }

@@ -355,6 +355,7 @@ async def run_orchestration(
                     "reply": saved.final_reply,
                     "thread_id": thread_id,
                     "tool_results": saved.executed_tools,
+                    "response_attachments": list(saved.response_attachments or []),
                 }
 
         external_context = dict(memory_context or {})
@@ -450,6 +451,7 @@ async def run_orchestration(
             "reply": final_ctx.final_reply or final_ctx.llm_response,
             "thread_id": thread_id,
             "tool_results": final_ctx.executed_tools,
+            "response_attachments": list(final_ctx.response_attachments or []),
             "escalation_requested": final_ctx.escalation_requested,
             "escalation_meta": {
                 "reason": final_ctx.escalation_reason,

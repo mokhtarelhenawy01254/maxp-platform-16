@@ -207,8 +207,18 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
             validated = AgentResponse(**response_data)
             ctx.response_contract = validated
             ctx.final_reply = validated.reply
+            # Merge LLM-provided attachments on top of auto-populated ones (e.g. landmarkImage)
             if validated.attachments:
-                ctx.response_attachments = validated.attachments
+                existing = {a.get("url"): a for a in (ctx.response_attachments or []) if a.get("url")}
+                for a in validated.attachments:
+                    if a.get("url"):
+                        existing[a.get("url")] = a
+                ctx.response_attachments = list(existing.values())
+            logger.info(
+                "validate_reply_attachments_final",
+                count=len(ctx.response_attachments or []),
+                urls=[a.get("url", "")[:120] for a in (ctx.response_attachments or [])],
+            )
             ctx.llm_response = reply
             break  # Validation succeeded!
         except Exception as exc:

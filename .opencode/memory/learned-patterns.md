@@ -1,5 +1,29 @@
 # Learned Patterns
 
+## 2026-07-10 — Image Delivery Pipeline for AI Agents
+
+### Problem
+Agent Ahmed returned `landmarkImage` URLs in text but images never appeared in chat (sandbox/WhatsApp/Facebook).
+
+### Solution — Multi-Layer Pipeline
+1. **Backend URL resolution**: `getAllBranches()` constructs full `https://maxp.online/uploads/...` URLs using `req.protocol://req.get('host')`. On-read migration converts legacy base64 to file paths.
+2. **Base64-to-file conversion**: `saveBase64AsFile()` in `bookingBranchesController.js` writes `data:image/...` strings to `uploads/booking-branches/` directory.
+3. **Auto-populate from tool evidence**: `skills_pipeline.py` scans `ctx.tool_evidence` for `landmarkImage` in `booking_info` results and populates `ctx.response_attachments` automatically.
+4. **Snapshot preservation**: `sdk_workflow.py` must carry `response_attachments` between pipeline stages (was lost during serialization).
+5. **Channel delivery**: WhatsApp/Facebook handlers iterate `response_attachments` after sending text and call `sendImage()` for HTTP(S) URLs (skip `data:` URIs — only work in sandbox UI).
+6. **Role access**: `PHYSIOTHERAPY` role must be in `role_tools.yaml` with `booking_info` tool for customer-facing agents.
+
+### Lesson
+When building image delivery for AI agents, trace the ENTIRE pipeline end-to-end: tool output → pipeline context → result → channel handler → send method. Each layer has its own constraints (base64 only works in browser, relative URLs need public base, channel workers need explicit media-send calls).
+
+### Key Files
+- `apps/backend/controller/bookingBranchesController.js` — `saveBase64AsFile()`, URL construction
+- `apps/ai-service/src/pipeline/stages/skills_pipeline.py` — auto-populate attachments
+- `apps/ai-service/src/pipeline/sdk_workflow.py` — snapshot serialization
+- `apps/backend/services/whatsapp/WhatsAppInboundService.js` — channel delivery
+- `apps/backend/utils/allFunctions.js` — Facebook channel delivery
+- `apps/ai-service/src/tools/role_tools.yaml` — PHYSIOTHERAPY role access
+
 ## 2026-07-08 — Skill/Tool System Unification
 
 ### Problem

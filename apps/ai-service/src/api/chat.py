@@ -45,6 +45,7 @@ class ChatResponse(BaseModel):
     reply: str | None = None
     draft_id: str | None = None
     tool_calls: list[dict[str, Any]] = []
+    response_attachments: list[dict[str, Any]] = []  # Media attachments (e.g. branch landmark images)
     escalation: dict[str, Any] | None = None  # Silent escalation metadata
 
 
@@ -172,6 +173,7 @@ async def chat(
 
         reply = sanitize_model_reply(outcome.get("reply", ""))
         tool_results = outcome.get("tool_results") or []
+        response_attachments = outcome.get("response_attachments") or []
 
         # Silent Escalation: AI failed, return escalated status with no reply
         if outcome.get("escalation_requested"):
@@ -216,11 +218,19 @@ async def chat(
                 approval_response.reply = reply
                 return approval_response
 
+        logger.info(
+            "chat_response_ready",
+            thread_id=thread_id,
+            reply_length=len(reply or ""),
+            tool_calls=len(tool_calls),
+            response_attachments=len(response_attachments),
+        )
         return ChatResponse(
             status="ok",
             thread_id=thread_id,
             reply=reply,
             tool_calls=tool_calls,
+            response_attachments=response_attachments,
         )
     except Exception as e:
         logger.error("chat failed", error=str(e), thread_id=thread_id)

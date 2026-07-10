@@ -354,14 +354,19 @@ async function saveIncomingMessage(payload) {
             });
           }
           const attachments = result.response_attachments || result.responseAttachments;
+          console.log(`[WA-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
           if (Array.isArray(attachments)) {
             for (const att of attachments) {
               if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                console.log(`[WA-AI-ATTACHMENT] sending image: ${att.url.substring(0, 80)}...`);
                 try {
                   await WhatsAppMessageHandler.sendImage(first.sessionId, first.normalizedJid, { url: att.url }, '', { isAIResponse: true });
+                  console.log('[WA-AI-ATTACHMENT] image sent successfully');
                 } catch (e) {
                   console.error('[WA-AI-ATTACHMENT] Failed to send image:', e.message);
                 }
+              } else {
+                console.log(`[WA-AI-ATTACHMENT] skipping attachment type=${att.type} url=${(att.url || '').substring(0, 40)}...`);
               }
             }
           }
