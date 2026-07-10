@@ -1169,7 +1169,7 @@ async function seedMarketplace() {
       'whatsapp-analytics',
     ];
     const { count } = await prisma.marketplaceApp.updateMany({
-      where: { slug: { in: slugsToHide } },
+      where: { slug: { in: slugsToHide }, isActive: true },
       data: { isActive: false, isPublic: false }
     });
     if (count > 0) {
