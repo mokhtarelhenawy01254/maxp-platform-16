@@ -1969,3 +1969,12 @@ enum EducationSessionStatus {
 
   @@map("education_session_status")
 }
+
+enum ServiceOrderStatus {
+  NEW
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@map("service_order_status")
+}

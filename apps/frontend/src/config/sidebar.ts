@@ -978,6 +978,18 @@ export const getSidebarConfig = (
             ]
         },
 
+        // 7️⃣.7️⃣ طلبات الخدمات
+        {
+            id: 'services',
+            title: t('sidebar.services'),
+            icon: WrenchScrewdriverIcon,
+            hidden: !isAppActive('service-request-app'),
+            items: [
+                { to: '/admin/services', icon: WrenchScrewdriverIcon, label: t('sidebar.services') },
+                { to: '/admin/service-orders', icon: ClipboardDocumentListIcon, label: t('sidebar.serviceOrders') },
+            ]
+        },
+
         // 7️⃣.7️⃣ النظام التعليمي
         {
             id: 'education',

@@ -884,6 +884,15 @@ const BrandIdentitySettings = React.lazy(
 const EducationFunnelPage = React.lazy(
   () => import("./pages/admin/EducationFunnelPage"),
 );
+const ServiceManagementPage = React.lazy(
+  () => import("./pages/admin/ServiceManagementPage"),
+);
+const ServiceOrdersPage = React.lazy(
+  () => import("./pages/admin/ServiceOrdersPage"),
+);
+const ServiceRequestForm = React.lazy(
+  () => import("./pages/ServiceRequestForm"),
+);
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
 );
@@ -6468,6 +6477,26 @@ const AppContent = () => {
                       <BookingManagementPage />
                     </Layout>
                   }
+                />
+                <Route
+                  path="/admin/services"
+                  element={
+                    <Layout fullWidth>
+                      <ServiceManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/service-orders"
+                  element={
+                    <Layout fullWidth>
+                      <ServiceOrdersPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/request-service"
+                  element={<ServiceRequestForm />}
                 />
                 <Route
                   path="/admin/education/funnel"

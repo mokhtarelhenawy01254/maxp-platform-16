@@ -243,6 +243,23 @@ class UploadService {
   }
 
   /**
+   * Upload service file (audio/image/video)
+   */
+  async uploadServiceFile(file: File): Promise<UploadResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await apiClient.post("/upload/service-file", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000,
+      });
+      return response.data;
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.error || "Failed to upload file" };
+    }
+  }
+
+  /**
    * Get file preview URL
    */
   getFilePreview(file: File): Promise<string> {

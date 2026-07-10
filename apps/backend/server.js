@@ -206,6 +206,8 @@ const educationTeacherAvailabilityRoutes = require("./routes/educationTeacherAva
 const educationTeacherPaymentsRoutes = require("./routes/educationTeacherPaymentsRoutes");
 const educationTeacherPortalRoutes = require("./routes/educationTeacherPortalRoutes");
 const educationParentPortalRoutes = require("./routes/educationParentPortalRoutes");
+const servicesRoutes = require("./routes/servicesRoutes");
+const serviceOrdersRoutes = require("./routes/serviceOrdersRoutes");
 const formsRoutes = require("./routes/formsRoutes");
 const publicFormsRoutes = require("./routes/publicFormsRoutes");
 
@@ -751,6 +753,8 @@ app.use("/api/v1/education/availability", educationTeacherAvailabilityRoutes);
 app.use("/api/v1/education/payments", educationTeacherPaymentsRoutes);
 app.use("/api/v1/education/teacher-portal", educationTeacherPortalRoutes);
 app.use("/api/v1/education/parent-portal", educationParentPortalRoutes);
+app.use("/api/v1/services", servicesRoutes);
+app.use("/api/v1/service-orders", serviceOrdersRoutes);
 app.use("/api/v1/forms", formsRoutes);
 app.use("/api/v1/affiliates", affiliateRoutes);
 app.use("/api/v1/affiliate-settings", affiliateSettingsRoutes);

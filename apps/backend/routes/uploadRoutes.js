@@ -357,4 +357,44 @@ router.post('/conversation-image', conversationUpload.single('image'), (req, res
   }
 });
 
+// Create service files directory
+const serviceFilesDir = path.join(uploadsDir, 'services');
+if (!fs.existsSync(serviceFilesDir)) {
+  fs.mkdirSync(serviceFilesDir, { recursive: true });
+}
+
+const serviceFileStorage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, serviceFilesDir); },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = uuidv4();
+    cb(null, `service-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const serviceFileUpload = multer({
+  storage: serviceFileStorage,
+  limits: { fileSize: 100 * 1024 * 1024, files: 10 }
+});
+
+router.post('/service-file', serviceFileUpload.single('file'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+    const fileUrl = `/uploads/services/${req.file.filename}`;
+    const isAudio = req.file.mimetype.startsWith('audio/');
+    const isVideo = req.file.mimetype.startsWith('video/');
+    const isImage = req.file.mimetype.startsWith('image/');
+    res.json({
+      success: true, data: {
+        filename: req.file.filename, originalName: req.file.originalname,
+        size: req.file.size, url: fileUrl,
+        fullUrl: `${req.protocol}://${req.get('host')}${fileUrl}`,
+        type: isAudio ? 'audio' : isVideo ? 'video' : isImage ? 'image' : 'file'
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading service file:', error);
+    res.status(500).json({ success: false, error: 'Failed to upload file' });
+  }
+});
+
 module.exports = router;

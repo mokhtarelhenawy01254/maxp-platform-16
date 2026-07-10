@@ -1,0 +1,42 @@
+/// Service catalog - predefined services (music, design, video, etc.)
+model Service {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  icon        String?
+  category    String   @default("other") /// audio | image | video | other
+  price       Float?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orders      ServiceOrder[]
+
+  @@index([companyId])
+  @@index([category])
+  @@map("services")
+}
+
+/// Service orders - customer requests for services
+model ServiceOrder {
+  id            String   @id @default(cuid())
+  companyId     String
+  serviceId     String
+  customerName  String
+  phone         String
+  description   String?
+  referenceFiles Json?   /// [{url, originalName, type}]
+  status        ServiceOrderStatus @default(NEW)
+  notes         String?
+  assignedTo    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  service       Service  @relation(fields: [serviceId], references: [id])
+
+  @@index([companyId])
+  @@index([serviceId])
+  @@index([status])
+  @@map("service_orders")
+}
