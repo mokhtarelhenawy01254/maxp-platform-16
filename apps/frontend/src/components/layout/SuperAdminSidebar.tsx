@@ -55,9 +55,9 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: t("superAdmin.evaluation.aiTemplates"), icon: <Layers className="size-4" />, path: "/super-admin/ai-templates" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },
     { text: "سجل البحث بالصورة", icon: <Image className="size-4" />, path: "/super-admin/visual-search-logs" },
-    { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/super-admin/ai-hub?tab=skills" },
-    { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/super-admin/ai-hub?tab=tools" },
-    { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/super-admin/ai-hub?tab=rag" },
+    { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/admin/ai-hub?tab=skills" },
+    { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/admin/ai-hub?tab=tools" },
+    { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/admin/ai-hub?tab=rag" },
     { text: "محادثات AI", icon: <MessageSquare className="size-4" />, path: "/super-admin/ai-chat" },
   ]},
   { title: t("superAdmin.sidebar.monitoring"), icon: <Activity className="size-5" />, items: [

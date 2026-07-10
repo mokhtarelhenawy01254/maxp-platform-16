@@ -1,7 +1,8 @@
 # User Preferences
 
 ## Language
-- Arabic for conversation, English for code/technical output
+- Egyptian Arabic dialect for conversation, English for code/technical output
+- Don't assume nationality — never default to Saudi or any other specific nationality
 
 ## Conventions
 - Follow project conventions in `.agents/skills/maxp-knowledge/references/conventions.md`

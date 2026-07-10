@@ -165,6 +165,48 @@
 - frameworks ناشئة (زي OpenClaw, Hermes, Paperclip) أول ما تظهر على GitHub قبل أي مصدر تاني
 - Issues بتظهر challenges حقيقية من الـ community وازاي اتحلت
 
+## Self-Improving Agents — 2026 Research (Jul 2026)
+
+### 3 Dominant Architectures
+| النمط | الوصف | الأمثلة |
+|-------|-------|---------|
+| **Reflexion / Verbal RL** | Agent acts → observes → reflects → stores in memory → retries | LangGraph + Reflexion cycles; original paper Shinn et al. NeurIPS 2023 |
+| **Memory-Driven** | Long-term memory across sessions, accumulates learnings, refines behavior | Letta/MemGPT (23.7k⭐), Raven (1.3k⭐) |
+| **Meta-Agent Loops** | Meta-agent generates/rewrites task agent code or prompts each generation | HyperAgents (Meta, 2.6k⭐, arXiv:2603.19461), SIA (2k⭐, 56.6% gain on LawBench) |
+
+### Key Techniques
+- **Durable Execution** — checkpoint/restart at every step (LangGraph PostgresSaver, OpenAI Sandbox)
+- **LLM-as-Judge** — model evaluates another model's outputs for iterative refinement
+- **Self-Play Fine-Tuning (SPIN)** — model generates training data, fine-tunes on best generations
+- **Constitutional AI** — rules + self-critique + RLAIF without human labels
+- **LangSmith Engine** — auto-detects issues in traces and proposes fixes
+
+### GitHub Projects — Self-Improvement Focus (Jul 2026)
+| المشروع | ⭐ | Self-Improvement |
+|---------|---|------------------|
+| AutoGPT | 185k | Benchmark eval |
+| letta-ai/letta | 23.7k | **Core**: self-improving memory |
+| PraisonAI | 8.4k | Self-improving workforce |
+| facebookresearch/HyperAgents | 2.6k | **Core**: self-referential improvement |
+| hexo-ai/sia | 2k | **Core**: harness + weight updates |
+| EverMind-AI/Raven | 1.3k | Memory-first self-improving |
+| JudgmentLabs/judgeval | 1k | RL continuous-improvement stack |
+
+### Academic Papers
+| Paper | Year | Core Idea |
+|-------|------|-----------|
+| Self-Refine (Madaan et al.) | 2023 | Same LLM generates → self-feedback → refines (~20% improvement) |
+| Reflexion (Shinn et al., NeurIPS) | 2023 | Verbal RL: reflect → episodic memory → retry (91% pass@1 HumanEval) |
+| Constitutional AI (Bai et al., Anthropic) | 2022 | Rules + self-critique + RLAIF |
+| SPIN (Chen et al., ICML) | 2024 | Self-play fine-tuning without human data |
+| HyperAgents (Zhang et al., Meta) | 2026 | Self-referential meta-agent rewrites task code |
+
+### MaxP Relevance
+- **Reflection Loop** — pipeline step + tool error handlers
+- **Durable Execution** — already using LangGraph-style checkpointing in SDK layer
+- **Memory-Based Learning** — Letta pattern, integrates with existing agent memory system
+- **LLM-as-Judge** — auto-improving agent responses
+
 ## MaxP Internal — SDK Layer
 
 MaxP's SDK ليس منتجًا منفصلًا، بل **طبقة تجريد داخلية** فوق Microsoft Agent Framework:

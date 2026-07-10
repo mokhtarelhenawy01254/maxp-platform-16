@@ -150,8 +150,8 @@ async def _run_backfill(company_id: str | None = None) -> None:
                                      text_embedding, image_embedding, embed_text, image_url,
                                      description, tags, category, workflow_status)
                                 VALUES (gen_random_uuid()::text, :cid, :pid, :name, :sku,
-                                        :price, :status, CAST(:vec AS vector),
-                                        CAST(:vec_img AS vector), :embed_text, :image_url,
+                                        :price, :status, :vec,
+                                        :vec_img, :embed_text, :image_url,
                                         :desc, :tags, :cat, :wf)
                                 ON CONFLICT (product_id) DO UPDATE SET
                                     product_name     = EXCLUDED.product_name,
