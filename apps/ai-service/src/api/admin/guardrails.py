@@ -115,6 +115,7 @@ async def create_guardrail(
     }
     
     rule = await repo.create_rule(rule_data)
+    await session.commit()
     
     # 4. Invalidate Redis cache
     if redis_client.available:
@@ -161,6 +162,7 @@ async def update_guardrail(
         update_data["is_active"] = body.isActive
         
     updated_rule = await repo.update_rule(rule_id, update_data)
+    await session.commit()
     
     # Invalidate Redis cache
     if redis_client.available:
@@ -192,6 +194,7 @@ async def delete_guardrail(
         raise HTTPException(status_code=404, detail="Guardrail rule not found")
         
     await repo.deactivate_rule(rule_id)
+    await session.commit()
     
     # Invalidate Redis cache
     if redis_client.available:
