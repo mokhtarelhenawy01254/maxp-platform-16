@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
-  Shield, RefreshCw, Menu, MessageSquare, Archive,
+  Shield, RefreshCw, Menu, MessageSquare, Archive, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sandboxApi, type AgentProfileResponse } from "../ai-agent-sandbox/services/sandboxApi";
+import AgentGuardrailsTab from "./AgentGuardrailsTab";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -40,7 +41,7 @@ function useIsMobile(breakpoint = 1024) {
   return isMobile;
 }
 
-type Tab = "settings";
+type Tab = "settings" | "guardrails";
 
 const isActive = (s?: string | null) => String(s || "").toUpperCase() === "ACTIVE";
 
@@ -145,6 +146,14 @@ export default function AgentProfilesPage() {
   const isMobile = useIsMobile(1024);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+  const companyId = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}").companyId || "";
+    } catch {
+      return "";
+    }
+  }, []);
+
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(agentIdFromUrl);
@@ -199,6 +208,7 @@ export default function AgentProfilesPage() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "settings", label: t("agentProfiles.tabs.settings"), icon: <Shield className="size-4" aria-hidden="true" /> },
+    { key: "guardrails", label: t("agentProfiles.tabs.guardrails", "القواعد والتعلم"), icon: <Lock className="size-4" aria-hidden="true" /> },
   ];
 
   const [agentsListTab, setAgentsListTab] = useState<"active" | "archived">("active");
@@ -1024,6 +1034,15 @@ export default function AgentProfilesPage() {
                         <p className="text-xs text-muted-foreground/70 mt-0.5">هذا المحتوى يضاف كـ PERSONA.md فوق القالب الأساسي ولا يمس SOUL.md</p>
                       </div>
                     </div>
+                  )}
+
+                  {(tab as string) === "guardrails" && selectedId && (
+                    <AgentGuardrailsTab
+                      agentId={selectedId}
+                      companyId={companyId}
+                      agentModel={profile?.agent?.model || "gemini-2.5-flash"}
+                      agentProvider="GOOGLE"
+                    />
                   )}
 
                 </div>

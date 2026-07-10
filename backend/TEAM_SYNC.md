@@ -1,13 +1,17 @@
 # Team Sync Updates
 
 ## 2026-07-10 / 2026-03-09
-- **Merchant Agent Guardrails & Dynamic Learning System (FEATURE / WORK IN PROGRESS)**: Completed the core backend and AI matching engine for merchant-defined conversational guardrails:
+- **Merchant Agent Guardrails & Dynamic Learning System (FEATURE / COMPLETE)**: Completed the full end-to-end architecture for merchant-defined conversational guardrails:
   1. Created `AgentGuardrailRule` SQLAlchemy model in `guardrail.py` and registered it in the models package.
   2. Implemented `GuardrailRepository` for CRUD and retrieval operations.
   3. Developed `MerchantRuleGuardrail` for vector-based similarity matching, caching (via Redis), and markdown prompt assembly.
   4. Created `GuardrailTranslator` to auto-translate plain Arabic dialect merchant feedback to structured JSON and detect rule conflicts.
-  5. Integrated rule injection into the `ContextAssembler` compilation pipeline.
-  6. Added all tasks roadmap to `task.md` and verified import execution in virtual environment.
+  5. Integrated rule injection into the `ContextAssembler` compilation pipeline and rule validation checks in `validate_reply`.
+  6. Created admin REST API router under `apps/ai-service/src/api/admin/guardrails.py` and registered it in the API routes index.
+  7. Implemented keyword-based intersection fallback matching in `MerchantRuleGuardrail` when embeddings are unavailable.
+  8. Built `AgentGuardrailsTab.tsx` frontend dashboard component with rule CRUD grid, conflict detection dialog, and inline sandbox chat playground.
+  9. Integrated the tab into `AgentProfilesPage.tsx` as "القواعد والتعلم" with Lucide Lock icon, passing `agentId`, `companyId`, and model config.
+  10. Created unit tests (`test_merchant_rules.py`) for cosine similarity, prompt formatting, and conflict detection — 3/3 passing.
 - **Conditional Landmark Image Auto-Population in AI Pipeline (FIX / IMPROVEMENT)**: Fixed a bug where branch landmark images were unconditionally sent to the user as WhatsApp/Facebook attachments every time the `booking_info` tool was executed (e.g., when the user just greeted the bot or asked for working hours):
   1. Updated `skills_pipeline.py` to check if the image URL/path or its filename is explicitly present in the final reply text (`ctx.final_reply`) before populating `ctx.response_attachments`.
   2. Added unit tests `test_landmark_image_auto_populate_conditional_negative` and `test_landmark_image_auto_populate_conditional_positive` inside `test_skills_pipeline.py` to verify this behavior.

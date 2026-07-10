@@ -148,6 +148,17 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 guardrail_result = result
                 break
 
+        if guardrail_result is None:
+            try:
+                from src.guardrails.merchant_rules import MerchantRuleGuardrail
+                merchant_guardrail = MerchantRuleGuardrail()
+                res = await merchant_guardrail.validate(ctx, reply)
+                if not res.allowed:
+                    guardrail_result = res
+            except Exception as e:
+                logger.warning("merchant_guardrails_validation_failed", error=str(e))
+
+
         if guardrail_result is not None:
             if attempt >= MAX_OUTPUT_RETRIES:
                 # Silent Escalation: suppress error message, flag for human takeover

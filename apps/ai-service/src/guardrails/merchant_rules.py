@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from typing import Any
 
 import structlog
@@ -98,9 +99,31 @@ class MerchantRuleGuardrail(BaseGuardrail):
             msg_embedding = None
 
         if not msg_embedding:
-            # Fallback: if embedding is unavailable, return all active rules capped at top_k
-            logger.info("guardrails.fallback_to_all_rules", agent_id=agent_id)
+            # Fallback: if embedding is unavailable, try keyword-based intersection or substring matching
+            logger.info("guardrails.fallback_to_keyword_matching", agent_id=agent_id)
+            matched_by_keyword = []
+            msg_lower = message.lower()
+            # Simple word-based normalization (removing basic punctuation)
+            msg_clean = re.sub(r"[^\w\s]", "", msg_lower)
+            msg_words = set(msg_clean.split())
+            
+            for rule in rules_data:
+                excuse_clean = re.sub(r"[^\w\s]", "", rule["excuse"].lower())
+                excuse_words = set(excuse_clean.split())
+                
+                # Check for word intersection (ignoring small stop words like 'في', 'من', 'على', 'ان', 'لا', 'ما')
+                common_words = msg_words.intersection(excuse_words)
+                meaningful_intersection = {w for w in common_words if len(w) > 2}
+                
+                # If there's an intersection or one string contains the other
+                if meaningful_intersection or excuse_clean in msg_clean or msg_clean in excuse_clean:
+                    matched_by_keyword.append(rule)
+            
+            if matched_by_keyword:
+                logger.debug("guardrails.keyword_match_success", agent_id=agent_id, count=len(matched_by_keyword))
+                return matched_by_keyword[:top_k]
             return rules_data[:top_k]
+
 
         # Calculate similarity scores
         scored_rules = []

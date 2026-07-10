@@ -1,5 +1,23 @@
 # Architectural & Design Decisions
 
+## 2026-07-10 — Gemini Embedding 2 for similarity search
+- **Context:** Need to generate embedding vectors for merchant rules to calculate semantic similarity against customer messages.
+- **Decision:** Selected Gemini Embedding 2 as the primary embedding model, resolving via `episodic_memory_service.generate_embedding_async()`.
+- **Rationale:** Gemini is already configured in the MaxP service stack, provides excellent accuracy for Arabic dialects and Franco-Arabic, and introduces zero extra infrastructure or API billing costs.
+- **Rejected:** Local SentenceTransformers (`all-MiniLM-L6-v2`) which would bloat the Docker image size by requiring PyTorch/SentenceTransformers libraries on the server, and OpenAI embeddings which would require setting up new API keys/contracts.
+
+## 2026-07-10 — Keyword Fallback Matcher in Guardrail retrieval
+- **Context:** If the Google/Gemini embedding API is down, rate-limited, or running locally without Internet, agent prompt assembly could fail or rules would be skipped.
+- **Decision:** Added a robust fallback keyword matching algorithm using normalizations, clean word intersections (filtering stop-words and short words), and substring searches in `MerchantRuleGuardrail`.
+- **Rationale:** High availability and fault tolerance are critical. Fallback matching ensures that even during API outages, basic rule matching remains operational rather than skipping rule checks or crashing conversations.
+- **Rejected:** Hard failure or throwing exceptions which would crash the LLM conversation loop and degrade service.
+
+## 2026-07-10 — Express Layer Proxying via aiAdminProxyRoute
+- **Context:** Creating new admin CRUD routes for guardrails in the Node.js backend.
+- **Decision:** Leveraged the existing dynamic backend proxy `aiAdminProxyRoute.js` which forwards all requests under `/api/v1/ai-admin` directly to FastAPI.
+- **Rationale:** Simplifies the codebase, avoids writing duplicate Express route handlers and controller files, and reduces backend maintenance.
+- **Rejected:** Creating dedicated Express routes/controllers (`guardrailsController.js` and `guardrailsRoutes.js`), which would duplicate routing logic and increase file count without adding value.
+
 ## 2026-07-07 — Vite Chunk 404: Keep Old Chunks + `vite:preloadError`
 - **Context:** After AppDashboardPage redesign (96106ac7), returning users got 404 on old chunk. Nginx had `immutable` cache on `/assets/`, deploy deleted old files via `rsync --delete`.
 - **Decision:** Combined two fixes: (A) removed `--delete` from deploy script so old chunks persist on disk, (B) added `vite:preloadError` listener to reload page when a stale import fails.

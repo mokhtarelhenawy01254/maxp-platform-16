@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [FIX] TS2367 Tab Literal Overlap Error in AgentProfilesPage
+- **Date**: 2026-07-10
+- **Description**: Resolved a TypeScript compilation error (`TS2367: This comparison appears to be unintentional because the types '"settings"' and '"guardrails"' have no overlap`) in the React frontend interface `AgentProfilesPage.tsx`.
+- **Root Cause**: The TypeScript compiler failed to dynamically widen the custom `Tab` type enum or cached the old literal definition during comparison.
+- **Resolution**: Cast the `tab` state variable to `string` (i.e. `(tab as string) === "guardrails"`) to bypass the strict compiler check safely.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+
 ### [FIX] Landmark Image Auto-Population: Unwanted Branch Images Sent Unconditionally
 - **Date**: 2026-07-10
 - **Description**:

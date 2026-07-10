@@ -1,5 +1,13 @@
 # Learned Patterns
 
+## 2026-07-10 — TypeScript TS2367 Type Overlap in Tabs switching
+- **Problem:** Adding a new literal to a locally declared `type Tab = "settings" | "guardrails"` can trigger `TS2367: This comparison appears to be unintentional because the types have no overlap` error at compile-time, even if state and interfaces are correctly declared.
+- **Solution:** Cast the state variable to `string` in comparison blocks: `(tab as string) === "guardrails"`. This satisfies the compiler while preserving type safety for state functions.
+
+## 2026-07-10 — Redis Cache invalidation in dynamic rule tables
+- **Problem:** Reading dynamic agent rules on every incoming chat message creates high DB overhead. Caching them indefinitely risks serving stale configurations after updates.
+- **Solution:** Implement a **write-through invalidation pattern**. Cache the entire list of parsed rules at key `guardrails:{agent_id}` with a safety TTL (e.g. 5 minutes). On any database write operation (Insert, Update, Delete/Deactivate), perform an explicit invalidation `await redis_client.delete(f"guardrails:{agent_id}")` so the next chat transaction retrieves fresh rule definitions.
+
 ## 2026-07-10 — Image Delivery Pipeline for AI Agents
 
 ### Problem

@@ -1,3 +1,35 @@
+# Session Log — 2026-07-10 — Merchant Agent Guardrails & Dynamic Learning System
+
+## What Happened
+1. **Goal**: Implement a database-backed, semantic-RAG-filtered guardrail architecture allowing merchants to correct and train their agents directly from the dashboard.
+2. **Database & Migration**: Created `AgentGuardrailRule` model and ran Alembic migration `5049cf2020f5_add_agent_guardrail_rules` to create the `ai.agent_guardrail_rules` table.
+3. **AI Logic (Python)**:
+   - Built `MerchantRuleGuardrail` for vector cosine similarity matching (with a robust keyword fallback matcher for offline/local states) and markdown table formatting.
+   - Built `GuardrailTranslator` to translate raw dialect text to Modern Standard Arabic Excuse/Rebuttal/Action JSON via Gemini 2.5 Flash and identify semantic conflicts (> 0.85).
+   - Injected relevant guardrails into prompt assembler (`assembler.py`) at priority 1.5 and wired violation hook in `validate_reply.py` to trigger silent takeover escalation (`ctx.escalation_requested = True`).
+4. **Backend Layer (Express)**: Utilized the existing Express `/api/v1/ai-admin` proxy route to redirect all requests to FastAPI, avoiding the need for dedicated Express controller/route files.
+5. **Frontend Dashboard UI**: Built `AgentGuardrailsTab.tsx` with rule CRUD grid, conflict warn dialog, and inline sandbox playground chat. Integrated it as "القواعد والتعلم" in `AgentProfilesPage.tsx`.
+6. **TypeScript Fix**: Resolved TS2367 comparison error on custom `Tab` type enum by casting `(tab as string) === "guardrails"`.
+7. **Verification**: Created unit tests (`test_merchant_rules.py`) and API router integration tests (`test_admin_guardrails.py`). Executed pytest and verified 13/13 tests passed successfully.
+
+## Key Files Modified / Created
+- `apps/ai-service/src/db/models/guardrail.py` [NEW]
+- `apps/ai-service/src/db/repo/guardrail_repo.py` [NEW]
+- `apps/ai-service/src/guardrails/merchant_rules.py` [NEW]
+- `apps/ai-service/src/guardrails/translator.py` [NEW]
+- `apps/ai-service/src/api/admin/guardrails.py` [NEW]
+- `apps/ai-service/tests/unit/test_merchant_rules.py` [NEW]
+- `apps/ai-service/tests/api/test_admin_guardrails.py` [NEW]
+- `apps/frontend/src/pages/admin/agent-profiles/AgentGuardrailsTab.tsx` [NEW]
+- `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+- `apps/ai-service/src/context/assembler.py`
+- `apps/ai-service/src/pipeline/stages/validate_reply.py`
+- `backend/Bugs.md`
+- `backend/Structure.md`
+- `backend/TEAM_SYNC.md`
+
+---
+
 # Session Log — 2026-07-10 — WhatsApp Business Trial Reset Fix
 
 ## What Happened
