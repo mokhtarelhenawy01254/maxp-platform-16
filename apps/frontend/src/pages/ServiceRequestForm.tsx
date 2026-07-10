@@ -12,16 +12,17 @@ export default function ServiceRequestForm() {
   const [form, setForm] = useState({ companyId: "", serviceId: "", customerName: "", phone: "", description: "" });
 
   useEffect(() => {
-    const cid = localStorage.getItem("companyId");
-    if (cid) setForm(f => ({ ...f, companyId: cid }));
-    fetchServices(cid);
+    const token = localStorage.getItem("token");
+    if (token) setForm(f => ({ ...f, companyId: localStorage.getItem("companyId") || "" }));
+    fetchServices();
   }, []);
 
-  const fetchServices = async (cid: string | null) => {
-    if (!cid) { setLoading(false); return; }
+  const fetchServices = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) { setLoading(false); return; }
     try {
       const r = await fetch(`/api/v1/services`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } as any
+        headers: { Authorization: `Bearer ${token}` } as any
       });
       const d = await r.json();
       if (d.success) setServices(d.data.filter((s: any) => s.isActive));
