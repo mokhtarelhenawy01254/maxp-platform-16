@@ -321,6 +321,17 @@ async function updateGlobalFilterSettings(companyId, data) {
   return request('PUT', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`, data);
 }
 
+async function visualSearch({ company_id, query, image_base64, mime_type, top_k, min_score }) {
+  return request('POST', '/admin/search/visual', {
+    company_id,
+    query: query || '',
+    image_base64: image_base64 || null,
+    mime_type: mime_type || 'image/jpeg',
+    top_k: top_k || 5,
+    min_score: min_score != null ? min_score : 0.30,
+  });
+}
+
 async function playgroundChat({ provider, model, prompt, systemPrompt, temperature, maxTokens }) {
   return request('POST', '/admin/playground/chat', {
     provider,
@@ -375,6 +386,7 @@ module.exports = {
   updateGuardrails,
   getAutoReply,
   updateAutoReply,
+  visualSearch,
   getGlobalFilterSettings,
   updateGlobalFilterSettings,
 };

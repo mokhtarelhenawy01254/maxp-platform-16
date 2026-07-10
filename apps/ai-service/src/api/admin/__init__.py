@@ -11,6 +11,7 @@ from src.api.admin.knowledge_embeddings import router as knowledge_embeddings_ro
 from src.api.admin.product_embeddings import router as product_embeddings_router
 from src.api.admin.settings import router as settings_router
 from src.api.admin.playground import router as playground_router
+from src.api.admin.search import router as search_router
 from src.api.admin.tasks import router as tasks_router
 
 router = APIRouter()
@@ -23,4 +24,5 @@ router.include_router(knowledge_embeddings_router)
 router.include_router(product_embeddings_router)
 router.include_router(settings_router)
 router.include_router(playground_router)
+router.include_router(search_router)
 router.include_router(tasks_router)

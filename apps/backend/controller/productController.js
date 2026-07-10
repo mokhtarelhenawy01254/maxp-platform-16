@@ -3688,8 +3688,6 @@ const getProductVariants = async (req, res) => {
   }
 };
 
-const episodicMemoryService = { generateMultimodalEmbeddingAsync: async () => null };
-
 const visualSearchProduct = async (req, res) => {
   try {
     const companyId = req.companyId || req.user?.companyId;
@@ -3697,11 +3695,12 @@ const visualSearchProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Company ID is required' });
     }
 
-    let imageBuffer = null;
+    let imageBase64 = null;
     let mimeType = 'image/jpeg';
 
     if (req.file) {
-      imageBuffer = fs.readFileSync(req.file.path);
+      const fs = require('fs');
+      imageBase64 = fs.readFileSync(req.file.path).toString('base64');
       mimeType = req.file.mimetype || 'image/jpeg';
     } else if (req.body?.imageUrl) {
       const fetchFn = typeof fetch === 'function' ? fetch : require('node-fetch');
@@ -3709,77 +3708,33 @@ const visualSearchProduct = async (req, res) => {
       if (!imageResponse.ok) {
         return res.status(400).json({ success: false, message: 'Failed to fetch image from URL' });
       }
-      imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      imageBase64 = Buffer.from(await imageResponse.arrayBuffer()).toString('base64');
       mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
     } else if (req.body?.imageBase64) {
-      imageBuffer = Buffer.from(req.body.imageBase64, 'base64');
+      imageBase64 = req.body.imageBase64;
       mimeType = req.body.mimeType || 'image/jpeg';
     } else {
       return res.status(400).json({ success: false, message: 'Image is required (file, URL, or base64)' });
     }
 
-    const queryText = req.body?.query || 'product image match';
+    const queryText = req.body?.query || '';
     const topK = Math.min(Math.max(Number(req.body?.topK) || 5, 1), 20);
+    const minScore = req.body?.minScore != null ? Number(req.body.minScore) : 0.30;
 
-    const queryEmbedding = await episodicMemoryService.generateMultimodalEmbeddingAsync({
-      text: queryText,
-      imageBytes: imageBuffer,
-      mimeType,
+    const result = await aiServiceAdminClient.visualSearch({
+      company_id: companyId,
+      query: queryText,
+      image_base64: imageBase64,
+      mime_type: mimeType,
+      top_k: topK,
+      min_score: minScore,
     });
-
-    const fetchLimit = Math.min(Math.max(topK * 20, 100), 1000);
-    const prisma = getSharedPrismaClient();
-    const products = await prisma.product.findMany({
-      where: { companyId, isActive: true, embeddingImage: { not: null } },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        mainImage: true,
-        images: true,
-        sku: true,
-        embeddingImage: true,
-        category: { select: { name: true } },
-      },
-      take: fetchLimit,
-    });
-
-    const scored = products.map(product => {
-      let storedEmbedding = [];
-      try {
-        storedEmbedding = JSON.parse(product.embeddingImage || '[]');
-      } catch (_) {}
-
-      const similarity = storedEmbedding.length > 0
-        ? cosineSimilarity(queryEmbedding, storedEmbedding)
-        : 0;
-
-      let images = [];
-      try { images = JSON.parse(product.images || '[]'); } catch (_) {}
-
-      return {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        sku: product.sku,
-        mainImage: product.mainImage,
-        images,
-        category: product.category?.name || null,
-        similarity: Number(similarity.toFixed(4)),
-      };
-    });
-
-    scored.sort((a, b) => b.similarity - a.similarity);
-    const results = scored.slice(0, topK);
 
     res.json({
       success: true,
       data: {
-        results,
-        totalScanned: products.length,
-        topMatch: results[0] || null,
+        results: result.data || [],
+        topMatch: (result.data || [])[0] || null,
       },
     });
   } catch (error) {
@@ -3790,18 +3745,6 @@ const visualSearchProduct = async (req, res) => {
     });
   }
 };
-
-function cosineSimilarity(vecA, vecB) {
-  let dot = 0, magA = 0, magB = 0;
-  const len = Math.min(vecA.length, vecB.length);
-  for (let i = 0; i < len; i++) {
-    dot += vecA[i] * vecB[i];
-    magA += vecA[i] * vecA[i];
-    magB += vecB[i] * vecB[i];
-  }
-  const denom = Math.sqrt(magA) * Math.sqrt(magB);
-  return denom === 0 ? 0 : dot / denom;
-}
 
 const bulkUpdateVisibility = async (req, res) => {
   try {
