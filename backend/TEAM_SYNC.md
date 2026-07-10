@@ -4,7 +4,9 @@
 - **Appointments Management UI/UX & Visual Slot Picker (UI/UX / IMPROVEMENT)**: Refactored the appointments page (`/admin/booking/appointments`) and the booking modal to resolve space utilization and usability issues:
   1. Replaced browser-native blocking `window.confirm` alerts for status transitions (confirming, cancelling, completing bookings) with clean, non-blocking toast notifications (via `toast` from `sonner`) featuring a **تراجع (Undo)** action for immediate and frictionless state recovery.
   2. Redesigned the available slots selector in `AppointmentModal.tsx` to display as an interactive grid of buttons grouped side-by-side, replacing the primitive HTML select dropdown. Styled unavailable slots with line-throughs and muted backgrounds, and styled selected slots with high-contrast active backgrounds.
-  3. Cleaned up the table filters header in `AppointmentsTab.tsx` by wrapping secondary status, branch, and date filters into a collapsible advanced filters drawer. The drawer is toggled by a brand button showing the number of active filters.
+  3. Cleaned up the table filters header in `AppointmentsTab.tsx` by wrapping secondary status and date filters into a collapsible advanced filters drawer. The drawer is toggled by a brand button showing the number of active filters.
+  4. Moved the Branch filter dropdown from the collapsible advanced panel to the top filters row next to "تصفية متقدمة", making it always visible for quick access with a clean, compact appearance.
+  5. Restored vertical scrolling on the booking management page by adding `h-full overflow-y-auto` to the outer container in `BookingManagementPage.tsx`, fixing viewport clipping caused by the parent layout shell's `overflow-hidden` on the `<main>` wrapper.
 
 ## 2026-07-09 / 2026-03-09
 - **Company Dashboard Welcome State Removal (UI/UX)**: Removed the `DashboardWelcomeState` component and its import/rendering rules from the main dashboard (`MainDashboardPage.tsx`) so that the core dashboard metrics and charts are always visible to new users or companies without the ecommerce application active. Deleted the unused `DashboardWelcomeState.tsx` file.

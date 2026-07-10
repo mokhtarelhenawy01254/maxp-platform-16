@@ -1,16 +1,19 @@
 # Backend Bugs Log
 
-### [FIX] Modeless Undo Notification and Visual Time-Slot Grid in Appointments Booking
+### [FIX] Modeless Undo Notification, Visual Time-Slot Grid, Scrolling Restore, and Branch Filter Relocation in Appointments Booking
 - **Date**: 2026-07-10
 - **Description**:
   1. Replaced primitive browser-native `window.confirm` for status changes in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) with a modern, non-blocking toast notification system (using `toast` from `sonner`) supporting a **تراجع (Undo)** action.
   2. Overhauled the time-slot picker in [AppointmentModal.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentModal.tsx) by replacing the standard HTML select dropdown with a premium visual grid of slot buttons. Disabled/unavailable slots are styled with a clean line-through and muted background, and selected/active slots are emphasized using brand styling.
-  3. Redesigned the filters layout in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) to be collapsible, wrapping secondary controls (status, branch, dates) in an advanced filters drawer toggled via a brand button with active filters count.
-- **Root Cause**: Non-intuitive select list time picker, modal-blocking browser confirmations, and a cluttered filters header layout.
-- **Resolution**: Implemented collapsible advanced filters row, custom toast-based undo action, and visually styled slot grid buttons.
+  3. Redesigned the filters layout in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) to be collapsible, wrapping secondary controls (status, dates) in an advanced filters drawer toggled via a brand button with active filters count.
+  4. Moved the Branch filter dropdown next to the "تصفية متقدمة" button in the top filters row for quick access and improved appearance, removing the duplicate branch select from the advanced panel.
+  5. Restored vertical scrolling on the booking management page by adding `h-full overflow-y-auto` to the outer layout container in [BookingManagementPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/BookingManagementPage.tsx), resolving viewport clipping caused by the parent layout shell's `overflow-hidden` configuration.
+- **Root Cause**: Non-intuitive select list time picker, modal-blocking browser confirmations, a cluttered filters header layout, and layout overflow constraints in the main shell wrapper.
+- **Resolution**: Implemented collapsible advanced filters row, top-level branch selector, custom toast-based undo action, visual slot grid buttons, and scrollable container height.
 - **Files Modified**:
   - `apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx`
   - `apps/frontend/src/pages/admin/booking/AppointmentModal.tsx`
+  - `apps/frontend/src/pages/admin/BookingManagementPage.tsx`
 
 ### [FIX] AI Image Generator Layout Cramping, Dormant Aspect Preview, Mobile CTA Hiding, and UI De-nesting
 - **Date**: 2026-07-09

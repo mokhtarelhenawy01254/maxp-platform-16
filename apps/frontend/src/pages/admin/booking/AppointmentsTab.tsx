@@ -59,7 +59,6 @@ export default function AppointmentsTab({
 
   const activeFiltersCount = [
     filters.status,
-    filters.branchId,
     filters.dateFrom || filters.dateTo ? "date" : "",
   ].filter(Boolean).length;
 
@@ -139,6 +138,14 @@ export default function AppointmentsTab({
               </button>
             )}
           </div>
+          <select 
+            className="border dark:border-gray-600 rounded-lg px-2.5 py-2 text-sm dark:bg-gray-800 dark:text-gray-100 w-32 sm:w-40 cursor-pointer focus:ring-2 focus:ring-blue-500" 
+            value={filters.branchId} 
+            onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}
+          >
+            <option value="">كل الفروع</option>
+            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
           <button 
             type="button" 
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -162,19 +169,12 @@ export default function AppointmentsTab({
 
       {/* Advanced Filters Panel */}
       {showAdvancedFilters && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 mb-4 bg-gray-50/50 dark:bg-gray-800/20 border dark:border-gray-700 rounded-xl transition-all duration-200">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 mb-4 bg-gray-50/50 dark:bg-gray-800/20 border dark:border-gray-700 rounded-xl transition-all duration-200">
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الحالة</label>
             <select className={`${MODAL_INPUT_CLS} text-sm py-1.5`} value={filters.status} onChange={e => onFiltersChange({ ...filters, status: e.target.value })}>
               <option value="">كل الحالات</option>
               {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الفرع</label>
-            <select className={`${MODAL_INPUT_CLS} text-sm py-1.5`} value={filters.branchId} onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}>
-              <option value="">كل الفروع</option>
-              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
           <div className="sm:col-span-2">

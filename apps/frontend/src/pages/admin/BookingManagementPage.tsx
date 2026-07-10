@@ -275,7 +275,7 @@ export default function BookingManagementPage() {
   );
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 w-full">
+    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">إدارة النظام الطبي</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm max-w-2xl">نظام إدارة المواعيد والخدمات الطبية</p>
