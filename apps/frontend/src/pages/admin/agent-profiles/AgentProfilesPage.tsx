@@ -1004,19 +1004,16 @@ export default function AgentProfilesPage() {
                       </div>
                     </div>
                   )}
-
-                  {(tab as string) === "guardrails" && selectedId && (
-                    <AgentGuardrailsTab
-                      agentId={selectedId}
-                      companyId={companyId}
-                      agentModel={profile?.agent?.model || "gemini-2.5-flash"}
-                      agentProvider="GOOGLE"
-                    />
-                  )}
-
                 </div>
               )}
-            </>
+
+              {(tab as string) === "guardrails" && selectedId && (
+                <AgentGuardrailsTab
+                  agentId={selectedId}
+                  companyId={companyId}
+                  agentModel={profile?.agent?.model || "gemini-2.5-flash"}
+                  agentProvider="GOOGLE"
+                />
               )}
             </>
           )}
