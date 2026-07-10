@@ -55,6 +55,8 @@ export default function BookingManagementPage() {
   const [page, setPage] = useState(() => parseInt(new URLSearchParams(window.location.search).get("page") || "1"));
   const [total, setTotal] = useState(0);
   const limit = 20;
+  const [sortBy, setSortBy] = useState("appointmentDate");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [searchDoctor, setSearchDoctor] = useState("");
   const [searchService, setSearchService] = useState("");
   const [serviceFilterStatus, setServiceFilterStatus] = useState<"all" | "active" | "inactive">("active");
@@ -120,6 +122,8 @@ export default function BookingManagementPage() {
     if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.append("dateTo", filters.dateTo);
     if (filters.search) params.append("search", filters.search);
+    params.append("sortBy", sortBy);
+    params.append("sortOrder", sortOrder);
     params.append("page", String(page));
     params.append("limit", String(limit));
     try {
@@ -366,6 +370,8 @@ export default function BookingManagementPage() {
                 onUpdateStatus={updateAppointmentStatus}
                 onEdit={a => setAppointmentModal(a)}
                 onPageChange={setPage}
+                sortBy={sortBy} sortOrder={sortOrder}
+                onSortChange={(field, order) => { setSortBy(field); setSortOrder(order); }}
                 modalAppointment={appointmentModal}
                 onModalClose={() => setAppointmentModal(undefined)}
                 onSave={saveAppointment}

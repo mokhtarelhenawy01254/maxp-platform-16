@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import {
-  XMarkIcon, EyeIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon, CalendarDaysIcon
+  XMarkIcon, EyeIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon, CalendarDaysIcon,
+  ChevronUpIcon, ChevronDownIcon
 } from "@heroicons/react/24/outline";
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService,
@@ -32,6 +33,9 @@ interface Props {
   onUpdateStatus: (id: string, status: string) => void;
   onEdit: (a: Partial<BookingAppointment>) => void;
   onPageChange?: (page: number) => void;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  onSortChange?: (field: string, order: "asc" | "desc") => void;
   modalAppointment: Partial<BookingAppointment> | null | undefined;
   onModalClose: () => void;
   onSave: (d: Partial<BookingAppointment>) => Promise<void>;
@@ -44,6 +48,7 @@ export default function AppointmentsTab({
   selectedIds, onToggleSelect, onToggleSelectAll,
   onBulkUpdateStatus, onBulkDelete, onClearSelection,
   onUpdateStatus, onEdit, onPageChange,
+  sortBy, sortOrder, onSortChange,
   modalAppointment, onModalClose, onSave
 }: Props) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -57,6 +62,22 @@ export default function AppointmentsTab({
   }, [onUpdateStatus]);
 
   const totalPages = Math.ceil(total / limit);
+
+  const SORT_FIELDS: Record<string, string> = {
+    "العميل": "customerName", "التاريخ": "appointmentDate", "الوقت": "startTime", "الحالة": "status"
+  };
+  const sortHeader = (label: string) => {
+    const field = SORT_FIELDS[label];
+    if (!field) return <th key={label} className="text-right py-3 px-4">{label}</th>;
+    const active = sortBy === field;
+    return (
+      <th key={label} className="text-right py-3 px-4 cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200" onClick={() => onSortChange?.(field, active && sortOrder === 'desc' ? 'asc' : 'desc')}>
+        <span className="inline-flex items-center gap-1">{label}
+          {active && (sortOrder === 'desc' ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronUpIcon className="w-3 h-3" />)}
+        </span>
+      </th>
+    );
+  };
 
   const setQuickDate = (daysBack: number) => {
     const today = new Date();
@@ -192,7 +213,7 @@ export default function AppointmentsTab({
               <input type="checkbox" checked={selectedIds.size === appointments.length && appointments.length > 0} onChange={onToggleSelectAll}
                 className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
             </th>
-            {["العميل", "الهاتف", "الفرع", "الخدمة", "التاريخ", "الوقت", "المسجل", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}
+            {["العميل", "الهاتف", "الفرع", "الخدمة", "التاريخ", "الوقت", "المسجل", "الحالة", ""].map(h => h === "" ? <th key={h} className="text-right py-3 px-4"></th> : sortHeader(h))}
           </tr></thead>
           <tbody>
             {loading ? (
