@@ -11,19 +11,30 @@ export default function ServiceRequestForm() {
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ companyId: "", serviceId: "", customerName: "", phone: "", description: "" });
 
-  useEffect(() => {
+  const decodeCompanyId = (): string => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try { const p = JSON.parse(atob(token.split(".")[1])); return p.companyId || ""; } catch { }
+    }
     const params = new URLSearchParams(window.location.search);
-    const cid = params.get("companyId") || localStorage.getItem("companyId") || "";
-    setForm(f => ({ ...f, companyId: cid }));
+    return params.get("companyId") || localStorage.getItem("companyId") || "";
+  };
+
+  useEffect(() => {
+    setForm(f => ({ ...f, companyId: decodeCompanyId() }));
     fetchServices();
   }, []);
 
-  const fetchServices = async () => {
-    const cid = form.companyId || localStorage.getItem("companyId");
+  const authHeaders = (): Record<string, string> => {
     const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const fetchServices = async () => {
+    const cid = decodeCompanyId();
     try {
       const r = await fetch(`/api/v1/services${cid ? `?companyId=${cid}` : ""}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } as any : undefined
+        headers: authHeaders() as any
       });
       const d = await r.json();
       if (d.success) setServices(d.data);
@@ -51,9 +62,10 @@ export default function ServiceRequestForm() {
     setSubmitting(true);
     const referenceFiles = await uploadFiles();
     try {
+      const token = localStorage.getItem("token");
       const r = await fetch("/api/v1/service-orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ ...form, referenceFiles }),
       });
       const d = await r.json();
