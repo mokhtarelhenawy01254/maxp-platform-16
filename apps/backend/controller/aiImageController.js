@@ -233,3 +233,86 @@ exports.deleteImage = async (req, res) => {
 exports.getModels = async (req, res) => {
   res.json({ success: true, data: ALLOWED_MODELS });
 };
+
+exports.generateCaption = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { structured, brandVoice = "" } = req.body;
+    if (!structured) {
+      return res.status(400).json({ success: false, message: "البيانات المنظمة مطلوبة" });
+    }
+
+    const apiKey = await getOpenRouterKey();
+
+    const system = [
+      "You are a social media copywriter for Arabic brands.",
+      "Return ONLY a JSON object with these keys: headline (optional string), caption (string), cta (string), hashtags (array of strings without #).",
+      "No markdown, no explanations, no extra keys.",
+      brandVoice ? `Brand voice: ${brandVoice}.` : "",
+    ].filter(Boolean).join(" ");
+
+    const userPrompt = [
+      `Industry vertical: ${structured.vertical || "general"}.`,
+      `Platform: ${structured.platform || "social media"}.`,
+      `Purpose: ${structured.campaign?.purpose || "general post"}.`,
+      `Brand: ${structured.brand?.name || ""}.`,
+      structured.product?.name ? `Subject: ${structured.product.name}.` : "",
+      structured.product?.description ? `Description: ${structured.product.description}.` : "",
+      structured.copy?.headline ? `Headline: ${structured.copy.headline}.` : "",
+      structured.copy?.subheadline ? `Subheadline: ${structured.copy.subheadline}.` : "",
+      structured.copy?.cta ? `Desired CTA: ${structured.copy.cta}.` : "",
+      structured.campaign?.urgency ? `Urgency: ${structured.campaign.urgency}.` : "",
+      "Generate an Arabic social media caption, a short catchy headline, a CTA, and 3-8 relevant hashtags.",
+      "The tone should match the industry vertical and campaign purpose.",
+    ].filter(Boolean).join("\n");
+
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "https://maxp.online",
+      "X-Title": "MaxP Social Caption Generator",
+    };
+
+    const resp = await axios.post(
+      `${OPENROUTER_BASE}/chat/completions`,
+      {
+        model: "google/gemini-3.1-flash-lite-001",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      },
+      { headers, timeout: 60000 }
+    );
+
+    const raw = resp.data?.choices?.[0]?.message?.content;
+    if (!raw) {
+      return res.status(500).json({ success: false, message: "لم يتم استلام نص من الموديل" });
+    }
+
+    let parsed;
+    try {
+      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch (e) {
+      return res.status(500).json({ success: false, message: "فشل تحليل نص الموديل" });
+    }
+
+    const result = {
+      headline: typeof parsed.headline === "string" && parsed.headline.trim() ? parsed.headline.trim() : undefined,
+      caption: typeof parsed.caption === "string" ? parsed.caption.trim() : String(parsed.caption || "").trim(),
+      cta: typeof parsed.cta === "string" ? parsed.cta.trim() : String(parsed.cta || "").trim(),
+      hashtags: Array.isArray(parsed.hashtags)
+        ? parsed.hashtags.map((h) => String(h || "").replace(/^#/, "").trim()).filter(Boolean)
+        : typeof parsed.hashtags === "string"
+        ? parsed.hashtags.split(/\s+/).map((h) => h.replace(/^#/, "").trim()).filter(Boolean)
+        : [],
+    };
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    const status = error.response?.status || 500;
+    const detail = error.response?.data?.error?.message || error.message;
+    console.error("❌ [AI-CAPTION] Error:", detail);
+    return res.status(status).json({ success: false, message: detail });
+  }
+};

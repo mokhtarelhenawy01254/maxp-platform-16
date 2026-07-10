@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
   Loader2,
@@ -15,6 +15,10 @@ import {
   Wand2,
   RotateCcw,
   ImageIcon,
+  FileText,
+  Hash,
+  Type,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +47,7 @@ import {
   SettingsStatusAlert,
 } from "../settings/components/SettingsPagePrimitives";
 import { apiClient } from "../../services/apiClient";
+import { useCompany } from "../../contexts/CompanyContext";
 
 const PLATFORMS = [
   { value: "instagram", label: "Instagram", ratios: ["1:1", "4:5", "9:16"] },
@@ -161,6 +166,194 @@ const PURPOSES = [
   { value: "traffic_driving", label: "جلب زيارات" },
 ];
 
+type Vertical = "ecommerce" | "medical" | "education" | "restaurant" | "services" | "general";
+
+const VERTICALS: { value: Vertical; label: string }[] = [
+  { value: "ecommerce", label: "متجر إلكتروني" },
+  { value: "medical", label: "عيادة / مركز طبي" },
+  { value: "education", label: "مركز تعليمي" },
+  { value: "restaurant", label: "مطعم / كافيه" },
+  { value: "services", label: "خدمات / استشارات" },
+  { value: "general", label: "عام" },
+];
+
+interface VerticalConfig {
+  productNameLabel: string;
+  productNamePlaceholder: string;
+  priceLabel: string;
+  priceHint: string;
+  discountBadgeLabel: string;
+  discountBadgePlaceholder: string;
+  headlineLabel: string;
+  headlinePlaceholder: string;
+  subheadlinePlaceholder: string;
+  taglineLabel: string;
+  taglinePlaceholder: string;
+  descriptionLabel: string;
+  descriptionPlaceholder: string;
+  ctaOptions: { value: string; label: string }[];
+  purposeOptions: { value: string; label: string }[];
+  platformDefaults?: string[];
+}
+
+const VERTICAL_CONFIG: Record<Vertical, VerticalConfig> = {
+  ecommerce: {
+    productNameLabel: "اسم المنتج",
+    productNamePlaceholder: "مثال: حقيبة جلدية كلاسيكية",
+    priceLabel: "السعر والعملة",
+    priceHint: "اتركه فارغاً لإخفاء السعر",
+    discountBadgeLabel: "شارة الخصم",
+    discountBadgePlaceholder: "خصم 30%",
+    headlineLabel: "العنوان الرئيسي للإعلان",
+    headlinePlaceholder: "مثال: خصم 50% لفترة محدودة",
+    subheadlinePlaceholder: "مثال: التوصيل مجاني لكل مناطق المملكة",
+    taglineLabel: "شعار قصير / Tagline",
+    taglinePlaceholder: "مثال: الأناقة والجودة في تصميم واحد",
+    descriptionLabel: "وصف المنتج التفصيلي",
+    descriptionPlaceholder: "حقيبة مصنوعة من الجلد الطبيعي المقاوم للماء بمقبض يدوي مريح...",
+    ctaOptions: CTAS,
+    purposeOptions: PURPOSES,
+  },
+  medical: {
+    productNameLabel: "اسم الخدمة / الطبيب",
+    productNamePlaceholder: "مثال: كشف أسنان / د. أحمد",
+    priceLabel: "رسوم الخدمة",
+    priceHint: "اتركه فارغاً لإخفاء الرسوم",
+    discountBadgeLabel: "عرض الخدمة",
+    discountBadgePlaceholder: "كشف مجاني أول مرة",
+    headlineLabel: "العنوان الرئيسي للإعلان",
+    headlinePlaceholder: "مثال: احجز موعدك بسهولة",
+    subheadlinePlaceholder: "مثال: فريق طبي متخصص بانتظارك",
+    taglineLabel: "نبذة عن المركز",
+    taglinePlaceholder: "مثال: رعاية طبية موثوقة",
+    descriptionLabel: "تفاصيل الخدمة الطبية",
+    descriptionPlaceholder: "وصف مختصر للخدمة، فوائدها، ومدة الجلسة...",
+    ctaOptions: [
+      { value: "احجز الآن", label: "احجز الآن" },
+      { value: "اعرف المزيد", label: "اعرف المزيد" },
+      { value: "تواصل معنا", label: "تواصل معنا" },
+      { value: "احجز موعد", label: "احجز موعد" },
+      { value: "استشارة مجانية", label: "استشارة مجانية" },
+      { value: "custom", label: "نص مخصص" },
+    ],
+    purposeOptions: [
+      { value: "new_service_launch", label: "إطلاق خدمة جديدة" },
+      { value: "appointment_booking", label: "حجز مواعيد" },
+      { value: "awareness", label: "توعية صحية" },
+      { value: "seasonal_event", label: "مناسبة موسمية" },
+      { value: "announcement", label: "إعلان" },
+      { value: "testimonial_social_proof", label: "توصيات المرضى" },
+    ],
+    platformDefaults: ["instagram", "facebook", "linkedin"],
+  },
+  education: {
+    productNameLabel: "اسم الدورة / المادة",
+    productNamePlaceholder: "مثال: دورة لغة إنجليزية للأطفال",
+    priceLabel: "سعر الاشتراك",
+    priceHint: "اتركه فارغاً لإخفاء السعر",
+    discountBadgeLabel: "عرض التسجيل",
+    discountBadgePlaceholder: "خصم 20% للتسجيل المبكر",
+    headlineLabel: "العنوان الرئيسي للإعلان",
+    headlinePlaceholder: "مثال: التسجيل مفتوح الآن",
+    subheadlinePlaceholder: "مثال: حصص تفاعلية مع معلمين متخصصين",
+    taglineLabel: "شعار المركز التعليمي",
+    taglinePlaceholder: "مثال: تعلم بمتعة وثقة",
+    descriptionLabel: "تفاصيل الدورة",
+    descriptionPlaceholder: "محتوى الدورة، الفئة العمرية، عدد الحصص، والمميزات...",
+    ctaOptions: [
+      { value: "سجّل الآن", label: "سجّل الآن" },
+      { value: "احجز حصة تجريبية", label: "احجز حصة تجريبية" },
+      { value: "اعرف المزيد", label: "اعرف المزيد" },
+      { value: "تواصل معنا", label: "تواصل معنا" },
+      { value: "custom", label: "نص مخصص" },
+    ],
+    purposeOptions: [
+      { value: "new_course_launch", label: "إطلاق دورة جديدة" },
+      { value: "enrollment_open", label: "فتح التسجيل" },
+      { value: "educational", label: "محتوى تعليمي" },
+      { value: "engagement", label: "تفاعل" },
+      { value: "announcement", label: "إعلان" },
+    ],
+    platformDefaults: ["instagram", "facebook", "tiktok"],
+  },
+  restaurant: {
+    productNameLabel: "اسم الوجبة / العرض",
+    productNamePlaceholder: "مثال: وجبة غداء خاصة",
+    priceLabel: "السعر",
+    priceHint: "اتركه فارغاً لإخفاء السعر",
+    discountBadgeLabel: "عرض الطعام",
+    discountBadgePlaceholder: "خصم 30% على الطلبات",
+    headlineLabel: "العنوان الرئيسي للإعلان",
+    headlinePlaceholder: "مثال: طعم ما يُنسى",
+    subheadlinePlaceholder: "مثال: اطلب الآن ونوصلك لحد باب البيت",
+    taglineLabel: "شعار المطعم",
+    taglinePlaceholder: "مثال: طازج في كل لقمة",
+    descriptionLabel: "تفاصيل الوجبة / العرض",
+    descriptionPlaceholder: "مكونات الوجبة، الحجم، والعرض المقدم...",
+    ctaOptions: [
+      { value: "اطلب الآن", label: "اطلب الآن" },
+      { value: "احجز طاولة", label: "احجز طاولة" },
+      { value: "اعرف المزيد", label: "اعرف المزيد" },
+      { value: "تواصل معنا", label: "تواصل معنا" },
+      { value: "custom", label: "نص مخصص" },
+    ],
+    purposeOptions: [
+      { value: "new_menu_item", label: "وجبة جديدة" },
+      { value: "sale_promotion", label: "عرض / تخفيضات" },
+      { value: "brand_awareness", label: "تعريف بالعلامة" },
+      { value: "engagement", label: "تفاعل" },
+      { value: "traffic_driving", label: "جلب زيارات" },
+    ],
+    platformDefaults: ["instagram", "tiktok", "facebook"],
+  },
+  services: {
+    productNameLabel: "اسم الخدمة",
+    productNamePlaceholder: "مثال: جلسة استشارة قانونية",
+    priceLabel: "رسوم الخدمة",
+    priceHint: "اتركه فارغاً لإخفاء الرسوم",
+    discountBadgeLabel: "عرض الخدمة",
+    discountBadgePlaceholder: "استشارة أولى مجانية",
+    headlineLabel: "العنوان الرئيسي للإعلان",
+    headlinePlaceholder: "مثال: احصل على استشارة متخصصة",
+    subheadlinePlaceholder: "مثال: خبراء في خدمتك لحل كل تحدياتك",
+    taglineLabel: "شعار الشركة",
+    taglinePlaceholder: "مثال: حلول عملية بخبرة حقيقية",
+    descriptionLabel: "تفاصيل الخدمة",
+    descriptionPlaceholder: "اشرح الخدمة، المشكلة التي تحلها، وطريقة التواصل...",
+    ctaOptions: [
+      { value: "تواصل معنا", label: "تواصل معنا" },
+      { value: "احجز استشارة", label: "احجز استشارة" },
+      { value: "اعرف المزيد", label: "اعرف المزيد" },
+      { value: "ابدأ الآن", label: "ابدأ الآن" },
+      { value: "custom", label: "نص مخصص" },
+    ],
+    purposeOptions: [
+      { value: "lead_generation", label: "توليد عملاء محتملين" },
+      { value: "brand_awareness", label: "تعريف بالعلامة" },
+      { value: "announcement", label: "إعلان" },
+      { value: "educational", label: "محتوى تعليمي" },
+    ],
+    platformDefaults: ["linkedin", "instagram", "facebook"],
+  },
+  general: {
+    productNameLabel: "اسم المحتوى / العرض",
+    productNamePlaceholder: "مثال: عرض خاص محدود",
+    priceLabel: "السعر / التكلفة",
+    priceHint: "اتركه فارغاً لإخفاء السعر",
+    discountBadgeLabel: "شارة العرض",
+    discountBadgePlaceholder: "عرض محدود",
+    headlineLabel: "العنوان الرئيسي للإعلان",
+    headlinePlaceholder: "مثال: عرض لا يفوت",
+    subheadlinePlaceholder: "مثال: تفاصيل إضافية توضح القيمة",
+    taglineLabel: "شعار قصير / Tagline",
+    taglinePlaceholder: "مثال: قيمة حقيقية في كل تفصيلة",
+    descriptionLabel: "وصف التصميم",
+    descriptionPlaceholder: "اشرح الفكرة الأساسية للصورة والرسالة المطلوبة...",
+    ctaOptions: CTAS,
+    purposeOptions: PURPOSES,
+  },
+};
+
 const URGENCIES = [
   { value: "", label: "بدون" },
   { value: "limited_time", label: "عرض لفترة محدودة" },
@@ -190,50 +383,6 @@ const FONTS = [
   "Tajawal",
 ];
 
-const TEMPLATES: Record<string, Partial<FormData>> = {
-  sale_promotion: {
-    purpose: "sale_promotion",
-    mood: "energetic",
-    theme: "gradient",
-    layout: "product_centered",
-    headline: "خصم 50% لفترة محدودة",
-    subheadline: "أفضل العروض على كل المنتجات",
-    cta: "تسوق الآن",
-    urgency: "limited_time",
-    hashtags: "خصومات, عروض, تسوق",
-  },
-  new_product_launch: {
-    purpose: "new_product_launch",
-    mood: "modern",
-    theme: "product_hero",
-    layout: "product_centered",
-    headline: "وصل حديثاً",
-    subheadline: "اكتشف المجموعة الجديدة الآن",
-    cta: "اعرف المزيد",
-    hashtags: "جديد, منتج, إطلاق",
-  },
-  brand_awareness: {
-    purpose: "brand_awareness",
-    mood: "professional",
-    theme: "modern",
-    layout: "full_bleed_image",
-    headline: "ثقة تستحقها",
-    subheadline: "جودة وخدمة في كل تفصيلة",
-    cta: "تواصل معنا",
-    hashtags: "علامة_تجارية, جودة, ثقة",
-  },
-  engagement: {
-    purpose: "engagement",
-    mood: "playful",
-    theme: "lifestyle",
-    layout: "split_screen",
-    headline: "شاركنا رأيك",
-    subheadline: "إيه أكتر حاجة عجبتك في الشهر ده؟",
-    cta: "علق الآن",
-    hashtags: "تفاعل, رأيك_يهم, مجتمع",
-  },
-};
-
 // ModelConfigResponse removed — model selection is handled by the backend agent template.
 
 interface BrandIdentityResponse {
@@ -262,6 +411,7 @@ interface GenerateResponse {
 }
 
 interface FormData {
+  vertical: Vertical;
   platform: string;
   aspectRatio: string;
   brandName: string;
@@ -297,6 +447,7 @@ interface FormData {
   transparentBg: boolean;
   avoidPrompt: string;
   editablePrompt: string;
+  brandKitAutoApply: boolean;
 }
 
 const DRAFT_KEY = "aiImageGenerator_draft_v1";
@@ -326,6 +477,7 @@ const clearDraft = () => {
 };
 
 const initialForm: FormData = {
+  vertical: "general",
   platform: "instagram",
   aspectRatio: "1:1",
   brandName: "",
@@ -361,6 +513,7 @@ const initialForm: FormData = {
   transparentBg: false,
   avoidPrompt: "",
   editablePrompt: "",
+  brandKitAutoApply: true,
 };
 
 function Field({
@@ -581,7 +734,28 @@ function CollapsibleSection({
   );
 }
 
+const detectVerticalFromCompany = (company: any | null): Vertical => {
+  if (!company) return "general";
+  const activeApps = company.activeApps || [];
+  const appSet = new Set(Array.isArray(activeApps) ? activeApps : []);
+  if (appSet.has("medical-system") || appSet.has("medical-app")) return "medical";
+  if (appSet.has("education-app")) return "education";
+  if (appSet.has("restaurant-app") || appSet.has("food-app") || appSet.has("menu-app")) return "restaurant";
+  if (appSet.has("services-app") || appSet.has("consulting-app")) return "services";
+  if (
+    appSet.has("ecommerce-basic") ||
+    appSet.has("ecommerce-pro") ||
+    appSet.has("ecommerce-plus") ||
+    appSet.has("inventory-pro") ||
+    appSet.has("marketplace")
+  ) {
+    return "ecommerce";
+  }
+  return "general";
+};
+
 const AIImageGenerator: React.FC = () => {
+  const { company } = useCompany();
   const [form, setForm] = useState<FormData>(() => {
     const draft = loadDraft();
     return { ...initialForm, ...(draft || {}) };
@@ -593,7 +767,8 @@ const AIImageGenerator: React.FC = () => {
   const [primaryImage, setPrimaryImage] = useState<File | null>(null);
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentityResponse>({});
-
+  const [brandKitLoading, setBrandKitLoading] = useState(false);
+  const [generatedCaption, setGeneratedCaption] = useState<{ headline?: string; caption: string; cta: string; hashtags: string[] } | null>(null);
 
   const [gallery, setGallery] = useState<any[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
@@ -621,6 +796,12 @@ const AIImageGenerator: React.FC = () => {
     total_tokens?: number;
   } | null>(null);
 
+  const [verticalLocked, setVerticalLocked] = useState(false);
+
+  const vertical = form.vertical || "general";
+  const vc = VERTICAL_CONFIG[vertical];
+  const isBrandKitLoaded = Object.keys(brandIdentity).length > 0;
+
   const [openSections, setOpenSections] = useState<{
     branding: boolean;
     layout: boolean;
@@ -642,25 +823,49 @@ const AIImageGenerator: React.FC = () => {
   };
 
   useEffect(() => {
+    setBrandKitLoading(true);
     apiClient
       .get<BrandIdentityResponse>("/settings/brand-identity")
       .then((res) => {
         const data = res.data;
         if (data) {
           setBrandIdentity(data);
-          setForm((prev) => ({
-            ...prev,
-            brandName: data.brandName || prev.brandName,
-            primaryColor: data.primaryColor || prev.primaryColor,
-            secondaryColor: data.secondaryColor || prev.secondaryColor,
-            accentColor: data.accentColor || prev.accentColor,
-            headingFont: data.headingFont || prev.headingFont,
-          }));
+          setForm((prev) => {
+            if (!prev.brandKitAutoApply) return prev;
+            const next = {
+              ...prev,
+              brandName: data.brandName || prev.brandName,
+              primaryColor: data.primaryColor || prev.primaryColor,
+              secondaryColor: data.secondaryColor || prev.secondaryColor,
+              accentColor: data.accentColor || prev.accentColor,
+              headingFont: data.headingFont || prev.headingFont,
+            };
+            saveDraft(next);
+            return next;
+          });
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setBrandKitLoading(false));
     fetchGallery();
   }, []);
+
+  useEffect(() => {
+    if (!company || verticalLocked || form.vertical !== "general") return;
+    const detected = detectVerticalFromCompany(company);
+    if (detected !== "general") {
+      setForm((prev) => {
+        const next = {
+          ...prev,
+          vertical: detected,
+          platform: VERTICAL_CONFIG[detected].platformDefaults?.[0] || prev.platform,
+        };
+        saveDraft(next);
+        return next;
+      });
+      setVerticalLocked(true);
+    }
+  }, [company, verticalLocked, form.vertical]);
 
   useEffect(() => {
     if (!message) return;
@@ -668,9 +873,11 @@ const AIImageGenerator: React.FC = () => {
     return () => clearTimeout(timer);
   }, [message]);
 
+  const rebuildPrompt = useCallback(() => buildPromptText(), [buildPromptText]);
+
   useEffect(() => {
     if (!promptTouched) {
-      setForm((prev) => ({ ...prev, editablePrompt: buildPromptText() }));
+      setForm((prev) => ({ ...prev, editablePrompt: rebuildPrompt() }));
     }
   }, [
     form.platform,
@@ -701,6 +908,7 @@ const AIImageGenerator: React.FC = () => {
     form.shadow,
     form.purpose,
     form.urgency,
+    form.avoidPrompt,
     primaryImage,
   ]);
 
@@ -708,6 +916,31 @@ const AIImageGenerator: React.FC = () => {
     if (!imageUrl) return;
     document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [imageUrl]);
+
+  const generateCaption = useCallback(async () => {
+    if (!canGenerate) {
+      toast.error("من فضلك أدخل اسم المنتج أو العنوان الرئيسي لتوليد الكابشن");
+      return;
+    }
+    try {
+      const res = await apiClient.post<{
+        success?: boolean;
+        data?: { headline?: string; caption: string; cta: string; hashtags: string[] };
+        message?: string;
+      }>("/ai-image/caption", {
+        structured: buildPromptJson(),
+        brandVoice: brandIdentity["brandVoice"] || "",
+      });
+      if (res.data?.success && res.data?.data) {
+        setGeneratedCaption(res.data.data);
+        toast.success("تم توليد الكابشن والهاشتاجات");
+      } else {
+        toast.error(res.data?.message || "فشل توليد الكابشن");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err.message || "فشل توليد الكابشن");
+    }
+  }, [canGenerate, form, brandIdentity, buildPromptJson]);
 
   const canGenerate = useMemo(
     () => Boolean(form.productName.trim() || form.headline.trim()),
@@ -777,8 +1010,9 @@ const AIImageGenerator: React.FC = () => {
     [form.platform]
   );
 
-  const buildPromptJson = () => {
+  const buildPromptJson = useCallback(() => {
     return {
+      vertical: form.vertical,
       platform: form.platform,
       aspectRatio: form.aspectRatio,
       brand: {
@@ -834,12 +1068,16 @@ const AIImageGenerator: React.FC = () => {
         avoid: form.avoidPrompt,
       },
     };
-  };
+  }, [
+    form,
+    primaryImage,
+  ]);
 
   const buildPromptText = (): string => {
     const parts: string[] = [];
 
     parts.push(`Create a social media image for ${form.platform} with aspect ratio ${form.aspectRatio}.`);
+    parts.push(`Industry vertical: ${form.vertical}. Adapt the tone, imagery, and messaging to suit this business type.`);
 
     if (form.brandName) parts.push(`Brand: ${form.brandName}.`);
     if (form.productName)
@@ -905,6 +1143,7 @@ const AIImageGenerator: React.FC = () => {
     setLoading(true);
     setImageUrl("");
     setMessage(null);
+    setGeneratedCaption(null);
 
     const prompt =
       promptTouched && form.editablePrompt.trim() ? form.editablePrompt.trim() : buildPromptText();
@@ -959,6 +1198,15 @@ const AIImageGenerator: React.FC = () => {
     a.download = `maxp-ai-${Date.now()}.${form.format}`;
     a.click();
     toast.success("تم بدء التحميل");
+  };
+
+  const handleCopyCaption = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("تم نسخ النص");
+    } catch {
+      toast.error("فشل النسخ");
+    }
   };
 
   const handleCopyUrl = async () => {
@@ -1054,6 +1302,7 @@ const AIImageGenerator: React.FC = () => {
     setGalleryFilter("all");
     setGallerySearch("");
     setUsage(null);
+    setGeneratedCaption(null);
     toast.info("تم تصفير النموذج");
   };
 
@@ -1102,65 +1351,67 @@ const AIImageGenerator: React.FC = () => {
     });
   }, [gallery, galleryFilter, gallerySearch]);
 
-  const applyTemplate = (template: string) => {
-    const t = TEMPLATES[template];
-    if (!t) return;
-    setForm((prev) => {
-      const next = { ...prev, ...t };
-      saveDraft(next);
-      return next;
-    });
-    setPromptTouched(false);
-    setTimeout(
-      () =>
-        setForm((prev) => {
-          const next = { ...prev, editablePrompt: buildPromptText() };
-          saveDraft(next);
-          return next;
-        }),
-      0
-    );
-  };
-
   const inputCls = "bg-white dark:bg-gray-900 border-slate-200 dark:border-slate-800 rounded-xl";
 
   return (
     <div dir="rtl" className="space-y-6 text-right w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       
       {/* Sleek 2026 low-profile Page Header */}
-      <div className="flex flex-col gap-1 pb-4 pt-2 border-b border-slate-100 dark:border-slate-800/80">
-        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-          <Sparkles className="size-5 text-sky-500 animate-pulse" />
-          مصمم صور السوشيال ميديا
-        </h1>
-        <p className="text-xs text-muted-foreground">أنشئ إعلانات احترافية لمنتجاتك بهوية بصرية متكاملة دون الحاجة لبرومبت معقد</p>
+      <div className="flex flex-col gap-4 pb-4 pt-2 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <Sparkles className="size-5 text-sky-500 animate-pulse" />
+            مصمم صور السوشيال ميديا
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            أنشئ محتوى بصري احترافي متكيّف مع نوع نشاطك بدون برومبت معقد
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-slate-50/60 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/60 p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">نوع النشاط:</span>
+            <Select
+              value={form.vertical}
+              onValueChange={(v) => {
+                const nextVertical = (v as Vertical) || "general";
+                const defaults = VERTICAL_CONFIG[nextVertical].platformDefaults;
+                setForm((prev) => {
+                  const next = {
+                    ...prev,
+                    vertical: nextVertical,
+                    platform: defaults?.[0] || prev.platform,
+                    cta: vc.ctaOptions.find((c) => c.value === prev.cta) ? prev.cta : "",
+                    purpose: vc.purposeOptions.find((p) => p.value === prev.purpose) ? prev.purpose : "",
+                  };
+                  saveDraft(next);
+                  return next;
+                });
+                setVerticalLocked(true);
+              }}
+            >
+              <SelectTrigger className="h-8 w-44 text-xs rounded-xl bg-white dark:bg-gray-900">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VERTICALS.map((v) => (
+                  <SelectItem key={v.value} value={v.value}>
+                    {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {company && (
+            <p className="text-[10px] text-muted-foreground">
+              تم الكشف تلقائياً بناءً على تطبيقات الشركة المفعلة.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
         <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
-
-        {/* Quick Presets Section (Flat macOS-style chips list) */}
-        <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/50">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 ml-2">قوالب إعلانية جاهزة:</span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { key: "sale_promotion", label: "عرض / تخفيضات" },
-              { key: "new_product_launch", label: "إطلاق منتج جديد" },
-              { key: "brand_awareness", label: "تعريف بالعلامة" },
-              { key: "engagement", label: "تفاعل الجمهور" },
-            ].map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => applyTemplate(t.key)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors"
-              >
-                <Sparkles className="size-3 text-sky-500" />
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Main Grid: Config (Right) & Live Preview (Left) */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
@@ -1180,16 +1431,16 @@ const AIImageGenerator: React.FC = () => {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="اسم المنتج" required hint="الاسم الأساسي الذي سيظهر بالتصميم">
+                  <Field label={vc.productNameLabel} required hint="الاسم الأساسي الذي سيظهر بالتصميم">
                     <Input
                       dir="auto"
-                      placeholder="مثال: حقيبة جلدية كلاسيكية"
+                      placeholder={vc.productNamePlaceholder}
                       value={form.productName}
                       onChange={(e) => update("productName", e.target.value)}
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="السعر والعملة" hint="اتركه فارغاً لإخفاء السعر">
+                  <Field label={vc.priceLabel} hint={vc.priceHint}>
                     <div className="flex gap-2">
                       <Input
                         placeholder="199"
@@ -1214,10 +1465,10 @@ const AIImageGenerator: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="العنوان الرئيسي للإعلان" required hint="الجملة الأهم لجذب انتباه العميل">
+                  <Field label={vc.headlineLabel} required hint="الجملة الأهم لجذب انتباه العميل">
                     <Input
                       dir="auto"
-                      placeholder="مثال: خصم 50% لفترة محدودة"
+                      placeholder={vc.headlinePlaceholder}
                       value={form.headline}
                       onChange={(e) => update("headline", e.target.value)}
                       className={inputCls}
@@ -1226,7 +1477,7 @@ const AIImageGenerator: React.FC = () => {
                   <Field label="العنوان الفرعي" hint="تفاصيل داعمة للعنوان الرئيسي">
                     <Input
                       dir="auto"
-                      placeholder="مثال: التوصيل مجاني لكل مناطق المملكة"
+                      placeholder={vc.subheadlinePlaceholder}
                       value={form.subheadline}
                       onChange={(e) => update("subheadline", e.target.value)}
                       className={inputCls}
@@ -1235,19 +1486,19 @@ const AIImageGenerator: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="شعار قصير / Tagline" hint="عبارة توضح قيمة المنتج الأساسية">
+                  <Field label={vc.taglineLabel} hint="عبارة توضح قيمة المحتوى الأساسية">
                     <Input
                       dir="auto"
-                      placeholder="مثال: الأناقة والجودة في تصميم واحد"
+                      placeholder={vc.taglinePlaceholder}
                       value={form.tagline}
                       onChange={(e) => update("tagline", e.target.value)}
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="شارة الخصم" hint="مثال: 50% OFF أو عرض خاص">
+                  <Field label={vc.discountBadgeLabel} hint="مثال: 50% OFF أو عرض خاص">
                     <Input
                       dir="auto"
-                      placeholder="خصم 30%"
+                      placeholder={vc.discountBadgePlaceholder}
                       value={form.discountBadge}
                       onChange={(e) => update("discountBadge", e.target.value)}
                       className={inputCls}
@@ -1255,10 +1506,10 @@ const AIImageGenerator: React.FC = () => {
                   </Field>
                 </div>
 
-                <Field label="وصف المنتج التفصيلي" hint="وصف يوضح تفاصيل ومزايا الموديل المراد توليده">
+                <Field label={vc.descriptionLabel} hint="وصف يوضح تفاصيل ومزايا التصميم المراد توليده">
                   <Textarea
                     dir="auto"
-                    placeholder="حقيبة مصنوعة من الجلد الطبيعي المقاوم للماء بمقبض يدوي مريح..."
+                    placeholder={vc.descriptionPlaceholder}
                     value={form.description}
                     onChange={(e) => update("description", e.target.value)}
                     rows={3}
@@ -1326,12 +1577,59 @@ const AIImageGenerator: React.FC = () => {
                 onToggle={() => toggleSection("branding")}
               >
                 <div className="space-y-4 pt-1">
-                  {Object.keys(brandIdentity).length > 0 && (
-                    <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/40 px-3.5 py-2.5 text-xs text-emerald-800 dark:border-emerald-950/30 dark:bg-emerald-950/20 dark:text-emerald-400">
-                      <span className="flex size-2 rounded-full bg-emerald-500" />
-                      <span>تم استيراد ألوان وهوية العلامة التجارية تلقائياً من الإعدادات العامة.</span>
+                  <div className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/50 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-900/40">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                        {brandKitLoading ? (
+                          <Loader2 className="size-3.5 animate-spin text-sky-500" />
+                        ) : isBrandKitLoaded ? (
+                          <span className="flex size-2 rounded-full bg-emerald-500" />
+                        ) : (
+                          <span className="flex size-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                        )}
+                        <span>
+                          {brandKitLoading
+                            ? "جاري تحميل هوية العلامة..."
+                            : isBrandKitLoaded
+                            ? "تم استيراد ألوان وهوية العلامة التجارية تلقائياً."
+                            : "لم يتم العثور على هوية علامة محفوظة."}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="brand-kit-auto"
+                          checked={form.brandKitAutoApply}
+                          onCheckedChange={(v) => update("brandKitAutoApply", v)}
+                          disabled={!isBrandKitLoaded || brandKitLoading}
+                        />
+                        <Label htmlFor="brand-kit-auto" className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+                          تطبيق تلقائي
+                        </Label>
+                      </div>
                     </div>
-                  )}
+                    {isBrandKitLoaded && (
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                        {brandIdentity.brandName && <span>العلامة: {brandIdentity.brandName}</span>}
+                        {brandIdentity.primaryColor && (
+                          <span className="flex items-center gap-1">
+                            ألوان:
+                            <span className="inline-flex gap-0.5">
+                              {brandIdentity.primaryColor !== "#000000" && (
+                                <span className="size-3 rounded-full border" style={{ backgroundColor: brandIdentity.primaryColor }} />
+                              )}
+                              {brandIdentity.secondaryColor !== "#ffffff" && (
+                                <span className="size-3 rounded-full border" style={{ backgroundColor: brandIdentity.secondaryColor }} />
+                              )}
+                              {brandIdentity.accentColor !== "#ff0000" && (
+                                <span className="size-3 rounded-full border" style={{ backgroundColor: brandIdentity.accentColor }} />
+                              )}
+                            </span>
+                          </span>
+                        )}
+                        {brandIdentity.headingFont && brandIdentity.headingFont !== "Cairo" && <span>الخط: {brandIdentity.headingFont}</span>}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field label="اسم العلامة التجارية">
@@ -1513,7 +1811,7 @@ const AIImageGenerator: React.FC = () => {
                           <SelectValue placeholder="زر الإجراء" />
                         </SelectTrigger>
                         <SelectContent>
-                          {CTAS.map((c) => (
+                          {vc.ctaOptions.map((c) => (
                             <SelectItem key={c.value} value={c.value}>
                               {c.label}
                             </SelectItem>
@@ -1611,7 +1909,7 @@ const AIImageGenerator: React.FC = () => {
                           <SelectValue placeholder="اختر الهدف التسويقي" />
                         </SelectTrigger>
                         <SelectContent>
-                          {PURPOSES.map((p) => (
+                          {vc.purposeOptions.map((p) => (
                             <SelectItem key={p.value} value={p.value}>
                               {p.label}
                             </SelectItem>
@@ -1725,7 +2023,7 @@ const AIImageGenerator: React.FC = () => {
                     </div>
                   </div>
 
-                  <Field label="أشياء يفضل تجنبها بالرسم" hint="مثال: نصوص إنجليزية عشوائية، أشخاص مشوشين، إلخ.">
+                  <Field label="أشياء يفضل تجنبها بالرسم (Negative Prompt)" hint="مثال: نصوص إنجليزية عشوائية، أشخاص مشوشين، إلخ.">
                     <Textarea
                       dir="auto"
                       placeholder="كتابة نصوص غير مفهومة، أيدي مشوهة، خلفية فوضوية..."
@@ -1892,6 +2190,15 @@ const AIImageGenerator: React.FC = () => {
                     
                     {/* Image Actions Toolbar */}
                     <div className="flex flex-wrap gap-2 justify-center border-t border-slate-100 pt-3 dark:border-slate-800">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 rounded-xl text-xs border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:text-sky-400"
+                        onClick={generateCaption}
+                        disabled={!canGenerate}
+                      >
+                        <MessageSquare className="size-3.5" /> كابشن
+                      </Button>
                       <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs" onClick={handleDownload}>
                         <Download className="size-3.5" /> تحميل
                       </Button>
@@ -1914,6 +2221,60 @@ const AIImageGenerator: React.FC = () => {
                       >
                         <Trash2 className="size-3.5" /> مسح المعاينة
                       </Button>
+                      {generatedCaption && (
+                        <div className="w-full mt-3 space-y-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+                          {generatedCaption.headline && (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+                                <Type className="size-3" /> العنوان المقترح
+                              </div>
+                              <div className="text-xs text-slate-800 dark:text-slate-200">{generatedCaption.headline}</div>
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+                              <FileText className="size-3" /> الكابشن
+                            </div>
+                            <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">{generatedCaption.caption}</div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-semibold text-slate-500">CTA مقترح:</span>
+                            <span className="text-xs font-medium text-sky-700 dark:text-sky-400">{generatedCaption.cta}</span>
+                          </div>
+                          {generatedCaption.hashtags.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Hash className="size-3 text-slate-400" />
+                              {generatedCaption.hashtags.map((h) => (
+                                <Badge
+                                  key={h}
+                                  variant="secondary"
+                                  className="cursor-pointer text-[10px] rounded-md"
+                                  onClick={() => handleCopyCaption(h)}
+                                  title="نسخ الهاشتاج"
+                                >
+                                  #{h}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full gap-1.5 rounded-xl text-xs text-slate-500 hover:text-sky-600"
+                            onClick={() => {
+                              const text = [
+                                generatedCaption.headline,
+                                generatedCaption.caption,
+                                generatedCaption.cta,
+                                generatedCaption.hashtags.map((h) => `#${h}`).join(" "),
+                              ].filter(Boolean).join("\n\n");
+                              void handleCopyCaption(text);
+                            }}
+                          >
+                            <Copy className="size-3.5" /> نسخ كل النصوص
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -2028,7 +2389,11 @@ const AIImageGenerator: React.FC = () => {
                     <div className="p-2.5 text-right space-y-1">
                       {img.purpose && (
                         <p className="text-[9px] font-bold text-sky-600 dark:text-sky-400">
-                          {PURPOSES.find((p) => p.value === img.purpose)?.label || img.purpose}
+                          {VERTICAL_CONFIG[(img.vertical as Vertical) || "general"].purposeOptions.find(
+                            (p) => p.value === img.purpose
+                          )?.label ||
+                            PURPOSES.find((p) => p.value === img.purpose)?.label ||
+                            img.purpose}
                         </p>
                       )}
                       <p className="text-[9px] text-muted-foreground truncate leading-tight" title={img.prompt}>
