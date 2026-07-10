@@ -55,7 +55,7 @@
     "seed:permissions": "node prisma/seeds/seedPermissions.js",
     "seed:migrate-roles": "node prisma/seeds/migrateCustomRoles.js",
     "seed:link-roles": "node prisma/seeds/linkUserRoles.js",
-    "postinstall": "node ../../patch-telegram-updates.js"
+    "postinstall": "node -e \"try{require('../../patch-telegram-updates.js')}catch(e){console.log('⚠️  patch-telegram-updates skipped:',e.code||e.message)}\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
