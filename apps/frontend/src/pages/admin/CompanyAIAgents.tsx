@@ -68,6 +68,8 @@ import {
   Clock,
   AlertCircle,
   HelpCircle,
+  User,
+  Lock,
 } from "lucide-react";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -1116,6 +1118,10 @@ function AgentProfilePanel({
       <div className="p-3 sm:p-4">
         <Tabs value={tab} onValueChange={onTabChange}>
           <TabsList variant="line" className="w-full justify-start gap-0.5 mb-4 overflow-x-auto">
+            <TabsTrigger value="persona" className="text-xs sm:text-sm font-semibold px-3 py-2 h-9 gap-1.5 data-[state=active]:font-bold">
+              <User className="size-3.5" />
+              PERSONA.md
+            </TabsTrigger>
             <TabsTrigger value="soul" className="text-xs sm:text-sm font-semibold px-3 py-2 h-9 gap-1.5 data-[state=active]:font-bold">
               <BookOpen className="size-3.5" />
               SOUL.md
@@ -1138,8 +1144,21 @@ function AgentProfilePanel({
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="persona">
+            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+              اكتب هنا شخصية الوكيل، نبرة الصوت، وتعليمات البراند. هذا المحتوى يضاف فوق تعليمات القالب الأساسي (SOUL.md) ولا يمسه.
+            </div>
+            <FieldEditor
+              label="PERSONA.md"
+              value={draftFiles["PERSONA.md"] || ""}
+              onChange={(v) => updateFile("PERSONA.md", v)}
+            />
+          </TabsContent>
           <TabsContent value="soul">
-            <FieldEditor label="SOUL.md" value={draftFiles["SOUL.md"] || ""} onChange={(v) => updateFile("SOUL.md", v)} />
+            <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50 dark:bg-slate-900/30 px-3 py-2 text-xs text-slate-700 dark:text-slate-300">
+              هذا المحتوى يأتي من قالب الوكيل الأصلي (SOUL.md) ولا يمكن تعديله من هنا. لتخصيص شخصية الوكيل استخدم تبويب PERSONA.md.
+            </div>
+            <FieldEditor label="SOUL.md" value={draftFiles["SOUL.md"] || ""} readOnly />
           </TabsContent>
           <TabsContent value="agents">
             <FieldEditor label="AGENTS.md" value={draftFiles["AGENTS.md"] || ""} onChange={(v) => updateFile("AGENTS.md", v)} />
@@ -1746,12 +1765,14 @@ function FieldEditor({
   onChange,
   minRows = 8,
   disablePreview = false,
+  readOnly = false,
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
   minRows?: number;
   disablePreview?: boolean;
+  readOnly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -1771,6 +1792,12 @@ function FieldEditor({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[0.65rem] text-muted-foreground">{lineCount} سطر · {wordCount} كلمة</span>
+          {readOnly && (
+            <span className="inline-flex items-center gap-1 text-[0.65rem] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-md">
+              <Lock className="size-3" />
+              للقراءة فقط
+            </span>
+          )}
           {isMarkdown && !disablePreview && (
             <button
               type="button"
@@ -1796,20 +1823,24 @@ function FieldEditor({
 
       {showPreview && isMarkdown && !disablePreview ? (
         <div
-          className="ai-editor-preview"
+          className={cn("ai-editor-preview", readOnly && "bg-muted/30")}
           dir="ltr"
           dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(value) }}
         />
       ) : (
-        <div className="relative min-h-[200px]">
+        <div className={cn("relative min-h-[200px]", readOnly && "bg-muted/30 rounded-b-lg")}>
           <Textarea
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => onChange?.(e.target.value)}
             rows={shouldCollapse ? 10 : minRows}
-            className="resize-y border-0 rounded-none bg-transparent font-mono text-sm leading-[1.8] text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/40 px-5 py-4 min-h-[200px]"
+            className={cn(
+              "resize-y border-0 rounded-none bg-transparent font-mono text-sm leading-[1.8] text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/40 px-5 py-4 min-h-[200px]",
+              readOnly && "opacity-70 cursor-not-allowed"
+            )}
             dir="ltr"
             spellCheck={false}
-            placeholder={`اكتب محتوى ${label} هنا...`}
+            readOnly={readOnly}
+            placeholder={readOnly ? "يتم تحميل هذا المحتوى من قالب الوكيل ولا يمكن تعديله من هنا" : `اكتب محتوى ${label} هنا...`}
           />
         </div>
       )}
