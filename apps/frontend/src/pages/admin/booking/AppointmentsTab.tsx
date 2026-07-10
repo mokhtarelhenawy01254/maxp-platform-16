@@ -80,52 +80,46 @@ export default function AppointmentsTab({
 
   return (
     <div>
-      {/* Row 1: header + search + add */}
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-        <h2 className="text-xl font-bold">المواعيد</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input type="text" placeholder="بحث باسم أو هاتف..."
-              className={`${MODAL_INPUT_CLS} pr-9${filters.search ? ' pl-8' : ''} w-48`}
-              value={filters.search}
-              onChange={e => onFiltersChange({ ...filters, search: e.target.value })} />
-            {filters.search && (
-              <button onClick={() => onFiltersChange({ ...filters, search: '' })}
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <XMarkIcon className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-          <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />حجز موعد</button>
-        </div>
-      </div>
-      {/* Row 2: filters */}
+      {/* Filters row — compact single row */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <select className={`${MODAL_INPUT_CLS} w-auto`} value={filters.status} onChange={e => onFiltersChange({ ...filters, status: e.target.value })}>
+        <h2 className="text-xl font-bold ml-2">المواعيد</h2>
+        <div className="relative">
+          <MagnifyingGlassIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <input type="text" placeholder="بحث..."
+            className={`${MODAL_INPUT_CLS} pr-7${filters.search ? ' pl-7' : ''} w-32 sm:w-40 text-sm`}
+            value={filters.search}
+            onChange={e => onFiltersChange({ ...filters, search: e.target.value })} />
+          {filters.search && (
+            <button onClick={() => onFiltersChange({ ...filters, search: '' })}
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <XMarkIcon className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+        <select className={`${MODAL_INPUT_CLS} w-auto text-sm py-1.5`} value={filters.status} onChange={e => onFiltersChange({ ...filters, status: e.target.value })}>
           <option value="">كل الحالات</option>
           {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
-        <select className={`${MODAL_INPUT_CLS} w-auto`} value={filters.branchId} onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}>
+        <select className={`${MODAL_INPUT_CLS} w-auto text-sm py-1.5`} value={filters.branchId} onChange={e => onFiltersChange({ ...filters, branchId: e.target.value })}>
           <option value="">كل الفروع</option>
           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
-        <span className="text-xs text-gray-500 dark:text-gray-400 mx-1 hidden sm:inline">الفترة:</span>
-        <input type="date" className={`${MODAL_INPUT_CLS} w-auto`} value={filters.dateFrom} onChange={e => onFiltersChange({ ...filters, dateFrom: e.target.value })} />
-        <span className="text-gray-400 dark:text-gray-500">—</span>
-        <input type="date" className={`${MODAL_INPUT_CLS} w-auto`} value={filters.dateTo} onChange={e => onFiltersChange({ ...filters, dateTo: e.target.value })} />
-        <div className="flex gap-1">
+        <input type="date" className={`${MODAL_INPUT_CLS} w-36 sm:w-40 text-sm py-1.5`} value={filters.dateFrom} onChange={e => onFiltersChange({ ...filters, dateFrom: e.target.value })} />
+        <span className="text-gray-400 dark:text-gray-500 -ml-1.5 -mr-1.5">—</span>
+        <input type="date" className={`${MODAL_INPUT_CLS} w-36 sm:w-40 text-sm py-1.5`} value={filters.dateTo} onChange={e => onFiltersChange({ ...filters, dateTo: e.target.value })} />
+        <div className="flex gap-0.5">
           <button onClick={() => setQuickDate(0)}
-            className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${isToday ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>اليوم</button>
+            className={`text-xs px-1.5 py-1 rounded font-medium border ${isToday ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>اليوم</button>
           <button onClick={() => setQuickDate(7)}
-            className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${isThisWeek ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>٧ أيام</button>
+            className={`text-xs px-1.5 py-1 rounded font-medium border ${isThisWeek ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' : 'bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>٧أ</button>
           <button onClick={() => setQuickDate(30)}
-            className="text-xs px-2 py-1.5 rounded-lg font-medium border bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">٣٠ يوم</button>
+            className="text-xs px-1.5 py-1 rounded font-medium border bg-white text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">٣٠أ</button>
           <button onClick={() => onFiltersChange({ ...filters, dateFrom: '', dateTo: '' })}
-            className={`text-xs px-2 py-1.5 rounded-lg font-medium border ${filters.dateFrom || filters.dateTo ? 'text-red-600 border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-300 border-gray-200 dark:text-gray-600 dark:border-gray-700 cursor-default'}`}>
+            className={`text-xs px-1.5 py-1 rounded font-medium border ${filters.dateFrom || filters.dateTo ? 'text-red-600 border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-300 border-gray-200 dark:text-gray-600 dark:border-gray-700 cursor-default'}`}>
             <XMarkIcon className="w-3 h-3" />
           </button>
         </div>
+        <button onClick={() => onEdit({})} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><PlusIcon className="w-3.5 h-3.5" />حجز</button>
       </div>
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
