@@ -97,6 +97,8 @@ _CONTRACT_TEMPLATE = """\
 <persona>
 {{ persona_block }}
 </persona>
+
+# Priority: <persona> supplements <goal> — does not override it
 {% endif %}
 
 <constraints>
