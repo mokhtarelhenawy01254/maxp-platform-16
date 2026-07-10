@@ -1,0 +1,105 @@
+import { PencilIcon, TrashIcon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { BookingBranch, DAY_NAMES, tryParseJSON } from "./shared";
+import BranchModal from "./BranchModal";
+
+interface Props {
+  branches: BookingBranch[];
+  onEdit: (b: Partial<BookingBranch>) => void;
+  onToggleActive: (id: string, current: boolean) => void;
+  onDelete: (id: string) => void;
+  modalBranch: Partial<BookingBranch> | null | undefined;
+  onModalClose: () => void;
+  onSave: (d: any) => Promise<void>;
+}
+
+export default function BranchesTab({ branches, onEdit, onToggleActive, onDelete, modalBranch, onModalClose, onSave }: Props) {
+  return (
+    <div>
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <h2 className="text-xl font-bold">إدارة الفروع</h2>
+        <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة فرع</button>
+      </div>
+      {/* Mobile card view */}
+      <div className="block md:hidden space-y-3">
+        {branches.map(b => (
+          <div key={b.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="font-bold text-sm">{b.name}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{b.address || "—"}</p>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex flex-wrap gap-1">{(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{p}</span>) || "—"}</div>
+            {b.location && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 truncate" title={b.location}>📍 {b.location}</p>}
+            {(() => {
+              const gd = tryParseJSON<{ male: string[]; female: string[] }>(b.genderDays);
+              if (!gd || (!gd.male?.length && !gd.female?.length)) return null;
+              return (
+                <div className="text-xs mb-3 space-y-1">
+                  {gd.male?.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 الرجال: {gd.male.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
+                  {gd.female?.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 السيدات: {gd.female.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
+                </div>
+              );
+            })()}
+            <div className="flex gap-2">
+              <button onClick={() => onEdit(b)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3 h-3 inline ml-1" />تعديل</button>
+              <button onClick={() => onToggleActive(b.id, b.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${b.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{b.isActive ? "تعطيل" : "تفعيل"}</button>
+              <button onClick={() => onDelete(b.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><TrashIcon className="w-3 h-3 inline ml-1" />حذف</button>
+            </div>
+          </div>
+        ))}
+        {branches.length === 0 && <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد فروع</p>}
+      </div>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+        <table className="w-full">
+          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الموقع", "الهاتف", "أيام العمل", "الجنس", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
+          <tbody>{branches.map(b => (
+            <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+              <td className="py-3 px-4 font-medium">{b.name}</td>
+              <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
+              <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400 max-w-[150px] truncate" title={b.location}>{b.location || "—"}</td>
+              <td className="py-3 px-4">
+                <div className="flex flex-wrap gap-1">
+                  {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="text-xs inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">{p}</span>) || "—"}
+                </div>
+              </td>
+              <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">{
+                (() => {
+                  try {
+                    const wd = tryParseJSON<Record<string, string>>(b.workingDays);
+                    if (!wd || typeof wd !== 'object') return "—";
+                    const days = Object.entries(wd).filter(([k,v]) => v).map(([k,v]) => `${DAY_NAMES[k]||k} (${v})`);
+                    return days.join(" / ") || "—";
+                  } catch(e) { return "—"; }
+                })()
+              }</td>
+              <td className="py-3 px-4 text-xs">{
+                (() => {
+                  const gd = tryParseJSON<{ male: string[]; female: string[] }>(b.genderDays);
+                  if (!gd || (!gd.male?.length && !gd.female?.length)) return <span className="text-gray-400 dark:text-gray-500">—</span>;
+                  return (
+                    <div className="space-y-1">
+                      {gd.male?.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 {gd.male.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
+                      {gd.female?.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 {gd.female.map((d: string) => DAY_NAMES[d] || d).join("، ")}</div>}
+                    </div>
+                  );
+                })()
+              }</td>
+              <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span></td>
+              <td className="py-3 px-4">
+                <div className="flex gap-1">
+                  <button onClick={() => onEdit(b)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
+                  <button onClick={() => onToggleActive(b.id, b.isActive)} className={`p-1.5 rounded ${b.isActive ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30" : "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30"}`} title={b.isActive ? "تعطيل" : "تفعيل"}><CheckIcon className="w-4 h-4" /></button>
+                  <button onClick={() => onDelete(b.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><TrashIcon className="w-4 h-4" /></button>
+                </div>
+              </td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+      {modalBranch !== undefined && <BranchModal branch={modalBranch} onClose={onModalClose} onSave={onSave} />}
+    </div>
+  );
+}

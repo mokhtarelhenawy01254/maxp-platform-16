@@ -1,0 +1,138 @@
+import { useState } from "react";
+import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { BookingBranch, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, DAYS } from "./shared";
+
+interface Props {
+  branch?: Partial<BookingBranch> | null;
+  onClose: () => void;
+  onSave: (d: Partial<BookingBranch> & { maleDays?: string[]; femaleDays?: string[]; phones?: string[]; workStart?: string; workEnd?: string }) => Promise<void>;
+}
+
+const tryParseGenderDays = (v: unknown): { male: string[]; female: string[] } | null => {
+  if (!v) return null;
+  const obj = typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch { return null; } })() : v;
+  if (!obj || typeof obj !== 'object') return null;
+  return { male: obj.male || [], female: obj.female || [] };
+};
+
+export default function BranchModal({ branch, onClose, onSave }: Props) {
+  const initForm = () => {
+    const defaults = { name: "", address: "", phones: [] as string[], workingDays: "sat,mon,wed", workStart: "09:00", workEnd: "22:00", maleDays: [] as string[], femaleDays: [] as string[], isActive: true, maxBookingsPerSlot: 1 };
+    let initialPhones = (branch?.phones || []).filter(Boolean);
+    if (initialPhones.length === 0 && branch?.phone) initialPhones = [branch.phone];
+    if (!branch?.workingDays || typeof branch.workingDays === 'string') {
+      const gd = tryParseGenderDays(branch?.genderDays);
+      return { ...defaults, ...branch, phones: initialPhones, maleDays: gd?.male || [], femaleDays: gd?.female || [] };
+    }
+    const obj = branch.workingDays as Record<string, string>;
+    const dayKeys = Object.keys(obj).filter(k => obj[k]);
+    const times = dayKeys.length > 0 ? obj[dayKeys[0]].split('-') : [];
+    const gd = tryParseGenderDays(branch.genderDays);
+    return {
+      ...defaults, ...branch,
+      workingDays: dayKeys.join(","),
+      workStart: times[0] || "09:00",
+      workEnd: times[1] || "22:00",
+      phones: initialPhones,
+      maleDays: gd?.male || [],
+      femaleDays: gd?.female || [],
+    };
+  };
+  const [form, setForm] = useState(initForm);
+  const toggleWorkingDay = (d: string) => {
+    const current = (form.workingDays || "").split(",").filter(Boolean);
+    const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
+    setForm({ ...form, workingDays: next.join(",") });
+  };
+  const toggleGenderDay = (type: "male" | "female", d: string) => {
+    const key = type === "male" ? "maleDays" : "femaleDays";
+    const current = form[key] || [];
+    const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
+    setForm({ ...form, [key]: next });
+  };
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">{branch?.id ? "تعديل فرع" : "إضافة فرع"}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
+        </div>
+        <div className="space-y-4">
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label><input className={MODAL_INPUT_CLS} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label><textarea className={MODAL_INPUT_CLS} rows={3} placeholder="مثال: ١٢ شارع النيل، الدور الثالث، بجوار الصيدلية" value={form.address || ""} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الموقع</label><input className={MODAL_INPUT_CLS} placeholder="رابط الخريطة أو عنوان الموقع" value={form.location || ""} onChange={e => setForm({ ...form, location: e.target.value })} /></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">صورة علامة مميزة</label>
+            <input type="file" accept="image/*" className={MODAL_INPUT_CLS} onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) { const reader = new FileReader(); reader.onloadend = () => setForm({ ...form, landmarkImage: reader.result as string }); reader.readAsDataURL(file); }
+            }} />
+            {form.landmarkImage && <div className="mt-2 relative inline-block"><img src={form.landmarkImage} className="h-20 w-20 object-cover rounded border dark:border-gray-600" alt="علامة مميزة" /><button onClick={() => setForm({ ...form, landmarkImage: undefined })} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أرقام الهاتف</label>
+            <div className="space-y-2">
+              {(form.phones || []).map((p: string, i: number) => (
+                <div key={i} className="flex gap-2">
+                  <input className={`${MODAL_INPUT_CLS} flex-1`} dir="ltr" placeholder="010xxxxxxxx" value={p} onChange={e => {
+                    const next = [...(form.phones || [])];
+                    next[i] = e.target.value;
+                    setForm({ ...form, phones: next });
+                  }} />
+                  <button onClick={() => setForm({ ...form, phones: (form.phones || []).filter((_, idx) => idx !== i) })} className="px-2 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف الرقم"><TrashIcon className="w-4 h-4" /></button>
+                </div>
+              ))}
+              <button onClick={() => setForm({ ...form, phones: [...(form.phones || []), ""] })} className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700">+ إضافة رقم هاتف</button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أيام العمل</label>
+            <div className="flex flex-wrap gap-2">
+              {DAYS.map(d => (
+                <button key={d.value} onClick={() => toggleWorkingDay(d.value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.workingDays || "").split(",").includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">بداية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workStart} onChange={e => setForm({ ...form, workStart: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نهاية العمل</label><input type="time" className={MODAL_INPUT_CLS} value={form.workEnd} onChange={e => setForm({ ...form, workEnd: e.target.value })} /></div>
+          </div>
+          <div className="border-t dark:border-gray-700 pt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">فصل الحجز حسب الجنس (اختياري)</label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">اتركهم فاضيين لو الفرع بيستقبل الرجال والسيدات في كل الأيام.</p>
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 block">أيام الرجال</span>
+                <div className="flex flex-wrap gap-2">
+                  {DAYS.map(d => (
+                    <button key={d.value} onClick={() => toggleGenderDay("male", d.value)}
+                      className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.maleDays || []).includes(d.value) ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-pink-600 dark:text-pink-400 mb-1 block">أيام السيدات</span>
+                <div className="flex flex-wrap gap-2">
+                  {DAYS.map(d => (
+                    <button key={d.value} onClick={() => toggleGenderDay("female", d.value)}
+                      className={`px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 ${(form.femaleDays || []).includes(d.value) ? "bg-pink-600 text-white border-pink-600" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"}`}>{d.label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="border-t dark:border-gray-700 pt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحد الأقصى للحجوزات لكل وقت</label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">عدد الحجوزات المسموح بها في نفس الساعة (الافتراضي: ١)</p>
+            <input type="number" min={1} max={99} className={MODAL_INPUT_CLS} value={form.maxBookingsPerSlot ?? 1} onChange={e => setForm({ ...form, maxBookingsPerSlot: Math.max(1, Number(e.target.value)) })} />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
+          <button onClick={() => onSave(form)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">حفظ</button>
+        </div>
+      </div>
+    </div>
+  );
+}
