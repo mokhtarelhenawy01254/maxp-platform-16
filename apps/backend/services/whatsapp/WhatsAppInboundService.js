@@ -353,6 +353,18 @@ async function saveIncomingMessage(payload) {
               isAIResponse: true,
             });
           }
+          const attachments = result.response_attachments || result.responseAttachments;
+          if (Array.isArray(attachments)) {
+            for (const att of attachments) {
+              if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                try {
+                  await WhatsAppMessageHandler.sendImage(first.sessionId, first.normalizedJid, { url: att.url }, '', { isAIResponse: true });
+                } catch (e) {
+                  console.error('[WA-AI-ATTACHMENT] Failed to send image:', e.message);
+                }
+              }
+            }
+          }
         });
       } catch (e) {
         console.error('❌ [WA-DEBOUNCE] Error generating or sending AI reply:', e.message);

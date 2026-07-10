@@ -2133,6 +2133,19 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
                                 await WhatsAppMessageHandler.sendText(first.sessionId, first.remoteJid, replyText, { isAIResponse: true });
                             }
+                            const attachments = result?.response_attachments || result?.responseAttachments;
+                            if (Array.isArray(attachments)) {
+                                const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+                                for (const att of attachments) {
+                                    if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                                        try {
+                                            await WhatsAppMessageHandler.sendImage(first.sessionId, first.remoteJid, { url: att.url }, '', { isAIResponse: true });
+                                        } catch (e) {
+                                            console.error('[BAILEYS-AI-ATTACHMENT] Failed to send image:', e.message);
+                                        }
+                                    }
+                                }
+                            }
                         });
                     } catch(e) {
                         console.error('❌ [BAILEYS-DEBOUNCE] Error:', e.message);

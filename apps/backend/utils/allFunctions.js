@@ -2211,6 +2211,23 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   } else {
                     console.error(`❌ [AI-AUTOREPLY] Failed to send AI reply to Facebook:`, fbResult.message || fbResult.error);
                   }
+
+                  // 7b. Send image attachments from AI response
+                  const attachments = result.response_attachments || result.responseAttachments;
+                  if (Array.isArray(attachments)) {
+                    for (const att of attachments) {
+                      if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                        try {
+                          const imgResult = await sendFacebookMessage(first.senderId, att.url, 'IMAGE', first.messagePageId, first.fbMessageId);
+                          if (imgResult.success) {
+                            console.log(`✅ [AI-AUTOREPLY] AI image attachment sent to Facebook.`);
+                          }
+                        } catch (e) {
+                          console.error('[FB-AI-ATTACHMENT] Failed to send image:', e.message);
+                        }
+                      }
+                    }
+                  }
                 } else {
                   console.error(`❌ [AI-AUTOREPLY] Missing Facebook Page Access Token for page: ${first.messagePageId}`);
                 }
