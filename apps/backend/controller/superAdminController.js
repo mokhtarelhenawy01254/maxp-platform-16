@@ -328,11 +328,8 @@ const getSuperAdminUsers = async (req, res) => {
       adminRoles,
     );
 
-    // ✅ FIX: Base filter conditions for INTERNAL SYSTEM STAFF ONLY
-    // We only want to see people who are part of the "mother ship" (system devs/admins)
-    // Retrieve current user's companyId to identifying the System/Main Company
-    const currentUserCompanyId = req.user?.companyId;
-
+    // ✅ SUPER_ADMIN sees all system users regardless of company
+    // (SUPER_ADMIN is platform-level, never tied to a specific company)
     const roleFilterConditions = [
       // 1. Users with explicitly assigned high-level system roles
       {
@@ -347,34 +344,6 @@ const getSuperAdminUsers = async (req, res) => {
         },
       },
     ];
-
-    // 3. If we are in the System/Main Company, also show members of this company
-    // (both those who have it as Primary AND those linked via UserCompany)
-    // BUT strictly exclude regular Agents who are not in the Dev Team or don't have higher roles
-    if (currentUserCompanyId) {
-      const systemCompanyCondition = {
-        AND: [
-          {
-            OR: [
-              { companyId: currentUserCompanyId },
-              {
-                userCompanies: {
-                  some: {
-                    companyId: currentUserCompanyId,
-                  },
-                },
-              },
-            ],
-          },
-          {
-            role: {
-              notIn: tenantRoles,
-            },
-          },
-        ],
-      };
-      roleFilterConditions.push(systemCompanyCondition);
-    }
 
     // Build the where clause
     const where = {
@@ -552,7 +521,7 @@ const createSuperAdminUser = async (req, res) => {
         availability: availability || "available",
         isActive,
         isEmailVerified: true,
-        companyId: req.user.companyId || null,
+        companyId: null, // ponytail: SUPER_ADMINS are platform-level, never tied to a company
       },
       select: {
         id: true,
@@ -1502,10 +1471,7 @@ const getDevTeam = async (req, res) => {
       console.warn("⚠️ Could not load dynamic roles, using defaults");
     }
 
-    // Get all users with system roles - ONLY system users, not regular customers
-    // Use same logic as getSuperAdminUsers to filter correctly
-    const currentUserCompanyId = req.user?.companyId;
-
+    // Get all users with system roles - SUPER_ADMIN sees all, no company filter needed
     const where = {
       OR: [
         { role: "SUPER_ADMIN" },
@@ -1515,11 +1481,6 @@ const getDevTeam = async (req, res) => {
       ],
       isActive: true,
     };
-
-    // Only show users in the same company (System Company) - excludes client users
-    if (currentUserCompanyId) {
-      where.companyId = currentUserCompanyId;
-    }
 
     const allSystemUsers = await getPrisma().user.findMany({
       where,
