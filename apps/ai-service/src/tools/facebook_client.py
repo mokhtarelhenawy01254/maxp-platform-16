@@ -54,6 +54,22 @@ class FacebookGraphClient:
         response.raise_for_status()
         return response.json()
 
+    async def send_media(self, recipient_id: str, media_url: str, media_type: str = "image") -> dict[str, Any]:
+        """Send a media message (image) to a user via URL."""
+        payload = {
+            "recipient": {"id": recipient_id},
+            "message": {
+                "attachment": {
+                    "type": media_type,
+                    "payload": {"url": media_url, "is_reusable": False},
+                }
+            },
+            "access_token": self.page_access_token,
+        }
+        response = await self._client.post("/me/messages", json=payload)
+        response.raise_for_status()
+        return response.json()
+
     async def hide_comment(self, comment_id: str) -> dict[str, Any]:
         """Hide a Facebook comment."""
         payload = {

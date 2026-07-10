@@ -448,6 +448,14 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
             from src.tools.facebook_client import FacebookGraphClient
             async with FacebookGraphClient(token) as fb:
                 await fb.send_message(sender_id, reply)
+                attachments = result_data.get("response_attachments") or []
+                for att in attachments:
+                    url = (att.get("url") or "").strip()
+                    if url.startswith(("http://", "https://")):
+                        try:
+                            await fb.send_media(sender_id, url, att.get("type", "image"))
+                        except Exception:
+                            logger.warning("facebook_media_failed", url=url[:80], exc_info=True)
             logger.info("facebook reply sent", sender_id=sender_id, reply=reply)
 
 async def handle_facebook_comment(job: dict[str, Any]) -> None:
@@ -652,11 +660,20 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
             "channel": "whatsapp",
         })
 
-        reply = task_result.get("result", {}).get("reply")
+        result_data = task_result.get("result", {})
+        reply = result_data.get("reply")
         if reply:
             from src.tools.whatsapp_client import WhatsAppClient
             async with WhatsAppClient(token, phone_number_id) as wa:
                 await wa.send_text(sender_id, reply)
+                attachments = result_data.get("response_attachments") or []
+                for att in attachments:
+                    url = (att.get("url") or "").strip()
+                    if url.startswith(("http://", "https://")):
+                        try:
+                            await wa.send_media(sender_id, url, att.get("type", "image"))
+                        except Exception:
+                            logger.warning("whatsapp_media_failed", url=url[:80], exc_info=True)
             logger.info("whatsapp reply sent", sender_id=sender_id, reply=reply)
 
 

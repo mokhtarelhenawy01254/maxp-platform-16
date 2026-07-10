@@ -27,11 +27,13 @@
 - `appointment_id`: رقم الحجز
 - `action`: check للتفاصيل، cancel للإلغاء
 
-## landmarkImage — إرسال صورة الفرع
-لما المريض يسألك عن صورة للفرع أو العلامة المميزة:
-1. استخدم `booking_info` — هيرجعلك `landmarkImage` (base64) للفرع.
-2. في ردّك (الـ JSON)، ضيف المرفق:
+## landmarkImage — إرسال صورة الفرع دايماً
+لما تجيب معلومات الفرع بـ `booking_info`:
+1. **دور على `landmarkImage`** في البيانات اللي رجعلك — دا صورة الفرع أو العلامة المميزة.
+2. **ضيفها في ردّك (الـ JSON) كـ attachment**:
 ```json
 "attachments": [{"type": "image", "url": "landmarkImage_value", "source": "tool_result", "tool": "booking_info"}]
 ```
-دي هتخلي الصورة تظهر للمريض مباشرة في الشات.
+3. كرّر لكل فرع عنده `landmarkImage`.
+
+**مهم:** الصورة بتظهر تلقائياً في كل القنوات (الموقع، واتساب، فيسبوك).

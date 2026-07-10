@@ -182,15 +182,26 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             ctx.llm_response = ""
 
     # Auto-populate response_attachments from landmarkImage in tool evidence
+    import os
+    _maxp_api_url = os.getenv("MAXP_API_URL", "").rstrip("/")
     for evidence in ctx.tool_evidence:
         result = evidence.get("result", {})
         if isinstance(result, dict):
             for branch in (result.get("branches") or []):
                 img = (branch.get("landmarkImage") or "")
-                if img and img.startswith("data:"):
+                if not img:
+                    continue
+                if img.startswith("data:"):
                     ctx.response_attachments.append({
                         "type": "image",
                         "url": img,
+                        "source": "tool_result",
+                        "tool": evidence.get("tool", "booking_info"),
+                    })
+                elif img.startswith("/") and _maxp_api_url:
+                    ctx.response_attachments.append({
+                        "type": "image",
+                        "url": f"{_maxp_api_url}{img}",
                         "source": "tool_result",
                         "tool": evidence.get("tool", "booking_info"),
                     })
