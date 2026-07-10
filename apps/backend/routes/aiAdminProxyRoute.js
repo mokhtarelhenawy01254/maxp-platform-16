@@ -12,7 +12,6 @@ function getAiServiceUrl() {
 
 router.use(addPublicCORS);
 router.use(authenticateToken);
-router.use(requireSuperAdmin);
 
 router.all("/:path(*)", checkPermission("canAccessSettings"), async (req, res) => {
   try {
