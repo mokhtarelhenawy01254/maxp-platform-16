@@ -3,7 +3,7 @@ const router = express.Router();
 const controller = require('../controller/servicesController');
 const verifyToken = require('../utils/verifyToken');
 
-router.get('/', controller.getAll);
+router.get('/', verifyToken.optionalAuth, controller.getAll);
 router.post('/', verifyToken.authenticateToken, controller.create);
 router.put('/:id', verifyToken.authenticateToken, controller.update);
 router.delete('/:id', verifyToken.authenticateToken, controller.remove);
