@@ -1,6 +1,6 @@
 # Backend Bugs Log
 
-### [FIX] Modeless Undo Notification, Visual Time-Slot Grid, Scrolling Restore, and Branch Filter Relocation in Appointments Booking
+### [FIX] Modeless Undo Notification, Visual Time-Slot Grid, Scrolling Restore, Branch Filter Relocation, and Redundant Header/Tabs Removal in Appointments Booking
 - **Date**: 2026-07-10
 - **Description**:
   1. Replaced primitive browser-native `window.confirm` for status changes in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) with a modern, non-blocking toast notification system (using `toast` from `sonner`) supporting a **تراجع (Undo)** action.
@@ -8,8 +8,9 @@
   3. Redesigned the filters layout in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) to be collapsible, wrapping secondary controls (status, dates) in an advanced filters drawer toggled via a brand button with active filters count.
   4. Moved the Branch filter dropdown next to the "تصفية متقدمة" button in the top filters row for quick access and improved appearance, removing the duplicate branch select from the advanced panel.
   5. Restored vertical scrolling on the booking management page by adding `h-full overflow-y-auto` to the outer layout container in [BookingManagementPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/BookingManagementPage.tsx), resolving viewport clipping caused by the parent layout shell's `overflow-hidden` configuration.
-- **Root Cause**: Non-intuitive select list time picker, modal-blocking browser confirmations, a cluttered filters header layout, and layout overflow constraints in the main shell wrapper.
-- **Resolution**: Implemented collapsible advanced filters row, top-level branch selector, custom toast-based undo action, visual slot grid buttons, and scrollable container height.
+  6. Removed the redundant top page header ("إدارة النظام الطبي / نظام إدارة المواعيد والخدمات الطبية") and the duplicated page-level tabs list from [BookingManagementPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/BookingManagementPage.tsx) since the primary sidebar layout already includes separate sidebar navigation entries for each individual tab.
+- **Root Cause**: Non-intuitive select list time picker, modal-blocking browser confirmations, a cluttered filters header layout, layout overflow constraints in the main shell wrapper, and layout redundancy.
+- **Resolution**: Implemented collapsible advanced filters row, top-level branch selector, custom toast-based undo action, visual slot grid buttons, scrollable container height, and removed redundant tabs/header.
 - **Files Modified**:
   - `apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx`
   - `apps/frontend/src/pages/admin/booking/AppointmentModal.tsx`

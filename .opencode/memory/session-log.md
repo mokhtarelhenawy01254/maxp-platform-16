@@ -4,9 +4,13 @@
 1. **Design Review**: Reviewed layout, filters row, and time-slot selection in the Appointments admin page (`/admin/booking/appointments`).
 2. **Modeless Notification (Undo Pattern)**: Replaced primitive browser-native `window.confirm` for status changes in `AppointmentsTab.tsx` with a modern, non-blocking toast notification (`toast` from `sonner`) supporting a **تراجع (Undo)** action.
 3. **Visual Time-Slot Picker**: Overhauled the time-slot picker in `AppointmentModal.tsx` by replacing the standard HTML select dropdown with a premium visual grid of slot buttons. Styled unavailable/occupied slots with line-throughs and muted backgrounds, and styled selected slots with high-contrast active backgrounds.
-4. **Collapsible Advanced Filters**: Cleaned up the filters header in `AppointmentsTab.tsx` by wrapping secondary filters (status, branch, dates, quick dates) in a collapsible advanced filters drawer toggled via a brand button with active filters count.
+4. **Collapsible Advanced Filters**: Cleaned up the filters header in `AppointmentsTab.tsx` by wrapping secondary filters (status, dates, quick dates) in a collapsible advanced filters drawer toggled via a brand button with active filters count.
+5. **Branch Filter Relocation**: Moved the Branch filter dropdown to the top filters row next to "تصفية متقدمة" for quick access and improved appearance, removing the duplicate branch select from the advanced panel.
+6. **Scrolling Restore**: Added `h-full overflow-y-auto` to the outer container in `BookingManagementPage.tsx` to restore vertical scrolling, solving viewport clipping caused by `overflow-hidden` on the layout main wrapper.
+7. **Redundant Header/Tabs Removal**: Removed redundant top page header and page-level tabs list from `BookingManagementPage.tsx` since the sidebar layout already provides separate navigation items for each tab.
 
 ## Key Files Modified
+- `apps/frontend/src/pages/admin/BookingManagementPage.tsx`
 - `apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx`
 - `apps/frontend/src/pages/admin/booking/AppointmentModal.tsx`
 - `backend/Bugs.md`
