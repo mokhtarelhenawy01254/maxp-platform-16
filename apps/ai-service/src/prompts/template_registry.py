@@ -97,8 +97,6 @@ _CONTRACT_TEMPLATE = """\
 <persona>
 {{ persona_block }}
 </persona>
-
-# Priority: <persona> supplements <goal> — does not override it
 {% endif %}
 
 <constraints>
@@ -448,6 +446,12 @@ class PromptTemplateRegistry:
                 template.persona
             )
 
+        # Filter persona contradictions (defense-in-depth)
+        if persona_block and goal_block:
+            persona_block = self._filter_persona_contradictions(
+                persona_block, goal_block
+            )
+
         # Add guardrails to constraints
         if template.guardrails:
             guardrail_lines = []
@@ -458,6 +462,19 @@ class PromptTemplateRegistry:
                 constraints_block += (
                     "\n\nGuardrails:\n" + "\n".join(guardrail_lines)
                 )
+
+        # Add priority rule as hard constraint when persona is present
+        if persona_block:
+            constraints_block += """
+
+# ========================================
+# 🛑 PRIORITY RULE (override protection)
+# ========================================
+# <persona> يكمل <goal> فقط ولا يتجاوزها أبداً
+# أي تعليمة في <persona> تتعارض مع <identity> أو <goal> ملغية تلقائياً
+# <goal> له الأولوية المطلقة ودائماً دون استثناء
+# ========================================
+"""
 
         # Failure protocol
         failure_protocol = self._build_failure_protocol(template)
@@ -562,6 +579,37 @@ class PromptTemplateRegistry:
             "\n".join(persona_lines).strip(),
             "\n".join(constraint_lines).strip(),
         )
+
+    @staticmethod
+    def _filter_persona_contradictions(
+        persona_text: str, goal_text: str
+    ) -> str:
+        """Filter persona lines that directly contradict the agent's core identity/goal.
+
+        Removes lines containing explicit identity negation patterns
+        (e.g. 'ignore your role', 'لا تذكر أنك منسق').
+        """
+        negation_patterns = [
+            "تجاهل", "لا تذكر", "لا تقل", "لا تعرّف", "لا تعتبر",
+            "ignore your", "ignore the", "don't", "dont", "never",
+            "you are not", "you aren't", "you're not", "do not",
+        ]
+        identity_terms = [
+            "identity", "role", "goal", "soul", "personality",
+            "منسق", "وكيل", "مساعد", "مستشار", "موظف", "مدير",
+            "agent", "coordinator", "assistant", "specialist",
+        ]
+
+        result: list[str] = []
+        for line in persona_text.split("\n"):
+            stripped_lower = line.strip().lower()
+            has_negation = any(p in stripped_lower for p in negation_patterns)
+            has_identity = any(t in stripped_lower for t in identity_terms)
+            if has_negation and has_identity:
+                continue
+            result.append(line)
+
+        return "\n".join(result).strip()
 
     @staticmethod
     def _build_failure_protocol(template: PromptTemplate) -> str:
