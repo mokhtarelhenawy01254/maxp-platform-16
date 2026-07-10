@@ -873,6 +873,123 @@ const AIImageGenerator: React.FC = () => {
     return () => clearTimeout(timer);
   }, [message]);
 
+  const buildPromptJson = useCallback(() => {
+    return {
+      vertical: form.vertical,
+      platform: form.platform,
+      aspectRatio: form.aspectRatio,
+      brand: {
+        name: form.brandName,
+        colors: {
+          primary: form.primaryColor,
+          secondary: form.secondaryColor,
+          accent: form.accentColor,
+        },
+        font: form.headingFont,
+      },
+      product: {
+        name: form.productName,
+        tagline: form.tagline || undefined,
+        description: form.description || undefined,
+        price: form.price ? `${form.price} ${form.currency}` : undefined,
+        discountBadge: form.discountBadge || undefined,
+        hasImage: primaryImage !== null,
+      },
+      copy: {
+        headline: form.headline,
+        subheadline: form.subheadline || undefined,
+        bodyText: form.bodyText || undefined,
+        cta: form.cta === "custom" ? form.customCta : form.cta || undefined,
+        hashtags: form.hashtags
+          ? form.hashtags
+              .split(",")
+              .map((h) => h.trim())
+              .filter(Boolean)
+          : [],
+        textPosition: form.textPosition,
+        textAlignment: form.textAlignment,
+      },
+      visualStyle: {
+        mood: form.mood || undefined,
+        theme: form.theme || undefined,
+        layout: form.layout || undefined,
+        borderRadius: form.borderRadius,
+        shadow: form.shadow,
+      },
+      campaign: {
+        purpose: form.purpose || undefined,
+        name: form.campaignName || undefined,
+        urgency: form.urgency || undefined,
+        url: form.url || undefined,
+      },
+      output: {
+        format: form.format,
+        quality: form.quality,
+        transparentBg: form.transparentBg,
+      },
+      constraints: {
+        avoid: form.avoidPrompt,
+      },
+    };
+  }, [form, primaryImage]);
+
+  const buildPromptText = useCallback((): string => {
+    const parts: string[] = [];
+
+    parts.push(`Create a social media image for ${form.platform} with aspect ratio ${form.aspectRatio}.`);
+    parts.push(`Industry vertical: ${form.vertical}. Adapt the tone, imagery, and messaging to suit this business type.`);
+
+    if (form.brandName) parts.push(`Brand: ${form.brandName}.`);
+    if (form.productName)
+      parts.push(
+        `Product: ${form.productName}${form.tagline ? ` — ${form.tagline}` : ""}${
+          form.price ? ` at ${form.price} ${form.currency}` : ""
+        }.`
+      );
+    if (form.description) parts.push(`Description: ${form.description}.`);
+    if (form.discountBadge) parts.push(`Show discount badge: ${form.discountBadge}.`);
+
+    if (form.headline) parts.push(`Headline: "${form.headline}".`);
+    if (form.subheadline) parts.push(`Subheadline: "${form.subheadline}".`);
+    if (form.bodyText) parts.push(`Body text: "${form.bodyText}".`);
+    if (form.cta) parts.push(`Call to action: "${form.cta === "custom" ? form.customCta : form.cta}".`);
+    if (form.hashtags) parts.push(`Hashtags: ${form.hashtags}.`);
+    parts.push(`Text position: ${form.textPosition}, alignment: ${form.textAlignment}.`);
+
+    if (form.mood) parts.push(`Mood: ${form.mood}.`);
+    if (form.theme) parts.push(`Theme: ${form.theme}.`);
+    if (form.layout) parts.push(`Layout: ${form.layout}.`);
+    parts.push(`Style: ${form.borderRadius} corners, ${form.shadow} shadow.`);
+
+    if (form.purpose) {
+      const p = PURPOSES.find((x) => x.value === form.purpose);
+      if (p) parts.push(`Campaign purpose: ${p.label}.`);
+    }
+    if (form.urgency) parts.push(`Urgency: ${form.urgency}.`);
+
+    if (brandIdentity["brandVoice"]) parts.push(`Brand voice: ${brandIdentity["brandVoice"]}.`);
+    if (brandIdentity["designRules"]) parts.push(`Design rules: ${brandIdentity["designRules"]}.`);
+    if (brandIdentity["visualGuidelines"]) parts.push(`Visual guidelines: ${brandIdentity["visualGuidelines"]}.`);
+
+    parts.push(
+      "Design must be in Arabic, professional, suitable for social media, with clear typography and strong visual hierarchy."
+    );
+    parts.push(
+      `Use brand colors: primary ${form.primaryColor}, secondary ${form.secondaryColor}, accent ${form.accentColor}.`
+    );
+
+    if (form.avoidPrompt.trim()) {
+      parts.push(`Avoid: ${form.avoidPrompt.trim()}.`);
+    }
+
+    return parts.join(" ");
+  }, [form, brandIdentity]);
+
+  const canGenerate = useMemo(
+    () => Boolean(form.productName.trim() || form.headline.trim()),
+    [form.productName, form.headline]
+  );
+
   const rebuildPrompt = useCallback(() => buildPromptText(), [buildPromptText]);
 
   useEffect(() => {
@@ -942,11 +1059,6 @@ const AIImageGenerator: React.FC = () => {
     }
   }, [canGenerate, form, brandIdentity, buildPromptJson]);
 
-  const canGenerate = useMemo(
-    () => Boolean(form.productName.trim() || form.headline.trim()),
-    [form.productName, form.headline]
-  );
-
   const fetchGallery = async () => {
     setGalleryLoading(true);
     try {
@@ -1009,121 +1121,6 @@ const AIImageGenerator: React.FC = () => {
     () => PLATFORMS.find((p) => p.value === form.platform)?.label || form.platform,
     [form.platform]
   );
-
-  const buildPromptJson = useCallback(() => {
-    return {
-      vertical: form.vertical,
-      platform: form.platform,
-      aspectRatio: form.aspectRatio,
-      brand: {
-        name: form.brandName,
-        colors: {
-          primary: form.primaryColor,
-          secondary: form.secondaryColor,
-          accent: form.accentColor,
-        },
-        font: form.headingFont,
-      },
-      product: {
-        name: form.productName,
-        tagline: form.tagline || undefined,
-        description: form.description || undefined,
-        price: form.price ? `${form.price} ${form.currency}` : undefined,
-        discountBadge: form.discountBadge || undefined,
-        hasImage: primaryImage !== null,
-      },
-      copy: {
-        headline: form.headline,
-        subheadline: form.subheadline || undefined,
-        bodyText: form.bodyText || undefined,
-        cta: form.cta === "custom" ? form.customCta : form.cta || undefined,
-        hashtags: form.hashtags
-          ? form.hashtags
-              .split(",")
-              .map((h) => h.trim())
-              .filter(Boolean)
-          : [],
-        textPosition: form.textPosition,
-        textAlignment: form.textAlignment,
-      },
-      visualStyle: {
-        mood: form.mood || undefined,
-        theme: form.theme || undefined,
-        layout: form.layout || undefined,
-        borderRadius: form.borderRadius,
-        shadow: form.shadow,
-      },
-      campaign: {
-        purpose: form.purpose || undefined,
-        name: form.campaignName || undefined,
-        urgency: form.urgency || undefined,
-        url: form.url || undefined,
-      },
-      output: {
-        format: form.format,
-        quality: form.quality,
-        transparentBg: form.transparentBg,
-      },
-      constraints: {
-        avoid: form.avoidPrompt,
-      },
-    };
-  }, [
-    form,
-    primaryImage,
-  ]);
-
-  const buildPromptText = (): string => {
-    const parts: string[] = [];
-
-    parts.push(`Create a social media image for ${form.platform} with aspect ratio ${form.aspectRatio}.`);
-    parts.push(`Industry vertical: ${form.vertical}. Adapt the tone, imagery, and messaging to suit this business type.`);
-
-    if (form.brandName) parts.push(`Brand: ${form.brandName}.`);
-    if (form.productName)
-      parts.push(
-        `Product: ${form.productName}${form.tagline ? ` — ${form.tagline}` : ""}${
-          form.price ? ` at ${form.price} ${form.currency}` : ""
-        }.`
-      );
-    if (form.description) parts.push(`Description: ${form.description}.`);
-    if (form.discountBadge) parts.push(`Show discount badge: ${form.discountBadge}.`);
-
-    if (form.headline) parts.push(`Headline: "${form.headline}".`);
-    if (form.subheadline) parts.push(`Subheadline: "${form.subheadline}".`);
-    if (form.bodyText) parts.push(`Body text: "${form.bodyText}".`);
-    if (form.cta) parts.push(`Call to action: "${form.cta === "custom" ? form.customCta : form.cta}".`);
-    if (form.hashtags) parts.push(`Hashtags: ${form.hashtags}.`);
-    parts.push(`Text position: ${form.textPosition}, alignment: ${form.textAlignment}.`);
-
-    if (form.mood) parts.push(`Mood: ${form.mood}.`);
-    if (form.theme) parts.push(`Theme: ${form.theme}.`);
-    if (form.layout) parts.push(`Layout: ${form.layout}.`);
-    parts.push(`Style: ${form.borderRadius} corners, ${form.shadow} shadow.`);
-
-    if (form.purpose) {
-      const p = PURPOSES.find((x) => x.value === form.purpose);
-      if (p) parts.push(`Campaign purpose: ${p.label}.`);
-    }
-    if (form.urgency) parts.push(`Urgency: ${form.urgency}.`);
-
-    if (brandIdentity["brandVoice"]) parts.push(`Brand voice: ${brandIdentity["brandVoice"]}.`);
-    if (brandIdentity["designRules"]) parts.push(`Design rules: ${brandIdentity["designRules"]}.`);
-    if (brandIdentity["visualGuidelines"]) parts.push(`Visual guidelines: ${brandIdentity["visualGuidelines"]}.`);
-
-    parts.push(
-      "Design must be in Arabic, professional, suitable for social media, with clear typography and strong visual hierarchy."
-    );
-    parts.push(
-      `Use brand colors: primary ${form.primaryColor}, secondary ${form.secondaryColor}, accent ${form.accentColor}.`
-    );
-
-    if (form.avoidPrompt.trim()) {
-      parts.push(`Avoid: ${form.avoidPrompt.trim()}.`);
-    }
-
-    return parts.join(" ");
-  };
 
   const getBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
