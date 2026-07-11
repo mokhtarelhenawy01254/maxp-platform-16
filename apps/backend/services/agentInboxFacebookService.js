@@ -143,7 +143,10 @@ const buildMessagePreview = (message) => {
     facebookMessageIdMasked: maskExternalId(metadata.facebookMessageId),
     source: metadata.source || null,
     hasAttachments: Boolean(metadata.hasAttachments),
-    hasButtons: Boolean(metadata.hasButtons)
+    hasButtons: Boolean(metadata.hasButtons),
+    senderId: message.senderId || null,
+    metadata: message.metadata || null,
+    isAIResponse: metadata.isAIResponse || (!message.isFromCustomer && !message.senderId) || false
   };
 };
 

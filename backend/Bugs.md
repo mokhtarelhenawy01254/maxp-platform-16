@@ -1,5 +1,21 @@
 # Backend Bugs Log
 
+### [BUG FIX] AI Correction Button Not Visible Across All Inbox Pages
+- **Date**: 2026-07-12
+- **Root Cause**: Three cascading issues prevented the "✏️ تصحيح الرد" button from appearing:
+  1. **Backend (unifiedInboxController.js)**: The `sender` field returned `'agent'` for ALL outbound messages including AI-generated ones. The frontend condition checked for `sender === 'ai'` which never matched. Fixed by returning `'ai'` when `isAIResponse === true` or `senderId` is null.
+  2. **Backend (agentInboxFacebookService.js)**: The `buildMessagePreview()` function did not include `senderId`, `metadata`, or `isAIResponse` in the serialized message object, so Facebook/Instagram inbox pages had no way to identify AI messages.
+  3. **Frontend (useInboxConversations.ts)**: The shared inbox hook mapped `senderId` to `"unknown"` when the actual `senderId` was null (AI messages). The frontend condition `!message.senderId` evaluated to `false` for `"unknown"`. Fixed by mapping AI messages to `senderId: 'ai'` and adding explicit `isAIResponse` field.
+- **Tricky Behaviors**:
+  - Empty string `""` is falsy in JS but `"unknown"` is truthy — this caused a subtle mismatch between the fallback default and the display condition.
+  - Messages without `senderId` AND without `metadata.isAIResponse` are treated as AI messages (conservative assumption: if no human sent it, it's AI).
+- **Files Modified**:
+  - `apps/backend/controller/unifiedInboxController.js` — Fixed `sender` and `isAIResponse` for both standard and WhatsApp message normalization
+  - `apps/backend/services/agentInboxFacebookService.js` — Added `senderId`, `metadata`, `isAIResponse` to `buildMessagePreview()`
+  - `apps/frontend/src/hooks/inbox/useInboxConversations.ts` — Fixed `senderId` mapping and added `isAIResponse`
+  - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx` — Mapped `isAIResponse` in all 3 message parsing blocks
+  - `apps/frontend/src/components/facebook-inbox/MessageBubble/MessageBubble.tsx` — Added `message.isAIResponse` to detection condition
+
 ### [FEATURE] Multi-Platform AI Correction (`correction_auto` Generalization)
 - **Date**: 2026-07-12
 - **Description**: Extended `correction_auto` from WhatsApp-only to all channels (Facebook, Instagram, Telegram, Unified Inbox).

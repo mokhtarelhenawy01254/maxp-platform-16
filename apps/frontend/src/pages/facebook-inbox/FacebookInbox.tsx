@@ -559,6 +559,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
           fileSize: msg.fileSize,
           metadata: msg.metadata,
           attachments: msg.attachments,
+          isAIResponse: msg.isAIResponse,
         }));
         setConversationMessages((prev) => {
           const newMap = new Map(prev);
@@ -618,6 +619,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
             fileUrl: msg.fileUrl,
             fileName: msg.fileName,
             fileSize: msg.fileSize,
+            isAIResponse: msg.isAIResponse || (!msg.isFromCustomer && !msg.senderId),
           }));
 
           allMessages = [...allMessages, ...parsedMessages];
@@ -1645,6 +1647,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
             fileSize: msg.fileSize,
             metadata: msg.metadata,
             attachments: msg.attachments,
+            isAIResponse: msg.isAIResponse,
           }));
           setConversationMessages((prev) => {
             const newMap = new Map(prev);

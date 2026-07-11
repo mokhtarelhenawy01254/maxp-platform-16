@@ -991,7 +991,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
             </div>
 
             {/* AI message badge + correction button */}
-            {!isCustomer && (!message.senderId || message.senderId === 'ai') && (
+            {!isCustomer && (!message.senderId || message.senderId === 'ai' || message.isAIResponse) && (
               <div className="mt-2 pt-1.5 flex justify-between items-center text-[10px]" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
                 <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>🤖 رد تلقائي من الوكيل</span>
                 {!isEditing && (

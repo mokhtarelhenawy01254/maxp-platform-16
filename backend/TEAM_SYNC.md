@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-12 / 2026-03-09
+- **AI Correction Button Visibility Fix (BUGFIX / CRITICAL)**: Fixed a 3-layer cascading bug that prevented the "✏️ تصحيح الرد" button from appearing on ANY inbox page (Unified, Facebook, Instagram, WhatsApp):
+  1. Backend `sender` field returned `'agent'` instead of `'ai'` for AI-generated messages — frontend condition `sender === 'ai'` never matched.
+  2. `agentInboxFacebookService.buildMessagePreview()` omitted `senderId`, `metadata`, and `isAIResponse` fields from serialized messages.
+  3. Frontend `useInboxConversations` hook defaulted `senderId` to `"unknown"` (truthy) for AI messages — `!message.senderId` evaluated to `false`.
+  4. Added `message.isAIResponse` as a third detection path in `MessageBubble.tsx` for maximum resilience.
 - **Multi-Platform AI Correction (`correction_auto` Generalization) (FEATURE / COMPLETE)**: Extended the WhatsApp-only `correction_auto` feature to work across ALL inbox channels (Facebook, Instagram, Telegram, and Unified Inbox):
   1. Generalized `correctMessage()` in `whatsappInboxService.js` with multi-platform delivery: WhatsApp (via `sendText`), Facebook (via `sendProductionFacebookMessage`), Instagram (via Graph API), and Telegram (via `TelegramBotService` / `TelegramUserbotService`).
   2. Agent lookup now matches `conversation.channel` dynamically instead of hardcoded 'whatsapp'.
