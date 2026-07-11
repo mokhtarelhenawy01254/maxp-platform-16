@@ -1,13 +1,11 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CalculatorIcon, CurrencyDollarIcon, ChartBarIcon,
-  ExclamationTriangleIcon, InformationCircleIcon, ArrowTrendingUpIcon,
+  CalculatorIcon, ExclamationTriangleIcon, InformationCircleIcon, ArrowTrendingUpIcon,
   BookmarkIcon as SaveIcon, TrashIcon,
   SparklesIcon, CheckCircleIcon, XCircleIcon,
   Cog6ToothIcon, ArrowPathIcon,
-  RocketLaunchIcon, WalletIcon, ShoppingCartIcon,
-  GiftIcon, ClockIcon, TagIcon,
+  WalletIcon, GiftIcon,
   ArrowUpIcon, ArrowDownIcon,
 } from "@heroicons/react/24/outline";
 
