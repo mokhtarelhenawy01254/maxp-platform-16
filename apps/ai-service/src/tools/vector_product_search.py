@@ -413,9 +413,8 @@ async def vector_product_search(
     # Ponytail: keep relative image URLs for reranker to resolve later
 
     # Ponytail: visual rerank via Gemini Vision when query image exists.
-    # Gemini sees the actual images, so it can distinguish visually similar
-    # products that pgvector lumps together at ~77%.
     if image_bytes and results:
+        import sys; print("RERANK_CALLED", flush=True, file=sys.stderr)
         results = await _rerank_visual(image_bytes, mime_type, results, limit)
 
     _latency = int((time.monotonic() - _start) * 1000)
@@ -480,7 +479,7 @@ _RERANK_VISUAL_PROMPT = """You are a visual product matching expert. Compare the
 For each product, rate how visually similar the product image is to the query image on a scale of 0.00 to 1.00.
 Consider: shape, color, pattern, style, material. Be strict — only give high scores (>0.90) to near-identical products.
 
-Return ONLY a JSON object with keys being product numbers and values the similarity scores.
+Return ONLY a JSON object with keys being product numbers and values the similarity scores. No explanation, no markdown.
 Example: {"1": 0.95, "2": 0.72, "3": 0.31}"""
 
 
@@ -546,16 +545,24 @@ async def _rerank_visual(
     parts.append({"text": _RERANK_VISUAL_PROMPT})
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    import logging as _logging
+    _logging.warning("rerank_vision: starting, api_key=%s, base_url=%s, urls=%s",
+                     api_key[:8] if api_key else "none",
+                     base_url,
+                     [u[-30:] for u in urls])
     try:
         async with httpx.AsyncClient(timeout=30) as c:
             r = await c.post(url, json={
                 "contents": [{"role": "user", "parts": parts}],
-                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 512},
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1024, "response_mime_type": "application/json"},
             })
+            _logging.warning("rerank_vision: api status=%s", r.status_code)
             if not r.is_success:
+                _logging.warning("rerank_vision: api failed, body=%s", r.text[:200])
                 return results
             data = r.json()
             text = (data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", ""))
+            _logging.warning("rerank_vision: gemini=%s", text[:150])
             if not text:
                 return results
 
@@ -563,6 +570,7 @@ async def _rerank_visual(
         if not match:
             return results
         scores = _json.loads(match.group())
+        _logging.warning("rerank_vision: scores=%s", scores)
 
         for i, prod in enumerate(candidates):
             s = scores.get(str(i + 1))
@@ -570,6 +578,8 @@ async def _rerank_visual(
                 prod["score"] = round(float(s), 4)
                 prod["rerank"] = True
         candidates.sort(key=lambda x: -x["score"])
+        _logging.warning("rerank_vision: top=%s score=%s", candidates[0]["name"], candidates[0]["score"])
         return candidates + results[rerank_k:]
     except Exception as exc:
+        _logging.warning("rerank_vision: exception=%s", exc)
         return results
