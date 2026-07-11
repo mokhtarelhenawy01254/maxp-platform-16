@@ -101,6 +101,12 @@ const DiscountImpactCalculator = React.lazy(
 const ShippingOptimizer = React.lazy(
   () => import("./pages/marketing/ShippingOptimizer"),
 );
+const MonthlyPnLDashboard = React.lazy(
+  () => import("./pages/marketing/MonthlyPnLDashboard"),
+);
+const CLVCalculator = React.lazy(
+  () => import("./pages/marketing/CLVCalculator"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2659,6 +2665,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ShippingOptimizer />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/monthly-pnl"
+                  element={
+                    <Layout>
+                      <MonthlyPnLDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/clv-calculator"
+                  element={
+                    <Layout>
+                      <CLVCalculator />
                     </Layout>
                   }
                 />
