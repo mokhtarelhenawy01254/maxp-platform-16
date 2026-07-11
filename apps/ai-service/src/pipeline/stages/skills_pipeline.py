@@ -500,6 +500,33 @@ def _format_tool_results(executed: list[dict]) -> str:
                 if result.get("found") or result.get("customer"):
                     cust = result.get("customer") or result
                     parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
+            elif name == "booking_info":
+                handled = True
+                out = []
+                branches = result.get("branches") or []
+                services = result.get("services") or []
+                for b in branches:
+                    line = b.get("name", "")
+                    addr = b.get("address", "")
+                    phone = b.get("phone", "")
+                    male = b.get("male_days") or []
+                    female = b.get("female_days") or []
+                    if addr:
+                        line += f" - {addr}"
+                    if phone:
+                        line += f" - تلفون: {phone}"
+                    days = []
+                    if male:
+                        days.append(f"رجال: {', '.join(male)}")
+                    if female:
+                        days.append(f"سيدات: {', '.join(female)}")
+                    if days:
+                        line += f" ({'; '.join(days)})"
+                    out.append(line)
+                svc_names = [s.get("name", "") for s in services[:5] if s.get("name")]
+                if svc_names:
+                    out.append(f"الخدمات: {', '.join(svc_names)}")
+                parts.append("\n".join(out) if out else f"تم استرجاع معلومات المركز ({result.get('total_branches', 0)} فروع).")
 
             if not handled:
                 id_val = result.get("id") or result.get("number") or result.get("orderId")

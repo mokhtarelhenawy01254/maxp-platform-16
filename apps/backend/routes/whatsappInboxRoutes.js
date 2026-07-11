@@ -58,6 +58,13 @@ router.post(
   inboxController.sendMessage
 );
 
+router.post(
+  '/conversations/:conversationId/messages/:messageId/correct',
+  conversationAccessGuard,
+  requireDbPermission('inbox.send'),
+  inboxController.correctMessage
+);
+
 router.patch(
   '/conversations/:conversationId/status',
   conversationAccessGuard,

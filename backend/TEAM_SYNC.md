@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-11 / 2026-03-09
+- **Inbox AI Message Auto-Correction Feature (`correction_auto`) (FEATURE / COMPLETE)**: Implemented a live correction flow in the WhatsApp Inbox enabling supervisors to correct wrong AI responses on-the-fly:
+  1. Added `POST /conversations/:conversationId/messages/:messageId/correct` endpoint in Express backend with `conversationAccessGuard` and `inbox.send` permission.
+  2. Implemented `correctMessage` service logic that: resolves the customer's preceding question, formats structured feedback, calls the AI Service guardrails API with `source: 'correction_auto'`, sends the corrected text to WhatsApp, and updates conversation state.
+  3. Built inline correction UI in `WhatsAppChat.tsx` — AI messages (no `senderId`) show a "تصحيح الرد" button that opens a pre-filled textarea with "حفظ وتصحيح" / "إلغاء" actions.
+  4. Guardrail creation is gracefully degraded: if the AI service is unreachable, the correction is still sent to the customer.
+  5. Auto-generated rules appear in the "القواعد والتعلم" tab with source tag "تعلم تلقائي" for full auditability.
 - **Agent Guardrails Sandbox Removal & Full-Width Layout Refactor (UX / IMPROVEMENT)**: Refactored the "القواعد والتعلم" (Guardrails) tab in Agent Profiles based on admin feedback:
   1. Removed the redundant Sandbox Playground chat area from the tab, deferring all testing activities to the dedicated "تجربة الوكلاء" (Agent Playground) page to reduce UI clutter.
   2. Redesigned the guardrails layout to occupy 100% width, resolving a flexbox layout collapse bug where the rules list shrank to zero width, and giving the manager a spacious table and input forms.

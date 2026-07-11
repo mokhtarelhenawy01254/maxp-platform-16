@@ -1,5 +1,20 @@
 # Backend Bugs Log
 
+### [FEATURE] Inbox AI Message Auto-Correction (`correction_auto`) Integration
+- **Date**: 2026-07-11
+- **Description**: Implemented a live correction flow in the WhatsApp Inbox that allows supervisors to correct wrong AI-generated responses inline, automatically training the agent by creating a `correction_auto` guardrail rule.
+- **Architecture Notes**:
+  1. The service method `correctMessage` in `whatsappInboxService.js` resolves the customer's preceding question contextually, formats a structured feedback query, and POSTs it to the AI Service's guardrails endpoint with `source: 'correction_auto'`.
+  2. Agent resolution is dynamic: it queries `/admin/agents?company_id=` and prefers the agent with `whatsapp` in its channels, falling back to any active agent.
+  3. The corrected message is sent immediately to the customer via WhatsApp using `sendText()`, so the customer receives the right answer in real-time.
+  4. Guardrail creation is non-blocking: if the AI Service is unreachable, the correction message is still sent to the customer (graceful degradation).
+- **UI**: AI messages (identified as `!isFromCustomer && !senderId`) display a "تصحيح الرد" (Correct Response) button. Clicking it opens an inline textarea pre-filled with the original AI response, with "حفظ وتصحيح" (Save & Correct) and "إلغاء" (Cancel) actions.
+- **Files Modified**:
+  - `apps/backend/routes/whatsappInboxRoutes.js` — Added POST `/conversations/:conversationId/messages/:messageId/correct`
+  - `apps/backend/controller/whatsappInboxController.js` — Added `correctMessage` handler
+  - `apps/backend/services/whatsappInboxService.js` — Added `correctMessage` business logic
+  - `apps/frontend/src/pages/whatsapp-inbox/WhatsAppChat.tsx` — Added inline correction UI with state management
+
 ### [FIX] Invisible Guardrails Rules Column due to Flexbox Collapsing & Sandbox Redundancy
 - **Date**: 2026-07-11
 - **Description**: Resolved a critical frontend layout issue in the "القواعد والتعلم" (Guardrails) tab where the Rules Management column collapsed to 0px (or 4px) width on desktop screens, leaving the tab looking completely empty except for the Sandbox card on the left.

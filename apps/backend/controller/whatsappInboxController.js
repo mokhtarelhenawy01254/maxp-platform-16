@@ -92,6 +92,35 @@ exports.sendMessage = async (req, res) => {
 };
 
 /**
+ * @route POST /api/v1/whatsapp-inbox/conversations/:conversationId/messages/:messageId/correct
+ * @desc Correct an AI message, sending the correction to WhatsApp and creating a guardrail rule
+ */
+exports.correctMessage = async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const { correction } = req.body;
+
+    if (!correction) {
+      return res.status(400).json({ error: 'Correction content is required' });
+    }
+
+    const result = await whatsappInboxService.correctMessage(
+      conversationId,
+      messageId,
+      req.user.companyId,
+      req.user.id,
+      req.user.role,
+      correction
+    );
+    res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    console.error('[InboxController] correctMessage error:', error.message);
+    const statusCode = error.message?.includes('locked') ? 403 : 500;
+    res.status(statusCode).json({ error: error.message || 'Failed to correct message' });
+  }
+};
+
+/**
  * @route PATCH /api/v1/whatsapp-inbox/conversations/:conversationId/status
  * @desc Update conversation status
  */
