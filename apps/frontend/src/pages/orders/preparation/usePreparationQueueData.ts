@@ -9,7 +9,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
-import { DEFAULT_PREPARATION_QUEUE_SETTINGS, PAGE_SIZE } from "./constants";
+import { DEFAULT_PREPARATION_QUEUE_SETTINGS, PAGE_SIZE, type PageSize } from "./constants";
 import {
   normalizeInventoryRecord,
   normalizePreparationQueueSettings,
@@ -52,6 +52,7 @@ interface ApiCompanyResponse {
 
 interface UsePreparationQueueDataParams {
   page: number;
+  pageSize: PageSize;
   activeStage: StageFilter;
   selectedWarehouseId: string;
   stockFilter: StockFilter;
@@ -131,6 +132,7 @@ const buildOrdersQueryKey = (
     "preparation-queue",
     "orders",
     params.page,
+    params.pageSize,
     params.activeStage,
     params.selectedWarehouseId || "",
     params.stockFilter,
@@ -152,7 +154,7 @@ const fetchOrdersData = async (
     {
       params: {
         page: params.page,
-        limit: PAGE_SIZE,
+        limit: params.pageSize,
         stage: params.activeStage,
         warehouseId: params.selectedWarehouseId || undefined,
         stockFilter: params.stockFilter,
@@ -261,6 +263,7 @@ const fetchPreparationSettingsData =
 
 export const usePreparationQueueData = ({
   page,
+  pageSize,
   activeStage,
   selectedWarehouseId,
   stockFilter,
@@ -287,6 +290,7 @@ export const usePreparationQueueData = ({
   const ordersParams = useMemo<UsePreparationQueueDataParams>(
     () => ({
       page,
+      pageSize,
       activeStage,
       selectedWarehouseId,
       stockFilter,
@@ -300,6 +304,7 @@ export const usePreparationQueueData = ({
     [
       activeStage,
       page,
+      pageSize,
       search,
       selectedWarehouseId,
       shortageFollowUpFilter,

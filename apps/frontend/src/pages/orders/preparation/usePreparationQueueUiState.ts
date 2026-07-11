@@ -1,4 +1,5 @@
 import { useMemo, useReducer } from "react";
+import type { PageSize } from "./constants";
 import type {
   ShortageFollowUpFilter,
   ShortageReasonFilter,
@@ -18,6 +19,7 @@ interface PreparationQueueUiState {
   itemCountFilter: ItemCountFilter;
   search: string;
   page: number;
+  pageSize: PageSize;
   selectedOrders: string[];
   statusSelections: Record<string, string>;
   bulkStatus: string;
@@ -34,6 +36,7 @@ type PreparationQueueUiAction =
   | { type: "set_product_filter"; value: string }
   | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_search"; value: string }
+  | { type: "set_page_size"; value: PageSize }
   | { type: "reset_page" }
   | { type: "clamp_page"; totalPages: number }
   | { type: "go_to_previous_page" }
@@ -57,6 +60,7 @@ const initialState: PreparationQueueUiState = {
   itemCountFilter: "all",
   search: "",
   page: 1,
+  pageSize: 12,
   selectedOrders: [],
   statusSelections: {},
   bulkStatus: "",
@@ -100,6 +104,8 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { itemCountFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
+    case "set_page_size":
+      return withPageReset(state, { pageSize: action.value });
     case "reset_page":
       return {
         ...state,
@@ -116,9 +122,10 @@ const preparationQueueUiReducer = (
         page: Math.max(1, state.page - 1),
       };
     case "go_to_next_page":
+      if (state.page >= action.totalPages) return state;
       return {
         ...state,
-        page: Math.min(Math.max(1, action.totalPages), state.page + 1),
+        page: state.page + 1,
       };
     case "retain_selected_orders": {
       const visibleSet = new Set(action.visibleOrderNumbers);
@@ -200,6 +207,8 @@ export const usePreparationQueueUiState = () => {
       setItemCountFilter: (value: ItemCountFilter) =>
         dispatch({ type: "set_item_count_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
+      setPageSize: (value: PageSize) =>
+        dispatch({ type: "set_page_size", value }),
       clampPage: (totalPages: number) =>
         dispatch({ type: "clamp_page", totalPages }),
       goToPreviousPage: () => dispatch({ type: "go_to_previous_page" }),

@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -14,8 +16,10 @@ import { printPreparationSlip } from "../../utils/printPreparationSlip";
 import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   FALLBACK_STATUS_LABELS,
+  PAGE_SIZE_OPTIONS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
+  type PageSize,
 } from "./preparation/constants";
 import {
   getApiErrorMessage,
@@ -72,6 +76,7 @@ const PreparationQueue: React.FC = () => {
     fetchAll,
   } = usePreparationQueueData({
     page: uiState.page,
+    pageSize: uiState.pageSize,
     activeStage: uiState.activeStage,
     selectedWarehouseId: uiState.selectedWarehouseId,
     stockFilter: uiState.stockFilter,
@@ -91,6 +96,8 @@ const PreparationQueue: React.FC = () => {
     Record<string, ShortageHoldDetails>
   >({});
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
   );
@@ -842,19 +849,6 @@ const PreparationQueue: React.FC = () => {
     uiActions.selectVisibleOrders(visibleIds);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-14 w-14 rounded-full border-4 border-amber-200 border-t-amber-500 animate-spin" />
-          <p className="mt-4 text-sm text-gray-500">
-            جاري تحميل قائمة تجهيز الطلبات...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <PreparationPageHeader
@@ -862,14 +856,32 @@ const PreparationQueue: React.FC = () => {
         onRefresh={() => void fetchAll(true)}
       />
 
-      <PreparationStats
-        searchedOrdersCount={searchedOrdersCount}
-        readyCount={readyCount}
-        shortageCount={shortageCount}
-        readyToShipCount={readyToShipCount}
-        shortageHoldCount={shortageHoldCount}
-        overdueShortageFollowUpCount={overdueShortageFollowUpCount}
-      />
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setShowStats((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          <span>الإحصائيات</span>
+          <ChevronDownIcon
+            className={`h-4 w-4 text-gray-400 transition-transform ${
+              showStats ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {showStats && (
+          <div className="border-t border-gray-100 px-4 pb-4 pt-3">
+            <PreparationStats
+              searchedOrdersCount={searchedOrdersCount}
+              readyCount={readyCount}
+              shortageCount={shortageCount}
+              readyToShipCount={readyToShipCount}
+              shortageHoldCount={shortageHoldCount}
+              overdueShortageFollowUpCount={overdueShortageFollowUpCount}
+            />
+          </div>
+        )}
+      </div>
 
       {isMerchantUser ? (
         <MerchantOperationsSummary
@@ -894,30 +906,51 @@ const PreparationQueue: React.FC = () => {
         </div>
       ) : null}
 
-      <PreparationFilters
-        activeStage={activeStage}
-        stageCounts={stageCounts}
-        visibleOrdersCount={visibleOrdersCount}
-        search={search}
-        selectedWarehouseId={selectedWarehouseId}
-        stockFilter={stockFilter}
-        shortageReasonFilter={shortageReasonFilter}
-        shortageOwnerFilter={shortageOwnerFilter}
-        shortageOwnerOptions={shortageOwnerOptions}
-        shortageFollowUpFilter={shortageFollowUpFilter}
-        productFilter={productFilter}
-        itemCountFilter={itemCountFilter}
-        warehouses={warehouses}
-        onActiveStageChange={uiActions.setActiveStage}
-        onSearchChange={uiActions.setSearch}
-        onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
-        onStockFilterChange={uiActions.setStockFilter}
-        onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
-        onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
-        onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
-        onProductFilterChange={uiActions.setProductFilter}
-        onItemCountFilterChange={uiActions.setItemCountFilter}
-      />
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setShowFilters((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          <span className="flex items-center gap-2">
+            <FunnelIcon className="h-4 w-4 text-gray-400" />
+            فلترة التجهيز
+          </span>
+          <ChevronDownIcon
+            className={`h-4 w-4 text-gray-400 transition-transform ${
+              showFilters ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {showFilters && (
+          <div className="border-t border-gray-100">
+            <PreparationFilters
+              activeStage={activeStage}
+              stageCounts={stageCounts}
+              visibleOrdersCount={visibleOrdersCount}
+              search={search}
+              selectedWarehouseId={selectedWarehouseId}
+              stockFilter={stockFilter}
+              shortageReasonFilter={shortageReasonFilter}
+              shortageOwnerFilter={shortageOwnerFilter}
+              shortageOwnerOptions={shortageOwnerOptions}
+              shortageFollowUpFilter={shortageFollowUpFilter}
+              productFilter={productFilter}
+              itemCountFilter={itemCountFilter}
+              warehouses={warehouses}
+              onActiveStageChange={uiActions.setActiveStage}
+              onSearchChange={uiActions.setSearch}
+              onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
+              onStockFilterChange={uiActions.setStockFilter}
+              onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
+              onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
+              onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
+              onProductFilterChange={uiActions.setProductFilter}
+              onItemCountFilterChange={uiActions.setItemCountFilter}
+            />
+          </div>
+        )}
+      </div>
 
       <PreparationBulkActions
         selectedOrdersCount={selectedOrders.length}
@@ -935,18 +968,37 @@ const PreparationQueue: React.FC = () => {
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-2.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">قائمة التنفيذ</span>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
-            <input
-              type="checkbox"
-              checked={allVisibleSelected}
-              onChange={toggleSelectAllVisible}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-            />
-            تحديد الكل
-          </label>
+          <div className="flex items-center gap-2">
+            {loading && (
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+            )}
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
+              <input
+                type="checkbox"
+                checked={allVisibleSelected}
+                onChange={toggleSelectAllVisible}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              />
+              تحديد الكل
+            </label>
+          </div>
         </div>
 
-        {paginatedOrders.length === 0 ? (
+        {loading ? (
+          <div className="space-y-0">
+            {[1, 2, 3, 4, 5].map((row) => (
+              <div
+                key={row}
+                className="flex animate-pulse items-center gap-3 border-b border-gray-100 px-4 py-3"
+              >
+                <div className="h-4 w-4 rounded bg-gray-200" />
+                <div className="h-4 w-16 rounded bg-gray-200" />
+                <div className="h-4 w-24 rounded bg-gray-200" />
+                <div className="mr-auto h-4 w-20 rounded bg-gray-200" />
+              </div>
+            ))}
+          </div>
+        ) : paginatedOrders.length === 0 ? (
           <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center">
             <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300" />
             <h3 className="mt-4 text-lg font-semibold text-gray-900">
@@ -1000,10 +1052,30 @@ const PreparationQueue: React.FC = () => {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-2.5">
-          <p className="text-xs text-gray-400">
-            صفحة {pagination.page} من {totalPages} • {visibleOrdersCount} طلب
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs text-gray-400">
+              صفحة {pagination.page} من {totalPages} • {visibleOrdersCount} طلب
+            </p>
+
+            <label className="flex items-center gap-1.5 text-xs text-gray-400">
+              عرض
+              <select
+                value={uiState.pageSize}
+                onChange={(e) =>
+                  uiActions.setPageSize(Number(e.target.value) as PageSize)
+                }
+                className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-amber-400"
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              لكل صفحة
+            </label>
+          </div>
 
           <div className="flex items-center gap-2">
             <button
