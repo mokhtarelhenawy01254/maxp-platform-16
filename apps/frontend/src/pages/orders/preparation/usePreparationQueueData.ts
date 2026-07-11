@@ -35,6 +35,7 @@ import type {
   StatusConfig,
   StockFilter,
   WarehouseOption,
+  ItemCountFilter,
 } from "./types";
 
 interface ApiListResponse<T> {
@@ -57,6 +58,8 @@ interface UsePreparationQueueDataParams {
   shortageReasonFilter: ShortageReasonFilter;
   shortageFollowUpFilter: ShortageFollowUpFilter;
   shortageOwnerFilter: string;
+  productFilter: string;
+  itemCountFilter: ItemCountFilter;
   search: string;
 }
 
@@ -134,6 +137,8 @@ const buildOrdersQueryKey = (
     params.shortageReasonFilter,
     params.shortageFollowUpFilter,
     params.shortageOwnerFilter.trim().toLowerCase(),
+    params.productFilter.trim().toLowerCase(),
+    params.itemCountFilter,
     params.search.trim().toLowerCase(),
     prioritizeShortageOrders ? "prioritized" : "chronological",
   ] as const;
@@ -154,6 +159,8 @@ const fetchOrdersData = async (
         shortageReason: params.shortageReasonFilter,
         shortageFollowUp: params.shortageFollowUpFilter,
         shortageOwner: params.shortageOwnerFilter.trim() || undefined,
+        productFilter: params.productFilter.trim() || undefined,
+        itemCountFilter: params.itemCountFilter,
         search: params.search.trim() || undefined,
         prioritizeShortageOrders,
       },
@@ -260,6 +267,8 @@ export const usePreparationQueueData = ({
   shortageReasonFilter,
   shortageFollowUpFilter,
   shortageOwnerFilter,
+  productFilter,
+  itemCountFilter,
   search,
 }: UsePreparationQueueDataParams): UsePreparationQueueDataResult => {
   const queryClient = useQueryClient();
@@ -284,6 +293,8 @@ export const usePreparationQueueData = ({
       shortageReasonFilter,
       shortageFollowUpFilter,
       shortageOwnerFilter,
+      productFilter,
+      itemCountFilter,
       search,
     }),
     [
@@ -295,6 +306,8 @@ export const usePreparationQueueData = ({
       shortageOwnerFilter,
       shortageReasonFilter,
       stockFilter,
+      productFilter,
+      itemCountFilter,
     ],
   );
 

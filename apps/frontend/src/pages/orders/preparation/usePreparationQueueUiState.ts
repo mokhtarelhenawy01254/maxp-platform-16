@@ -4,6 +4,7 @@ import type {
   ShortageReasonFilter,
   StageFilter,
   StockFilter,
+  ItemCountFilter,
 } from "./types";
 
 interface PreparationQueueUiState {
@@ -13,6 +14,8 @@ interface PreparationQueueUiState {
   shortageReasonFilter: ShortageReasonFilter;
   shortageFollowUpFilter: ShortageFollowUpFilter;
   shortageOwnerFilter: string;
+  productFilter: string;
+  itemCountFilter: ItemCountFilter;
   search: string;
   page: number;
   selectedOrders: string[];
@@ -28,6 +31,8 @@ type PreparationQueueUiAction =
   | { type: "set_shortage_reason_filter"; value: ShortageReasonFilter }
   | { type: "set_shortage_follow_up_filter"; value: ShortageFollowUpFilter }
   | { type: "set_shortage_owner_filter"; value: string }
+  | { type: "set_product_filter"; value: string }
+  | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_search"; value: string }
   | { type: "reset_page" }
   | { type: "clamp_page"; totalPages: number }
@@ -48,6 +53,8 @@ const initialState: PreparationQueueUiState = {
   shortageReasonFilter: "all",
   shortageFollowUpFilter: "all",
   shortageOwnerFilter: "",
+  productFilter: "",
+  itemCountFilter: "all",
   search: "",
   page: 1,
   selectedOrders: [],
@@ -87,6 +94,10 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { shortageFollowUpFilter: action.value });
     case "set_shortage_owner_filter":
       return withPageReset(state, { shortageOwnerFilter: action.value });
+    case "set_product_filter":
+      return withPageReset(state, { productFilter: action.value });
+    case "set_item_count_filter":
+      return withPageReset(state, { itemCountFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
     case "reset_page":
@@ -184,6 +195,10 @@ export const usePreparationQueueUiState = () => {
         dispatch({ type: "set_shortage_follow_up_filter", value }),
       setShortageOwnerFilter: (value: string) =>
         dispatch({ type: "set_shortage_owner_filter", value }),
+      setProductFilter: (value: string) =>
+        dispatch({ type: "set_product_filter", value }),
+      setItemCountFilter: (value: ItemCountFilter) =>
+        dispatch({ type: "set_item_count_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
       clampPage: (totalPages: number) =>
         dispatch({ type: "clamp_page", totalPages }),
