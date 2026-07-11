@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Shield, AlertTriangle, ShieldCheck, Loader2, Bot, Plus, Trash2, Edit2,
-  Play, Send, RefreshCw, X, ShieldAlert, Check, HelpCircle
+  RefreshCw, X, ShieldAlert, Check, HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -64,12 +64,7 @@ export default function AgentGuardrailsTab({
     conflictingRule: { excuse: string; rebuttal: string; action: string };
   } | null>(null);
 
-  // Playground Chat State
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [userInput, setUserInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const [chatSessionId] = useState(() => `sandbox-gr-${agentId}-${Math.random().toString(36).substring(7)}`);
+  // Playground Chat State (Removed sandbox test area)
 
   // 1. Fetch rules list
   const fetchRules = useCallback(async () => {
@@ -97,10 +92,7 @@ export default function AgentGuardrailsTab({
     fetchRules();
   }, [fetchRules]);
 
-  // Scroll playground chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+
 
   // 2. Add / Save rule (with conflict check)
   const handleSaveRule = async (bypassConflict = false) => {
@@ -230,60 +222,13 @@ export default function AgentGuardrailsTab({
     }
   };
 
-  // 6. Sandbox Chat handler
-  const handleSendMessage = async () => {
-    if (!userInput.trim() || chatLoading) return;
-    const userMsg = userInput.trim();
-    setUserInput("");
 
-    const newMsg: Message = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: userMsg
-    };
-    setChatMessages(prev => [...prev, newMsg]);
-    setChatLoading(true);
-
-    try {
-      const res = await fetch(buildApiUrl("ai-sandbox/chat"), {
-        method: "POST",
-        headers: {
-          ...tokenManager.createAuthHeaders(),
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          sessionId: chatSessionId,
-          message: userMsg,
-          agentId,
-          model: agentModel,
-          provider: agentProvider
-        })
-      });
-
-      if (!res.ok) throw new Error("Sandbox service error");
-
-      const data = await res.json();
-      
-      const assistantMsg: Message = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: data.reply || "",
-        // Applied guardrails passed back from assembler metadata
-        appliedGuardrails: data.metadata?.applied_guardrail_ids || []
-      };
-      setChatMessages(prev => [...prev, assistantMsg]);
-    } catch (err: any) {
-      toast.error("فشل إرسال الرسالة إلى المختبر");
-    } finally {
-      setChatLoading(false);
-    }
-  };
 
   return (
-    <div className="w-full flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-280px)] lg:overflow-hidden text-right" dir="rtl">
+    <div className="w-full flex flex-col gap-6 lg:h-[calc(100vh-280px)] lg:overflow-hidden text-right" dir="rtl">
       
-      {/* Right Column: Rules Management */}
-      <div className="w-full lg:flex-1 flex flex-col gap-4 lg:overflow-y-auto pr-1 min-h-0 min-w-0">
+      {/* Rules Management */}
+      <div className="w-full flex-1 flex flex-col gap-4 lg:overflow-y-auto pr-1 min-h-0 min-w-0">
         
         {/* Sub-header card */}
         <div className="bg-card p-4 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -414,106 +359,6 @@ export default function AgentGuardrailsTab({
               </table>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Left Column: Sandbox Playground */}
-      <div className="w-full lg:w-80 flex flex-col border border-border rounded-xl bg-card overflow-hidden max-h-[400px] lg:max-h-none">
-        {/* Playground header */}
-        <div className="bg-muted/40 p-4 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="size-7 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Bot className="size-4 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-bold text-xs text-foreground">مختبر السلوك التجريبي</h4>
-              <p className="text-[10px] text-muted-foreground">اختبر تفاعل الوكيل مع القواعد المفروضة</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setChatMessages([])}
-            className="size-7 hover:bg-muted"
-            title="تصفية المحادثة"
-          >
-            <RefreshCw className="size-3.5 text-muted-foreground" />
-          </Button>
-        </div>
-
-        {/* Chat Feed */}
-        <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 min-h-[250px]">
-          {chatMessages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground gap-2 p-6">
-              <Bot className="size-8 text-muted-foreground/50" />
-              <div className="text-xs">
-                <p className="font-semibold text-foreground/80">المحادثة التجريبية فارغة</p>
-                <p className="mt-1">جرب تحدي الوكيل كأنك عميل يطلب تخفيضاً أو تجاوزاً للقوانين لترى مدى التزامه بالقواعد!</p>
-              </div>
-            </div>
-          ) : (
-            chatMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={cn(
-                  "max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed flex flex-col gap-1.5",
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground self-start rounded-tr-none"
-                    : "bg-muted/50 text-foreground self-end rounded-tl-none border border-border"
-                )}
-              >
-                <span>{msg.content}</span>
-                
-                {/* Applied guardrails tags */}
-                {msg.role === "assistant" && msg.appliedGuardrails && msg.appliedGuardrails.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1 border-t border-border/40 pt-1.5">
-                    {msg.appliedGuardrails.map(gid => {
-                      const matchedRule = rules.find(r => r.id === gid);
-                      return (
-                        <div
-                          key={gid}
-                          className="flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[9px] px-1.5 py-0.5 rounded"
-                          title={matchedRule ? `القاعدة: ${matchedRule.excuse}` : "تم تطبيق قاعدة"}
-                        >
-                          <ShieldCheck className="size-2.5" />
-                          <span>قاعدة مطبقة</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-          {chatLoading && (
-            <div className="bg-muted/50 text-foreground self-end rounded-2xl rounded-tl-none border border-border p-3 flex items-center gap-1.5 text-xs max-w-[80%]">
-              <Loader2 className="size-3 animate-spin text-primary" />
-              <span>جاري تفكير الوكيل البشري...</span>
-            </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Input area */}
-        <div className="p-3 border-t border-border bg-muted/20 flex gap-2">
-          <Input
-            placeholder="اكتب رسالة تجريبية هنا..."
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSendMessage();
-            }}
-            disabled={chatLoading}
-            className="h-9 text-xs"
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={chatLoading || !userInput.trim()}
-            size="icon"
-            className="size-9 shrink-0"
-          >
-            <Send className="size-3.5" />
-          </Button>
         </div>
       </div>
 

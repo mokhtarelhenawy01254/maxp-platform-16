@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-11 / 2026-03-09
+- **Agent Guardrails Sandbox Removal & Full-Width Layout Refactor (UX / IMPROVEMENT)**: Refactored the "القواعد والتعلم" (Guardrails) tab in Agent Profiles based on admin feedback:
+  1. Removed the redundant Sandbox Playground chat area from the tab, deferring all testing activities to the dedicated "تجربة الوكلاء" (Agent Playground) page to reduce UI clutter.
+  2. Redesigned the guardrails layout to occupy 100% width, resolving a flexbox layout collapse bug where the rules list shrank to zero width, and giving the manager a spacious table and input forms.
+  3. Cleaned up unused state variables, event handlers, and Lucide icons to reduce bundle size and maintain code hygiene.
 - **Agent Profiles Settings & Guardrails Layout Fix (BUGFIX / FRONTEND)**: Resolved a critical frontend layout and tag mismatch compilation bug on the Merchant Dashboard:
   1. Fixed JSX nesting where the newly added "القواعد والتعلم" (Guardrails) tab block was erroneously wrapped inside the settings conditional div, preventing it from mounting or rendering when clicked.
   2. Restructured the JSX hierarchy inside `AgentProfilesPage.tsx` to mount the `AgentGuardrailsTab` as a direct sibling of the settings block under the common Fragment.

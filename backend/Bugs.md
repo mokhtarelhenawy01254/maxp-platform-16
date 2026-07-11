@@ -1,5 +1,18 @@
 # Backend Bugs Log
 
+### [FIX] Invisible Guardrails Rules Column due to Flexbox Collapsing & Sandbox Redundancy
+- **Date**: 2026-07-11
+- **Description**: Resolved a critical frontend layout issue in the "القواعد والتعلم" (Guardrails) tab where the Rules Management column collapsed to 0px (or 4px) width on desktop screens, leaving the tab looking completely empty except for the Sandbox card on the left.
+- **Root Cause**: 
+  1. The layout container `div` lacked a `w-full` class, causing the browser to collapse its width when layout children used flex-basis of 0% (`flex-1`).
+  2. The Sandbox Playground column had `w-full lg:w-80` but lacked `lg:shrink-0`, causing the browser to expand it to the container's remaining width while shrinking the flexible Rules column to zero.
+  3. The sandbox test area was redundant since there is a dedicated, fully featured "تجربة الوكلاء" (Agent Playground) page for testing agent behavior.
+- **Resolution**:
+  1. Removed the redundant Sandbox Playground column and its related states, handlers, and React hooks from `AgentGuardrailsTab.tsx`.
+  2. Restructured the layout wrapper to use a single column that stretches to 100% width (`w-full flex-1`), allowing the guardrails table and creation form to occupy the full page width for clean, readable management.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentGuardrailsTab.tsx`
+
 ### [FIX] JSX Nesting and Tag Mismatch for AgentGuardrailsTab inside AgentProfilesPage
 - **Date**: 2026-07-11
 - **Description**: Resolved a critical rendering issue where the "القواعد والتعلم" (Guardrails) tab rendered completely blank and caused a subsequent Vite build crash (JSX tag mismatch / unterminated regex syntax error) during deployment.
