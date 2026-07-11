@@ -230,5 +230,20 @@
   "loading": {
     "title": "Loading dashboard",
     "summary": "Fetching latest company data..."
+  },
+  "live": {
+    "label": "Live",
+    "connected": "Live updates connected",
+    "disconnected": "Live updates paused",
+    "viewAll": "View all",
+    "newEvent": "New activity"
+  },
+  "export": {
+    "label": "Export",
+    "csv": "Export CSV",
+    "excel": "Export Excel",
+    "pdf": "Export PDF",
+    "metric": "Metric",
+    "value": "Value"
   }
 }

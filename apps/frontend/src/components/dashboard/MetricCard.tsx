@@ -55,7 +55,7 @@ export function MetricCard(props: MetricCardProps) {
         type="button"
         onClick={onClick}
         className={cn(
-          "relative flex flex-col p-5 rounded-2xl text-right col-span-1 row-span-1",
+          "relative flex flex-col p-5 rounded-2xl text-right col-span-1 row-span-1 h-full",
           "bg-card text-card-foreground",
           "border border-border/50",
           "shadow-sm hover:shadow-md",
@@ -92,7 +92,7 @@ export function MetricCard(props: MetricCardProps) {
         type="button"
         onClick={onClick}
         className={cn(
-          "relative flex flex-col p-5 rounded-2xl text-right",
+          "relative flex flex-col p-5 rounded-2xl text-right h-full",
           "bg-card text-card-foreground",
           "border border-border/50",
           "shadow-sm hover:shadow-md",
@@ -127,7 +127,7 @@ export function MetricCard(props: MetricCardProps) {
         type="button"
         onClick={onClick}
         className={cn(
-          "relative flex flex-col p-5 rounded-2xl text-right",
+          "relative flex flex-col p-5 rounded-2xl text-right h-full",
           "bg-card text-card-foreground",
           "border border-border/50",
           "shadow-sm hover:shadow-md",
@@ -177,7 +177,7 @@ export function MetricCard(props: MetricCardProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        "relative flex flex-row items-center gap-4 p-4 rounded-2xl text-right",
+        "relative flex flex-row items-center gap-4 p-4 rounded-2xl text-right h-full",
         "bg-card text-card-foreground",
         "border border-border/50",
         "shadow-sm hover:shadow-md",

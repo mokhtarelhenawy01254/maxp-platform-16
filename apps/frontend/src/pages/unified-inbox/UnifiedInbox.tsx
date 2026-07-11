@@ -173,14 +173,7 @@ const UnifiedInbox: React.FC = () => {
   const [customerProfile, setCustomerProfile] =
     useState<CustomerProfile | null>(null);
   const [profileActiveTab, setProfileActiveTab] = useState<"timeline" | "orders" | "info">("timeline");
-  const [counts, setCounts] = useState<PlatformCounts>({
-    all: 0,
-    facebook: 0,
-    instagram: 0,
-    whatsapp: 0,
-    telegram: 0,
-    unreplied: 0,
-  });
+  // ponytail: counts fetched from API but not yet displayed in UI — wire up when needed
 
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -233,6 +226,9 @@ const UnifiedInbox: React.FC = () => {
   const socketHandlerRef = useRef<((message: any) => void) | null>(null);
   const newConvHandlerRef = useRef<((conversation: any) => void) | null>(null);
   const waSocketHandlerRef = useRef<((payload: any) => void) | null>(null);
+  // ponytail: AbortControllers prevent race conditions when switching conversations rapidly
+  const messagesAbortRef = useRef<AbortController | null>(null);
+  const profileAbortRef = useRef<AbortController | null>(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -300,7 +296,7 @@ const UnifiedInbox: React.FC = () => {
         }
 
         if (response.data.counts) {
-          setCounts(response.data.counts);
+          // ponytail: counts available but not displayed yet
         }
       }
     } catch (error) {
@@ -483,6 +479,11 @@ const UnifiedInbox: React.FC = () => {
   }, [selectedConvIds, selectedConversation, clearSelection]);
 
   const loadMessages = useCallback(async (conv: UnifiedConversation) => {
+    // Abort previous in-flight request to avoid race when switching conversations
+    messagesAbortRef.current?.abort();
+    const ac = new AbortController();
+    messagesAbortRef.current = ac;
+
     try {
       setLoadingMessages(true);
       const params = new URLSearchParams();
@@ -493,33 +494,45 @@ const UnifiedInbox: React.FC = () => {
 
       const response = await apiClient.get<ApiResponse<UnifiedMessage[]>>(
         `/api/v1/unified-inbox/conversations/${conv.id}/messages?${params.toString()}`,
+        { signal: ac.signal },
       );
 
       if (response.data?.success) {
         setMessages(response.data.data || []);
         setTimeout(() => scrollToBottom(), 100);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (ac.signal.aborted) return; // superseded by a newer request
       console.error("❌ Error loading messages:", error);
     } finally {
-      setLoadingMessages(false);
+      if (messagesAbortRef.current === ac) {
+        setLoadingMessages(false);
+      }
     }
   }, []);
 
   const loadCustomerProfile = useCallback(async (customerId: string) => {
+    profileAbortRef.current?.abort();
+    const ac = new AbortController();
+    profileAbortRef.current = ac;
+
     try {
       setLoadingProfile(true);
       const response = await apiClient.get<ApiResponse<CustomerProfile>>(
         `/api/v1/unified-inbox/customer/${customerId}`,
+        { signal: ac.signal },
       );
       if (response.data?.success) {
-        setCustomerProfile(response.data.data);
+        setCustomerProfile(response.data.data ?? null);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (ac.signal.aborted) return;
       console.error("❌ Error loading customer:", error);
       setCustomerProfile(null);
     } finally {
-      setLoadingProfile(false);
+      if (profileAbortRef.current === ac) {
+        setLoadingProfile(false);
+      }
     }
   }, []);
 
@@ -669,24 +682,27 @@ const UnifiedInbox: React.FC = () => {
       const payloads: any[] = [];
 
       if (hasText) {
+        const firstAtt = attachments[0];
         const firstPayload: any = {
           content: newMessage.trim(),
           platform: selectedConversation.platform,
         };
-        if (attachments.length > 0) {
-          firstPayload.type = attachments[0].type;
-          firstPayload.mediaUrl = attachments[0].url;
-          firstPayload.mediaFileName = attachments[0].name;
+        if (firstAtt) {
+          firstPayload.type = firstAtt.type;
+          firstPayload.mediaUrl = firstAtt.url;
+          firstPayload.mediaFileName = firstAtt.name;
         }
         payloads.push(firstPayload);
 
         for (let i = 1; i < attachments.length; i++) {
+          const att = attachments[i];
+          if (!att) continue;
           payloads.push({
             content: "",
             platform: selectedConversation.platform,
-            type: attachments[i].type,
-            mediaUrl: attachments[i].url,
-            mediaFileName: attachments[i].name,
+            type: att.type,
+            mediaUrl: att.url,
+            mediaFileName: att.name,
           });
         }
       } else {
@@ -877,10 +893,12 @@ const UnifiedInbox: React.FC = () => {
     }, 400);
   };
 
-  // Clear pending search timeout on unmount
+  // Clear pending search timeout and abort in-flight requests on unmount
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      messagesAbortRef.current?.abort();
+      profileAbortRef.current?.abort();
     };
   }, []);
 
@@ -958,7 +976,7 @@ const UnifiedInbox: React.FC = () => {
     socketService.onNewConversation(newConvHandler);
 
     const findWaConv = (convs: UnifiedConversation[], sessionId: string, remoteJid: string) =>
-      convs.find(c => c.platform === 'whatsapp' && c.metadata?.sessionId === sessionId && c.metadata?.jid === remoteJid);
+      convs.find(c => c.platform === 'whatsapp' && c.metadata?.["sessionId"] === sessionId && c.metadata?.["jid"] === remoteJid);
 
     const waHandler = (payload: any) => {
       const { sessionId, message } = payload;
@@ -981,8 +999,8 @@ const UnifiedInbox: React.FC = () => {
       });
 
       if (selectedConversation?.platform === 'whatsapp' &&
-          selectedConversation.metadata?.sessionId === sessionId &&
-          selectedConversation.metadata?.jid === message.remoteJid) {
+          selectedConversation.metadata?.["sessionId"] === sessionId &&
+          selectedConversation.metadata?.["jid"] === message.remoteJid) {
         setMessages((prev) => {
           if (prev.some(m => m.messageId === message.messageId || m.id === message.id)) return prev;
           return [...prev, {
@@ -1885,7 +1903,7 @@ const UnifiedInbox: React.FC = () => {
                               {(() => {
                                 if (msg.mediaUrl) return null;
                                 if (!msg.content || !msg.content.startsWith("http")) return null;
-                                const url = msg.content.split(/[\s\n]/)[0];
+                                const url = msg.content.split(/[\s\n]/)[0] || "";
                                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(url) || url.includes("fbcdn") || url.includes("cdninstagram");
                                 const isVideo = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(url);
                                 const isAudio = /\.(mp3|wav|ogg|aac|m4a|opus)(\?|$)/i.test(url);
@@ -2468,7 +2486,7 @@ const UnifiedInbox: React.FC = () => {
               <div className="mt-2 grid gap-1.5" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
                 <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
                   <StatusDropdown
-                    currentStatus={selectedConversation.status}
+                    currentStatus={selectedConversation.status as ConversationStatus}
                     onStatusChange={handleStatusChange}
                     disabled={loadingProfile}
                   />
@@ -2476,7 +2494,7 @@ const UnifiedInbox: React.FC = () => {
                 <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
                   <AssignmentDropdown
                     currentAssignee={selectedConversation.assignedTo?.id || null}
-                    currentAssigneeName={selectedConversation.assignedTo?.name || null}
+                    currentAssigneeName={selectedConversation.assignedTo?.name || undefined}
                     onAssign={handleAssign}
                     disabled={loadingProfile}
                   />

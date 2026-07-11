@@ -14,9 +14,10 @@ import {
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useDashboardData } from "../../hooks/useDashboardData";
+import { useDashboardLiveSync } from "../../hooks/useDashboardLiveSync";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import { QuickActions } from "../../components/dashboard/QuickActions";
-import { RevenueTrendChart, TopProductsPanel, DashboardSkeleton, InsightsPanel } from ".";
+import { RevenueTrendChart, TopProductsPanel, DashboardSkeleton, InsightsPanel, OnboardingChecklist, DashboardExportMenu } from ".";
 import DateRangeToolbar from "./DateRangeToolbar";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
@@ -144,6 +145,7 @@ export default function MainDashboardPage() {
   }, [period, customStart, customEnd]);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardData(dateParams);
+  const live = useDashboardLiveSync(!isLoading && !isError);
 
   const dashboard = data?.data;
   const company = dashboard?.company;
@@ -209,6 +211,25 @@ export default function MainDashboardPage() {
     );
   }
 
+  if (isEmpty && dashboard) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+            {dashboard.company?.name
+              ? t("companyDashboard.welcome", { name: dashboard.company.name })
+              : t("companyDashboard.title")}
+          </h1>
+        </div>
+        <OnboardingChecklist
+          dashboard={dashboard}
+          activeApps={activeApps}
+          onNavigate={(href) => navigate(href)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto"
@@ -245,7 +266,46 @@ export default function MainDashboardPage() {
           onSelectFilter={(v) => setPeriod(v as PeriodPreset)}
           onRefresh={() => refetch()}
         />
+        {dashboard && (
+          <DashboardExportMenu
+            dashboard={dashboard}
+            periodLabel={PERIOD_LABEL_MAP[period] ? t(PERIOD_LABEL_MAP[period]) : t("companyDashboard.presets.custom")}
+            disabled={isFetching}
+          />
+        )}
       </div>
+
+      {live.isConnected && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+            style={{
+              background: live.liveCount > 0 ? "color-mix(in srgb, var(--color-success) 14%, transparent)" : "color-mix(in srgb, var(--color-border) 20%, transparent)",
+              color: live.liveCount > 0 ? "var(--color-success)" : "var(--color-muted-foreground)",
+            }}
+            title={t("companyDashboard.live.connected")}
+          >
+            <span className="relative flex h-2 w-2">
+              {live.liveCount > 0 && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "var(--color-success)" }} />
+              )}
+              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: live.liveCount > 0 ? "var(--color-success)" : "var(--color-muted-foreground)" }} />
+            </span>
+            {t("companyDashboard.live.label")}{live.liveCount > 0 ? ` · ${live.liveCount}` : ""}
+          </span>
+          {live.activities.slice(0, 3).map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => a.href && navigate(a.href)}
+              className="text-xs px-2 py-1 rounded-full transition-colors hover:underline"
+              style={{ background: "color-mix(in srgb, var(--color-border) 22%, transparent)", color: "var(--color-foreground)" }}
+            >
+              {a.text}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div

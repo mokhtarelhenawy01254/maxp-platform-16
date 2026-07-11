@@ -230,5 +230,20 @@
     "viewedOrders": "[AR] Reviewed Orders",
     "totalOrders": "[AR] Total Orders",
     "requiresAttention": "[AR] Needs attention"
+  },
+  "live": {
+    "label": "مباشر",
+    "connected": "التحديثات المباشرة متصلة",
+    "disconnected": "التحديثات المباشرة متوقفة",
+    "viewAll": "عرض الكل",
+    "newEvent": "نشاط جديد"
+  },
+  "export": {
+    "label": "تصدير",
+    "csv": "تصدير CSV",
+    "excel": "تصدير Excel",
+    "pdf": "تصدير PDF",
+    "metric": "المؤشر",
+    "value": "القيمة"
   }
 }
