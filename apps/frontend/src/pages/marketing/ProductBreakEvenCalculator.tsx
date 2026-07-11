@@ -504,10 +504,6 @@ export default function ProductBreakEvenCalculator() {
               </div>
             </details>
 
-            {/* Footer */}
-            <div className="text-center text-xs text-gray-400 dark:text-gray-600">
-              {T("footer")}
-            </div>
           </div>
         </div>
       </div>
