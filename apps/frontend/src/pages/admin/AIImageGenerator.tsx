@@ -3,8 +3,6 @@ import {
   Sparkles,
   Loader2,
   Download,
-  ChevronDown,
-  ChevronUp,
   Trash2,
   Copy,
   ExternalLink,
@@ -20,6 +18,7 @@ import {
   Type,
   MessageSquare,
   MoreVertical,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +49,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   SettingsStatusAlert,
 } from "../settings/components/SettingsPagePrimitives";
@@ -546,158 +546,6 @@ function Field({
   );
 }
 
-
-
-function AspectPreview({
-  formData,
-  platformLabel,
-}: {
-  formData: FormData;
-  platformLabel: string;
-}) {
-  const ratio = formData.aspectRatio;
-  let aspectVal = 1;
-  if (ratio.includes(":")) {
-    const parts = ratio.split(":").map(Number);
-    const w = parts[0];
-    const h = parts[1];
-    if (w !== undefined && h !== undefined && !isNaN(w) && !isNaN(h) && h !== 0) {
-      aspectVal = w / h;
-    }
-  } else {
-    const val = Number(ratio);
-    if (!isNaN(val)) aspectVal = val;
-  }
-
-  const radiusMap: Record<string, string> = {
-    none: "rounded-none",
-    subtle: "rounded-md",
-    rounded: "rounded-2xl",
-    pill: "rounded-[32px]",
-  };
-
-  const shadowMap: Record<string, string> = {
-    none: "shadow-none",
-    soft: "shadow-sm",
-    medium: "shadow-md",
-    hard: "shadow-lg",
-    glow: "shadow-[0_0_15px_rgba(56,189,248,0.25)]",
-  };
-
-  const positionMap: Record<string, string> = {
-    "top-left": "justify-start items-start text-left",
-    "top-center": "justify-start items-center text-center",
-    "top-right": "justify-start items-end text-right",
-    "center": "justify-center items-center text-center",
-    "bottom-left": "justify-end items-start text-left",
-    "bottom-center": "justify-end items-center text-center",
-    "bottom-right": "justify-end items-end text-right",
-  };
-
-  const alignmentClass =
-    formData.textAlignment === "left"
-      ? "text-left"
-      : formData.textAlignment === "right"
-      ? "text-right"
-      : "text-center";
-
-  return (
-    <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200/50 bg-slate-50/50 p-5 dark:border-slate-800/50 dark:bg-slate-900/50">
-      <div className="relative flex min-h-[240px] w-full items-center justify-center p-2">
-        <div
-          style={{
-            aspectRatio: aspectVal,
-            maxHeight: "260px",
-            maxWidth: "100%",
-            backgroundColor: formData.primaryColor || "#0f172a",
-            color: formData.secondaryColor || "#ffffff",
-          }}
-          className={`relative flex flex-col justify-between p-4 transition-all duration-300 w-full overflow-hidden border border-slate-200/20 dark:border-slate-800/20 ${
-            radiusMap[formData.borderRadius] || "rounded-xl"
-          } ${shadowMap[formData.shadow] || "shadow-md"}`}
-        >
-          <div
-            style={{ backgroundColor: formData.accentColor || "#38bdf8" }}
-            className="absolute -right-10 -top-10 size-28 rounded-full opacity-20 blur-xl"
-          />
-
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5 text-[10px] opacity-80">
-            <span className="font-bold tracking-wider">
-              {formData.brandName || "اسم العلامة"}
-            </span>
-            <span className="rounded bg-white/20 px-1.5 py-0.5 text-[8px] uppercase font-semibold">
-              {platformLabel}
-            </span>
-          </div>
-
-          <div
-            className={`flex flex-1 flex-col py-2 ${
-              positionMap[formData.textPosition] || "justify-center items-center text-center"
-            }`}
-          >
-            <div className={`space-y-1 w-full ${alignmentClass}`}>
-              {formData.discountBadge && (
-                <span
-                  style={{
-                    backgroundColor: formData.accentColor || "#38bdf8",
-                    color: formData.primaryColor || "#0f172a",
-                  }}
-                  className="inline-block rounded-full px-2 py-0.5 text-[9px] font-bold"
-                >
-                  {formData.discountBadge}
-                </span>
-              )}
-              <h5 className="text-xs font-bold leading-tight line-clamp-2">
-                {formData.headline || "العنوان الرئيسي للإعلان"}
-              </h5>
-              {formData.subheadline && (
-                <p className="text-[10px] leading-tight opacity-90 line-clamp-1">
-                  {formData.subheadline}
-                </p>
-              )}
-              {formData.productName && (
-                <div className="mt-1 flex items-center justify-center gap-1.5 text-[10px]">
-                  <span className="font-medium underline decoration-accent decoration-2">
-                    {formData.productName}
-                  </span>
-                  {formData.price && (
-                    <span className="rounded bg-black/30 px-1.5 py-0.5 font-bold text-accent">
-                      {formData.price} {formData.currency}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-1 flex items-center justify-between pt-1 text-[9px] opacity-90">
-            <span className="truncate text-[8px] text-white/50">{formData.tagline || ""}</span>
-            {(formData.cta || formData.customCta) && (
-              <span
-                style={{
-                  backgroundColor: formData.accentColor || "#38bdf8",
-                  color: formData.primaryColor || "#0f172a",
-                }}
-                className="rounded px-2.5 py-1 font-bold text-[9px] shadow-sm hover:scale-105 transition-transform"
-              >
-                {formData.cta === "custom" ? formData.customCta : formData.cta}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="w-full border-t border-slate-200/50 pt-2.5 text-center text-xs dark:border-slate-800/50">
-        <p className="font-medium text-slate-700 dark:text-slate-300">
-          معاينة المقاس: <span className="font-mono text-sky-600 dark:text-sky-400">{ratio}</span>
-        </p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
-          الأبعاد التقريبية: {ASPECT_SIZES[ratio] || ""} بكسل
-        </p>
-      </div>
-    </div>
-  );
-}
-
 const detectVerticalFromCompany = (company: any | null): Vertical => {
   if (!company) return "general";
   const activeApps = company.activeApps || [];
@@ -727,7 +575,6 @@ const AIImageGenerator: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [showJson, setShowJson] = useState(false);
   const [primaryImage, setPrimaryImage] = useState<File | null>(null);
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentityResponse>({});
@@ -1080,11 +927,6 @@ const AIImageGenerator: React.FC = () => {
     });
   };
 
-  const platformLabel = useMemo(
-    () => PLATFORMS.find((p) => p.value === form.platform)?.label || form.platform,
-    [form.platform]
-  );
-
   const getBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1314,9 +1156,9 @@ const AIImageGenerator: React.FC = () => {
   const inputCls = "bg-white dark:bg-gray-900 border-slate-200 dark:border-slate-800 rounded-xl";
 
   return (
-    <div dir="rtl" className="space-y-6 text-right w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full overflow-y-auto">
-
-      {/* Sleek 2026 low-profile Page Header */}
+    <div dir="rtl" className="w-full px-4 sm:px-6 lg:px-8 py-6 h-full overflow-y-auto">
+      <Tabs defaultValue="create" className="gap-5">
+      {/* Page Header */}
       <div className="flex flex-col gap-4 pt-2">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
@@ -1370,11 +1212,25 @@ const AIImageGenerator: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-6">
-        <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
+      <TabsList
+        variant="line"
+        className="h-auto w-full justify-start gap-1 rounded-none border-b border-slate-200/70 bg-transparent p-0 pb-3 dark:border-slate-800"
+      >
+        <TabsTrigger value="create" className="gap-1.5 !text-sm !font-bold data-active:!text-sky-600">
+          <Wand2 className="size-4" /> إنشاء تصميم
+        </TabsTrigger>
+        <TabsTrigger value="gallery" className="gap-1.5 !text-sm !font-bold data-active:!text-sky-600">
+          <Grid3X3 className="size-4" /> معرض التصاميم
+          <Badge variant="secondary" className="rounded-full px-1.5 text-[10px] !h-4 !py-0 ms-1">
+            {gallery.length}
+          </Badge>
+        </TabsTrigger>
+      </TabsList>
 
-        {/* Main Grid: Config (Right) & Live Preview (Left) */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+      <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
+
+      <TabsContent value="create" className="space-y-6">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           
           {/* Right Column: Configuration Form (lg:col-span-7) */}
           <div className="space-y-5 lg:col-span-7">
@@ -2033,33 +1889,10 @@ const AIImageGenerator: React.FC = () => {
 
           {/* Left Column: Sticky Control Panel & Image Output (lg:col-span-5) */}
           <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
-            
+
             {/* AI Control Panel (compact, no nested card) */}
             <div className="rounded-2xl bg-white dark:bg-slate-900/60 p-4 space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-semibold text-slate-500">البرومبت المولّد</Label>
-                <button
-                  type="button"
-                  onClick={() => setShowJson(true)}
-                  className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
-                >
-                  <ChevronDown className="size-3" />
-                  عرض JSON
-                </button>
-              </div>
-              <Textarea
-                dir="auto"
-                value={form.editablePrompt}
-                onChange={(e) => {
-                  update("editablePrompt", e.target.value);
-                  setPromptTouched(true);
-                }}
-                rows={3}
-                className={`${inputCls} text-xs leading-relaxed focus-visible:ring-sky-500`}
-                placeholder="سيتم كتابة البرومبت ديناميكياً من الخيارات المدخلة..."
-              />
-
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2">
                 <Button
                   onClick={handleGenerate}
                   disabled={loading || !canGenerate}
@@ -2092,30 +1925,6 @@ const AIImageGenerator: React.FC = () => {
                 </div>
               )}
             </div>
-
-            <Dialog open={showJson} onOpenChange={setShowJson}>
-              <DialogContent className="rounded-2xl max-w-2xl max-h-[80vh] flex flex-col">
-                <DialogHeader>
-                  <DialogTitle className="text-sm font-bold">JSON للـ Prompt المولّد</DialogTitle>
-                  <DialogDescription className="text-[11px]">
-                    البيانات المهيكلة المرسلة لموديل الذكاء الاصطناعي
-                  </DialogDescription>
-                </DialogHeader>
-                <pre className="flex-1 overflow-auto rounded-lg bg-slate-50 dark:bg-gray-950 p-3 text-[11px] font-mono leading-relaxed">
-                  {JSON.stringify(buildPromptJson(), null, 2)}
-                </pre>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-lg text-xs"
-                    onClick={() => handleCopyCaption(JSON.stringify(buildPromptJson(), null, 2))}
-                  >
-                    <Copy className="size-3.5 ml-1.5" /> نسخ
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
 
             {/* Output Visualizer */}
             <div className="rounded-2xl bg-white dark:bg-slate-900/60 p-4 shadow-sm">
@@ -2227,7 +2036,11 @@ const AIImageGenerator: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <AspectPreview formData={form} platformLabel={platformLabel} />
+                  <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-slate-400">
+                    <ImageIcon className="size-10 text-slate-300" />
+                    <p className="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-400">جاهز للتوليد</p>
+                    <p className="mt-1 text-[10px] text-slate-400">املأ الحقول المطلوبة واضغط "توليد الصورة"</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -2235,159 +2048,159 @@ const AIImageGenerator: React.FC = () => {
           </div>
 
         </div>
+      </TabsContent>
 
-        {/* Bottom Section: Full Width Created Images Gallery */}
-        <div className="pt-8">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-              <Grid3X3 className="size-4 text-slate-400" />
-              معرض التصاميم
-              <Badge variant="secondary" className="rounded-full px-2 text-[10px]">
-                {gallery.length}
-              </Badge>
-            </h3>
-
-            <div className="flex items-center gap-2">
-              <Select value={galleryFilter} onValueChange={(v) => setGalleryFilter(v || "all")}>
-                <SelectTrigger className="h-8 w-32 text-xs rounded-lg">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">كل المنصات</SelectItem>
-                  {PLATFORMS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="ابحث..."
-                value={gallerySearch}
-                onChange={(e) => setGallerySearch(e.target.value)}
-                className={`h-8 w-44 text-xs ${inputCls}`}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-slate-500"
-                onClick={fetchGallery}
-                disabled={galleryLoading}
-                title="تحديث"
-              >
-                <RefreshCw className={`size-3.5 ${galleryLoading ? "animate-spin" : ""}`} />
-              </Button>
-            </div>
+      <TabsContent value="gallery" className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="size-4 text-slate-400" />
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">كل التصاميم</span>
+            <Badge variant="secondary" className="rounded-full px-2 text-[10px]">
+              {filteredGallery.length}
+            </Badge>
           </div>
 
-          {/* Gallery Grid */}
-          {filteredGallery.length === 0 ? (
-            <div className="flex min-h-[160px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-slate-400">
-              <ImageIcon className="size-7 text-slate-300" />
-              <p className="mt-2 text-xs">
-                {gallerySearch || galleryFilter !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد تصاميم بعد"}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-              {filteredGallery.map((img) => {
-                return (
-                  <div
-                    key={img.filename}
-                    className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:shadow-sm transition-all"
-                  >
-                    <div className="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center overflow-hidden">
-                      <img
-                        src={img.url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-
-                      <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                        {img.platform && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded font-semibold bg-white/90 text-slate-800 dark:bg-slate-950/90 dark:text-slate-200">
-                            {PLATFORMS.find((p) => p.value === img.platform)?.label || img.platform}
-                          </Badge>
-                        )}
-                        {img.aspectRatio && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded font-semibold bg-slate-950/70 text-white border-none">
-                            {img.aspectRatio}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="p-2 text-right space-y-0.5">
-                      {img.purpose && (
-                        <p className="text-[11px] font-bold text-sky-600 dark:text-sky-400">
-                          {VERTICAL_CONFIG[(img.vertical as Vertical) || "general"].purposeOptions.find(
-                            (p) => p.value === img.purpose
-                          )?.label ||
-                            PURPOSES.find((p) => p.value === img.purpose)?.label ||
-                            img.purpose}
-                        </p>
-                      )}
-                      <p className="text-[11px] text-muted-foreground truncate leading-tight" title={img.prompt}>
-                        {img.prompt || "تصميم بدون عنوان"}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-mono">
-                        {formatDate(img.createdAt)}
-                      </p>
-                    </div>
-
-                    <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100 z-20">
-                      <button
-                        type="button"
-                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
-                        onClick={() => {
-                          setImageUrl(img.url);
-                          document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }}
-                        aria-label="عرض"
-                        title="عرض"
-                      >
-                        <ImageIcon className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="فتح"
-                        className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
-                        onClick={() => window.open(img.url, "_blank")}
-                        title="فتح"
-                      >
-                        <ExternalLink className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="استنساخ"
-                        className="rounded-lg bg-sky-500/70 p-2 text-white hover:bg-sky-500 transition-colors"
-                        onClick={() => handleApplySettings(img)}
-                        title="نسخ الخيارات"
-                      >
-                        <Copy className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="حذف"
-                        className="rounded-lg bg-red-500/70 p-2 text-white hover:bg-red-500 transition-colors"
-                        onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
-                        title="حذف"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <Select value={galleryFilter} onValueChange={(v) => setGalleryFilter(v || "all")}>
+              <SelectTrigger className="h-8 w-32 text-xs rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل المنصات</SelectItem>
+                {PLATFORMS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="ابحث..."
+              value={gallerySearch}
+              onChange={(e) => setGallerySearch(e.target.value)}
+              className={`h-8 w-44 text-xs ${inputCls}`}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-500"
+              onClick={fetchGallery}
+              disabled={galleryLoading}
+              title="تحديث"
+            >
+              <RefreshCw className={`size-3.5 ${galleryLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
 
-      </div>
+        {/* Gallery Grid */}
+        {filteredGallery.length === 0 ? (
+          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-slate-400">
+            <ImageIcon className="size-8 text-slate-300" />
+            <p className="mt-2 text-xs">
+              {gallerySearch || galleryFilter !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد تصاميم بعد"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {filteredGallery.map((img) => {
+              return (
+                <div
+                  key={img.filename}
+                  className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:shadow-sm transition-all"
+                >
+                  <div className="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                      {img.platform && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded font-semibold bg-white/90 text-slate-800 dark:bg-slate-950/90 dark:text-slate-200">
+                          {PLATFORMS.find((p) => p.value === img.platform)?.label || img.platform}
+                        </Badge>
+                      )}
+                      {img.aspectRatio && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded font-semibold bg-slate-950/70 text-white border-none">
+                          {img.aspectRatio}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-2 text-right space-y-0.5">
+                    {img.purpose && (
+                      <p className="text-[11px] font-bold text-sky-600 dark:text-sky-400">
+                        {VERTICAL_CONFIG[(img.vertical as Vertical) || "general"].purposeOptions.find(
+                          (p) => p.value === img.purpose
+                        )?.label ||
+                          PURPOSES.find((p) => p.value === img.purpose)?.label ||
+                          img.purpose}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground truncate leading-tight" title={img.prompt}>
+                      {img.prompt || "تصميم بدون عنوان"}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-mono">
+                      {formatDate(img.createdAt)}
+                    </p>
+                  </div>
+
+                  <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100 z-20">
+                    <button
+                      type="button"
+                      className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
+                      onClick={() => {
+                        setImageUrl(img.url);
+                        document.getElementById("ai-generated-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      aria-label="عرض"
+                      title="عرض"
+                    >
+                      <ImageIcon className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="فتح"
+                      className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
+                      onClick={() => window.open(img.url, "_blank")}
+                      title="فتح"
+                    >
+                      <ExternalLink className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="استنساخ"
+                      className="rounded-lg bg-sky-500/70 p-2 text-white hover:bg-sky-500 transition-colors"
+                      onClick={() => handleApplySettings(img)}
+                      title="نسخ الخيارات"
+                    >
+                      <Copy className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="حذف"
+                      className="rounded-lg bg-red-500/70 p-2 text-white hover:bg-red-500 transition-colors"
+                      onClick={() => setDeleteDialog({ open: true, url: img.url, filename: img.filename })}
+                      title="حذف"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </TabsContent>
+
+      </Tabs>
 
       {/* Delete Dialog */}
       <Dialog
