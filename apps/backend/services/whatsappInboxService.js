@@ -379,15 +379,22 @@ class WhatsAppInboxService {
     }
 
     // 7. Send the corrected reply to the customer via WhatsApp
+    let messageSent = false;
     const sessionId = getSessionIdFromMetadata(conversation.metadata);
-    if (!sessionId) {
-      throw new Error('Conversation session is missing');
-    }
 
-    await sendText(sessionId, conversation.customer.phone, correction, {
-      senderId: userId,
-      companyId
-    });
+    if (sessionId) {
+      try {
+        await sendText(sessionId, conversation.customer.phone, correction, {
+          senderId: userId,
+          companyId
+        });
+        messageSent = true;
+      } catch (sendErr) {
+        console.warn('[whatsappInboxService] WhatsApp send failed (correction saved anyway):', sendErr.message);
+      }
+    } else {
+      console.warn('[whatsappInboxService] No session ID found in metadata. Correction saved but message not sent.');
+    }
 
     // 8. Update conversation status
     const metadata = safeJsonParse(conversation.metadata, {});
@@ -419,13 +426,15 @@ class WhatsAppInboxService {
       sessionId,
       contentPreview: correction.substring(0, 60),
       originalMessageId: messageId,
-      guardrailCreated: !!guardrail
+      guardrailCreated: !!guardrail,
+      messageSent
     });
 
     socketService.emitToCompany(companyId, 'conversation:updated', { conversationId });
 
     return {
       success: true,
+      messageSent,
       guardrailCreated: !!guardrail,
       guardrail
     };

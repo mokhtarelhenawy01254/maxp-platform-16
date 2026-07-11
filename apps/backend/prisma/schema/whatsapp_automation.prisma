@@ -27,15 +27,19 @@ model WhatsAppFollowUpStep {
 }
 
 model LeadFollowUpSettings {
-  id          String    @id @default(cuid())
-  companyId   String    @unique
-  isEnabled   Boolean   @default(false)
-  delayHours  Int       @default(24)
-  message     String    @db.Text
-  mediaUrl    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id               String    @id @default(cuid())
+  companyId        String    @unique
+  isEnabled        Boolean   @default(false)
+  delayHours       Int       @default(24)
+  message          String    @db.Text
+  mediaUrl         String?
+  steps            String?   @db.Text  // JSON array of { delayHours, message, mediaUrl }
+  businessHourStart Int?              // 0-23
+  businessHourEnd   Int?              // 0-23
+  timezone         String?            // IANA timezone, default 'UTC'
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("lead_follow_up_settings")
 }
@@ -49,6 +53,8 @@ model LeadFollowUpEnrollment {
   nextSendAt        DateTime
   lastSentAt        DateTime?
   firstMessageAt    DateTime        @default(now())
+  repliedAt         DateTime?
+  currentStep       Int             @default(0)
   logs              String?         @db.Text
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt

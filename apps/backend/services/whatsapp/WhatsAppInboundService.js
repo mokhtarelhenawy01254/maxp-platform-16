@@ -381,12 +381,17 @@ async function saveIncomingMessage(payload) {
   if (syncedCustomer && syncedCustomer.status === 'LEAD') {
     setImmediate(async () => {
       try {
-        const existingEnrollment = await getSharedPrismaClient().leadFollowUpEnrollment.findFirst({
+        const prisma = getSharedPrismaClient();
+        const existingEnrollment = await prisma.leadFollowUpEnrollment.findFirst({
           where: { whatsappContactId: contact.id, status: 'ACTIVE' }
         });
         if (!existingEnrollment) {
           const LeadFollowUpService = require('./LeadFollowUpService');
           await LeadFollowUpService.enrollLead(syncedCustomer.companyId, syncedCustomer.id, contact.id);
+        } else if (existingEnrollment.lastSentAt) {
+          // Lead replied after receiving a follow-up → mark as replied
+          const LeadFollowUpService = require('./LeadFollowUpService');
+          await LeadFollowUpService.markReplied(contact.id);
         }
       } catch (e) {
         console.error('[LEAD-FOLLOWUP] Error enrolling lead:', e.message);

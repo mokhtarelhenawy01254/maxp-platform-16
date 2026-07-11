@@ -527,6 +527,48 @@ def _format_tool_results(executed: list[dict]) -> str:
                 if svc_names:
                     out.append(f"الخدمات: {', '.join(svc_names)}")
                 parts.append("\n".join(out) if out else f"تم استرجاع معلومات المركز ({result.get('total_branches', 0)} فروع).")
+            elif name == "booking_reserve_skill":
+                handled = True
+                err = result.get("error", "")
+                if err:
+                    parts.append(f"تعذر الحجز: {err}")
+                elif result.get("needs_gender"):
+                    parts.append(result.get("message", ""))
+                else:
+                    appt = result.get("appointment") or result
+                    parts.append(
+                        f"تم حجز موعد لـ {result.get('patient', '')} "
+                        f"{'في ' + result.get('branch', '') if result.get('branch') else ''} "
+                        f"{'يوم ' + result.get('day_arabic', '') if result.get('day_arabic') else result.get('date', '')} "
+                        f"{'الساعة ' + result.get('time', '') if result.get('time') else ''} "
+                        f"{'خدمة ' + result.get('service', '') if result.get('service') else ''}"
+                    )
+            elif name == "booking_slots":
+                handled = True
+                available = result.get("available") or []
+                booked = result.get("booked") or []
+                note = result.get("note", "")
+                day = result.get("day", "")
+                date = result.get("date", "")
+                line = f"مواعيد {'يوم ' + day if day else ''} {date}: " if date else "مواعيد متاحة: "
+                if available:
+                    line += ', '.join(available)
+                else:
+                    line += "لا توجد مواعيد متاحة"
+                if note:
+                    line += f" ({note})"
+                parts.append(line)
+            elif name == "booking_status":
+                handled = True
+                if result.get("error"):
+                    parts.append(f"خطأ: {result.get('error')}")
+                elif result.get("cancelled") or result.get("success"):
+                    parts.append("تم إلغاء الحجز بنجاح.")
+                elif result.get("appointment"):
+                    appt = result["appointment"]
+                    parts.append(f"حالة الحجز: {appt.get('status', 'مؤكد')} في {appt.get('branchName', '')} يوم {appt.get('date', '')}")
+                else:
+                    parts.append(f"حالة الحجز: {result.get('status', 'غير معروف')}")
 
             if not handled:
                 id_val = result.get("id") or result.get("number") or result.get("orderId")

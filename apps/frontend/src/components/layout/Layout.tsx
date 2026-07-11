@@ -27,6 +27,7 @@ import ThemeToggle from "../ui/theme-toggle";
 import { apiClient } from "../../services/apiClient";
 import type { ApiRequestConfig } from "../../services/apiClient";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
+import FloatingWhatsAppSupport from "../support/FloatingWhatsAppSupport";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 import PageExplanations from "../common/PageExplanations";
 
@@ -739,15 +740,16 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
          </div>
        )}
 
-       {isSuperAdmin && showActiveUsers && (
-        <ActiveUsersMonitor
-          isOpen={showActiveUsers}
-          onClose={() => setShowActiveUsers(false)}
-        />
-      )}
-    </div>
-  );
-};
+        {isSuperAdmin && showActiveUsers && (
+         <ActiveUsersMonitor
+           isOpen={showActiveUsers}
+           onClose={() => setShowActiveUsers(false)}
+         />
+       )}
+       <FloatingWhatsAppSupport />
+     </div>
+   );
+ };
 
 const LayoutWithSidebarSettings: React.FC<LayoutProps> = (props) => {
   return (
