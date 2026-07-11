@@ -447,7 +447,7 @@ exports.getEmployeeAnalytics = async (req, res) => {
     const userIds = Array.from(employeeMap.keys());
     const users = userIds.length > 0 ? await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, name: true, email: true, profileImage: true },
+      select: { id: true, firstName: true, lastName: true, email: true, avatar: true },
     }) : [];
 
     const userMap = new Map(users.map(u => [u.id, u]));
@@ -464,9 +464,9 @@ exports.getEmployeeAnalytics = async (req, res) => {
 
       return {
         userId: emp.userId,
-        userName: user?.name || 'غير معروف',
+        userName: user ? `${user.firstName} ${user.lastName}`.trim() : 'غير معروف',
         userEmail: user?.email || '',
-        userImage: user?.profileImage || null,
+        userImage: user?.avatar || null,
         assignedConversations: emp.assignedConversations,
         repliedConversations: emp.repliedConversations,
         unrepliedConversations: emp.unrepliedConversations,
