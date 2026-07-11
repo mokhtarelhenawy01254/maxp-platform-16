@@ -17,6 +17,13 @@ interface StatusMappingTabProps {
   saveSettings: () => Promise<void>;
 }
 
+const TYPE_META: Record<string, { label: string; name: string; icon: string }> = {
+  order: { label: "طلب", name: "حالات الطلبات", icon: "📦" },
+  payment: { label: "دفع", name: "حالات الدفع", icon: "💳" },
+  shipping: { label: "شحن", name: "حالات الشحن", icon: "🚚" },
+  preparation: { label: "تجهيز", name: "حالات التجهيز", icon: "⚙️" },
+};
+
 export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
   settings,
   settingsForm,
@@ -27,6 +34,8 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
     wooStatuses,
     fetchingStatuses,
     localStatuses,
+    localStatusesByType,
+    statusColors,
     statusSearch,
     setStatusSearch,
     fetchLocalStatuses,
@@ -37,12 +46,10 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
 
   const customStatusRef = useRef<HTMLInputElement>(null);
 
-  // Fetch local statuses on mount
   useEffect(() => {
     fetchLocalStatuses();
   }, [fetchLocalStatuses]);
 
-  // Fetch woo statuses on mount/settings change
   useEffect(() => {
     if (settings?.hasCredentials) {
       fetchWooStatuses();
@@ -69,14 +76,25 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
     const val = customStatusRef.current?.value?.trim();
     if (val && !settingsForm.statusMapping?.[val]) {
       const newMapping = { ...settingsForm.statusMapping };
-      newMapping[val] = "PROCESSING"; // Default
+      newMapping[val] = "PROCESSING";
       setSettingsForm((prev: any) => ({ ...prev, statusMapping: newMapping }));
       toast.success(`تم إضافة الحالة "${val}"`);
       if (customStatusRef.current) customStatusRef.current.value = "";
-    } else if (settingsForm.statusMapping?.[val]) {
+    } else if (val && settingsForm.statusMapping?.[val]) {
       toast.error("هذه الحالة موجودة بالفعل");
     }
   };
+
+  const getBorderColor = (mappedValue: string | undefined): string => {
+    if (!mappedValue) return "border-l-4 border-l-gray-300 dark:border-l-gray-600";
+    const color = statusColors[mappedValue];
+    if (color) return `border-l-4 [border-left-color:${color}]`;
+    return "border-l-4 border-l-gray-300 dark:border-l-gray-600";
+  };
+
+  const hasAnyTypeStatuses = Object.values(localStatusesByType).some(
+    (arr) => arr.length > 0,
+  );
 
   return (
     <div>
@@ -133,27 +151,39 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        {/* شرح التلوين */}
-        <div className="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-sm text-gray-600 dark:text-gray-400">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-green-500"></span>
-            <span>حالة مكتملة/ناجحة</span>
+        {/* Color Legend */}
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">
+            دليل الألوان (Color Legend):
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-            <span>قيد التجهيز</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-            <span>معلق/انتظار</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-red-500"></span>
-            <span>ملغي/فشل</span>
+          <div className="space-y-2">
+            {Object.entries(TYPE_META).map(([typeKey, meta]) => {
+              const typeStatuses = localStatusesByType[typeKey] || [];
+              return (
+                <div key={typeKey} className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-2 min-w-[110px] shrink-0">
+                    {meta.icon} {meta.name}:
+                  </span>
+                  {typeStatuses.length > 0 ? (
+                    typeStatuses.map((s) => (
+                      <span
+                        key={s.value}
+                        className="px-2 py-0.5 rounded text-[11px] font-medium text-white leading-5"
+                        style={{ backgroundColor: s.color || "#6B7280" }}
+                      >
+                        {s.value}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-400">جاري التحميل...</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* البحث */}
+        {/* Search */}
         <div className="mb-6 relative">
           <input
             type="text"
@@ -176,20 +206,9 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
             {filteredStatuses.map((status, index) => {
               const currentMapping = settingsForm.statusMapping?.[status.slug];
               const isMapped = !!currentMapping;
-
-              // Dynamic border color based on mapping
-              let borderColor =
-                "border-l-4 border-l-gray-300 dark:border-l-gray-600";
-              if (isMapped) {
-                if (currentMapping === "DELIVERED")
-                  borderColor = "border-l-4 border-l-green-500";
-                else if (currentMapping === "PROCESSING")
-                  borderColor = "border-l-4 border-l-blue-500";
-                else if (currentMapping === "PENDING")
-                  borderColor = "border-l-4 border-l-yellow-500";
-                else if (currentMapping === "CANCELLED")
-                  borderColor = "border-l-4 border-l-red-500";
-              }
+              const borderColor = getBorderColor(
+                isMapped ? currentMapping : undefined,
+              );
 
               return (
                 <div
@@ -227,13 +246,34 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
                         handleStatusChange(status.slug, e.target.value)
                       }
                       className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-sm"
+                      style={
+                        isMapped && statusColors[currentMapping]
+                          ? { borderLeftColor: statusColors[currentMapping], borderLeftWidth: "4px" }
+                          : undefined
+                      }
                     >
                       <option value="">-- اختر الحالة المقابلة --</option>
-                      {localStatuses.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label}
-                        </option>
-                      ))}
+                      {Object.entries(localStatusesByType).map(
+                        ([typeKey, statuses]) => {
+                          const meta = TYPE_META[typeKey];
+                          if (statuses.length === 0) return null;
+                          return (
+                            <optgroup key={typeKey} label={`── ${meta?.name || typeKey} ──`}>
+                              {statuses.map((s) => (
+                                <option key={`${typeKey}-${s.value}`} value={s.value}>
+                                  {s.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          );
+                        },
+                      )}
+                      {!hasAnyTypeStatuses &&
+                        localStatuses.map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 </div>
@@ -241,7 +281,7 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
             })}
           </div>
 
-          {/* Add Custom Status Logic */}
+          {/* Add Custom Status */}
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <PlusIcon className="h-4 w-4" />
@@ -271,7 +311,7 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
             </div>
           </div>
 
-          {/* Mappings View */}
+          {/* Current Mappings */}
           <div className="mt-8">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               الخريطة الحالية:
