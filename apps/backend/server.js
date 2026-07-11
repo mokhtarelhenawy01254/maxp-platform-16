@@ -572,6 +572,7 @@ app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
 app.use("/api/v1/public/forms", publicFormsRoutes);
 app.use("/api/v1/public/store-promotions", storePromotionRoutes);
+app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/product-landings", productLandingPagesRoutes);
   console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
 
@@ -782,20 +783,6 @@ app.use("/api/v1/ai-admin", aiAdminProxyRoute);
 app.use("/api/v1/admin/lp-pages", require("./routes/lpAdminRoutes").adminRouter);
 app.use("/api/v1/proxy", proxyRoutes);
 
-// Public support settings (no auth needed - read only)
-app.get("/api/v1/public/support-settings", async (req, res) => {
-  try {
-    const { getSharedPrismaClient } = require("./services/sharedDatabase");
-    const prisma = getSharedPrismaClient();
-    const settings = await prisma.systemSettings.findUnique({
-      where: { systemName: "support_whatsapp" },
-    });
-    const config = settings?.config ? JSON.parse(settings.config) : {};
-    return res.json({ success: true, data: { phone: config.phone || "" } });
-  } catch (error) {
-    return res.json({ success: true, data: { phone: "" } });
-  }
-});
 
 // Platform & Super-Admin
 app.use("/api/v1/super-admin", superAdminRoutes);
