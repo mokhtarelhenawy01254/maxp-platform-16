@@ -107,6 +107,9 @@ const MonthlyPnLDashboard = React.lazy(
 const CLVCalculator = React.lazy(
   () => import("./pages/marketing/CLVCalculator"),
 );
+const UpsellPlanner = React.lazy(
+  () => import("./pages/marketing/UpsellPlanner"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2681,6 +2684,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CLVCalculator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/upsell-planner"
+                  element={
+                    <Layout>
+                      <UpsellPlanner />
                     </Layout>
                   }
                 />
