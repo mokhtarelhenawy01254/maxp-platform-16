@@ -21,10 +21,6 @@ import {
   getApiErrorMessage,
   buildShortageHoldDetails,
   getEffectivePreparationStatus,
-  getNextStatus,
-  getQuickActionLabel,
-  getShortageFollowUpState,
-  getShortageFollowUpVisual,
   mergePlainObjects,
   normalizeStage,
   parseMaybeJsonObject,
@@ -43,7 +39,7 @@ import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
 import { usePreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
 import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
-import PreparationOrderCard from "./preparation/components/PreparationOrderCard";
+import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
 import PreparationPageHeader from "./preparation/components/PreparationPageHeader";
 import PreparationStats from "./preparation/components/PreparationStats";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
@@ -962,95 +958,45 @@ const PreparationQueue: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="mt-3 grid grid-cols-1 gap-2.5 2xl:grid-cols-2">
-            {paginatedOrders.map((order) => {
-              const shortageHoldDetails =
-                shortageHoldDrafts[order.orderNumber] ||
-                buildShortageHoldDetails(order.metadata);
-              const shortageFollowUpVisual =
-                getShortageFollowUpVisual(
-                  getShortageFollowUpState(
-                    shortageHoldDetails.followUpDate,
-                    order.stage,
-                  ),
-                );
-              const nextStatus = getNextStatus(
-                order.stage,
-                preparationSettings.handoffStatus,
-                preparationSettings.startingStatus,
-              );
-              const currentStageStatus =
-                order.stage === "WAITING"
-                  ? preparationSettings.startingStatus
-                  : order.stage === "PREPARING"
-                    ? "PREPARING"
-                    : order.stage === "QUALITY_CHECK"
-                      ? "QUALITY_CHECK"
-                      : order.stage === "PACKAGED"
-                        ? "PACKAGED"
-                        : order.stage === "STOCK_SHORTAGE"
-                          ? SHORTAGE_HOLD_STATUS
-                          : preparationSettings.handoffStatus;
-              const defaultTargetStatus = nextStatus || currentStageStatus;
-              const currentSelection =
-                statusSelections[order.orderNumber] || defaultTargetStatus;
-              const actionLabel =
-                statusSelections[order.orderNumber] &&
-                statusSelections[order.orderNumber] !== defaultTargetStatus
-                  ? "تطبيق المرحلة المختارة"
-                  : getQuickActionLabel(order.stage);
-              const qcCompleted = isQcComplete(order.orderNumber);
-              const rowBusy =
-                rowUpdatingId === order.orderNumber ||
-                shortageSavingOrderId === order.orderNumber;
-              const hasShortageContext =
-                order.missingItemsCount > 0 || order.stage === "STOCK_SHORTAGE";
-
-              return (
-                <PreparationOrderCard
-                  key={order.orderNumber}
-                  order={order}
-                  selected={selectedSet.has(order.orderNumber)}
-                  statusOptions={statusOptions}
-                  statusLabelMap={statusLabelMap}
-                  currentSelection={currentSelection}
-                  actionLabel={actionLabel}
-                  qcCompleted={qcCompleted}
-                  rowBusy={rowBusy}
-                  hasShortageContext={hasShortageContext}
-                  selectedWarehouseId={selectedWarehouseId}
-                  enabledQcChecks={enabledQcChecks}
-                  qcChecklist={qcChecklistState[order.orderNumber]}
-                  shortageHoldDetails={shortageHoldDetails}
-                  shortageFollowUpVisual={shortageFollowUpVisual}
-                  transferingItemKey={transferingItemKey}
-                  printingOrderNumber={printingOrderNumber}
-                  preparationSettings={preparationSettings}
-                  formatPrice={formatPrice}
-                  formatDate={formatDate}
-                  onToggleSelection={toggleOrderSelection}
-                  onQuickTransfer={(orderNumber, item) =>
-                    void handleQuickTransfer(orderNumber, item)
-                  }
-                  onShortageFieldChange={handleShortageFieldChange}
-                  onSaveShortageHoldDetails={saveShortageHoldDetails}
-                  onQcCheckToggle={handleQcCheckToggle}
-                  onStatusSelectionChange={uiActions.setStatusSelection}
-                  onSingleStatusUpdate={(orderNumber, nextStatus) =>
-                    void handleSingleStatusUpdate(orderNumber, nextStatus)
-                  }
-                  onMarkAsShortageHold={(orderNumber) =>
-                    void handleMarkAsShortageHold(orderNumber)
-                  }
-                  onReleaseShortageHold={(orderNumber) =>
-                    void handleReleaseShortageHold(orderNumber)
-                  }
-                  onPrintPreparationSlip={(orderNumber) =>
-                    void handlePrintPreparationSlip(orderNumber)
-                  }
-                />
-              );
-            })}
+          <div className="mt-3">
+            <PreparationOrdersTable
+              orders={paginatedOrders}
+              statusSelections={statusSelections}
+              statusOptions={statusOptions}
+              statusLabelMap={statusLabelMap}
+              selectedSet={selectedSet}
+              rowUpdatingId={rowUpdatingId}
+              shortageSavingOrderId={shortageSavingOrderId}
+              selectedWarehouseId={selectedWarehouseId}
+              enabledQcChecks={enabledQcChecks}
+              qcChecklistState={qcChecklistState}
+              shortageHoldDrafts={shortageHoldDrafts}
+              transferingItemKey={transferingItemKey}
+              printingOrderNumber={printingOrderNumber}
+              preparationSettings={preparationSettings}
+              formatPrice={formatPrice}
+              formatDate={formatDate}
+              onToggleSelection={toggleOrderSelection}
+              onQuickTransfer={(orderNumber, item) =>
+                void handleQuickTransfer(orderNumber, item)
+              }
+              onShortageFieldChange={handleShortageFieldChange}
+              onSaveShortageHoldDetails={saveShortageHoldDetails}
+              onQcCheckToggle={handleQcCheckToggle}
+              onStatusSelectionChange={uiActions.setStatusSelection}
+              onSingleStatusUpdate={(orderNumber, nextStatus) =>
+                void handleSingleStatusUpdate(orderNumber, nextStatus)
+              }
+              onMarkAsShortageHold={(orderNumber) =>
+                void handleMarkAsShortageHold(orderNumber)
+              }
+              onReleaseShortageHold={(orderNumber) =>
+                void handleReleaseShortageHold(orderNumber)
+              }
+              onPrintPreparationSlip={(orderNumber) =>
+                void handlePrintPreparationSlip(orderNumber)
+              }
+            />
           </div>
         )}
 
