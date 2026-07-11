@@ -2040,11 +2040,11 @@ const AIImageGenerator: React.FC = () => {
                 <Label className="text-[10px] font-semibold text-slate-500">البرومبت المولّد</Label>
                 <button
                   type="button"
-                  onClick={() => setShowJson(!showJson)}
+                  onClick={() => setShowJson(true)}
                   className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
                 >
-                  {showJson ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-                  {showJson ? "إخفاء JSON" : "عرض JSON"}
+                  <ChevronDown className="size-3" />
+                  عرض JSON
                 </button>
               </div>
               <Textarea
@@ -2058,11 +2058,6 @@ const AIImageGenerator: React.FC = () => {
                 className={`${inputCls} text-xs leading-relaxed focus-visible:ring-sky-500`}
                 placeholder="سيتم كتابة البرومبت ديناميكياً من الخيارات المدخلة..."
               />
-              {showJson && (
-                <pre className="max-h-48 overflow-auto rounded-lg bg-slate-50 dark:bg-gray-950 p-2.5 text-[10px] font-mono">
-                  {JSON.stringify(buildPromptJson(), null, 2)}
-                </pre>
-              )}
 
               <div className="flex gap-2 pt-1">
                 <Button
@@ -2097,6 +2092,30 @@ const AIImageGenerator: React.FC = () => {
                 </div>
               )}
             </div>
+
+            <Dialog open={showJson} onOpenChange={setShowJson}>
+              <DialogContent className="rounded-2xl max-w-2xl max-h-[80vh] flex flex-col">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold">JSON للـ Prompt المولّد</DialogTitle>
+                  <DialogDescription className="text-[11px]">
+                    البيانات المهيكلة المرسلة لموديل الذكاء الاصطناعي
+                  </DialogDescription>
+                </DialogHeader>
+                <pre className="flex-1 overflow-auto rounded-lg bg-slate-50 dark:bg-gray-950 p-3 text-[11px] font-mono leading-relaxed">
+                  {JSON.stringify(buildPromptJson(), null, 2)}
+                </pre>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg text-xs"
+                    onClick={() => handleCopyCaption(JSON.stringify(buildPromptJson(), null, 2))}
+                  >
+                    <Copy className="size-3.5 ml-1.5" /> نسخ
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Output Visualizer */}
             <div className="rounded-2xl bg-white dark:bg-slate-900/60 p-4 shadow-sm">
