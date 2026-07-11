@@ -494,14 +494,12 @@ async def _rerank_visual(
     results: list[dict[str, Any]],
     limit: int,
 ) -> list[dict[str, Any]]:
-    """Rerank visual search results using Gemini Vision.
-
-    Downloads each product's image and sends all images + the query image
-    to Gemini 2.5 Flash for visual similarity scoring. Falls back to
-    original results on any failure.
-    """
+    import sys as _sys
     rerank_k = min(max(limit * 2, 8), 16)
     candidates = results[:rerank_k]
+    # Skip if no product images available to compare
+    if not any(p.get("image_url") for p in candidates):
+        return results
     if len(candidates) < 2:
         return results
 
@@ -512,7 +510,6 @@ async def _rerank_visual(
     if not api_key:
         return results
 
-    # Download product images concurrently
     async def _dl(url: str) -> bytes | None:
         if not url or not (url.startswith("http://") or url.startswith("https://")):
             return None
@@ -523,16 +520,15 @@ async def _rerank_visual(
         except Exception:
             return None
 
-    product_images = await asyncio.gather(*[_dl(p.get("image_url", "")) for p in candidates])
+    urls = [p.get("image_url", "") for p in candidates]
+    product_images = await asyncio.gather(*[_dl(u) for u in urls])
 
-    # Build Gemini Vision payload: query image + each product image
     parts = [{
         "inlineData": {
             "mimeType": mime_type or "image/jpeg",
             "data": base64.b64encode(query_image_bytes).decode(),
         }
     }]
-    labels = []
     for idx, (prod, img_bytes) in enumerate(zip(candidates, product_images)):
         if img_bytes:
             parts.append({
@@ -543,7 +539,6 @@ async def _rerank_visual(
             })
         else:
             parts.append({"text": f"[{idx + 1}] {prod.get('name', 'unknown')} (no image)"})
-        labels.append(prod)
 
     parts.append({"text": _RERANK_VISUAL_PROMPT})
 
@@ -555,7 +550,6 @@ async def _rerank_visual(
                 "generationConfig": {"temperature": 0.1, "maxOutputTokens": 512},
             })
             if not r.is_success:
-                logger.warning("rerank_vision_api_failed", status=r.status_code, body=r.text[:200])
                 return results
             data = r.json()
             text = (data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", ""))
@@ -573,9 +567,6 @@ async def _rerank_visual(
                 prod["score"] = round(float(s), 4)
                 prod["rerank"] = True
         candidates.sort(key=lambda x: -x["score"])
-        logger.info("rerank_vision_done", count=len(candidates), top=candidates[0]["name"])
-        # Merge reranked candidates back, preserving any results beyond rerank_k
         return candidates + results[rerank_k:]
     except Exception as exc:
-        logger.warning("rerank_vision_failed", error=str(exc)[:200])
         return results
