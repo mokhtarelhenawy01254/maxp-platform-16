@@ -82,6 +82,8 @@ const PreparationQueue: React.FC = () => {
     shortageReasonFilter: uiState.shortageReasonFilter,
     shortageFollowUpFilter: uiState.shortageFollowUpFilter,
     shortageOwnerFilter: uiState.shortageOwnerFilter,
+    productFilter: uiState.productFilter,
+    itemCountFilter: uiState.itemCountFilter,
     search: uiState.search,
   });
   const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
@@ -107,6 +109,8 @@ const PreparationQueue: React.FC = () => {
     shortageReasonFilter,
     shortageFollowUpFilter,
     shortageOwnerFilter,
+    productFilter,
+    itemCountFilter,
     search,
     selectedOrders,
     statusSelections,
@@ -856,7 +860,7 @@ const PreparationQueue: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PreparationPageHeader
         refreshing={refreshing}
         onRefresh={() => void fetchAll(true)}
@@ -879,39 +883,19 @@ const PreparationQueue: React.FC = () => {
       ) : null}
 
       {!preparationSettings.enabled ? (
-        <section className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-            <div>
-              <h2 className="font-semibold text-amber-900">
-                صفحة التجهيز معطلة من الإعدادات
-              </h2>
-              <p className="mt-1 text-sm text-amber-800">
-                التبويب ما زال ظاهرًا للإدارة، لكن الإعدادات الحالية تشير إلى أن
-                workflow التجهيز متوقف. يمكنك إعادة تفعيله من إعدادات الطلبات ثم
-                تبويب تجهيز الطلبات.
-              </p>
-            </div>
-          </div>
-        </section>
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700" />
+          <span className="font-semibold">صفحة التجهيز معطلة</span>
+          <span className="text-amber-700">— يمكن إعادة تفعيلها من إعدادات الطلبات.</span>
+        </div>
       ) : null}
 
       {allOverdueShortageFollowUpCount > 0 ? (
-        <section className="rounded-3xl border border-orange-200 bg-orange-50 px-5 py-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-orange-700" />
-            <div>
-              <h2 className="font-semibold text-orange-900">
-                توجد طلبات مؤجلة تجاوزت موعد المتابعة
-              </h2>
-              <p className="mt-1 text-sm text-orange-800">
-                يوجد حاليًا {allOverdueShortageFollowUpCount} طلب في `مؤجل للعجز`
-                مرّ عليه تاريخ المتابعة. استخدم فلتر السبب أو المسؤول للوصول
-                السريع لها ومراجعتها.
-              </p>
-            </div>
-          </div>
-        </section>
+        <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm text-orange-900">
+          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700" />
+          <span className="font-semibold">{allOverdueShortageFollowUpCount} طلب تجاوز موعد المتابعة</span>
+          <span className="text-orange-700">— استخدم فلتر السبب أو المسؤول للوصول السريع.</span>
+        </div>
       ) : null}
 
       <PreparationFilters
@@ -925,6 +909,8 @@ const PreparationQueue: React.FC = () => {
         shortageOwnerFilter={shortageOwnerFilter}
         shortageOwnerOptions={shortageOwnerOptions}
         shortageFollowUpFilter={shortageFollowUpFilter}
+        productFilter={productFilter}
+        itemCountFilter={itemCountFilter}
         warehouses={warehouses}
         onActiveStageChange={uiActions.setActiveStage}
         onSearchChange={uiActions.setSearch}
@@ -933,6 +919,8 @@ const PreparationQueue: React.FC = () => {
         onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
         onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
         onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
+        onProductFilterChange={uiActions.setProductFilter}
+        onItemCountFilterChange={uiActions.setItemCountFilter}
       />
 
       <PreparationBulkActions
@@ -948,26 +936,17 @@ const PreparationQueue: React.FC = () => {
         onClear={uiActions.clearBulkControls}
       />
 
-      <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              قائمة التنفيذ اليومي
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              الطلبات المعروضة هنا مرتبة بحسب الفلاتر الحالية، ويمكن فتح الطلب
-              أو تحريك مرحلته مباشرة من البطاقة.
-            </p>
-          </div>
-
-          <label className="inline-flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+      <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-2.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">قائمة التنفيذ</span>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
             <input
               type="checkbox"
               checked={allVisibleSelected}
               onChange={toggleSelectAllVisible}
-              className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
             />
-            تحديد كل الطلبات في الصفحة الحالية
+            تحديد الكل
           </label>
         </div>
 
@@ -983,7 +962,7 @@ const PreparationQueue: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="mt-5 grid grid-cols-1 gap-5 2xl:grid-cols-2">
+          <div className="mt-3 grid grid-cols-1 gap-2.5 2xl:grid-cols-2">
             {paginatedOrders.map((order) => {
               const shortageHoldDetails =
                 shortageHoldDrafts[order.orderNumber] ||
@@ -1075,28 +1054,28 @@ const PreparationQueue: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-4 lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-sm text-gray-500">
-            صفحة {pagination.page} من {totalPages} • إجمالي {visibleOrdersCount} طلب
+        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-2.5">
+          <p className="text-xs text-gray-400">
+            صفحة {pagination.page} من {totalPages} • {visibleOrdersCount} طلب
           </p>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={uiActions.goToPreviousPage}
               disabled={pagination.page === 1}
-              className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronRightIcon className="h-4 w-4" />
+              <ChevronRightIcon className="h-3.5 w-3.5" />
               السابق
             </button>
 
             <button
               onClick={() => uiActions.goToNextPage(totalPages)}
               disabled={pagination.page === totalPages}
-              className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               التالي
-              <ChevronLeftIcon className="h-4 w-4" />
+              <ChevronLeftIcon className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
