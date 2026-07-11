@@ -10,6 +10,9 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pydantic import BaseModel
+
+from src.db.models.agent import Agent
 from src.db.repo.review_log_repo import ReviewLogRepo
 from src.db.session import get_session
 
@@ -154,3 +157,35 @@ async def export_logs_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=self-review-logs.csv"},
     )
+
+
+class ReviewModelUpdate(BaseModel):
+    model: str
+
+
+@router.patch("/self-review/agents/{agent_id}/review-model")
+async def set_review_model(
+    agent_id: str,
+    body: ReviewModelUpdate,
+    session: SessionDep,
+) -> dict[str, bool]:
+    from sqlalchemy import select, update
+
+    stmt = select(Agent).where(Agent.agent_id == agent_id)
+    result = await session.execute(stmt)
+    agent = result.scalar_one_or_none()
+    if not agent:
+        from fastapi import HTTPException, status
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
+
+    cfg = dict(agent.config or {})
+    if body.model == "__default__":
+        cfg.pop("reviewModel", None)
+    else:
+        cfg["reviewModel"] = body.model
+    await session.execute(
+        update(Agent).where(Agent.agent_id == agent_id).values(config=cfg)
+    )
+    await session.commit()
+    logger.info("review_model_updated", agent_id=agent_id, model=body.model)
+    return {"success": True}
