@@ -96,7 +96,7 @@ interface WhatsAppInboxProps {
 
 const getSessionTone = (status: string) =>
   String(status || '').toUpperCase() === 'CONNECTED'
-    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200'
+    ? 'bg-success/10 text-success'
     : 'bg-muted text-muted-foreground';
 
 const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode = false }) => {
@@ -320,7 +320,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500 dark:border-slate-600 dark:border-t-cyan-400" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
       </div>
     );
   }
@@ -339,7 +339,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
             {copy.inbox.railTitle}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="wa-slim-scroll flex-1 overflow-y-auto p-2">
           {sessions.map((item) => {
             const active = item.id === activeSession;
             return (
@@ -386,12 +386,10 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                 {heroMetrics.map((metric) => (
                   <div
                     key={metric.label}
-                    className="rounded-lg border border-border/50 bg-muted px-3 py-2 text-center"
+                    className="inline-flex items-baseline gap-1.5 rounded-md bg-muted/40 px-2.5 py-1"
                   >
-                    <div className="text-[11px] font-medium text-muted-foreground">
-                      {metric.label}
-                    </div>
-                    <div className="mt-0.5 text-lg font-bold text-foreground">{metric.value}</div>
+                    <span className="text-lg font-bold tabular-nums text-foreground">{metric.value}</span>
+                    <span className="text-[11px] text-muted-foreground">{metric.label}</span>
                   </div>
                 ))}
               </div>
@@ -437,7 +435,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
 
         <div className="grid min-h-0 flex-1 gap-0 xl:grid-cols-[1fr,320px]">
           <section className="flex min-h-0 flex-col border-r border-border/50 bg-background">
-            <div className="border-b border-border/50 bg-card px-4 py-3 md:px-5">
+            <div className="wa-glass-search-bar border-b border-border/50 bg-card px-4 py-3 md:px-5">
               {error ? (
                 <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
@@ -474,7 +472,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                 </button>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-1.5">
+              <div className="wa-filter-strip mt-3 flex flex-wrap gap-1.5">
                 {queueTabs.map((tab) => (
                   <button
                     key={tab.key || 'all'}
@@ -503,9 +501,12 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-4">
+            <div className="wa-slim-scroll wa-messages-scroll min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-4">
               {conversations.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card px-6 text-center">
+                <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                  <svg className="mb-3 size-12 text-muted-foreground/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                  </svg>
                   <div className="text-base font-semibold text-foreground">
                     {copy.inbox.emptyStateTitle}
                   </div>
@@ -522,7 +523,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                       key={conversation.id}
                       type="button"
                       onClick={() => navigateToChat(conversation.id)}
-                      className="mb-2 w-full rounded-lg border border-border/50 bg-card p-3 text-left shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
+                      className="wa-conversation-item mb-2 w-full rounded-lg border border-border/50 bg-card p-3 text-left shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -557,25 +558,25 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                           {formatWorkflowStatus(conversation.status, i18n.language)}
                         </span>
                         {conversation.assignedUser ? (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
+                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-success">
                             {`${conversation.assignedUser.firstName} ${conversation.assignedUser.lastName}`.trim()}
                           </span>
                         ) : (
-                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                          <span className="rounded-full bg-warning/10 px-2 py-0.5 text-warning">
                             {copy.common.unassigned}
                           </span>
                         )}
                         {conversation.customer.status === 'VIP' ? (
-                          <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
+                          <span className="rounded-full bg-tertiary/10 px-2 py-0.5 text-tertiary">
                             {copy.common.vip}
                           </span>
                         ) : null}
                         {conversation.window?.isOpen ? (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
+                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] text-success">
                             ⏱ {conversation.window.remainingLabel}
                           </span>
                         ) : (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] text-red-700 dark:bg-red-950/30 dark:text-red-200">
+                          <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
                             ✕ {conversation.window.remainingLabel}
                           </span>
                         )}
@@ -600,10 +601,16 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                 {copy.inbox.moderatorPoolTitle}
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            <div className="wa-slim-scroll min-h-0 flex-1 overflow-y-auto p-3">
               {moderatorPool.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-                  {copy.inbox.moderatorPoolEmpty}
+                <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+                  <svg className="mb-2 size-10 text-muted-foreground/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <div className="text-sm text-muted-foreground">{copy.inbox.moderatorPoolEmpty}</div>
                 </div>
               ) : (
                 moderatorPool.map((moderator) => (
@@ -621,7 +628,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                       <span
                         className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                           moderator.online
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200'
+                            ? 'bg-success/10 text-success'
                             : 'bg-muted text-muted-foreground'
                         }`}
                       >

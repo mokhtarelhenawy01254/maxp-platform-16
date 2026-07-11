@@ -85,7 +85,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-8 dark:bg-gray-950" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="mx-auto max-w-7xl">
         {feedback && (
           <div className={`mb-4 flex items-center justify-between rounded-md border px-3 py-2 text-sm ${

@@ -119,6 +119,8 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
   const [customerOrders, setCustomerOrders] = useState<Array<{ id: string; orderNumber?: string; status?: string; createdAt?: string; items?: unknown[]; total?: number }>>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [correctionText, setCorrectionText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const currentRole = useMemo(() => {
@@ -216,6 +218,23 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       });
       setDraft('');
       await loadConversation();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitCorrection = async (messageId: string) => {
+    if (!correctionText.trim() || !conversationId) return;
+    setSaving(true);
+    try {
+      await apiClient.post(`${apiBase}/conversations/${conversationId}/messages/${messageId}/correct${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
+        correction: correctionText.trim(),
+      });
+      setEditingMessageId(null);
+      setCorrectionText('');
+      await loadConversation();
+    } catch (error: any) {
+      alert(error.response?.data?.error || error.message || 'فشل إرسال التصحيح');
     } finally {
       setSaving(false);
     }
@@ -352,22 +371,23 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
 
   const getOrderStatusTheme = (status?: string) => {
     const upper = (status || '').toUpperCase();
+    const mix = (token: string) => `color-mix(in srgb, ${token} 12%, var(--color-background))`;
     if (['COMPLETED', 'DELIVERED', 'PAID'].includes(upper)) {
-      return { background: 'color-mix(in srgb, var(--business-success) 12%, white)', color: 'var(--business-success)' };
+      return { background: mix('var(--business-success)'), color: 'var(--business-success)' };
     }
     if (['CANCELLED', 'REFUNDED', 'RETURNED'].includes(upper)) {
-      return { background: 'color-mix(in srgb, var(--business-danger) 12%, white)', color: 'var(--business-danger)' };
+      return { background: mix('var(--business-danger)'), color: 'var(--business-danger)' };
     }
     if (upper === 'PENDING') {
-      return { background: 'color-mix(in srgb, var(--business-warning) 12%, white)', color: 'var(--business-warning)' };
+      return { background: mix('var(--business-warning)'), color: 'var(--business-warning)' };
     }
     if (upper === 'CONFIRMED') {
-      return { background: 'color-mix(in srgb, var(--color-primary) 12%, white)', color: 'var(--color-primary)' };
+      return { background: mix('var(--color-primary)'), color: 'var(--color-primary)' };
     }
     if (['PROCESSING', 'SHIPPED'].includes(upper)) {
-      return { background: 'color-mix(in srgb, var(--business-chart-tertiary) 12%, white)', color: 'var(--business-chart-tertiary)' };
+      return { background: mix('var(--business-chart-tertiary)'), color: 'var(--business-chart-tertiary)' };
     }
-    return { background: 'color-mix(in srgb, var(--color-border) 42%, white)', color: 'var(--color-muted-foreground)' };
+    return { background: 'color-mix(in srgb, var(--color-border) 42%, var(--color-background))', color: 'var(--color-muted-foreground)' };
   };
 
   const canTransfer = conversation?.canTransfer && ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(currentRole || '');
@@ -375,15 +395,20 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500 dark:border-slate-600 dark:border-t-cyan-400" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
       </div>
     );
   }
 
   if (!conversation) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-        {copy.chat.notAvailable}
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+        <svg className="mb-3 size-12 text-muted-foreground/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        <div className="text-sm text-muted-foreground">
+          {copy.chat.notAvailable}
+        </div>
       </div>
     );
   }
@@ -391,7 +416,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   return (
     <div className="grid h-[calc(100vh-64px)] min-h-0 gap-0 xl:grid-cols-[1fr,380px]">
       <main className="flex min-h-0 flex-col bg-background">
-        <header className="border-b border-border/50 bg-card px-4 py-3 md:px-5">
+        <header className="wa-glass-header border-b border-border/50 bg-card px-4 py-3 md:px-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div className="flex items-start gap-2">
         <button
@@ -442,7 +467,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             ))}
           </select>
           {conversation.customer.status === 'VIP' ? (
-            <span className="rounded-full bg-fuchsia-100 px-2.5 py-0.5 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
+            <span className="rounded-full bg-tertiary/10 px-2.5 py-0.5 text-xs font-medium text-tertiary">
               {copy.chat.vipBadge}
             </span>
           ) : null}
@@ -457,44 +482,95 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             {conversation.flags.ownerLock?.lockExpiresAt ? <span>{copy.chat.lockUntil}: {formatTime(conversation.flags.ownerLock.lockExpiresAt)}</span> : null}
             {conversation.flags.sla?.maxWaitingDeadlineAt ? <span>{copy.chat.slaDeadline}: {formatTime(conversation.flags.sla.maxWaitingDeadlineAt)}</span> : null}
             {conversation.window?.isOpen ? (
-              <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">⏱ {conversation.window.remainingLabel}</span>
+              <span className="rounded-md bg-success/10 px-2 py-0.5 text-success">⏱ {conversation.window.remainingLabel}</span>
             ) : (
-              <span className="rounded-md bg-red-100 px-2 py-0.5 text-red-700 dark:bg-red-950/30 dark:text-red-200">✕ {conversation.window.remainingLabel}</span>
+              <span className="rounded-md bg-destructive/10 px-2 py-0.5 text-destructive">✕ {conversation.window.remainingLabel}</span>
             )}
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-5">
+        <div className="wa-slim-scroll wa-messages-scroll min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-5">
           <div className="space-y-3">
             {conversation.messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.isFromCustomer ? 'justify-start' : 'justify-end'}`}
-              >
+              <div key={message.id} className="space-y-1.5">
                 <div
-                className={`max-w-[72%] rounded-xl px-4 py-3 shadow-sm ${
-                  message.isFromCustomer
-                    ? 'rounded-bl-sm bg-card text-foreground'
-                    : 'rounded-br-sm bg-primary text-primary-foreground'
-                }`}
+                  className={`flex ${message.isFromCustomer ? 'justify-start' : 'justify-end'}`}
                 >
-                  {renderMessageContent(message)}
-                  <div className={`mt-1.5 text-[11px] ${message.isFromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/70'}`}>
-                    {formatTime(message.createdAt)}
-                  </div>
-                  {!message.isFromCustomer && message.user ? (
-                    <div className="mt-0.5 text-[10px] text-primary-foreground/50 text-right">
-                      {`${message.user.firstName} ${message.user.lastName}`.trim()}
+                  <div
+                    className={`wa-bubble wa-bubble-enter max-w-[72%] rounded-xl px-4 py-3 shadow-sm ${
+                      message.isFromCustomer
+                        ? 'rounded-bl-sm bg-card text-foreground'
+                        : 'rounded-br-sm bg-primary text-primary-foreground'
+                    }`}
+                  >
+                    {renderMessageContent(message)}
+                    <div className={`mt-1.5 text-[11px] ${message.isFromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/70'}`}>
+                      {formatTime(message.createdAt)}
                     </div>
-                  ) : null}
+                    {!message.isFromCustomer && message.user && (
+                      <div className="mt-0.5 text-[10px] text-primary-foreground/50 text-right">
+                        {`${message.user.firstName} ${message.user.lastName}`.trim()}
+                      </div>
+                    )}
+                    {!message.isFromCustomer && !message.user && (
+                      <div className="mt-2 border-t border-primary-foreground/20 pt-1.5 flex justify-between items-center text-[10px]">
+                        <span className="text-primary-foreground/60">🤖 رد تلقائي من الوكيل</span>
+                        {editingMessageId !== message.id && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingMessageId(message.id);
+                              setCorrectionText(message.content);
+                            }}
+                            className="text-white hover:underline font-medium cursor-pointer"
+                          >
+                            تصحيح الرد
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
+                {editingMessageId === message.id && (
+                  <div className="flex justify-end">
+                    <div className="w-[72%] bg-muted rounded-xl p-3 border border-border/80 space-y-2">
+                      <div className="text-xs font-semibold text-foreground">تصحيح رد الوكيل:</div>
+                      <textarea
+                        value={correctionText}
+                        onChange={(e) => setCorrectionText(e.target.value)}
+                        className="w-full min-h-[60px] p-2 text-sm rounded border bg-background text-foreground outline-none resize-none focus:border-primary"
+                        placeholder="اكتب الرد الصحيح للعميل هنا لتعليم الوكيل وتصحيح الخطأ..."
+                      />
+                      <div className="flex justify-end gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingMessageId(null);
+                            setCorrectionText('');
+                          }}
+                          className="px-3 py-1.5 rounded bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => submitCorrection(message.id)}
+                          disabled={saving || !correctionText.trim()}
+                          className="px-3 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 font-medium disabled:opacity-50"
+                        >
+                          {saving ? 'جاري الحفظ...' : 'حفظ وتصحيح'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
           </div>
         </div>
 
-        <div className="border-t border-border/50 bg-card px-4 py-3 md:px-5">
+        <div className="wa-input-bar border-t border-border/50 bg-card px-4 py-3 md:px-5">
           <div className="rounded-lg border border-border/50 bg-muted p-3">
             <textarea
               value={draft}
@@ -522,7 +598,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         </div>
       </main>
 
-      <aside className="min-h-0 overflow-y-auto border-l border-border/50 bg-card p-4 md:p-5">
+      <aside className="wa-slim-scroll min-h-0 overflow-y-auto border-l border-border/50 bg-card p-4 md:p-5">
         <div className="space-y-4">
           <section className="rounded-xl border border-border/50 bg-muted/50 p-4">
             <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{copy.chat.tags.title}</div>
@@ -577,7 +653,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   type="button"
                   onClick={transferConversation}
                   disabled={!transferTarget}
-                  className="w-full rounded-lg bg-amber-400 px-3 py-2 text-sm font-medium text-slate-950 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-500 dark:text-slate-950"
+                  className="w-full rounded-lg bg-warning px-3 py-2 text-sm font-medium text-warning-foreground disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {copy.chat.transfer.button}
                 </button>
@@ -679,7 +755,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                       key={order.id}
                       className="rounded-2xl border p-3"
                       style={{
-                        background: 'linear-gradient(180deg, color-mix(in srgb, white 88%, var(--color-background) 12%) 0%, color-mix(in srgb, white 76%, var(--color-background) 24%) 100%)',
+                        background: 'var(--color-card)',
                         borderColor: 'var(--business-card-border)',
                       }}
                     >
@@ -716,8 +792,8 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             <div className="mt-4 space-y-3">
               {conversation.notes.map((note) => (
                 <div key={note.id} className="rounded-lg border border-border/50 bg-card p-3">
-                  <div className="text-sm leading-6 text-slate-700 dark:text-slate-200">{note.content}</div>
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+                  <div className="text-sm leading-6 text-foreground">{note.content}</div>
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground/70">
                     <span>{`${note.author.firstName} ${note.author.lastName}`.trim()}</span>
                     <span>{formatTime(note.createdAt)}</span>
                   </div>

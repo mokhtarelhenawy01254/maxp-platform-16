@@ -16,6 +16,33 @@ interface EmployeePickerProps {
 const getInitials = (firstName = '', lastName = '') =>
   `${firstName.charAt(0)}${lastName.charAt(0)}`.trim() || 'U';
 
+const accentClasses: Record<string, { border: string; bg: string; avatar: string; avatarText: string; check: string }> = {
+  primary: {
+    border: 'border-primary/40',
+    bg: 'bg-primary/5',
+    avatar: 'bg-primary text-primary-foreground',
+    avatarText: 'text-primary-foreground',
+    check: 'text-primary',
+  },
+  secondary: {
+    border: 'border-secondary/40',
+    bg: 'bg-secondary/5',
+    avatar: 'bg-secondary text-secondary-foreground',
+    avatarText: 'text-secondary-foreground',
+    check: 'text-secondary',
+  },
+  tertiary: {
+    border: 'border-tertiary/40',
+    bg: 'bg-tertiary/5',
+    avatar: 'bg-tertiary text-tertiary-foreground',
+    avatarText: 'text-tertiary-foreground',
+    check: 'text-tertiary',
+  },
+};
+
+const getAccent = (mode: RoutingMode) =>
+  mode === 'NUMBER_OWNER' ? accentClasses.primary : mode === 'SHARED_INBOX' ? accentClasses.tertiary : accentClasses.secondary;
+
 const EmployeePicker: React.FC<EmployeePickerProps> = ({
   employees,
   selectedEmployeeIds,
@@ -27,6 +54,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
+  const accent = getAccent(routingMode);
 
   const resolveRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
@@ -133,10 +161,6 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 
         {filteredEmployees.map((employee) => {
           const isSelected = selectedEmployeeIds.includes(employee.id);
-          const accent =
-            routingMode === 'NUMBER_OWNER' ? 'primary' :
-            routingMode === 'SHARED_INBOX' ? 'tertiary' :
-            'secondary';
 
           return (
             <button
@@ -145,19 +169,19 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
               onClick={() => onToggleEmployee(employee.id)}
               className={`flex items-center gap-2 rounded-md border px-3 py-2 text-start transition-colors ${
                 isSelected
-                  ? `border-${accent}/40 bg-${accent}/5`
+                  ? `${accent.border} ${accent.bg}`
                   : 'border-border hover:border-border/80 hover:bg-muted'
               }`}
             >
               <div className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                 isSelected
-                  ? `bg-${accent} text-${accent}-foreground`
+                  ? accent.avatar
                   : 'bg-muted text-muted-foreground'
               }`}>
                 {getInitials(employee.firstName, employee.lastName)}
                 {isSelected && (
                   <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-card shadow">
-                    <Check className={`size-2 text-${accent}`} />
+                    <Check className={`size-2 ${accent.check}`} />
                   </span>
                 )}
               </div>
