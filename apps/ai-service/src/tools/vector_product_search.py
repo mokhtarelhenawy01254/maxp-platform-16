@@ -256,12 +256,15 @@ async def _run_pgvector_search(
 
     q_vec_str = "[" + ",".join(str(x) for x in q_vec) + "]"
     sql = text(_search_query(embed_col, q_vec_str, company_id, limit, min_score, keywords))
+    logger.info("pgvector_search", col=embed_col, vec_len=len(q_vec), qvec_preview=q_vec_str[:80])
     try:
         sf = _db_mod.async_session
         async with sf() as sess:
             rows = await sess.execute(sql, {"cid": company_id, "q_vec": q_vec_str, "lim": limit})
             raw = [dict(r._mapping) for r in rows]
-    except Exception:
+            logger.info("pgvector_search_rows", col=embed_col, count=len(raw))
+    except Exception as exc:
+        logger.warning("pgvector_search_failed", col=embed_col, error=str(exc)[:200])
         return []
     return [_format_product(r) for r in raw if float(r.get("score", 0)) >= min_score]
 
@@ -349,8 +352,10 @@ async def vector_product_search(
     if not company_id or (not query and not image_bytes):
         return []
 
-    # Extract keywords from query text if not explicitly provided
-    kw = keywords or (_extract_keywords(query) if query else None)
+    # Ponytail: default query for image-only search — Gemini multimodal
+    # embedding maps image-only vectors differently from text+image.
+    _search_text = query or ("product image" if image_bytes else "")
+    kw = keywords or (_extract_keywords(_search_text) if _search_text else None)
 
     # Generate ONE multimodal embedding from text + image (or text-only, or image-only)
     _emb_provider = "unknown"
@@ -358,7 +363,7 @@ async def vector_product_search(
         from src.memory.episodic_memory import EpisodicMemoryService
         svc = EpisodicMemoryService()
         emb_result = await svc.generate_embedding_with_provider(
-            text=query or None,
+            text=_search_text or None,
             image_bytes=base64.b64encode(image_bytes).decode() if image_bytes else None,
             mime_type=mime_type,
             task_type="RETRIEVAL_QUERY",
@@ -448,14 +453,21 @@ async def _client_side_fallback(
             """), {"cid": company_id})
             raw = [dict(r._mapping) for r in rows]
 
+        logger.info("client_fallback", col=embed_col, total_rows=len(raw))
         scored = []
         for r in raw:
             emb = _coerce_embedding(r.get("emb_json"))
             if not emb:
+                logger.info("client_fallback_skip", name=r.get("product_name"), reason="no_emb")
                 continue
             score = _cosine(q_emb, emb)
             if score >= min_score:
                 scored.append(_format_product({**r, "score": score}))
-        return sorted(scored, key=lambda x: -x["score"])[:limit]
-    except Exception:
+            else:
+                logger.info("client_fallback_low", name=r.get("product_name"), score=round(score,4))
+        result = sorted(scored, key=lambda x: -x["score"])[:limit]
+        logger.info("client_fallback_result", count=len(scored), limit=limit)
+        return result
+    except Exception as exc:
+        logger.warning("client_fallback_failed", col=embed_col, error=str(exc)[:300])
         return []
