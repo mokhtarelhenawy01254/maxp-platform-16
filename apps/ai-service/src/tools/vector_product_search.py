@@ -416,6 +416,12 @@ async def vector_product_search(
         if url and not (url.startswith("http://") or url.startswith("https://")):
             r["image_url"] = ""
 
+    # Ponytail: visual rerank via Gemini Vision when query image exists.
+    # Gemini sees the actual images, so it can distinguish visually similar
+    # products that pgvector lumps together at ~77%.
+    if image_bytes and results:
+        results = await _rerank_visual(image_bytes, mime_type, results, limit)
+
     _latency = int((time.monotonic() - _start) * 1000)
     logger.info("vector_search results", query=query, company=company_id, count=len(results),
                 top=results[0]["name"] if results else None)
@@ -471,3 +477,105 @@ async def _client_side_fallback(
     except Exception as exc:
         logger.warning("client_fallback_failed", col=embed_col, error=str(exc)[:300])
         return []
+
+
+_RERANK_VISUAL_PROMPT = """You are a visual product matching expert. Compare the query image (image 0) with each product image below.
+
+For each product, rate how visually similar the product image is to the query image on a scale of 0.00 to 1.00.
+Consider: shape, color, pattern, style, material. Be strict — only give high scores (>0.90) to near-identical products.
+
+Return ONLY a JSON object with keys being product numbers and values the similarity scores.
+Example: {"1": 0.95, "2": 0.72, "3": 0.31}"""
+
+
+async def _rerank_visual(
+    query_image_bytes: bytes,
+    mime_type: str | None,
+    results: list[dict[str, Any]],
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Rerank visual search results using Gemini Vision.
+
+    Downloads each product's image and sends all images + the query image
+    to Gemini 2.5 Flash for visual similarity scoring. Falls back to
+    original results on any failure.
+    """
+    rerank_k = min(max(limit * 2, 8), 16)
+    candidates = results[:rerank_k]
+    if len(candidates) < 2:
+        return results
+
+    from src.config import get_settings
+    import httpx, re, json as _json
+
+    api_key = get_settings().google_api_key
+    if not api_key:
+        return results
+
+    # Download product images concurrently
+    async def _dl(url: str) -> bytes | None:
+        if not url or not (url.startswith("http://") or url.startswith("https://")):
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=8) as c:
+                r = await c.get(url)
+                return r.content if r.status_code == 200 else None
+        except Exception:
+            return None
+
+    product_images = await asyncio.gather(*[_dl(p.get("image_url", "")) for p in candidates])
+
+    # Build Gemini Vision payload: query image + each product image
+    parts = [{
+        "inlineData": {
+            "mimeType": mime_type or "image/jpeg",
+            "data": base64.b64encode(query_image_bytes).decode(),
+        }
+    }]
+    labels = []
+    for idx, (prod, img_bytes) in enumerate(zip(candidates, product_images)):
+        if img_bytes:
+            parts.append({
+                "inlineData": {
+                    "mimeType": "image/jpeg",
+                    "data": base64.b64encode(img_bytes).decode(),
+                }
+            })
+        else:
+            parts.append({"text": f"[{idx + 1}] {prod.get('name', 'unknown')} (no image)"})
+        labels.append(prod)
+
+    parts.append({"text": _RERANK_VISUAL_PROMPT})
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    try:
+        async with httpx.AsyncClient(timeout=30) as c:
+            r = await c.post(url, json={
+                "contents": [{"role": "user", "parts": parts}],
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 512},
+            })
+            if not r.is_success:
+                logger.warning("rerank_vision_api_failed", status=r.status_code, body=r.text[:200])
+                return results
+            data = r.json()
+            text = (data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", ""))
+            if not text:
+                return results
+
+        match = re.search(r"\{[\s\S]*\}", text)
+        if not match:
+            return results
+        scores = _json.loads(match.group())
+
+        for i, prod in enumerate(candidates):
+            s = scores.get(str(i + 1))
+            if s is not None:
+                prod["score"] = round(float(s), 4)
+                prod["rerank"] = True
+        candidates.sort(key=lambda x: -x["score"])
+        logger.info("rerank_vision_done", count=len(candidates), top=candidates[0]["name"])
+        # Merge reranked candidates back, preserving any results beyond rerank_k
+        return candidates + results[rerank_k:]
+    except Exception as exc:
+        logger.warning("rerank_vision_failed", error=str(exc)[:200])
+        return results
