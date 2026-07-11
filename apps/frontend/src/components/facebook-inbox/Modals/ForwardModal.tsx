@@ -1,13 +1,25 @@
 import React, { useState } from "react";
 import { X, Search, Send, User } from "lucide-react";
-import { InboxConversation } from "../../../types/inbox.types";
 import { getInboxCustomerAvatarUrl } from "../../../utils/imageUrl";
+
+export interface ForwardConversation {
+  id: string;
+  // Unified inbox uses contactName/contactId/contactAvatar
+  // Facebook inbox uses customerName/customerId/customerAvatar
+  contactName?: string;
+  contactId?: string;
+  contactAvatar?: string | null;
+  customerName?: string;
+  customerId?: string;
+  customerAvatar?: string;
+  pageName?: string;
+}
 
 interface ForwardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onForward: (targetConversationId: string) => Promise<void>;
-  conversations: InboxConversation[];
+  conversations: ForwardConversation[];
 }
 
 const ForwardModal: React.FC<ForwardModalProps> = ({
@@ -24,9 +36,14 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
 
   if (!isOpen) return null;
 
+  const getName = (c: ForwardConversation) => c.contactName || c.customerName || "";
+  const getId = (c: ForwardConversation) => c.contactId || c.customerId || "";
+  const getAvatar = (c: ForwardConversation) =>
+    c.contactAvatar !== undefined ? c.contactAvatar : c.customerAvatar;
+
   const filteredConversations = conversations.filter(
     (c) =>
-      c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getName(c).toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.pageName &&
         c.pageName.toLowerCase().includes(searchQuery.toLowerCase())),
   );
@@ -115,13 +132,13 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
                       : { borderColor: "transparent" }
                   }
                 >
-                  {getInboxCustomerAvatarUrl(conv.customerId, conv.customerAvatar) ? (
+                  {getInboxCustomerAvatarUrl(getId(conv), getAvatar(conv)) ? (
                     <img
                       src={getInboxCustomerAvatarUrl(
-                        conv.customerId,
-                        conv.customerAvatar,
+                        getId(conv),
+                        getAvatar(conv),
                       )}
-                      alt={conv.customerName}
+                      alt={getName(conv)}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
@@ -141,7 +158,7 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
                       className="font-medium"
                       style={{ color: "var(--color-foreground)" }}
                     >
-                      {conv.customerName}
+                      {getName(conv)}
                     </p>
                     <p
                       className="truncate text-xs"

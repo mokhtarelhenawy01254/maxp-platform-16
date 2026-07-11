@@ -1,5 +1,26 @@
 # Backend Bugs Log
 
+### [FEATURE] Multi-Platform AI Correction (`correction_auto` Generalization)
+- **Date**: 2026-07-12
+- **Description**: Extended `correction_auto` from WhatsApp-only to all channels (Facebook, Instagram, Telegram, Unified Inbox).
+- **Architecture Notes**:
+  1. `correctMessage()` in `whatsappInboxService.js` was generalized with platform-specific delivery branches (`WHATSAPP`, `FACEBOOK`, `INSTAGRAM`, `TELEGRAM`), determined by `conversation.channel`.
+  2. Facebook delivery resolves `pageAccessToken` via metadata → `getPageToken()` → `facebookPage` table fallback chain.
+  3. Instagram delivery uses Graph API v22.0 with `instagramAccountId` from `facebookPage` table.
+  4. Telegram delivery checks `metadata.isUserbot` to route between `TelegramUserbotService` and `TelegramBotService`.
+  5. For non-WhatsApp channels, corrected messages are explicitly saved via `prisma.message.create()` since WhatsApp auto-saves via its webhook pipeline but other channels don't.
+  6. Agent matching changed from hardcoded `'whatsapp'` to dynamic `conversation.channel` lookup.
+- **Tricky Behaviors**:
+  - `conversationAccessGuard` in `numberAccessGuard.js` works for non-WhatsApp conversations because it falls back to `conversation.assignedUserId` check when `sessionId` is missing.
+  - `MessageBubble.tsx` (shared between Facebook and Instagram inbox) needed self-contained correction state to avoid prop-drilling editing state through parent components.
+- **Files Modified**:
+  - `apps/backend/services/whatsappInboxService.js` — Generalized `correctMessage` with multi-platform delivery
+  - `apps/backend/routes/unifiedInboxRoutes.js` — Added unified correction route
+  - `apps/frontend/src/pages/unified-inbox/UnifiedInbox.tsx` — Added inline correction UI
+  - `apps/frontend/src/components/facebook-inbox/MessageBubble/MessageBubble.tsx` — Added self-contained correction UI
+  - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx` — Added `onCorrect` prop
+  - `apps/frontend/src/pages/instagram-inbox/InstagramInbox.tsx` — Added `onCorrect` prop
+
 ### [FEATURE] Inbox AI Message Auto-Correction (`correction_auto`) Integration
 - **Date**: 2026-07-11
 - **Description**: Implemented a live correction flow in the WhatsApp Inbox that allows supervisors to correct wrong AI-generated responses inline, automatically training the agent by creating a `correction_auto` guardrail rule.

@@ -93,6 +93,7 @@ interface UnifiedMessage {
   sender: string;
   senderAvatar?: string | null;
   interactiveData: any;
+  isStarred?: boolean;
 }
 
 interface CustomerProfile {
@@ -460,7 +461,7 @@ const UnifiedInbox: React.FC = () => {
     if (!selectedConversation) return;
     try {
       await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/messages/${msgId}/star`);
-      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: m.status } : m));
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, isStarred: !m.isStarred } : m));
     } catch (err) {
       console.error("Error starring message:", err);
     }
@@ -821,21 +822,22 @@ const UnifiedInbox: React.FC = () => {
     }
   }, [selectedConversation]);
 
-  const handleAssign = useCallback(async (userId: string | null) => {
+  const handleAssign = useCallback(async (userId: string | null, name?: string | null) => {
     if (!selectedConversation) return;
     try {
       await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
         assignedTo: userId,
       });
+      const assignee = userId ? { id: userId, name: name || "", avatar: null } : null;
       setConversations(prev =>
         prev.map(c =>
           c.id === selectedConversation.id
-            ? { ...c, assignedTo: userId ? { id: userId, name: "", avatar: null } : null }
+            ? { ...c, assignedTo: assignee }
             : c
         )
       );
       setSelectedConversation(prev =>
-        prev ? { ...prev, assignedTo: userId ? { id: userId, name: "", avatar: null } : null } : null
+        prev ? { ...prev, assignedTo: assignee } : null
       );
     } catch (err) {
       console.error("Error assigning conversation:", err);
@@ -2995,7 +2997,7 @@ const UnifiedInbox: React.FC = () => {
       isOpen={showForwardModal}
       onClose={() => { setShowForwardModal(false); setForwardMessage(null); }}
       onForward={handleForwardMessage}
-      conversations={[]}
+      conversations={conversations}
     />
     </>
   );

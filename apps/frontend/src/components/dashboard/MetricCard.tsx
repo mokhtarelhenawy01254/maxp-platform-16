@@ -30,6 +30,7 @@ interface MetricWithBar extends BaseMetricProps {
 interface MetricSimple extends BaseMetricProps {
   variant: "simple";
   icon?: React.ComponentType<{ className?: string }>;
+  trend?: { value: string; positive: boolean };
 }
 
 type MetricCardProps = MetricWithSparkline | MetricWithTrend | MetricWithBar | MetricSimple;
@@ -191,9 +192,31 @@ export function MetricCard(props: MetricCardProps) {
       )}
       <div className="flex-1 min-w-0">
         <span className="text-xs text-muted-foreground block">{label}</span>
-        <span className="text-lg font-bold tabular-nums tracking-tight text-foreground">
-          {value}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold tabular-nums tracking-tight text-foreground">
+            {value}
+          </span>
+          {p.trend && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold",
+                p.trend.positive
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
+              )}
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              <svg
+                className={cn("w-2.5 h-2.5", p.trend.positive ? "" : "rotate-180")}
+                viewBox="0 0 12 12"
+                fill="none"
+              >
+                <path d="M6 2L10 7H2L6 2Z" fill="currentColor" />
+              </svg>
+              {p.trend.value}
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );

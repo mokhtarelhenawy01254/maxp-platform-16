@@ -76,6 +76,16 @@ export type RevenueHistoryPoint = {
   orders?: number;
 };
 
+export type PreviousPeriod = {
+  trackedOrders: number;
+  revenue: number;
+  items: number;
+  visits: number;
+  newCustomers: number;
+  conversionRate: number;
+  aov: number;
+};
+
 export type DashboardData = {
   company: DashboardCompany;
   dateRange?: { start?: string; end?: string };
@@ -88,6 +98,7 @@ export type DashboardData = {
   inventory?: { lowStockCount: number; outOfStockCount: number };
   topProducts?: DashboardTopProduct[];
   revenueHistory?: RevenueHistoryPoint[];
+  previousPeriod?: PreviousPeriod;
 };
 
 export type DashboardResponse = {

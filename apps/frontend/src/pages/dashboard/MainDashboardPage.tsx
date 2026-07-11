@@ -22,6 +22,17 @@ import type { RevenueHistoryPoint } from "./types";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
 
+function pctDelta(current: number | null | undefined, prev: number | null | undefined): { value: string; positive: boolean } | undefined {
+  const c = current ?? 0;
+  const p = prev ?? 0;
+  if (p === 0 && c === 0) return undefined;
+  if (p === 0) return c > 0 ? { value: "+100%", positive: true } : undefined;
+  const pct = ((c - p) / p) * 100;
+  if (Math.abs(pct) < 0.5) return undefined;
+  const sign = pct > 0 ? "+" : "";
+  return { value: `${sign}${pct.toFixed(1)}%`, positive: pct > 0 };
+}
+
 const PERIOD_LABEL_MAP: Record<string, string> = {
   "today": "companyDashboard.presets.today",
   "yesterday": "companyDashboard.presets.yesterday",
@@ -144,6 +155,7 @@ export default function MainDashboardPage() {
   const recentActivity = dashboard?.recentActivity;
   const topProducts = dashboard?.topProducts ?? [];
   const inventory = dashboard?.inventory;
+  const prev = dashboard?.previousPeriod;
   const isEmpty = !isLoading && !isError && isNewCompany(dashboard);
 
   const revenueHistory = dashboard?.revenueHistory ?? [];
@@ -291,6 +303,8 @@ export default function MainDashboardPage() {
           label={t("companyDashboard.metrics.totalOrders")}
           value={formatLargeNumber(counts?.orders)}
           icon={ShoppingCartIcon}
+          isRtl={i18n.language === "ar"}
+          trend={pctDelta(orderHealth?.trackedOrders, prev?.trackedOrders)}
           onClick={() => navigate("/orders")}
         />
         <MetricCard
@@ -298,6 +312,7 @@ export default function MainDashboardPage() {
           label={t("companyDashboard.metrics.totalCustomers")}
           value={formatLargeNumber(counts?.customers)}
           progress={counts?.customers ? 65 : 0}
+          isRtl={i18n.language === "ar"}
           onClick={() => navigate("/customers")}
         />
         <MetricCard
@@ -305,6 +320,7 @@ export default function MainDashboardPage() {
           label={t("companyDashboard.stats.products")}
           value={formatLargeNumber(counts?.products)}
           icon={CubeIcon}
+          isRtl={i18n.language === "ar"}
           onClick={() => navigate("/products")}
         />
         <MetricCard
@@ -312,6 +328,8 @@ export default function MainDashboardPage() {
           label={t("companyDashboard.rangeStats.storeVisits")}
           value={formatLargeNumber(metrics?.visits)}
           icon={EyeIcon}
+          isRtl={i18n.language === "ar"}
+          trend={pctDelta(metrics?.visits, prev?.visits)}
           onClick={() => navigate("/analytics/orders")}
         />
       </div>
@@ -322,6 +340,8 @@ export default function MainDashboardPage() {
           label={t("companyDashboard.financials.profit")}
           value={formatCurrency(financials?.grossProfit, company?.currency)}
           icon={ChartBarIcon}
+          isRtl={i18n.language === "ar"}
+          trend={pctDelta(financials?.grossProfit, prev?.revenue)}
           onClick={() => navigate("/analytics/orders/revenue")}
         />
         <MetricCard
@@ -329,6 +349,8 @@ export default function MainDashboardPage() {
           label={t("companyDashboard.financials.aov")}
           value={formatCurrency(financials?.aov, company?.currency)}
           icon={CurrencyDollarIcon}
+          isRtl={i18n.language === "ar"}
+          trend={pctDelta(financials?.aov, prev?.aov)}
           onClick={() => navigate("/analytics/orders")}
         />
       </div>

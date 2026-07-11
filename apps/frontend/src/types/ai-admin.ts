@@ -8,6 +8,7 @@ export interface AiKey {
   key_type: string;
   company_id?: string;
   is_active: boolean;
+  models?: { id: string; model_name: string; is_enabled: boolean }[];
   max_requests_per_day: number;
   current_usage: number;
   priority: number;
@@ -31,6 +32,9 @@ export interface CreateAiKeyPayload {
   provider: string;
   name: string;
   api_key: string;
+  key_type?: string;
+  max_requests_per_day?: number;
+  priority?: number;
   models?: string[];
 }
 
@@ -55,6 +59,26 @@ export interface AiTestResult {
   reply?: string;
   error?: string;
   [key: string]: unknown;
+}
+
+export interface AiKeyUpdatePayload {
+  name?: string;
+  api_key?: string;
+  base_url?: string;
+  max_requests_per_day?: number;
+  priority?: number;
+  is_active?: boolean;
+  key_type?: string;
+  company_id?: string;
+}
+
+export interface GlobalConfig {
+  id: string;
+  default_provider: string | null;
+  enable_failover: boolean;
+  provider_priority: string[];
+  settings: Record<string, unknown>;
+  updated_at: string;
 }
 
 export interface DashboardStats {

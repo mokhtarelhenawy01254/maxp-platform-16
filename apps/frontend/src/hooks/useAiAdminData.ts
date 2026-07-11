@@ -29,3 +29,11 @@ export function useAiDashboard() {
     staleTime: 30_000,
   });
 }
+
+export function useAiGlobalConfig() {
+  return useQuery({
+    queryKey: ["ai-admin", "config"],
+    queryFn: () => aiAdminService.getGlobalConfig(),
+    staleTime: 1000 * 60 * 5,
+  });
+}

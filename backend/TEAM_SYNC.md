@@ -1,5 +1,15 @@
 # Team Sync Updates
 
+## 2026-07-12 / 2026-03-09
+- **Multi-Platform AI Correction (`correction_auto` Generalization) (FEATURE / COMPLETE)**: Extended the WhatsApp-only `correction_auto` feature to work across ALL inbox channels (Facebook, Instagram, Telegram, and Unified Inbox):
+  1. Generalized `correctMessage()` in `whatsappInboxService.js` with multi-platform delivery: WhatsApp (via `sendText`), Facebook (via `sendProductionFacebookMessage`), Instagram (via Graph API), and Telegram (via `TelegramBotService` / `TelegramUserbotService`).
+  2. Agent lookup now matches `conversation.channel` dynamically instead of hardcoded 'whatsapp'.
+  3. Added `POST /conversations/:conversationId/messages/:messageId/correct` route in `unifiedInboxRoutes.js` with `conversationAccessGuard` middleware.
+  4. Built inline correction UI in `UnifiedInbox.tsx` — AI messages show "🤖 رد تلقائي من الوكيل" badge with "✏️ تصحيح الرد" button.
+  5. Built self-contained correction UI in `MessageBubble.tsx` (shared component) — used by both `FacebookInbox.tsx` and `InstagramInbox.tsx` with `onCorrect` callback for message reload.
+  6. For non-WhatsApp channels, corrected messages are saved to DB via `prisma.message.create` (WhatsApp auto-saves via webhook).
+  7. All channel failures are gracefully degraded: correction is saved even if platform delivery fails.
+
 ## 2026-07-11 / 2026-03-09
 - **Inbox AI Message Auto-Correction Feature (`correction_auto`) (FEATURE / COMPLETE)**: Implemented a live correction flow in the WhatsApp Inbox enabling supervisors to correct wrong AI responses on-the-fly:
   1. Added `POST /conversations/:conversationId/messages/:messageId/correct` endpoint in Express backend with `conversationAccessGuard` and `inbox.send` permission.
