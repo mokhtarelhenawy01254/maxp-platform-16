@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -50,28 +50,25 @@ import {
   Plus, Trash2, Copy, FlaskConical, Search, RefreshCw,
   Eye, EyeOff, Check, X,
   Activity, CheckCircle2, XCircle, Zap, Gauge, Loader2,
-  ChevronUp, ChevronDown, Download, FileText,
+  ChevronUp,
   Info, ArrowUpDown, ArrowUp, ArrowDown,
-  ToggleLeft, ToggleRight, History, Settings,
+  ToggleLeft, ToggleRight, History,
 } from "lucide-react";
-import { useAiProviders, useAiKeys, useAiDashboard, useAiGlobalConfig } from "../../hooks/useAiAdminData";
+import { useAiProviders, useAiKeys, useAiDashboard } from "../../hooks/useAiAdminData";
 import {
   useCreateKey,
   useToggleKeyStatus,
   useDeleteKey,
   useTestKey,
-  useBatchTestKeys,
   useUpdateKey,
-  useUpdateGlobalConfig,
-  useSetProviderPriority,
 } from "../../hooks/useKeyMutations";
 import { aiAdminService } from "../../services/aiAdminService";
 import type {
-  AiKey, AiProvider, DashboardStats, AiTestResult,
-  AiKeyUpdatePayload, GlobalConfig, AiKeyLog, CreateAiKeyPayload,
+  AiKey, AiProvider, DashboardStats,
+  AiKeyUpdatePayload, AiKeyLog, CreateAiKeyPayload,
 } from "../../types/ai-admin";
 
-type SortKey = "name" | "provider" | "key_type" | "is_active" | "current_usage" | "priority" | "created_at";
+type SortKey = "name" | "provider" | "key_type" | "is_active" | "current_usage" | "created_at";
 type SortDir = "asc" | "desc";
 interface SortConfig { key: SortKey; dir: SortDir; }
 
@@ -95,7 +92,6 @@ function sortKeys(keys: AiKey[], sort: SortConfig | null): AiKey[] {
     let av: unknown = a[k], bv: unknown = b[k];
     if (k === "is_active") { av = a.is_active ? 1 : 0; bv = b.is_active ? 1 : 0; }
     if (k === "current_usage") { av = a.current_usage ?? 0; bv = b.current_usage ?? 0; }
-    if (k === "priority") { av = a.priority ?? 0; bv = b.priority ?? 0; }
     if (av == null) return 1; if (bv == null) return -1;
     const cmp = typeof av === "string" ? (av as string).localeCompare(bv as string) : (av as number) - (bv as number);
     return cmp * d;
@@ -112,25 +108,6 @@ function SortHeader({ label, sortKey, sort, onSort }: { label: string; sortKey: 
       </span>
     </TableHead>
   );
-}
-
-function exportCsv(keys: AiKey[], filename = "ai-keys.csv") {
-  const rows = [["Name", "Provider", "Key", "Type", "Status", "Usage%", "Priority", "Created"]];
-  keys.forEach((k) => {
-    rows.push([
-      k.name, k.provider, k.api_key_masked || "", k.key_type,
-      k.is_active ? "Active" : "Inactive",
-      k.max_requests_per_day ? String(Math.round((k.current_usage / k.max_requests_per_day) * 100)) : "0",
-      String(k.priority ?? 1),
-      k.created_at ? new Date(k.created_at).toLocaleDateString() : "",
-    ]);
-  });
-  const bom = "\uFEFF";
-  const csv = bom + rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
 }
 
 function StatCard({ label, value, icon, color, large }: {
@@ -226,141 +203,6 @@ function CollapsibleSection({ icon, title, badge, children, action }: {
       </div>
       {open && <div className="px-4 pb-4">{children}</div>}
     </div>
-  );
-}
-
-function HealthSection({ keys, healthResults, isTesting, onHealthCheck }: {
-  keys: AiKey[]; healthResults: Record<string, AiTestResult> | null; isTesting: boolean; onHealthCheck: () => void;
-}) {
-  const healthy = healthResults ? Object.values(healthResults).filter((r) => r.success || r.ok).length : 0;
-  const total = keys.length;
-
-  return (
-    <CollapsibleSection
-      icon={<Activity className="size-4" />}
-      title="الفحص الصحي للمفاتيح"
-      badge={healthResults ? <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${healthy === total ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>{healthy}/{total} سليم</span> : null}
-      action={
-        <div className="flex items-center gap-2">
-          {isTesting ? <span className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="size-3 animate-spin" /> جاري الفحص...</span> : null}
-          <Button size="sm" variant="outline" onClick={onHealthCheck} disabled={isTesting} className="h-8"><FlaskConical className="size-3.5 ml-1" />فحص الكل</Button>
-        </div>
-      }
-    >
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {keys.map((k) => {
-          const hr = healthResults?.[k.id];
-          return (
-            <div key={k.id} className={`p-2.5 rounded-xl text-xs transition-all duration-150 ${hr ? hr.success || hr.ok ? "bg-green-50/80 dark:bg-green-950/40 ring-1 ring-green-200 dark:ring-green-800/50" : "bg-red-50/80 dark:bg-red-950/40 ring-1 ring-red-200 dark:ring-red-800/50" : "bg-muted/20 ring-1 ring-border"}`}>
-              <p className="font-medium truncate" title={k.name}>{k.name}</p>
-              <p className="text-muted-foreground mt-0.5">{k.provider}</p>
-              {hr ? (
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  {hr.success || hr.ok ? <><CheckCircle2 className="size-3 text-green-600" /><span className="text-green-600 font-medium">سليم</span></> : <><XCircle className="size-3 text-red-600" /><span className="text-red-600 font-medium" title={hr.error}>عطل</span></>}
-                  {hr.latency_ms != null ? <span className="text-muted-foreground mr-auto">{hr.latency_ms}ms</span> : null}
-                </div>
-              ) : <p className="text-muted-foreground mt-1.5">لم يختبر</p>}
-            </div>
-          );
-        })}
-      </div>
-    </CollapsibleSection>
-  );
-}
-
-function ProviderPriorityPanel({ providers, config, onSave }: {
-  providers: string[]; config: GlobalConfig | undefined; onSave: (ordered: string[]) => void;
-}) {
-  const [order, setOrder] = useState<string[]>([]);
-  const [dirty, setDirty] = useState(false);
-  const priorityList = config?.provider_priority?.length ? config.provider_priority : providers;
-
-  function moveUp(i: number) {
-    if (i <= 0) return;
-    const next = [...(dirty ? order : priorityList)];
-    [next[i - 1], next[i]] = [next[i], next[i - 1]];
-    setOrder(next); setDirty(true);
-  }
-  function moveDown(i: number) {
-    const list = dirty ? order : priorityList;
-    if (i >= list.length - 1) return;
-    const next = [...list];
-    [next[i], next[i + 1]] = [next[i + 1], next[i]];
-    setOrder(next); setDirty(true);
-  }
-  const list = dirty ? order : priorityList;
-
-  return (
-    <CollapsibleSection
-      icon={<FileText className="size-4" />}
-      title="ترتيب أولوية المزودين"
-    >
-      <div className="space-y-1 max-w-md">
-        {list.map((p, i) => (
-          <div key={p} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-muted/20 ring-1 ring-border text-sm hover:bg-muted/40 transition-colors">
-            <span className="flex items-center justify-center size-6 rounded-lg bg-primary/10 text-primary text-xs font-bold">{i + 1}</span>
-            <span className="flex-1 font-medium">{p}</span>
-            <button className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors" onClick={() => moveUp(i)} disabled={i === 0}><ChevronUp className="size-3.5" /></button>
-            <button className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors" onClick={() => moveDown(i)} disabled={i === list.length - 1}><ChevronDown className="size-3.5" /></button>
-          </div>
-        ))}
-        {dirty && (
-          <div className="flex gap-2 mt-3">
-            <Button size="sm" onClick={() => { onSave(order); setDirty(false); }}>حفظ الترتيب</Button>
-            <Button size="sm" variant="outline" onClick={() => { setDirty(false); setOrder([]); }}>إلغاء</Button>
-          </div>
-        )}
-      </div>
-    </CollapsibleSection>
-  );
-}
-
-function GlobalConfigSection({ config, providers, onUpdateConfig }: {
-  config: GlobalConfig | undefined; providers: string[]; onUpdateConfig: (payload: Partial<GlobalConfig>) => void;
-}) {
-  const [failover, setFailover] = useState(config?.enable_failover ?? false);
-  const [defaultProvider, setDefaultProvider] = useState(config?.default_provider ?? "");
-  const [dirty, setDirty] = useState(false);
-
-  function handleSave() {
-    const payload: Partial<GlobalConfig> = {};
-    if (failover !== config?.enable_failover) payload.enable_failover = failover;
-    if (defaultProvider !== (config?.default_provider ?? "")) payload.default_provider = defaultProvider || null;
-    onUpdateConfig(payload);
-    setDirty(false);
-  }
-
-  return (
-    <CollapsibleSection
-      icon={<Settings className="size-4" />}
-      title="الإعدادات العامة"
-    >
-      <div className="space-y-4 max-w-md">
-        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 ring-1 ring-border">
-          <div>
-            <label className="text-sm font-medium">تفعيل التبديل التلقائي</label>
-            <p className="text-xs text-muted-foreground mt-0.5">Failover — عند فشل مزود، انتقل تلقائيًا للمزود التالي</p>
-          </div>
-          <button
-            onClick={() => { setFailover(!failover); setDirty(true); }}
-            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 shrink-0 ${failover ? "bg-primary" : "bg-muted-foreground/20"}`}
-          >
-            <span className={`inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${failover ? "translate-x-6" : "translate-x-0.5"}`} />
-          </button>
-        </div>
-        <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border">
-          <label className="text-sm font-medium mb-1.5 block">المزود الافتراضي</label>
-          <Select value={defaultProvider} onValueChange={(v) => { setDefaultProvider(v); setDirty(true); }}>
-            <SelectTrigger><SelectValue placeholder="تلقائي" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">تلقائي</SelectItem>
-              {providers.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        {dirty && <Button size="sm" onClick={handleSave}>حفظ الإعدادات</Button>}
-      </div>
-    </CollapsibleSection>
   );
 }
 
@@ -487,8 +329,6 @@ function KeyManagerContent() {
   const { data: providers, isLoading: providersLoading, error: providersError } = useAiProviders();
   const { data: keys, isLoading: keysLoading, error: keysError } = useAiKeys();
   const { data: dashboard, isLoading: dashboardLoading } = useAiDashboard();
-  const { data: globalConfig } = useAiGlobalConfig();
-
   const [searchQuery, setSearchQuery] = useState("");
   const [providerFilter, setProviderFilter] = useState("");
   const [sort, setSort] = useState<SortConfig | null>(null);
@@ -500,16 +340,11 @@ function KeyManagerContent() {
   const [editTarget, setEditTarget] = useState<AiKey | null>(null);
   const [detailTarget, setDetailTarget] = useState<AiKey | null>(null);
 
-  const [healthResults, setHealthResults] = useState<Record<string, AiTestResult> | null>(null);
-
   const createKeyMutation = useCreateKey();
   const toggleStatusMutation = useToggleKeyStatus();
   const deleteKeyMutation = useDeleteKey();
   const testKeyMutation = useTestKey();
-  const batchTestMutation = useBatchTestKeys();
   const updateKeyMutation = useUpdateKey();
-  const updateConfigMutation = useUpdateGlobalConfig();
-  const setPriorityMutation = useSetProviderPriority();
 
   const providerList = useMemo(() => {
     if (!Array.isArray(providers)) return [];
@@ -579,14 +414,6 @@ function KeyManagerContent() {
     queryClient.invalidateQueries({ queryKey: ["ai-admin"] });
     toast.success("تم تحديث البيانات");
   }
-  function handleHealthCheck() {
-    if (!Array.isArray(keys) || keys.length === 0) return;
-    batchTestMutation.mutate(keys.map((k) => k.id), {
-      onSuccess: (results) => setHealthResults(results),
-      onError: () => toast.error("فشل فحص المفاتيح"),
-    });
-  }
-
   function usagePercent(key: AiKey) {
     if (!key.max_requests_per_day) return 0;
     return Math.round((key.current_usage / key.max_requests_per_day) * 100);
@@ -607,9 +434,6 @@ function KeyManagerContent() {
   return (
     <div>
       {dashboard && !dashboardLoading ? <StatsGrid dashboard={dashboard} /> : null}
-      <HealthSection keys={filteredKeys} healthResults={healthResults} isTesting={batchTestMutation.isPending} onHealthCheck={handleHealthCheck} />
-      <ProviderPriorityPanel providers={providerList} config={globalConfig} onSave={(ordered) => setPriorityMutation.mutate(ordered)} />
-      <GlobalConfigSection config={globalConfig} providers={providerList} onUpdateConfig={(p) => updateConfigMutation.mutate(p)} />
 
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -626,7 +450,6 @@ function KeyManagerContent() {
         </Select>
         <Button onClick={() => setShowAddDialog(true)} className="shadow-sm"><Plus className="size-4 ml-1" /> إضافة مفتاح</Button>
         <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث" className="border-0 shadow-sm bg-card"><RefreshCw className="size-4" /></Button>
-        <Button variant="outline" size="sm" onClick={() => exportCsv(sortedKeys)} title="تصدير CSV" className="border-0 shadow-sm bg-card"><Download className="size-4 ml-1" />CSV</Button>
       </div>
 
       {/* Bulk actions */}
@@ -653,13 +476,12 @@ function KeyManagerContent() {
               <SortHeader label="النوع" sortKey="key_type" sort={sort} onSort={handleSort} />
               <SortHeader label="الحالة" sortKey="is_active" sort={sort} onSort={handleSort} />
               <SortHeader label="الاستخدام" sortKey="current_usage" sort={sort} onSort={handleSort} />
-              <SortHeader label="الأولوية" sortKey="priority" sort={sort} onSort={handleSort} />
               <TableHead>الإجراءات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedKeys.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">لا توجد مفاتيح مطابقة</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">لا توجد مفاتيح مطابقة</TableCell></TableRow>
             ) : (
               sortedKeys.map((k, idx) => {
                 const up = usagePercent(k);
@@ -685,7 +507,6 @@ function KeyManagerContent() {
                         <span className={`text-xs shrink-0 font-medium ${up >= 85 ? "text-red-600" : "text-muted-foreground"}`}>{up}%</span>
                       </div>
                     </TableCell>
-                    <TableCell><span className="text-xs font-medium">{k.priority ?? 1}</span></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                         <button className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-colors" title="نسخ" onClick={() => handleCopyKey(k.api_key, k.api_key_masked)}><Copy className="size-3.5" /></button>
@@ -837,7 +658,6 @@ function EditKeyDialog({ target, onClose, onUpdated, updateKeyMutation }: {
   const [showKey, setShowKey] = useState(false);
   const [keyType, setKeyType] = useState(target.key_type);
   const [maxRequests, setMaxRequests] = useState(String(target.max_requests_per_day || 1500));
-  const [priority, setPriority] = useState(String(target.priority || 1));
 
   function handleSave() {
     if (!name) { toast.error("الاسم مطلوب"); return; }
@@ -845,7 +665,6 @@ function EditKeyDialog({ target, onClose, onUpdated, updateKeyMutation }: {
     if (apiKey) payload.api_key = apiKey;
     payload.key_type = keyType;
     payload.max_requests_per_day = parseInt(maxRequests) || 1500;
-    payload.priority = parseInt(priority) || 1;
     updateKeyMutation.mutate({ id: target.id, payload }, { onSuccess: onUpdated });
   }
   return (
@@ -867,7 +686,6 @@ function EditKeyDialog({ target, onClose, onUpdated, updateKeyMutation }: {
                 <SelectContent><SelectItem value="CENTRAL">مركزي</SelectItem><SelectItem value="COMPANY">شركة</SelectItem></SelectContent>
               </Select>
             </div>
-            <div className="flex-1"><label className="text-sm font-medium mb-1 block">الأولوية</label><Input type="number" value={priority} onChange={(e) => setPriority(e.target.value)} min={1} /></div>
           </div>
           <div className="flex gap-3">
             <div className="flex-1"><label className="text-sm font-medium mb-1 block">حد الطلبات/اليوم</label><Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(e.target.value)} min={1} /></div>
