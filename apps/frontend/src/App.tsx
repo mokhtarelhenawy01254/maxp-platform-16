@@ -773,6 +773,9 @@ const SuperAdminCompaniesReports = React.lazy(
 const SuperAdminCompanyDetails = React.lazy(
   () => import("./pages/super-admin/SuperAdminCompanyDetails"),
 );
+const SuperAdminSelfReviewLogs = React.lazy(
+  () => import("./pages/super-admin/SuperAdminSelfReviewLogs"),
+);
 const SuperAdminFollowUp = React.lazy(
   () => import("./pages/SuperAdminFollowUp"),
 );
