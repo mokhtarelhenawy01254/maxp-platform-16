@@ -851,6 +851,7 @@ export const getSidebarConfig = (
                 { to: '/tools/monthly-pnl', icon: ChartBarIcon, label: t('sidebar.monthlyPnL') },
                 { to: '/tools/clv-calculator', icon: UserGroupIcon, label: t('sidebar.clvCalculator') },
                 { to: '/tools/upsell-planner', icon: ArrowTrendingUpIcon, label: t('sidebar.upsellPlanner') },
+                { to: '/tools/refund-rate', icon: ShieldExclamationIcon, label: t('sidebar.refundRateCalculator') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])

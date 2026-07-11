@@ -110,6 +110,9 @@ const CLVCalculator = React.lazy(
 const UpsellPlanner = React.lazy(
   () => import("./pages/marketing/UpsellPlanner"),
 );
+const RefundRateCalculator = React.lazy(
+  () => import("./pages/marketing/RefundRateCalculator"),
+);
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
 );
@@ -2692,6 +2695,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <UpsellPlanner />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/refund-rate"
+                  element={
+                    <Layout>
+                      <RefundRateCalculator />
                     </Layout>
                   }
                 />
