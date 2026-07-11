@@ -16,27 +16,30 @@ interface EmployeePickerProps {
 const getInitials = (firstName = '', lastName = '') =>
   `${firstName.charAt(0)}${lastName.charAt(0)}`.trim() || 'U';
 
-const accentClasses: Record<string, { border: string; bg: string; avatar: string; avatarText: string; check: string }> = {
+const accentClasses: Record<string, { border: string; bg: string; avatar: string; avatarText: string; check: string; ring: string }> = {
   primary: {
-    border: 'border-primary/40',
-    bg: 'bg-primary/5',
+    border: 'border-primary/50',
+    bg: 'bg-primary/10',
     avatar: 'bg-primary text-primary-foreground',
     avatarText: 'text-primary-foreground',
     check: 'text-primary',
+    ring: 'ring-primary/30',
   },
   secondary: {
-    border: 'border-secondary/40',
-    bg: 'bg-secondary/5',
+    border: 'border-secondary/50',
+    bg: 'bg-secondary/10',
     avatar: 'bg-secondary text-secondary-foreground',
     avatarText: 'text-secondary-foreground',
     check: 'text-secondary',
+    ring: 'ring-secondary/30',
   },
   tertiary: {
-    border: 'border-tertiary/40',
-    bg: 'bg-tertiary/5',
+    border: 'border-tertiary/50',
+    bg: 'bg-tertiary/10',
     avatar: 'bg-tertiary text-tertiary-foreground',
     avatarText: 'text-tertiary-foreground',
     check: 'text-tertiary',
+    ring: 'ring-tertiary/30',
   },
 };
 
@@ -159,9 +162,9 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
               key={employee.id}
               type="button"
               onClick={() => onToggleEmployee(employee.id)}
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-start transition-colors ${
+              className={`flex items-center gap-2 rounded-md border-2 px-3 py-2 text-start transition-colors ${
                 isSelected
-                  ? `${accent.border} ${accent.bg}`
+                  ? `${accent.border} ${accent.bg} ring-1 ${accent.ring}`
                   : 'border-border hover:border-border/80 hover:bg-muted'
               }`}
             >

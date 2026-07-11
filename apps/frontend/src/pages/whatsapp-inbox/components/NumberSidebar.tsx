@@ -129,10 +129,10 @@ const NumberSidebar: React.FC<NumberSidebarProps> = ({
             <button
               key={number.sessionId}
               onClick={() => onSelect(number.sessionId)}
-              className={`flex w-full items-center gap-3 px-2 py-2 text-start transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-md border-2 px-2 py-2 text-start transition-colors ${
                 isSelected
-                  ? 'bg-primary/10'
-                  : 'hover:bg-muted'
+                  ? 'border-primary/40 bg-primary/15'
+                  : 'border-transparent hover:bg-muted'
               }`}
             >
               <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
