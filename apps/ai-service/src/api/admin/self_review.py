@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.db.models.agent import Agent
 from src.db.repo.review_log_repo import ReviewLogRepo
@@ -160,7 +160,7 @@ async def export_logs_csv(
 
 
 class ReviewModelUpdate(BaseModel):
-    model: str
+    model: str = Field(pattern=r"^[a-zA-Z0-9_.-]+$")
 
 
 @router.patch("/self-review/agents/{agent_id}/review-model")

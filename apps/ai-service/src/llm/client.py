@@ -375,7 +375,7 @@ class LLMClient:
             extra_params["response_format"] = self._build_response_format(output_schema)
 
         tool_choice = options.get("tool_choice")
-        if openai_tools and tool_choice != "none":
+        if openai_tools:
             extra_params["tools"] = openai_tools
             extra_params["tool_choice"] = tool_choice if tool_choice is not None else "auto"
             if self.provider == "DEEPSEEK":

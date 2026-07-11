@@ -72,7 +72,7 @@ class ReviewLogRepo:
         stmt = (
             select(ReviewLog)
             .where(*where)
-            .order_by(ReviewLog.created_at.desc())
+            .order_by(ReviewLog.created_at.desc(), ReviewLog.id.desc())
             .limit(limit)
             .offset(offset)
         )

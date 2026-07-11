@@ -354,7 +354,14 @@ export default function MainDashboardPage() {
         />
       </div>
 
-      <QuickActions activeApps={activeApps} />
+      <QuickActions
+        activeApps={activeApps}
+        badges={{
+          orders: orderHealth?.openOrders ?? 0,
+          inbox: recentActivity?.newConversations ?? 0,
+          products: (inventory?.lowStockCount ?? 0) + (inventory?.outOfStockCount ?? 0),
+        }}
+      />
 
       {inventory && (inventory.lowStockCount > 0 || inventory.outOfStockCount > 0) && (
         <div

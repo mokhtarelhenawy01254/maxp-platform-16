@@ -52,7 +52,7 @@ import {
   Activity, CheckCircle2, XCircle, Zap, Gauge, Loader2,
   ChevronUp, ChevronDown, Download, FileText,
   Info, ArrowUpDown, ArrowUp, ArrowDown,
-  ToggleLeft, ToggleRight, History,
+  ToggleLeft, ToggleRight, History, Settings,
 } from "lucide-react";
 import { useAiProviders, useAiKeys, useAiDashboard, useAiGlobalConfig } from "../../hooks/useAiAdminData";
 import {

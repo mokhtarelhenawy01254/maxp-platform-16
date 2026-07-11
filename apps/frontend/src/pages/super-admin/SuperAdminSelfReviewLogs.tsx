@@ -11,9 +11,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { selfReviewService, type ReviewFilters, type ReviewStats, type ReviewLog } from "../../services/selfReviewService";
+import { selfReviewService, type PaginatedResponse, type ReviewStats, type ReviewLog } from "../../services/selfReviewService";
 import { apiClient } from "../../services/apiClient";
+
+interface AgentOption {
+  id: string;
+  name: string;
+  template_slug: string | null;
+}
 
 const PAGE_SIZE = 20;
 
@@ -25,9 +32,9 @@ const statusColors: Record<string, string> = {
   error: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
-function formatTime(iso: string) {
+function formatTime(iso: string, locale: string) {
   const d = new Date(iso);
-  return d.toLocaleString("ar-EG", {
+  return d.toLocaleString(locale, {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: false,
   });
@@ -53,7 +60,7 @@ function StatsCard({ label, value, sub, icon: Icon, color }: {
 }
 
 function SuperAdminSelfReviewLogs() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [days, setDays] = useState(7);
   const [agentFilter, setAgentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -64,33 +71,37 @@ function SuperAdminSelfReviewLogs() {
   const [ctrlSaving, setCtrlSaving] = useState(false);
   const [ctrlSaved, setCtrlSaved] = useState(false);
 
-  const filters: ReviewFilters = { days, agent_id: agentFilter !== "all" ? agentFilter : undefined, status: statusFilter !== "all" ? statusFilter : undefined };
+  const filters = { days, agent_id: agentFilter !== "all" ? agentFilter : undefined, status: statusFilter !== "all" ? statusFilter : undefined };
 
   const { data: stats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery({
-    queryKey: ["self-review", "stats", days],
-    queryFn: () => selfReviewService.getStats({ days }),
+    queryKey: ["self-review", "stats", days, agentFilter, statusFilter],
+    queryFn: () => selfReviewService.getStats({ days, agent_id: agentFilter !== "all" ? agentFilter : undefined, status: statusFilter !== "all" ? statusFilter : undefined }),
   });
 
-  const { data: pageData, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
+  const { data: pageData, isLoading: logsLoading, isError: logsError, refetch: refetchLogs } = useQuery({
     queryKey: ["self-review", "logs", filters, page],
     queryFn: () => selfReviewService.getLogs({ ...filters, page, limit: PAGE_SIZE }),
-    keepPreviousData: true,
+    placeholderData: (prev: any) => prev,
   });
 
   const { data: agentsList } = useQuery({
     queryKey: ["self-review", "agent-list"],
-    queryFn: async () => {
-      const res = await apiClient.get("/admin/agents", { params: { limit: 200 } });
-      return (res.data?.data?.agents || []) as { agent_id: string; name: string; slug: string }[];
+    queryFn: async (): Promise<AgentOption[]> => {
+      const res = await apiClient.get("/admin/agents", { params: { limit: 500 } });
+      return (res.data || []) as AgentOption[];
     },
   });
 
   const handleExport = useCallback(async () => {
-    const blob = await selfReviewService.exportCsv(filters);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "self-review-logs.csv";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  }, [filters]);
+    try {
+      const blob = await selfReviewService.exportCsv(filters);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "self-review-logs.csv";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch (e) {
+      toast({ title: t("common.error"), description: t("common.tryAgain"), variant: "destructive" });
+    }
+  }, [filters, t]);
 
   const handleSaveModel = useCallback(async () => {
     if (!ctrlAgent) return;
@@ -99,14 +110,18 @@ function SuperAdminSelfReviewLogs() {
       await selfReviewService.updateReviewModel(ctrlAgent, ctrlModel || "__default__");
       setCtrlSaved(true);
       setTimeout(() => setCtrlSaved(false), 2000);
+      toast({ title: t("superAdmin.selfReview.modelControl.saved") });
+    } catch (e) {
+      toast({ title: t("common.error"), description: t("common.tryAgain"), variant: "destructive" });
     } finally { setCtrlSaving(false); }
-  }, [ctrlAgent, ctrlModel]);
+  }, [ctrlAgent, ctrlModel, t]);
 
   const handleRefresh = useCallback(() => { refetchStats(); refetchLogs(); }, [refetchStats, refetchLogs]);
 
   const s = stats as ReviewStats | undefined;
-  const logs = (pageData as any)?.logs as ReviewLog[] | undefined;
-  const totalPages = (pageData as any)?.total_pages || 1;
+  const pd = pageData as PaginatedResponse | undefined;
+  const logs = pd?.logs;
+  const totalPages = pd?.total_pages || 0;
 
   return (
     <div className="p-4 max-w-[1440px] mx-auto space-y-4" dir="auto">
@@ -140,8 +155,8 @@ function SuperAdminSelfReviewLogs() {
             <Select value={ctrlAgent} onValueChange={(v) => { setCtrlAgent(v); setCtrlModel(""); setCtrlSaved(false); }}>
               <SelectTrigger><SelectValue placeholder={t("superAdmin.selfReview.modelControl.placeholder")} /></SelectTrigger>
               <SelectContent>
-                {(agentsList || []).map((a: any) => (
-                  <SelectItem key={a.agent_id} value={a.agent_id}>{a.name || a.slug || a.agent_id}</SelectItem>
+                {(agentsList || []).map((a: AgentOption) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name || a.template_slug || a.id}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -173,7 +188,7 @@ function SuperAdminSelfReviewLogs() {
         <CardContent>
           {s?.violations && s.violations.length > 0 ? (
             <div className="space-y-2">
-              {s.violations.slice(0, 10).map((v: any, i: number) => (
+              {s.violations.slice(0, 10).map((v, i: number) => (
                 <div key={i} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground truncate">{v.violation}</span>
                   <div className="flex items-center gap-2 shrink-0">
@@ -206,7 +221,7 @@ function SuperAdminSelfReviewLogs() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {s.agents.map((a: any) => (
+                  {s.agents.map((a) => (
                     <TableRow key={a.agent_id}>
                       <TableCell className="font-medium">{a.agent_slug || a.agent_id.slice(0, 12)}</TableCell>
                       <TableCell className="text-center">{a.total}</TableCell>
@@ -243,8 +258,8 @@ function SuperAdminSelfReviewLogs() {
                 <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("superAdmin.selfReview.filters.allAgents")}</SelectItem>
-                  {(s?.agents || []).map((a: any) => (
-                    <SelectItem key={a.agent_id} value={a.agent_id}>{a.agent_slug || a.agent_id.slice(0, 12)}</SelectItem>
+                  {(agentsList || []).map((a: AgentOption) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name || a.template_slug || a.id.slice(0, 12)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -261,7 +276,9 @@ function SuperAdminSelfReviewLogs() {
           </div>
         </CardHeader>
         <CardContent>
-          {logsLoading ? <LoadingSpinner /> : !logs || logs.length === 0 ? (
+          {logsError ? (
+            <Alert variant="destructive"><AlertDescription>{t("common.error")}</AlertDescription></Alert>
+          ) : logsLoading ? <LoadingSpinner /> : !logs || logs.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("superAdmin.selfReview.empty")}</p>
           ) : (
             <>
@@ -281,7 +298,7 @@ function SuperAdminSelfReviewLogs() {
                   <TableBody>
                     {logs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="whitespace-nowrap text-xs">{formatTime(log.created_at)}</TableCell>
+                        <TableCell className="whitespace-nowrap text-xs">{formatTime(log.created_at, i18n.language)}</TableCell>
                         <TableCell className="font-medium text-xs">{log.agent_slug || log.agent_id.slice(0, 12)}</TableCell>
                         <TableCell><Badge className={statusColors[log.status] || ""}>{t(`superAdmin.selfReview.statusLabels.${log.status}`)}</Badge></TableCell>
                         <TableCell className="max-w-[200px] truncate text-xs">{log.violations?.join(", ") || "—"}</TableCell>
@@ -294,10 +311,10 @@ function SuperAdminSelfReviewLogs() {
                 </Table>
               </div>
               <div className="flex items-center justify-between pt-4">
-                <p className="text-sm text-muted-foreground">{t("common.page")} {page} / {totalPages}</p>
+                <p className="text-sm text-muted-foreground">{t("common.page")} {page} / {totalPages || 1}</p>
                 <div className="flex gap-1">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronRight className="size-4" /></Button>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}><ChevronLeft className="size-4" /></Button>
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{i18n.dir() === "rtl" ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}</Button>
+                  <Button variant="outline" size="sm" disabled={totalPages === 0 || page >= totalPages} onClick={() => setPage(page + 1)}>{i18n.dir() === "rtl" ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}</Button>
                 </div>
               </div>
             </>

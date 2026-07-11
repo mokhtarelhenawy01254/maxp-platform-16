@@ -250,6 +250,7 @@ async def _correct_output(
         {"role": "user", "content": correction_msg},
     ]
     try:
+        # Use _raw_llm_call for guardrail corrections (main model, keeps quality)
         return await _raw_llm_call(ctx, messages)
     except Exception:
         logger.exception("output_guardrail_correction_failed")
@@ -395,6 +396,10 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
             # 3. Self-Review quality check (LLM-as-Judge)
             reviewed = await _self_review(ctx, ctx.final_reply or reply)
             if reviewed:
+                if attempt >= MAX_OUTPUT_RETRIES:
+                    ctx.final_reply = reviewed
+                    ctx.llm_response = reviewed
+                    break
                 reply = _strip_internal_tags(reviewed)
                 ctx.final_reply = None
                 continue

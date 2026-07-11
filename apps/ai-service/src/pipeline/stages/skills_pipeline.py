@@ -502,31 +502,10 @@ def _format_tool_results(executed: list[dict]) -> str:
                     parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
             elif name == "booking_info":
                 handled = True
-                out = []
-                branches = result.get("branches") or []
-                services = result.get("services") or []
-                for b in branches:
-                    line = b.get("name", "")
-                    addr = b.get("address", "")
-                    phone = b.get("phone", "")
-                    male = b.get("male_days") or []
-                    female = b.get("female_days") or []
-                    if addr:
-                        line += f" - {addr}"
-                    if phone:
-                        line += f" - تلفون: {phone}"
-                    days = []
-                    if male:
-                        days.append(f"رجال: {', '.join(male)}")
-                    if female:
-                        days.append(f"سيدات: {', '.join(female)}")
-                    if days:
-                        line += f" ({'; '.join(days)})"
-                    out.append(line)
-                svc_names = [s.get("name", "") for s in services[:5] if s.get("name")]
-                if svc_names:
-                    out.append(f"الخدمات: {', '.join(svc_names)}")
-                parts.append("\n".join(out) if out else f"تم استرجاع معلومات المركز ({result.get('total_branches', 0)} فروع).")
+                branch_count = result.get('total_branches', 0) or len(result.get('branches') or [])
+                svc_count = len(result.get('services') or [])
+                doc_count = len(result.get('doctors') or [])
+                parts.append(f"المركز لديه {branch_count} فرع{' و' if svc_count or doc_count else ''}{f' {svc_count} خدمة' if svc_count else ''}{f' و {doc_count} دكتور' if doc_count else ''}.")
             elif name == "booking_reserve_skill":
                 handled = True
                 err = result.get("error", "")

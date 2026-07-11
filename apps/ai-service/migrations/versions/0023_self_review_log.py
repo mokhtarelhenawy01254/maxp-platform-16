@@ -34,6 +34,8 @@ def upgrade() -> None:
         CREATE INDEX IF NOT EXISTS idx_self_review_log_company_id ON ai.self_review_log (company_id);
         CREATE INDEX IF NOT EXISTS idx_self_review_log_created_at ON ai.self_review_log (created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_self_review_log_status ON ai.self_review_log (status);
+        CREATE INDEX IF NOT EXISTS idx_self_review_log_agent_id ON ai.self_review_log (agent_id);
+        CREATE INDEX IF NOT EXISTS idx_self_review_log_company_agent ON ai.self_review_log (company_id, agent_id, created_at DESC);
     """)
 
 
