@@ -141,7 +141,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
           <WorkspaceStats stats={stats} onStatClick={handleStatClick} />
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[280px,1fr]">
+        <div className="mt-6 grid divide-x divide-border lg:grid-cols-[320px,1fr]">
           <div className="flex flex-col">
             <NumberSidebar
               numbers={numbers}
@@ -183,30 +183,34 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
                 </span>
               </div>
 
-              <RoutingModeSelector mode={routingMode} onChange={handleModeChange} />
-
-              <div className="grid gap-4 md:grid-cols-[1.4fr,0.9fr]">
-                <EmployeePicker
-                  employees={employees}
-                  selectedEmployeeIds={selectedEmployeeIds}
-                  routingMode={routingMode}
-                  showInactive={showInactive}
-                  onToggleInactive={setShowInactive}
-                  onToggleEmployee={toggleEmployee}
-                  onSelectAll={handleSelectAll}
-                />
-                <EmployeeSummary
-                  selectedEmployeeIds={selectedEmployeeIds}
-                  employeeLookup={employeeLookup}
-                  routingMode={routingMode}
-                  selectedNumber={selectedNumber}
-                  showInactive={showInactive}
-                  previewResult={previewResult}
-                  onPreviewResult={handlePreviewResult}
-                />
+              <div className="rounded-lg border border-border/50 bg-card p-4">
+                <RoutingModeSelector mode={routingMode} onChange={handleModeChange} />
               </div>
 
-              <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+              <div className="rounded-lg border border-border/50 bg-card p-4">
+                <div className="flex flex-col gap-4">
+                  <EmployeePicker
+                    employees={employees}
+                    selectedEmployeeIds={selectedEmployeeIds}
+                    routingMode={routingMode}
+                    showInactive={showInactive}
+                    onToggleInactive={setShowInactive}
+                    onToggleEmployee={toggleEmployee}
+                    onSelectAll={handleSelectAll}
+                  />
+                  <EmployeeSummary
+                    selectedEmployeeIds={selectedEmployeeIds}
+                    employeeLookup={employeeLookup}
+                    routingMode={routingMode}
+                    selectedNumber={selectedNumber}
+                    showInactive={showInactive}
+                    previewResult={previewResult}
+                    onPreviewResult={handlePreviewResult}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setUnassignOpen(true)}

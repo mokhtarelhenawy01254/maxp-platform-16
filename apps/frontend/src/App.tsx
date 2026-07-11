@@ -334,6 +334,9 @@ const StorefrontClaritySettings = React.lazy(
 const TurboSettings = React.lazy(
   () => import("./pages/settings/TurboSettings"),
 );
+const BostaSettings = React.lazy(
+  () => import("./pages/settings/BostaSettings"),
+);
 const TurboTicketDetails = React.lazy(
   () => import("./pages/settings/TicketDetails"),
 );
@@ -652,6 +655,7 @@ const Tasks = React.lazy(() => import("./pages/tasks/Tasks"));
 const TasksDashboard = React.lazy(() => import("./pages/tasks/Dashboard"));
 const KanbanBoard = React.lazy(() => import("./pages/tasks/KanbanBoard"));
 const TurboRecords = React.lazy(() => import("./pages/orders/TurboRecords"));
+const BostaRecords = React.lazy(() => import("./pages/orders/BostaRecords"));
 const BulkOrders = React.lazy(() => import("./pages/orders/BulkOrders"));
 const TaskDetails = React.lazy(() => import("./pages/tasks/TaskDetails"));
 const TaskNotifications = React.lazy(
@@ -1144,6 +1148,10 @@ const WhatsAppTemplateBroadcast = React.lazy(
 );
 const WhatsAppLeadFollowUp = React.lazy(
   () => import("./pages/whatsapp/WhatsAppLeadFollowUp"),
+);
+
+const WhatsAppEmployeeAnalytics = React.lazy(
+  () => import("./pages/whatsapp/WhatsAppEmployeeAnalytics"),
 );
 
 // HR Module
@@ -3868,6 +3876,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/orders/bosta-records"
+                  element={
+                    <Layout>
+                      <BostaRecords />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/orders/bulk"
                   element={
                     <Layout>
@@ -5262,6 +5278,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/settings/bosta"
+                  element={
+                    <Layout>
+                      <BostaSettings />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/settings/turbo/ticket/:ticketId"
                   element={
                     <Layout>
@@ -5530,6 +5554,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppLeadFollowUp />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/employee-analytics"
+                  element={
+                    <Layout>
+                      <WhatsAppEmployeeAnalytics />
                     </Layout>
                   }
                 />

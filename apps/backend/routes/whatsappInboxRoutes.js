@@ -79,4 +79,11 @@ router.post(
   inboxController.transferConversation
 );
 
+// ─── Employee Analytics ─────────────────────────────────────────────
+router.get(
+  '/employee-analytics',
+  requireDbPermission('inbox.view'),
+  inboxController.getEmployeeAnalytics
+);
+
 module.exports = router;

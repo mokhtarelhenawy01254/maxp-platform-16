@@ -419,6 +419,8 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders') },
                     { to: '/orders/manual', icon: PencilSquareIcon, label: t('sidebar.manualOrder') },
+                    { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords') },
+                    { to: '/orders/bosta-records', icon: TruckIcon, label: t('sidebar.bostaRecords') },
                     { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
                 ],
             },
@@ -557,6 +559,7 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/template-broadcast', icon: MegaphoneIcon, label: t('sidebar.whatsappTemplateBroadcast') },
                 { to: '/whatsapp/lead-followup', icon: BoltIcon, label: t('sidebar.whatsappLeadFollowup') },
                 { to: '/whatsapp/customer-journey', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.whatsappCustomerJourney') },
+                { to: '/whatsapp/employee-analytics', icon: ChartBarIcon, label: t('sidebar.whatsappEmployeeAnalytics') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business')
@@ -600,7 +603,9 @@ export const getSidebarConfig = (
                 { to: '/settings/orders', icon: CogIcon, label: t('sidebar.ordersSettings') },
                 { to: '/settings/customer-blocks', icon: ShieldExclamationIcon, label: t('sidebar.customerBlockSettings') },
                 { to: '/settings/turbo', icon: RocketLaunchIcon, label: t('sidebar.turboSettings') },
+                { to: '/settings/bosta', icon: RocketLaunchIcon, label: t('sidebar.bostaSettings') },
                 { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords') },
+                { to: '/orders/bosta-records', icon: TruckIcon, label: t('sidebar.bostaRecords') },
                 { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets') },
                 { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies') },
                 { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews') },

@@ -52,3 +52,25 @@ Unified both systems into `SkillRegistry` as single source of truth:
 
 ### Lesson
 Single-registry pattern matches 2026 industry standard (OpenAI Agents SDK, Microsoft Agent Framework). DeepSeek V4 API compatible (same OpenAI wire format).
+
+## 2026-07-11 — AI Visual Search: Python-First Architecture
+
+### Problem
+Backend `visualSearchProduct` used a mock embedding service (`{ generateMultimodalEmbeddingAsync: async () => null }`) — always returned null. No real embeddings ever generated. Client-side cosine similarity on old `products.embeddingImage` (possibly different embedding model) returned 3% noise.
+
+### Solution — Python-First Proxy Pattern
+1. **ai-service owns all AI logic**: `POST /admin/search/visual` wraps `vector_product_search()` (Gemini embedding + pgvector + RRF fusion)
+2. **Backend becomes proxy**: `visualSearchProduct` validates auth, converts file to base64, forwards to ai-service, returns results. No duplicate AI logic.
+3. **DB unification**: One database (`maxp`) for all services. ai-service `.env.production` must match backend's DB (was incorrectly pointing to `maxp_ai`).
+
+### When Adding AI Endpoints
+- Node.js controller → calls `aiServiceAdminClient.xxx()` method → ai-service Python endpoint
+- No direct DB queries for AI data from backend
+- No embedding generation, no vector search, no ML in backend
+- No mock services that silently return null
+
+### SQL Raw INSERT in ai-service (for logging/analytics)
+When writing raw SQL in Python ai-service that interfaces with a Prisma-managed DB schema:
+- Use **camelCase quoted** column names: `"companyId"` not `company_id`
+- Use `ON CONFLICT DO NOTHING` with deterministic IDs for idempotency (avoids duplicates from async duplicate calls)
+- Quote every camelCase column: `INSERT INTO search_analytics (id, "companyId", query, "resultsCount", "wasSuccessful", "responseTime", intent, metadata)

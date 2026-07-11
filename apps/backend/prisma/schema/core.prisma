@@ -22,6 +22,9 @@ model Company {
   turboMainClientCode             Int?
   turboWebhookToken               String?
   turboSenderNumber               String?
+  bostaApiKey                     String?
+  bostaEnabled                    Boolean                          @default(false)
+  bostaWebhookToken               String?
   sidebarLayout                   String                           @default("three-tier")
   customDomain                    String?                          @unique
   timezone                        String                           @default("Asia/Riyadh")

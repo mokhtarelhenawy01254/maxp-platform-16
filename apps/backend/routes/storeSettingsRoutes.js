@@ -45,6 +45,10 @@ router.delete('/shipping-zones/:id', verifyToken.authenticateToken, storeSetting
 router.get('/turbo', verifyToken.authenticateToken, storeSettingsController.getTurboSettings);
 router.put('/turbo', verifyToken.authenticateToken, storeSettingsController.updateTurboSettings);
 
+// Bosta shipping settings routes
+router.get('/bosta', verifyToken.authenticateToken, storeSettingsController.getBostaSettings);
+router.put('/bosta', verifyToken.authenticateToken, storeSettingsController.updateBostaSettings);
+
 // Shipping Methods Routes (New Architecture)
 router.get('/shipping-zones/:zoneId/methods', verifyToken.authenticateToken, storeSettingsController.getShippingMethods);
 router.post('/shipping-zones/:zoneId/methods', verifyToken.authenticateToken, storeSettingsController.createShippingMethod);

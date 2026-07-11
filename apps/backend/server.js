@@ -324,8 +324,10 @@ const telegramAdvancedRoutes = require("./routes/telegramAdvancedRoutes");
 const userbotRoutes = require("./routes/userbotRoutes");
 const textGalleryRoutes = require("./routes/textGalleryRoutes");
 const turboRoutes = require("./routes/turboRoutes");
+const bostaRoutes = require("./routes/bostaRoutes");
 const shippingCompaniesRoutes = require("./routes/shippingCompaniesRoutes");
 const turboWebhookRoutes = require("./routes/turboWebhook");
+const bostaWebhookRoutes = require("./routes/bostaWebhook");
 const walletPaymentRoutes = require("./routes/walletPayment");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
@@ -529,6 +531,7 @@ app.use("/api/v1/webhook", webhookRoutes);
 app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
+app.use("/api/v1/bosta-webhook", bostaWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/v1/geolocation", geolocationRoutes);
@@ -733,6 +736,7 @@ app.use("/api/proxy-image", proxyRoutes);
 app.use("/api/v1/import-jobs", importJobRoutes);
 app.use("/api/v1/woocommerce", wooCommerceRoutes);
 app.use("/api/v1/turbo", turboRoutes);
+app.use("/api/v1/bosta", bostaRoutes);
 
 // Professional Tools
 app.use("/api/v1/appointments", appointmentsRoutes);

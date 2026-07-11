@@ -246,3 +246,54 @@ Each under `apps/backend/agents/<slug>/` with agent.json, SOUL.md, TOOLS.md, AGE
 - Tool/skill descriptions in English (machine-readable), SOUL content in Arabic
 - Multi-session pricing lives in Policies (FAQ/POLICY), not booking system packages (single-session only for physio company)
 - MaxP's 4-file agent contract + progressive disclosure matches 2026 OpenAI Agents SDK standard
+
+---
+
+# Session Log — 2026-07-11 — Visual Search Overhaul (Mock → ai-service Proxy) + Super Admin Monitoring
+
+## What Happened
+
+### Part 1: Super Admin Visual Search Monitoring Page
+1. **Goal**: Add monitoring page for visual search analytics (success/fail rates, latency, results)
+2. **Python**: Added `_log_search_analytic()` to `vector_product_search.py` — writes to `search_analytics` table with company_id, query, results_count, was_successful, latency, metadata (top_score, image_present, embedding_provider)
+3. **Backend**: `GET /super-admin/ai/visual-search-logs` with pagination, filtering (days/company/status), summary stats
+4. **Frontend**: `SuperAdminVisualSearchLogs.tsx` — summary cards, filter row, logs table, detail dialog, pagination
+5. **Routing**: App.tsx lazy import + SuperAdminSidebar.tsx link
+
+### Part 2: Bug Rescue — Silent Logging Failures
+1. **Bug 1 — camelCase mismatch**: `_log_search_analytic()` raw SQL used `company_id`, `results_count` but DB columns are `"companyId"`, `"resultsCount"`. Fixed with quoted column names.
+2. **Bug 2 — duplicate entries**: `vector_product_search()` called twice per request (Stage 0 pipeline + tool call). Fixed with deterministic SHA-256 dedup key + `ON CONFLICT (id) DO NOTHING`.
+3. **Bug 3 — silent exception**: `asyncio.ensure_future()` with `try/except` swallowed all errors. No one checked logs for `search_analytic_log_failed`.
+
+### Part 3: 3% Similarity Root Cause — Missing `ai.product_embeddings`
+1. **Local DB `maxp`**: Table didn't exist, pgvector not installed. Created table with TEXT columns (not vector), backfilled 49/49 products.
+2. **Production DB `maxp`**: Already had table (331 products) with pgvector + image_embeddings. Direct pgvector test = 83-100%.
+3. **Real root cause**: `visualSearchProduct` at `productController.js:3691` uses mock `{generateMultimodalEmbeddingAsync: async () => null}` — always returns null. No real embedding ever generated.
+
+### Part 4: Fix — Python-First Architecture
+1. **ai-service**: Added `POST /admin/search/visual` endpoint wrapping `vector_product_search` (real Gemini embedding + pgvector + RRF fusion)
+2. **Backend**: Rewrote `visualSearchProduct` to convert file to base64 and proxy to ai-service via `aiServiceAdminClient.visualSearch()`. Removed dead `cosineSimilarity`.
+3. **Live test**: Image search → 75.04% exact match, Text search → 63.55% top match (vs 3% before)
+
+### Key Decisions
+- All AI visual search logic moved to Python ai-service (2026 direction)
+- Backend becomes proxy (validate → forward → return)
+- Database unified: all services use `maxp` (production `.env.production` already points there, just the ai-service `.env.production` was stale)
+- New pattern: `backend/controller` AI features call `aiServiceAdminClient.xxx()` instead of implementing locally
+
+### Key Files Changed
+- `apps/ai-service/src/tools/vector_product_search.py` — `_log_search_analytic()`, dedup, direct `generate_embedding_with_provider()`, asyncio.ensure_future logging
+- `apps/ai-service/src/api/admin/search.py` [NEW] — `POST /admin/search/visual` endpoint
+- `apps/ai-service/src/api/admin/__init__.py` — registered search router
+- `apps/backend/controller/productController.js` — rewrote visualSearchProduct as proxy, removed mock, removed cosineSimilarity
+- `apps/backend/services/aiServiceAdminClient.js` — added `visualSearch()` method
+- `apps/backend/routes/superAdminRoutes.js` — GET /super-admin/ai/visual-search-logs
+- `apps/frontend/src/pages/super-admin/SuperAdminVisualSearchLogs.tsx` [NEW]
+- `apps/frontend/src/App.tsx` — lazy import + route
+- `apps/frontend/src/components/layout/SuperAdminSidebar.tsx` — sidebar link
+
+### Server
+- Host: srv974554.hstgr.cloud (153.92.223.119)
+- PM2: maxp-ai-service, maxp-backend, maxp-webhook-worker
+- DB: `maxp` with pgvector, 331 products, 86 Swan image_embeddings
+- Deploy: commit `90864f65` → GitHub Actions → success

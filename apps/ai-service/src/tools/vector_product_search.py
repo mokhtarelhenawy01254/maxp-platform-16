@@ -410,11 +410,7 @@ async def vector_product_search(
             company_id, q_emb, limit=limit, min_score=min_score, image_bytes=image_bytes,
         )
 
-    # Filter to valid full URLs only (skip bare filenames)
-    for r in results:
-        url = r.get("image_url") or ""
-        if url and not (url.startswith("http://") or url.startswith("https://")):
-            r["image_url"] = ""
+    # Ponytail: keep relative image URLs for reranker to resolve later
 
     # Ponytail: visual rerank via Gemini Vision when query image exists.
     # Gemini sees the actual images, so it can distinguish visually similar
@@ -510,9 +506,16 @@ async def _rerank_visual(
     if not api_key:
         return results
 
+    # Download product images concurrently. Resolve relative URLs via MAXP_API_URL.
+    base_url = get_settings().maxp_api_url.rstrip("/") if get_settings().maxp_api_url else None
     async def _dl(url: str) -> bytes | None:
-        if not url or not (url.startswith("http://") or url.startswith("https://")):
+        if not url:
             return None
+        if not (url.startswith("http://") or url.startswith("https://")):
+            if base_url:
+                url = f"{base_url}{url}" if url.startswith("/") else f"{base_url}/{url}"
+            else:
+                return None
         try:
             async with httpx.AsyncClient(timeout=8) as c:
                 r = await c.get(url)
