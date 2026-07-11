@@ -76,10 +76,19 @@ def _strip_internal_tags(text: str) -> str:
     return text.strip()
 
 
-async def _get_flash_review_client(ctx: PipelineContext) -> LLMClient | None:
+async def _get_flash_review_client(ctx: PipelineContext) -> tuple[LLMClient | None, str]:
+    """Returns (client, model_name). model_name used for logging."""
     from src.llm.model_manager import model_manager
 
-    for model_name in REVIEW_MODEL_PRIORITY:
+    agent_config = ctx.agent.config if ctx.agent and hasattr(ctx.agent, "config") else {}
+    preferred = agent_config.get("reviewModel") if isinstance(agent_config, dict) else None
+
+    models_to_try = [preferred] + REVIEW_MODEL_PRIORITY if preferred else REVIEW_MODEL_PRIORITY
+    seen = set()
+    for model_name in models_to_try:
+        if not model_name or model_name in seen:
+            continue
+        seen.add(model_name)
         try:
             routing = await model_manager.get_next_key(model_name, ctx.company_id)
             if routing:
@@ -88,12 +97,12 @@ async def _get_flash_review_client(ctx: PipelineContext) -> LLMClient | None:
                     model=routing.model,
                     api_key=routing.api_key,
                     base_url=routing.base_url,
-                )
+                ), routing.model
         except Exception:
             continue
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
     if client:
-        return client
+        return client, getattr(client, "model", REVIEW_MODEL_PRIORITY[-1])
     try:
         agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash"
         routing = await model_manager.get_next_key(agent_model, ctx.company_id)
@@ -102,9 +111,9 @@ async def _get_flash_review_client(ctx: PipelineContext) -> LLMClient | None:
             model=routing.model,
             api_key=routing.api_key,
             base_url=routing.base_url,
-        )
+        ), routing.model
     except Exception:
-        return None
+        return None, ""
 
 
 def _summarize_evidence(evidence: list[dict]) -> str:
@@ -123,11 +132,38 @@ def _summarize_evidence(evidence: list[dict]) -> str:
     return " | ".join(parts)
 
 
+async def _log_review(
+    ctx: PipelineContext, status: str, *,
+    reply: str = "", model_used: str = "", latency_ms: int = 0,
+    verdict: dict | None = None,
+) -> None:
+    try:
+        from src.db import session
+        from src.db.repo.review_log_repo import ReviewLogRepo
+        async with session.async_session() as db:
+            repo = ReviewLogRepo(db)
+            await repo.create(
+                company_id=ctx.company_id,
+                agent_id=str(ctx.agent.agent_id) if ctx.agent and hasattr(ctx.agent, "agent_id") else "",
+                agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+                reply_preview=reply[:200],
+                model_used=model_used,
+                latency_ms=latency_ms,
+                status=status,
+                violations=verdict.get("violations") if verdict else None,
+                reason=verdict.get("reason") if verdict else None,
+                verdict_raw=verdict,
+            )
+    except Exception as e:
+        logger.warning("self_review.log_failed", error=str(e))
+
+
 async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
     """LLM-as-Judge: review reply quality, merchant rules, accuracy, tone.
     Returns None if approved, or a corrected reply string."""
-    client = await _get_flash_review_client(ctx)
+    client, model_name = await _get_flash_review_client(ctx)
     if not client:
+        await _log_review(ctx, "skipped", reply=reply)
         return None
 
     rules_text = "(لا توجد قوانين نشطة)"
@@ -171,6 +207,7 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         latency = int((time.monotonic() - t0) * 1000)
         verdict = json.loads(response.text)
         if verdict.get("approved"):
+            await _log_review(ctx, "approved", reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
             return None
         reason = verdict.get("reason", "مخالفة قواعد المراجعة")
         violations = verdict.get("violations", [])
@@ -184,12 +221,17 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
                 reason=reason, latency_ms=latency,
                 agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
             )
+            await _log_review(ctx, "corrected", reply=corrected, model_used=model_name, latency_ms=latency, verdict=verdict)
+        else:
+            await _log_review(ctx, "rejected", reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
         return corrected
     except (json.JSONDecodeError, KeyError) as e:
         logger.warning("self_review.parse_failed", error=str(e), text=getattr(response, 'text', '')[:200])
+        await _log_review(ctx, "error", reply=reply, model_used=model_name, latency_ms=latency or 0)
         return None
     except Exception as e:
         logger.warning("self_review.failed", error=str(e))
+        await _log_review(ctx, "error", reply=reply)
         return None
 
 

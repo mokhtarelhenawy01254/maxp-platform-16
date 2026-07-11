@@ -79,6 +79,12 @@
 - Rationale: Docker adds complexity (registry, server Docker setup, env management, debugging) without solving any actual problem.
 - Rejected: Adding Dockerfiles + docker-compose + registry + CI changes — significant effort for marginal benefit.
 
+## 2026-07-11 — Tool Format Fallbacks: Add Handlers, Don't Change LLM Flow
+- Context: Follow-up LLM call (skills_pipeline.py:164, `tool_choice="none"`) returned empty text → fallback `_format_tool_results()` printed generic "تم تنفيذ {tool_name} بنجاح." for unhandled tools (booking_info, booking_reserve_skill, booking_slots, booking_status).
+- Decision: Added format handlers for all 4 booking tools. Each extracts readable fields from result dict → formatted Arabic text.
+- Rationale: Changing LLM flow (`tool_choice="auto"`) is a larger refactor with unpredictable side effects. Handlers follow existing pattern.
+- Rejected: (1) Switching to `tool_choice="auto"` — DeepSeek still returns empty text; risky refactor. (2) Retry logic on empty follow-up — increases latency/cost. (3) Removing fallback — returns empty responses.
+
 ## 2026-07-06 — AI Agent Doc Rewrite (Complete Inaccuracy)
 - Context: `ai-agent-system.md` described a Node.js system (`backend/services/aiAgent/`) that was either never built or replaced years ago. The real system is Python FastAPI + Microsoft Agent Framework.
 - Decision: Full rewrite of the doc to match actual architecture.

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -24,7 +25,7 @@ import {
   DialogDescription,
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { RefreshCw, Clock, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshCw, Clock, Download, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Activity, Zap, Building2, ArrowUpRight, Database, Key } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { companyAwareApi } from "../../services/companyAwareApi";
@@ -72,6 +73,18 @@ function formatTime(iso: string) {
   }) + " " + tz;
 }
 
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "الآن";
+  if (mins < 60) return `منذ ${mins} د`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `منذ ${hrs} س`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `منذ ${days} ي`;
+  return formatTime(iso);
+}
+
 function SuperAdminAIKeyLogs() {
   return (
     <div className="p-4 max-w-[1440px] mx-auto">
@@ -82,6 +95,7 @@ function SuperAdminAIKeyLogs() {
 }
 
 function KeyLogsContent() {
+  const navigate = useNavigate();
   const { data: keys } = useAiKeys();
   const [providerFilter, setProviderFilter] = useState("");
   const [keyFilter, setKeyFilter] = useState("");
@@ -116,7 +130,10 @@ function KeyLogsContent() {
     offset,
   }, refreshTick);
 
-  const logs = logsRes?.items;
+  const logs = useMemo(() => {
+    if (!logsRes?.items) return undefined;
+    return [...logsRes.items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [logsRes?.items]);
   const total = logsRes?.total ?? 0;
 
   function handleRefresh() {
@@ -182,23 +199,68 @@ function KeyLogsContent() {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-        <Card><CardContent className="p-3">
-          <p className="text-xs text-muted-foreground">إجمالي</p>
-          <p className="text-xl font-bold">{total.toLocaleString()}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3">
-          <p className="text-xs text-muted-foreground">ناجح (هذه الصفحة)</p>
-          <p className="text-xl font-bold text-green-600">{stats.success}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3">
-          <p className="text-xs text-muted-foreground">فاشل (هذه الصفحة)</p>
-          <p className="text-xl font-bold text-red-600">{stats.failed}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3">
-          <p className="text-xs text-muted-foreground">متوسط الزمن (ms)</p>
-          <p className="text-xl font-bold">{stats.avgLatency}</p>
-        </CardContent></Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <Card className="relative overflow-hidden col-span-2 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">إجمالي السجلات</p>
+                <p className="text-2xl font-bold mt-1">{total.toLocaleString()}</p>
+              </div>
+              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Activity className="size-4 text-primary" />
+              </div>
+            </div>
+            <div className="mt-3 h-1 bg-primary/10 rounded-full overflow-hidden">
+              <div className="h-full w-full bg-primary/30 rounded-full animate-pulse" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="relative overflow-hidden border-green-200/50 dark:border-green-800/30">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">ناجح</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.success}</p>
+              </div>
+              <div className="size-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="relative overflow-hidden border-red-200/50 dark:border-red-800/30">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">فاشل</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{stats.failed}</p>
+              </div>
+              <div className="size-9 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                <XCircle className="size-4 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="relative overflow-hidden col-span-2 md:col-span-1 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-200/50 dark:border-amber-800/30">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">متوسط الزمن</p>
+                <p className="text-2xl font-bold mt-1">{stats.avgLatency} <span className="text-sm font-normal text-muted-foreground">ms</span></p>
+              </div>
+              <div className="size-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                <Zap className="size-4 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            {stats.avgLatency > 0 && (
+              <div className="mt-3 h-1 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500 transition-all"
+                  style={{ width: `${Math.min(100, stats.avgLatency / 20)}%` }} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -249,7 +311,7 @@ function KeyLogsContent() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="border rounded bg-card">
+        <div className="border rounded-xl bg-card/80 backdrop-blur-xl shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -273,11 +335,13 @@ function KeyLogsContent() {
               ) : (
                 logs.map((log) => (
                   <TableRow key={log.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="cursor-pointer hover:bg-muted/50 hover:shadow-sm transition-all duration-200"
                     onClick={() => setSelectedLog(log)}>
-                    <TableCell className="text-xs whitespace-nowrap">{formatTime(log.created_at)}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap" title={formatTime(log.created_at)}>
+                      <span className="font-medium">{timeAgo(log.created_at)}</span>
+                    </TableCell>
                     <TableCell>
-                      <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.provider}</span>
+                      <span className="text-xs font-mono bg-muted/60 px-2 py-0.5 rounded-md border">{log.provider}</span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {log.key_id ? (
@@ -286,13 +350,29 @@ function KeyLogsContent() {
                         </span>
                       ) : "—"}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {log.company_id ? (companyNameMap[log.company_id] || log.company_id.substring(0, 8) + "…") : "—"}
+                    <TableCell className="text-xs">
+                      {log.company_id ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/super-admin/companies/${log.company_id}`); }}
+                          className="hover:underline text-primary cursor-pointer"
+                        >
+                          {companyNameMap[log.company_id] || log.company_id.substring(0, 8) + "…"}
+                        </button>
+                      ) : "—"}
                     </TableCell>
-                    <TableCell className="text-xs">{ACTION_LABELS[log.action] || log.action}</TableCell>
+                    <TableCell className="text-xs">
+                      <span className="inline-flex items-center gap-1.5">
+                        {log.action.startsWith("generation") ? <Zap className="size-3 text-amber-500" /> :
+                         log.action === "key.created" ? <Building2 className="size-3 text-blue-500" /> :
+                         log.action === "key.updated" ? <RefreshCw className="size-3 text-purple-500" /> :
+                         log.action === "key.test" ? <Activity className="size-3 text-teal-500" /> : null}
+                        {ACTION_LABELS[log.action] || log.action}
+                      </span>
+                    </TableCell>
                     <TableCell>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${statusColor(log.status)}`}
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full ${statusColor(log.status)}`}
                         title={log.error || undefined}>
+                        <span className={`size-1.5 rounded-full ${log.status === "success" || log.status === "ok" ? "bg-green-500" : "bg-red-500"}`} />
                         {STATUS_LABELS[log.status] || log.status}
                       </span>
                     </TableCell>
@@ -329,53 +409,75 @@ function KeyLogsContent() {
 
       <Dialog open={!!selectedLog} onOpenChange={(o) => { if (!o) setSelectedLog(null); }}>
         <DialogContent className="max-w-lg" dir="rtl">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/5 to-transparent rounded-lg" />
           <DialogHeader>
             <DialogTitle>تفاصيل السجل</DialogTitle>
             <DialogDescription>معلومات كاملة عن طلب المزود</DialogDescription>
           </DialogHeader>
           {selectedLog && (
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">الوقت</span>
-                <span className="col-span-2">{formatTime(selectedLog.created_at)}</span>
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="size-3" /> الوقت</span>
+                <span className="col-span-2 font-medium">{formatTime(selectedLog.created_at)}</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">المزود</span>
-                <span className="col-span-2">{selectedLog.provider}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">المفتاح</span>
-                <span className="col-span-2">{keyNameMap[selectedLog.key_id || ""] || selectedLog.key_id || "—"}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">الشركة</span>
-                <span className="col-span-2">{selectedLog.company_id ? (companyNameMap[selectedLog.company_id] || selectedLog.company_id) : "—"}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">الإجراء</span>
-                <span className="col-span-2">{ACTION_LABELS[selectedLog.action] || selectedLog.action}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">الحالة</span>
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Database className="size-3" /> المزود</span>
                 <span className="col-span-2">
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${statusColor(selectedLog.status)}`}>
+                  <span className="text-xs font-mono bg-muted/60 px-2 py-0.5 rounded-md border">{selectedLog.provider}</span>
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Key className="size-3" /> المفتاح</span>
+                <span className="col-span-2 font-mono text-xs">{keyNameMap[selectedLog.key_id || ""] || selectedLog.key_id || "—"}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Building2 className="size-3" /> الشركة</span>
+                <span className="col-span-2">
+                  {selectedLog.company_id ? (
+                    <button
+                      onClick={() => navigate(`/super-admin/companies/${selectedLog.company_id}`)}
+                      className="hover:underline text-primary cursor-pointer flex items-center gap-1"
+                    >
+                      {companyNameMap[selectedLog.company_id] || selectedLog.company_id}
+                      <ArrowUpRight className="size-3" />
+                    </button>
+                  ) : "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Activity className="size-3" /> الإجراء</span>
+                <span className="col-span-2">
+                  <span className="inline-flex items-center gap-1.5">
+                    {selectedLog.action.startsWith("generation") ? <Zap className="size-3 text-amber-500" /> :
+                     selectedLog.action === "key.created" ? <Building2 className="size-3 text-blue-500" /> :
+                     selectedLog.action === "key.updated" ? <RefreshCw className="size-3 text-purple-500" /> :
+                     selectedLog.action === "key.test" ? <Activity className="size-3 text-teal-500" /> : null}
+                    {ACTION_LABELS[selectedLog.action] || selectedLog.action}
+                  </span>
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground">{STATUS_LABELS[selectedLog.status] === "نجاح" ? <CheckCircle2 className="size-3" /> : <XCircle className="size-3" />} الحالة</span>
+                <span className="col-span-2">
+                  <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full ${statusColor(selectedLog.status)}`}>
+                    <span className={`size-1.5 rounded-full ${selectedLog.status === "success" || selectedLog.status === "ok" ? "bg-green-500" : "bg-red-500"}`} />
                     {STATUS_LABELS[selectedLog.status] || selectedLog.status}
                   </span>
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">النموذج</span>
-                <span className="col-span-2">{selectedLog.model || "—"}</span>
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="size-3" /> النموذج</span>
+                <span className="col-span-2 font-mono text-xs">{selectedLog.model || "—"}</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="text-muted-foreground">الزمن</span>
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="size-3" /> الزمن</span>
                 <span className={`col-span-2 flex items-center gap-1 ${selectedLog.latency_ms != null ? latencyColor(selectedLog.latency_ms) : ""}`}>
                   {selectedLog.latency_ms != null ? <><Clock className="size-3" /> {selectedLog.latency_ms}ms</> : "—"}
                 </span>
               </div>
               {selectedLog.error && (
                 <div className="grid grid-cols-3 gap-2">
-                  <span className="text-muted-foreground">الخطأ</span>
+                  <span className="text-muted-foreground flex items-center gap-1.5"><XCircle className="size-3 text-red-500" /> الخطأ</span>
                   <span className="col-span-2 text-red-600 break-words bg-red-50 dark:bg-red-950 p-2 rounded text-xs font-mono" dir="ltr">
                     {selectedLog.error}
                   </span>

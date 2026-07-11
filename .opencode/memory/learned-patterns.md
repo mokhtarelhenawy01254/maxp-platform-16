@@ -74,3 +74,25 @@ When writing raw SQL in Python ai-service that interfaces with a Prisma-managed 
 - Use **camelCase quoted** column names: `"companyId"` not `company_id`
 - Use `ON CONFLICT DO NOTHING` with deterministic IDs for idempotency (avoids duplicates from async duplicate calls)
 - Quote every camelCase column: `INSERT INTO search_analytics (id, "companyId", query, "resultsCount", "wasSuccessful", "responseTime", intent, metadata)
+
+## 2026-07-11 — Tool Result Format Fallbacks in skills_pipeline
+
+### Problem
+When the follow-up LLM call in `skills_pipeline.py` returned empty text (happens with DeepSeek when `tool_choice="none"`), the code fell back to `_format_tool_results()` which only handled a few tools (inventory_check, offers_list_active, coupon_validate, product_search, order_lookup, customer_info). Any tool not in that list — including `booking_info`, `booking_reserve_skill`, `booking_slots`, `booking_status` — printed the generic Arabic message "تم تنفيذ {tool_name} بنجاح."
+
+### Solution
+Added specific format handlers in `_format_tool_results()` for each booking tool:
+- `booking_info` (line 503): formats branch name, address, phone, working days + top 5 service names
+- `booking_reserve_skill` (line 530): formats booking confirmation (branch, doctor, service, date, time, price)
+- `booking_slots` (line 546): formats available time slots
+- `booking_status` (line 561): formats booking status details
+
+### Pattern
+When adding a new tool/skill that returns structured data and is called in the skills pipeline:
+1. Add a format handler in `_format_tool_results()` at `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+2. Match on `tool_result.get("tool")` or `name`
+3. Extract readable fields from the `result` dict
+4. Return Arabic-formatted text
+
+### Key Files
+- `apps/ai-service/src/pipeline/stages/skills_pipeline.py` — `_format_tool_results()` function

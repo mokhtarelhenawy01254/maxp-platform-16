@@ -5756,6 +5756,7 @@
     "toolsSection": "Tools",
     "training": "Training",
     "turboSettings": "Turbo Settings",
+    "bostaSettings": "Bosta Settings",
     "turboTickets": "Turbo Tickets",
     "unifiedComments": "Posts & Comments Management",
     "unifiedInbox": "Unified Inbox",
@@ -5783,6 +5784,7 @@
     "whatsappTemplatesOrders": "Orders Templates",
     "whatsappTemplatesHR": "HR Templates",
     "whatsappTemplatesSystem": "System Templates",
+    "whatsappEmployeeAnalytics": "Employee Analytics",
     "woocommerceSync": "WooCommerce Sync",
     "displayStudio": "Display Settings",
     "layoutStudio": "Page Layout",
@@ -5799,7 +5801,8 @@
     "storefrontSection": "Store Management",
     "storeShipping": "Shipping & Delivery",
     "storeThemeDesign": "Theme & Design",
-    "turboRecords": "Turbo Records"
+    "turboRecords": "Turbo Records",
+    "bostaRecords": "Bosta Records"
   },
   "stockAnalytics": {
     "title": "Stock Analytics",

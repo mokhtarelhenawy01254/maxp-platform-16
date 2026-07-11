@@ -207,6 +207,57 @@
 - **Memory-Based Learning** — Letta pattern, integrates with existing agent memory system
 - **LLM-as-Judge** — auto-improving agent responses
 
+## MaxP Internal — Booking System Backend Endpoints
+
+### Booking Data Endpoints (Node.js Backend)
+| Endpoint | Method | Description | Auth |
+|----------|--------|-------------|------|
+| `/api/v1/booking/branches?companyId=X` | GET | Branches with landmarkImage, address, phone, workingDays | Bearer token |
+| `/api/v1/booking/services?companyId=X` | GET | Services with name, description, duration | Bearer token |
+| `/api/v1/booking/doctors?companyId=X` | GET | Doctors with name, specialty, gender, branchId | Bearer token |
+| `/api/v1/booking/appointments/available-slots?companyId=X&branchId=Y&serviceId=Z&date=YYYY-MM-DD&doctorId=W` | GET | Available time slots (09:00-20:00) | Bearer token |
+| `/api/v1/booking/reserve` | POST | Reserve a booking | Bearer token |
+| `/api/v1/booking/status?companyId=X&bookingId=Y` | GET | Check booking status | Bearer token |
+
+### Booking Tool → Backend Mapping
+| Tool | Backend Endpoint | Data Used |
+|------|-----------------|-----------|
+| `booking_info` | branches + services + doctors | Branch info, service list, doctor list |
+| `booking_slots` | available-slots | Time slots for selected date/branch/service/doctor |
+| `booking_reserve_skill` | reserve | Creates booking via POST |
+| `booking_status` | status | Returns booking details/status |
+
+### Booking DB Tables (Prisma `maxp` database)
+- `BookingBranch` — branches with address, phone, workingDays, landmarkImage, genderDays
+- `BookingService` — services with name, description, duration
+- `BookingDoctor` — doctors with name, specialty, gender, linked to Branch
+- `BookingBranchService` — many-to-many branch↔service with packages (name, sessions, price)
+- `BookingBranchDay` — working days per branch per gender (dayName, isOff, fromTime, toTime)
+- `Booking` — actual bookings (customerId, branchId, serviceId, doctorId, date, timeSlot, status, price)
+- `BookingInfoPackage` — packages on branch services (name, price, sessions, sessionPrice, validity)
+
+### `genderDays` Field
+Each branch has a `genderDays` JSON field. If it's empty or missing, `booking_slots` returns "مغلق" (closed):
+```json
+{
+  "male": [{"day":"Sunday","isOff":true}, ...],
+  "female": [{"day":"Sunday","isOff":true}, ...]
+}
+```
+
+### Booking Flow (End-to-End)
+1. **booking_info** — get center data (branches, services, doctors, packages)
+2. **booking_slots** — get available slots for a specific date/branch/service/doctor
+3. **booking_reserve_skill** — reserve the booking (POST)
+4. **booking_status** — check status after booking
+
+### `_format_tool_results()` Handlers (skills_pipeline.py)
+When the follow-up LLM returns empty text, `_format_tool_results()` is the fallback. Handlers:
+- `booking_info` (line 503): branch details + top 5 services
+- `booking_reserve_skill` (line 530): booking confirmation with all details
+- `booking_slots` (line 546): available time slots
+- `booking_status` (line 561): booking status info
+
 ## MaxP Internal — SDK Layer
 
 MaxP's SDK ليس منتجًا منفصلًا، بل **طبقة تجريد داخلية** فوق Microsoft Agent Framework:

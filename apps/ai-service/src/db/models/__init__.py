@@ -11,6 +11,7 @@ from src.db.models.knowledge_question import KnowledgeQuestion
 from src.db.models.policy import Policy
 from src.db.models.product import Product
 from src.db.models.provider import AiKey, AiModelConfig, GlobalAiConfig, Provider, ProviderLog
+from src.db.models.review_log import ReviewLog
 from src.db.models.skill import Skill
 from src.db.models.task import AiAgentRun, AiAgentTask
 from src.db.models.thread import Thread
@@ -36,6 +37,7 @@ __all__ = [
     "Product",
     "Provider",
     "ProviderLog",
+    "ReviewLog",
     "Skill",
     "Thread",
     "ToolCall",

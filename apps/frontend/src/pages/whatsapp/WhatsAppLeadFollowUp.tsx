@@ -1,8 +1,11 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CheckCircle,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
   GripVertical,
+  Globe,
   Loader2,
   MessageSquare,
   Plus,
@@ -118,134 +121,102 @@ const defaultSteps: Step[] = [
   { delayHours: 72, message: "Hi {firstName}, we're here if you need anything. Don't hesitate to reach out!", mediaUrl: null },
 ];
 
-function StepCard({
-  step,
-  index,
-  onChange,
-  onDelete,
-  canDelete,
-}: {
-  step: Step;
-  index: number;
+const statusConfig = {
+  ACTIVE: { dot: "bg-amber-500", bg: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+  COMPLETED: { dot: "bg-emerald-500", bg: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
+  CANCELLED: { dot: "bg-red-500", bg: "bg-red-500/10 text-red-600 border-red-500/20" },
+} as const;
+
+function StatusDot({ status }: { status: string }) {
+  const cfg = statusConfig[status as keyof typeof statusConfig];
+  return <span className={cn("mr-1.5 inline-block size-1.5 rounded-full", cfg?.dot || "bg-gray-400")} />;
+}
+
+function StepCard({ step, index, onChange, onDelete, canDelete }: {
+  step: Step; index: number;
   onChange: (i: number, s: Step) => void;
-  onDelete: (i: number) => void;
-  canDelete: boolean;
+  onDelete: (i: number) => void; canDelete: boolean;
 }) {
   const { t } = useTranslation();
   const ns = "whatsappLeadFollowup";
   return (
-    <div className="rounded-xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-muted)_50%,transparent)] p-4">
+    <div className="group relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-card)_98%,var(--color-primary))] to-[color:var(--color-card)] p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-5">
+      <div className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-primary/40 to-primary/10" />
       <div className="mb-3 flex items-center gap-2">
-        <GripVertical className="size-4 shrink-0 text-[color:var(--color-muted-foreground)]" />
-        <span className="text-sm font-semibold">
-          {t(`${ns}.monitoring.step`, { ns, current: index + 1, total: "..." })}
-        </span>
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">{index + 1}</span>
+        <GripVertical className="size-4 shrink-0 text-[color:var(--color-muted-foreground)] opacity-40 transition-opacity group-hover:opacity-70" />
+        <span className="text-sm font-semibold">{t(`${ns}.stepEditor.stepLabel`, { ns, current: index + 1 })}</span>
         {canDelete && (
-          <button
-            onClick={() => onDelete(index)}
-            className="ml-auto rounded-lg p-1 text-[color:var(--color-muted-foreground)] transition-colors hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="size-4" />
+          <button onClick={() => onDelete(index)} className="ml-auto rounded-lg p-1.5 text-[color:var(--color-muted-foreground)] opacity-40 transition-all hover:bg-destructive/10 hover:text-destructive hover:opacity-100">
+            <Trash2 className="size-3.5" />
           </button>
         )}
       </div>
       <div className="space-y-3">
         <div>
-          <Label className="text-xs">{t(`${ns}.steps.delay`, { ns, hours: step.delayHours })}</Label>
+          <Label className="text-xs font-medium text-[color:var(--color-muted-foreground)]">{t(`${ns}.stepEditor.hours`, { ns })}</Label>
           <div className="mt-1 flex items-center gap-2">
-            <Input
-              type="number"
-              min={1}
-              max={720}
-              className="w-24"
-              value={step.delayHours}
-              onChange={(e) => onChange(index, { ...step, delayHours: Number(e.target.value) })}
-            />
-            <span className="text-sm text-[color:var(--color-muted-foreground)]">hours</span>
+            <Input type="number" min={1} max={720} className="w-24" value={step.delayHours}
+              onChange={(e) => onChange(index, { ...step, delayHours: Number(e.target.value) })} />
+            <span className="text-xs text-[color:var(--color-muted-foreground)]">{t(`${ns}.stepEditor.hours`, { ns })}</span>
           </div>
         </div>
         <div>
-          <Label className="text-xs">{t(`${ns}.steps.content`, { ns })}</Label>
-          <p className="mt-0.5 mb-1 text-[10px] text-[color:var(--color-muted-foreground)]">
-            {t(`${ns}.steps.variables`, { ns })}: {"{firstName}"}, {"{lastName}"}, {"{customerName}"}
-          </p>
-          <Textarea
-            value={step.message}
-            onChange={(e) => onChange(index, { ...step, message: e.target.value })}
-            rows={3}
-            placeholder="Hi {firstName}, thanks for reaching out!"
-          />
+          <Label className="text-xs font-medium text-[color:var(--color-muted-foreground)]">{t(`${ns}.steps.content`, { ns })}</Label>
+          <p className="mt-0.5 mb-1 text-[10px] text-[color:var(--color-muted-foreground)]">{t(`${ns}.steps.variables`, { ns })}: {"{firstName}"}, {"{lastName}"}, {"{customerName}"}</p>
+          <Textarea value={step.message} onChange={(e) => onChange(index, { ...step, message: e.target.value })}
+            rows={3} placeholder="Hi {firstName}, thanks for reaching out!" className="resize-none" />
         </div>
       </div>
     </div>
   );
 }
 
-function EnrollmentRow({
-  enrollment,
-  onCancel,
-  cancelling,
-}: {
+function EnrollmentRow({ enrollment, onCancel, cancelling }: {
   enrollment: Enrollment;
   onCancel: (id: string) => void;
   cancelling: string | null;
 }) {
   const { t } = useTranslation();
   const ns = "whatsappLeadFollowup";
-
-  const statusColor: Record<string, string> = {
-    ACTIVE: "bg-amber-500/15 text-amber-600",
-    COMPLETED: "bg-green-500/15 text-green-600",
-    CANCELLED: "bg-red-500/15 text-red-600",
-  };
-
+  const cfg = statusConfig[enrollment.status as keyof typeof statusConfig] || statusConfig.CANCELLED;
   const statusLabel = t(`${ns}.monitoring.${enrollment.status.toLowerCase()}`, { ns }) || enrollment.status;
-
   const name = enrollment.customer.firstName
     ? `${enrollment.customer.firstName} ${enrollment.customer.lastName || ""}`
     : enrollment.whatsAppContact.name || enrollment.whatsAppContact.pushName || enrollment.whatsAppContact.phoneNumber;
-
-  const nextSend = enrollment.nextSendAt
-    ? new Date(enrollment.nextSendAt).toLocaleString()
-    : "-";
-
-  const lastSent = enrollment.lastSentAt
-    ? new Date(enrollment.lastSentAt).toLocaleString()
-    : "-";
+  const nextSend = enrollment.nextSendAt ? new Date(enrollment.nextSendAt).toLocaleString() : "-";
+  const lastSent = enrollment.lastSentAt ? new Date(enrollment.lastSentAt).toLocaleString() : "-";
 
   return (
-    <TableRow>
-      <TableCell className="font-medium">{name}</TableCell>
-      <TableCell className="text-sm text-[color:var(--color-muted-foreground)]">
-        {enrollment.whatsAppContact.phoneNumber}
+    <TableRow className="transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)]">
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-xs font-bold text-primary">
+            {name.charAt(0).toUpperCase()}
+          </span>
+          <div>
+            <p className="font-medium">{name}</p>
+            <p className="text-xs text-[color:var(--color-muted-foreground)]">{enrollment.whatsAppContact.phoneNumber}</p>
+          </div>
+        </div>
       </TableCell>
       <TableCell>
-        <Badge className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusColor[enrollment.status] || "")}>
+        <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium", cfg.bg)}>
+          <StatusDot status={enrollment.status} />
           {statusLabel}
-        </Badge>
+        </span>
       </TableCell>
       <TableCell className="text-sm">
-        {enrollment.status === "ACTIVE"
-          ? `${enrollment.currentStep + 1}/${enrollment.totalSteps}`
-          : "-"}
+        {enrollment.status === "ACTIVE" ? `${enrollment.currentStep + 1}/${enrollment.totalSteps}` : "-"}
       </TableCell>
       <TableCell className="text-sm text-[color:var(--color-muted-foreground)]">{nextSend}</TableCell>
       <TableCell className="text-sm text-[color:var(--color-muted-foreground)]">{lastSent}</TableCell>
-      <TableCell>
+      <TableCell className="text-right">
         {enrollment.status === "ACTIVE" && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 rounded-full border-destructive/30 text-destructive hover:bg-destructive/10"
-            onClick={() => onCancel(enrollment.id)}
-            disabled={cancelling === enrollment.id}
-          >
-            {cancelling === enrollment.id ? (
-              <Loader2 className="size-3 animate-spin" />
-            ) : (
-              <XCircle className="size-3" />
-            )}
-            Cancel
+          <Button variant="outline" size="sm" className="h-8 rounded-full border-red-500/20 text-red-500 hover:bg-red-500/10"
+            onClick={() => onCancel(enrollment.id)} disabled={cancelling === enrollment.id}>
+            {cancelling === enrollment.id ? <Loader2 className="size-3 animate-spin" /> : <XCircle className="size-3" />}
+            {t(`${ns}.enrollments.cancel`, { ns })}
           </Button>
         )}
       </TableCell>
@@ -258,8 +229,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
   const ns = "whatsappLeadFollowup";
 
   const withCompanyConfig = useCallback(
-    (config: ApiRequestConfig = {}) =>
-      companyId ? { ...config, _companyId: companyId } : config,
+    (config: ApiRequestConfig = {}) => companyId ? { ...config, _companyId: companyId } : config,
     [companyId],
   );
 
@@ -281,10 +251,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
         apiClient.get("/whatsapp/lead-followup/stats", withCompanyConfig()),
       ]);
       const s = settingsRes.data.data;
-      setSettings({
-        ...s,
-        steps: Array.isArray(s.steps) && s.steps.length > 0 ? s.steps : null,
-      });
+      setSettings({ ...s, steps: Array.isArray(s.steps) && s.steps.length > 0 ? s.steps : null });
       setStats(statsRes.data.data || null);
     } catch {
       // toast handled by apiClient
@@ -304,7 +271,6 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
   }, [withCompanyConfig]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
   useEffect(() => {
     if (activeTab === "monitoring") loadEnrollments(enrollmentFilter);
   }, [activeTab, enrollmentFilter, loadEnrollments]);
@@ -326,8 +292,6 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
         payload.mediaUrl = settings.steps[0].mediaUrl;
       }
       await apiClient.put("/whatsapp/lead-followup/settings", payload, withCompanyConfig());
-
-      // Refresh stats
       const statsRes = await apiClient.get("/whatsapp/lead-followup/stats", withCompanyConfig());
       setStats(statsRes.data.data || null);
     } catch {
@@ -346,10 +310,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
       ]);
       setStats(statsRes.data.data || null);
       const s = settingsRes.data.data;
-      setSettings({
-        ...s,
-        steps: Array.isArray(s.steps) && s.steps.length > 0 ? s.steps : null,
-      });
+      setSettings({ ...s, steps: Array.isArray(s.steps) && s.steps.length > 0 ? s.steps : null });
     } catch {
       // handled
     } finally {
@@ -361,10 +322,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
     setCancelling(id);
     try {
       await apiClient.put(`/whatsapp/lead-followup/enrollments/${id}/cancel`, {}, withCompanyConfig());
-      setEnrollments((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, status: "CANCELLED" } : e)),
-      );
-      // Refresh stats
+      setEnrollments((prev) => prev.map((e) => (e.id === id ? { ...e, status: "CANCELLED" } : e)));
       const statsRes = await apiClient.get("/whatsapp/lead-followup/stats", withCompanyConfig());
       setStats(statsRes.data.data || null);
     } catch {
@@ -402,6 +360,18 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
 
   const stepCount = settings?.steps?.length ?? 1;
 
+  const statCards = useMemo(() => stats ? [
+    { label: t(`${ns}.stats.activeEnrollments`, { ns }), value: stats.active, icon: Users, tone: "primary" as const },
+    { label: t(`${ns}.stats.totalSent`, { ns }), value: stats.totalSent, icon: MessageSquare, tone: "info" as const },
+    {
+      label: t(`${ns}.stats.replyRate`, { ns }),
+      value: `${stats.replyRate}%`,
+      hint: t(`${ns}.stats.replyRateHint`, { ns, replied: stats.replied, total: stats.totalSent }),
+      icon: CheckCircle2, tone: "success" as const,
+    },
+    { label: t(`${ns}.stats.completionRate`, { ns }), value: `${stats.completionRate}%`, icon: Zap, tone: "primary" as const },
+  ] : [], [stats, t, ns]);
+
   return (
     <WhatsAppPageShell
       title={t(`${ns}.title`, { ns })}
@@ -410,16 +380,16 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
       actions={
         <div className="flex items-center gap-2">
           <Button
-            className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
+            className="rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md disabled:hover:scale-100"
             onClick={handleSave}
             disabled={saving || !settings}
           >
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            Save
+            {t(`${ns}.actions.save`, { ns })}
           </Button>
           <Button
             variant="outline"
-            className="rounded-full"
+            className="rounded-full transition-all duration-200 hover:scale-[1.02]"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -429,257 +399,188 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
       }
     >
       {loading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-32 w-full rounded-2xl" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
+        <div className="animate-in fade-in space-y-4 duration-500">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl sm:h-32" />)}
+          </div>
+          <Skeleton className="h-72 w-full rounded-2xl" />
         </div>
       ) : (
-        <>
-          {/* Stats */}
-          {stats && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-6 duration-500">
+          {statCards.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <WhatsAppMetricCard
-                label={t(`${ns}.stats.activeEnrollments`, { ns })}
-                value={stats.active}
-                icon={Users}
-                tone="primary"
-              />
-              <WhatsAppMetricCard
-                label={t(`${ns}.stats.totalSent`, { ns })}
-                value={stats.totalSent}
-                icon={MessageSquare}
-                tone="info"
-              />
-              <WhatsAppMetricCard
-                label="Reply Rate"
-                value={`${stats.replyRate}%`}
-                hint={`${stats.replied} of ${stats.totalSent} replied`}
-                icon={CheckCircle}
-                tone="success"
-              />
-              <WhatsAppMetricCard
-                label={t(`${ns}.stats.completionRate`, { ns })}
-                value={`${stats.completionRate}%`}
-                icon={Zap}
-                tone="primary"
-              />
+              {statCards.map((card, i) => (
+                <div key={i} className="transition-all duration-200 hover:scale-[1.02]">
+                  <WhatsAppMetricCard {...card} />
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="settings">
+            <TabsList className="mb-6 gap-1 rounded-2xl bg-[color:color-mix(in_srgb,var(--color-muted)_60%,transparent)] p-1">
+              <TabsTrigger value="settings" className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/20 data-[state=active]:to-primary/5 data-[state=active]:shadow-sm">
                 <Zap className="size-4" />
-                Settings
+                {t(`${ns}.tabs.settings`, { ns })}
               </TabsTrigger>
-              <TabsTrigger value="monitoring">
+              <TabsTrigger value="monitoring" className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/20 data-[state=active]:to-primary/5 data-[state=active]:shadow-sm">
                 <Users className="size-4" />
                 {t(`${ns}.tabs.monitoring`, { ns })}
               </TabsTrigger>
             </TabsList>
 
-            {/* ── Settings Tab ── */}
-            <TabsContent value="settings">
-              <div className="space-y-6">
-                {/* Sequence Editor */}
-                <WhatsAppSurfaceCard
-                  title={`Follow-up Sequence (${stepCount} step${stepCount > 1 ? "s" : ""})`}
-                  description="Configure the sequence of messages sent to new leads"
-                >
-                  {settings?.steps && settings.steps.length > 0 ? (
-                    <div className="space-y-3">
-                      {settings.steps.map((step, i) => (
-                        <StepCard
-                          key={i}
-                          step={step}
-                          index={i}
-                          onChange={handleStepChange}
-                          onDelete={handleDeleteStep}
-                          canDelete={(settings.steps?.length ?? 0) > 1}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                      No steps configured. Click below to add your first follow-up step.
-                    </p>
-                  )}
-                  <Button
-                    variant="outline"
-                    className="mt-4 rounded-full"
-                    onClick={handleAddStep}
-                  >
-                    <Plus className="size-4" />
-                    Add Step
-                  </Button>
-                </WhatsAppSurfaceCard>
-
-                {/* Business Hours */}
-                <WhatsAppSurfaceCard
-                  title="Business Hours"
-                  description="Only send follow-ups during specific hours"
-                >
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Start Hour (UTC)</Label>
-                      <Select
-                        value={String(settings?.businessHourStart ?? "")}
-                        onValueChange={(v) =>
-                          setSettings((prev) =>
-                            prev ? { ...prev, businessHourStart: v ? Number(v) : null } : prev,
-                          )
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Any time" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Any time</SelectItem>
-                          {WA_HOURS.map((h) => (
-                            <SelectItem key={h} value={String(h)}>
-                              {h.toString().padStart(2, "0")}:00
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">End Hour (UTC)</Label>
-                      <Select
-                        value={String(settings?.businessHourEnd ?? "")}
-                        onValueChange={(v) =>
-                          setSettings((prev) =>
-                            prev ? { ...prev, businessHourEnd: v ? Number(v) : null } : prev,
-                          )
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Any time" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Any time</SelectItem>
-                          {WA_HOURS.map((h) => (
-                            <SelectItem key={h} value={String(h)}>
-                              {h.toString().padStart(2, "0")}:00
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Timezone</Label>
-                      <Select
-                        value={settings?.timezone ?? "UTC"}
-                        onValueChange={(v) =>
-                          setSettings((prev) =>
-                            prev ? { ...prev, timezone: v || "UTC" } : prev,
-                          )
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIMEZONES.map((tz) => (
-                            <SelectItem key={tz} value={tz}>
-                              {tz}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+            <TabsContent value="settings" className="space-y-6">
+              <WhatsAppSurfaceCard
+                title={t(`${ns}.stepEditor.title`, { ns })}
+                description={`${t(`${ns}.stepEditor.description`, { ns })} — ${stepCount} ${t(`${ns}.stepEditor.stepLabel`, { ns, current: "" }).replace("1", stepCount.toString())}`}
+              >
+                {settings?.steps && settings.steps.length > 0 ? (
+                  <div className="space-y-3">
+                    {settings.steps.map((step, i) => (
+                      <StepCard key={i} step={step} index={i}
+                        onChange={handleStepChange} onDelete={handleDeleteStep}
+                        canDelete={(settings.steps?.length ?? 0) > 1} />
+                    ))}
                   </div>
-                  {settings && (
-                    <div className="mt-4 flex items-center gap-3">
-                      <Switch
-                        checked={settings.isEnabled}
-                        onCheckedChange={(checked) =>
-                          setSettings((prev) =>
-                            prev ? { ...prev, isEnabled: checked } : prev,
-                          )
-                        }
-                      />
-                      <span className="text-sm text-[color:var(--color-muted-foreground)]">
-                        {settings.isEnabled ? "Follow-up is active" : "Follow-up is paused"}
-                      </span>
-                    </div>
-                  )}
-                </WhatsAppSurfaceCard>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 py-8 text-[color:var(--color-muted-foreground)]">
+                    <MessageSquare className="size-10 opacity-40" />
+                    <p className="text-sm">{t(`${ns}.stepEditor.noSteps`, { ns })}</p>
+                  </div>
+                )}
+                <Button variant="outline" className="mt-4 rounded-full transition-all duration-200 hover:scale-[1.02]" onClick={handleAddStep}>
+                  <Plus className="size-4" />
+                  {t(`${ns}.stepEditor.addStep`, { ns })}
+                </Button>
+              </WhatsAppSurfaceCard>
 
-                {/* Hints */}
-                <WhatsAppSurfaceCard
-                  title={t(`${ns}.hints.title`, { ns })}
-                  description=""
-                >
-                  <ul className="space-y-2 text-sm text-[color:var(--color-muted-foreground)]">
-                    <li className="flex items-start gap-2">
-                      <Sparkles className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                      <span>{t(`${ns}.hints.tip1`, { ns })}</span>
+              <WhatsAppSurfaceCard
+                title={t(`${ns}.businessHours.title`, { ns })}
+                description={t(`${ns}.businessHours.description`, { ns })}
+              >
+                <div className="grid gap-5 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5 text-xs font-medium text-[color:var(--color-muted-foreground)]">
+                      <Clock className="size-3.5" />
+                      {t(`${ns}.businessHours.startHour`, { ns })}
+                    </Label>
+                    <Select value={String(settings?.businessHourStart ?? "")}
+                      onValueChange={(v) => setSettings((prev) => prev ? { ...prev, businessHourStart: v ? Number(v) : null } : prev)}>
+                      <SelectTrigger><SelectValue placeholder={t(`${ns}.businessHours.anyTime`, { ns })} /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">{t(`${ns}.businessHours.anyTime`, { ns })}</SelectItem>
+                        {WA_HOURS.map((h) => <SelectItem key={h} value={String(h)}>{h.toString().padStart(2, "0")}:00</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5 text-xs font-medium text-[color:var(--color-muted-foreground)]">
+                      <Clock className="size-3.5" />
+                      {t(`${ns}.businessHours.endHour`, { ns })}
+                    </Label>
+                    <Select value={String(settings?.businessHourEnd ?? "")}
+                      onValueChange={(v) => setSettings((prev) => prev ? { ...prev, businessHourEnd: v ? Number(v) : null } : prev)}>
+                      <SelectTrigger><SelectValue placeholder={t(`${ns}.businessHours.anyTime`, { ns })} /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">{t(`${ns}.businessHours.anyTime`, { ns })}</SelectItem>
+                        {WA_HOURS.map((h) => <SelectItem key={h} value={String(h)}>{h.toString().padStart(2, "0")}:00</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5 text-xs font-medium text-[color:var(--color-muted-foreground)]">
+                      <Globe className="size-3.5" />
+                      {t(`${ns}.businessHours.timezone`, { ns })}
+                    </Label>
+                    <Select value={settings?.timezone ?? "UTC"}
+                      onValueChange={(v) => setSettings((prev) => prev ? { ...prev, timezone: v || "UTC" } : prev)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {settings && (
+                  <div className="mt-5 flex items-center gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-muted)_40%,transparent)] p-3">
+                    <Switch checked={settings.isEnabled}
+                      onCheckedChange={(checked) => setSettings((prev) => prev ? { ...prev, isEnabled: checked } : prev)} />
+                    <span className="text-sm font-medium text-[color:var(--color-muted-foreground)]">
+                      {settings.isEnabled ? t(`${ns}.status.active`, { ns }) : t(`${ns}.status.paused`, { ns })}
+                    </span>
+                  </div>
+                )}
+              </WhatsAppSurfaceCard>
+
+              <WhatsAppSurfaceCard title={t(`${ns}.hints.title`, { ns })}>
+                <ul className="space-y-3 text-sm text-[color:var(--color-muted-foreground)]">
+                  {[
+                    { icon: Clock, color: "text-amber-500", textKey: "tip1" },
+                    { icon: MessageSquare, color: "text-sky-500", textKey: "tip2" },
+                    { icon: Sparkles, color: "text-violet-500", textKey: "tip3" },
+                  ].map((tip, i) => (
+                    <li key={i} className="flex items-start gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-card)_60%,transparent)] p-3 transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)]">
+                      <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/5", tip.color)}>
+                        <tip.icon className="size-4" />
+                      </span>
+                      <span>{t(`${ns}.hints.${tip.textKey}`, { ns })}</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <Sparkles className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                      <span>{t(`${ns}.hints.tip2`, { ns })}</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Sparkles className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                      <span>{t(`${ns}.hints.tip3`, { ns })}</span>
-                    </li>
-                  </ul>
-                </WhatsAppSurfaceCard>
-              </div>
+                  ))}
+                </ul>
+              </WhatsAppSurfaceCard>
             </TabsContent>
 
-            {/* ── Monitoring Tab ── */}
             <TabsContent value="monitoring">
               <WhatsAppSurfaceCard
                 title={t(`${ns}.tabs.monitoring`, { ns })}
                 action={
-                  <Select
-                    value={enrollmentFilter}
-                    onValueChange={setEnrollmentFilter}
-                  >
+                  <Select value={enrollmentFilter} onValueChange={setEnrollmentFilter}>
                     <SelectTrigger className="h-9 min-w-[10rem] rounded-full">
-                      <SelectValue placeholder="All statuses" />
+                      <SelectValue placeholder={t(`${ns}.enrollments.allStatuses`, { ns })} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All statuses</SelectItem>
+                      <SelectItem value="">{t(`${ns}.enrollments.allStatuses`, { ns })}</SelectItem>
                       {STATUSES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {t(`${ns}.monitoring.${s.toLowerCase()}`, { ns }) || s}
-                        </SelectItem>
+                        <SelectItem key={s} value={s}>{t(`${ns}.monitoring.${s.toLowerCase()}`, { ns }) || s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 }
               >
                 {enrollments.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-10 text-[color:var(--color-muted-foreground)]">
-                    <Users className="size-8" />
-                    <p className="text-sm">No enrollments found</p>
+                  <div className="flex flex-col items-center gap-3 py-12 text-[color:var(--color-muted-foreground)]">
+                    <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5">
+                      <Users className="size-7 opacity-50" />
+                    </div>
+                    <p className="text-sm font-medium">{t(`${ns}.enrollments.empty`, { ns })}</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>{t(`${ns}.monitoring.customer`, { ns })}</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>{t(`${ns}.monitoring.status`, { ns })}</TableHead>
-                          <TableHead>{t(`${ns}.monitoring.currentStep`, { ns })}</TableHead>
-                          <TableHead>{t(`${ns}.monitoring.nextMessage`, { ns })}</TableHead>
-                          <TableHead>{t(`${ns}.monitoring.lastSent`, { ns })}</TableHead>
-                          <TableHead></TableHead>
+                        <TableRow className="border-b-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)]">
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">
+                            {t(`${ns}.monitoring.customer`, { ns })}
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">
+                            {t(`${ns}.monitoring.status`, { ns })}
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">
+                            {t(`${ns}.monitoring.currentStep`, { ns })}
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">
+                            {t(`${ns}.monitoring.nextMessage`, { ns })}
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted-foreground)]">
+                            {t(`${ns}.monitoring.lastSent`, { ns })}
+                          </TableHead>
+                          <TableHead className="w-20" />
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {enrollments.map((enr) => (
-                          <EnrollmentRow
-                            key={enr.id}
-                            enrollment={enr}
-                            onCancel={handleCancelEnrollment}
-                            cancelling={cancelling}
-                          />
+                          <EnrollmentRow key={enr.id} enrollment={enr}
+                            onCancel={handleCancelEnrollment} cancelling={cancelling} />
                         ))}
                       </TableBody>
                     </Table>
@@ -688,7 +589,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
               </WhatsAppSurfaceCard>
             </TabsContent>
           </Tabs>
-        </>
+        </div>
       )}
     </WhatsAppPageShell>
   );
