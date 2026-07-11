@@ -280,10 +280,10 @@ export default function AgentGuardrailsTab({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-280px)] overflow-hidden text-right" dir="rtl">
+    <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-280px)] lg:overflow-hidden text-right" dir="rtl">
       
       {/* Right Column: Rules Management */}
-      <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1">
+      <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 min-h-0 min-w-0">
         
         {/* Sub-header card */}
         <div className="bg-card p-4 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -418,7 +418,7 @@ export default function AgentGuardrailsTab({
       </div>
 
       {/* Left Column: Sandbox Playground */}
-      <div className="w-full lg:w-96 flex flex-col border border-border rounded-xl bg-card overflow-hidden">
+      <div className="w-full lg:w-80 flex flex-col border border-border rounded-xl bg-card overflow-hidden max-h-[400px] lg:max-h-none">
         {/* Playground header */}
         <div className="bg-muted/40 p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
