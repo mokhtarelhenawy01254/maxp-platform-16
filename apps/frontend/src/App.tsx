@@ -810,9 +810,7 @@ const SuperAdminWhatsAppCompanyAnalytics = React.lazy(
 const SuperAdminWhatsAppLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppLogs"),
 );
-const SuperAdminSelfReviewLogs = React.lazy(
-  () => import("./pages/super-admin/SuperAdminSelfReviewLogs"),
-);
+
 const SuperAdminWhatsAppAutomations = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppAutomations"),
 );
