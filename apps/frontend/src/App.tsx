@@ -795,9 +795,6 @@ const SuperAdminWhatsAppCompanySettings = React.lazy(
 const SuperAdminWhatsAppCompanyNotifications = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppCompanyNotifications"),
 );
-const SuperAdminWhatsAppCompanyAnalytics = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyAnalytics"),
-);
 const SuperAdminWhatsAppLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppLogs"),
 );
@@ -1138,9 +1135,6 @@ const WhatsAppNotifications = React.lazy(
 );
 const WhatsAppCustomerJourney = React.lazy(
   () => import("./pages/whatsapp/WhatsAppCustomerJourney"),
-);
-const WhatsAppAnalytics = React.lazy(
-  () => import("./pages/whatsapp/WhatsAppAnalytics"),
 );
 const WhatsAppMetaTemplates = React.lazy(
   () => import("./pages/whatsapp/WhatsAppMetaTemplates"),
@@ -1790,14 +1784,6 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminWhatsAppCompanyNotifications />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/companies/:companyId/analytics"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppCompanyAnalytics />
                 </Layout>
               }
             />
@@ -5520,14 +5506,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppCustomerJourney />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/analytics"
-                  element={
-                    <Layout>
-                      <WhatsAppAnalytics />
                     </Layout>
                   }
                 />
