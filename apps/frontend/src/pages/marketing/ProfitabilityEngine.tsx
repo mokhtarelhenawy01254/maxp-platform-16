@@ -13,6 +13,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
 } from "recharts";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
@@ -239,26 +240,6 @@ export default function ProfitabilityEngine() {
 
   const T = (k: string) => t(`profitabilityEngine.${k}`);
 
-  const Slider: React.FC<{ label: string; value: number; min: number; max: number; step?: number; onChange: React.ChangeEventHandler; isPercent?: boolean }> =
-    ({ label, value, min, max, step = 1, onChange, isPercent }) => (
-      <div className="space-y-1">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-700 dark:text-gray-300">{label}</span>
-          <span className="flex items-center gap-1">
-            <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
-              className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : sym(currency)}</span>
-          </span>
-        </div>
-        <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-          className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>{fmt(min)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-          <span>{fmt(max)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-        </div>
-      </div>
-    );
-
   const WhatIfChip: React.FC<{ label: string; field: WhatIfField; value: number }> = ({ label, field, value }) => (
     <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5 border border-gray-100 dark:border-gray-800">
       <span className="text-xs text-gray-600 dark:text-gray-400">{label}</span>
@@ -370,10 +351,10 @@ export default function ProfitabilityEngine() {
           {/* Input Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Card title={T("revenueVolume")} icon={<CurrencyDollarIcon className="w-5 h-5 text-green-500" />}>
-              <Slider label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
-              <Slider label={T("ordersPerDay")} value={inputs.ordersPerDay} min={1} max={500} step={1} onChange={set("ordersPerDay")} />
-              <Slider label={T("confirmationRate")} value={inputs.confirmationRate} min={0} max={100} step={5} isPercent onChange={set("confirmationRate")} />
-              <Slider label={T("deliveryRate")} value={inputs.deliveryRate} min={0} max={100} step={5} isPercent onChange={set("deliveryRate")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("ordersPerDay")} value={inputs.ordersPerDay} min={1} max={500} step={1} onChange={set("ordersPerDay")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("confirmationRate")} value={inputs.confirmationRate} min={0} max={100} step={5} isPercent onChange={set("confirmationRate")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("deliveryRate")} value={inputs.deliveryRate} min={0} max={100} step={5} isPercent onChange={set("deliveryRate")} />
               {/* Order funnel preview */}
               <div className="pt-2 space-y-1 text-xs">
                 <div className="flex justify-between text-gray-500"><span>{T("monthlyPlaced")}</span><span className="font-mono font-semibold text-gray-900 dark:text-gray-100">{fmt(results.monthlyOrdersPlaced)}</span></div>
@@ -384,10 +365,10 @@ export default function ProfitabilityEngine() {
             </Card>
 
             <Card title={T("variableCosts")} icon={<ChartBarIcon className="w-5 h-5 text-purple-500" />}>
-              <Slider label={T("cogs")} value={inputs.cogs} min={0} max={3000} step={10} onChange={set("cogs")} />
-              <Slider label={T("packingFees")} value={inputs.packingFees} min={0} max={200} step={5} onChange={set("packingFees")} />
-              <Slider label={T("shippingFees")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
-              <Slider label={T("rtoFees")} value={inputs.rtoFees} min={0} max={300} step={10} onChange={set("rtoFees")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("cogs")} value={inputs.cogs} min={0} max={3000} step={10} onChange={set("cogs")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("packingFees")} value={inputs.packingFees} min={0} max={200} step={5} onChange={set("packingFees")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("shippingFees")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("rtoFees")} value={inputs.rtoFees} min={0} max={300} step={10} onChange={set("rtoFees")} />
               <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded p-2"><span className="text-gray-500">{T("costPerDelivered")}</span><div className="font-semibold text-gray-900 dark:text-gray-100">{fmtCurr(inputs.cogs + inputs.packingFees + inputs.shippingFees)}</div></div>
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded p-2"><span className="text-gray-500">{T("rtoUnitCost")}</span><div className="font-semibold text-red-500">{fmtCurr(inputs.packingFees + inputs.rtoFees)}</div></div>
@@ -395,7 +376,7 @@ export default function ProfitabilityEngine() {
             </Card>
 
             <Card title={T("fixedMarketing")} icon={<ChartBarIcon className="w-5 h-5 text-orange-500" />}>
-              <Slider label={T("fixedCosts")} value={inputs.fixedCosts} min={0} max={500000} step={1000} onChange={set("fixedCosts")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("fixedCosts")} value={inputs.fixedCosts} min={0} max={500000} step={1000} onChange={set("fixedCosts")} />
               <div className="space-y-2">
                 <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 text-[11px] font-mono font-semibold w-fit">
                   {(["cpp", "total"] as const).map((mode) => (
@@ -407,12 +388,12 @@ export default function ProfitabilityEngine() {
                 </div>
                 {adMode === "cpp" ? (
                   <>
-                    <Slider label={T("cpp")} value={inputs.cpp} min={0} max={1000} step={10} onChange={set("cpp")} />
+                    <SliderInput currencySymbol={sym(currency)} label={T("cpp")} value={inputs.cpp} min={0} max={1000} step={10} onChange={set("cpp")} />
                     <div className="text-xs text-gray-500">{T("totalAdSpend")}: <span className="font-semibold text-gray-900 dark:text-gray-100">{fmtCurr(results.adSpend)}</span></div>
                   </>
                 ) : (
                   <>
-                    <Slider label={T("totalBudget")} value={totalBudget} min={0} max={2000000} step={10000}
+                    <SliderInput currencySymbol={sym(currency)} label={T("totalBudget")} value={totalBudget} min={0} max={2000000} step={10000}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         const v = parseFloat(e.target.value) || 0;
                         setTotalBudget(v);

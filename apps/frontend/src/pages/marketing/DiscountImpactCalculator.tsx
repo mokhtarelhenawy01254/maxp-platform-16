@@ -9,6 +9,7 @@ import {
   ShoppingCartIcon, GiftIcon,
   TruckIcon, CubeIcon, TagIcon,
 } from "@heroicons/react/24/outline";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
@@ -273,29 +274,6 @@ export default function DiscountImpactCalculator() {
     return items.map((d) => ({ ...d, pct: Math.min(100, (d.value / maxV) * 100) }));
   }, [r, T]);
 
-  const Slider: React.FC<{
-    label: string; value: number; min: number; max: number;
-    step?: number; onChange: React.ChangeEventHandler;
-    isPercent?: boolean; suffix?: string;
-  }> = ({ label, value, min, max, step = 1, onChange, isPercent, suffix }) => (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-700 dark:text-gray-300">{label}</span>
-        <span className="flex items-center gap-1">
-          <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
-            className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : suffix || sym(currency)}</span>
-        </span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-      <div className="flex justify-between text-xs text-gray-400">
-        <span>{fmt(min)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-        <span>{fmt(max)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-      </div>
-    </div>
-  );
-
   const inputIcon = (tab === "product" || tab === "quantity") ? <TagIcon className="w-5 h-5 text-blue-500" />
     : tab === "order" ? <ShoppingCartIcon className="w-5 h-5 text-purple-500" />
     : tab === "bogo" ? <GiftIcon className="w-5 h-5 text-pink-500" />
@@ -386,26 +364,26 @@ export default function DiscountImpactCalculator() {
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Card title={T("productInputs")} icon={inputIcon}>
               {(tab === "product" || tab === "bogo" || tab === "quantity" || tab === "freeShipping") && (
-                <Slider label={T("originalPrice")} value={inputs.originalPrice} min={50} max={10000} step={10} onChange={set("originalPrice")} />
+                <SliderInput currencySymbol={sym(currency)} label={T("originalPrice")} value={inputs.originalPrice} min={50} max={10000} step={10} onChange={set("originalPrice")} />
               )}
               {tab === "order" && (
                 <>
-                  <Slider label={T("aov")} value={inputs.aov} min={100} max={20000} step={50} onChange={set("aov")} />
-                  <Slider label={T("cogsPerItem")} value={inputs.cogsPerItem} min={10} max={5000} step={10} onChange={set("cogsPerItem")} />
-                  <Slider label={T("itemsPerOrder")} value={inputs.itemsPerOrder} min={1} max={20} step={1} onChange={set("itemsPerOrder")} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={inputs.aov} min={100} max={20000} step={50} onChange={set("aov")} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("cogsPerItem")} value={inputs.cogsPerItem} min={10} max={5000} step={10} onChange={set("cogsPerItem")} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("itemsPerOrder")} value={inputs.itemsPerOrder} min={1} max={20} step={1} onChange={set("itemsPerOrder")} />
                 </>
               )}
               {tab !== "order" && (
-                <Slider label={T("cogs")} value={inputs.cogs} min={10} max={5000} step={10} onChange={set("cogs")} />
+                <SliderInput currencySymbol={sym(currency)} label={T("cogs")} value={inputs.cogs} min={10} max={5000} step={10} onChange={set("cogs")} />
               )}
               {tab !== "order" && (
-                <Slider label={T("shipping")} value={inputs.shipping} min={0} max={500} step={5} onChange={set("shipping")} />
+                <SliderInput currencySymbol={sym(currency)} label={T("shipping")} value={inputs.shipping} min={0} max={500} step={5} onChange={set("shipping")} />
               )}
               {tab !== "order" && (
-                <Slider label={T("adCost")} value={inputs.adCost} min={0} max={1000} step={10} onChange={set("adCost")} />
+                <SliderInput currencySymbol={sym(currency)} label={T("adCost")} value={inputs.adCost} min={0} max={1000} step={10} onChange={set("adCost")} />
               )}
               {tab !== "bogo" && tab !== "freeShipping" && (
-                <Slider label={T("discountPct")} value={inputs.discountPct} min={1} max={70} step={1} isPercent onChange={set("discountPct")} />
+                <SliderInput currencySymbol={sym(currency)} label={T("discountPct")} value={inputs.discountPct} min={1} max={70} step={1} isPercent onChange={set("discountPct")} />
               )}
               {tab === "bogo" && (
                 <div className="text-xs bg-pink-50 dark:bg-pink-900/10 border border-pink-200 dark:border-pink-800 rounded-lg p-3 text-pink-700 dark:text-pink-300">
@@ -422,8 +400,8 @@ export default function DiscountImpactCalculator() {
                   {T("tierLabel", { tier: 1 })} — {T("tierMinQty")}: 5, {T("tierDiscount")}: {inputs.discountPct}%
                 </div>
               )}
-              <Slider label={T("currentOrders")} value={inputs.currentOrders} min={10} max={5000} step={10} onChange={set("currentOrders")} suffix=" orders" />
-              <Slider label={T("expectedLift")} value={inputs.expectedLift} min={0} max={300} step={5} isPercent onChange={set("expectedLift")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("currentOrders")} value={inputs.currentOrders} min={10} max={5000} step={10} onChange={set("currentOrders")} suffix=" orders" />
+              <SliderInput currencySymbol={sym(currency)} label={T("expectedLift")} value={inputs.expectedLift} min={0} max={300} step={5} isPercent onChange={set("expectedLift")} />
             </Card>
           </div>
 

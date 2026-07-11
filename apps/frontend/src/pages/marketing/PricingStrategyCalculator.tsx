@@ -8,6 +8,7 @@ import {
   CheckCircleIcon, ExclamationCircleIcon, XCircleIcon,
   Cog6ToothIcon, CubeIcon, ArrowPathIcon, TagIcon,
 } from "@heroicons/react/24/outline";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
@@ -190,28 +191,7 @@ export default function PricingStrategyCalculator() {
   const loadScenario = (s: SavedScenario) => { setInputs({ ...s.inputs }); setCurrency(s.currency); };
   const deleteScenario = (id: string) => persist(saved.filter((s) => s.id !== id));
 
-  const Slider: React.FC<{
-    label: string; value: number; min: number; max: number;
-    step?: number; onChange: React.ChangeEventHandler;
-    isPercent?: boolean; suffix?: string;
-  }> = ({ label, value, min, max, step = 1, onChange, isPercent, suffix }) => (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-700 dark:text-gray-300">{label}</span>
-        <span className="flex items-center gap-1">
-          <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
-            className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : suffix || sym(currency)}</span>
-        </span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-      <div className="flex justify-between text-xs text-gray-400">
-        <span>{fmt(min)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-        <span>{fmt(max)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-      </div>
-    </div>
-  );
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-4 sm:py-6 px-3 sm:px-4" dir={i18n.dir()}>
@@ -295,16 +275,16 @@ export default function PricingStrategyCalculator() {
           {/* Input Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Card title={T("costInputs")} icon={<CurrencyDollarIcon className="w-5 h-5 text-purple-500" />}>
-              <Slider label={T("cogs")} value={inputs.cogs} min={1} max={5000} step={10} onChange={set("cogs")} />
-              <Slider label={T("shipping")} value={inputs.shipping} min={0} max={500} step={10} onChange={set("shipping")} />
-              <Slider label={T("packing")} value={inputs.packing} min={0} max={200} step={5} onChange={set("packing")} />
-              <Slider label={T("adCost")} value={inputs.adCost} min={0} max={1000} step={10} onChange={set("adCost")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("cogs")} value={inputs.cogs} min={1} max={5000} step={10} onChange={set("cogs")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("shipping")} value={inputs.shipping} min={0} max={500} step={10} onChange={set("shipping")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("packing")} value={inputs.packing} min={0} max={200} step={5} onChange={set("packing")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("adCost")} value={inputs.adCost} min={0} max={1000} step={10} onChange={set("adCost")} />
             </Card>
 
             <Card title={T("marketInputs")} icon={<ArrowTrendingUpIcon className="w-5 h-5 text-blue-500" />}>
-              <Slider label={T("commissionPct")} value={inputs.commissionPct} min={0} max={30} step={1} isPercent onChange={set("commissionPct")} />
-              <Slider label={T("desiredMarginPct")} value={inputs.desiredMarginPct} min={5} max={80} step={5} isPercent onChange={set("desiredMarginPct")} />
-              <Slider label={T("competitorPrice")} value={inputs.competitorPrice} min={10} max={10000} step={50} onChange={set("competitorPrice")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("commissionPct")} value={inputs.commissionPct} min={0} max={30} step={1} isPercent onChange={set("commissionPct")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("desiredMarginPct")} value={inputs.desiredMarginPct} min={5} max={80} step={5} isPercent onChange={set("desiredMarginPct")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("competitorPrice")} value={inputs.competitorPrice} min={10} max={10000} step={50} onChange={set("competitorPrice")} />
             </Card>
           </div>
 

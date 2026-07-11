@@ -6,6 +6,7 @@ import {
   PlusCircleIcon, TrashIcon, ArrowTrendingUpIcon,
   ChartBarIcon, ScaleIcon,
 } from "@heroicons/react/24/outline";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
@@ -207,29 +208,6 @@ export default function ShippingOptimizer() {
 
   const winSavings = best && worst && best.name !== worst.name ? worst.total - best.total : 0;
 
-  const Slider: React.FC<{
-    label: string; value: number; min: number; max: number;
-    step?: number; onChange: (v: number) => void;
-    isPercent?: boolean; suffix?: string;
-  }> = ({ label, value, min, max, step = 1, onChange, isPercent, suffix }) => (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-700 dark:text-gray-300">{label}</span>
-        <span className="flex items-center gap-1">
-          <input type="number" value={value} onChange={(e) => onChange(parseFloat(e.target.value) || 0)} min={min} max={max} step={step}
-            className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : suffix || sym(currency)}</span>
-        </span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-      <div className="flex justify-between text-xs text-gray-400">
-        <span>{fmt(min)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-        <span>{fmt(max)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-4 sm:py-6 px-3 sm:px-4" dir={i18n.dir()}>
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
@@ -259,8 +237,8 @@ export default function ShippingOptimizer() {
               <h2 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 text-sm sm:text-base">
                 <CurrencyDollarIcon className="w-5 h-5 text-blue-500" /> {T("storeSettings")}
               </h2>
-              <Slider label={T("aov")} value={aov} min={100} max={10000} step={100} onChange={setAov} />
-              <Slider label={T("ordersPerMonth")} value={orders} min={10} max={10000} step={10} onChange={setOrders} suffix=" orders" />
+              <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={aov} min={100} max={10000} step={100} onChange={(e) => setAov(parseFloat(e.target.value))} />
+              <SliderInput currencySymbol={sym(currency)} label={T("ordersPerMonth")} value={orders} min={10} max={10000} step={10} onChange={(e) => setOrders(parseFloat(e.target.value))} suffix=" orders" />
             </div>
 
             {/* Couriers */}
@@ -286,11 +264,11 @@ export default function ShippingOptimizer() {
                       </button>
                     )}
                   </div>
-                  <Slider label={T("deliveryCost")} value={c.deliveryCost} min={0} max={500} step={5} onChange={(v) => updateCourier(idx, "deliveryCost", v)} />
-                  <Slider label={T("rtoCost")} value={c.rtoCost} min={0} max={500} step={5} onChange={(v) => updateCourier(idx, "rtoCost", v)} />
-                  <Slider label={T("deliveryRate")} value={c.deliveryRate} min={30} max={100} step={1} isPercent onChange={(v) => updateCourier(idx, "deliveryRate", v)} />
-                  <Slider label={T("extraFees")} value={c.extraFees} min={0} max={200} step={5} onChange={(v) => updateCourier(idx, "extraFees", v)} />
-                  <Slider label={T("codCommission")} value={c.codPct} min={0} max={10} step={0.5} isPercent onChange={(v) => updateCourier(idx, "codPct", v)} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("deliveryCost")} value={c.deliveryCost} min={0} max={500} step={5} onChange={(e) => updateCourier(idx, "deliveryCost", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("rtoCost")} value={c.rtoCost} min={0} max={500} step={5} onChange={(e) => updateCourier(idx, "rtoCost", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("deliveryRate")} value={c.deliveryRate} min={30} max={100} step={1} isPercent onChange={(e) => updateCourier(idx, "deliveryRate", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("extraFees")} value={c.extraFees} min={0} max={200} step={5} onChange={(e) => updateCourier(idx, "extraFees", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("codCommission")} value={c.codPct} min={0} max={10} step={0.5} isPercent onChange={(e) => updateCourier(idx, "codPct", parseFloat(e.target.value))} />
                 </div>
               ))}
             </div>

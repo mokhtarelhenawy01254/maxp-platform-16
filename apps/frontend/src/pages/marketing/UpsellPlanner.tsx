@@ -8,6 +8,7 @@ import {
   WalletIcon, GiftIcon,
   ArrowUpIcon, ArrowDownIcon,
 } from "@heroicons/react/24/outline";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
@@ -111,28 +112,6 @@ function MetricCard({ label, value, sub, positive, accent = "emerald" }: {
     </div>
   );
 }
-
-const Slider: React.FC<{
-  label: string; value: number; min: number; max: number;
-  step?: number; onChange: React.ChangeEventHandler; suffix?: string; isPercent?: boolean;
-}> = ({ label, value, min, max, step = 1, onChange, suffix, isPercent }) => (
-  <div className="space-y-1">
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-600 dark:text-gray-400">{label}</span>
-      <span>
-        <input type="number" value={value} onChange={onChange}
-          className="w-20 sm:w-24 text-right font-semibold bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
-        <span className="text-gray-500 dark:text-gray-400 mr-1">{isPercent ? "%" : suffix || ""}</span>
-      </span>
-    </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-    <div className="flex justify-between text-xs text-gray-400">
-      <span>{fmt(min)}{isPercent ? "%" : ""}</span>
-      <span>{fmt(max)}{isPercent ? "%" : ""}</span>
-    </div>
-  </div>
-);
 
 function WhatIfButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -335,14 +314,14 @@ export default function UpsellPlanner() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <Cog6ToothIcon className="w-5 h-5" /> {T("calculate")}
               </h2>
-              <Slider label={T("inputAov")} value={inputs.aov} min={50} max={10000} step={10} onChange={set("aov")} suffix={` ${sym(currency)}`} />
-              <Slider label={T("inputOrders")} value={inputs.orders} min={10} max={10000} step={10} onChange={set("orders")} suffix="" />
-              <Slider label={T("inputUpsellRate")} value={inputs.upsellRate} min={1} max={60} step={1} onChange={set("upsellRate")} isPercent />
-              <Slider label={T("inputUpsellValue")} value={inputs.upsellValue} min={10} max={5000} step={10} onChange={set("upsellValue")} suffix={` ${sym(currency)}`} />
-              <Slider label={T("inputCrossRate")} value={inputs.crossRate} min={1} max={50} step={1} onChange={set("crossRate")} isPercent />
-              <Slider label={T("inputCrossValue")} value={inputs.crossValue} min={10} max={3000} step={10} onChange={set("crossValue")} suffix={` ${sym(currency)}`} />
-              <Slider label={T("inputDiscount")} value={inputs.discount} min={0} max={40} step={1} onChange={set("discount")} isPercent />
-              <Slider label={T("inputMargin")} value={inputs.margin} min={5} max={80} step={1} onChange={set("margin")} isPercent />
+              <SliderInput label={T("inputAov")} value={inputs.aov} min={50} max={10000} step={10} onChange={set("aov")} suffix={` ${sym(currency)}`} />
+              <SliderInput label={T("inputOrders")} value={inputs.orders} min={10} max={10000} step={10} onChange={set("orders")} suffix="" />
+              <SliderInput label={T("inputUpsellRate")} value={inputs.upsellRate} min={1} max={60} step={1} onChange={set("upsellRate")} isPercent />
+              <SliderInput label={T("inputUpsellValue")} value={inputs.upsellValue} min={10} max={5000} step={10} onChange={set("upsellValue")} suffix={` ${sym(currency)}`} />
+              <SliderInput label={T("inputCrossRate")} value={inputs.crossRate} min={1} max={50} step={1} onChange={set("crossRate")} isPercent />
+              <SliderInput label={T("inputCrossValue")} value={inputs.crossValue} min={10} max={3000} step={10} onChange={set("crossValue")} suffix={` ${sym(currency)}`} />
+              <SliderInput label={T("inputDiscount")} value={inputs.discount} min={0} max={40} step={1} onChange={set("discount")} isPercent />
+              <SliderInput label={T("inputMargin")} value={inputs.margin} min={5} max={80} step={1} onChange={set("margin")} isPercent />
               <button onClick={() => { setInputs({ ...DEFAULTS }); setActiveAction(null); }}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all w-full justify-center">
                 <ArrowPathIcon className="w-4 h-4" /> {T("reset")}

@@ -8,6 +8,7 @@ import {
   Cog6ToothIcon, ArrowPathIcon, ClockIcon,
   RocketLaunchIcon, WalletIcon, ShoppingCartIcon,
 } from "@heroicons/react/24/outline";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
@@ -218,28 +219,7 @@ export default function AdBudgetPlanner() {
 
   const maxBarValue = Math.max(...budgetBreakdownData.map((d) => d.value), 1);
 
-  const Slider: React.FC<{
-    label: string; value: number; min: number; max: number;
-    step?: number; onChange: React.ChangeEventHandler;
-    isPercent?: boolean; suffix?: string;
-  }> = ({ label, value, min, max, step = 1, onChange, isPercent, suffix }) => (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-700 dark:text-gray-300">{label}</span>
-        <span className="flex items-center gap-1">
-          <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
-            className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : suffix || sym(currency)}</span>
-        </span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-      <div className="flex justify-between text-xs text-gray-400">
-        <span>{fmt(min)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-        <span>{fmt(max)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-      </div>
-    </div>
-  );
+
 
   const cppHintText = inputMode === "cpp"
     ? T("cppHint", { budget: fmt(inputs.cpp * r.expectedOrders * conversionRate), orders: r.expectedOrders })
@@ -331,9 +311,9 @@ export default function AdBudgetPlanner() {
           {/* Input Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Card title={T("campaignInputs")} icon={<Cog6ToothIcon className="w-5 h-5 text-blue-500" />}>
-              <Slider label={T("targetRevenue")} value={inputs.targetRevenue} min={10000} max={10000000} step={5000} onChange={set("targetRevenue")} />
-              <Slider label={T("aov")} value={inputs.aov} min={100} max={5000} step={10} onChange={set("aov")} />
-              <Slider label={T("targetRoas")} value={inputs.targetRoas} min={1} max={15} step={0.5} onChange={set("targetRoas")} suffix="x" />
+              <SliderInput currencySymbol={sym(currency)} label={T("targetRevenue")} value={inputs.targetRevenue} min={10000} max={10000000} step={5000} onChange={set("targetRevenue")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={inputs.aov} min={100} max={5000} step={10} onChange={set("aov")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("targetRoas")} value={inputs.targetRoas} min={1} max={15} step={0.5} onChange={set("targetRoas")} suffix="x" />
 
               {/* Input Mode Toggle */}
               <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
@@ -352,17 +332,17 @@ export default function AdBudgetPlanner() {
               </div>
 
               {inputMode === "cpp" ? (
-                <Slider label={T("cpp")} value={inputs.cpp} min={10} max={1000} step={5} onChange={set("cpp")} />
+                <SliderInput currencySymbol={sym(currency)} label={T("cpp")} value={inputs.cpp} min={10} max={1000} step={5} onChange={set("cpp")} />
               ) : (
-                <Slider label={T("totalBudget")} value={inputs.totalBudget} min={1000} max={1000000} step={1000} onChange={set("totalBudget")} />
+                <SliderInput currencySymbol={sym(currency)} label={T("totalBudget")} value={inputs.totalBudget} min={1000} max={1000000} step={1000} onChange={set("totalBudget")} />
               )}
 
               <div className="text-[11px] text-gray-400 dark:text-gray-500 text-center bg-gray-50 dark:bg-gray-800/50 rounded-lg py-1.5">
                 {cppHintText}
               </div>
 
-              <Slider label={T("convRate")} value={inputs.convRate} min={0.5} max={15} step={0.5} isPercent onChange={set("convRate")} />
-              <Slider label={T("dailyCap")} value={inputs.dailyCap} min={500} max={100000} step={500} onChange={set("dailyCap")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("convRate")} value={inputs.convRate} min={0.5} max={15} step={0.5} isPercent onChange={set("convRate")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("dailyCap")} value={inputs.dailyCap} min={500} max={100000} step={500} onChange={set("dailyCap")} />
             </Card>
           </div>
 
