@@ -810,6 +810,9 @@ const SuperAdminWhatsAppCompanyAnalytics = React.lazy(
 const SuperAdminWhatsAppLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppLogs"),
 );
+const SuperAdminSelfReviewLogs = React.lazy(
+  () => import("./pages/super-admin/SuperAdminSelfReviewLogs"),
+);
 const SuperAdminWhatsAppAutomations = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppAutomations"),
 );
@@ -855,6 +858,9 @@ const SuperAdminProductEmbeddings = React.lazy(
 );
 const SuperAdminAIConsumption = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIConsumption"),
+);
+const SuperAdminSupportSettings = React.lazy(
+  () => import("./pages/super-admin/SuperAdminSupportSettings"),
 );
 // Merchant AI Pages
 const AIHubLayout = React.lazy(
@@ -1810,6 +1816,16 @@ const AppContent = () => {
               }
             />
             <Route
+              path="/super-admin/self-review"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminSelfReviewLogs />
+                  </React.Suspense>
+                </Layout>
+              }
+            />
+            <Route
               path="/super-admin/whatsapp/automations"
               element={
                 <Layout>
@@ -1999,6 +2015,16 @@ const AppContent = () => {
                 <Layout fullWidth>
                   <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                     <SuperAdminAIConsumption />
+                  </React.Suspense>
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/support-settings"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminSupportSettings />
                   </React.Suspense>
                 </Layout>
               }
