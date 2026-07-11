@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [FIX] JSX Nesting and Tag Mismatch for AgentGuardrailsTab inside AgentProfilesPage
+- **Date**: 2026-07-11
+- **Description**: Resolved a critical rendering issue where the "القواعد والتعلم" (Guardrails) tab rendered completely blank and caused a subsequent Vite build crash (JSX tag mismatch / unterminated regex syntax error) during deployment.
+- **Root Cause**: The `AgentGuardrailsTab` component was incorrectly nested *inside* the `tab === "settings"` conditional block, preventing it from mounting when the tab switched to `"guardrails"`. A quick attempt to restructure the layout caused mismatched `div` and Fragment tags, leading to a build failure.
+- **Resolution**: Closed the settings conditional block and its wrapper `div` first, then placed the `AgentGuardrailsTab` block as a clean sibling under the React Fragment container. Properly balanced all HTML wrappers, conditional braces, and Fragments.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+
 ### [FIX] Duplicate `/admin` Prefix in Guardrail FastAPI Endpoints
 - **Date**: 2026-07-10
 - **Description**: Resolved a 404 Not Found error when calling guardrail API routes (e.g. listing, creating, check-conflict, or update/delete rules) via the Express backend proxy.

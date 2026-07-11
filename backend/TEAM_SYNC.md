@@ -1,5 +1,12 @@
 # Team Sync Updates
 
+## 2026-07-11 / 2026-03-09
+- **Agent Profiles Settings & Guardrails Layout Fix (BUGFIX / FRONTEND)**: Resolved a critical frontend layout and tag mismatch compilation bug on the Merchant Dashboard:
+  1. Fixed JSX nesting where the newly added "القواعد والتعلم" (Guardrails) tab block was erroneously wrapped inside the settings conditional div, preventing it from mounting or rendering when clicked.
+  2. Restructured the JSX hierarchy inside `AgentProfilesPage.tsx` to mount the `AgentGuardrailsTab` as a direct sibling of the settings block under the common Fragment.
+  3. Balanced all closing `div` and Fragment tags, fixing the Vite production build failure (esbuild JSX tag mismatch and regex syntax error).
+  4. Verified layout loading, components structure, and successful API integration with the FastAPI backend through headless browser tests.
+
 ## 2026-07-10 / 2026-03-09
 - **Merchant Agent Guardrails & Dynamic Learning System (FEATURE / COMPLETE)**: Completed the full end-to-end architecture for merchant-defined conversational guardrails:
   1. Created `AgentGuardrailRule` SQLAlchemy model in `guardrail.py` and registered it in the models package.
