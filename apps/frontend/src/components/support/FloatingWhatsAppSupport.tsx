@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 32 32" className="w-7 h-7" fill="white">
@@ -7,11 +7,22 @@ const WhatsAppIcon = () => (
 );
 
 const FloatingWhatsAppSupport: React.FC = () => {
-  const number = import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER;
-  if (!number) return null;
-
+  const envPhone = import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER || "";
+  const [phone, setPhone] = useState(envPhone);
   const isRTL = document.dir === "rtl" || document.documentElement.dir === "rtl";
-  const cleanNumber = number.replace(/[^0-9]/g, "");
+
+  useEffect(() => {
+    fetch("/api/v1/public/support-settings")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data.phone) setPhone(res.data.phone);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!phone) return null;
+
+  const cleanNumber = phone.replace(/[^0-9]/g, "");
   const waLink = `https://wa.me/${cleanNumber}`;
 
   return (

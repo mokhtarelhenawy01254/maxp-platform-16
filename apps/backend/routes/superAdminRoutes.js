@@ -1174,4 +1174,50 @@ router.get(
   },
 );
 
+// 🆕 Support Settings (WhatsApp number)
+router.get("/support-settings", async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    let settings = await prisma.systemSettings.findUnique({
+      where: { systemName: "support_whatsapp" },
+    });
+    if (!settings) {
+      settings = await prisma.systemSettings.create({
+        data: {
+          systemName: "support_whatsapp",
+          displayName: "Support WhatsApp",
+          category: "support",
+          config: JSON.stringify({ phone: "" }),
+        },
+      });
+    }
+    const config = typeof settings.config === "string" ? JSON.parse(settings.config) : settings.config;
+    return res.json({ success: true, data: { phone: config.phone || "" } });
+  } catch (error) {
+    console.error("[SA] support-settings error:", error.message);
+    return res.status(500).json({ success: false, error: "فشل تحميل إعدادات الدعم الفني" });
+  }
+});
+
+router.put("/support-settings", async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { phone } = req.body;
+    await prisma.systemSettings.upsert({
+      where: { systemName: "support_whatsapp" },
+      update: { config: JSON.stringify({ phone: phone || "" }) },
+      create: {
+        systemName: "support_whatsapp",
+        displayName: "Support WhatsApp",
+        category: "support",
+        config: JSON.stringify({ phone: phone || "" }),
+      },
+    });
+    return res.json({ success: true, data: { phone: phone || "" } });
+  } catch (error) {
+    console.error("[SA] support-settings error:", error.message);
+    return res.status(500).json({ success: false, error: "فشل حفظ إعدادات الدعم الفني" });
+  }
+});
+
 module.exports = router;

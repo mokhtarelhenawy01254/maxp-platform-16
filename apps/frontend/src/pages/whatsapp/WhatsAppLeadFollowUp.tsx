@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  AlertCircle,
   CheckCircle,
-  Clock,
   GripVertical,
   Loader2,
   MessageSquare,

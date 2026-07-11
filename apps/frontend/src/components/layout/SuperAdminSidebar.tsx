@@ -82,6 +82,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
   { title: t("superAdmin.sidebar.support"), icon: <Headphones className="size-5" />, items: [
     { text: t("superAdmin.sidebar.supportManagement"), icon: <Headphones className="size-5" />, path: "/admin/support" },
     { text: t("superAdmin.sidebar.allTickets"), icon: <Ticket className="size-5" />, path: "/admin/support" },
+    { text: "إعدادات الدعم", icon: <Settings className="size-5" />, path: "/super-admin/support-settings" },
   ]},
   { title: t("superAdmin.sidebar.devManagement"), icon: <Wrench className="size-5" />, items: [
     { text: t("superAdmin.sidebar.okrs"), icon: <Trophy className="size-5" />, path: "/super-admin/dev-goals" },
