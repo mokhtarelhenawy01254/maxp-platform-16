@@ -280,10 +280,10 @@ export default function AgentGuardrailsTab({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-280px)] lg:overflow-hidden text-right" dir="rtl">
+    <div className="w-full flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-280px)] lg:overflow-hidden text-right" dir="rtl">
       
       {/* Right Column: Rules Management */}
-      <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 min-h-0 min-w-0">
+      <div className="w-full lg:flex-1 flex flex-col gap-4 lg:overflow-y-auto pr-1 min-h-0 min-w-0">
         
         {/* Sub-header card */}
         <div className="bg-card p-4 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
