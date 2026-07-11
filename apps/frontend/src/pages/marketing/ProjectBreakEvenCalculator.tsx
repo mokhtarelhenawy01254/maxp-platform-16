@@ -412,10 +412,6 @@ export default function ProjectBreakEvenCalculator() {
             </div>
           </div>
         </div>
-
-        <div className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">
-          {T("title")} &mdash; {T("subtitle")}
-        </div>
       </div>
     </div>
   );
