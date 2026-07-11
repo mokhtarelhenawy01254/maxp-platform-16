@@ -83,15 +83,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
     <div>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">
-            {t('whatsappInbox.workspaceEmployeesTitle')}
-            {selectedEmployeeIds.length > 0 && (
-              <span className="ml-1 text-xs font-normal text-muted-foreground">
-                ({selectedEmployeeIds.length})
-              </span>
-            )}
-          </h3>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {routingMode === 'NUMBER_OWNER'
               ? t('whatsappInbox.workspaceEmployeesDirectHint')
               : routingMode === 'SHARED_INBOX'

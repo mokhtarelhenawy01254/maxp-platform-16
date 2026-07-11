@@ -217,9 +217,14 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
                     }`}>
                       2
                     </span>
-                    <h3 className="text-sm font-semibold text-foreground">
+                    <span className="text-sm font-semibold text-foreground">
                       {t('whatsappInbox.workspaceEmployeesTitle')}
-                    </h3>
+                    </span>
+                    {selectedEmployeeIds.length > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        ({selectedEmployeeIds.length})
+                      </span>
+                    )}
                   </div>
                   <div className="rounded-lg border border-border/50 bg-card p-4">
                     <EmployeePicker
