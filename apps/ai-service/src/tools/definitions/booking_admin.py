@@ -19,8 +19,12 @@ class CreateBranchInput(BaseModel):
     name: str = Field(..., description="اسم الفرع")
     address: str = Field(default="", description="عنوان الفرع")
     phone: str = Field(default="", description="رقم هاتف الفرع")
+    phones: list[str] | None = Field(default=None, description="قائمة أرقام الهاتف (JSON array)")
     workingDays: dict[str, Any] | None = Field(default=None, description="أيام/ساعات العمل (JSON)")
     genderDays: dict[str, Any] | None = Field(default=None, description="توزيع أيام الرجال/السيدات (JSON)")
+    maxBookingsPerSlot: int | None = Field(default=None, description="الحد الأقصى للحجوزات لكل وقت (افتراضي 1)")
+    location: str | None = Field(default=None, description="الموقع (وصف أو رابط)")
+    landmarkImage: str | None = Field(default=None, description="صورة علامة مميزة (base64)")
 
 
 class UpdateBranchInput(BaseModel):
@@ -29,9 +33,13 @@ class UpdateBranchInput(BaseModel):
     name: str = Field(default="", description="اسم الفرع")
     address: str = Field(default="", description="عنوان الفرع")
     phone: str = Field(default="", description="رقم الهاتف")
+    phones: list[str] | None = Field(default=None, description="قائمة أرقام الهاتف (JSON array)")
     workingDays: dict[str, Any] | None = Field(default=None, description="أيام/ساعات العمل")
     genderDays: dict[str, Any] | None = Field(default=None, description="توزيع أيام الرجال/السيدات")
     isActive: bool | None = Field(default=None, description="تفعيل/إيقاف الفرع")
+    maxBookingsPerSlot: int | None = Field(default=None, description="الحد الأقصى للحجوزات لكل وقت")
+    location: str | None = Field(default=None, description="الموقع (وصف أو رابط)")
+    landmarkImage: str | None = Field(default=None, description="صورة علامة مميزة (base64)")
 
 
 class DeleteBranchInput(BaseModel):
@@ -220,7 +228,7 @@ booking_branch_create_tool = FunctionTool(
 
 booking_branch_update_tool = FunctionTool(
     name="booking_branch_update",
-    description="تعديل بيانات فرع موجود (الاسم، العنوان، الهاتف، أيام العمل، التفعيل).",
+    description="تعديل بيانات فرع موجود (الاسم، العنوان، الهاتف، الأرقام، أيام العمل، التفعيل، الحد الأقصى للحجوزات، الموقع، الصورة).",
     func=booking_branch_update,
     input_model=UpdateBranchInput,
 )

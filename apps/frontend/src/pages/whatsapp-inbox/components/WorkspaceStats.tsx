@@ -39,15 +39,15 @@ const WorkspaceStats: React.FC<WorkspaceStatsProps> = ({ stats, onStatClick }) =
   ];
 
   return (
-    <div className="-mx-4 flex divide-x divide-border border-y border-border px-1 md:-mx-6 md:px-3 lg:-mx-8">
+    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 text-sm">
       {items.map((item) => (
         <button
           key={item.key}
           type="button"
           onClick={() => onStatClick?.(item.key)}
-          className="flex flex-1 items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-muted/50"
+          className="inline-flex items-baseline gap-1.5 rounded text-start transition-colors hover:text-primary"
         >
-          <span className="text-2xl font-semibold tracking-tight text-foreground">
+          <span className="text-lg font-semibold tabular-nums text-foreground">
             {item.value}
           </span>
           <span className="text-xs leading-tight text-muted-foreground">

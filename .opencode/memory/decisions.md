@@ -1,5 +1,23 @@
 # Architectural & Design Decisions
 
+## 2026-07-10 — Gemini Embedding 2 for similarity search
+- **Context:** Need to generate embedding vectors for merchant rules to calculate semantic similarity against customer messages.
+- **Decision:** Selected Gemini Embedding 2 as the primary embedding model, resolving via `episodic_memory_service.generate_embedding_async()`.
+- **Rationale:** Gemini is already configured in the MaxP service stack, provides excellent accuracy for Arabic dialects and Franco-Arabic, and introduces zero extra infrastructure or API billing costs.
+- **Rejected:** Local SentenceTransformers (`all-MiniLM-L6-v2`) which would bloat the Docker image size by requiring PyTorch/SentenceTransformers libraries on the server, and OpenAI embeddings which would require setting up new API keys/contracts.
+
+## 2026-07-10 — Keyword Fallback Matcher in Guardrail retrieval
+- **Context:** If the Google/Gemini embedding API is down, rate-limited, or running locally without Internet, agent prompt assembly could fail or rules would be skipped.
+- **Decision:** Added a robust fallback keyword matching algorithm using normalizations, clean word intersections (filtering stop-words and short words), and substring searches in `MerchantRuleGuardrail`.
+- **Rationale:** High availability and fault tolerance are critical. Fallback matching ensures that even during API outages, basic rule matching remains operational rather than skipping rule checks or crashing conversations.
+- **Rejected:** Hard failure or throwing exceptions which would crash the LLM conversation loop and degrade service.
+
+## 2026-07-10 — Express Layer Proxying via aiAdminProxyRoute
+- **Context:** Creating new admin CRUD routes for guardrails in the Node.js backend.
+- **Decision:** Leveraged the existing dynamic backend proxy `aiAdminProxyRoute.js` which forwards all requests under `/api/v1/ai-admin` directly to FastAPI.
+- **Rationale:** Simplifies the codebase, avoids writing duplicate Express route handlers and controller files, and reduces backend maintenance.
+- **Rejected:** Creating dedicated Express routes/controllers (`guardrailsController.js` and `guardrailsRoutes.js`), which would duplicate routing logic and increase file count without adding value.
+
 ## 2026-07-07 — Vite Chunk 404: Keep Old Chunks + `vite:preloadError`
 - **Context:** After AppDashboardPage redesign (96106ac7), returning users got 404 on old chunk. Nginx had `immutable` cache on `/assets/`, deploy deleted old files via `rsync --delete`.
 - **Decision:** Combined two fixes: (A) removed `--delete` from deploy script so old chunks persist on disk, (B) added `vite:preloadError` listener to reload page when a stale import fails.
@@ -49,11 +67,23 @@
 - Rationale: These were one-off debug scripts, not part of the running service. The production service already uses `.env` properly. 133 files, 9458 lines removed.
 - Rejected: Refactoring each script to use env vars — 50+ scripts, most were single-use debug tools. Not worth the effort.
 
+## 2026-07-10 — WhatsApp Seed Guard: `updateMany` returns MATCHED, not MODIFIED
+- **Context:** `marketplaceSeed.js` migration code guarded by `if (count > 0)` based on `updateMany` result. PostgreSQL's `updateMany` returns the number of rows MATCHED by the WHERE clause, not the number actually MODIFIED. So even after all rows were already `isActive: false`, `count = 7` always → migration ran every deploy.
+- **Decision:** Added `isActive: true` to the `updateMany` WHERE clause so it only matches rows that are still active. Since all deprecated apps are already `isActive: false`, `count = 0` → migration skipped forever.
+- **Rationale:** Minimal change, prevents any deploy from overwriting existing CompanyApp records.
+- **Rejected:** Removing the migration code entirely (still needed for first-time deploy on fresh DB); adding a one-time migration flag table (overkill for a single guard).
+
 ## 2026-07-06 — Dockerize Deferred (Ponytail)
 - Context: CI/CD currently uses tarball SCP + SSH script (deploy-remote.sh). Considered containerization.
 - Decision: Defer Docker. Current system works reliably, handles all edge cases (blue-green frontend, .env backup/restore, health checks).
 - Rationale: Docker adds complexity (registry, server Docker setup, env management, debugging) without solving any actual problem.
 - Rejected: Adding Dockerfiles + docker-compose + registry + CI changes — significant effort for marginal benefit.
+
+## 2026-07-11 — Tool Format Fallbacks: Add Handlers, Don't Change LLM Flow
+- Context: Follow-up LLM call (skills_pipeline.py:164, `tool_choice="none"`) returned empty text → fallback `_format_tool_results()` printed generic "تم تنفيذ {tool_name} بنجاح." for unhandled tools (booking_info, booking_reserve_skill, booking_slots, booking_status).
+- Decision: Added format handlers for all 4 booking tools. Each extracts readable fields from result dict → formatted Arabic text.
+- Rationale: Changing LLM flow (`tool_choice="auto"`) is a larger refactor with unpredictable side effects. Handlers follow existing pattern.
+- Rejected: (1) Switching to `tool_choice="auto"` — DeepSeek still returns empty text; risky refactor. (2) Retry logic on empty follow-up — increases latency/cost. (3) Removing fallback — returns empty responses.
 
 ## 2026-07-06 — AI Agent Doc Rewrite (Complete Inaccuracy)
 - Context: `ai-agent-system.md` described a Node.js system (`backend/services/aiAgent/`) that was either never built or replaced years ago. The real system is Python FastAPI + Microsoft Agent Framework.

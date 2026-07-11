@@ -269,7 +269,6 @@ def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
             "guardrails": agent.guardrails or {},
             "budget": agent.budget or {},
         },
-        "custom_instructions": dict(getattr(agent, "custom_instructions", None) or {}),
         "allowed_tools": agent.allowed_tools or [],
         "allowed_skills": agent.allowed_skills or [],
         "allowed_channels": _safe_list(agent.channels),
@@ -316,7 +315,6 @@ def _normalize_agent_config(
         "allowed_channels": list(_first_present(config, "allowed_channels", "allowedChannels", default=[]) or []),
         "status": str(_first_present(config, "status", default="ACTIVE") or "ACTIVE"),
         "instructions": _instructions_from_persona(persona),
-        "custom_instructions": dict(_first_present(config, "custom_instructions", default={}) or {}),
         "version": _first_present(config, "version"),
         "parent_id": _first_present(config, "parent_id", "parentId"),
     }
@@ -424,7 +422,6 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         "allowed_tools": allowed_tools,
         "allowed_skills": allowed_skills,
         "instructions": cfg.get("instructions") or {},
-        "custom_instructions": cfg.get("custom_instructions") or {},
         "status": cfg.get("status") or "ACTIVE",
         "version": cfg.get("version"),
         "parent_id": cfg.get("parent_id"),
@@ -556,10 +553,20 @@ async def get_template_companies(slug: str, session: SessionDep) -> AgentTemplat
             diffs.append(AgentTemplateCompanyDiff(field="guardrails", type="modified"))
         if agent.budget and agent.budget != template.budget:
             diffs.append(AgentTemplateCompanyDiff(field="budget", type="modified"))
-        _agent_persona = dict(agent.persona or {})
-        _tmpl_persona = dict(template.persona_meta or {})
-        if _agent_persona != _tmpl_persona:
-            diffs.append(AgentTemplateCompanyDiff(field="persona", type="modified", template_value=_tmpl_persona, agent_value=_agent_persona))
+        _agent_instr = {
+            "soul": (agent.persona or {}).get("soulInstructions") or "",
+            "persona": (agent.persona or {}).get("personaInstructions") or "",
+            "agents": (agent.persona or {}).get("agentInstructions") or "",
+            "tools": (agent.persona or {}).get("toolsInstructions") or "",
+        }
+        _tmpl_instr = {
+            "soul": template.instructions_soul or "",
+            "persona": template.instructions_persona or "",
+            "agents": template.instructions_agents or "",
+            "tools": template.instructions_tools or "",
+        }
+        if _agent_instr != _tmpl_instr:
+            diffs.append(AgentTemplateCompanyDiff(field="persona", type="modified", template_value=_tmpl_instr, agent_value=_agent_instr))
         if agent.version != template.version:
             diffs.append(AgentTemplateCompanyDiff(field="version", type="modified", template_value=template.version, agent_value=agent.version))
 
@@ -688,7 +695,16 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         model=model,
         soul=body.soul or (template.soul if template else None),
         rules=body.rules or (template.rules if template else None),
-        persona=(template.persona if template else {}) | (body.persona or {}),
+        persona=(
+            {
+                "soulInstructions": template.instructions_soul or "",
+                "personaInstructions": template.instructions_persona or "",
+                "agentInstructions": template.instructions_agents or "",
+                "toolsInstructions": template.instructions_tools or "",
+            }
+            if template
+            else {}
+        ) | (body.persona or {}),
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
         channels=body.allowed_channels or (template.channels if template else []),
@@ -1241,8 +1257,6 @@ async def update_agent(
         agent.budget = body.budget
     if body.config is not None:
         agent.config = body.config
-    if body.custom_instructions is not None:
-        agent.custom_instructions = body.custom_instructions
 
     await session.commit()
     await session.refresh(agent)
@@ -1311,12 +1325,7 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     if not template:
         raise HTTPException(status_code=404, detail=f"Template not found: {agent.template_slug}")
 
-    # Migrate existing config.soul_custom to custom_instructions before clearing
-    existing_custom = dict(agent.custom_instructions or {})
-    config_soul_custom = (agent.config or {}).get("soul_custom")
-    if config_soul_custom and not existing_custom.get("soul"):
-        existing_custom["soul"] = config_soul_custom
-    agent.custom_instructions = existing_custom
+    # soul_custom was migrated to personaInstructions; custom_instructions is unused
 
     agent.allowed_tools = template.allowed_tools
     agent.allowed_skills = template.allowed_skills

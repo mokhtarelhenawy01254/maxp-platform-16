@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Brain, Users, Wrench, Zap, ChevronDown, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { Brain, Users, Wrench, Zap, User, ChevronDown, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import { sandboxApi, type AgentProfileResponse, type AgentSkillDetail } from "../services/sandboxApi";
 import type { AgentConfig } from "../types/sandbox.types";
 
@@ -7,10 +7,11 @@ interface Props {
   selectedAgent: AgentConfig | null;
 }
 
-type Tab = "soul" | "agents" | "tools" | "skills";
+type Tab = "soul" | "persona" | "agents" | "tools" | "skills";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "soul",   label: "Soul",    icon: <Brain className="size-3.5" /> },
+  { key: "persona",label: "Persona", icon: <User className="size-3.5" /> },
   { key: "agents", label: "Agents",  icon: <Users className="size-3.5" /> },
   { key: "tools",  label: "Tools",   icon: <Wrench className="size-3.5" /> },
   { key: "skills", label: "Skills",  icon: <Zap className="size-3.5" /> },
@@ -155,6 +156,10 @@ export default function AgentProfilePanel({ selectedAgent }: Props) {
           <>
             {tab === "soul" && (
               <MarkdownText content={profile.files["SOUL.md"]} />
+            )}
+
+            {tab === "persona" && (
+              <MarkdownText content={profile.files["PERSONA.md"]} />
             )}
 
             {tab === "agents" && (

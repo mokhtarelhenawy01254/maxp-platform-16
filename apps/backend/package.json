@@ -54,7 +54,8 @@
     "catalog:deactivate-old": "node scripts/deactivate_old_marketplace_apps.js",
     "seed:permissions": "node prisma/seeds/seedPermissions.js",
     "seed:migrate-roles": "node prisma/seeds/migrateCustomRoles.js",
-    "seed:link-roles": "node prisma/seeds/linkUserRoles.js"
+    "seed:link-roles": "node prisma/seeds/linkUserRoles.js",
+    "postinstall": "node -e \"try{require('../../patch-telegram-updates.js')}catch(e){console.log('⚠️  patch-telegram-updates skipped:',e.code||e.message)}\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -66,7 +67,7 @@
     "@socket.io/redis-emitter": "^5.1.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
-    "@whiskeysockets/baileys": "^6.7.22",
+    "@whiskeysockets/baileys": "^6.7.23",
     "array-flatten": "^3.0.0",
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",

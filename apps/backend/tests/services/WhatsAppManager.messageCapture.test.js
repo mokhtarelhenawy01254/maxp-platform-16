@@ -123,11 +123,11 @@ describe('WhatsAppManager message capture helpers', () => {
         expect(__testing.shouldEnableFullHistorySync({ importHistory: false })).toBe(false);
     });
 
-    test('treats forbidden socket closes as relink-required instead of reconnect loops', () => {
+    test('treats forbidden socket closes as reconnectable instead of relink-required', () => {
         expect(__testing.getDisconnectRecoveryDecision(403, '', false)).toMatchObject({
             isForbidden: true,
-            requiresFreshLink: true,
-            shouldReconnect: false
+            requiresFreshLink: false,
+            shouldReconnect: true
         });
         expect(__testing.getDisconnectRecoveryDecision(403, '', true)).toMatchObject({
             isForbidden: true,
@@ -147,11 +147,11 @@ describe('WhatsAppManager message capture helpers', () => {
         });
     });
 
-    test('moves corrupted auth into fresh-link state without deleting the MaxP session', () => {
+    test('treats corrupted auth (Bad MAC) as reconnectable instead of immediate relink', () => {
         expect(__testing.getDisconnectRecoveryDecision(undefined, 'failed to decrypt message: Bad MAC', false)).toMatchObject({
             isBadMac: true,
-            requiresFreshLink: true,
-            shouldReconnect: false
+            requiresFreshLink: false,
+            shouldReconnect: true
         });
         expect(__testing.getDisconnectRecoveryDecision(401, '', true)).toMatchObject({
             isLoggedOut: true,

@@ -939,6 +939,19 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId,
 
   if (agentModel.model && !requestedProvider && !requestedModel) {
       let resolveProvider = agentModel.provider || '';
+      if (!resolveProvider) {
+        const modelCfgs = await getSharedPrismaClient().aiModelConfig.findMany({
+          where: { isEnabled: true, modelName: agentModel.model },
+          select: { keyId: true },
+        });
+        if (modelCfgs.length > 0) {
+          const keys = await getSharedPrismaClient().aiKey.findMany({
+            where: { id: { in: modelCfgs.map(c => c.keyId) }, isActive: true },
+            select: { provider: true },
+          });
+          resolveProvider = keys[0]?.provider || '';
+        }
+      }
       const selection = await resolveRequestedSandboxModelSelection(companyId, {
         provider: resolveProvider,
         model: agentModel.model,

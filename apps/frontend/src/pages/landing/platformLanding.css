@@ -443,7 +443,7 @@
     background: rgba(9, 9, 11, 0.95);
   }
   .nav-links { display: none; }
-  .nav-actions .nav-link.mobile-hide { display: none; }
+  .nav-actions .nav-link.ml-6 { margin-right: 0.5rem; }
   .premium-brand { font-size: 1rem; gap: 0.5rem; }
   .premium-brand span { font-size: 0.8rem; }
   .brand-badge { display: none; }

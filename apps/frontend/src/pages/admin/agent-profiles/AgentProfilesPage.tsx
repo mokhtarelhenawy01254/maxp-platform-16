@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
-  Shield, RefreshCw, Menu, MessageSquare, Archive,
+  Shield, RefreshCw, Menu, MessageSquare, Archive, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sandboxApi, type AgentProfileResponse } from "../ai-agent-sandbox/services/sandboxApi";
+import AgentGuardrailsTab from "./AgentGuardrailsTab";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -40,7 +41,7 @@ function useIsMobile(breakpoint = 1024) {
   return isMobile;
 }
 
-type Tab = "settings";
+type Tab = "settings" | "guardrails";
 
 const isActive = (s?: string | null) => String(s || "").toUpperCase() === "ACTIVE";
 
@@ -145,6 +146,14 @@ export default function AgentProfilesPage() {
   const isMobile = useIsMobile(1024);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+  const companyId = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}").companyId || "";
+    } catch {
+      return "";
+    }
+  }, []);
+
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(agentIdFromUrl);
@@ -199,6 +208,7 @@ export default function AgentProfilesPage() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "settings", label: t("agentProfiles.tabs.settings"), icon: <Shield className="size-4" aria-hidden="true" /> },
+    { key: "guardrails", label: t("agentProfiles.tabs.guardrails", "القواعد والتعلم"), icon: <Lock className="size-4" aria-hidden="true" /> },
   ];
 
   const [agentsListTab, setAgentsListTab] = useState<"active" | "archived">("active");
@@ -301,7 +311,6 @@ export default function AgentProfilesPage() {
                 "رسالة الترحيب": "soul_welcome",
                 "عندما لا تعرف الإجابة": "soul_escalation",
                 "لغة الرد": "soul_language",
-                "تعليمات إضافية": "soul_custom",
               };
               for (const [section, key] of Object.entries(sectionMap)) {
                 const re = new RegExp(`## ${section}\\n([\\s\\S]*?)(?=\\n## |\\n?$)`);
@@ -319,10 +328,6 @@ export default function AgentProfilesPage() {
               };
               if (parsedConfig.soul_escalation && escRev[parsedConfig.soul_escalation]) parsedConfig.soul_escalation = escRev[parsedConfig.soul_escalation];
             }
-          }
-          if (!parsedConfig.soul_custom && data.files?.["SOUL.md"]) {
-            const m2 = data.files["SOUL.md"].match(/## تعليمات إضافية\n([\s\S]*?)(?=\n## |\n?$)/);
-            if (m2) parsedConfig.soul_custom = m2[1].trim();
           }
           setDraftConfig(parsedConfig);
           if (parsedConfig.soul_persona) generateSoulFromConfig(parsedConfig);
@@ -382,7 +387,6 @@ export default function AgentProfilesPage() {
       icon: draftIcon,
       config: draftConfig,
       files: draftFiles,
-      customInstructions: draftConfig.soul_custom ? { soul: draftConfig.soul_custom } : undefined,
     };
     const data = await tryApiFetch<{ success: boolean } & Record<string, unknown>>(
       `/agent/agents/${selectedId}/files`,
@@ -910,104 +914,108 @@ export default function AgentProfilesPage() {
                 <>
                   {tab === "settings" && (
                     <div className="max-w-3xl space-y-6">
-                  {!editing ? (
-                    <div className="space-y-5">
-                      {/* اسم الوكيل */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.agentName")}</label>
-                        <p className={`text-sm ${draftName ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                          {draftName || "—"}
-                        </p>
-                      </div>
+                      {!editing ? (
+                        <div className="space-y-5">
+                          {/* اسم الوكيل */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.agentName")}</label>
+                            <p className={`text-sm ${draftName ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
+                              {draftName || "—"}
+                            </p>
+                          </div>
 
-                      <hr className="border-t border-border/50" />
+                          <hr className="border-t border-border/50" />
 
-                      {/* طريقة الرد */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.tone")}</label>
-                        <p className="text-sm text-foreground/90">
-                          {[
-                            { k: "friendly", l: t("agentProfiles.settings.toneFriendly") },
-                            { k: "formal", l: t("agentProfiles.settings.toneFormal") },
-                            { k: "concise", l: t("agentProfiles.settings.toneConcise") },
-                            { k: "detailed", l: t("agentProfiles.settings.toneDetailed") },
-                          ].find(o => o.k === (draftConfig.soul_tone || "friendly"))?.l}
-                        </p>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
-                      </div>
+                          {/* طريقة الرد */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.tone")}</label>
+                            <p className="text-sm text-foreground/90">
+                              {[
+                                { k: "friendly", l: t("agentProfiles.settings.toneFriendly") },
+                                { k: "formal", l: t("agentProfiles.settings.toneFormal") },
+                                { k: "concise", l: t("agentProfiles.settings.toneConcise") },
+                                { k: "detailed", l: t("agentProfiles.settings.toneDetailed") },
+                              ].find(o => o.k === (draftConfig.soul_tone || "friendly"))?.l}
+                            </p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
+                          </div>
 
-                      <hr className="border-t border-border/50" />
-
-                      {/* تعليمات إضافية */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.customPrompt")}</label>
-                        <p className={`text-sm whitespace-pre-wrap font-mono ${draftConfig.soul_custom ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                          {draftConfig.soul_custom || "—"}
-                        </p>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {/* اسم الوكيل */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.agentName")}
-                          {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Input value={draftName} onChange={(e) => { setDraftName(e.target.value) }}
-                          disabled={isIdentityLocked}
-                          placeholder={t("agentProfiles.settings.agentNamePlaceholder")} className="h-8 text-sm" />
-                      </div>
-
-                      <hr className="border-t border-border/50" />
-
-                      {/* طريقة الرد */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.tone")}
-                          {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg w-fit">
-                          {[
-                            { key: "friendly", label: t("agentProfiles.settings.toneFriendly") },
-                            { key: "formal", label: t("agentProfiles.settings.toneFormal") },
-                            { key: "concise", label: t("agentProfiles.settings.toneConcise") },
-                            { key: "detailed", label: t("agentProfiles.settings.toneDetailed") },
-                          ].map((opt) => (
-                            <button key={opt.key} type="button"
-                              disabled={isRulesLocked}
-                              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                                (draftConfig.soul_tone || "friendly") === opt.key
-                                  ? "bg-background text-foreground shadow-sm animate-none"
-                                  : "text-muted-foreground hover:text-foreground"
-                              } ${isRulesLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-                              onClick={() => handleSoulFieldChange("soul_tone", opt.key)}
-                            >{opt.label}</button>
-                          ))}
+                          {/* PERSONA.md - شخصية الوكيل */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground/70 mb-1">شخصية الوكيل (PERSONA.md)</label>
+                            <p className={`text-sm whitespace-pre-wrap font-mono ${draftFiles["PERSONA.md"] ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
+                              {draftFiles["PERSONA.md"] || "—"}
+                            </p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">تعليمات إضافية لشخصية الوكيل تضاف فوق القالب الأساسي ولا تؤثر على SOUL.md</p>
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
-                      </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {/* اسم الوكيل */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                              {t("agentProfiles.settings.agentName")}
+                              {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                            </label>
+                            <Input value={draftName} onChange={(e) => { setDraftName(e.target.value) }}
+                              disabled={isIdentityLocked}
+                              placeholder={t("agentProfiles.settings.agentNamePlaceholder")} className="h-8 text-sm" />
+                          </div>
 
-                      <hr className="border-t border-border/50" />
+                          <hr className="border-t border-border/50" />
 
-                      {/* تعليمات إضافية */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                          {t("agentProfiles.settings.customPrompt")}
-                          {isCustomPromptLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
-                        </label>
-                        <Textarea value={draftConfig.soul_custom || ""} onChange={(e) => handleSoulFieldChange("soul_custom", e.target.value)}
-                          disabled={isCustomPromptLocked}
-                          placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[80px] resize-y font-mono text-xs" />
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.customPromptHint")}</p>
-                      </div>
+                          {/* طريقة الرد */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                              {t("agentProfiles.settings.tone")}
+                              {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                            </label>
+                            <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg w-fit">
+                              {[
+                                { key: "friendly", label: t("agentProfiles.settings.toneFriendly") },
+                                { key: "formal", label: t("agentProfiles.settings.toneFormal") },
+                                { key: "concise", label: t("agentProfiles.settings.toneConcise") },
+                                { key: "detailed", label: t("agentProfiles.settings.toneDetailed") },
+                              ].map((opt) => (
+                                <button key={opt.key} type="button"
+                                  disabled={isRulesLocked}
+                                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                                    (draftConfig.soul_tone || "friendly") === opt.key
+                                      ? "bg-background text-foreground shadow-sm animate-none"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  } ${isRulesLocked ? "opacity-50 cursor-not-allowed" : ""}`}
+                                  onClick={() => handleSoulFieldChange("soul_tone", opt.key)}
+                                >{opt.label}</button>
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
+                          </div>
+
+                          {/* PERSONA.md - شخصية الوكيل */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
+                              شخصية الوكيل (PERSONA.md)
+                              {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">🔒 مغلق من الإدارة</span>}
+                            </label>
+                            <Textarea value={draftFiles["PERSONA.md"] || ""} onChange={(e) => setDraftFiles(prev => ({...prev, "PERSONA.md": e.target.value}))}
+                              disabled={isPersonaLocked}
+                              placeholder='اكتب شخصية الوكيل، أسلوب الرد، نبرة الصوت، أو أي تعليمات براند إضافية...' className="text-sm min-h-[120px] resize-y font-mono text-xs" />
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">هذا المحتوى يضاف كـ PERSONA.md فوق القالب الأساسي ولا يمس SOUL.md</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                </div>
-              )}
-            </>
+                  {(tab as string) === "guardrails" && selectedId && (
+                    <AgentGuardrailsTab
+                      agentId={selectedId}
+                      companyId={companyId}
+                      agentModel={profile?.agent?.model || "gemini-2.5-flash"}
+                      agentProvider="GOOGLE"
+                    />
+                  )}
+                </>
               )}
             </>
           )}

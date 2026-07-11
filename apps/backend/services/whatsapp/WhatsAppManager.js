@@ -429,7 +429,7 @@ function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 
 
     // Exponential backoff with jitter for stability
     const baseDelay = Math.max(delayMs, cooldownRemaining);
-    const maxDelay = 60000;
+    const maxDelay = 300000; // Cap at 5 minutes to keep attempting indefinitely without overloading
     const jitter = Math.random() * Math.min(baseDelay * 0.3, 3000);
     const actualDelay = Math.min(baseDelay + jitter, maxDelay);
 
@@ -445,10 +445,9 @@ function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 
         reconnectSession(sessionId, companyId, attempt, options).catch((error) => {
             WA_LOG.error(sessionId, `Scheduled reconnect failed: ${error.message}`);
             clearReconnecting(sessionId);
-            if (attempt < 5) {
-                const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
-                scheduleReconnectSession(sessionId, companyId, options, nextDelay, attempt + 1);
-            }
+            // Indefinite reconnect for production SaaS stability, capped at maxDelay (5m)
+            const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
+            scheduleReconnectSession(sessionId, companyId, options, nextDelay, attempt + 1);
         }).finally(() => {
             clearReconnecting(sessionId);
         });
@@ -527,9 +526,13 @@ function getLiveStatusFromDbStatus(status, provider) {
 
 function getDisconnectRecoveryDecision(statusCode, errorMessage = '', isManualLogout = false) {
     const isBadMac = String(errorMessage || '').includes('Bad MAC');
-    const isLoggedOut = statusCode === 401 || statusCode === DisconnectReason?.loggedOut;
-    const isForbidden = statusCode === 403 || statusCode === DisconnectReason?.forbidden;
-    const requiresFreshLink = !isManualLogout && (isBadMac || isLoggedOut || isForbidden);
+    const isLoggedOut = statusCode !== undefined && statusCode !== null && (statusCode === 401 || statusCode === DisconnectReason?.loggedOut);
+    const isForbidden = statusCode !== undefined && statusCode !== null && (statusCode === 403 || statusCode === DisconnectReason?.forbidden);
+    
+    // Only require a fresh link (auth clear) if the user has explicitly logged out from their phone (401).
+    // Do NOT wipe the session for 403 (Forbidden) or Bad MAC (decryption errors) because they are often
+    // transient or due to rate limits. Wiping them causes QR scan loops which worsens WhatsApp blocks.
+    const requiresFreshLink = !isManualLogout && isLoggedOut;
 
     return {
         isBadMac,
@@ -1140,7 +1143,7 @@ async function createSession(sessionId, companyId, options = {}) {
             const fetched = await fetchLatestBaileysVersion();
             version = fetched.version;
         } catch {
-            version = [6, 7, 22];
+            version = [6, 7, 23];
             WA_LOG.warn(sessionId, `Failed to fetch latest Baileys version, using fallback ${version.join('.')}`);
         }
         console.log(`📦 Using Baileys version: ${version.join('.')}`);
@@ -2132,6 +2135,24 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             if (replyText) {
                                 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
                                 await WhatsAppMessageHandler.sendText(first.sessionId, first.remoteJid, replyText, { isAIResponse: true });
+                            }
+                            const attachments = result?.response_attachments || result?.responseAttachments;
+                            console.log(`[BAILEYS-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
+                            if (Array.isArray(attachments)) {
+                                const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+                                for (const att of attachments) {
+                                    if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                                        console.log(`[BAILEYS-AI-ATTACHMENT] sending image: ${att.url.substring(0, 80)}...`);
+                                        try {
+                                            await WhatsAppMessageHandler.sendImage(first.sessionId, first.remoteJid, { url: att.url }, '', { isAIResponse: true });
+                                            console.log('[BAILEYS-AI-ATTACHMENT] image sent successfully');
+                                        } catch (e) {
+                                            console.error('[BAILEYS-AI-ATTACHMENT] Failed to send image:', e.message);
+                                        }
+                                    } else {
+                                        console.log(`[BAILEYS-AI-ATTACHMENT] skipping attachment type=${att.type} url=${(att.url || '').substring(0, 40)}...`);
+                                    }
+                                }
                             }
                         });
                     } catch(e) {

@@ -177,6 +177,9 @@ if [ -f "$DEPLOY_STAGING/ai-service.tar.gz" ]; then
   echo "🌱 Seeding agent templates..."
   "$UV_BIN" run python -m scripts.seed_agent_templates 2>&1 || echo "⚠️ Seeding failed (non-fatal)"
 
+  echo "📋 Migrating custom_instructions to PERSONA.md..."
+  "$UV_BIN" run python -m scripts.migrate_custom_instructions_to_persona 2>&1 || echo "⚠️ Migration skipped (non-fatal)"
+
   echo "🔄 Starting/restarting maxp-ai-service in PM2..."
   if [ -n "$PM2_BIN" ]; then
     if "$PM2_BIN" list | grep -q "maxp-ai-service"; then

@@ -474,6 +474,94 @@ exports.updateTurboSettings = async (req, res) => {
   }
 };
 
+/**
+ * Get Bosta shipping settings
+ */
+exports.getBostaSettings = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const prisma = await getSharedPrismaClientAsync();
+
+    const company = await safeQuery(async () => {
+      return await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { bostaApiKey: true, bostaEnabled: true, bostaWebhookToken: true }
+      });
+    }, 3);
+
+    const maskedApiKey = company?.bostaApiKey
+      ? `${company.bostaApiKey.substring(0, 4)}****${company.bostaApiKey.substring(company.bostaApiKey.length - 4)}`
+      : null;
+
+    res.json({
+      success: true,
+      data: {
+        bostaEnabled: company?.bostaEnabled || false,
+        bostaWebhookToken: company?.bostaWebhookToken || null,
+        hasApiKey: !!company?.bostaApiKey,
+        maskedApiKey: maskedApiKey
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching Bosta settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'فشل في جلب إعدادات Bosta',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update Bosta shipping settings
+ */
+exports.updateBostaSettings = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { bostaApiKey, bostaEnabled, bostaWebhookToken } = req.body;
+    const prisma = await getSharedPrismaClientAsync();
+
+    const updateData = {};
+
+    if (bostaApiKey !== undefined) {
+      if (bostaApiKey && bostaApiKey.trim().length > 0) {
+        updateData.bostaApiKey = bostaApiKey.trim();
+      } else {
+        updateData.bostaApiKey = null;
+      }
+    }
+
+    if (bostaEnabled !== undefined) {
+      updateData.bostaEnabled = Boolean(bostaEnabled);
+    }
+
+    if (bostaWebhookToken !== undefined) {
+      updateData.bostaWebhookToken = bostaWebhookToken || null;
+    }
+
+    await safeQuery(async () => {
+      return await prisma.company.update({
+        where: { id: companyId },
+        data: updateData
+      });
+    }, 3);
+
+    console.log(`✅ [BOSTA] Settings saved for company ${companyId}`);
+
+    res.json({
+      success: true,
+      message: 'تم تحديث إعدادات Bosta بنجاح'
+    });
+  } catch (error) {
+    console.error('Error updating Bosta settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'فشل في تحديث إعدادات Bosta',
+      error: error.message
+    });
+  }
+};
+
 // ============ Shipping Method Management (New Architecture) ============
 
 /**

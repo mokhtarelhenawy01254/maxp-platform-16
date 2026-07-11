@@ -271,7 +271,7 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
                   </div>
                   <p className="mb-3 min-h-[42px] text-sm text-muted-foreground">{skill.description || t("agentSkills.noDescription")}</p>
                   <div className="mb-4 flex flex-wrap gap-2">{(skill.allowedTools || []).map((t) => (<Badge key={t} variant="outline" className="h-5 gap-1 text-[0.6rem]"><Zap className="size-3" />{t}</Badge>))}</div>
-                  <div className="mt-auto flex gap-2"><Button onClick={() => navigate(`/super-admin/ai-hub/skills/${skill.id}`, { state: { skill, tools, agents, companyId } })} className="flex-1"><ExternalLink className="size-4" />{t("agentSkills.details")}</Button><Button variant="outline" onClick={() => setAssignSkill(skill.id)} className="flex-1"><UserPlus className="size-4" />{t("agentSkills.assignToAgent")}</Button></div>
+                  <div className="mt-auto flex gap-2"><Button onClick={() => navigate(`/admin/ai-hub/skills/${skill.id}`, { state: { skill, tools, agents, companyId } })} className="flex-1"><ExternalLink className="size-4" />{t("agentSkills.details")}</Button><Button variant="outline" onClick={() => setAssignSkill(skill.id)} className="flex-1"><UserPlus className="size-4" />{t("agentSkills.assignToAgent")}</Button></div>
                 </div>); })}
             </div>
             {filteredSkills.length === 0 && <div className="flex min-h-[200px] items-center justify-center rounded-xl bg-card"><p className="text-muted-foreground">{t("agentSkills.noDescription")}</p></div>}

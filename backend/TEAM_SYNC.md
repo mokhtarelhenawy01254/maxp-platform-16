@@ -1,6 +1,66 @@
 # Team Sync Updates
 
+## 2026-07-11 / 2026-03-09
+- **Inbox AI Message Auto-Correction Feature (`correction_auto`) (FEATURE / COMPLETE)**: Implemented a live correction flow in the WhatsApp Inbox enabling supervisors to correct wrong AI responses on-the-fly:
+  1. Added `POST /conversations/:conversationId/messages/:messageId/correct` endpoint in Express backend with `conversationAccessGuard` and `inbox.send` permission.
+  2. Implemented `correctMessage` service logic that: resolves the customer's preceding question, formats structured feedback, calls the AI Service guardrails API with `source: 'correction_auto'`, sends the corrected text to WhatsApp, and updates conversation state.
+  3. Built inline correction UI in `WhatsAppChat.tsx` — AI messages (no `senderId`) show a "تصحيح الرد" button that opens a pre-filled textarea with "حفظ وتصحيح" / "إلغاء" actions.
+  4. Guardrail creation is gracefully degraded: if the AI service is unreachable, the correction is still sent to the customer.
+  5. Auto-generated rules appear in the "القواعد والتعلم" tab with source tag "تعلم تلقائي" for full auditability.
+- **Agent Guardrails Sandbox Removal & Full-Width Layout Refactor (UX / IMPROVEMENT)**: Refactored the "القواعد والتعلم" (Guardrails) tab in Agent Profiles based on admin feedback:
+  1. Removed the redundant Sandbox Playground chat area from the tab, deferring all testing activities to the dedicated "تجربة الوكلاء" (Agent Playground) page to reduce UI clutter.
+  2. Redesigned the guardrails layout to occupy 100% width, resolving a flexbox layout collapse bug where the rules list shrank to zero width, and giving the manager a spacious table and input forms.
+  3. Cleaned up unused state variables, event handlers, and Lucide icons to reduce bundle size and maintain code hygiene.
+- **Agent Profiles Settings & Guardrails Layout Fix (BUGFIX / FRONTEND)**: Resolved a critical frontend layout and tag mismatch compilation bug on the Merchant Dashboard:
+  1. Fixed JSX nesting where the newly added "القواعد والتعلم" (Guardrails) tab block was erroneously wrapped inside the settings conditional div, preventing it from mounting or rendering when clicked.
+  2. Restructured the JSX hierarchy inside `AgentProfilesPage.tsx` to mount the `AgentGuardrailsTab` as a direct sibling of the settings block under the common Fragment.
+  3. Balanced all closing `div` and Fragment tags, fixing the Vite production build failure (esbuild JSX tag mismatch and regex syntax error).
+  4. Verified layout loading, components structure, and successful API integration with the FastAPI backend through headless browser tests.
+
+## 2026-07-10 / 2026-03-09
+- **Merchant Agent Guardrails & Dynamic Learning System (FEATURE / COMPLETE)**: Completed the full end-to-end architecture for merchant-defined conversational guardrails:
+  1. Created `AgentGuardrailRule` SQLAlchemy model in `guardrail.py` and registered it in the models package.
+  2. Implemented `GuardrailRepository` for CRUD and retrieval operations.
+  3. Developed `MerchantRuleGuardrail` for vector-based similarity matching, caching (via Redis), and markdown prompt assembly.
+  4. Created `GuardrailTranslator` to auto-translate plain Arabic dialect merchant feedback to structured JSON and detect rule conflicts.
+  5. Integrated rule injection into the `ContextAssembler` compilation pipeline and rule validation checks in `validate_reply`.
+  6. Created admin REST API router under `apps/ai-service/src/api/admin/guardrails.py` and registered it in the API routes index.
+  7. Implemented keyword-based intersection fallback matching in `MerchantRuleGuardrail` when embeddings are unavailable.
+  8. Built `AgentGuardrailsTab.tsx` frontend dashboard component with rule CRUD grid, conflict detection dialog, and inline sandbox chat playground.
+  9. Integrated the tab into `AgentProfilesPage.tsx` as "القواعد والتعلم" with Lucide Lock icon, passing `agentId`, `companyId`, and model config.
+  10. Created unit tests (`test_merchant_rules.py`) for cosine similarity, prompt formatting, and conflict detection — 3/3 passing.
+  11. Lowered the default similarity threshold to `0.65` inside `MerchantRuleGuardrail` to ensure robust matching against Egyptian dialect messages on production.
+  12. Fixed database commit rollback bug by adding `await session.commit()` in the guardrail REST API routes.
+  13. Fixed compiled system prompt logging by re-assigning the fully assembled system prompt (`enriched_prompt`) back to the `PipelineContext.system_prompt` field in `skills_pipeline.py`.
+  14. Removed the redundant `/admin` prefix from guardrail routes in `apps/ai-service/src/api/admin/guardrails.py` to fix 404 API errors under the FastAPI `/admin` router.
+  15. Modified `aiAdminProxyRoute.js` to allow merchant users (`OWNER` / `COMPANY_ADMIN` company roles) to access the AI proxy, resolving the 403 Forbidden permission error on the "القواعد والتعلم" (Guardrails) tab.
+
+- **Conditional Landmark Image Auto-Population in AI Pipeline (FIX / IMPROVEMENT)**: Fixed a bug where branch landmark images were unconditionally sent to the user as WhatsApp/Facebook attachments every time the `booking_info` tool was executed (e.g., when the user just greeted the bot or asked for working hours):
+  1. Updated `skills_pipeline.py` to check if the image URL/path or its filename is explicitly present in the final reply text (`ctx.final_reply`) before populating `ctx.response_attachments`.
+  2. Added unit tests `test_landmark_image_auto_populate_conditional_negative` and `test_landmark_image_auto_populate_conditional_positive` inside `test_skills_pipeline.py` to verify this behavior.
+  3. Deployed the fix to the production server (`maxp-ai-service`) and verified successful operation.
+- **WhatsApp Baileys Stability & Reconnection Overhaul (IMPROVEMENT / STABILITY)**: Hardened the unofficial WhatsApp integration (`@whiskeysockets/baileys`) against connection drops, pairing failures, and rate limits:
+  1. Upgraded `@whiskeysockets/baileys` package version to `6.7.23` (latest stable 6.x release) and updated the hardcoded fallback version to `[6, 7, 23]`.
+  2. Fixed a critical session wipe bug in `isValidAuthState` validator where the credentials cache was completely deleted from the database if the session was reloaded during the pairing phase (`QR_PENDING` / `CONNECTING`). The validator now preserves the initial keys.
+  3. Refactored disconnect recovery logic in `getDisconnectRecoveryDecision` to treat `403` (Forbidden/Rate Limit) and `Bad MAC` (Decryption failure) disconnects as transient errors instead of terminal logouts, preventing destructive session wipes.
+  4. Added undefined check guards for `statusCode` in `getDisconnectRecoveryDecision` to prevent false positive logouts when both `statusCode` and `DisconnectReason` are undefined.
+  5. Overhauled `scheduleReconnectSession` to retry indefinitely with an exponential backoff capped at 5 minutes (300,000 ms), preventing connections from giving up completely after 5 attempts.
+- **Appointments Management UI/UX & Visual Slot Picker (UI/UX / IMPROVEMENT)**: Refactored the appointments page (`/admin/booking/appointments`) and the booking modal to resolve space utilization and usability issues:
+  1. Replaced browser-native blocking `window.confirm` alerts for status transitions (confirming, cancelling, completing bookings) with clean, non-blocking toast notifications (via `toast` from `sonner`) featuring a **تراجع (Undo)** action for immediate and frictionless state recovery.
+  2. Redesigned the available slots selector in `AppointmentModal.tsx` to display as an interactive grid of buttons grouped side-by-side, replacing the primitive HTML select dropdown. Styled unavailable slots with line-throughs and muted backgrounds, and styled selected slots with high-contrast active backgrounds.
+  3. Cleaned up the table filters header in `AppointmentsTab.tsx` by wrapping secondary status and date filters into a collapsible advanced filters drawer. The drawer is toggled by a brand button showing the number of active filters.
+  4. Moved the Branch filter dropdown from the collapsible advanced panel to the top filters row next to "تصفية متقدمة", making it always visible for quick access with a clean, compact appearance.
+  5. Restored vertical scrolling on the booking management page by adding `h-full overflow-y-auto` to the outer container in `BookingManagementPage.tsx`, fixing viewport clipping caused by the parent layout shell's `overflow-hidden` on the `<main>` wrapper.
+  6. Removed redundant top page header ("إدارة النظام الطبي / نظام إدارة المواعيد والخدمات الطبية") and page-level tabs list from `BookingManagementPage.tsx`, as they duplicated the primary sidebar navigation.
+- **Branches Management UI/UX & Modal Usability Overhaul (UI/UX / FEATURE)**: Redesigned the branches tab (`/admin/booking/branches`) and the branch form modal to align with 2026 UI aesthetics and address several functional constraints:
+  1. Resolved viewport clipping on mobile/small displays by implementing a scroll container with a max height limit (`max-h-[90vh] overflow-y-auto`) and a `backdrop-blur-sm` overlay for the modal backdrop container.
+  2. Upgraded the file upload field from a standard browser file input to a custom, modern Arabic-first card (with clear visual hints, a clickable choose button, and size limits verification).
+  3. Formatted working days in desktop and mobile views from a verbose plain text column to compact, interactive circular day badges (`س`, `ح`, `ن`, `ث`, `ر`, `خ`, `ج`) with dynamic hover tooltips.
+  4. Parsed location field URLs to display inline `📍 فتح الخريطة` buttons opening in a new browser tab.
+  5. Resolved strict TypeScript compilation errors across `shared.ts`, `BranchModal.tsx`, `BranchesTab.tsx`, and `BookingManagementPage.tsx`.
+
 ## 2026-07-09 / 2026-03-09
+- **Company Dashboard Welcome State Removal (UI/UX)**: Removed the `DashboardWelcomeState` component and its import/rendering rules from the main dashboard (`MainDashboardPage.tsx`) so that the core dashboard metrics and charts are always visible to new users or companies without the ecommerce application active. Deleted the unused `DashboardWelcomeState.tsx` file.
 - **AI Image Generator Interface Redesign & 2026 Style Overhaul (UI/UX / FEATURE)**: Refactored the AI Image Generator page (`/admin/ai-image-generator`) layout to adopt a borderless 12-column split-canvas design. Removed the heavy header banner (`SettingsPageHero`) and the outer wrapper (`SettingsPageShell`) to let the workspace flow freely on the background canvas. Replaced all nested card wrappers ("box-in-a-box" style) by placing core inputs flat on the layout grid and converting `CollapsibleSection` components into borderless macOS-style settings accordions separated by thin dividers (`border-b border-slate-100`). Restructured quick presets into a simple borderless row of clean chips, and upgraded the preview panel and prompt control deck into floating glassmorphic panes (`backdrop-blur-md bg-white/70`) with soft, layered ambient shadows. Activated the dormant `AspectPreview` mockup visualizer, removed the redundant client-side model selector dropdown and associated state/constants, and cleaned up the allowedModels API sync to rely completely on backend template model config policies.
 - **WhatsApp Workspace UI/UX Overhaul & Edge-to-Edge Desktop Layout (IMPROVEMENT)**: Overhauled the WhatsApp workspace interface for a premium, distraction-free desktop/laptop experience. Merged the sidebar header into a single horizontal bar (height `h-14`) and removed the workspace title and descriptions. Placed the session selector in a clean sub-bar below the header. Added support for edge-to-edge full viewport presentation (removing all margins and paddings around the panel relative to the app-shell sidebar and global header) by updating `Layout.tsx` (`shouldRemovePadding`) and making the outer container in `WhatsAppChat.tsx` borderless and shadowless. Changed the chat background in light mode to pure white (`#ffffff`), and modified the light-mode incoming message bubble color to light grey (`#f0f2f5`) to maintain contrast.
 - **AI Agent Model Override Precedence (FIX)**: Fixed a bug where custom model configurations for specific company agents were ignored in favor of the template's default model policy. Flipped the resolution order in `agent_registry.py` to check `db_agent.model` first before falling back to `template.model_policy.get("default")`. Added corresponding unit tests in `test_model_resolution.py`.

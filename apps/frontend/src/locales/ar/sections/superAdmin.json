@@ -405,5 +405,57 @@
         "notifications": "الإشعارات"
       }
     }
+  },
+  "selfReview": {
+    "title": "مراجعة الردود الذاتية",
+    "description": "سجل مراجعات جودة ردود المساعد قبل الإرسال للعميل",
+    "sidebar": "مراجعة الردود",
+    "stats": {
+      "total": "إجمالي المراجعات",
+      "approvalRate": "نسبة القبول",
+      "correctionRate": "نسبة التصحيح",
+      "avgLatency": "متوسط زمن المراجعة",
+      "topViolations": "أكثر الانتهاكات شيوعاً",
+      "agentSummary": "ملخص الوكلاء"
+    },
+    "filters": {
+      "dateFrom": "من تاريخ",
+      "dateTo": "إلى تاريخ",
+      "agentId": "الوكيل",
+      "status": "الحالة",
+      "search": "بحث...",
+      "allAgents": "جميع الوكلاء",
+      "allStatuses": "جميع الحالات",
+      "days": "آخر {{n}} يوم"
+    },
+    "statusLabels": {
+      "approved": "مقبول",
+      "corrected": "تم التصحيح",
+      "rejected": "مرفوض",
+      "skipped": "تم التجاهل",
+      "error": "خطأ"
+    },
+    "table": {
+      "timestamp": "الوقت",
+      "agent": "الوكيل",
+      "status": "الحالة",
+      "violations": "الانتهاكات",
+      "reason": "السبب",
+      "model": "موديل المراجعة",
+      "latency": "زمن الاستجابة",
+      "replyPreview": "الرد"
+    },
+    "export": "تصدير CSV",
+    "refresh": "تحديث",
+    "empty": "لا توجد سجلات للمراجعة",
+    "modelControl": {
+      "title": "التحكم بموديل المراجعة",
+      "agent": "اختر الوكيل",
+      "model": "موديل المراجعة",
+      "save": "حفظ",
+      "saved": "تم الحفظ",
+      "default": "الافتراضي (حسب الأولوية)",
+      "placeholder": "اختر موديل..."
+    }
   }
 }

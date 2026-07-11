@@ -53,7 +53,7 @@ const LandingPage: React.FC = () => {
           <a href="#faq" className="nav-link">الأسئلة الشائعة</a>
         </div>
         <div className="nav-actions">
-          <Link to="/auth/login" className="nav-link ml-6 mobile-hide">دخول</Link>
+          <Link to="/auth/login" className="nav-link ml-6">دخول</Link>
           <Link to="/auth/register" className="btn-primary">ابدأ مجاناً</Link>
         </div>
       </nav>

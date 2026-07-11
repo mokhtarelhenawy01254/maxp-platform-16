@@ -1,5 +1,145 @@
 # Backend Bugs Log
 
+### [FEATURE] Inbox AI Message Auto-Correction (`correction_auto`) Integration
+- **Date**: 2026-07-11
+- **Description**: Implemented a live correction flow in the WhatsApp Inbox that allows supervisors to correct wrong AI-generated responses inline, automatically training the agent by creating a `correction_auto` guardrail rule.
+- **Architecture Notes**:
+  1. The service method `correctMessage` in `whatsappInboxService.js` resolves the customer's preceding question contextually, formats a structured feedback query, and POSTs it to the AI Service's guardrails endpoint with `source: 'correction_auto'`.
+  2. Agent resolution is dynamic: it queries `/admin/agents?company_id=` and prefers the agent with `whatsapp` in its channels, falling back to any active agent.
+  3. The corrected message is sent immediately to the customer via WhatsApp using `sendText()`, so the customer receives the right answer in real-time.
+  4. Guardrail creation is non-blocking: if the AI Service is unreachable, the correction message is still sent to the customer (graceful degradation).
+- **UI**: AI messages (identified as `!isFromCustomer && !senderId`) display a "تصحيح الرد" (Correct Response) button. Clicking it opens an inline textarea pre-filled with the original AI response, with "حفظ وتصحيح" (Save & Correct) and "إلغاء" (Cancel) actions.
+- **Files Modified**:
+  - `apps/backend/routes/whatsappInboxRoutes.js` — Added POST `/conversations/:conversationId/messages/:messageId/correct`
+  - `apps/backend/controller/whatsappInboxController.js` — Added `correctMessage` handler
+  - `apps/backend/services/whatsappInboxService.js` — Added `correctMessage` business logic
+  - `apps/frontend/src/pages/whatsapp-inbox/WhatsAppChat.tsx` — Added inline correction UI with state management
+
+### [FIX] Invisible Guardrails Rules Column due to Flexbox Collapsing & Sandbox Redundancy
+- **Date**: 2026-07-11
+- **Description**: Resolved a critical frontend layout issue in the "القواعد والتعلم" (Guardrails) tab where the Rules Management column collapsed to 0px (or 4px) width on desktop screens, leaving the tab looking completely empty except for the Sandbox card on the left.
+- **Root Cause**: 
+  1. The layout container `div` lacked a `w-full` class, causing the browser to collapse its width when layout children used flex-basis of 0% (`flex-1`).
+  2. The Sandbox Playground column had `w-full lg:w-80` but lacked `lg:shrink-0`, causing the browser to expand it to the container's remaining width while shrinking the flexible Rules column to zero.
+  3. The sandbox test area was redundant since there is a dedicated, fully featured "تجربة الوكلاء" (Agent Playground) page for testing agent behavior.
+- **Resolution**:
+  1. Removed the redundant Sandbox Playground column and its related states, handlers, and React hooks from `AgentGuardrailsTab.tsx`.
+  2. Restructured the layout wrapper to use a single column that stretches to 100% width (`w-full flex-1`), allowing the guardrails table and creation form to occupy the full page width for clean, readable management.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentGuardrailsTab.tsx`
+
+### [FIX] JSX Nesting and Tag Mismatch for AgentGuardrailsTab inside AgentProfilesPage
+- **Date**: 2026-07-11
+- **Description**: Resolved a critical rendering issue where the "القواعد والتعلم" (Guardrails) tab rendered completely blank and caused a subsequent Vite build crash (JSX tag mismatch / unterminated regex syntax error) during deployment.
+- **Root Cause**: The `AgentGuardrailsTab` component was incorrectly nested *inside* the `tab === "settings"` conditional block, preventing it from mounting when the tab switched to `"guardrails"`. A quick attempt to restructure the layout caused mismatched `div` and Fragment tags, leading to a build failure.
+- **Resolution**: Closed the settings conditional block and its wrapper `div` first, then placed the `AgentGuardrailsTab` block as a clean sibling under the React Fragment container. Properly balanced all HTML wrappers, conditional braces, and Fragments.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+
+### [FIX] Duplicate `/admin` Prefix in Guardrail FastAPI Endpoints
+- **Date**: 2026-07-10
+- **Description**: Resolved a 404 Not Found error when calling guardrail API routes (e.g. listing, creating, check-conflict, or update/delete rules) via the Express backend proxy.
+- **Root Cause**: The FastAPI `admin_router` already has a prefix of `/admin` registered in `main.py` (`app.include_router(admin_router, prefix="/admin")`). Inside `guardrails.py`, the endpoints were decorated with `@router.get("/admin/agents/{agent_id}/guardrails")`, resulting in actual paths containing double `/admin` prefixes (`/admin/admin/agents/...`). The Express proxy and frontend expected `/admin/agents/...`, causing a mismatch and resulting in a 404 response.
+- **Resolution**: Removed the redundant `/admin` prefix from all route decorators in `guardrails.py` so they are successfully mounted under `/admin/agents/...`.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/guardrails.py`
+
+### [FIX] Merchant User 403 Forbidden Access to AI Admin Proxy
+- **Date**: 2026-07-10
+- **Description**: Resolved an access denied/403 Forbidden issue when merchant users (`OWNER` or `COMPANY_ADMIN` in the database) clicked the "القواعد والتعلم" (Guardrails) tab.
+- **Root Cause**: The Express backend router `aiAdminProxyRoute.js` had a global `router.use(requireSuperAdmin)` middleware, which blocked any request that did not belong to a system-level Super Admin. Merchant users have company-specific administrative roles but do not hold system-wide roles, causing their requests to be denied.
+- **Resolution**: Removed the global `requireSuperAdmin` middleware from `aiAdminProxyRoute.js` and replaced it with `allowMerchantOrSystemAdmin` which allows system-level admins OR merchant users holding `OWNER` or `COMPANY_ADMIN` role within a company to pass through to the proxy safely.
+- **Files Modified**:
+  - `apps/backend/routes/aiAdminProxyRoute.js`
+
+### [FIX] Compiled System Prompt Observable Value Not Saved
+- **Date**: 2026-07-10
+- **Description**: The `compiled_system_prompt` field in chat/sandbox api response was empty/unpopulated in responses.
+- **Root Cause**: In `skills_pipeline.py`, after calling `assembler.build_system_prompt(ctx)`, the resulting string was assigned to a local variable `enriched_prompt`, but it was never assigned back to `ctx.system_prompt`, leaving the final prompt empty in logs and response payloads.
+- **Resolution**: Re-assigned `enriched_prompt` back to `ctx.system_prompt` to ensure the compiled value is saved and returned.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
+### [FIX] Guardrail Rules Not Persisted on Creation/Update
+- **Date**: 2026-07-10
+- **Description**: Guardrail rules added or modified by merchants did not persist in PostgreSQL.
+- **Root Cause**: The FastAPI endpoints in `guardrails.py` created and modified SQLAlchemy model instances but forgot to execute `await session.commit()`.
+- **Resolution**: Added explicit commits after database modifications.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/guardrails.py`
+
+### [FIX] TS2367 Tab Literal Overlap Error in AgentProfilesPage
+- **Date**: 2026-07-10
+- **Description**: Resolved a TypeScript compilation error (`TS2367: This comparison appears to be unintentional because the types '"settings"' and '"guardrails"' have no overlap`) in the React frontend interface `AgentProfilesPage.tsx`.
+- **Root Cause**: The TypeScript compiler failed to dynamically widen the custom `Tab` type enum or cached the old literal definition during comparison.
+- **Resolution**: Cast the `tab` state variable to `string` (i.e. `(tab as string) === "guardrails"`) to bypass the strict compiler check safely.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx`
+
+### [FIX] Landmark Image Auto-Population: Unwanted Branch Images Sent Unconditionally
+- **Date**: 2026-07-10
+- **Description**:
+  1. Resolved an issue in the AI service pipeline (`skills_pipeline.py`) where branch landmark images (`landmarkImage`) were automatically and unconditionally appended to `response_attachments` and sent via WhatsApp/Facebook every time the `booking_info` tool was called.
+  2. Modified the auto-population logic to check if the image URL/path or its filename is explicitly present in the agent's text response (`ctx.final_reply`).
+  3. Added new unit tests `test_landmark_image_auto_populate_conditional_negative` and `test_landmark_image_auto_populate_conditional_positive` to prevent regressions.
+- **Root Cause**: The pipeline unconditionally grabbed the `landmarkImage` from `booking_info` tool evidence whenever the tool was executed, bypassing the agent's actual decision/intent to show it.
+- **Resolution**: Added a conditional guard checking for the image's presence in `ctx.final_reply` before auto-populating.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+  - `apps/ai-service/tests/pipeline/test_skills_pipeline.py`
+
+### [FIX] WhatsApp Baileys Stability: Disconnection Loops, Credentials Wiping, and 48-Hour Number Bans
+- **Date**: 2026-07-10
+- **Description**:
+  1. Resolved a major bug in the `isValidAuthState` validator where the credentials cache was completely wiped from the database if the session was reloaded during the pairing phase (`QR_PENDING` / `CONNECTING`). The validator now preserves the initial keys.
+  2. Refactored disconnect recovery logic in `getDisconnectRecoveryDecision` to treat `403` (Forbidden/Rate Limit) and `Bad MAC` (Decryption failure) disconnects as transient errors instead of terminal logouts, preventing destructive session wipes.
+  3. Added undefined check guards for `statusCode` in `getDisconnectRecoveryDecision` to prevent false positive logouts when both `statusCode` and `DisconnectReason` are undefined.
+  4. Modified `scheduleReconnectSession` to retry indefinitely with a capped exponential backoff of 5 minutes (300,000 ms), preventing connections from giving up completely after 5 attempts.
+  5. Upgraded `@whiskeysockets/baileys` package version to `6.7.23` (latest stable 6.x release) and updated the hardcoded fallback version to `[6, 7, 23]`.
+- **Root Cause**: Over-aggressive session wiping on transient websocket status codes, strict initialization validation rejecting unpaired session keys, lack of undefined guards for status code comparisons, and a capped reconnect limit of 5 attempts.
+- **Resolution**: Preserved keys for unpaired sessions, handled 403 and Bad MAC as reconnectable errors with exponential backoff, guarded undefined status codes, and enabled infinite reconnection attempts.
+- **Files Modified**:
+  - `apps/backend/package.json`
+  - `apps/backend/services/whatsapp/DatabaseAuthState.js`
+  - `apps/backend/services/whatsapp/WhatsAppManager.js`
+  - `apps/backend/tests/services/WhatsAppManager.messageCapture.test.js`
+
+### [FIX] Branch Modal Overflow, Custom Upload Container, Working Days Badges, Map URLs and Strict TypeScript Checks in Branches Management
+- **Date**: 2026-07-10
+- **Description**:
+  1. Resolved modal height overflow on small viewports in `BranchModal.tsx` by introducing `max-h-[90vh] overflow-y-auto` scrolling container.
+  2. Added `backdrop-blur-sm` overlay to the modal backdrop container for enhanced design aesthetics.
+  3. Replaced standard browser-native file input with a custom, polished upload card designed specifically for Arabic layout (📸 + clickable choose button).
+  4. Added `type="button"` attributes to dynamic sub-elements (phones list, day toggle tags) inside `BranchModal.tsx` to prevent accidental form submit actions.
+  5. Implemented regex phone number validation (`/^[0-9+\-\s]+$/`) to reject arbitrary text inputs.
+  6. Disabled gender-specific day buttons (men/women working days) unless those days are first selected as branch working days, adding a helpful explanation tooltip.
+  7. Formatted branch working days list into compact, interactive circular badges (`س`, `ح`, `ن`, `ث`, `ر`, `خ`, `ج`) in both desktop table and mobile card views inside `BranchesTab.tsx` with detailed timing tooltips.
+  8. Parsed geographic location links to display interactive `📍 فتح الخريطة` buttons opening in a new browser tab.
+  9. Resolved strict TypeScript compile errors (`TS6133` unused variables, `TS4111` index signature dot-access, `TS2345` undefined params) in `BookingManagementPage.tsx`.
+- **Root Cause**: Missing overflow configuration on container, primitive default HTML file inputs, form-submission side effects of standard button elements inside form layouts, loose phone input validation, and strict Vite/React compiler flags.
+- **Resolution**: Implemented scrolling modals, custom file input widgets, type-safe validations, visual day badges, and converted object property dot access to bracket access for strict TypeScript compliance.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/booking/shared.ts`
+  - `apps/frontend/src/pages/admin/booking/BranchModal.tsx`
+  - `apps/frontend/src/pages/admin/booking/BranchesTab.tsx`
+  - `apps/frontend/src/pages/admin/BookingManagementPage.tsx`
+
+### [FIX] Modeless Undo Notification, Visual Time-Slot Grid, Scrolling Restore, Branch Filter Relocation, and Redundant Header/Tabs Removal in Appointments Booking
+- **Date**: 2026-07-10
+- **Description**:
+  1. Replaced primitive browser-native `window.confirm` for status changes in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) with a modern, non-blocking toast notification system (using `toast` from `sonner`) supporting a **تراجع (Undo)** action.
+  2. Overhauled the time-slot picker in [AppointmentModal.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentModal.tsx) by replacing the standard HTML select dropdown with a premium visual grid of slot buttons. Disabled/unavailable slots are styled with a clean line-through and muted background, and selected/active slots are emphasized using brand styling.
+  3. Redesigned the filters layout in [AppointmentsTab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx) to be collapsible, wrapping secondary controls (status, dates) in an advanced filters drawer toggled via a brand button with active filters count.
+  4. Moved the Branch filter dropdown next to the "تصفية متقدمة" button in the top filters row for quick access and improved appearance, removing the duplicate branch select from the advanced panel.
+  5. Restored vertical scrolling on the booking management page by adding `h-full overflow-y-auto` to the outer layout container in [BookingManagementPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/BookingManagementPage.tsx), resolving viewport clipping caused by the parent layout shell's `overflow-hidden` configuration.
+  6. Removed the redundant top page header ("إدارة النظام الطبي / نظام إدارة المواعيد والخدمات الطبية") and the duplicated page-level tabs list from [BookingManagementPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/BookingManagementPage.tsx) since the primary sidebar layout already includes separate sidebar navigation entries for each individual tab.
+- **Root Cause**: Non-intuitive select list time picker, modal-blocking browser confirmations, a cluttered filters header layout, layout overflow constraints in the main shell wrapper, and layout redundancy.
+- **Resolution**: Implemented collapsible advanced filters row, top-level branch selector, custom toast-based undo action, visual slot grid buttons, scrollable container height, and removed redundant tabs/header.
+- **Files Modified**:
+  - `apps/frontend/src/pages/admin/booking/AppointmentsTab.tsx`
+  - `apps/frontend/src/pages/admin/booking/AppointmentModal.tsx`
+  - `apps/frontend/src/pages/admin/BookingManagementPage.tsx`
+
 ### [FIX] AI Image Generator Layout Cramping, Dormant Aspect Preview, Mobile CTA Hiding, and UI De-nesting
 - **Date**: 2026-07-09
 - **Description**: The AI Image Generator page (`/admin/ai-image-generator`) had multiple layout, responsiveness, and control issues:
@@ -616,4 +756,17 @@
   - `apps/backend/prisma/seed-quick-profiles.js` [DELETE]
   - `.github/workflows/seed-quick-profiles.yml` [DELETE]
   - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx` [MODIFY]
+
+### [FIX] Missing FastAPI session.commit() in Guardrail Operations & Prompt Logging
+- **Date**: 2026-03-09
+- **Description**: Guardrail rules created, updated, or deactivated via the FastAPI admin endpoints were not persisted to the database and rolled back upon session closure. Also, the compiled system prompt returned in sandbox API responses and logs was empty/unpopulated with the assembled sections.
+- **Root Cause**:
+  1. The DB session was flushed via `session.flush()` inside the repository but was never committed via `await session.commit()` in the FastAPI endpoints inside `guardrails.py`.
+  2. The assembled `enriched_prompt` was not assigned back to `ctx.system_prompt` inside `skills_pipeline.py`, leaving the context system prompt unpopulated.
+- **Resolution**:
+  1. Added `await session.commit()` calls before invalidating Redis cache inside create, update, and delete endpoints in `apps/ai-service/src/api/admin/guardrails.py`.
+  2. Assigned `enriched_prompt` to `ctx.system_prompt` inside `_llm_call` in `apps/ai-service/src/pipeline/stages/skills_pipeline.py`.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/guardrails.py`
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
 

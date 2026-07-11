@@ -5,57 +5,32 @@ const { getSharedPrismaClient, initializeSharedDatabase } = require('../services
 
 async function createSuperAdmin() {
     try {
-        console.log('ðŸ”§ Initializing database...');
+        console.log('Initializing database...');
         await initializeSharedDatabase();
 
         const prisma = getSharedPrismaClient();
 
-        // 1. Create a Default System Company
-        console.log('ðŸ¢ Creating system company...');
-        const companyEmail = 'admin@mokhtarelhenawy.com';
-        let company = await prisma.company.findFirst({
-            where: { email: companyEmail }
-        });
-
-        if (!company) {
-            company = await prisma.company.create({
-                data: {
-                    name: 'Mokhtar Elhenawy Systems',
-                    email: companyEmail,
-                    slug: 'mokhtar-systems',
-                    isActive: true,
-                    // useCentralKeys removed — schema-agnostic routing
-                    sidebarLayout: 'three-tier',
-                    timezone: 'Africa/Cairo'
-                }
-            });
-            console.log('âœ… Company created:', company.name);
-        } else {
-            console.log('â„¹ï¸  Company already exists');
-        }
-
-        // 2. Create Super Admin User
         const email = 'admin@mokhtarelhenawy.com';
         const password = process.env.PASSWORD || 'Admin@123456';
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        console.log('ðŸ” Checking for user...');
+        console.log('Checking for user...');
         const existingUser = await prisma.user.findUnique({
             where: { email }
         });
 
         if (existingUser) {
-            console.log('âš ï¸  User already exists, updating to SUPER_ADMIN...');
+            console.log('User already exists, updating to SUPER_ADMIN...');
             await prisma.user.update({
                 where: { email },
                 data: {
                     role: 'SUPER_ADMIN',
                     isActive: true,
-                    companyId: company.id
+                    companyId: null
                 }
             });
         } else {
-            console.log('ðŸ‘¤ Creating new Super Admin user...');
+            console.log('Creating new Super Admin user...');
             const user = await prisma.user.create({
                 data: {
                     id: uuidv4(),
@@ -66,37 +41,24 @@ async function createSuperAdmin() {
                     role: 'SUPER_ADMIN',
                     isActive: true,
                     isEmailVerified: true,
-                    companyId: company.id,
+                    companyId: null,
                     timezone: 'Africa/Cairo'
                 }
             });
 
-            // Create UserCompany record
-            await prisma.userCompany.create({
-                data: {
-                    userId: user.id,
-                    companyId: company.id,
-                    role: 'SUPER_ADMIN',
-                    isActive: true,
-                    isDefault: true
-                }
-            });
-
-            console.log('âœ… Super Admin created successfully!');
+            console.log('Super Admin created successfully!');
         }
 
-        console.log('â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”');
-        console.log('ðŸ“§ Email:', email);
-        console.log('ðŸ”‘ Password:', password);
-        console.log('ðŸ¢ Company:', company.name);
-        console.log('â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”');
+        console.log('-----------------------');
+        console.log('Email:', email);
+        console.log('Password:', password);
+        console.log('-----------------------');
 
     } catch (error) {
-        console.error('âŒ Error:', error);
+        console.error('Error:', error);
     } finally {
         process.exit(0);
     }
 }
 
 createSuperAdmin();
-

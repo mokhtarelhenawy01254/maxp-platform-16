@@ -559,7 +559,7 @@ class LLMClient:
             native_name = str(func.get("name") or "").strip()
             if not native_name:
                 continue
-            provider_name = _safe_provider_tool_name(native_name, seen)
+            provider_name = ToolDefinition.sanitize_name(native_name, seen)
             params = func.get("parameters", func.get("input_schema", {}))
             if hasattr(params, "model_json_schema"):
                 params = params.model_json_schema()

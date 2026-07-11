@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
   History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, 
   Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
-  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers, Bell,
+  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers, Bell, Image,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -54,9 +54,10 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: "AI Playground", icon: <Play className="size-4" />, path: "/super-admin/ai-playground" },
     { text: t("superAdmin.evaluation.aiTemplates"), icon: <Layers className="size-4" />, path: "/super-admin/ai-templates" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },
-    { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/super-admin/ai-hub?tab=skills" },
-    { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/super-admin/ai-hub?tab=tools" },
-    { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/super-admin/ai-hub?tab=rag" },
+    { text: "سجل البحث بالصورة", icon: <Image className="size-4" />, path: "/super-admin/visual-search-logs" },
+    { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/admin/ai-hub?tab=skills" },
+    { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/admin/ai-hub?tab=tools" },
+    { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/admin/ai-hub?tab=rag" },
     { text: "محادثات AI", icon: <MessageSquare className="size-4" />, path: "/super-admin/ai-chat" },
   ]},
   { title: t("superAdmin.sidebar.monitoring"), icon: <Activity className="size-5" />, items: [
@@ -81,6 +82,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
   { title: t("superAdmin.sidebar.support"), icon: <Headphones className="size-5" />, items: [
     { text: t("superAdmin.sidebar.supportManagement"), icon: <Headphones className="size-5" />, path: "/admin/support" },
     { text: t("superAdmin.sidebar.allTickets"), icon: <Ticket className="size-5" />, path: "/admin/support" },
+    { text: "إعدادات الدعم", icon: <Settings className="size-5" />, path: "/super-admin/support-settings" },
   ]},
   { title: t("superAdmin.sidebar.devManagement"), icon: <Wrench className="size-5" />, items: [
     { text: t("superAdmin.sidebar.okrs"), icon: <Trophy className="size-5" />, path: "/super-admin/dev-goals" },

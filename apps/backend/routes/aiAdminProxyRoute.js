@@ -12,9 +12,43 @@ function getAiServiceUrl() {
 
 router.use(addPublicCORS);
 router.use(authenticateToken);
-router.use(requireSuperAdmin);
 
-router.all("/:path(*)", checkPermission("canAccessSettings"), async (req, res) => {
+// Custom access check: allow Super Admin (system) OR company Owner/Admin (merchant)
+const allowMerchantOrSystemAdmin = async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    // 1. SUPER_ADMIN always passes
+    if (req.user.role === 'SUPER_ADMIN') return next();
+
+    // 2. Check system-level permission (for internal team roles)
+    const devSettingsService = require("../services/devSettingsService");
+    try {
+      const settings = await devSettingsService.getSettings();
+      const rolePerms = settings.permissions?.[req.user.role];
+      if (rolePerms?.canAccessSettings) return next();
+    } catch { /* ignore, check company role next */ }
+
+    // 3. Check if user is OWNER or COMPANY_ADMIN of any company (merchant access)
+    const companyRoles = req.user.userCompanies || [];
+    const isMerchantAdmin = companyRoles.some(
+      uc => ['OWNER', 'COMPANY_ADMIN'].includes(uc.role)
+    );
+
+    if (isMerchantAdmin) return next();
+
+    return res.status(403).json({
+      success: false,
+      message: 'ليس لديك الصلاحية الكافية للقيام بهذا الإجراء'
+    });
+  } catch (error) {
+    console.error('[ai-admin-proxy] Access check error:', error.message);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
+
+router.all("/:path(*)", allowMerchantOrSystemAdmin, async (req, res) => {
+
   try {
     const aiServiceBase = getAiServiceUrl();
     const targetPath = req.params.path;

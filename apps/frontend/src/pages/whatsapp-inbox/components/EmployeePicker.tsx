@@ -16,6 +16,36 @@ interface EmployeePickerProps {
 const getInitials = (firstName = '', lastName = '') =>
   `${firstName.charAt(0)}${lastName.charAt(0)}`.trim() || 'U';
 
+const accentClasses: Record<string, { border: string; bg: string; avatar: string; avatarText: string; check: string; ring: string }> = {
+  primary: {
+    border: 'border-primary/50',
+    bg: 'bg-primary/10',
+    avatar: 'bg-primary text-primary-foreground',
+    avatarText: 'text-primary-foreground',
+    check: 'text-primary',
+    ring: 'ring-primary/30',
+  },
+  secondary: {
+    border: 'border-secondary/50',
+    bg: 'bg-secondary/10',
+    avatar: 'bg-secondary text-secondary-foreground',
+    avatarText: 'text-secondary-foreground',
+    check: 'text-secondary',
+    ring: 'ring-secondary/30',
+  },
+  tertiary: {
+    border: 'border-tertiary/50',
+    bg: 'bg-tertiary/10',
+    avatar: 'bg-tertiary text-tertiary-foreground',
+    avatarText: 'text-tertiary-foreground',
+    check: 'text-tertiary',
+    ring: 'ring-tertiary/30',
+  },
+};
+
+const getAccent = (mode: RoutingMode) =>
+  mode === 'NUMBER_OWNER' ? accentClasses.primary : mode === 'SHARED_INBOX' ? accentClasses.tertiary : accentClasses.secondary;
+
 const EmployeePicker: React.FC<EmployeePickerProps> = ({
   employees,
   selectedEmployeeIds,
@@ -27,6 +57,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
+  const accent = getAccent(routingMode);
 
   const resolveRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
@@ -55,15 +86,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
     <div>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">
-            {t('whatsappInbox.workspaceEmployeesTitle')}
-            {selectedEmployeeIds.length > 0 && (
-              <span className="ml-1 text-xs font-normal text-muted-foreground">
-                ({selectedEmployeeIds.length})
-              </span>
-            )}
-          </h3>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {routingMode === 'NUMBER_OWNER'
               ? t('whatsappInbox.workspaceEmployeesDirectHint')
               : routingMode === 'SHARED_INBOX'
@@ -133,31 +156,27 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 
         {filteredEmployees.map((employee) => {
           const isSelected = selectedEmployeeIds.includes(employee.id);
-          const accent =
-            routingMode === 'NUMBER_OWNER' ? 'primary' :
-            routingMode === 'SHARED_INBOX' ? 'tertiary' :
-            'secondary';
 
           return (
             <button
               key={employee.id}
               type="button"
               onClick={() => onToggleEmployee(employee.id)}
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-start transition-colors ${
+              className={`flex items-center gap-2 rounded-md border-2 px-3 py-2 text-start transition-colors ${
                 isSelected
-                  ? `border-${accent}/40 bg-${accent}/5`
+                  ? `${accent.border} ${accent.bg} ring-1 ${accent.ring}`
                   : 'border-border hover:border-border/80 hover:bg-muted'
               }`}
             >
               <div className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                 isSelected
-                  ? `bg-${accent} text-${accent}-foreground`
+                  ? accent.avatar
                   : 'bg-muted text-muted-foreground'
               }`}>
                 {getInitials(employee.firstName, employee.lastName)}
                 {isSelected && (
                   <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-card shadow">
-                    <Check className={`size-2 text-${accent}`} />
+                    <Check className={`size-2 ${accent.check}`} />
                   </span>
                 )}
               </div>

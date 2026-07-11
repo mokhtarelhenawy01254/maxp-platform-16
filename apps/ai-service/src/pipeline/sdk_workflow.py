@@ -56,6 +56,7 @@ class PipelineWorkflowSnapshot:
     early_return: dict[str, Any] | None = None
     last_checkpoint_id: str | None = None
     resumed_from_checkpoint: bool = False
+    response_attachments: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def from_context(cls, ctx: PipelineContext) -> PipelineWorkflowSnapshot:
@@ -90,6 +91,7 @@ class PipelineWorkflowSnapshot:
             early_return=ctx.early_return,
             last_checkpoint_id=ctx.last_checkpoint_id,
             resumed_from_checkpoint=ctx.resumed_from_checkpoint,
+            response_attachments=list(ctx.response_attachments or []),
         )
 
     def to_context(
@@ -134,6 +136,7 @@ class PipelineWorkflowSnapshot:
         ctx.early_return = self.early_return
         ctx.last_checkpoint_id = self.last_checkpoint_id
         ctx.resumed_from_checkpoint = self.resumed_from_checkpoint
+        ctx.response_attachments = list(self.response_attachments or [])
         return ctx
 
 

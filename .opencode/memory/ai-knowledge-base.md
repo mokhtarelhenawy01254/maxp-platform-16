@@ -165,6 +165,99 @@
 - frameworks ناشئة (زي OpenClaw, Hermes, Paperclip) أول ما تظهر على GitHub قبل أي مصدر تاني
 - Issues بتظهر challenges حقيقية من الـ community وازاي اتحلت
 
+## Self-Improving Agents — 2026 Research (Jul 2026)
+
+### 3 Dominant Architectures
+| النمط | الوصف | الأمثلة |
+|-------|-------|---------|
+| **Reflexion / Verbal RL** | Agent acts → observes → reflects → stores in memory → retries | LangGraph + Reflexion cycles; original paper Shinn et al. NeurIPS 2023 |
+| **Memory-Driven** | Long-term memory across sessions, accumulates learnings, refines behavior | Letta/MemGPT (23.7k⭐), Raven (1.3k⭐) |
+| **Meta-Agent Loops** | Meta-agent generates/rewrites task agent code or prompts each generation | HyperAgents (Meta, 2.6k⭐, arXiv:2603.19461), SIA (2k⭐, 56.6% gain on LawBench) |
+
+### Key Techniques
+- **Durable Execution** — checkpoint/restart at every step (LangGraph PostgresSaver, OpenAI Sandbox)
+- **LLM-as-Judge** — model evaluates another model's outputs for iterative refinement
+- **Self-Play Fine-Tuning (SPIN)** — model generates training data, fine-tunes on best generations
+- **Constitutional AI** — rules + self-critique + RLAIF without human labels
+- **LangSmith Engine** — auto-detects issues in traces and proposes fixes
+
+### GitHub Projects — Self-Improvement Focus (Jul 2026)
+| المشروع | ⭐ | Self-Improvement |
+|---------|---|------------------|
+| AutoGPT | 185k | Benchmark eval |
+| letta-ai/letta | 23.7k | **Core**: self-improving memory |
+| PraisonAI | 8.4k | Self-improving workforce |
+| facebookresearch/HyperAgents | 2.6k | **Core**: self-referential improvement |
+| hexo-ai/sia | 2k | **Core**: harness + weight updates |
+| EverMind-AI/Raven | 1.3k | Memory-first self-improving |
+| JudgmentLabs/judgeval | 1k | RL continuous-improvement stack |
+
+### Academic Papers
+| Paper | Year | Core Idea |
+|-------|------|-----------|
+| Self-Refine (Madaan et al.) | 2023 | Same LLM generates → self-feedback → refines (~20% improvement) |
+| Reflexion (Shinn et al., NeurIPS) | 2023 | Verbal RL: reflect → episodic memory → retry (91% pass@1 HumanEval) |
+| Constitutional AI (Bai et al., Anthropic) | 2022 | Rules + self-critique + RLAIF |
+| SPIN (Chen et al., ICML) | 2024 | Self-play fine-tuning without human data |
+| HyperAgents (Zhang et al., Meta) | 2026 | Self-referential meta-agent rewrites task code |
+
+### MaxP Relevance
+- **Reflection Loop** — pipeline step + tool error handlers
+- **Durable Execution** — already using LangGraph-style checkpointing in SDK layer
+- **Memory-Based Learning** — Letta pattern, integrates with existing agent memory system
+- **LLM-as-Judge** — auto-improving agent responses
+
+## MaxP Internal — Booking System Backend Endpoints
+
+### Booking Data Endpoints (Node.js Backend)
+| Endpoint | Method | Description | Auth |
+|----------|--------|-------------|------|
+| `/api/v1/booking/branches?companyId=X` | GET | Branches with landmarkImage, address, phone, workingDays | Bearer token |
+| `/api/v1/booking/services?companyId=X` | GET | Services with name, description, duration | Bearer token |
+| `/api/v1/booking/doctors?companyId=X` | GET | Doctors with name, specialty, gender, branchId | Bearer token |
+| `/api/v1/booking/appointments/available-slots?companyId=X&branchId=Y&serviceId=Z&date=YYYY-MM-DD&doctorId=W` | GET | Available time slots (09:00-20:00) | Bearer token |
+| `/api/v1/booking/reserve` | POST | Reserve a booking | Bearer token |
+| `/api/v1/booking/status?companyId=X&bookingId=Y` | GET | Check booking status | Bearer token |
+
+### Booking Tool → Backend Mapping
+| Tool | Backend Endpoint | Data Used |
+|------|-----------------|-----------|
+| `booking_info` | branches + services + doctors | Branch info, service list, doctor list |
+| `booking_slots` | available-slots | Time slots for selected date/branch/service/doctor |
+| `booking_reserve_skill` | reserve | Creates booking via POST |
+| `booking_status` | status | Returns booking details/status |
+
+### Booking DB Tables (Prisma `maxp` database)
+- `BookingBranch` — branches with address, phone, workingDays, landmarkImage, genderDays
+- `BookingService` — services with name, description, duration
+- `BookingDoctor` — doctors with name, specialty, gender, linked to Branch
+- `BookingBranchService` — many-to-many branch↔service with packages (name, sessions, price)
+- `BookingBranchDay` — working days per branch per gender (dayName, isOff, fromTime, toTime)
+- `Booking` — actual bookings (customerId, branchId, serviceId, doctorId, date, timeSlot, status, price)
+- `BookingInfoPackage` — packages on branch services (name, price, sessions, sessionPrice, validity)
+
+### `genderDays` Field
+Each branch has a `genderDays` JSON field. If it's empty or missing, `booking_slots` returns "مغلق" (closed):
+```json
+{
+  "male": [{"day":"Sunday","isOff":true}, ...],
+  "female": [{"day":"Sunday","isOff":true}, ...]
+}
+```
+
+### Booking Flow (End-to-End)
+1. **booking_info** — get center data (branches, services, doctors, packages)
+2. **booking_slots** — get available slots for a specific date/branch/service/doctor
+3. **booking_reserve_skill** — reserve the booking (POST)
+4. **booking_status** — check status after booking
+
+### `_format_tool_results()` Handlers (skills_pipeline.py)
+When the follow-up LLM returns empty text, `_format_tool_results()` is the fallback. Handlers:
+- `booking_info` (line 503): branch details + top 5 services
+- `booking_reserve_skill` (line 530): booking confirmation with all details
+- `booking_slots` (line 546): available time slots
+- `booking_status` (line 561): booking status info
+
 ## MaxP Internal — SDK Layer
 
 MaxP's SDK ليس منتجًا منفصلًا، بل **طبقة تجريد داخلية** فوق Microsoft Agent Framework:
@@ -176,6 +269,109 @@ MaxP's SDK ليس منتجًا منفصلًا، بل **طبقة تجريد دا�
 | **PipelineWorkflowSnapshot** | `apps/ai-service/src/pipeline/sdk_workflow.py` | تشغيل مراحل الـ pipeline عبر `WorkflowBuilder` بتاع الـ framework |
 
 **الاستخدام**: `BaseAgent._run_with_sdk_agent()` يستخدم SDK Agent للمهام الداخلية (non-customer)، ويستخدم pipeline للقنوات المباشرة (Facebook/WhatsApp).
+
+## Agent Self-Improvement/Self-Learning Landscape (Mid-2026)
+
+### Official SDK/Framework Capabilities
+
+| Platform | Self-Improvement Features | Confidence |
+|----------|--------------------------|------------|
+| **OpenAI Agents SDK** (>=0.14.0) | Sandbox agents with durable execution (snapshot+rehydration), guardrails (input/output validation), tracing for eval/fine-tuning, sessions for persistent memory. No built-in reflection loop; pattern is implemented via agent loop + guardrails + tool error handling. | High |
+| **Anthropic Claude** (Opus 4.8/Sonnet 5) | Advisor tool (faster model consults higher-intelligence model mid-generation), strict tool use with `strict: true` for schema conformance, memory tool for cross-session persistence, server tools (web_search, code_execution). No native self-refine; pattern: prompt-based reflection via system prompt + tool_use loop. | High |
+| **Google Gemini** | Computer Use, Grounding (Google Search, Maps, Vertex AI RAG), live API with WebRTC. Self-improvement via grounding + tool feedback cycles. | Medium |
+| **Microsoft Agent Framework** (1.x) | Middleware for exception handling, checkpointing, streaming, human-in-the-loop, time-travel debugging, observability via OpenTelemetry. AF Labs includes experimental reinforcement learning packages. Workflow graph-based orchestration with retry semantics. | High |
+| **Microsoft AutoGen** (maintenance mode) | Legacy — migrated to MAF. No new self-healing features. | Medium |
+
+### Key Open Source Frameworks (GitHub)
+
+| Repo | Stars | Self-Improvement Features |
+|------|-------|--------------------------|
+| **lettra-ai/letta** (MemGPT) | 23.7k | Stateful agents with advanced memory that learn and self-improve over time. Archival memory, core memory, recursive summarization. Model-agnostic. Agent SDK (TypeScript) + CLI. |
+| **Significant-Gravitas/AutoGPT** | 185k | Classic agent with benchmark (agbenchmark), Forge kit. Auto-improving via benchmark-driven iteration. Platform adds agent builder, workflow management, continuous agents. |
+| **crewAIInc/crewAI** | 55.3k | Multi-agent orchestration with role-based agents, memory, checkpointing, human input. Self-evaluation via task validation + human review loops. Flows for event-driven control. |
+| **langchain-ai/langgraph** | 37k | Durable execution (checkpointing), persistence (short-term checkpoints + long-term stores), human-in-the-loop interrupts, LangSmith Engine for auto-detecting issues in traces and proposing fixes. |
+| **LangChain Deep Agents** | (part of langgraph ecosystem) | Agent harness with context management, summarization, subagent spawning, memory, skills, prompt caching, human-in-the-loop interrupts. "Improve over time": update memory, skills, prompts based on real usage. |
+| **microsoft/agent-framework** | 12k | Graph-based workflows, middleware (including exception handling), checkpointing, streaming, OpenTelemetry, AF Labs (RL experiments). |
+| **facebookresearch/HyperAgents** | 2.6k | Self-referential self-improving agents. Meta-agent rewrites its own task agent code. arXiv:2603.19461. Optimizes for any computable task. |
+| **hexo-ai/sia** | 2k | Self Improving AI framework — autonomously improves any AI system (model/agent) on a benchmark task. |
+| **uclaml/SPIN** | 1.2k | Self-Play Fine-Tuning — LLM improves by playing against previous iterations. ICML 2024. arXiv:2401.01335. |
+
+### Key Academic Papers
+
+| Paper | Year | Core Idea | Link |
+|-------|------|-----------|------|
+| **Self-Refine** (Madaan et al.) | 2023 | Iterative feedback + refinement using same LLM. ~20% improvement across 7 tasks. | arxiv.org/abs/2303.17651 |
+| **Reflexion** (Shinn et al.) | 2023 | Verbal RL via linguistic feedback. Episodic memory buffer of reflections. 91% pass@1 on HumanEval (prev SOTA 80%). | arxiv.org/abs/2303.11366 |
+| **Constitutional AI** (Bai et al., Anthropic) | 2022 | Self-training via rules/principles + RLAIF. SL phase: self-critique + revision. RL phase: AI preference model. | arxiv.org/abs/2212.08073 |
+| **SPIN: Self-Play Fine-Tuning** (Chen et al.) | 2024 | Self-play mechanism where LLM refines by discerning self-generated vs human responses. Outperforms DPO. ICML 2024. | arxiv.org/abs/2401.01335 |
+| **HyperAgents** (Zhang et al., Meta) | 2026 | Self-referential meta-agent that rewrites its own agent code. Open-ended self-improvement. | arxiv.org/abs/2603.19461 |
+
+### Practical Patterns for Agent Self-Improvement (Mid-2026)
+
+1. **Reflection Loop** (ReAct + Reflexion)
+   - Agent acts → observes result → reflects on failure/success → stores reflection in memory → adjusts next action
+   - Implemented via: system prompt with reflection instructions + structured memory for storing reflections
+
+2. **Self-Evaluation (LLM-as-Judge)**
+   - Same or different LLM evaluates agent output against criteria
+   - Used for: tool call correctness, response quality, task completion
+   - Pattern: generate → evaluate → refine → re-evaluate (Self-Refine)
+
+3. **Memory-Based Learning**
+   - Episodic memory: stores past trajectories with success/failure signals
+   - Semantic memory: stores extracted knowledge/user preferences/skills
+   - Procedural memory: stores improved prompts/tool usage patterns
+   - Letta/MemGPT pattern: archival + core memory + recursive summarization
+
+4. **Durable Execution with Checkpoint/Retry**
+   - LangGraph: checkpoint every step, resume from failure
+   - OpenAI Sandbox: snapshot + rehydration
+   - Pattern: transactional agent steps with idempotent tool calls
+
+5. **Tool-Use Error Recovery**
+   - Strict schemas (`strict: true` on Anthropic, Pydantic on OpenAI)
+   - Error feedback loop: tool error → parse → retry with corrected params
+   - Advisor tool pattern: fast model → error → consult slower model
+
+6. **Continuous Learning from Feedback**
+   - User feedback (explicit: thumbs up/down, implicit: retention/engagement)
+   - Auto-evaluation pipelines (LangSmith Engine, RAGAS)
+   - Periodic fine-tuning on collected preference data
+   - Deep Agents pattern: "Improve over time — update memory, skills, and prompts based on real usage"
+
+7. **Self-Play / Self-Training**
+   - Model generates synthetic experience → evaluates → fine-tunes on best
+   - SPIN: self-play without additional human data
+   - HyperAgents: self-referential code rewriting
+
+### GitHub Trending (AI Agents, 2026)
+- AutoGPT (185k) — platform for continuous agents
+- letta (23.7k) — stateful self-improving agents
+- crewAI (55.3k) — multi-agent orchestration
+- langgraph (37k) — durable execution runtime
+- microsoft/agent-framework (12k) — production multi-agent
+- PraisonAI (8.4k) — self-improving agents with Hermes integration
+- HyperAgents (2.6k) — Facebook self-referential agents
+- Reflexio (320) — dedicated self-improvement harness
+- SIA (2k) — self-improving AI on benchmarks
+
+### Source Map
+
+| Source | Type | Checked | Confidence |
+|--------|------|---------|------------|
+| openai.github.io/openai-agents-python | official-docs | 2026-07-10 | High |
+| docs.anthropic.com/en/docs/agents-and-tools/tool-use | official-docs | 2026-07-10 | High |
+| github.com/microsoft/agent-framework | official-repo | 2026-07-10 | High |
+| docs.langchain.com/oss/python/langgraph | official-docs | 2026-07-10 | High |
+| docs.langchain.com/oss/python/deepagents | official-docs | 2026-07-10 | High |
+| github.com/microsoft/autogen | official-repo | 2026-07-10 | High |
+| arxiv.org/abs/2303.17651 | paper | 2026-07-10 | High |
+| arxiv.org/abs/2303.11366 | paper | 2026-07-10 | High |
+| arxiv.org/abs/2212.08073 | paper | 2026-07-10 | High |
+| arxiv.org/abs/2401.01335 | paper | 2026-07-10 | High |
+| arxiv.org/abs/2603.19461 | paper | 2026-07-10 | High |
+| github.com/search?q=self-improving+agents | repository-search | 2026-07-10 | High |
+| github.com/topics/self-improving-agent | topic-page | 2026-07-10 | High |
 
 ## MaxP Internal — Agent Creation System (Premium Human-like Agents)
 

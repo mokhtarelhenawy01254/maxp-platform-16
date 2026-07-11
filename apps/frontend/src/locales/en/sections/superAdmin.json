@@ -405,5 +405,57 @@
         "notifications": "Notifications"
       }
     }
+  },
+  "selfReview": {
+    "title": "Self-Review Logs",
+    "description": "Review logs from LLM-as-Judge quality checks on agent replies before sending",
+    "sidebar": "Self-Review Logs",
+    "stats": {
+      "total": "Total Reviews",
+      "approvalRate": "Approval Rate",
+      "correctionRate": "Correction Rate",
+      "avgLatency": "Avg Review Latency",
+      "topViolations": "Top Violations",
+      "agentSummary": "Agent Summary"
+    },
+    "filters": {
+      "dateFrom": "From Date",
+      "dateTo": "To Date",
+      "agentId": "Agent",
+      "status": "Status",
+      "search": "Search...",
+      "allAgents": "All Agents",
+      "allStatuses": "All Statuses",
+      "days": "Last {{n}} Days"
+    },
+    "statusLabels": {
+      "approved": "Approved",
+      "corrected": "Corrected",
+      "rejected": "Rejected",
+      "skipped": "Skipped",
+      "error": "Error"
+    },
+    "table": {
+      "timestamp": "Timestamp",
+      "agent": "Agent",
+      "status": "Status",
+      "violations": "Violations",
+      "reason": "Reason",
+      "model": "Review Model",
+      "latency": "Latency",
+      "replyPreview": "Reply"
+    },
+    "export": "Export CSV",
+    "refresh": "Refresh",
+    "empty": "No review logs found",
+    "modelControl": {
+      "title": "Review Model Control",
+      "agent": "Select Agent",
+      "model": "Review Model",
+      "save": "Save",
+      "saved": "Saved",
+      "default": "Default (priority order)",
+      "placeholder": "Choose a model..."
+    }
   }
 }

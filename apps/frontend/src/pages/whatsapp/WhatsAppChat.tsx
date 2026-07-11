@@ -84,6 +84,7 @@ import {
   useSendTemplate,
   useMarkAsRead,
   useDeleteConversation,
+  useDeleteConversationsBulk,
   useArchiveConversation
 } from '../../hooks/useWhatsAppMutations';
 import {
@@ -474,6 +475,7 @@ const WhatsAppChatContent: React.FC = () => {
   const sendMediaMutation = useSendMedia();
   const markAsReadMutation = useMarkAsRead();
   const deleteConversationMutation = useDeleteConversation();
+  const deleteConversationsBulkMutation = useDeleteConversationsBulk();
   const archiveConversationMutation = useArchiveConversation();
 
   // Helper functions
@@ -1197,6 +1199,31 @@ const WhatsAppChatContent: React.FC = () => {
       }
     });
   };
+
+  const handleBulkDeleteChats = useCallback((jids: string[], sessionId: string) => {
+    setConfirmData({
+      open: true,
+      title: 'حذف المحادثات المحددة',
+      content: `هل أنت متأكد من حذف ${jids.length} محادثة نهائياً؟`,
+      onConfirm: () => {
+        deleteConversationsBulkMutation.mutate({
+          sessionId,
+          jids
+        }, {
+          onSuccess: () => {
+            if (selectedContact && jids.includes(selectedContact.jid)) {
+              setSelectedContact(null);
+            }
+            toast.success(`تم حذف ${jids.length} محادثة بنجاح`);
+            setConfirmData(prev => ({ ...prev, open: false }));
+          },
+          onError: () => {
+            toast.error('فشل حذف المحادثات');
+          }
+        });
+      }
+    });
+  }, [deleteConversationsBulkMutation, selectedContact]);
 
   const handleArchiveChat = async (contact: Contact) => {
     if (!selectedSession) return;
@@ -1941,6 +1968,7 @@ const WhatsAppChatContent: React.FC = () => {
         onOpenBroadcast={() => setBroadcastDialogOpen(true)}
         onOpenCheckNumber={() => setCheckNumberDialogOpen(true)}
         onOpenLabels={() => setLabelDialogOpen(true)}
+        onBulkDelete={handleBulkDeleteChats}
       />
 
       <ChatWindow

@@ -1092,6 +1092,22 @@ async function seedMarketplace() {
         "isPopular": false,
         "category": "PRODUCTIVITY",
         "trialDays": 14
+      },
+      {
+        "slug": "service-request-app",
+        "name": "نظام طلبات الخدمات",
+        "description": "نظام لإدارة طلبات الخدمات الإبداعية: إنتاج أغاني، تصميم جرافيك، مونتاج فيديو. مع رفع ملفات (صوت/صورة/فيديو) وإدارة الطلبات والموافقات.",
+        "icon": "🎯",
+        "monthlyPrice": 99,
+        "yearlyPrice": 990,
+        "pricingModel": "SUBSCRIPTION",
+        "features": "[\"إدارة الخدمات (إضافة/تعديل/حذف)\",\"نموذج طلب خدمة عام\",\"رفع ملفات صوت/صورة/فيديو\",\"إدارة الطلبات والحالات\",\"تغيير حالة الطلب (جديد/قيد التنفيذ/مكتمل/ملغي)\",\"عرض الملفات المرفقة\",\"متوافق مع جميع المجالات\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": false,
+        "isPopular": false,
+        "category": "PRODUCTIVITY",
+        "trialDays": 14
       }
 
     ];
@@ -1153,7 +1169,7 @@ async function seedMarketplace() {
       'whatsapp-analytics',
     ];
     const { count } = await prisma.marketplaceApp.updateMany({
-      where: { slug: { in: slugsToHide } },
+      where: { slug: { in: slugsToHide }, isActive: true },
       data: { isActive: false, isPublic: false }
     });
     if (count > 0) {

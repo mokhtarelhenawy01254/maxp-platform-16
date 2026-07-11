@@ -23,7 +23,6 @@ describe("whatsapp sidebar admin links", () => {
       "/whatsapp/notifications",
       "/whatsapp-inbox",
       "/whatsapp/settings",
-      "/whatsapp/analytics",
     ]);
   });
 });

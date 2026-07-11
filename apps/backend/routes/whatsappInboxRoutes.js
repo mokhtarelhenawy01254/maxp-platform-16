@@ -58,6 +58,13 @@ router.post(
   inboxController.sendMessage
 );
 
+router.post(
+  '/conversations/:conversationId/messages/:messageId/correct',
+  conversationAccessGuard,
+  requireDbPermission('inbox.send'),
+  inboxController.correctMessage
+);
+
 router.patch(
   '/conversations/:conversationId/status',
   conversationAccessGuard,
@@ -77,6 +84,13 @@ router.post(
   conversationAccessGuard,
   requireDbPermission('inbox.transfer'),
   inboxController.transferConversation
+);
+
+// ─── Employee Analytics ─────────────────────────────────────────────
+router.get(
+  '/employee-analytics',
+  requireDbPermission('inbox.view'),
+  inboxController.getEmployeeAnalytics
 );
 
 module.exports = router;

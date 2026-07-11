@@ -40,6 +40,8 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
             "phones": phones,
             "male_days": male_days, "female_days": female_days,
             "hours": wd,
+            "location": b.get("location"),
+            "landmarkImage": b.get("landmarkImage"),
         })
 
     svc_list = []

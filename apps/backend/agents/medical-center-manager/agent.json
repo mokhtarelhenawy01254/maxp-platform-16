@@ -10,7 +10,8 @@
   "instructions": {
     "agents": "AGENTS.md",
     "soul": "SOUL.md",
-    "tools": "TOOLS.md"
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
   },
   "personaMeta": {
     "language": "arabic",

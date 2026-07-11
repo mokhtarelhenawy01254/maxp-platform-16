@@ -48,6 +48,11 @@ interface DeleteConversationParams {
   sessionId: string;
 }
 
+interface DeleteConversationsBulkParams {
+  sessionId: string;
+  jids: string[];
+}
+
 interface ArchiveConversationParams {
   jid: string;
   sessionId: string;
@@ -348,6 +353,66 @@ export const useDeleteConversation = (
     },
     onError: (_error, variables) => {
       // Rollback on error
+      queryClient.invalidateQueries({
+        queryKey: ["whatsapp", "conversations", variables.sessionId],
+      });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook to delete multiple conversations at once
+ */
+export const useDeleteConversationsBulk = (
+  options?: Omit<
+    UseMutationOptions<any, Error, DeleteConversationsBulkParams>,
+    "mutationFn"
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<any, Error, DeleteConversationsBulkParams>({
+    mutationFn: async (params) => {
+      const response = await api.post(
+        `/whatsapp/chats/delete-bulk`,
+        { sessionId: params.sessionId, jids: params.jids }
+      );
+      return response.data;
+    },
+    onMutate: async (variables) => {
+      // Optimistically remove from list
+      queryClient.setQueryData(
+        ["whatsapp", "conversations", variables.sessionId, 30],
+        (old: any) => {
+          if (!old || !old.pages || old.pages.length === 0) return old;
+          const firstPage = old.pages[0];
+          return {
+            ...old,
+            pages: [
+              {
+                ...firstPage,
+                conversations: firstPage.conversations.filter(
+                  (conv: Contact) => !variables.jids.includes(conv.jid),
+                ),
+              },
+              ...old.pages.slice(1),
+            ],
+          };
+        },
+      );
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["whatsapp", "conversations", variables.sessionId],
+      });
+      variables.jids.forEach((jid) => {
+        queryClient.removeQueries({
+          queryKey: ["whatsapp", "messages", jid, variables.sessionId],
+        });
+      });
+    },
+    onError: (_error, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["whatsapp", "conversations", variables.sessionId],
       });

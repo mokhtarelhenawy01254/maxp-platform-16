@@ -441,7 +441,7 @@ class ModelManager:
             "SAMBANOVA": "DeepSeek-V3.1",
             "MISTRAL": "mistral-large-latest",
         }
-        return defaults.get(provider, "gemini-2.5-flash")
+        return defaults.get(provider, "deepseek-v4-flash")
 
     # -------------------------------------------------------------------------
     # Core key selection — simple first active key

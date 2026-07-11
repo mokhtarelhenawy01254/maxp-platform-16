@@ -353,6 +353,23 @@ async function saveIncomingMessage(payload) {
               isAIResponse: true,
             });
           }
+          const attachments = result.response_attachments || result.responseAttachments;
+          console.log(`[WA-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
+          if (Array.isArray(attachments)) {
+            for (const att of attachments) {
+              if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
+                console.log(`[WA-AI-ATTACHMENT] sending image: ${att.url.substring(0, 80)}...`);
+                try {
+                  await WhatsAppMessageHandler.sendImage(first.sessionId, first.normalizedJid, { url: att.url }, '', { isAIResponse: true });
+                  console.log('[WA-AI-ATTACHMENT] image sent successfully');
+                } catch (e) {
+                  console.error('[WA-AI-ATTACHMENT] Failed to send image:', e.message);
+                }
+              } else {
+                console.log(`[WA-AI-ATTACHMENT] skipping attachment type=${att.type} url=${(att.url || '').substring(0, 40)}...`);
+              }
+            }
+          }
         });
       } catch (e) {
         console.error('❌ [WA-DEBOUNCE] Error generating or sending AI reply:', e.message);
@@ -364,12 +381,17 @@ async function saveIncomingMessage(payload) {
   if (syncedCustomer && syncedCustomer.status === 'LEAD') {
     setImmediate(async () => {
       try {
-        const existingEnrollment = await getSharedPrismaClient().leadFollowUpEnrollment.findFirst({
+        const prisma = getSharedPrismaClient();
+        const existingEnrollment = await prisma.leadFollowUpEnrollment.findFirst({
           where: { whatsappContactId: contact.id, status: 'ACTIVE' }
         });
         if (!existingEnrollment) {
           const LeadFollowUpService = require('./LeadFollowUpService');
           await LeadFollowUpService.enrollLead(syncedCustomer.companyId, syncedCustomer.id, contact.id);
+        } else if (existingEnrollment.lastSentAt) {
+          // Lead replied after receiving a follow-up → mark as replied
+          const LeadFollowUpService = require('./LeadFollowUpService');
+          await LeadFollowUpService.markReplied(contact.id);
         }
       } catch (e) {
         console.error('[LEAD-FOLLOWUP] Error enrolling lead:', e.message);

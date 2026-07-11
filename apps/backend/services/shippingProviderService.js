@@ -1,9 +1,11 @@
 const crypto = require('crypto');
 const TurboService = require('./turboService');
+const BostaService = require('./bostaService');
 
 const PROVIDER_KEYS = Object.freeze({
   MANUAL: 'MANUAL',
   TURBO: 'TURBO',
+  BOSTA: 'BOSTA',
   BOSTA_DEMO: 'BOSTA_DEMO',
   MYLERZ_DEMO: 'MYLERZ_DEMO',
   ARAMEX_DEMO: 'ARAMEX_DEMO',
@@ -70,7 +72,10 @@ const normalizeProviderKey = (value, carrier = {}) => {
 
   const text = `${carrier.slug || ''} ${carrier.name || ''}`.toLowerCase();
   if (text.includes('turbo') || text.includes('تربو')) return PROVIDER_KEYS.TURBO;
-  if (text.includes('bosta') || text.includes('بوستا')) return PROVIDER_KEYS.BOSTA_DEMO;
+  if (text.includes('bosta') || text.includes('بوستا')) {
+    const mode = String(carrier.integrationMode || '').toUpperCase();
+    return mode === 'LIVE' ? PROVIDER_KEYS.BOSTA : PROVIDER_KEYS.BOSTA_DEMO;
+  }
   if (text.includes('mylerz') || text.includes('مايلرز')) return PROVIDER_KEYS.MYLERZ_DEMO;
   if (text.includes('aramex') || text.includes('ارامكس') || text.includes('أرامكس')) {
     return PROVIDER_KEYS.ARAMEX_DEMO;
@@ -305,6 +310,41 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
 
     const result = await createTurboShipment(shipment);
     return updateShipmentFromProviderResult(prisma, shipment, provider, result);
+  }
+
+  if (providerKey === PROVIDER_KEYS.BOSTA && integrationMode === 'LIVE') {
+    if (!options.allowLiveCreate) {
+      return updateShipmentFromProviderResult(prisma, shipment, provider, {
+        success: false,
+        skipped: true,
+        reason: 'LIVE_CREATE_REQUIRES_EXPLICIT_CONFIRMATION',
+        serviceLevel: provider.serviceLevel,
+      });
+    }
+
+    const bostaApiKey = settings.apiKey || shipment.shippingCompany?.apiKey;
+    const bostaService = new BostaService(bostaApiKey || null, shipment.companyId);
+    const payload = bostaService.formatOrderForBosta(shipment.order || {}, shipment.order?.customer || {});
+    try {
+      const result = await bostaService.createDelivery(payload);
+      return updateShipmentFromProviderResult(prisma, shipment, provider, {
+        success: true,
+        status: 'CREATED',
+        externalShipmentId: result._id,
+        trackingNumber: result.trackingNumber,
+        labelUrl: null,
+        serviceLevel: provider.serviceLevel,
+        cost: null,
+        data: result,
+      });
+    } catch (error) {
+      return updateShipmentFromProviderResult(prisma, shipment, provider, {
+        success: false,
+        skipped: true,
+        reason: `BOSTA_API_ERROR: ${error.message}`,
+        serviceLevel: provider.serviceLevel,
+      });
+    }
   }
 
   return updateShipmentFromProviderResult(prisma, shipment, provider, {

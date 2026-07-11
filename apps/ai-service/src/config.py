@@ -72,9 +72,9 @@ class Settings(BaseSettings):
         description="Sensitive: OpenRouter API key",
     )
 
-    default_llm_provider: Literal["anthropic", "openai", "google"] = "anthropic"
-    default_model: str = "claude-sonnet-4-6"
-    google_gemini_model: str = "gemini-1.5-flash"
+    default_llm_provider: Literal["anthropic", "openai", "google", "deepseek"] = "deepseek"
+    default_model: str = "deepseek-v4-flash"
+    google_gemini_model: str = "gemini-2.5-flash"
 
     otlp_endpoint: str | None = Field(
         default=None,

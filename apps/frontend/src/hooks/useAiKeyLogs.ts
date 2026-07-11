@@ -6,6 +6,7 @@ export function useAiKeyLogs(params?: {
   key_id?: string;
   status?: string;
   limit?: number;
+  offset?: number;
 }, refreshKey?: number) {
   return useQuery({
     queryKey: ["ai-admin", "key-logs", params, refreshKey],

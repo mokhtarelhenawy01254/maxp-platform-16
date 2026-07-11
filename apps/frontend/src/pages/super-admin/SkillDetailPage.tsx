@@ -215,7 +215,7 @@ export default function SkillDetailPage() {
   if (error) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4 p-4">
       <Alert variant="destructive" className="max-w-md shadow-sm"><AlertDescription className="font-semibold text-center">{error}</AlertDescription></Alert>
-      <Button variant="outline" onClick={() => navigate("/super-admin/ai-hub?tab=skills")}>العودة للمهارات</Button>
+      <Button variant="outline" onClick={() => navigate("/admin/ai-hub?tab=skills")}>العودة للمهارات</Button>
     </div>
   );
 
@@ -230,7 +230,7 @@ export default function SkillDetailPage() {
       <div className="shrink-0 border-b border-slate-200/80 bg-white/80 px-6 py-4 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => navigate("/super-admin/ai-hub?tab=skills")} className="h-8 border-slate-200 hover:bg-slate-50 transition-colors">
+            <Button variant="outline" size="sm" onClick={() => navigate("/admin/ai-hub?tab=skills")} className="h-8 border-slate-200 hover:bg-slate-50 transition-colors">
               <ArrowRight className="ml-1.5 size-4 text-slate-500" /> العودة
             </Button>
             <div className="flex items-center gap-2">

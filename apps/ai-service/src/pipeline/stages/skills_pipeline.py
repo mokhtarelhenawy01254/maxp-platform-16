@@ -181,6 +181,43 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             ctx.final_reply = ""
             ctx.llm_response = ""
 
+    # Auto-populate response_attachments from landmarkImage in tool evidence
+    import os
+    _maxp_api_url = os.getenv("MAXP_API_URL", "").rstrip("/")
+    for evidence in ctx.tool_evidence:
+        result = evidence.get("result", {})
+        if isinstance(result, dict):
+            for branch in (result.get("branches") or []):
+                img = (branch.get("landmarkImage") or "")
+                if not img:
+                    continue
+                # Only auto-populate if the image URL/path or its filename is present in the final reply text,
+                # meaning the LLM explicitly intended to display/refer to the image.
+                img_filename = os.path.basename(img)
+                if not ctx.final_reply or (img not in ctx.final_reply and img_filename not in ctx.final_reply):
+                    continue
+                if img.startswith("data:") or img.startswith("http"):
+                    ctx.response_attachments.append({
+                        "type": "image",
+                        "url": img,
+                        "source": "tool_result",
+                        "tool": evidence.get("tool", "booking_info"),
+                    })
+                elif img.startswith("/") and _maxp_api_url:
+                    ctx.response_attachments.append({
+                        "type": "image",
+                        "url": f"{_maxp_api_url}{img}",
+                        "source": "tool_result",
+                        "tool": evidence.get("tool", "booking_info"),
+                    })
+
+    if ctx.response_attachments:
+        logger.info(
+            "landmark_image_attachments_auto_populated",
+            count=len(ctx.response_attachments),
+            urls=[a.get("url", "")[:120] for a in ctx.response_attachments],
+        )
+
     ctx.llm_result = provider_response
     return ctx
 
@@ -209,6 +246,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
     ctx.system_prompt = system_prompt
     enriched_prompt = await assembler.build_system_prompt(ctx)
+    ctx.system_prompt = enriched_prompt
 
     messages = [
         {"role": "system", "content": enriched_prompt},
@@ -237,7 +275,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     if not client:
         from src.llm.model_manager import model_manager
 
-        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash"
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash"
         try:
             routing = await model_manager.get_next_key(agent_model, ctx.company_id)
             client = LLMClient(
@@ -334,7 +372,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         from src.llm.client import LLMClient
         from src.llm.model_manager import model_manager
 
-        agent_model = getattr(ctx.llm_client, "model", None) or (ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash")
+        agent_model = getattr(ctx.llm_client, "model", None) or (ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash")
         routing = await model_manager.get_next_key(agent_model, ctx.company_id)
         client = LLMClient(
             provider=routing.provider,
@@ -462,6 +500,75 @@ def _format_tool_results(executed: list[dict]) -> str:
                 if result.get("found") or result.get("customer"):
                     cust = result.get("customer") or result
                     parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
+            elif name == "booking_info":
+                handled = True
+                out = []
+                branches = result.get("branches") or []
+                services = result.get("services") or []
+                for b in branches:
+                    line = b.get("name", "")
+                    addr = b.get("address", "")
+                    phone = b.get("phone", "")
+                    male = b.get("male_days") or []
+                    female = b.get("female_days") or []
+                    if addr:
+                        line += f" - {addr}"
+                    if phone:
+                        line += f" - تلفون: {phone}"
+                    days = []
+                    if male:
+                        days.append(f"رجال: {', '.join(male)}")
+                    if female:
+                        days.append(f"سيدات: {', '.join(female)}")
+                    if days:
+                        line += f" ({'; '.join(days)})"
+                    out.append(line)
+                svc_names = [s.get("name", "") for s in services[:5] if s.get("name")]
+                if svc_names:
+                    out.append(f"الخدمات: {', '.join(svc_names)}")
+                parts.append("\n".join(out) if out else f"تم استرجاع معلومات المركز ({result.get('total_branches', 0)} فروع).")
+            elif name == "booking_reserve_skill":
+                handled = True
+                err = result.get("error", "")
+                if err:
+                    parts.append(f"تعذر الحجز: {err}")
+                elif result.get("needs_gender"):
+                    parts.append(result.get("message", ""))
+                else:
+                    appt = result.get("appointment") or result
+                    parts.append(
+                        f"تم حجز موعد لـ {result.get('patient', '')} "
+                        f"{'في ' + result.get('branch', '') if result.get('branch') else ''} "
+                        f"{'يوم ' + result.get('day_arabic', '') if result.get('day_arabic') else result.get('date', '')} "
+                        f"{'الساعة ' + result.get('time', '') if result.get('time') else ''} "
+                        f"{'خدمة ' + result.get('service', '') if result.get('service') else ''}"
+                    )
+            elif name == "booking_slots":
+                handled = True
+                available = result.get("available") or []
+                booked = result.get("booked") or []
+                note = result.get("note", "")
+                day = result.get("day", "")
+                date = result.get("date", "")
+                line = f"مواعيد {'يوم ' + day if day else ''} {date}: " if date else "مواعيد متاحة: "
+                if available:
+                    line += ', '.join(available)
+                else:
+                    line += "لا توجد مواعيد متاحة"
+                if note:
+                    line += f" ({note})"
+                parts.append(line)
+            elif name == "booking_status":
+                handled = True
+                if result.get("error"):
+                    parts.append(f"خطأ: {result.get('error')}")
+                elif result.get("cancelled") or result.get("success"):
+                    parts.append("تم إلغاء الحجز بنجاح.")
+                elif result.get("appointment"):
+                    appt = result["appointment"]
+                    parts.append(f"حالة الحجز: {appt.get('status', 'مؤكد')} في {appt.get('branchName', '')} يوم {appt.get('date', '')}")
+                else:
+                    parts.append(f"حالة الحجز: {result.get('status', 'غير معروف')}")
 
             if not handled:
                 id_val = result.get("id") or result.get("number") or result.get("orderId")

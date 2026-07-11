@@ -2021,6 +2021,75 @@ async function clearChat(req, res) {
  * حذف محادثة
  * POST /api/whatsapp/chats/delete
  */
+async function deleteChatsBulk(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId, jids } = req.body;
+
+        if (!sessionId || !jids || !Array.isArray(jids) || jids.length === 0) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        // Look up session in DB only — no active-connection requirement for delete
+        const targetSessionId = sessionId && sessionId !== 'all'
+            ? sessionId
+            : null;
+
+        let session = null;
+        if (targetSessionId) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: targetSessionId, companyId }
+            });
+        }
+
+        // Fallback: find any session belonging to this company (even disconnected)
+        if (!session) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId },
+                orderBy: { lastConnectedAt: 'desc' }
+            });
+        }
+
+        if (!session) {
+            return res.status(404).json({ error: 'لا توجد جلسة واتساب لهذه الشركة' });
+        }
+
+        const resolvedSessionId = session.id;
+
+        // Delete from Baileys for each JID (best-effort)
+        const activeSession = WhatsAppManager.getSession(resolvedSessionId);
+        if (activeSession?.status === 'connected') {
+            for (const jid of jids) {
+                try {
+                    await activeSession.sock.chatModify({
+                        delete: true,
+                        lastMessages: [{
+                            key: { remoteJid: jid, fromMe: true, id: 'AAA' },
+                            messageTimestamp: Math.floor(Date.now() / 1000)
+                        }]
+                    }, jid);
+                } catch (baileysError) {
+                    console.error(`⚠️ Error deleting chat ${jid} from Baileys (continuing with DB delete):`, baileysError);
+                }
+            }
+        }
+
+        // Delete from DB
+        await getSharedPrismaClient().whatsAppMessage.deleteMany({
+            where: { sessionId: resolvedSessionId, remoteJid: { in: jids } }
+        });
+
+        await getSharedPrismaClient().whatsAppContact.deleteMany({
+            where: { sessionId: resolvedSessionId, jid: { in: jids } }
+        });
+
+        res.json({ success: true, deletedCount: jids.length });
+    } catch (error) {
+        console.error('❌ Error deleting chats bulk:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء حذف المحادثات' });
+    }
+}
+
 async function deleteChat(req, res) {
     try {
         const { companyId } = req.user;
@@ -3706,6 +3775,7 @@ module.exports = {
     markChatUnread,
     clearChat,
     deleteChat,
+    deleteChatsBulk,
 
     // Migration
     migrateAuthToDatabase,

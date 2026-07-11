@@ -15,7 +15,6 @@ import { useDashboardData } from "../../hooks/useDashboardData";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import { QuickActions } from "../../components/dashboard/QuickActions";
 import { RevenueTrendChart, TopProductsPanel, DashboardSkeleton } from ".";
-import DashboardWelcomeState from "./DashboardWelcomeState";
 import DateRangeToolbar from "./DateRangeToolbar";
 import type { RevenueHistoryPoint } from "./types";
 
@@ -224,22 +223,6 @@ export default function MainDashboardPage() {
             {t("common.retry")}
           </button>
         </div>
-      </div>
-    );
-  }
-
-  if (isEmpty) {
-    return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
-        <DashboardWelcomeState activeApps={activeApps} />
-      </div>
-    );
-  }
-
-  if (!hasEcommerce) {
-    return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
-        <DashboardWelcomeState activeApps={activeApps} />
       </div>
     );
   }

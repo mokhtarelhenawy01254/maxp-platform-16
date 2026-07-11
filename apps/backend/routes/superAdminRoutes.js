@@ -1097,4 +1097,127 @@ router.post(
   },
 );
 
+// 🔍 Visual Search Logs
+router.get(
+  "/ai/visual-search-logs",
+  checkPermission("canViewReports"),
+  async (req, res) => {
+    try {
+      const prisma = getSharedPrismaClient();
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const pageSize = Math.min(Math.max(1, parseInt(req.query.pageSize) || 25), 100);
+      const days = parseInt(req.query.days) || 30;
+      const companyId = req.query.companyId || null;
+      const status = req.query.status || null; // "success" or "failed"
+
+      const dateFilter = new Date();
+      dateFilter.setDate(dateFilter.getDate() - days);
+
+      const where = {
+        createdAt: { gte: dateFilter },
+        intent: "visual_search",
+        ...(companyId ? { companyId } : {}),
+        ...(status === "success" ? { wasSuccessful: true } : {}),
+        ...(status === "failed" ? { wasSuccessful: false } : {}),
+      };
+
+      const [total, logs, companies] = await Promise.all([
+        prisma.searchAnalytic.count({ where }),
+        prisma.searchAnalytic.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        prisma.company.findMany({
+          select: { id: true, name: true },
+          where: companyId ? { id: companyId } : undefined,
+        }),
+      ]);
+
+      const companyMap = {};
+      for (const c of companies) companyMap[c.id] = c.name;
+
+      // Summary stats
+      const [totalCount, successCount, failedCount] = await Promise.all([
+        prisma.searchAnalytic.count({ where: { createdAt: { gte: dateFilter }, intent: "visual_search" } }),
+        prisma.searchAnalytic.count({ where: { createdAt: { gte: dateFilter }, intent: "visual_search", wasSuccessful: true } }),
+        prisma.searchAnalytic.count({ where: { createdAt: { gte: dateFilter }, intent: "visual_search", wasSuccessful: false } }),
+      ]);
+
+      return res.json({
+        success: true,
+        data: {
+          logs: logs.map((l) => ({
+            ...l,
+            companyName: companyMap[l.companyId] || l.companyId,
+            metadata: l.metadata ? JSON.parse(l.metadata) : null,
+          })),
+          summary: {
+            total: totalCount,
+            success: successCount,
+            failed: failedCount,
+            successRate: totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0,
+          },
+          pagination: {
+            page,
+            pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("[SA] visual-search-logs error:", error.message);
+      return res.status(500).json({ success: false, error: "فشل تحميل سجل البحث بالصورة" });
+    }
+  },
+);
+
+// 🆕 Support Settings (WhatsApp number)
+router.get("/support-settings", async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    let settings = await prisma.systemSettings.findUnique({
+      where: { systemName: "support_whatsapp" },
+    });
+    if (!settings) {
+      settings = await prisma.systemSettings.create({
+        data: {
+          systemName: "support_whatsapp",
+          displayName: "Support WhatsApp",
+          category: "support",
+          config: JSON.stringify({ phone: "" }),
+        },
+      });
+    }
+    const config = typeof settings.config === "string" ? JSON.parse(settings.config) : settings.config;
+    return res.json({ success: true, data: { phone: config.phone || "" } });
+  } catch (error) {
+    console.error("[SA] support-settings error:", error.message);
+    return res.status(500).json({ success: false, error: "فشل تحميل إعدادات الدعم الفني" });
+  }
+});
+
+router.put("/support-settings", async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { phone } = req.body;
+    await prisma.systemSettings.upsert({
+      where: { systemName: "support_whatsapp" },
+      update: { config: JSON.stringify({ phone: phone || "" }) },
+      create: {
+        systemName: "support_whatsapp",
+        displayName: "Support WhatsApp",
+        category: "support",
+        config: JSON.stringify({ phone: phone || "" }),
+      },
+    });
+    return res.json({ success: true, data: { phone: phone || "" } });
+  } catch (error) {
+    console.error("[SA] support-settings error:", error.message);
+    return res.status(500).json({ success: false, error: "فشل حفظ إعدادات الدعم الفني" });
+  }
+});
+
 module.exports = router;

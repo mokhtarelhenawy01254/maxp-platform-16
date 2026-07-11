@@ -139,9 +139,9 @@ async def _resolve_channel_agent(
             if matches:
                 db_agent = matches[0]
                 resolved_model = await _resolve_agent_model(db_agent, session)
-                # Fetch template instructions (soul/persona) if agent has none
+                # Fetch template instructions for fallback (persona, agents, tools)
                 tmpl_instr = None
-                if db_agent.template_slug and not (db_agent.soul or (db_agent.persona or {}).get("soulInstructions")):
+                if db_agent.template_slug:
                     try:
                         tmpl = await get_template(db_agent.template_slug, session)
                         if tmpl:
@@ -355,6 +355,7 @@ async def run_orchestration(
                     "reply": saved.final_reply,
                     "thread_id": thread_id,
                     "tool_results": saved.executed_tools,
+                    "response_attachments": list(saved.response_attachments or []),
                 }
 
         external_context = dict(memory_context or {})
@@ -450,6 +451,7 @@ async def run_orchestration(
             "reply": final_ctx.final_reply or final_ctx.llm_response,
             "thread_id": thread_id,
             "tool_results": final_ctx.executed_tools,
+            "response_attachments": list(final_ctx.response_attachments or []),
             "escalation_requested": final_ctx.escalation_requested,
             "escalation_meta": {
                 "reason": final_ctx.escalation_reason,

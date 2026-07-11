@@ -24,6 +24,7 @@ interface ShippingCompany {
 const providerLabels: Record<string, string> = {
   MANUAL: "يدوي",
   TURBO: "Turbo",
+  BOSTA: "Bosta",
   BOSTA_DEMO: "Bosta Demo",
   MYLERZ_DEMO: "Mylerz Demo",
   ARAMEX_DEMO: "Aramex Demo",
@@ -505,6 +506,7 @@ const ShippingCompanies: React.FC = () => {
                   >
                     <option value="MANUAL">يدوي</option>
                     <option value="TURBO">Turbo فعلي</option>
+                    <option value="BOSTA">Bosta فعلي</option>
                     <option value="BOSTA_DEMO">Bosta Demo</option>
                     <option value="MYLERZ_DEMO">Mylerz Demo</option>
                     <option value="ARAMEX_DEMO">Aramex Demo</option>

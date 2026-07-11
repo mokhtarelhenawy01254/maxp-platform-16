@@ -462,6 +462,10 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/public/coupons/*',
   'POST /api/v1/public/coupons/*',
 
+  // Public service order and services (no authentication required)
+  'GET /api/v1/services',
+  'POST /api/v1/service-orders',
+
   // Public shipping quotes for storefront checkout
   'GET /api/v1/shipping-zones/public/*',
   'POST /api/v1/shipping-zones/public/*',

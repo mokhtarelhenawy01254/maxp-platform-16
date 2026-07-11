@@ -15,3 +15,7 @@ class AgentResponse(BaseModel):
     escalation_reason: str | None = None
     silent_escalation: bool = False  # When True, suppress reply and flag for human takeover
     metadata: dict[str, Any] = Field(default_factory=dict)
+    attachments: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="صور أو مرفقات: {type: 'image', url: 'data:...', source: 'tool_result', tool: 'tool_name'}",
+    )

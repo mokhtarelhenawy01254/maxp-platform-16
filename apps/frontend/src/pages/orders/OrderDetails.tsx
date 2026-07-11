@@ -16,6 +16,7 @@ import OrderHeader from "./components/OrderHeader";
 import OrderItemsCard from "./components/OrderItemsCard";
 import CustomerInfoCard from "./components/CustomerInfoCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
+import BostaShippingPanel from "./components/BostaShippingPanel";
 import OrderActivityLog from "./components/OrderActivityLog";
 import OrderSourceCard from "./components/OrderSourceCard";
 import OrderAttributionCard from "./components/OrderAttributionCard";
@@ -26,6 +27,7 @@ import PartialDeliveryModal from "./components/PartialDeliveryModal";
 // Hooks
 import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useTurboShipping } from "./hooks/useTurboShipping";
+import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
 import { printPreparationSlip } from "../../utils/printPreparationSlip";
 import { printOrderInvoice } from "../../utils/printOrderInvoice";
@@ -123,6 +125,19 @@ const OrderDetails: React.FC = () => {
     calculateShipping,
     setTurboTrackingData,
   } = useTurboShipping(order, setOrder);
+
+  const {
+    bostaLoading,
+    bostaShipment,
+    fetchShipment: fetchBostaShipment,
+    createShipment: createBostaShipment,
+    printAWB: printBostaAWB,
+    cancelShipment: cancelBostaShipment,
+  } = useBostaShipping(order, setOrder);
+
+  useEffect(() => {
+    if (order?.id) fetchBostaShipment();
+  }, [order?.id]);
 
   // Local UI State (Modals)
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -938,6 +953,19 @@ const OrderDetails: React.FC = () => {
             <OrderPartnerOperationsCard
               affiliate={order.affiliate}
               merchantOrder={merchantOrderScope}
+            />
+          )}
+
+          {/* Bosta Shipping Panel */}
+          {showPartnerOperationsCard && (
+            <BostaShippingPanel
+              order={order}
+              bostaShipment={bostaShipment}
+              bostaLoading={bostaLoading}
+              onCreateShipment={createBostaShipment}
+              onPrintAWB={printBostaAWB}
+              onCancelShipment={cancelBostaShipment}
+              canManageShipments={canManageTurboShipping}
             />
           )}
 

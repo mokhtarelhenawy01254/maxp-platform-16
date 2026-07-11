@@ -209,11 +209,11 @@ const MyCompaniesDashboard: React.FC = () => {
 
   return (
     <div
-      className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+      className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
       dir="rtl"
     >
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
             لوحة تحكم شركاتي
@@ -222,45 +222,45 @@ const MyCompaniesDashboard: React.FC = () => {
             متابعة شاملة لجميع فروعك وشركاتك من مكان واحد
           </p>
         </div>
-        <div className="mt-4 md:mt-0 flex gap-3">
+        <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
           <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "overview" ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${activeTab === "overview" ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}
             >
               نظرة عامة
             </button>
             <button
               onClick={() => setActiveTab("attendance")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "attendance" ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${activeTab === "attendance" ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}
             >
               الحضور
             </button>
             <button
               onClick={() => setActiveTab("reports")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "reports" ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${activeTab === "reports" ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}
             >
               التقارير
             </button>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            className="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-xs sm:text-sm"
           >
-            <PlusIcon className="w-5 h-5" />
-            <span>إضافة شركة</span>
+            <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">إضافة شركة</span>
           </button>
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 text-xs sm:text-sm"
           >
             {isExporting ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <ArrowDownTrayIcon className="w-5 h-5" />
+              <ArrowDownTrayIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             )}
-            <span>تصدير</span>
+            <span className="hidden sm:inline">تصدير</span>
           </button>
         </div>
       </div>
@@ -429,7 +429,7 @@ const MyCompaniesDashboard: React.FC = () => {
 
       {activeTab === "attendance" && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex gap-4 items-center">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
             <div className="flex items-center gap-2">
               <CalendarDaysIcon className="w-5 h-5 text-gray-400" />
               <select
@@ -582,7 +582,7 @@ const StatCard = ({
   alert = false,
 }: any) => (
   <div
-    className={`${color} p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-transform hover:-translate-y-1 ${alert ? "ring-2 ring-red-400" : ""}`}
+    className={`${color} p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-transform hover:-translate-y-1 ${alert ? "ring-2 ring-red-400" : ""}`}
   >
     <div className="flex justify-between items-start">
       <div>
@@ -612,7 +612,7 @@ const StatCard = ({
 const DashboardSkeleton = () => (
   <div className="p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
     <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-    <div className="grid grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
@@ -620,7 +620,7 @@ const DashboardSkeleton = () => (
         ></div>
       ))}
     </div>
-    <div className="grid grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       {[1, 2, 3].map((i) => (
         <div
           key={i}

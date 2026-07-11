@@ -198,18 +198,10 @@ class ContextAssembler:
         from src.pipeline.stages.skills_pipeline import get_agent_instructions
         base_prompt = ctx.system_prompt or (get_agent_instructions(ctx.agent) if ctx.agent else "") or ""
 
-        # Inject persona.agentInstructions, persona.toolsInstructions, and rules
-        # These are stored in the DB but were previously excluded from the system prompt.
+        # Inject DB-level rules (only injected here, not inside the contract)
         _agent = ctx.agent
         if _agent:
-            _persona = getattr(_agent, "persona", {}) or {}
-            _agent_instr = (_persona.get("agentInstructions") or "").strip()
-            _tools_instr = (_persona.get("toolsInstructions") or "").strip()
             _db_rules = (getattr(_agent, "_db_rules", "") or "").strip()
-            if _agent_instr:
-                base_prompt += f"\n\n{_agent_instr}"
-            if _tools_instr:
-                base_prompt += f"\n\n{_tools_instr}"
             if _db_rules:
                 base_prompt += f"\n\n<rules>\n{_db_rules}\n</rules>"
 
@@ -242,6 +234,28 @@ You are continuing an existing conversation on Facebook Messenger that was previ
             f"  Timezone: UTC\n"
             f"</current_datetime>"
         ))
+
+        # 1.5 Merchant Guardrails (Dynamic rules matching)
+        _agent = ctx.agent
+        if _agent and ctx.session:
+            try:
+                from src.guardrails.merchant_rules import MerchantRuleGuardrail
+                guardrail = MerchantRuleGuardrail()
+                matched_rules = await guardrail.get_relevant_rules(
+                    session=ctx.session,
+                    agent_id=_agent.id,
+                    message=ctx.message,
+                    top_k=5,
+                )
+                if matched_rules:
+                    guardrails_block = guardrail.format_as_prompt_block(matched_rules)
+                    sections.append(("merchant_guardrails", f"\n{guardrails_block}"))
+                    
+                    if ctx.session_state is None:
+                        ctx.session_state = {}
+                    ctx.session_state["applied_guardrail_ids"] = [r["id"] for r in matched_rules]
+            except Exception as e:
+                logger.warning("failed to fetch merchant guardrails", error=str(e))
 
         # 1. Customer profile
         customer = await self.fetch_customer_profile(ctx)

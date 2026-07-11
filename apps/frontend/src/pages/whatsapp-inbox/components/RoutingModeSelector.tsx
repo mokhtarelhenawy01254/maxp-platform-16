@@ -32,7 +32,7 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
       label: t('whatsappInbox.modeDirect'),
       description: t('whatsappInbox.modeDirectDescription'),
       activeClasses:
-        'border-primary/30 bg-primary/10 shadow-sm dark:border-primary/50 dark:bg-primary/20',
+        'border-2 border-primary/50 bg-primary/15 shadow-sm dark:border-primary/70 dark:bg-primary/25',
       indicatorClasses: 'border-primary bg-[color:var(--color-card)]',
     },
     {
@@ -40,7 +40,7 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
       label: t('whatsappInbox.modeRoundRobin'),
       description: t('whatsappInbox.modeRoundRobinDescription'),
       activeClasses:
-        'border-secondary/30 bg-secondary/10 shadow-sm dark:border-secondary/50 dark:bg-secondary/20',
+        'border-2 border-secondary/50 bg-secondary/15 shadow-sm dark:border-secondary/70 dark:bg-secondary/25',
       indicatorClasses: 'border-secondary bg-[color:var(--color-card)]',
     },
     {
@@ -48,7 +48,7 @@ const RoutingModeSelector: React.FC<RoutingModeSelectorProps> = ({
       label: t('whatsappInbox.modeSharedInbox'),
       description: t('whatsappInbox.modeSharedInboxDescription'),
       activeClasses:
-        'border-tertiary/30 bg-tertiary/10 shadow-sm dark:border-tertiary/50 dark:bg-tertiary/20',
+        'border-2 border-tertiary/50 bg-tertiary/15 shadow-sm dark:border-tertiary/70 dark:bg-tertiary/25',
       indicatorClasses: 'border-tertiary bg-[color:var(--color-card)]',
     },
   ];

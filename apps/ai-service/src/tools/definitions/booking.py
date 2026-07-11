@@ -66,7 +66,7 @@ async def booking_status(input_data: StatusInput) -> dict[str, Any]:
 
 booking_info_tool = FunctionTool(
     name="booking_info",
-    description="استرجاع كافة معلومات المركز الطبي (مثل الفروع، الخدمات، الأطباء، الأسعار، وأيام العمل للرجال والنساء).",
+    description="استرجاع كافة معلومات المركز الطبي (مثل الفروع مع landmarkImage/صورة, الخدمات, الأطباء, الأسعار, أيام العمل للرجال والنساء).",
     func=booking_info,
     input_model=InfoInput,
 )

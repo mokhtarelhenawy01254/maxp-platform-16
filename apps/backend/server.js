@@ -206,6 +206,8 @@ const educationTeacherAvailabilityRoutes = require("./routes/educationTeacherAva
 const educationTeacherPaymentsRoutes = require("./routes/educationTeacherPaymentsRoutes");
 const educationTeacherPortalRoutes = require("./routes/educationTeacherPortalRoutes");
 const educationParentPortalRoutes = require("./routes/educationParentPortalRoutes");
+const servicesRoutes = require("./routes/servicesRoutes");
+const serviceOrdersRoutes = require("./routes/serviceOrdersRoutes");
 const formsRoutes = require("./routes/formsRoutes");
 const publicFormsRoutes = require("./routes/publicFormsRoutes");
 
@@ -322,8 +324,10 @@ const telegramAdvancedRoutes = require("./routes/telegramAdvancedRoutes");
 const userbotRoutes = require("./routes/userbotRoutes");
 const textGalleryRoutes = require("./routes/textGalleryRoutes");
 const turboRoutes = require("./routes/turboRoutes");
+const bostaRoutes = require("./routes/bostaRoutes");
 const shippingCompaniesRoutes = require("./routes/shippingCompaniesRoutes");
 const turboWebhookRoutes = require("./routes/turboWebhook");
+const bostaWebhookRoutes = require("./routes/bostaWebhook");
 const walletPaymentRoutes = require("./routes/walletPayment");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
@@ -527,6 +531,7 @@ app.use("/api/v1/webhook", webhookRoutes);
 app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
+app.use("/api/v1/bosta-webhook", bostaWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/v1/geolocation", geolocationRoutes);
@@ -560,6 +565,7 @@ app.use("/api/v1/public/affiliates", publicAffiliateRoutes);
 app.use("/api/v1/public/merchants", publicMerchantRoutes);
 app.use("/api/v1/public/booking", require("./routes/publicBookingRoutes"));
 app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
+app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/public", publicCouponsRoutes);
 app.use("/api/v1/public", publicProductReviewRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
@@ -731,6 +737,7 @@ app.use("/api/proxy-image", proxyRoutes);
 app.use("/api/v1/import-jobs", importJobRoutes);
 app.use("/api/v1/woocommerce", wooCommerceRoutes);
 app.use("/api/v1/turbo", turboRoutes);
+app.use("/api/v1/bosta", bostaRoutes);
 
 // Professional Tools
 app.use("/api/v1/appointments", appointmentsRoutes);
@@ -751,6 +758,8 @@ app.use("/api/v1/education/availability", educationTeacherAvailabilityRoutes);
 app.use("/api/v1/education/payments", educationTeacherPaymentsRoutes);
 app.use("/api/v1/education/teacher-portal", educationTeacherPortalRoutes);
 app.use("/api/v1/education/parent-portal", educationParentPortalRoutes);
+app.use("/api/v1/services", servicesRoutes);
+app.use("/api/v1/service-orders", serviceOrdersRoutes);
 app.use("/api/v1/forms", formsRoutes);
 app.use("/api/v1/affiliates", affiliateRoutes);
 app.use("/api/v1/affiliate-settings", affiliateSettingsRoutes);
@@ -773,6 +782,7 @@ app.use("/api/v1/proxy/ai-service", aiServiceAgentProxy);
 app.use("/api/v1/ai-admin", aiAdminProxyRoute);
 app.use("/api/v1/admin/lp-pages", require("./routes/lpAdminRoutes").adminRouter);
 app.use("/api/v1/proxy", proxyRoutes);
+
 
 // Platform & Super-Admin
 app.use("/api/v1/super-admin", superAdminRoutes);
@@ -1303,6 +1313,35 @@ function startMemoryMonitor() {
     }
   }, CHECK_INTERVAL);
 }
+
+// Graceful shutdown — disconnect WhatsApp sessions before exit
+async function shutdownGracefully(signal) {
+  console.log(`\n🛑 [SERVER] Received ${signal}, starting graceful shutdown...`);
+
+  const timeout = setTimeout(() => {
+    console.error('⚠️ [SERVER] Forced shutdown after timeout');
+    process.exit(1);
+  }, 15000);
+
+  try {
+    const WhatsAppManager = require("./services/whatsapp/WhatsAppManager");
+    const sessionCount = WhatsAppManager.getAllSessions()?.length || 0;
+    if (sessionCount > 0) {
+      console.log(`📱 [SERVER] Disconnecting ${sessionCount} WhatsApp session(s)...`);
+      await WhatsAppManager.disconnectAllSessions();
+      console.log('✅ [SERVER] All WhatsApp sessions disconnected');
+    }
+  } catch (err) {
+    console.error('⚠️ [SERVER] Error during WhatsApp shutdown:', err.message);
+  }
+
+  clearTimeout(timeout);
+  console.log('✅ [SERVER] Graceful shutdown complete');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdownGracefully('SIGTERM'));
+process.on('SIGINT', () => shutdownGracefully('SIGINT'));
 
 if (require.main === module) {
   startMemoryMonitor();

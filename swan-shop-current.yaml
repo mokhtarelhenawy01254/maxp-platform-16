@@ -1,0 +1,80 @@
+- generic [ref=e83]:
+  - banner [ref=e84]:
+    - generic [ref=e86]:
+      - link "Swan" [ref=e87] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e88]:
+        - generic [ref=e89]:
+          - link "كل الأحذية" [ref=e90] [cursor=pointer]:
+            - /url: /shop
+          - link "الكوتشيات" [ref=e91] [cursor=pointer]:
+            - /url: /shop?category=sneakers
+          - link "الفلات" [ref=e92] [cursor=pointer]:
+            - /url: /shop?category=flats
+          - link "العروض" [ref=e93] [cursor=pointer]:
+            - /url: /sale
+      - generic [ref=e94]:
+        - button "فتح البحث" [ref=e95]:
+          - img [ref=e96]
+        - button "سلة التسوق (0 منتجات)" [ref=e99]:
+          - img [ref=e100]
+    - generic [ref=e106]:
+      - link "ابدئي الطلب" [ref=e107] [cursor=pointer]:
+        - /url: /shop
+      - generic [ref=e108]: شحن مجاني فوق ٧٩٩ جنيه
+      - generic [ref=e110]: تبديل مقاس خلال 14 يوم
+      - generic [ref=e112]: تأكيد الطلب قبل التجهيز
+  - main [ref=e113]:
+    - complementary [ref=e127]
+  - contentinfo [ref=e134]:
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - text: Swan
+          - paragraph [ref=e138]: "أحذية حريمي مصنوعة بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلي القرار أسرع."
+          - generic [ref=e139]:
+            - 'link "واتساب: +20 100 000 0000" [ref=e140] [cursor=pointer]':
+              - /url: https://wa.me/201000000000
+            - 'link "البريد: hello@khemetluxe.com" [ref=e141] [cursor=pointer]':
+              - /url: mailto:hello@khemetluxe.com
+          - generic [ref=e142]:
+            - link "تابعنا على instagram" [ref=e143] [cursor=pointer]:
+              - /url: https://instagram.com
+              - generic [ref=e144]: I
+            - link "تابعنا على facebook" [ref=e145] [cursor=pointer]:
+              - /url: https://facebook.com
+              - generic [ref=e146]: F
+            - link "تابعنا على whatsapp" [ref=e147] [cursor=pointer]:
+              - /url: https://wa.me/201000000000
+              - generic [ref=e148]: W
+        - generic [ref=e149]:
+          - heading "الدار" [level=3] [ref=e150]
+          - list [ref=e151]:
+            - listitem [ref=e152]:
+              - link "قصة الصناعة" [ref=e153] [cursor=pointer]:
+                - /url: /collections
+            - listitem [ref=e154]:
+              - link "الشحن والتوصيل" [ref=e155] [cursor=pointer]:
+                - /url: /shipping
+            - listitem [ref=e156]:
+              - link "دليل المقاسات" [ref=e157] [cursor=pointer]:
+                - /url: /size-guide
+        - generic [ref=e158]:
+          - heading "التسوق" [level=3] [ref=e159]
+          - list [ref=e160]:
+            - listitem [ref=e161]:
+              - link "كل الأحذية" [ref=e162] [cursor=pointer]:
+                - /url: /shop
+            - listitem [ref=e163]:
+              - link "العروض الحصرية" [ref=e164] [cursor=pointer]:
+                - /url: /sale
+            - listitem [ref=e165]:
+              - link "المجموعات" [ref=e166] [cursor=pointer]:
+                - /url: /collections
+      - generic [ref=e167]:
+        - paragraph [ref=e168]: © 2026 Swan. CRAFTED IN EGYPT.
+        - generic [ref=e169]:
+          - link "الخصوصية" [ref=e170] [cursor=pointer]:
+            - /url: /privacy
+          - link "الشروط والأحكام" [ref=e171] [cursor=pointer]:
+            - /url: /terms

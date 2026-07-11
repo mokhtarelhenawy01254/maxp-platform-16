@@ -11,6 +11,7 @@ const AIAgentSandboxPage = React.lazy(() => import("./ai-agent-sandbox/AIAgentSa
 import ChannelRoutingPage from "./ChannelRoutingPage";
 import AgentSkillsPage from "./AgentSkillsPage";
 import AgentToolsPage from "./AgentToolsPage";
+const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 
 const TABS = [
   { key: "sandbox", label: "المساعد الذكي" },
@@ -18,6 +19,7 @@ const TABS = [
   { key: "tools", label: "أدوات الوكلاء" },
   { key: "routing", label: "توجيه القنوات" },
   { key: "test", label: "اختبار", superOnly: true },
+  { key: "rag", label: "قاعدة المعرفة (RAG)", superOnly: true },
 ] as const;
 
 interface Company { id: string; name: string }
@@ -190,6 +192,10 @@ export default function AIHubLayout() {
           {currentTab === "test" && selectedCompanyId
             ? <div className="h-full overflow-y-auto"><AgentTestTab key={selectedCompanyId} companyId={selectedCompanyId} /></div>
             : currentTab === "test" && <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة أولاً</div>
+          }
+          {currentTab === "rag" && selectedCompanyId
+            ? <div className="h-full overflow-y-auto"><AgenticRAGLab key={selectedCompanyId} companyId={selectedCompanyId} /></div>
+            : currentTab === "rag" && <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة أولاً</div>
           }
         </React.Suspense>
       </div>

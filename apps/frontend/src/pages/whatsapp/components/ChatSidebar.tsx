@@ -8,6 +8,7 @@ import {
   ArchiveRestore,
   Ban,
   Camera,
+  Check,
   CheckCheck,
   Filter,
   Loader2,
@@ -26,6 +27,7 @@ import {
   VolumeX,
   Wifi,
   WifiOff,
+  X,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -106,6 +108,8 @@ interface ChatSidebarProps {
   onOpenLabels: () => void;
   conversationsError?: boolean;
   onRetryConversations?: () => void;
+  // Bulk actions
+  onBulkDelete?: (jids: string[], sessionId: string) => void;
 }
 
 type SidebarFilter = "all" | "unread" | "groups" | "statuses";
@@ -230,6 +234,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onOpenLabels,
   conversationsError,
   onRetryConversations,
+  onBulkDelete,
 }) => {
   const { t, i18n } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -240,6 +245,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     mouseY: number;
     contact: Contact;
   } | null>(null);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedJids, setSelectedJids] = useState<Set<string>>(new Set());
 
   // Swipe-to-action states for mobile
   const [swipedContactId, setSwipedContactId] = useState<string | null>(null);
@@ -451,6 +458,67 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       )}
     >
       <div className="flex h-12 items-center justify-between border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-3 shrink-0">
+        {multiSelectMode ? (
+          <div className="flex w-full items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => {
+                  setMultiSelectMode(false);
+                  setSelectedJids(new Set());
+                }}
+                className="size-8 rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+                title="إلغاء"
+              >
+                <X className="size-4" />
+              </Button>
+              <span className="text-sm font-semibold text-[color:var(--color-foreground)]">
+                {selectedJids.size > 0
+                  ? `محدد ${selectedJids.size}`
+                  : 'اختر المحادثات'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const allJids = filteredConversations.map(c => c.jid);
+                  if (selectedJids.size === allJids.length) {
+                    setSelectedJids(new Set());
+                  } else {
+                    setSelectedJids(new Set(allJids));
+                  }
+                }}
+                className="h-7 rounded-lg px-2 text-[11px] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+              >
+                {selectedJids.size === filteredConversations.length ? 'إلغاء الكل' : 'تحديد الكل'}
+              </Button>
+              {selectedJids.size > 0 && onBulkDelete ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const sessionId = selectedSession && selectedSession !== 'all'
+                      ? selectedSession
+                      : sessionOptions.find(s => s.id !== 'all')?.id || '';
+                    if (sessionId) {
+                      onBulkDelete(Array.from(selectedJids), sessionId);
+                      setMultiSelectMode(false);
+                      setSelectedJids(new Set());
+                    }
+                  }}
+                  className="h-7 rounded-lg px-2 text-[11px] text-rose-600 hover:bg-rose-500/10"
+                >
+                  <Trash2 className="size-3.5 mr-1" />
+                  حذف
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -549,6 +617,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                onClick={() => {
+                  setMultiSelectMode(true);
+                  setSelectedJids(new Set());
+                }}
+              >
+                <Trash2 className="size-4" />
+                <span>حذف متعدد</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
                 onClick={onOpenProfile}
               >
                 <User className="size-4" />
@@ -584,6 +662,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        </>
+      )}
       </div>
 
       <div className="wa-glass-search-bar border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-1.5 shrink-0">
@@ -754,9 +834,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               const isSelected = selectedContact?.id === contact.id;
               const isSwiped = swipedContactId === contact.id;
 
+              const isSelectedInMulti = selectedJids.has(contact.jid);
+
               return (
                 <div key={contact.id} className="relative overflow-hidden rounded-2xl">
                   {/* Action panel underneath */}
+                  {!multiSelectMode ? (
                   <div
                     className={cn(
                       "absolute inset-y-0 flex items-center px-4 transition-opacity duration-150",
@@ -779,10 +862,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       <span>{contact.isArchived ? "إلغاء" : "أرشفة"}</span>
                     </button>
                   </div>
+                  ) : null}
 
                   <button
                     type="button"
                     onClick={() => {
+                      if (multiSelectMode) {
+                        setSelectedJids(prev => {
+                          const next = new Set(prev);
+                          if (next.has(contact.jid)) {
+                            next.delete(contact.jid);
+                          } else {
+                            next.add(contact.jid);
+                          }
+                          return next;
+                        });
+                        return;
+                      }
                       if (swipedContactId === contact.id) {
                         setSwipedContactId(null);
                         setSwipeOffset(0);
@@ -790,11 +886,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         onSelectContact(contact);
                       }
                     }}
-                    onTouchStart={(e) => handleSwipeTouchStart(e, contact.id)}
-                    onTouchMove={(e) => handleSwipeTouchMove(e, contact.id)}
-                    onTouchEnd={(e) => handleSwipeTouchEnd(e, contact)}
+                    onTouchStart={!multiSelectMode ? (e) => handleSwipeTouchStart(e, contact.id) : undefined}
+                    onTouchMove={!multiSelectMode ? (e) => handleSwipeTouchMove(e, contact.id) : undefined}
+                    onTouchEnd={!multiSelectMode ? (e) => handleSwipeTouchEnd(e, contact) : undefined}
                     onContextMenu={(event) => {
                       event.preventDefault();
+                      if (multiSelectMode) return;
                       setContextMenu({
                         mouseX: event.clientX + 2,
                         mouseY: event.clientY - 6,
@@ -803,15 +900,27 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     }}
                     className={cn(
                       "wa-conversation-item min-h-[3.25rem] w-full border-b border-t-0 border-x-0 border-[color:color-mix(in_srgb,var(--shell-control-border)_50%,transparent)] px-3 py-1.5 text-start transition-all duration-150 sm:min-h-[3.5rem] sm:py-2 rounded-none",
-                      isSelected
+                      multiSelectMode && isSelectedInMulti
+                        ? "bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-background))]"
+                        : !multiSelectMode && isSelected
                         ? "bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-background))]"
                         : "bg-transparent hover:bg-[var(--whatsapp-surface-hover)]",
                     )}
                     style={{
-                      transform: isSwiped ? `translateX(${swipeOffset}px)` : 'translateX(0px)',
+                      transform: !multiSelectMode && isSwiped ? `translateX(${swipeOffset}px)` : 'translateX(0px)',
                     }}
                   >
                     <div className="flex items-center gap-3">
+                      {multiSelectMode ? (
+                        <div className={cn(
+                          "flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+                          isSelectedInMulti
+                            ? "border-[color:var(--color-primary)] bg-[color:var(--color-primary)] text-white"
+                            : "border-[color:var(--shell-control-border)]"
+                        )}>
+                          {isSelectedInMulti ? <Check className="size-3.5" /> : null}
+                        </div>
+                      ) : null}
                       <Avatar className="size-10 sm:size-10">
                         <AvatarImage src={contact.profilePicUrl || undefined} />
                         <AvatarFallback className="bg-gradient-to-br from-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] to-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)] text-xs font-semibold text-[color:var(--color-primary)]">
