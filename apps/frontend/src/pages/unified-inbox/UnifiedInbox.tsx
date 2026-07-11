@@ -1179,7 +1179,8 @@ const UnifiedInbox: React.FC = () => {
       <div className="flex-1 overflow-hidden relative flex flex-col">
         {isCommentsActive ? (
           <div className="absolute inset-0 overflow-hidden bg-slate-50 p-2">
-            <PostsManagement embedded defaultPlatform={activeTab === 'fb-comments' ? 'facebook' : 'instagram'} />
+            {/* ponytail: PostsManagement.jsx infers defaultPlatform as null from its default value */}
+            <PostsManagement embedded defaultPlatform={(activeTab === 'fb-comments' ? 'facebook' : 'instagram') as any} />
           </div>
         ) : (
           <div className={`business-inbox-shell w-full ${selectedConversation ? 'business-inbox-shell--conversation-active' : ''}`}>
@@ -1948,7 +1949,7 @@ const UnifiedInbox: React.FC = () => {
                               })()}
 
                               {/* Text content (hide if it's a media URL shown above) */}
-                              {msg.content && !(msg.content.startsWith("http") && (msg.content.includes("fbcdn") || msg.content.includes("cdninstagram") || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(msg.content.split(/[\s\n]/)[0]))) && (
+                              {msg.content && !(msg.content.startsWith("http") && (msg.content.includes("fbcdn") || msg.content.includes("cdninstagram") || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(msg.content.split(/[\s\n]/)[0] || ""))) && (
                                 <p
                                   className="text-sm leading-relaxed whitespace-pre-wrap"
                                   style={{
