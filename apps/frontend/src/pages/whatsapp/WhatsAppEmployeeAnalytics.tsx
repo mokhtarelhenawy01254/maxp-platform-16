@@ -1,24 +1,38 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   BarChart3,
   Clock,
   Inbox,
   MessageSquare,
-  MessageCircle,
   Send,
-  TrendingUp,
   UserCheck,
   UserX,
   Users,
   RefreshCw,
   Calendar,
+  Trophy,
+  ArrowDown,
+  Activity,
+  Zap,
+  Target,
+  Layers,
+  ChevronRight,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+} from "recharts";
 import {
   Table,
   TableBody,
@@ -27,10 +41,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   WhatsAppPageShell,
-  WhatsAppSurfaceCard,
-  WhatsAppMetricCard,
 } from "./components/WhatsAppPageShell";
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
 
@@ -70,10 +85,166 @@ interface AnalyticsResponse {
   employees: EmployeeStat[];
 }
 
+// ─── Animation Variants ─────────────────────────────────────────────
+const containerStagger = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
+  },
+} as const;
+
+const itemSlide = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 280, damping: 24 },
+  },
+} as const;
+
+// ─── Glass Metric Card ──────────────────────────────────────────────
+const GlassMetric: React.FC<{
+  label: string;
+  value: string | number;
+  hint?: string;
+  icon: React.ElementType;
+  gradient: string;
+  delay?: number;
+}> = ({ label, value, hint, icon: Icon, gradient, delay = 0 }) => (
+  <motion.div
+    variants={itemSlide}
+    whileHover={{ y: -3 }}
+    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/80 p-4 shadow-sm backdrop-blur-xl sm:rounded-3xl sm:p-5"
+    style={{ animationDelay: `${delay}ms` }}
+  >
+    <div
+      className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full opacity-[0.07] blur-2xl"
+      style={{ background: gradient }}
+    />
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 space-y-1.5">
+        <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground sm:text-[11px]">
+          {label}
+        </p>
+        <motion.p
+          key={String(value)}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="text-2xl font-bold tracking-tight sm:text-3xl"
+        >
+          {value}
+        </motion.p>
+        {hint && (
+          <p className="text-[11px] text-muted-foreground sm:text-xs">{hint}</p>
+        )}
+      </div>
+      <div
+        className="flex size-10 shrink-0 items-center justify-center rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] sm:size-11 sm:rounded-2xl"
+        style={{ background: gradient }}
+      >
+        <Icon className="size-5 text-white sm:size-5.5" />
+      </div>
+    </div>
+  </motion.div>
+);
+
+// ─── Radial Progress Ring ───────────────────────────────────────────
+const RadialProgress: React.FC<{
+  value: number;
+  label: string;
+  size?: number;
+}> = ({ value, label, size = 120 }) => {
+  const data = [{ name: label, value: Math.min(100, value), fill: "url(#gradRing)" }];
+  return (
+    <div className="relative flex flex-col items-center">
+      <ResponsiveContainer width={size} height={size}>
+        <RadialBarChart
+          innerRadius="72%"
+          outerRadius="100%"
+          data={data}
+          startAngle={90}
+          endAngle={-270}
+        >
+          <defs>
+            <linearGradient id="gradRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#6366f1" />
+              <stop offset="100%" stopColor="#8b5cf6" />
+            </linearGradient>
+          </defs>
+          <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+          <RadialBar
+            background={{ fill: "var(--color-muted)" }}
+            dataKey="value"
+            cornerRadius={12}
+          />
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-xl font-bold sm:text-2xl">{value}%</span>
+        <span className="text-[10px] text-muted-foreground sm:text-xs">{label}</span>
+      </div>
+    </div>
+  );
+};
+
+// ─── Ranking Row with Progress Bar ──────────────────────────────────
+const RankingRow: React.FC<{
+  emp: EmployeeStat;
+  idx: number;
+  max: number;
+  variant: "top" | "low";
+}> = ({ emp, idx, max, variant }) => {
+  const isTop = variant === "top";
+  const medalColors = isTop
+    ? ["bg-amber-500/20 text-amber-600", "bg-slate-400/20 text-slate-600", "bg-orange-700/20 text-orange-700"]
+    : [];
+  const barColor = isTop
+    ? "from-indigo-500 to-violet-500"
+    : "from-rose-400 to-rose-500/60";
+  const barWidth = Math.max(4, (emp.outgoingMessages / max) * 100);
+
+  return (
+    <motion.div
+      variants={itemSlide}
+      className="flex items-center gap-3"
+    >
+      <div
+        className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+          isTop && idx < 3 ? medalColors[idx] : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {isTop && idx < 3 ? (
+          <Trophy className="size-3.5" />
+        ) : (
+          idx + 1
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="truncate text-sm font-medium">{emp.userName}</span>
+          <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+            {emp.outgoingMessages} رسالة
+          </span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-muted/60">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${barWidth}%` }}
+            transition={{ type: "spring", stiffness: 120, damping: 18, delay: 0.1 * idx }}
+            className={`h-full rounded-full bg-gradient-to-r ${barColor}`}
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const WhatsAppEmployeeAnalytics: React.FC<{
   companyId?: string;
 }> = ({ companyId }) => {
-  const { t } = useTranslation();
   const withCompanyConfig = useCallback(
     (config: ApiRequestConfig = {}) =>
       companyId ? { ...config, _companyId: companyId } : config,
@@ -94,14 +265,14 @@ const WhatsAppEmployeeAnalytics: React.FC<{
     try {
       const params: Record<string, string> = {};
       if (dateFilter === "custom" && startDate && endDate) {
-        params.startDate = startDate;
-        params.endDate = endDate;
+        params["startDate"] = startDate;
+        params["endDate"] = endDate;
       }
       const res = await apiClient.get(
         "/whatsapp-inbox/employee-analytics",
         withCompanyConfig({ params }),
       );
-      setData(res.data);
+      setData(res.data as AnalyticsResponse);
     } catch {
       toast.error("فشل في تحميل تحليلات الموظفين");
     } finally {
@@ -117,11 +288,36 @@ const WhatsAppEmployeeAnalytics: React.FC<{
   const summary = data?.summary;
   const employees = data?.employees || [];
 
-  const sortedEmployees = useMemo(() => {
-    return [...employees].sort(
-      (a, b) => b.assignedConversations - a.assignedConversations,
-    );
-  }, [employees]);
+  const sortedEmployees = useMemo(() =>
+    [...employees].sort((a, b) => b.assignedConversations - a.assignedConversations),
+    [employees],
+  );
+
+  const topActive = useMemo(() =>
+    [...employees].sort((a, b) => b.outgoingMessages - a.outgoingMessages).slice(0, 5),
+    [employees],
+  );
+
+  const leastActive = useMemo(() =>
+    [...employees].sort((a, b) => a.outgoingMessages - b.outgoingMessages).slice(0, 5),
+    [employees],
+  );
+
+  const maxMessages = topActive[0]?.outgoingMessages || 1;
+
+  // Chart data for per-employee bars
+  const chartData = useMemo(() =>
+    employees
+      .sort((a, b) => b.outgoingMessages - a.outgoingMessages)
+      .slice(0, 10)
+      .map((e) => ({
+        name: e.userName?.split(" ")[0] || "?",
+        صادرة: e.outgoingMessages,
+        واردة: e.incomingMessages,
+        محادثات: e.assignedConversations,
+      })),
+    [employees],
+  );
 
   return (
     <WhatsAppPageShell
@@ -154,9 +350,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
           <Button
             variant={dateFilter === "today" ? "outline" : "default"}
             size="sm"
-            onClick={() =>
-              setDateFilter((p) => (p === "today" ? "custom" : "today"))
-            }
+            onClick={() => setDateFilter((p) => (p === "today" ? "custom" : "today"))}
           >
             <Calendar className="size-4" />
             {dateFilter === "today" ? "اليوم" : "نطاق مخصص"}
@@ -173,189 +367,444 @@ const WhatsAppEmployeeAnalytics: React.FC<{
         </>
       }
     >
-      {/* Summary Metrics */}
-      {loading ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-28 animate-pulse rounded-2xl border border-border bg-muted/30"
-            />
-          ))}
-        </div>
-      ) : summary ? (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <WhatsAppMetricCard
-              label="محادثات واردة"
-              value={summary.totalIncomingConversations}
-              hint="العميل هو اللي بدأها"
-              icon={Inbox}
-              tone="primary"
-            />
-            <WhatsAppMetricCard
-              label="محادثات صادرة"
-              value={summary.totalOutgoingConversations}
-              hint="بدأت من الموظف"
-              icon={Send}
-              tone="info"
-            />
-            <WhatsAppMetricCard
-              label="مردود عليها"
-              value={summary.totalReplied}
-              hint={`من ${summary.totalIncomingConversations} واردة`}
-              icon={MessageSquare}
-              tone="success"
-            />
-            <WhatsAppMetricCard
-              label="غير مردود عليها"
-              value={summary.totalUnreplied}
-              hint="بحاجة لمتابعة"
-              icon={UserX}
-              tone="danger"
-            />
-            <WhatsAppMetricCard
-              label="رسائل واردة"
-              value={summary.totalIncomingMessages}
-              hint="من العملاء"
-              icon={MessageCircle}
-              tone="info"
-            />
-            <WhatsAppMetricCard
-              label="رسائل صادرة"
-              value={summary.totalOutgoingMessages}
-              hint="من الموظفين"
-              icon={Send}
-              tone="primary"
-            />
-            <WhatsAppMetricCard
-              label="نسبة الرد"
-              value={`${summary.overallResponseRate}%`}
-              hint="من المحادثات الواردة"
-              icon={TrendingUp}
-              tone={summary.overallResponseRate >= 70 ? "success" : "danger"}
-            />
-            <WhatsAppMetricCard
-              label="متوسط وقت الرد"
-              value={
-                summary.overallAvgResponseTimeMin != null
-                  ? `${summary.overallAvgResponseTimeMin} دقيقة`
-                  : "—"
-              }
-              hint="من أول رسالة العميل"
-              icon={Clock}
-              tone="info"
-            />
-          </div>
-
-          {/* Employee Breakdown Table */}
-          <WhatsAppSurfaceCard
-            title="توزيع الأداء على الموظفين"
-            description="تفاصيل المحادثات والرسائل وأوقات الرد لكل موظف"
-            action={
-              <Badge variant="outline">
-                <Users className="size-3.5" />
-                {summary.activeEmployees} موظف
-              </Badge>
-            }
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-4"
           >
-            {sortedEmployees.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Users className="mb-3 size-10 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">
-                  لا توجد بيانات للموظفين في هذه الفترة
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>الموظف</TableHead>
-                      <TableHead className="text-center">المحادثات المُعينة</TableHead>
-                      <TableHead className="text-center">رُدّ عليها</TableHead>
-                      <TableHead className="text-center">لم تُردّ</TableHead>
-                      <TableHead className="text-center">رسائل صادرة</TableHead>
-                      <TableHead className="text-center">نسبة الرد</TableHead>
-                      <TableHead className="text-center">متوسط وقت الرد</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedEmployees.map((emp) => (
-                      <TableRow key={emp.userId}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                              {emp.userName?.charAt(0) || "?"}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{emp.userName}</p>
-                              {emp.userEmail && (
-                                <p className="text-xs text-muted-foreground">
-                                  {emp.userEmail}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="secondary">
-                            {emp.assignedConversations}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-success/15 text-[color:var(--color-success)]">
-                            <UserCheck className="size-3" />
-                            {emp.repliedConversations}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {emp.unrepliedConversations > 0 ? (
-                            <Badge className="bg-destructive/15 text-[color:var(--color-destructive)]">
-                              <UserX className="size-3" />
-                              {emp.unrepliedConversations}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="text-sm font-medium">
-                            {emp.outgoingMessages}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            variant="outline"
-                            className={
-                              emp.responseRate >= 70
-                                ? "border-success/30 text-[color:var(--color-success)]"
-                                : emp.responseRate >= 40
-                                  ? "border-warning/30 text-[color:var(--color-warning)]"
-                                  : "border-destructive/30 text-[color:var(--color-destructive)]"
-                            }
-                          >
-                            {emp.responseRate}%
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {emp.avgResponseTimeMin != null ? (
-                            <span className="text-sm">
-                              {emp.avgResponseTimeMin} دقيقة
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-28 animate-pulse rounded-2xl border border-border bg-muted/30 sm:rounded-3xl"
+                />
+              ))}
+            </div>
+            <div className="h-64 animate-pulse rounded-2xl border border-border bg-muted/30 sm:rounded-3xl" />
+            <div className="h-48 animate-pulse rounded-2xl border border-border bg-muted/30 sm:rounded-3xl" />
+          </motion.div>
+        ) : summary ? (
+          <motion.div
+            key="content"
+            initial="hidden"
+            animate="show"
+            variants={containerStagger}
+            className="space-y-4 sm:space-y-6"
+          >
+            {/* ─── Row 1: Hero Metrics (4 cards) ─────────────────────── */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <GlassMetric
+                label="محادثات واردة"
+                value={summary.totalIncomingConversations}
+                hint="العميل بدأها"
+                icon={Inbox}
+                gradient="linear-gradient(135deg, #6366f1, #4f46e5)"
+                delay={0}
+              />
+              <GlassMetric
+                label="مردود عليها"
+                value={summary.totalReplied}
+                hint={`من ${summary.totalIncomingConversations} واردة`}
+                icon={MessageSquare}
+                gradient="linear-gradient(135deg, #10b981, #059669)"
+                delay={60}
+              />
+              <GlassMetric
+                label="غير مردود عليها"
+                value={summary.totalUnreplied}
+                hint="بحاجة لمتابعة"
+                icon={UserX}
+                gradient="linear-gradient(135deg, #f43f5e, #e11d48)"
+                delay={120}
+              />
+              <GlassMetric
+                label="رسائل صادرة"
+                value={summary.totalOutgoingMessages}
+                hint="من الموظفين"
+                icon={Send}
+                gradient="linear-gradient(135deg, #06b6d4, #0891b2)"
+                delay={180}
+              />
+            </div>
+
+            {/* ─── Row 2: Radial Progress + Bar Chart ────────────────── */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              {/* Response Rate Radial */}
+              <motion.div
+                variants={itemSlide}
+                className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/80 p-5 shadow-sm backdrop-blur-xl sm:rounded-3xl"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Target className="size-4 text-primary" />
+                      <h3 className="text-sm font-semibold">نسبة الرد الكلية</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      من المحادثات الواردة
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center pb-2">
+                  <RadialProgress
+                    value={Math.round(summary.overallResponseRate)}
+                    label="نسبة الرد"
+                    size={140}
+                  />
+                  <div className="mt-3 grid w-full grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-lg font-bold text-[color:var(--color-success)]">
+                        {summary.totalReplied}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">مردود</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-[color:var(--color-destructive)]">
+                        {summary.totalUnreplied}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">غير مردود</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-primary">
+                        {summary.overallAvgResponseTimeMin ?? "—"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">دقيقة رد</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Per-Employee Bar Chart */}
+              <motion.div
+                variants={itemSlide}
+                className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/80 p-5 shadow-sm backdrop-blur-xl sm:rounded-3xl lg:col-span-2"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="size-4 text-primary" />
+                    <h3 className="text-sm font-semibold">
+                      مقارنة الرسائل والمحادثات (أعلى 10)
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px]">
+                    <span className="flex items-center gap-1">
+                      <span className="size-2.5 rounded-full bg-indigo-500" />
+                      صادرة
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="size-2.5 rounded-full bg-cyan-400" />
+                      واردة
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="size-2.5 rounded-full bg-violet-400" />
+                      محادثات
+                    </span>
+                  </div>
+                </div>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={chartData} barGap={4}>
+                      <defs>
+                        <linearGradient id="barOutgoing" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366f1" />
+                          <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="barIncoming" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#22d3ee" />
+                          <stop offset="100%" stopColor="#0891b2" stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="barConvos" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#a78bfa" />
+                          <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.7} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-muted)" opacity={0.3} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={28}
+                      />
+                      <RechartsTooltip
+                        cursor={{ fill: "var(--color-muted)", opacity: 0.3 }}
+                        contentStyle={{
+                          borderRadius: 12,
+                          border: "1px solid var(--color-border)",
+                          background: "var(--color-card)",
+                          fontSize: 12,
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                        }}
+                      />
+                      <Bar dataKey="محادثات" fill="url(#barConvos)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="واردة" fill="url(#barIncoming)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="صادرة" fill="url(#barOutgoing)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-[240px] flex-col items-center justify-center text-center">
+                    <Activity className="mb-2 size-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">
+                      لا توجد بيانات للعرض
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+
+            {/* ─── Row 3: Most / Least Active ─────────────────────────── */}
+            {employees.length > 0 && (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {/* Most Active */}
+                <motion.div
+                  variants={itemSlide}
+                  className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/80 p-5 shadow-sm backdrop-blur-xl sm:rounded-3xl"
+                >
+                  <div className="pointer-events-none absolute -left-8 -top-8 size-32 rounded-full bg-emerald-500/5 blur-3xl" />
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+                        <Trophy className="size-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold">الأكثر نشاطاً</h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          أعلى رسائل صادرة
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-success/15 text-[color:var(--color-success)]">
+                      <Zap className="size-3" />
+                      Top {topActive.length}
+                    </Badge>
+                  </div>
+                  <motion.div
+                    initial="hidden"
+                    animate="show"
+                    variants={containerStagger}
+                    className="space-y-3"
+                  >
+                    {topActive.map((emp, idx) => (
+                      <RankingRow
+                        key={emp.userId}
+                        emp={emp}
+                        idx={idx}
+                        max={maxMessages}
+                        variant="top"
+                      />
                     ))}
-                  </TableBody>
-                </Table>
+                  </motion.div>
+                </motion.div>
+
+                {/* Least Active */}
+                <motion.div
+                  variants={itemSlide}
+                  className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/80 p-5 shadow-sm backdrop-blur-xl sm:rounded-3xl"
+                >
+                  <div className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-rose-500/5 blur-3xl" />
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-rose-600 shadow-sm">
+                        <ArrowDown className="size-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold">الأقل نشاطاً</h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          أقل رسائل صادرة
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-destructive/15 text-[color:var(--color-destructive)]">
+                      <Activity className="size-3" />
+                      Low {leastActive.length}
+                    </Badge>
+                  </div>
+                  <motion.div
+                    initial="hidden"
+                    animate="show"
+                    variants={containerStagger}
+                    className="space-y-3"
+                  >
+                    {leastActive.map((emp, idx) => (
+                      <RankingRow
+                        key={emp.userId}
+                        emp={emp}
+                        idx={idx}
+                        max={maxMessages}
+                        variant="low"
+                      />
+                    ))}
+                  </motion.div>
+                </motion.div>
               </div>
             )}
-          </WhatsAppSurfaceCard>
-        </>
-      ) : null}
+
+            {/* ─── Row 4: Detailed Table ──────────────────────────────── */}
+            <motion.div
+              variants={itemSlide}
+              className="relative overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/80 shadow-sm backdrop-blur-xl sm:rounded-3xl"
+            >
+              <div className="flex items-center justify-between border-b border-[color:var(--shell-control-border)] px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <Users className="size-4 text-primary" />
+                  <div>
+                    <h3 className="text-sm font-semibold">جدول الأداء التفصيلي</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      إحصائيات لكل موظف
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="outline">
+                  <Users className="size-3.5" />
+                  {summary.activeEmployees} موظف
+                </Badge>
+              </div>
+
+              {sortedEmployees.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Users className="mb-3 size-10 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">
+                    لا توجد بيانات للموظفين في هذه الفترة
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="text-xs">الموظف</TableHead>
+                        <TableHead className="text-center text-xs">معينة</TableHead>
+                        <TableHead className="text-center text-xs">رُدّ عليها</TableHead>
+                        <TableHead className="text-center text-xs">لم تُردّ</TableHead>
+                        <TableHead className="text-center text-xs">رسائل صادرة</TableHead>
+                        <TableHead className="text-center text-xs">نسبة الرد</TableHead>
+                        <TableHead className="text-center text-xs">متوسط الرد</TableHead>
+                        <TableHead className="text-center text-xs">الأداء</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedEmployees.map((emp, idx) => {
+                        const perfScore =
+                          (emp.responseRate + Math.min(100, emp.outgoingMessages / Math.max(1, maxMessages) * 100)) / 2;
+                        const perfColor =
+                          perfScore >= 70
+                            ? "text-[color:var(--color-success)]"
+                            : perfScore >= 40
+                              ? "text-amber-500"
+                              : "text-[color:var(--color-destructive)]";
+                        return (
+                          <motion.tr
+                            key={emp.userId}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.04, type: "spring", stiffness: 200, damping: 20 }}
+                            className="group"
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="relative">
+                                  <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/15 to-violet-500/15 text-sm font-semibold text-primary">
+                                    {emp.userName?.charAt(0) || "?"}
+                                  </div>
+                                  {idx === 0 && (
+                                    <div className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-amber-500 shadow-sm">
+                                      <Trophy className="size-2.5 text-white" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{emp.userName}</p>
+                                  {emp.userEmail && (
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {emp.userEmail}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="secondary" className="font-mono">
+                                {emp.assignedConversations}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge className="bg-success/15 text-[color:var(--color-success)]">
+                                <UserCheck className="size-3" />
+                                {emp.repliedConversations}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {emp.unrepliedConversations > 0 ? (
+                                <Badge className="bg-destructive/15 text-[color:var(--color-destructive)]">
+                                  <UserX className="size-3" />
+                                  {emp.unrepliedConversations}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="text-sm font-medium">
+                                {emp.outgoingMessages}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
+                                  <div
+                                    className={`h-full rounded-full ${
+                                      emp.responseRate >= 70
+                                        ? "bg-success"
+                                        : emp.responseRate >= 40
+                                          ? "bg-amber-500"
+                                          : "bg-destructive"
+                                    }`}
+                                    style={{ width: `${Math.min(100, emp.responseRate)}%` }}
+                                  />
+                                </div>
+                                <span className={`text-xs font-medium ${perfColor}`}>
+                                  {emp.responseRate}%
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {emp.avgResponseTimeMin != null ? (
+                                <span className="flex items-center justify-center gap-1 text-sm">
+                                  <Clock className="size-3 text-muted-foreground" />
+                                  {emp.avgResponseTimeMin} د
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <span className={`text-sm font-bold ${perfColor}`}>
+                                  {Math.round(perfScore)}
+                                </span>
+                                <ChevronRight className="size-3 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5" />
+                              </div>
+                            </TableCell>
+                          </motion.tr>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </WhatsAppPageShell>
   );
 };
