@@ -45,7 +45,6 @@ import ForwardModal from "../../components/facebook-inbox/Modals/ForwardModal";
 import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
 import type { ConversationStatus } from "../../types/inbox.types";
 import PostsManagement from "../comments/PostsManagement";
-import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
 import AssignmentDropdown from "../../components/facebook-inbox/AssignmentDropdown/AssignmentDropdown";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -228,7 +227,6 @@ const UnifiedInbox: React.FC = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'followUp'>('all');
   const [activeTab, setActiveTab] = useState("all");
-  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [showProfilePanel, setShowProfilePanel] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
@@ -253,24 +251,24 @@ const UnifiedInbox: React.FC = () => {
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [replyToMsg, setReplyToMsg] = useState<UnifiedMessage | null>(null);
 
+  // ── AI Correction state ──
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [correctionText, setCorrectionText] = useState("");
+  const [savingCorrection, setSavingCorrection] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
   const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketHandlerRef = useRef<((message: any) => void) | null>(null);
   const newConvHandlerRef = useRef<((conversation: any) => void) | null>(null);
   const waSocketHandlerRef = useRef<((payload: any) => void) | null>(null);
-  const waSentHandlerRef = useRef<((payload: any) => void) | null>(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowPlatformDropdown(false);
-      }
       if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
         setShowActionsMenu(false);
       }
@@ -283,17 +281,6 @@ const UnifiedInbox: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const getPlatformFilterLabel = () => {
-    if (selectedPlatforms.length === 0) return t("unifiedInbox.filters.allPlatforms");
-    
-    if (selectedPlatforms.length === 1) {
-      return t(`unifiedInbox.platforms.${selectedPlatforms[0]}`);
-    }
-    
-    const firstLabel = t(`unifiedInbox.platforms.${selectedPlatforms[0]}`);
-    return `${firstLabel} + ${selectedPlatforms.length - 1}`;
-  };
 
   // ──────────────────────────────────────────────────────────
   // 📡 Data Fetching
@@ -536,9 +523,8 @@ const UnifiedInbox: React.FC = () => {
         params.set("sessionId", conv.metadata["sessionId"]);
       if (conv.metadata?.["jid"]) params.set("jid", conv.metadata["jid"]);
 
-      const realId = conv.id.startsWith("wa_") ? conv.id : conv.id;
       const response = await apiClient.get(
-        `/api/v1/unified-inbox/conversations/${realId}/messages?${params.toString()}`,
+        `/api/v1/unified-inbox/conversations/${conv.id}/messages?${params.toString()}`,
       );
 
       if (response.data?.success) {
@@ -624,6 +610,26 @@ const UnifiedInbox: React.FC = () => {
     },
     [loadMessages, loadCustomerProfile],
   );
+
+  // ── AI Correction ──
+  const submitCorrection = async (msgId: string) => {
+    if (!correctionText.trim() || !selectedConversation) return;
+    setSavingCorrection(true);
+    try {
+      await apiClient.post(
+        `/api/v1/unified-inbox/conversations/${selectedConversation.id}/messages/${msgId}/correct`,
+        { correction: correctionText.trim() }
+      );
+      setEditingMessageId(null);
+      setCorrectionText("");
+      // Reload messages
+      loadMessages(selectedConversation);
+    } catch (error: any) {
+      alert(error.response?.data?.error || error.message || "فشل إرسال التصحيح");
+    } finally {
+      setSavingCorrection(false);
+    }
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1024,12 +1030,9 @@ const UnifiedInbox: React.FC = () => {
       }
     };
 
-    const waSentHandler = (payload: any) => waHandler(payload);
-
     waSocketHandlerRef.current = waHandler;
-    waSentHandlerRef.current = waSentHandler;
     socketService.on("whatsapp:message:new", waHandler);
-    socketService.on("whatsapp:message:sent", waSentHandler);
+    socketService.on("whatsapp:message:sent", waHandler);
 
     return () => {
       if (socketHandlerRef.current) {
@@ -1042,11 +1045,8 @@ const UnifiedInbox: React.FC = () => {
       }
       if (waSocketHandlerRef.current) {
         socketService.off("whatsapp:message:new", waSocketHandlerRef.current);
+        socketService.off("whatsapp:message:sent", waSocketHandlerRef.current);
         waSocketHandlerRef.current = null;
-      }
-      if (waSentHandlerRef.current) {
-        socketService.off("whatsapp:message:sent", waSentHandlerRef.current);
-        waSentHandlerRef.current = null;
       }
     };
   }, [selectedConversation]);
@@ -1997,7 +1997,62 @@ const UnifiedInbox: React.FC = () => {
                                   </span>
                                 )}
                               </div>
+
+                              {/* AI message badge + correction button */}
+                              {!msg.isFromCustomer && (msg.isAIResponse || !msg.sender || msg.sender === 'ai') && (
+                                <div className="mt-2 pt-1.5 flex justify-between items-center text-[10px]" style={{ borderTop: '1px solid rgba(225, 238, 250, 0.2)' }}>
+                                  <span style={{ color: 'rgba(225, 238, 250, 0.7)' }}>🤖 رد تلقائي من الوكيل</span>
+                                  {editingMessageId !== msg.id && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingMessageId(msg.id);
+                                        setCorrectionText(msg.content || '');
+                                      }}
+                                      className="hover:underline font-medium cursor-pointer"
+                                      style={{ color: 'white' }}
+                                    >
+                                      ✏️ تصحيح الرد
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
+
+                            {/* Correction textarea (shown below the bubble) */}
+                            {editingMessageId === msg.id && (
+                              <div className={`flex ${msg.isFromCustomer ? 'justify-start' : 'justify-end'}`}>
+                                <div className="max-w-[75%] rounded-xl p-3 space-y-2" style={{ background: 'var(--color-muted)', border: '1px solid var(--business-card-border)' }}>
+                                  <div className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>تصحيح رد الوكيل:</div>
+                                  <textarea
+                                    value={correctionText}
+                                    onChange={(e) => setCorrectionText(e.target.value)}
+                                    className="w-full min-h-[60px] p-2 text-sm rounded border outline-none resize-none"
+                                    style={{ background: 'var(--color-background)', color: 'var(--color-foreground)', borderColor: 'var(--business-card-border)' }}
+                                    placeholder="اكتب الرد الصحيح للعميل هنا لتعليم الوكيل وتصحيح الخطأ..."
+                                  />
+                                  <div className="flex justify-end gap-2 text-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => { setEditingMessageId(null); setCorrectionText(''); }}
+                                      className="px-3 py-1.5 rounded font-medium"
+                                      style={{ background: 'var(--color-secondary)', color: 'var(--color-secondary-foreground)' }}
+                                    >
+                                      إلغاء
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => submitCorrection(msg.id)}
+                                      disabled={savingCorrection || !correctionText.trim()}
+                                      className="px-3 py-1.5 rounded font-medium disabled:opacity-50"
+                                      style={{ background: 'var(--color-primary)', color: 'white' }}
+                                    >
+                                      {savingCorrection ? 'جاري الحفظ...' : 'حفظ وتصحيح'}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </React.Fragment>
                       );

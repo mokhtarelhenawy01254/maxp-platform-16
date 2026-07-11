@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { aiAdminService } from "../services/aiAdminService";
-import type { CreateAiKeyPayload, AiTestResult } from "../types/ai-admin";
+import type { CreateAiKeyPayload, AiTestResult, DashboardStats } from "../types/ai-admin";
 
 export function useCreateKey() {
   const queryClient = useQueryClient();
@@ -53,5 +53,15 @@ export function useTestKey() {
   return useMutation({
     mutationFn: (keyId: string): Promise<AiTestResult> =>
       aiAdminService.testKeyById(keyId),
+  });
+}
+
+export function useBatchTestKeys() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (keyIds: string[]) => aiAdminService.batchTestKeys(keyIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ai-admin", "keys"] });
+    },
   });
 }

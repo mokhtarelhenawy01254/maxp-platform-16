@@ -441,6 +441,7 @@ const InstagramInbox: React.FC = () => {
                       key={msg.id}
                       message={msg}
                       conversation={selectedConversation}
+                      onCorrect={() => selectedConversation && loadMessages(selectedConversation.id)}
                     />
                   ))}
                 </>

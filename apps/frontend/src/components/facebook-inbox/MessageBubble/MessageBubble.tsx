@@ -13,6 +13,7 @@ import {
   getInboxExternalImageUrl,
   getInboxMessageMediaUrl,
 } from "../../../utils/imageUrl";
+import { apiClient } from "../../../services/apiClient";
 
 interface ReplyReference {
   senderName?: string;
@@ -98,6 +99,7 @@ interface MessageBubbleProps {
   onReply?: (message: Message) => void;
   currentUserId?: string;
   hasBeenReplied?: boolean; // جديد: هل تم الرد على هذه الرسالة
+  onCorrect?: () => void; // جديد: عند تصحيح الرد
 }
 
 type MediaKind = "image" | "video" | "audio" | "file";
@@ -263,11 +265,37 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
     onReaction,
     onReply,
     hasBeenReplied,
+    onCorrect,
   }) => {
     const isCustomer = !!message.isFromCustomer;
     const [showActions, setShowActions] = useState(false);
     const [showReactionSelector, setShowReactionSelector] = useState(false);
     const actionsRef = useRef<HTMLDivElement | null>(null);
+
+    // AI Correction state
+    const [isEditing, setIsEditing] = useState(false);
+    const [correctionText, setCorrectionText] = useState("");
+    const [saving, setSaving] = useState(false);
+
+    const submitCorrection = async () => {
+      if (!correctionText.trim()) return;
+      setSaving(true);
+      try {
+        await apiClient.post(
+          `/api/v1/unified-inbox/conversations/${message.conversationId}/messages/${message.id}/correct`,
+          { correction: correctionText.trim() }
+        );
+        setIsEditing(false);
+        setCorrectionText("");
+        if (onCorrect) {
+          onCorrect();
+        }
+      } catch (error: any) {
+        alert(error.response?.data?.error || error.message || "فشل إرسال التصحيح");
+      } finally {
+        setSaving(false);
+      }
+    };
 
     useEffect(() => {
       if (!showActions) {
@@ -961,7 +989,61 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 </span>
               )}
             </div>
+
+            {/* AI message badge + correction button */}
+            {!isCustomer && (!message.senderId || message.senderId === 'ai') && (
+              <div className="mt-2 pt-1.5 flex justify-between items-center text-[10px]" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>🤖 رد تلقائي من الوكيل</span>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setCorrectionText(message.content || '');
+                    }}
+                    className="hover:underline font-medium cursor-pointer text-white"
+                  >
+                    ✏️ تصحيح الرد
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Correction textarea (shown below the bubble) */}
+          {isEditing && (
+            <div className={`mt-2 flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+              <div className="w-full rounded-xl p-3 space-y-2" style={{ background: 'var(--color-muted)', border: '1px solid var(--business-card-border)' }}>
+                <div className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>تصحيح رد الوكيل:</div>
+                <textarea
+                  value={correctionText}
+                  onChange={(e) => setCorrectionText(e.target.value)}
+                  className="w-full min-h-[60px] p-2 text-sm rounded border outline-none resize-none"
+                  style={{ background: 'var(--color-background)', color: 'var(--color-foreground)', borderColor: 'var(--business-card-border)' }}
+                  placeholder="اكتب الرد الصحيح للعميل هنا لتعليم الوكيل وتصحيح الخطأ..."
+                />
+                <div className="flex justify-end gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditing(false); setCorrectionText(''); }}
+                    className="px-3 py-1.5 rounded font-medium"
+                    style={{ background: 'var(--color-secondary)', color: 'var(--color-secondary-foreground)' }}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitCorrection}
+                    disabled={saving || !correctionText.trim()}
+                    className="px-3 py-1.5 rounded font-medium disabled:opacity-50"
+                    style={{ background: 'var(--color-primary)', color: 'white' }}
+                  >
+                    {saving ? 'جاري الحفظ...' : 'حفظ وتصحيح'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -2014,6 +2014,16 @@ const AppContent = () => {
               }
             />
             <Route
+              path="/super-admin/self-review"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminSelfReviewLogs />
+                  </React.Suspense>
+                </Layout>
+              }
+            />
+            <Route
               path="/super-admin/visual-search-logs"
               element={
                 <Layout fullWidth>

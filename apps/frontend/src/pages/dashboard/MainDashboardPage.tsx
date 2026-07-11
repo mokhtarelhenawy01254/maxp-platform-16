@@ -8,6 +8,8 @@ import {
   CubeIcon,
   EyeIcon,
   ChartBarIcon,
+  ExclamationTriangleIcon,
+  ArchiveBoxXMarkIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -43,30 +45,6 @@ function formatCurrency(value: number | null | undefined, currency?: string | nu
   const symbols: Record<string, string> = { EGP: "E£", SAR: "﷼", USD: "$", EUR: "€" };
   const sym = currency ? symbols[currency] ?? currency : "";
   return sym + value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
-
-function generateRevenueHistory(totalRevenue: number, days: number, locale: string): RevenueHistoryPoint[] {
-  const count = Math.min(days, 90);
-  const rand = seededRandom(totalRevenue || Date.now());
-  return Array.from({ length: count }, (_, i) => {
-    const day = new Date();
-    day.setDate(day.getDate() - (count - 1 - i));
-    const trend = Math.sin((i / count) * Math.PI * 2) * 0.3 + 0.7;
-    const noise = 0.5 + rand() * 0.5;
-    return {
-      date: day.toLocaleDateString(locale, { month: "short", day: "numeric" }),
-      revenue: Math.round(totalRevenue * trend * noise * (1 / count) * 2),
-      orders: Math.round(1 + rand() * 10),
-    };
-  });
 }
 
 function useOnScreen(ref: React.RefObject<HTMLElement | null>) {
@@ -165,17 +143,10 @@ export default function MainDashboardPage() {
   const orderHealth = dashboard?.orderHealth;
   const recentActivity = dashboard?.recentActivity;
   const topProducts = dashboard?.topProducts ?? [];
+  const inventory = dashboard?.inventory;
   const isEmpty = !isLoading && !isError && isNewCompany(dashboard);
 
-  const dayMap: Record<string, number> = { "today": 1, "yesterday": 1, "7d": 7, "30d": 30, "90d": 90, "thisWeek": 7, "thisMonth": 30, "thisYear": 365 };
-  const days = period === "custom" ? 30 : dayMap[period] ?? 30;
-
-  const revenueHistory = useMemo(() => {
-    if (dashboard?.revenueHistory && dashboard.revenueHistory.length > 0) {
-      return dashboard.revenueHistory;
-    }
-    return generateRevenueHistory(financials?.totalRevenue ?? 0, days, locale);
-  }, [dashboard?.revenueHistory, financials?.totalRevenue, days, locale]);
+  const revenueHistory = dashboard?.revenueHistory ?? [];
 
   const chartRef = useRef<HTMLDivElement>(null);
   const chartVisible = useOnScreen(chartRef);
@@ -363,6 +334,59 @@ export default function MainDashboardPage() {
       </div>
 
       <QuickActions activeApps={activeApps} />
+
+      {inventory && (inventory.lowStockCount > 0 || inventory.outOfStockCount > 0) && (
+        <div
+          className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm"
+          style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}
+        >
+          <h3 className="text-sm font-semibold text-foreground mb-4">
+            {t("companyDashboard.sections.inventoryAlerts")}
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            {inventory.outOfStockCount > 0 && (
+              <button
+                type="button"
+                onClick={() => navigate("/products?filter=out-of-stock")}
+                className="flex items-center gap-3 p-3 rounded-xl text-right transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{ background: "color-mix(in srgb, var(--color-destructive) 12%, transparent)" }}
+              >
+                <div className="p-2 rounded-lg shrink-0" style={{ background: "color-mix(in srgb, var(--color-destructive) 18%, transparent)" }}>
+                  <ArchiveBoxXMarkIcon className="w-5 h-5" style={{ color: "var(--color-destructive)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-muted-foreground block">
+                    {t("companyDashboard.inventory.outOfStock")}
+                  </span>
+                  <span className="text-lg font-bold tabular-nums" style={{ color: "var(--color-destructive)" }}>
+                    {formatLargeNumber(inventory.outOfStockCount)}
+                  </span>
+                </div>
+              </button>
+            )}
+            {inventory.lowStockCount > 0 && (
+              <button
+                type="button"
+                onClick={() => navigate("/products?filter=low-stock")}
+                className="flex items-center gap-3 p-3 rounded-xl text-right transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{ background: "color-mix(in srgb, var(--color-warning) 12%, transparent)" }}
+              >
+                <div className="p-2 rounded-lg shrink-0" style={{ background: "color-mix(in srgb, var(--color-warning) 18%, transparent)" }}>
+                  <ExclamationTriangleIcon className="w-5 h-5" style={{ color: "var(--color-warning)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-muted-foreground block">
+                    {t("companyDashboard.inventory.lowStock")}
+                  </span>
+                  <span className="text-lg font-bold tabular-nums" style={{ color: "var(--color-warning)" }}>
+                    {formatLargeNumber(inventory.lowStockCount)}
+                  </span>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
         <h3 className="text-sm font-semibold text-foreground mb-4">

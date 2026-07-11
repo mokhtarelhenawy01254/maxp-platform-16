@@ -2584,6 +2584,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                           onStar={handleStarMessage}
                           onReaction={handleMessageReaction}
                           onReply={handleReplyToMessage}
+                          onCorrect={() => selectedConversation && loadMessages(selectedConversation.id)}
                           currentUserId={user?.id || ""}
                         />
                       );

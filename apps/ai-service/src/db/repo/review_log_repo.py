@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -192,7 +191,9 @@ class ReviewLogRepo:
         company_id: str,
         since: datetime | None = None,
     ) -> list[dict[str, Any]]:
-        """Per-agent review stats for dashboard."""
+        """Per-agent review stats for dashboard (single query)."""
+        from sqlalchemy import case, Integer
+
         where = [ReviewLog.company_id == company_id]
         if since:
             where.append(ReviewLog.created_at >= since)
@@ -203,44 +204,29 @@ class ReviewLogRepo:
                     ReviewLog.agent_id,
                     ReviewLog.agent_slug,
                     func.count().label("total"),
-                    func.sum(
-                        func.cast(
-                            func.jsonb_typeof(ReviewLog.latency_ms),
-                            text("integer")
-                        )
-                    ).label("total_latency"),
+                    func.sum(case((ReviewLog.status == "approved", 1), else_=0)).label("approved"),
+                    func.sum(case((ReviewLog.status == "corrected", 1), else_=0)).label("corrected"),
+                    func.sum(case((ReviewLog.status == "rejected", 1), else_=0)).label("rejected"),
+                    func.sum(case((ReviewLog.status == "skipped", 1), else_=0)).label("skipped"),
                 )
                 .where(*where)
                 .group_by(ReviewLog.agent_id, ReviewLog.agent_slug)
             )
         ).all()
 
-        result = []
-        for r in rows:
-            where_agent = [
-                ReviewLog.company_id == company_id,
-                ReviewLog.agent_id == r.agent_id,
-            ]
-            if since:
-                where_agent.append(ReviewLog.created_at >= since)
-
-            status_counts = (
-                await self._session.execute(
-                    select(ReviewLog.status, func.count().label("count"))
-                    .where(*where_agent)
-                    .group_by(ReviewLog.status)
-                )
-            ).all()
-            sc = {sr.status: sr.count for sr in status_counts}
-
-            result.append({
-                "agent_id": r.agent_id,
-                "agent_slug": r.agent_slug,
-                "total": r.total,
-                "approved": sc.get("approved", 0),
-                "rejected": sc.get("rejected", 0),
-                "corrected": sc.get("corrected", 0),
-                "skipped": sc.get("skipped", 0),
-            })
-
-        return sorted(result, key=lambda x: x["total"], reverse=True)
+        return sorted(
+            [
+                {
+                    "agent_id": r.agent_id,
+                    "agent_slug": r.agent_slug,
+                    "total": r.total,
+                    "approved": r.approved,
+                    "rejected": r.rejected,
+                    "corrected": r.corrected,
+                    "skipped": r.skipped,
+                }
+                for r in rows
+            ],
+            key=lambda x: x["total"],
+            reverse=True,
+        )

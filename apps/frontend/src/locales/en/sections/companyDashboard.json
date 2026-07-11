@@ -64,7 +64,12 @@
   "sections": {
     "financials": "Financials",
     "growth": "Growth",
-    "operations": "Operations"
+    "operations": "Operations",
+    "inventoryAlerts": "Inventory Alerts"
+  },
+  "inventory": {
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock"
   },
   "metrics": {
     "totalCustomers": "Total Customers",

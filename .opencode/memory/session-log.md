@@ -1,3 +1,33 @@
+# Session Log — 2026-07-12 — Self-Review System (LLM-as-Judge) Full Stack
+
+## What Happened
+1. **Sprint 1 (Self-Review Engine)**: Added LLM-as-Judge quality review to `validate_reply.py` — `_get_flash_review_client`, `_self_review`, `_summarize_evidence`. Flash model checks merchant rules compliance, factual accuracy vs tool evidence, tone/language, hallucinations. Fail-open on errors.
+2. **Sprint 2 (Review Log DB)**: Created `ReviewLog` model (`ai.self_review_log`) + `ReviewLogRepo` with CRUD and aggregation queries. Integrated DB logging into `_self_review` at every exit point. Migration SQL in `migrations/001_self_review_log.sql`.
+3. **Sprint 3 (REST API)**: 4 endpoints in `api/admin/self_review.py` — `GET /admin/self-review/logs`, `GET /admin/self-review/stats`, `GET /admin/self-review/logs/export` (CSV), `PATCH /admin/self-review/agents/{agent_id}/review-model`.
+4. **Sprint 4 (Dashboard UI)**: Full super-admin page at `/super-admin/self-review` — stats cards, Model Control Card (agent + model selector), filter bar, violations breakdown, agent summary table, log table with pagination, CSV export. Arabic/English i18n. Lazy route + sidebar.
+5. **Per-agent review model**: `Agent.config.reviewModel` JSONB field. PATCH endpoint updates it. Engine reads it first. Dashboard has dropdown for it.
+6. **Verification**: 26/26 pipeline tests pass (same 1 pre-existing failure in test_followup_empty_falls_back_to_tool_results).
+
+## Key Files
+- `apps/ai-service/src/pipeline/stages/validate_reply.py` [MODIFIED — self-review engine + DB logging]
+- `apps/ai-service/src/db/models/review_log.py` [NEW]
+- `apps/ai-service/src/db/models/__init__.py` [MODIFIED — ReviewLog import]
+- `apps/ai-service/src/db/repo/review_log_repo.py` [NEW]
+- `apps/ai-service/src/api/admin/self_review.py` [NEW]
+- `apps/ai-service/src/api/admin/__init__.py` [MODIFIED — register router]
+- `apps/ai-service/migrations/001_self_review_log.sql` [NEW]
+- `apps/frontend/src/pages/super-admin/SuperAdminSelfReviewLogs.tsx` [NEW]
+- `apps/frontend/src/services/selfReviewService.ts` [NEW]
+- `apps/frontend/src/locales/{ar,en}/sections/superAdmin.json` [MODIFIED — i18n]
+- `apps/frontend/src/App.tsx` [MODIFIED — lazy route]
+- `apps/frontend/src/components/layout/SuperAdminSidebar.tsx` [MODIFIED — sidebar link]
+- `docs/agentic_ai_planning/self-review-system-plan.md` [MODIFIED — updated file listing + Sprint 5]
+
+## Remaining
+- Apply migration: `psql -d yourdb -f apps/ai-service/migrations/001_self_review_log.sql`
+- Monitor PM2 logs after deploy for latency (target: <500ms avg)
+
+---
 # Session Log — 2026-07-10 — Merchant Agent Guardrails & Dynamic Learning System
 
 ## What Happened

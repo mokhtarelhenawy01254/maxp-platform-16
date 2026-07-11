@@ -1,5 +1,5 @@
 import { apiClient } from "./apiClient";
-import type { AiKey, AiKeyLog, AiProvider, CreateAiKeyPayload, AiTestResult } from "../types/ai-admin";
+import type { AiKey, AiKeyLog, AiProvider, CreateAiKeyPayload, AiTestResult, DashboardStats } from "../types/ai-admin";
 
 export const aiAdminService = {
   getProviders: async (): Promise<AiProvider[]> => {
@@ -51,5 +51,25 @@ export const aiAdminService = {
       api_key: apiKey,
     });
     return response.data;
+  },
+
+  getDashboard: async (): Promise<DashboardStats> => {
+    const response = await apiClient.get<DashboardStats>("/ai-admin/dashboard");
+    return response.data;
+  },
+
+  batchTestKeys: async (keyIds: string[]): Promise<Record<string, AiTestResult>> => {
+    const results: Record<string, AiTestResult> = {};
+    await Promise.allSettled(
+      keyIds.map(async (id) => {
+        try {
+          const r = await aiAdminService.testKeyById(id);
+          results[id] = r;
+        } catch (err: any) {
+          results[id] = { error: err?.message || "فشل الاختبار" };
+        }
+      }),
+    );
+    return results;
   },
 };

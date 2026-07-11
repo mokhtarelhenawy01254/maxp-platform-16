@@ -20,3 +20,12 @@ export function useAiKeys() {
     staleTime: 1000 * 60 * 5,
   });
 }
+
+export function useAiDashboard() {
+  return useQuery({
+    queryKey: ["ai-admin", "dashboard"],
+    queryFn: () => aiAdminService.getDashboard(),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+}
