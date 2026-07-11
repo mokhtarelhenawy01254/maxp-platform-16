@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { selfReviewService, type PaginatedResponse, type ReviewStats, type ReviewLog } from "../../services/selfReviewService";
 import { apiClient } from "../../services/apiClient";
@@ -99,7 +99,7 @@ function SuperAdminSelfReviewLogs() {
       const a = document.createElement("a"); a.href = url; a.download = "self-review-logs.csv";
       document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     } catch (e) {
-      toast({ title: t("common.error"), description: t("common.tryAgain"), variant: "destructive" });
+      toast.error(t("common.error"), { description: t("common.tryAgain") });
     }
   }, [filters, t]);
 
@@ -110,9 +110,9 @@ function SuperAdminSelfReviewLogs() {
       await selfReviewService.updateReviewModel(ctrlAgent, ctrlModel || "__default__");
       setCtrlSaved(true);
       setTimeout(() => setCtrlSaved(false), 2000);
-      toast({ title: t("superAdmin.selfReview.modelControl.saved") });
+      toast.success(t("superAdmin.selfReview.modelControl.saved"));
     } catch (e) {
-      toast({ title: t("common.error"), description: t("common.tryAgain"), variant: "destructive" });
+      toast.error(t("common.error"), { description: t("common.tryAgain") });
     } finally { setCtrlSaving(false); }
   }, [ctrlAgent, ctrlModel, t]);
 

@@ -66,7 +66,20 @@
     "financials": "المالية",
     "growth": "النمو",
     "operations": "العمليات",
-    "inventoryAlerts": "تنبيهات المخزون"
+    "inventoryAlerts": "تنبيهات المخزون",
+    "insights": "رؤى ذكية"
+  },
+  "insights": {
+    "revenueTrend": "الإيرادات {{delta}} مقارنة بالفترة السابقة ({{current}}).",
+    "lowConversion": "نسبة التحويل {{rate}}% — أقل من 2%. راجع صفحة الدفع والمنتجات.",
+    "highConversion": "أداء قوي: نسبة التحويل {{rate}}% — أعلى من متوسط المجال.",
+    "highCancellation": "نسبة الإلغاء {{rate}}% — أعلى من 15%. افحص مشاكل الطلبات أو توقعات المنتجات.",
+    "outOfStock": "{{count}} منتجات نفذت من المخزون. أعد التخزين لتجنب فقدان المبيعات.",
+    "lowStock": "{{count}} منتجات على وشك النفاد. خطط لإعادة التخزين قريبًا.",
+    "openOrders": "{{count}} طلب مفتوح يحتاج اهتمام.",
+    "productConcentration": "{{product}} يمثل {{pct}}% من القطع المباعة — فكّر في التنويع أو إعادة التخزين.",
+    "newCustomers": "{{count}} عميل جديد انضم في هذه الفترة.",
+    "newCustomersGrowth": "العملاء الجدد ارتفعوا {{delta}} ({{count}} هذه الفترة)."
   },
   "inventory": {
     "lowStock": "مخزون منخفض",

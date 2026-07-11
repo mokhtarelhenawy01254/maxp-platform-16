@@ -66,7 +66,20 @@
     "financials": "Financials",
     "growth": "Growth",
     "operations": "Operations",
-    "inventoryAlerts": "Inventory Alerts"
+    "inventoryAlerts": "Inventory Alerts",
+    "insights": "Smart Insights"
+  },
+  "insights": {
+    "revenueTrend": "Revenue is {{delta}} vs the previous period ({{current}}).",
+    "lowConversion": "Conversion rate is {{rate}}% — below 2%. Review your checkout and product pages.",
+    "highConversion": "Strong performance: conversion rate is {{rate}}% — above industry average.",
+    "highCancellation": "Cancellation rate is {{rate}}% — above 15%. Investigate order issues or product expectations.",
+    "outOfStock": "{{count}} products are out of stock. Restock to avoid lost sales.",
+    "lowStock": "{{count}} products are running low on stock. Plan restocking soon.",
+    "openOrders": "{{count}} open orders need attention.",
+    "productConcentration": "{{product}} accounts for {{pct}}% of items sold — consider diversifying or restocking.",
+    "newCustomers": "{{count}} new customers joined this period.",
+    "newCustomersGrowth": "New customers up {{delta}} ({{count}} this period)."
   },
   "inventory": {
     "lowStock": "Low Stock",

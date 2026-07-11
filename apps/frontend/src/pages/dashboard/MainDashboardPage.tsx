@@ -16,7 +16,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import { QuickActions } from "../../components/dashboard/QuickActions";
-import { RevenueTrendChart, TopProductsPanel, DashboardSkeleton } from ".";
+import { RevenueTrendChart, TopProductsPanel, DashboardSkeleton, InsightsPanel } from ".";
 import DateRangeToolbar from "./DateRangeToolbar";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
@@ -414,6 +414,10 @@ export default function MainDashboardPage() {
             )}
           </div>
         </div>
+      )}
+
+      {dashboard && (
+        <InsightsPanel dashboard={dashboard} onNavigate={(href) => navigate(href)} />
       )}
 
       <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
