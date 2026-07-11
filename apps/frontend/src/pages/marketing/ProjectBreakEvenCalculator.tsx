@@ -413,9 +413,8 @@ export default function ProjectBreakEvenCalculator() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-gray-400 dark:text-gray-600">
-          {T("footer")} <a href="https://tools.e-cart.academy/project-break-even" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">eCart Project Break-Even</a>
+        <div className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">
+          {T("title")} &mdash; {T("subtitle")}
         </div>
       </div>
     </div>

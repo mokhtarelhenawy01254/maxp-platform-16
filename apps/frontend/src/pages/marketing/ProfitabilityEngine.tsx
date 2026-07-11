@@ -648,9 +648,8 @@ export default function ProfitabilityEngine() {
           </div>
         </details>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-gray-400 dark:text-gray-600">
-          {T("footer")} <a href="https://tools.e-cart.academy/profitability-engine" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">eCart Profitability Engine</a>
+        <div className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">
+          {T("title")} &mdash; {T("subtitle")}
         </div>
       </div>
     </div>
