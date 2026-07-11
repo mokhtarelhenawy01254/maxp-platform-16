@@ -490,3 +490,14 @@
   background-size: 20px 20px !important;
 }
 
+/* ── Routing Workspace 2-Column Grid ── */
+.routing-workspace-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .routing-workspace-grid {
+    grid-template-columns: 320px 1fr;
+  }
+}
+

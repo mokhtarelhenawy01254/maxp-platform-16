@@ -144,7 +144,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
       </div>
 
       {/* Main 2-column area */}
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[320px,1fr]">
+      <div className="routing-workspace-grid grid min-h-0 flex-1">
         {/* Left: Number sidebar (sticky) */}
         <div className="min-h-0 overflow-hidden border-r border-border/50">
           <NumberSidebar
