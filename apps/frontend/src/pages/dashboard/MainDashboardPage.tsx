@@ -18,7 +18,6 @@ import { MetricCard } from "../../components/dashboard/MetricCard";
 import { QuickActions } from "../../components/dashboard/QuickActions";
 import { RevenueTrendChart, TopProductsPanel, DashboardSkeleton } from ".";
 import DateRangeToolbar from "./DateRangeToolbar";
-import type { RevenueHistoryPoint } from "./types";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
 

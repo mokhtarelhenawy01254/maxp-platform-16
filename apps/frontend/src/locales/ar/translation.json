@@ -1690,7 +1690,12 @@
     "sections": {
       "financials": "المالية",
       "growth": "النمو",
-      "operations": "العمليات"
+      "operations": "العمليات",
+      "inventoryAlerts": "تنبيهات المخزون"
+    },
+    "inventory": {
+      "lowStock": "مخزون منخفض",
+      "outOfStock": "منتجات نافذة"
     },
     "metrics": {
       "totalCustomers": "إجمالي العملاء",

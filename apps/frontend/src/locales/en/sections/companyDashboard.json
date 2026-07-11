@@ -22,6 +22,7 @@
     "yesterday": "Yesterday",
     "last7Days": "Last 7 days",
     "last30Days": "Last 30 days",
+    "last90Days": "Last 90 days",
     "thisMonth": "This month",
     "lastMonth": "Last month",
     "custom": "Custom range"

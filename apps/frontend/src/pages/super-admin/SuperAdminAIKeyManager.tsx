@@ -21,6 +21,12 @@ import {
   DialogFooter,
 } from "../../components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "../../components/ui/sheet";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -44,203 +50,435 @@ import {
   Plus, Trash2, Copy, FlaskConical, Search, RefreshCw,
   Eye, EyeOff, Check, X,
   Activity, CheckCircle2, XCircle, Zap, Gauge, Loader2,
+  ChevronUp, ChevronDown, Download, FileText,
+  Info, ArrowUpDown, ArrowUp, ArrowDown,
+  ToggleLeft, ToggleRight, History,
 } from "lucide-react";
-import { useAiProviders, useAiKeys, useAiDashboard } from "../../hooks/useAiAdminData";
+import { useAiProviders, useAiKeys, useAiDashboard, useAiGlobalConfig } from "../../hooks/useAiAdminData";
 import {
   useCreateKey,
   useToggleKeyStatus,
   useDeleteKey,
   useTestKey,
   useBatchTestKeys,
+  useUpdateKey,
+  useUpdateGlobalConfig,
+  useSetProviderPriority,
 } from "../../hooks/useKeyMutations";
-import type { AiKey, AiProvider, DashboardStats, AiTestResult } from "../../types/ai-admin";
+import { aiAdminService } from "../../services/aiAdminService";
+import type {
+  AiKey, AiProvider, DashboardStats, AiTestResult,
+  AiKeyUpdatePayload, GlobalConfig, AiKeyLog, CreateAiKeyPayload,
+} from "../../types/ai-admin";
+
+type SortKey = "name" | "provider" | "key_type" | "is_active" | "current_usage" | "priority" | "created_at";
+type SortDir = "asc" | "desc";
+interface SortConfig { key: SortKey; dir: SortDir; }
 
 function SuperAdminAIKeyManager() {
   return (
-    <div className="p-4 max-w-[1440px] mx-auto">
-      <h1 className="text-2xl font-bold mb-4">إدارة مفاتيح الذكاء الاصطناعي</h1>
+    <div className="p-4 md:p-6 max-w-[1440px] mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">إدارة مفاتيح الذكاء الاصطناعي</h1>
+        <p className="text-sm text-muted-foreground mt-1">عرض وإدارة مفاتيح API لمزودي الذكاء الاصطناعي</p>
+      </div>
       <KeyManagerContent />
     </div>
   );
 }
 
+function sortKeys(keys: AiKey[], sort: SortConfig | null): AiKey[] {
+  if (!sort) return keys;
+  const k = sort.key;
+  const d = sort.dir === "asc" ? 1 : -1;
+  return [...keys].sort((a, b) => {
+    let av: unknown = a[k], bv: unknown = b[k];
+    if (k === "is_active") { av = a.is_active ? 1 : 0; bv = b.is_active ? 1 : 0; }
+    if (k === "current_usage") { av = a.current_usage ?? 0; bv = b.current_usage ?? 0; }
+    if (k === "priority") { av = a.priority ?? 0; bv = b.priority ?? 0; }
+    if (av == null) return 1; if (bv == null) return -1;
+    const cmp = typeof av === "string" ? (av as string).localeCompare(bv as string) : (av as number) - (bv as number);
+    return cmp * d;
+  });
+}
+
+function SortHeader({ label, sortKey, sort, onSort }: { label: string; sortKey: SortKey; sort: SortConfig | null; onSort: (k: SortKey) => void }) {
+  const active = sort?.key === sortKey;
+  return (
+    <TableHead className="cursor-pointer select-none whitespace-nowrap" onClick={() => onSort(sortKey)}>
+      <span className="flex items-center gap-1">
+        {label}
+        {active && sort ? (sort.dir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />) : <ArrowUpDown className="size-3 text-muted-foreground/50" />}
+      </span>
+    </TableHead>
+  );
+}
+
+function exportCsv(keys: AiKey[], filename = "ai-keys.csv") {
+  const rows = [["Name", "Provider", "Key", "Type", "Status", "Usage%", "Priority", "Created"]];
+  keys.forEach((k) => {
+    rows.push([
+      k.name, k.provider, k.api_key_masked || "", k.key_type,
+      k.is_active ? "Active" : "Inactive",
+      k.max_requests_per_day ? String(Math.round((k.current_usage / k.max_requests_per_day) * 100)) : "0",
+      String(k.priority ?? 1),
+      k.created_at ? new Date(k.created_at).toLocaleDateString() : "",
+    ]);
+  });
+  const bom = "\uFEFF";
+  const csv = bom + rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function StatCard({ label, value, icon, color, large }: {
+  label: string; value: string | number; icon: React.ReactNode; color: string; large?: boolean;
+}) {
+  const [bg, iconBg] = color.split("|");
+  return (
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+      <CardContent className={`${large ? "p-4" : "p-3"} relative overflow-hidden`}>
+        <div className={`absolute inset-y-0 right-0 w-1 ${bg} rounded-r`} />
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium tracking-wide">{label}</p>
+            <p className={`text-xl font-bold mt-1 ${large ? "text-2xl" : ""}`}>{value}</p>
+          </div>
+          <div className={`size-9 rounded-xl ${iconBg} flex items-center justify-center ring-1 ring-black/5`}>
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function StatsGrid({ dashboard }: { dashboard: DashboardStats }) {
   const providerCount = Object.keys(dashboard.keys_by_provider).length;
-  const rateColor = (v: number) => v >= 95 ? "text-green-600" : v >= 80 ? "text-yellow-600" : "text-red-600";
+  const rate = dashboard.last_24h_success_rate;
+  const rateColor = rate >= 95 ? "bg-green-500" : rate >= 80 ? "bg-yellow-500" : "bg-red-500";
+  const rateTextColor = rate >= 95 ? "text-green-600" : rate >= 80 ? "text-yellow-600" : "text-red-600";
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-start justify-between">
+    <div className="mb-6">
+      <div className="grid grid-cols-4 gap-3 mb-3">
+        <div className="col-span-4 md:col-span-2 lg:col-span-1">
+          <StatCard label="إجمالي المفاتيح" value={dashboard.total_keys} icon={<Activity className="size-4.5 text-blue-600" />} color="bg-blue-500/10|bg-blue-50 dark:bg-blue-950" large />
+        </div>
+        <StatCard label="النشطة" value={dashboard.active_keys} icon={<CheckCircle2 className="size-4.5 text-green-600" />} color="bg-green-500/10|bg-green-50 dark:bg-green-950" />
+        <StatCard label="المزودون" value={providerCount} icon={<Zap className="size-4.5 text-purple-600" />} color="bg-purple-500/10|bg-purple-50 dark:bg-purple-950" />
+        <StatCard label="طلبات اليوم" value={dashboard.requests_today} icon={<Activity className="size-4.5 text-amber-600" />} color="bg-amber-500/10|bg-amber-50 dark:bg-amber-950" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-3 flex items-center gap-4">
+            <div className="size-10 rounded-xl bg-red-50 dark:bg-red-950 flex items-center justify-center ring-1 ring-black/5 shrink-0">
+              <XCircle className="size-5 text-red-600" />
+            </div>
             <div>
-              <p className="text-xs text-muted-foreground">إجمالي المفاتيح</p>
-              <p className="text-xl font-bold mt-1">{dashboard.total_keys}</p>
+              <p className="text-xs text-muted-foreground font-medium tracking-wide">فشل اليوم</p>
+              <p className="text-lg font-bold text-red-600">{dashboard.failures_today}</p>
             </div>
-            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Activity className="size-4 text-primary" />
+            <div className="mr-auto text-left">
+              <p className="text-xs text-muted-foreground font-medium tracking-wide">نسبة النجاح</p>
+              <p className={`text-lg font-bold ${rateTextColor}`}>{rate}%</p>
+              <div className="mt-1 h-1 w-24 bg-muted rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${rateColor}`} style={{ width: `${rate}%` }} />
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-start justify-between">
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50/40 to-transparent dark:from-blue-950/20">
+          <CardContent className="p-3 flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center ring-1 ring-black/5 shrink-0">
+              <Gauge className="size-5 text-blue-600" />
+            </div>
             <div>
-              <p className="text-xs text-muted-foreground">النشطة</p>
-              <p className="text-xl font-bold text-green-600 mt-1">{dashboard.active_keys}</p>
+              <p className="text-xs text-muted-foreground font-medium tracking-wide">حالة النظام</p>
+              <p className="text-lg font-bold">{dashboard.active_keys}/{dashboard.total_keys} نشط</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{providerCount} مزودون · {dashboard.requests_today + dashboard.failures_today} طلب اليوم</p>
             </div>
-            <div className="size-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <CheckCircle2 className="size-4 text-green-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">المزودون</p>
-              <p className="text-xl font-bold mt-1">{providerCount}</p>
-            </div>
-            <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Zap className="size-4 text-purple-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">طلبات اليوم</p>
-              <p className="text-xl font-bold mt-1">{dashboard.requests_today}</p>
-            </div>
-            <div className="size-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <Zap className="size-4 text-amber-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">فشل اليوم</p>
-              <p className="text-xl font-bold text-red-600 mt-1">{dashboard.failures_today}</p>
-            </div>
-            <div className="size-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-              <XCircle className="size-4 text-red-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">نسبة النجاح</p>
-              <p className={`text-xl font-bold mt-1 ${rateColor(dashboard.last_24h_success_rate)}`}>
-                {dashboard.last_24h_success_rate}%
-              </p>
-            </div>
-            <div className="size-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Gauge className="size-4 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                dashboard.last_24h_success_rate >= 95 ? "bg-green-500" :
-                dashboard.last_24h_success_rate >= 80 ? "bg-yellow-500" : "bg-red-500"
-              }`}
-              style={{ width: `${dashboard.last_24h_success_rate}%` }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
 
-function HealthSection({
-  keys, healthResults, isTesting, onHealthCheck,
-}: {
-  keys: AiKey[];
-  healthResults: Record<string, AiTestResult> | null;
-  isTesting: boolean;
-  onHealthCheck: () => void;
+function CollapsibleSection({ icon, title, badge, children, action }: {
+  icon: React.ReactNode; title: string; badge?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-3 bg-card rounded-xl border-0 shadow-sm overflow-hidden transition-all duration-200">
+      <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setOpen(!open)}>
+        <div className="flex items-center gap-2.5">
+          <span className="text-muted-foreground transition-transform duration-200" style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>
+            <ChevronUp className="size-4" />
+          </span>
+          <span className="text-muted-foreground">{icon}</span>
+          <span className="text-sm font-medium">{title}</span>
+          {badge}
+        </div>
+        {action && <div onClick={(e) => e.stopPropagation()}>{action}</div>}
+      </div>
+      {open && <div className="px-4 pb-4">{children}</div>}
+    </div>
+  );
+}
+
+function HealthSection({ keys, healthResults, isTesting, onHealthCheck }: {
+  keys: AiKey[]; healthResults: Record<string, AiTestResult> | null; isTesting: boolean; onHealthCheck: () => void;
+}) {
   const healthy = healthResults ? Object.values(healthResults).filter((r) => r.success || r.ok).length : 0;
   const total = keys.length;
 
   return (
-    <Card className="mb-4">
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between">
-          <button
-            className="flex items-center gap-2 text-sm font-medium cursor-pointer hover:text-primary transition-colors"
-            onClick={() => setExpanded(!expanded)}
-          >
-            <Activity className="size-4" />
-            الفحص الصحي للمفاتيح
-            {healthResults ? (
-              <Badge variant={healthy === total ? "default" : "destructive"} className="text-xs">
-                {healthy}/{total} سليم
-              </Badge>
-            ) : null}
-          </button>
-          <div className="flex items-center gap-2">
-            {isTesting ? (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Loader2 className="size-3 animate-spin" /> جاري الفحص...
-              </span>
-            ) : null}
-            <Button size="sm" variant="outline" onClick={onHealthCheck} disabled={isTesting}>
-              <FlaskConical className="size-3.5 ml-1" />
-              فحص الكل
-            </Button>
-          </div>
+    <CollapsibleSection
+      icon={<Activity className="size-4" />}
+      title="الفحص الصحي للمفاتيح"
+      badge={healthResults ? <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${healthy === total ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>{healthy}/{total} سليم</span> : null}
+      action={
+        <div className="flex items-center gap-2">
+          {isTesting ? <span className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="size-3 animate-spin" /> جاري الفحص...</span> : null}
+          <Button size="sm" variant="outline" onClick={onHealthCheck} disabled={isTesting} className="h-8"><FlaskConical className="size-3.5 ml-1" />فحص الكل</Button>
         </div>
-        {expanded && (
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-            {keys.map((k) => {
-              const hr = healthResults?.[k.id];
-              return (
-                <div
-                  key={k.id}
-                  className={`p-2 rounded-lg border text-xs ${
-                    hr
-                      ? hr.success || hr.ok
-                        ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800"
-                        : "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"
-                      : "bg-muted/30 border-border"
-                  }`}
-                >
-                  <p className="font-medium truncate" title={k.name}>{k.name}</p>
-                  <p className="text-muted-foreground mt-0.5">{k.provider}</p>
-                  {hr ? (
-                    <div className="mt-1 flex items-center gap-1">
-                      {hr.success || hr.ok ? (
-                        <><CheckCircle2 className="size-3 text-green-600" /><span className="text-green-600">سليم</span></>
-                      ) : (
-                        <><XCircle className="size-3 text-red-600" /><span className="text-red-600" title={hr.error}>عطل</span></>
-                      )}
-                      {hr.latency_ms != null ? (
-                        <span className="text-muted-foreground mr-auto">{hr.latency_ms}ms</span>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground mt-1">لم يختبر</p>
-                  )}
+      }
+    >
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+        {keys.map((k) => {
+          const hr = healthResults?.[k.id];
+          return (
+            <div key={k.id} className={`p-2.5 rounded-xl text-xs transition-all duration-150 ${hr ? hr.success || hr.ok ? "bg-green-50/80 dark:bg-green-950/40 ring-1 ring-green-200 dark:ring-green-800/50" : "bg-red-50/80 dark:bg-red-950/40 ring-1 ring-red-200 dark:ring-red-800/50" : "bg-muted/20 ring-1 ring-border"}`}>
+              <p className="font-medium truncate" title={k.name}>{k.name}</p>
+              <p className="text-muted-foreground mt-0.5">{k.provider}</p>
+              {hr ? (
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  {hr.success || hr.ok ? <><CheckCircle2 className="size-3 text-green-600" /><span className="text-green-600 font-medium">سليم</span></> : <><XCircle className="size-3 text-red-600" /><span className="text-red-600 font-medium" title={hr.error}>عطل</span></>}
+                  {hr.latency_ms != null ? <span className="text-muted-foreground mr-auto">{hr.latency_ms}ms</span> : null}
                 </div>
-              );
-            })}
+              ) : <p className="text-muted-foreground mt-1.5">لم يختبر</p>}
+            </div>
+          );
+        })}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+function ProviderPriorityPanel({ providers, config, onSave }: {
+  providers: string[]; config: GlobalConfig | undefined; onSave: (ordered: string[]) => void;
+}) {
+  const [order, setOrder] = useState<string[]>([]);
+  const [dirty, setDirty] = useState(false);
+  const priorityList = config?.provider_priority?.length ? config.provider_priority : providers;
+
+  function moveUp(i: number) {
+    if (i <= 0) return;
+    const next = [...(dirty ? order : priorityList)];
+    [next[i - 1], next[i]] = [next[i], next[i - 1]];
+    setOrder(next); setDirty(true);
+  }
+  function moveDown(i: number) {
+    const list = dirty ? order : priorityList;
+    if (i >= list.length - 1) return;
+    const next = [...list];
+    [next[i], next[i + 1]] = [next[i + 1], next[i]];
+    setOrder(next); setDirty(true);
+  }
+  const list = dirty ? order : priorityList;
+
+  return (
+    <CollapsibleSection
+      icon={<FileText className="size-4" />}
+      title="ترتيب أولوية المزودين"
+    >
+      <div className="space-y-1 max-w-md">
+        {list.map((p, i) => (
+          <div key={p} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-muted/20 ring-1 ring-border text-sm hover:bg-muted/40 transition-colors">
+            <span className="flex items-center justify-center size-6 rounded-lg bg-primary/10 text-primary text-xs font-bold">{i + 1}</span>
+            <span className="flex-1 font-medium">{p}</span>
+            <button className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors" onClick={() => moveUp(i)} disabled={i === 0}><ChevronUp className="size-3.5" /></button>
+            <button className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors" onClick={() => moveDown(i)} disabled={i === list.length - 1}><ChevronDown className="size-3.5" /></button>
+          </div>
+        ))}
+        {dirty && (
+          <div className="flex gap-2 mt-3">
+            <Button size="sm" onClick={() => { onSave(order); setDirty(false); }}>حفظ الترتيب</Button>
+            <Button size="sm" variant="outline" onClick={() => { setDirty(false); setOrder([]); }}>إلغاء</Button>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+function GlobalConfigSection({ config, providers, onUpdateConfig }: {
+  config: GlobalConfig | undefined; providers: string[]; onUpdateConfig: (payload: Partial<GlobalConfig>) => void;
+}) {
+  const [failover, setFailover] = useState(config?.enable_failover ?? false);
+  const [defaultProvider, setDefaultProvider] = useState(config?.default_provider ?? "");
+  const [dirty, setDirty] = useState(false);
+
+  function handleSave() {
+    const payload: Partial<GlobalConfig> = {};
+    if (failover !== config?.enable_failover) payload.enable_failover = failover;
+    if (defaultProvider !== (config?.default_provider ?? "")) payload.default_provider = defaultProvider || null;
+    onUpdateConfig(payload);
+    setDirty(false);
+  }
+
+  return (
+    <CollapsibleSection
+      icon={<Settings className="size-4" />}
+      title="الإعدادات العامة"
+    >
+      <div className="space-y-4 max-w-md">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+          <div>
+            <label className="text-sm font-medium">تفعيل التبديل التلقائي</label>
+            <p className="text-xs text-muted-foreground mt-0.5">Failover — عند فشل مزود، انتقل تلقائيًا للمزود التالي</p>
+          </div>
+          <button
+            onClick={() => { setFailover(!failover); setDirty(true); }}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 shrink-0 ${failover ? "bg-primary" : "bg-muted-foreground/20"}`}
+          >
+            <span className={`inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${failover ? "translate-x-6" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+          <label className="text-sm font-medium mb-1.5 block">المزود الافتراضي</label>
+          <Select value={defaultProvider} onValueChange={(v) => { setDefaultProvider(v); setDirty(true); }}>
+            <SelectTrigger><SelectValue placeholder="تلقائي" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">تلقائي</SelectItem>
+              {providers.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        {dirty && <Button size="sm" onClick={handleSave}>حفظ الإعدادات</Button>}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+function KeyDetailDrawer({ key: k, open, onClose }: { key: AiKey; open: boolean; onClose: () => void }) {
+  const [logs, setLogs] = useState<AiKeyLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  const usagePct = k.max_requests_per_day ? Math.round((k.current_usage / k.max_requests_per_day) * 100) : 0;
+  const usageColor = usagePct >= 85 ? "text-red-600" : usagePct >= 60 ? "text-yellow-600" : "text-green-600";
+
+  React.useEffect(() => {
+    if (!open) return;
+    setLogsLoading(true);
+    aiAdminService.getKeyLogs({ key_id: k.id, limit: 20 }).then((res) => {
+      setLogs(Array.isArray(res) ? res : res.items ?? []);
+    }).catch(() => {
+      setLogs([]);
+    }).finally(() => setLogsLoading(false));
+  }, [open, k.id]);
+
+  const statusBadge = k.is_active
+    ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+    : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
+        <div className="bg-gradient-to-b from-muted/30 to-transparent px-4 pt-6 pb-4">
+          <SheetHeader className="px-0">
+            <SheetTitle className="flex items-center gap-2 text-lg">
+              {k.name}
+              <span className={`text-xs px-2 py-0.5 rounded-lg font-medium ${statusBadge}`}>{k.is_active ? "نشط" : "غير نشط"}</span>
+            </SheetTitle>
+          </SheetHeader>
+        </div>
+        <div className="p-4 space-y-6">
+          {/* Key Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+              <span className="text-xs text-muted-foreground">المزود</span>
+              <p className="font-medium text-sm mt-0.5">{k.provider}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+              <span className="text-xs text-muted-foreground">النوع</span>
+              <p className="font-medium text-sm mt-0.5">{k.key_type === "CENTRAL" ? "مركزي" : "شركة"}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+              <span className="text-xs text-muted-foreground">الأولوية</span>
+              <p className="font-medium text-sm mt-0.5">{k.priority ?? 1}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+              <span className="text-xs text-muted-foreground">المفتاح</span>
+              <p className="font-mono text-xs mt-0.5 truncate" dir="ltr">{k.api_key_masked || "-"}</p>
+            </div>
+          </div>
+
+          {/* Usage */}
+          <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+            <span className="text-xs text-muted-foreground">الاستخدام اليومي</span>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex-1 h-2.5 bg-muted/60 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${usagePct >= 85 ? "bg-red-500" : usagePct >= 60 ? "bg-yellow-500" : "bg-green-500"}`} style={{ width: `${Math.min(usagePct, 100)}%` }} />
+              </div>
+              <span className={`text-xs font-medium shrink-0 ${usageColor}`}>{k.current_usage}/{k.max_requests_per_day}</span>
+            </div>
+          </div>
+
+          {/* Dates */}
+          <div className="flex gap-3">
+            {k.created_at && (
+              <div className="flex-1 p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+                <span className="text-xs text-muted-foreground">تاريخ الإنشاء</span>
+                <p className="font-medium text-sm mt-0.5">{new Date(k.created_at).toLocaleDateString()}</p>
+              </div>
+            )}
+            {k.last_used_at && (
+              <div className="flex-1 p-3 rounded-xl bg-muted/20 ring-1 ring-border">
+                <span className="text-xs text-muted-foreground">آخر استخدام</span>
+                <p className="font-medium text-sm mt-0.5">{new Date(k.last_used_at).toLocaleDateString()}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Models */}
+          {k.models && k.models.length > 0 && (
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">الموديلات</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {k.models.map((m) => (
+                  <span key={m.id} className={`text-xs px-2 py-1 rounded-lg font-medium ${m.is_enabled ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "bg-muted/40 text-muted-foreground ring-1 ring-border"}`}>{m.model_name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Logs */}
+          <div>
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5"><History className="size-3.5" />سجل الاستخدام</h4>
+            {logsLoading ? (
+              <div className="flex items-center justify-center py-6"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
+            ) : logs.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-6">لا توجد سجلات</p>
+            ) : (
+              <div className="space-y-1 max-h-[320px] overflow-y-auto">
+                {logs.map((log) => (
+                  <div key={log.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-muted/20 ring-1 ring-border text-xs">
+                    <span className={`inline-block size-1.5 rounded-full shrink-0 ${log.status === "ok" || log.status === "success" ? "bg-green-500" : "bg-red-500"}`} />
+                    <span className="flex-1 truncate font-medium">{log.action}{log.model ? <span className="text-muted-foreground font-normal"> — {log.model}</span> : ""}</span>
+                    {log.latency_ms != null && <span className="text-muted-foreground shrink-0">{log.latency_ms}ms</span>}
+                    <span className="text-muted-foreground shrink-0 text-[10px]">{new Date(log.created_at).toLocaleTimeString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -249,14 +487,18 @@ function KeyManagerContent() {
   const { data: providers, isLoading: providersLoading, error: providersError } = useAiProviders();
   const { data: keys, isLoading: keysLoading, error: keysError } = useAiKeys();
   const { data: dashboard, isLoading: dashboardLoading } = useAiDashboard();
+  const { data: globalConfig } = useAiGlobalConfig();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [providerFilter, setProviderFilter] = useState("");
+  const [sort, setSort] = useState<SortConfig | null>(null);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AiKey | null>(null);
   const [testTarget, setTestTarget] = useState<{ key: AiKey; result?: unknown; error?: string } | null>(null);
   const [editTarget, setEditTarget] = useState<AiKey | null>(null);
+  const [detailTarget, setDetailTarget] = useState<AiKey | null>(null);
 
   const [healthResults, setHealthResults] = useState<Record<string, AiTestResult> | null>(null);
 
@@ -265,6 +507,9 @@ function KeyManagerContent() {
   const deleteKeyMutation = useDeleteKey();
   const testKeyMutation = useTestKey();
   const batchTestMutation = useBatchTestKeys();
+  const updateKeyMutation = useUpdateKey();
+  const updateConfigMutation = useUpdateGlobalConfig();
+  const setPriorityMutation = useSetProviderPriority();
 
   const providerList = useMemo(() => {
     if (!Array.isArray(providers)) return [];
@@ -277,49 +522,63 @@ function KeyManagerContent() {
   const filteredKeys = useMemo(() => {
     if (!Array.isArray(keys)) return [];
     const sq = searchQuery.toLowerCase().trim();
-    const pf = providerFilter;
     return keys.filter((k) => {
       if (sq && !k.name.toLowerCase().includes(sq)) return false;
-      if (pf && k.provider !== pf) return false;
+      if (providerFilter && k.provider !== providerFilter) return false;
       return true;
     });
   }, [keys, searchQuery, providerFilter]);
 
+  const sortedKeys = useMemo(() => sortKeys(filteredKeys, sort), [filteredKeys, sort]);
+
+  const allSelected = filteredKeys.length > 0 && selectedIds.size === filteredKeys.length;
+
+  function handleSort(key: SortKey) {
+    setSort((prev) => prev?.key === key ? (prev.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" });
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function toggleSelectAll() {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(filteredKeys.map((k) => k.id)));
+  }
+
   function handleToggle(key: AiKey) {
     toggleStatusMutation.mutate({ id: key.id, isActive: !key.is_active });
   }
-
+  function handleBulkToggle(activate: boolean) {
+    selectedIds.forEach((id) => toggleStatusMutation.mutate({ id, isActive: activate }));
+    setSelectedIds(new Set());
+  }
+  function handleBulkDelete() {
+    selectedIds.forEach((id) => deleteKeyMutation.mutate(id));
+    setSelectedIds(new Set());
+  }
   function handleDelete() {
     if (!deleteTarget) return;
-    deleteKeyMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
-    });
+    deleteKeyMutation.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) });
   }
-
   function handleTest(key: AiKey) {
     testKeyMutation.mutate(key.id, {
       onSuccess: (result) => setTestTarget({ key, result }),
       onError: (err: any) => setTestTarget({ key, error: err?.message || "فشل الاختبار" }),
     });
   }
-
   function handleCopyKey(apiKey?: string, masked?: string) {
     const keyToCopy = apiKey || masked;
-    if (!keyToCopy) {
-      toast.error("المفتاح غير متاح للنسخ");
-      return;
-    }
-    navigator.clipboard.writeText(keyToCopy).then(
-      () => toast.success("تم نسخ المفتاح"),
-      () => toast.error("فشل النسخ"),
-    );
+    if (!keyToCopy) { toast.error("المفتاح غير متاح للنسخ"); return; }
+    navigator.clipboard.writeText(keyToCopy).then(() => toast.success("تم نسخ المفتاح"), () => toast.error("فشل النسخ"));
   }
-
   function handleRefresh() {
     queryClient.invalidateQueries({ queryKey: ["ai-admin"] });
     toast.success("تم تحديث البيانات");
   }
-
   function handleHealthCheck() {
     if (!Array.isArray(keys) || keys.length === 0) return;
     batchTestMutation.mutate(keys.map((k) => k.id), {
@@ -332,155 +591,108 @@ function KeyManagerContent() {
     if (!key.max_requests_per_day) return 0;
     return Math.round((key.current_usage / key.max_requests_per_day) * 100);
   }
-
-  function usageColor(pct: number) {
+  function usageBarColor(pct: number) {
     if (pct >= 85) return "bg-red-500";
     if (pct >= 60) return "bg-yellow-500";
     return "bg-green-500";
   }
 
   if (providersError || keysError) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>فشل تحميل البيانات. يرجى المحاولة مرة أخرى.</AlertDescription>
-      </Alert>
-    );
+    return <Alert variant="destructive"><AlertDescription>فشل تحميل البيانات. يرجى المحاولة مرة أخرى.</AlertDescription></Alert>;
   }
-
   if (providersLoading || keysLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
   }
 
   return (
     <div>
       {dashboard && !dashboardLoading ? <StatsGrid dashboard={dashboard} /> : null}
+      <HealthSection keys={filteredKeys} healthResults={healthResults} isTesting={batchTestMutation.isPending} onHealthCheck={handleHealthCheck} />
+      <ProviderPriorityPanel providers={providerList} config={globalConfig} onSave={(ordered) => setPriorityMutation.mutate(ordered)} />
+      <GlobalConfigSection config={globalConfig} providers={providerList} onUpdateConfig={(p) => updateConfigMutation.mutate(p)} />
 
-      <HealthSection
-        keys={filteredKeys}
-        healthResults={healthResults}
-        isTesting={batchTestMutation.isPending}
-        onHealthCheck={handleHealthCheck}
-      />
-
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            className="pr-9"
-            placeholder="بحث بالاسم..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <Input className="pr-9 bg-card border-0 shadow-sm" placeholder="بحث بالاسم..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         <Select value={providerFilter} onValueChange={setProviderFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="كل المزودين" />
-          </SelectTrigger>
+          <SelectTrigger className="w-[150px] border-0 shadow-sm bg-card"><SelectValue placeholder="كل المزودين" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="">كل المزودين</SelectItem>
-            {providerList.map((p) => (
-              <SelectItem key={p} value={p}>{p}</SelectItem>
-            ))}
+            {providerList.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="size-4 ml-1" /> إضافة مفتاح
-        </Button>
-        <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث">
-          <RefreshCw className="size-4" />
-        </Button>
+        <Button onClick={() => setShowAddDialog(true)} className="shadow-sm"><Plus className="size-4 ml-1" /> إضافة مفتاح</Button>
+        <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث" className="border-0 shadow-sm bg-card"><RefreshCw className="size-4" /></Button>
+        <Button variant="outline" size="sm" onClick={() => exportCsv(sortedKeys)} title="تصدير CSV" className="border-0 shadow-sm bg-card"><Download className="size-4 ml-1" />CSV</Button>
       </div>
 
-      <div className="border rounded bg-card">
+      {/* Bulk actions */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-primary/5 ring-1 ring-primary/10 text-sm">
+          <span className="text-muted-foreground font-medium ml-2">{selectedIds.size} محدد</span>
+          <Button size="sm" variant="outline" onClick={() => handleBulkToggle(true)} className="h-8 border-0 bg-card shadow-sm"><ToggleRight className="size-3.5 ml-1" />تفعيل</Button>
+          <Button size="sm" variant="outline" onClick={() => handleBulkToggle(false)} className="h-8 border-0 bg-card shadow-sm"><ToggleLeft className="size-3.5 ml-1" />إلغاء تفعيل</Button>
+          <Button size="sm" variant="destructive" onClick={handleBulkDelete} className="h-8"><Trash2 className="size-3.5 ml-1" />حذف</Button>
+        </div>
+      )}
+
+      {/* Desktop table */}
+      <div className="hidden sm:block rounded-xl border-0 shadow-sm overflow-hidden bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>الاسم</TableHead>
-              <TableHead>المزود</TableHead>
+            <TableRow className="bg-muted/30">
+              <TableHead className="w-10">
+                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="size-4" />
+              </TableHead>
+              <SortHeader label="الاسم" sortKey="name" sort={sort} onSort={handleSort} />
+              <SortHeader label="المزود" sortKey="provider" sort={sort} onSort={handleSort} />
               <TableHead>المفتاح</TableHead>
-              <TableHead>النوع</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>الاستخدام</TableHead>
+              <SortHeader label="النوع" sortKey="key_type" sort={sort} onSort={handleSort} />
+              <SortHeader label="الحالة" sortKey="is_active" sort={sort} onSort={handleSort} />
+              <SortHeader label="الاستخدام" sortKey="current_usage" sort={sort} onSort={handleSort} />
+              <SortHeader label="الأولوية" sortKey="priority" sort={sort} onSort={handleSort} />
               <TableHead>الإجراءات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredKeys.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  لا توجد مفاتيح
-                </TableCell>
-              </TableRow>
+            {sortedKeys.length === 0 ? (
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">لا توجد مفاتيح مطابقة</TableCell></TableRow>
             ) : (
-              filteredKeys.map((k) => {
+              sortedKeys.map((k, idx) => {
                 const up = usagePercent(k);
                 return (
-                  <TableRow key={k.id}>
+                  <TableRow key={k.id} className={`cursor-pointer transition-all duration-150 hover:bg-muted/20 hover:shadow-sm ${idx % 2 === 0 ? "bg-background" : "bg-muted/[0.02]"}`} onClick={() => setDetailTarget(k)}>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selectedIds.has(k.id)} onChange={() => toggleSelect(k.id)} className="size-4" />
+                    </TableCell>
                     <TableCell className="font-medium">{k.name}</TableCell>
+                    <TableCell><span className="text-xs px-2 py-1 rounded-lg bg-muted/40 font-medium">{k.provider}</span></TableCell>
+                    <TableCell><span className="font-mono text-xs text-muted-foreground">{k.api_key_masked || "-"}</span></TableCell>
+                    <TableCell><span className="text-xs px-2 py-1 rounded-lg bg-purple-100/80 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 font-medium">{k.key_type || "CENTRAL"}</span></TableCell>
                     <TableCell>
-                      <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{k.provider}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {k.api_key_masked || (k.api_key ? `${k.api_key.substring(0, 12)}...` : "\u2014")}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                        {k.key_type || "CENTRAL"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        onClick={() => handleToggle(k)}
-                        className={`text-xs px-2 py-0.5 rounded border cursor-pointer ${
-                          k.is_active
-                            ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800"
-                            : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-800"
-                        }`}
-                      >
+                      <button onClick={(e) => { e.stopPropagation(); handleToggle(k); }} className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${k.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-200" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200"}`}>
                         {k.is_active ? "نشط" : "غير نشط"}
                       </button>
                     </TableCell>
-                    <TableCell className="min-w-[100px]">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${usageColor(up)}`}
-                            style={{ width: `${Math.min(up, 100)}%` }}
-                          />
+                    <TableCell className="min-w-[120px]">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex-1 h-2 bg-muted/60 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-300 ${usageBarColor(up)}`} style={{ width: `${Math.min(up, 100)}%` }} />
                         </div>
-                        <span className={`text-xs shrink-0 ${up >= 85 ? "text-red-600 font-bold" : "text-muted-foreground"}`}>
-                          {up}%
-                        </span>
+                        <span className={`text-xs shrink-0 font-medium ${up >= 85 ? "text-red-600" : "text-muted-foreground"}`}>{up}%</span>
                       </div>
                     </TableCell>
+                    <TableCell><span className="text-xs font-medium">{k.priority ?? 1}</span></TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <button
-                          className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                          title="نسخ المفتاح"
-                          onClick={() => handleCopyKey(k.api_key, k.api_key_masked)}
-                        ><Copy className="size-3.5" /></button>
-                        <button
-                          className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                          title="اختبار المفتاح"
-                          onClick={() => handleTest(k)}
-                        ><FlaskConical className="size-3.5" /></button>
-                        <button
-                          className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                          title="تعديل"
-                          onClick={() => setEditTarget(k)}
-                        ><Zap className="size-3.5" /></button>
-                        <button
-                          className="p-1 hover:bg-muted rounded text-destructive hover:text-destructive/80"
-                          title="حذف المفتاح"
-                          onClick={() => setDeleteTarget(k)}
-                        ><Trash2 className="size-3.5" /></button>
+                      <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                        <button className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-colors" title="نسخ" onClick={() => handleCopyKey(k.api_key, k.api_key_masked)}><Copy className="size-3.5" /></button>
+                        <button className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-colors" title="اختبار" onClick={() => handleTest(k)}><FlaskConical className="size-3.5" /></button>
+                        <button className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-colors" title="تعديل" onClick={() => setEditTarget(k)}><Zap className="size-3.5" /></button>
+                        <button className="p-1.5 hover:bg-muted/60 rounded-lg text-muted-foreground hover:text-foreground transition-colors" title="تفاصيل" onClick={() => setDetailTarget(k)}><Info className="size-3.5" /></button>
+                        <button className="p-1.5 hover:bg-destructive/10 rounded-lg text-destructive/70 hover:text-destructive transition-colors" title="حذف" onClick={() => setDeleteTarget(k)}><Trash2 className="size-3.5" /></button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -491,52 +703,66 @@ function KeyManagerContent() {
         </Table>
       </div>
 
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {sortedKeys.length === 0 ? (
+          <div className="text-center text-muted-foreground py-12">لا توجد مفاتيح مطابقة</div>
+        ) : (
+          sortedKeys.map((k) => {
+            const up = usagePercent(k);
+            return (
+              <Card key={k.id} className="cursor-pointer border-0 shadow-sm hover:shadow-md transition-all duration-200" onClick={() => setDetailTarget(k)}>
+                <CardContent className="p-3.5">
+                  <div className="flex items-start justify-between mb-2.5">
+                    <div>
+                      <p className="font-medium text-sm">{k.name}</p>
+                      <span className="text-xs text-muted-foreground">{k.provider} · {k.key_type === "CENTRAL" ? "مركزي" : "شركة"}</span>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); handleToggle(k); }} className={`text-xs px-2.5 py-1 rounded-lg font-medium ${k.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>
+                      {k.is_active ? "نشط" : "غير نشط"}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex-1 h-2 bg-muted/60 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-300 ${usageBarColor(up)}`} style={{ width: `${Math.min(up, 100)}%` }} />
+                    </div>
+                    <span className={`text-xs font-medium ${up >= 85 ? "text-red-600" : "text-muted-foreground"}`}>{k.current_usage}/{k.max_requests_per_day}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={selectedIds.has(k.id)} onChange={() => toggleSelect(k.id)} className="size-4 ml-1" />
+                    <button className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors" title="نسخ" onClick={() => handleCopyKey(k.api_key, k.api_key_masked)}><Copy className="size-3.5" /></button>
+                    <button className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors" title="اختبار" onClick={() => handleTest(k)}><FlaskConical className="size-3.5" /></button>
+                    <button className="p-1.5 hover:bg-muted/60 rounded-lg transition-colors" title="تعديل" onClick={() => setEditTarget(k)}><Zap className="size-3.5" /></button>
+                    <button className="p-1.5 hover:bg-destructive/10 rounded-lg text-destructive/70 hover:text-destructive transition-colors" title="حذف" onClick={() => setDeleteTarget(k)}><Trash2 className="size-3.5" /></button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
       {showAddDialog && (
-        <AddKeyDialog
-          providers={providerList}
-          onClose={() => setShowAddDialog(false)}
-          onCreated={() => setShowAddDialog(false)}
-          createKeyMutation={createKeyMutation}
-        />
+        <AddKeyDialog providers={providerList} onClose={() => setShowAddDialog(false)} onCreated={() => setShowAddDialog(false)} createKeyMutation={createKeyMutation} />
       )}
-
       {editTarget && (
-        <EditKeyDialog
-          key={editTarget.id}
-          target={editTarget}
-          onClose={() => setEditTarget(null)}
-          onUpdated={() => setEditTarget(null)}
-          updateKeyMutation={undefined as any}
-        />
+        <EditKeyDialog key={editTarget.id} target={editTarget} onClose={() => setEditTarget(null)} onUpdated={() => setEditTarget(null)} updateKeyMutation={updateKeyMutation} />
       )}
-
       {deleteTarget && (
-        <DeleteConfirmDialog
-          target={deleteTarget}
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteTarget(null)}
-          isLoading={deleteKeyMutation.isPending}
-        />
+        <DeleteConfirmDialog target={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} isLoading={deleteKeyMutation.isPending} />
       )}
-
       {testTarget && (
-        <TestResultDialog
-          data={testTarget}
-          onClose={() => setTestTarget(null)}
-          isLoading={testKeyMutation.isPending}
-        />
+        <TestResultDialog data={testTarget} onClose={() => setTestTarget(null)} isLoading={testKeyMutation.isPending} />
+      )}
+      {detailTarget && (
+        <KeyDetailDrawer key={detailTarget.id} key={detailTarget.id} open={!!detailTarget} onClose={() => setDetailTarget(null)} />
       )}
     </div>
   );
 }
 
-function AddKeyDialog({
-  providers, onClose, onCreated, createKeyMutation,
-}: {
-  providers: string[];
-  onClose: () => void;
-  onCreated: () => void;
-  createKeyMutation: ReturnType<typeof useCreateKey>;
+function AddKeyDialog({ providers, onClose, onCreated, createKeyMutation }: {
+  providers: string[]; onClose: () => void; onCreated: () => void; createKeyMutation: ReturnType<typeof useCreateKey>;
 }) {
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
@@ -550,69 +776,44 @@ function AddKeyDialog({
     setProvider(value);
     if (value === "OPENROUTER" && !modelsText) setModelsText("openrouter/auto");
   }
-
   function handleSave() {
-    if (!provider || !name || !apiKey) {
-      toast.error("المزود والاسم والمفتاح مطلوبون");
-      return;
-    }
+    if (!provider || !name || !apiKey) { toast.error("المزود والاسم والمفتاح مطلوبون"); return; }
     const models = modelsText.split("\n").map((m) => m.trim()).filter(Boolean);
-    createKeyMutation.mutate(
-      {
-        provider, name, api_key: apiKey,
-        models: models.length > 0 ? models : undefined,
-        key_type: keyType,
-        max_requests_per_day: parseInt(maxRequests) || 1500,
-      } as CreateAiKeyPayload,
-      { onSuccess: onCreated },
-    );
+    createKeyMutation.mutate({
+      provider, name, api_key: apiKey,
+      models: models.length > 0 ? models : undefined,
+      key_type: keyType,
+      max_requests_per_day: parseInt(maxRequests) || 1500,
+    } as CreateAiKeyPayload, { onSuccess: onCreated });
   }
-
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader><DialogTitle>إضافة مفتاح API جديد</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium mb-1 block">المزود</label>
+          <div><label className="text-sm font-medium mb-1 block">المزود</label>
             <Select value={provider} onValueChange={handleProviderChange}>
               <SelectTrigger><SelectValue placeholder="اختر المزود" /></SelectTrigger>
-              <SelectContent>
-                {providers.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}
-              </SelectContent>
+              <SelectContent>{providers.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">الاسم</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: Production GPT-4" />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">مفتاح API</label>
+          <div><label className="text-sm font-medium mb-1 block">الاسم</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: Production GPT-4" /></div>
+          <div><label className="text-sm font-medium mb-1 block">مفتاح API</label>
             <div className="relative">
               <Input type={showKey ? "text" : "password"} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..." />
-              <button className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowKey(!showKey)} type="button">
-                {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+              <button className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowKey(!showKey)} type="button">{showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button>
             </div>
           </div>
           <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">النوع</label>
+            <div className="flex-1"><label className="text-sm font-medium mb-1 block">النوع</label>
               <Select value={keyType} onValueChange={setKeyType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CENTRAL">مركزي</SelectItem>
-                  <SelectItem value="COMPANY">شركة</SelectItem>
-                </SelectContent>
+                <SelectContent><SelectItem value="CENTRAL">مركزي</SelectItem><SelectItem value="COMPANY">شركة</SelectItem></SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">حد الطلبات/اليوم</label>
-              <Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(e.target.value)} min={1} />
-            </div>
+            <div className="flex-1"><label className="text-sm font-medium mb-1 block">حد الطلبات/اليوم</label><Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(e.target.value)} min={1} /></div>
           </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">الموديلات (موديل واحد في كل سطر)</label>
+          <div><label className="text-sm font-medium mb-1 block">الموديلات (موديل واحد في كل سطر)</label>
             <Textarea value={modelsText} onChange={(e) => setModelsText(e.target.value)} placeholder={provider === "OPENROUTER" ? "openrouter/auto" : "deepseek-chat\ngpt-4o-mini"} rows={3} />
           </div>
         </div>
@@ -628,17 +829,11 @@ function AddKeyDialog({
   );
 }
 
-function EditKeyDialog({
-  target, onClose, onUpdated, updateKeyMutation,
-}: {
-  target: AiKey;
-  onClose: () => void;
-  onUpdated: () => void;
-  updateKeyMutation: any;
+function EditKeyDialog({ target, onClose, onUpdated, updateKeyMutation }: {
+  target: AiKey; onClose: () => void; onUpdated: () => void; updateKeyMutation: ReturnType<typeof useUpdateKey>;
 }) {
   const [name, setName] = useState(target.name);
   const [apiKey, setApiKey] = useState("");
-  const [modelsText, setModelsText] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [keyType, setKeyType] = useState(target.key_type);
   const [maxRequests, setMaxRequests] = useState(String(target.max_requests_per_day || 1500));
@@ -646,102 +841,73 @@ function EditKeyDialog({
 
   function handleSave() {
     if (!name) { toast.error("الاسم مطلوب"); return; }
-    toast.success("تم تحديث المفتاح بنجاح");
-    onUpdated();
+    const payload: AiKeyUpdatePayload = { name };
+    if (apiKey) payload.api_key = apiKey;
+    payload.key_type = keyType;
+    payload.max_requests_per_day = parseInt(maxRequests) || 1500;
+    payload.priority = parseInt(priority) || 1;
+    updateKeyMutation.mutate({ id: target.id, payload }, { onSuccess: onUpdated });
   }
-
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader><DialogTitle>تعديل المفتاح — {target.name}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium mb-1 block">الاسم</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">مفتاح API (اتركه فارغًا إذا لا تريد تغييره)</label>
+          <div><label className="text-sm font-medium mb-1 block">الاسم</label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div><label className="text-sm font-medium mb-1 block">مفتاح API (اتركه فارغًا إذا لا تريد تغييره)</label>
             <div className="relative">
               <Input type={showKey ? "text" : "password"} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={target.api_key_masked || "أدخل مفتاح جديد"} />
-              <button className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowKey(!showKey)} type="button">
-                {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+              <button className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowKey(!showKey)} type="button">{showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button>
             </div>
           </div>
           <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">النوع</label>
+            <div className="flex-1"><label className="text-sm font-medium mb-1 block">النوع</label>
               <Select value={keyType} onValueChange={setKeyType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CENTRAL">مركزي</SelectItem>
-                  <SelectItem value="COMPANY">شركة</SelectItem>
-                </SelectContent>
+                <SelectContent><SelectItem value="CENTRAL">مركزي</SelectItem><SelectItem value="COMPANY">شركة</SelectItem></SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">الأولوية</label>
-              <Input type="number" value={priority} onChange={(e) => setPriority(e.target.value)} min={1} />
-            </div>
+            <div className="flex-1"><label className="text-sm font-medium mb-1 block">الأولوية</label><Input type="number" value={priority} onChange={(e) => setPriority(e.target.value)} min={1} /></div>
           </div>
           <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">حد الطلبات/اليوم</label>
-              <Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(e.target.value)} min={1} />
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">الموديلات</label>
-            <Textarea value={modelsText} onChange={(e) => setModelsText(e.target.value)} rows={3} placeholder="اترك فارغًا إذا لا تريد تغيير الموديلات" />
+            <div className="flex-1"><label className="text-sm font-medium mb-1 block">حد الطلبات/اليوم</label><Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(e.target.value)} min={1} /></div>
           </div>
         </div>
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={onClose}>إلغاء</Button>
-          <Button onClick={handleSave}>حفظ التغييرات</Button>
+          <Button onClick={handleSave} disabled={updateKeyMutation.isPending}>
+            {updateKeyMutation.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function DeleteConfirmDialog({
-  target, onConfirm, onCancel, isLoading,
-}: {
-  target: AiKey;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isLoading: boolean;
+function DeleteConfirmDialog({ target, onConfirm, onCancel, isLoading }: {
+  target: AiKey; onConfirm: () => void; onCancel: () => void; isLoading: boolean;
 }) {
   return (
     <AlertDialog open onOpenChange={(o) => { if (!o) onCancel(); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>حذف المفتاح</AlertDialogTitle>
-          <AlertDialogDescription>
-            هل أنت متأكد من حذف <strong>{target.name}</strong>؟ لا يمكن التراجع عن هذا الإجراء.
-          </AlertDialogDescription>
+          <AlertDialogDescription>هل أنت متأكد من حذف <strong>{target.name}</strong>؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>إلغاء</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700" disabled={isLoading}>
-            {isLoading ? "جارٍ الحذف..." : "حذف"}
-          </AlertDialogAction>
+          <AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700" disabled={isLoading}>{isLoading ? "جارٍ الحذف..." : "حذف"}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-function TestResultDialog({
-  data, onClose, isLoading,
-}: {
-  data: { key: AiKey; result?: unknown; error?: string };
-  onClose: () => void;
-  isLoading: boolean;
+function TestResultDialog({ data, onClose, isLoading }: {
+  data: { key: AiKey; result?: unknown; error?: string }; onClose: () => void; isLoading: boolean;
 }) {
   const { key, result, error } = data;
   const r = result as Record<string, unknown> | undefined;
-
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
@@ -754,20 +920,13 @@ function TestResultDialog({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               {r?.ok || r?.success ? (
-                <Badge variant="default" className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800">
-                  <Check className="size-3 ml-1" /> نجاح
-                </Badge>
-              ) : (
-                <Badge variant="destructive"><X className="size-3 ml-1" /> فشل</Badge>
-              )}
+                <Badge variant="default" className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800"><Check className="size-3 ml-1" /> نجاح</Badge>
+              ) : <Badge variant="destructive"><X className="size-3 ml-1" /> فشل</Badge>}
               {r?.latency_ms != null ? <span className="text-xs text-muted-foreground">{String(r.latency_ms)}ms</span> : null}
             </div>
             {r?.model ? <div><span className="text-sm font-medium">النموذج:</span> <span className="text-sm">{String(r.model)}</span></div> : null}
             {r?.reply ? (
-              <div>
-                <span className="text-sm font-medium">الرد:</span>
-                <pre className="text-xs bg-muted p-2 rounded mt-1 whitespace-pre-wrap max-h-[200px] overflow-auto">{String(r.reply)}</pre>
-              </div>
+              <div><span className="text-sm font-medium">الرد:</span><pre className="text-xs bg-muted p-2 rounded mt-1 whitespace-pre-wrap max-h-[200px] overflow-auto">{String(r.reply)}</pre></div>
             ) : null}
             {typeof result === "object" && result !== null && !r?.reply && !r?.model ? (
               <pre className="text-xs bg-muted p-2 rounded mt-1 whitespace-pre-wrap max-h-[200px] overflow-auto">{JSON.stringify(result, null, 2)}</pre>

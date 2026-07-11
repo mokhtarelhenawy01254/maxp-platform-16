@@ -94,6 +94,7 @@ interface UnifiedMessage {
   senderAvatar?: string | null;
   interactiveData: any;
   isStarred?: boolean;
+  isAIResponse?: boolean;
 }
 
 interface CustomerProfile {
@@ -910,6 +911,13 @@ const UnifiedInbox: React.FC = () => {
     }, 400);
   };
 
+  // Clear pending search timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, []);
+
   const handleQuickReplySelect = (reply: any) => {
     setNewMessage((prev) => prev ? prev + "\n" + (reply.content || "") : (reply.content || ""));
     
@@ -936,14 +944,15 @@ const UnifiedInbox: React.FC = () => {
 
   // Warn before closing if there's unsent message
   useEffect(() => {
-    if (!newMessage.trim()) return;
+    const hasUnsent = newMessage.trim().length > 0;
+    if (!hasUnsent) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [newMessage]);
+  }, [newMessage.trim().length > 0]);
 
   useEffect(() => {
     socketService.connect();

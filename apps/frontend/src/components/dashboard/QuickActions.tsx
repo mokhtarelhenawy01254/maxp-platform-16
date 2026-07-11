@@ -41,9 +41,10 @@ const secondaryActions: QuickAction[] = [
 
 interface QuickActionsProps {
   activeApps?: string[];
+  badges?: Record<string, number>;
 }
 
-export function QuickActions({ activeApps = [] }: QuickActionsProps) {
+export function QuickActions({ activeApps = [], badges = {} }: QuickActionsProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const activeLower = activeApps.map((a) => a.toLowerCase());
@@ -52,6 +53,8 @@ export function QuickActions({ activeApps = [] }: QuickActionsProps) {
     actions.filter((a) => !a.appSlug || activeLower.includes(a.appSlug));
 
   const visiblePrimary = filterActions(primaryActions);
+  // ponytail: sort by badge count desc so attention-needing actions surface first
+  const sortedPrimary = [...visiblePrimary].sort((a, b) => (badges[b.key] ?? 0) - (badges[a.key] ?? 0));
   const visibleSecondary = filterActions(secondaryActions);
 
   if (visiblePrimary.length === 0 && visibleSecondary.length === 0) return null;
@@ -62,13 +65,15 @@ export function QuickActions({ activeApps = [] }: QuickActionsProps) {
       <div className="space-y-3">
         {visiblePrimary.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {visiblePrimary.map((action) => (
+            {sortedPrimary.map((action) => {
+              const badge = badges[action.key];
+              return (
               <button
                 key={action.key}
                 type="button"
                 onClick={() => navigate(action.path)}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-xl",
+                  "relative flex items-center gap-3 p-3 rounded-xl",
                   "bg-card border border-border/50 shadow-sm",
                   "transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -87,8 +92,17 @@ export function QuickActions({ activeApps = [] }: QuickActionsProps) {
                 <span className="text-xs font-semibold text-foreground truncate">
                   {t(action.labelKey)}
                 </span>
+                {badge != null && badge > 0 && (
+                  <span
+                    className="absolute top-1.5 end-1.5 min-w-4 h-4 px-1 rounded-full text-[10px] font-bold leading-4 text-white tabular-nums"
+                    style={{ background: "color-mix(in srgb, var(--color-destructive) 88%, black)" }}
+                  >
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </button>
-            ))}
+              );
+            })}
           </div>
         )}
         {visibleSecondary.length > 0 && (
