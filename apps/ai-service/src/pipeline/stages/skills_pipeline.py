@@ -275,7 +275,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     if not client:
         from src.llm.model_manager import model_manager
 
-        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash"
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash"
         try:
             routing = await model_manager.get_next_key(agent_model, ctx.company_id)
             client = LLMClient(
@@ -372,7 +372,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         from src.llm.client import LLMClient
         from src.llm.model_manager import model_manager
 
-        agent_model = getattr(ctx.llm_client, "model", None) or (ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash")
+        agent_model = getattr(ctx.llm_client, "model", None) or (ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash")
         routing = await model_manager.get_next_key(agent_model, ctx.company_id)
         client = LLMClient(
             provider=routing.provider,

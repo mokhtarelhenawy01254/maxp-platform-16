@@ -54,7 +54,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict]) -> str:
     if not client:
         from src.llm.model_manager import model_manager
 
-        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "gemini-2.5-flash"
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash"
         routing = await model_manager.get_next_key(agent_model, ctx.company_id)
         client = LLMClient(
             provider=routing.provider,
@@ -266,7 +266,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
             messages=ctx.messages,
             tool_context=ctx.tool_context,
             model_name=(ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else None)
-            or "gemini-2.5-flash",
+            or "deepseek-v4-flash",
             original_history_tokens=getattr(ctx, "original_history_tokens", 0),
             compressed_history_tokens=getattr(ctx, "compressed_history_tokens", 0),
         )

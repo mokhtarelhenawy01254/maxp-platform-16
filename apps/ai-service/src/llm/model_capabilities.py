@@ -19,7 +19,7 @@ DEFAULT_PROVIDER_MODELS = {
     "GOOGLE": DEFAULT_VISION_MODEL,
     "GROQ": "llama-3.3-70b-versatile",
     "OPENROUTER": "openrouter/auto",
-    "DEEPSEEK": "deepseek-chat",
+    "DEEPSEEK": "deepseek-v4-flash",
     "NVIDIA": "meta/llama-3.1-70b-instruct",
     "OLLAMA": "llama3",
 }
