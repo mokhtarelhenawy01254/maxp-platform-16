@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from typing import Any
 
 import structlog
@@ -15,6 +16,7 @@ from src.pipeline.context import PipelineContext
 logger = structlog.get_logger(__name__)
 
 MAX_OUTPUT_RETRIES = 2
+REVIEW_MODEL_PRIORITY = ["gemini-2.5-flash", "deepseek-v4-flash", "gpt-5.4-nano"]
 
 
 def _try_parse_json_object(text: str) -> dict[str, Any] | None:
@@ -72,6 +74,123 @@ def _strip_internal_tags(text: str) -> str:
     text = re.sub(r"<function\b[^>]*>.*?</function>", "", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r"</?function\b[^>]*>", "", text, flags=re.IGNORECASE)
     return text.strip()
+
+
+async def _get_flash_review_client(ctx: PipelineContext) -> LLMClient | None:
+    from src.llm.model_manager import model_manager
+
+    for model_name in REVIEW_MODEL_PRIORITY:
+        try:
+            routing = await model_manager.get_next_key(model_name, ctx.company_id)
+            if routing:
+                return LLMClient(
+                    provider=routing.provider,
+                    model=routing.model,
+                    api_key=routing.api_key,
+                    base_url=routing.base_url,
+                )
+        except Exception:
+            continue
+    client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
+    if client:
+        return client
+    try:
+        agent_model = ctx.agent.model if ctx.agent and hasattr(ctx.agent, "model") else "deepseek-v4-flash"
+        routing = await model_manager.get_next_key(agent_model, ctx.company_id)
+        return LLMClient(
+            provider=routing.provider,
+            model=routing.model,
+            api_key=routing.api_key,
+            base_url=routing.base_url,
+        )
+    except Exception:
+        return None
+
+
+def _summarize_evidence(evidence: list[dict]) -> str:
+    if not evidence:
+        return "(لا توجد أدوات مستخدمة)"
+    parts = []
+    for item in evidence:
+        tool = item.get("tool", "unknown")
+        result = item.get("result", {})
+        if isinstance(result, dict):
+            keys = list(result.keys())[:3]
+            summary = ", ".join(f"{k}: {str(result[k])[:120]}" for k in keys if result[k] is not None)
+        else:
+            summary = str(result)[:200]
+        parts.append(f"{tool}: {{{summary}}}")
+    return " | ".join(parts)
+
+
+async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
+    """LLM-as-Judge: review reply quality, merchant rules, accuracy, tone.
+    Returns None if approved, or a corrected reply string."""
+    client = await _get_flash_review_client(ctx)
+    if not client:
+        return None
+
+    rules_text = "(لا توجد قوانين نشطة)"
+    try:
+        from src.db import session
+        async with session.async_session() as db:
+            from src.guardrails.merchant_rules import MerchantRuleGuardrail
+            guardrail = MerchantRuleGuardrail()
+            agent_id = ctx.agent.agent_id if ctx.agent and hasattr(ctx.agent, "agent_id") else ""
+            if agent_id:
+                rules = await guardrail.get_relevant_rules(db, agent_id, ctx.message, top_k=5)
+                if rules:
+                    rules_text = "\n".join(
+                        f"- {r['excuse']} => {r['rebuttal']} ({r['action']})"
+                        for r in rules
+                    )
+    except Exception as e:
+        logger.warning("self_review_rules_fetch_failed", error=str(e))
+
+    evidence_text = _summarize_evidence(ctx.tool_evidence)
+    review_prompt = (
+        "أنت مدقق جودة. راجع رد المساعد التالي:\n\n"
+        "1. الالتزام بقوانين التاجر - هل يخالف أي قاعدة؟\n"
+        f"{rules_text}\n\n"
+        "2. دقة المعلومات - هل المعلومات متوافقة مع بيانات الأدوات؟\n"
+        f"{evidence_text}\n\n"
+        "3. النبرة واللغة - هل مناسبة للشخصية؟\n"
+        "4. التخيلات - هل يذكر شيء غير مدعوم بالسياق؟\n\n"
+        'رد بصيغة JSON:\n'
+        '{"approved": true/false, "reason": "سبب الرفض", "violations": ["انتهاكات"]}'
+    )
+
+    messages = [
+        {"role": "system", "content": review_prompt},
+        {"role": "user", "content": f"رسالة العميل:\n{ctx.message}\n\nرد المساعد:\n{reply}"},
+    ]
+
+    t0 = time.monotonic()
+    try:
+        response = await client.generate(messages=messages, tools=None, temperature=0.1)
+        latency = int((time.monotonic() - t0) * 1000)
+        verdict = json.loads(response.text)
+        if verdict.get("approved"):
+            return None
+        reason = verdict.get("reason", "مخالفة قواعد المراجعة")
+        violations = verdict.get("violations", [])
+        logger.info("self_review.rejected",
+            reason=reason, violations=violations, latency_ms=latency,
+            agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+        )
+        corrected = await _correct_output(ctx, reply, reason, violations)
+        if corrected:
+            logger.info("self_review.corrected",
+                reason=reason, latency_ms=latency,
+                agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+            )
+        return corrected
+    except (json.JSONDecodeError, KeyError) as e:
+        logger.warning("self_review.parse_failed", error=str(e), text=getattr(response, 'text', '')[:200])
+        return None
+    except Exception as e:
+        logger.warning("self_review.failed", error=str(e))
+        return None
 
 
 async def _correct_output(
@@ -230,8 +349,19 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 count=len(ctx.response_attachments or []),
                 urls=[a.get("url", "")[:120] for a in (ctx.response_attachments or [])],
             )
+
+            # 3. Self-Review quality check (LLM-as-Judge)
+            reviewed = await _self_review(ctx, ctx.final_reply or reply)
+            if reviewed:
+                reply = _strip_internal_tags(reviewed)
+                ctx.final_reply = None
+                continue
+
+            logger.info("self_review.approved",
+                agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+            )
             ctx.llm_response = reply
-            break  # Validation succeeded!
+            break  # Validation + review succeeded!
         except Exception as exc:
             if attempt >= MAX_OUTPUT_RETRIES:
                 logger.error("agent_response_validation_failed_final", reply=reply[:150], error=str(exc))
