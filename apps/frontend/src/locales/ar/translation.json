@@ -1648,6 +1648,7 @@
       "yesterday": "أمس",
       "last7Days": "آخر 7 أيام",
       "last30Days": "آخر 30 يوم",
+      "last90Days": "آخر 90 يوم",
       "thisMonth": "هذا الشهر",
       "lastMonth": "الشهر الماضي",
       "custom": "فترة مخصصة"
@@ -1691,7 +1692,20 @@
       "financials": "المالية",
       "growth": "النمو",
       "operations": "العمليات",
-      "inventoryAlerts": "تنبيهات المخزون"
+      "inventoryAlerts": "تنبيهات المخزون",
+      "insights": "رؤى ذكية"
+    },
+    "insights": {
+      "revenueTrend": "الإيرادات {{delta}} مقارنة بالفترة السابقة ({{current}}).",
+      "lowConversion": "نسبة التحويل {{rate}}% — أقل من 2%. راجع صفحة الدفع والمنتجات.",
+      "highConversion": "أداء قوي: نسبة التحويل {{rate}}% — أعلى من متوسط المجال.",
+      "highCancellation": "نسبة الإلغاء {{rate}}% — أعلى من 15%. افحص مشاكل الطلبات أو توقعات المنتجات.",
+      "outOfStock": "{{count}} منتجات نفذت من المخزون. أعد التخزين لتجنب فقدان المبيعات.",
+      "lowStock": "{{count}} منتجات على وشك النفاد. خطط لإعادة التخزين قريبًا.",
+      "openOrders": "{{count}} طلب مفتوح يحتاج اهتمام.",
+      "productConcentration": "{{product}} يمثل {{pct}}% من القطع المباعة — فكّر في التنويع أو إعادة التخزين.",
+      "newCustomers": "{{count}} عميل جديد انضم في هذه الفترة.",
+      "newCustomersGrowth": "العملاء الجدد ارتفعوا {{delta}} ({{count}} هذه الفترة)."
     },
     "inventory": {
       "lowStock": "مخزون منخفض",
@@ -1841,6 +1855,21 @@
       "viewedOrders": "[AR] Reviewed Orders",
       "totalOrders": "[AR] Total Orders",
       "requiresAttention": "[AR] Needs attention"
+    },
+    "live": {
+      "label": "مباشر",
+      "connected": "التحديثات المباشرة متصلة",
+      "disconnected": "التحديثات المباشرة متوقفة",
+      "viewAll": "عرض الكل",
+      "newEvent": "نشاط جديد"
+    },
+    "export": {
+      "label": "تصدير",
+      "csv": "تصدير CSV",
+      "excel": "تصدير Excel",
+      "pdf": "تصدير PDF",
+      "metric": "المؤشر",
+      "value": "القيمة"
     }
   },
   "companyLinks": {

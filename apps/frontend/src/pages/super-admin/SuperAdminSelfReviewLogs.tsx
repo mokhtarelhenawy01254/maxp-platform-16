@@ -87,7 +87,7 @@ function SuperAdminSelfReviewLogs() {
   const { data: agentsList } = useQuery({
     queryKey: ["self-review", "agent-list"],
     queryFn: async (): Promise<AgentOption[]> => {
-      const res = await apiClient.get("/admin/agents", { params: { limit: 500 } });
+      const res = await apiClient.get("/admin/self-review/agents", { params: { limit: 500 } });
       return (res.data || []) as AgentOption[];
     },
   });

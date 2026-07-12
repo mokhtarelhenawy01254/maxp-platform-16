@@ -49,7 +49,7 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Copy, FlaskConical, Search, RefreshCw,
   Eye, EyeOff, Check, X,
-  Activity, CheckCircle2, XCircle, Zap, Gauge, Loader2,
+  Activity, Zap, Gauge, Loader2,
   ChevronUp,
   Info, ArrowUpDown, ArrowUp, ArrowDown,
   ToggleLeft, ToggleRight, History, KeyRound,
@@ -123,75 +123,33 @@ function StatsGrid({ dashboard }: { dashboard: DashboardStats }) {
   const rateColor = rate >= 95 ? "bg-emerald-500" : rate >= 80 ? "bg-amber-500" : "bg-red-500";
   const rateTextColor = rate >= 95 ? "text-emerald-600 dark:text-emerald-400" : rate >= 80 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
 
+  const stats = [
+    { label: "إجمالي المفاتيح", value: dashboard.total_keys, sub: `${dashboard.active_keys} نشط` },
+    { label: "المزودون", value: providerCount, sub: "مزود متصل" },
+    { label: "طلبات اليوم", value: dashboard.requests_today + dashboard.failures_today, sub: `${dashboard.failures_today} فشل` },
+  ];
+
   return (
-    <div className="mb-6 grid grid-cols-12 gap-3">
-      {/* Total keys — large bento card */}
-      <Card className="col-span-12 sm:col-span-6 lg:col-span-3 border-0 shadow-sm hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-blue-50/60 to-card dark:from-blue-950/20">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-muted-foreground tracking-wide">إجمالي المفاتيح</span>
-            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-              <Activity className="size-4 text-blue-600 dark:text-blue-400" />
-            </span>
+    <div className="mb-6 flex flex-wrap items-stretch gap-3">
+      {stats.map((s) => (
+        <div key={s.label} className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-card shadow-sm flex items-baseline gap-3">
+          <span className="text-2xl font-bold tabular-nums tracking-tight">{s.value}</span>
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground">{s.label}</span>
+            <span className="text-[10px] text-muted-foreground/70">{s.sub}</span>
           </div>
-          <p className="text-3xl font-bold tracking-tight">{dashboard.total_keys}</p>
-          <div className="flex items-center gap-1.5 mt-2 text-xs">
-            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-              <CheckCircle2 className="size-3" />{dashboard.active_keys} نشط
-            </span>
-            <span className="text-muted-foreground/40">·</span>
-            <span className="text-muted-foreground">{dashboard.total_keys - dashboard.active_keys} متوقف</span>
+        </div>
+      ))}
+      {/* Success rate — inline */}
+      <div className="flex-1 min-w-[180px] px-4 py-3 rounded-xl bg-card shadow-sm flex items-center gap-3">
+        <span className={`text-2xl font-bold tabular-nums tracking-tight ${rateTextColor}`}>{rate}%</span>
+        <div className="flex flex-col flex-1">
+          <span className="text-xs text-muted-foreground">نسبة النجاح</span>
+          <div className="h-1.5 mt-1.5 bg-muted/60 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-500 ${rateColor}`} style={{ width: `${rate}%` }} />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Providers */}
-      <Card className="col-span-6 sm:col-span-3 lg:col-span-2 border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-        <CardContent className="p-4">
-          <span className="text-xs font-medium text-muted-foreground tracking-wide">المزودون</span>
-          <p className="text-2xl font-bold mt-2">{providerCount}</p>
-          <span className="inline-flex size-7 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40 mt-2">
-            <Zap className="size-3.5 text-purple-600 dark:text-purple-400" />
-          </span>
-        </CardContent>
-      </Card>
-
-      {/* Requests today */}
-      <Card className="col-span-6 sm:col-span-3 lg:col-span-2 border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-        <CardContent className="p-4">
-          <span className="text-xs font-medium text-muted-foreground tracking-wide">طلبات اليوم</span>
-          <p className="text-2xl font-bold mt-2">{dashboard.requests_today + dashboard.failures_today}</p>
-          <div className="flex items-center gap-1.5 mt-2 text-xs">
-            <span className="text-amber-600 dark:text-amber-400 font-medium">{dashboard.requests_today} نجاح</span>
-            {dashboard.failures_today > 0 && (
-              <><span className="text-muted-foreground/40">·</span>
-              <span className="text-red-600 dark:text-red-400 font-medium">{dashboard.failures_today} فشل</span></>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Success rate — wide card with bar */}
-      <Card className="col-span-12 lg:col-span-5 border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <span className="text-xs font-medium text-muted-foreground tracking-wide">نسبة نجاح آخر 24 ساعة</span>
-              <p className={`text-2xl font-bold mt-1 ${rateTextColor}`}>{rate}%</p>
-            </div>
-            <div className="text-left">
-              <span className="text-xs text-muted-foreground block">{dashboard.requests_today} طلب</span>
-              {dashboard.failures_today > 0 && <span className="text-xs text-red-500 block">{dashboard.failures_today} فشل</span>}
-            </div>
-          </div>
-          <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-700 ease-out ${rateColor}`} style={{ width: `${rate}%` }} />
-          </div>
-          <div className="flex justify-between mt-1.5 text-[10px] text-muted-foreground/60">
-            <span>0%</span><span>50%</span><span>100%</span>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
