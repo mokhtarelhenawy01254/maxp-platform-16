@@ -343,6 +343,34 @@ async function playgroundChat({ provider, model, prompt, systemPrompt, temperatu
   });
 }
 
+async function getSelfReviewStats({ days, agent_id, status }) {
+  const params = { days: days || 7 };
+  if (agent_id) params.agent_id = agent_id;
+  if (status) params.status = status;
+  const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  return request('GET', `/admin/self-review/stats?${qs}`);
+}
+
+async function listSelfReviewLogs({ days, page, limit, agent_id, status }) {
+  const params = { days: days || 7, page: page || 1, limit: limit || 20 };
+  if (agent_id) params.agent_id = agent_id;
+  if (status) params.status = status;
+  const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  return request('GET', `/admin/self-review/logs?${qs}`);
+}
+
+async function exportSelfReviewCsv({ days, agent_id, status }) {
+  const params = { days: days || 7 };
+  if (agent_id) params.agent_id = agent_id;
+  if (status) params.status = status;
+  const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  return request('GET', `/admin/self-review/logs/export?${qs}`);
+}
+
+async function updateReviewModel(agentId, modelName) {
+  return request('PATCH', `/admin/self-review/agents/${encodeURIComponent(agentId)}/review-model`, { model: modelName });
+}
+
 module.exports = {
   listTools,
   listSkills,
@@ -389,4 +417,8 @@ module.exports = {
   visualSearch,
   getGlobalFilterSettings,
   updateGlobalFilterSettings,
+  getSelfReviewStats,
+  listSelfReviewLogs,
+  exportSelfReviewCsv,
+  updateReviewModel,
 };
