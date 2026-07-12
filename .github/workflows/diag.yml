@@ -47,12 +47,11 @@ jobs:
               const { PrismaClient } = require('./prisma/generated/postgresql_v2');
               const prisma = new PrismaClient();
               async function run() {
-                // Since prisma is dynamically generated, let's list logs from raw query to be model-independent
                 const logs = await prisma.\$queryRaw\`
-                  SELECT * FROM public.ai_provider_logs 
-                  WHERE status = 'failed' 
+                  SELECT id, action, status, model, metadata, \"createdAt\" 
+                  FROM public.ai_provider_logs 
                   ORDER BY \"createdAt\" DESC 
-                  LIMIT 5
+                  LIMIT 15
                 \`;
                 console.log(JSON.stringify(logs, null, 2));
               }
