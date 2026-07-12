@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { toast } from "sonner";
 import {
   ChevronDownIcon,
@@ -59,10 +59,14 @@ const PreparationQueue: React.FC = () => {
   const { state: uiState, actions: uiActions } = usePreparationQueueUiState();
   const isMerchantUser = user?.role === "MERCHANT";
 
+  const deferredSearch = useDeferredValue(uiState.search);
+
   const {
     orders,
     setOrders,
     inventory,
+    inventoryLoading,
+    ensureInventory,
     warehouses,
     statusConfigs,
     preparationSettings,
@@ -83,7 +87,7 @@ const PreparationQueue: React.FC = () => {
     shortageOwnerFilter: uiState.shortageOwnerFilter,
     productFilter: uiState.productFilter,
     itemCountFilter: uiState.itemCountFilter,
-    search: uiState.search,
+    search: deferredSearch,
   });
   const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -123,6 +127,12 @@ const PreparationQueue: React.FC = () => {
       uiActions.applyDefaultWarehouse(preparationSettings.defaultWarehouseId);
     }
   }, [preparationSettings.defaultWarehouseId, uiActions]);
+
+  useEffect(() => {
+    if (orders.length > 0 && inventory.length === 0 && !inventoryLoading) {
+      ensureInventory();
+    }
+  }, [orders.length, inventory.length, inventoryLoading, ensureInventory]);
 
   useEffect(() => {
     setShortageHoldDrafts((previous) => {
@@ -252,22 +262,21 @@ const PreparationQueue: React.FC = () => {
 
         const itemInsights: ItemInsight[] = order.items.map((item) => {
           const summary = inventorySummaryByProduct.get(String(item.productId || ""));
-          const scopedWarehouses = selectedWarehouseId
-            ? summary?.warehouses.filter(
-                (warehouse) => warehouse.warehouseId === selectedWarehouseId,
-              ) || []
-            : summary?.warehouses || [];
-
-          const availableInScope = scopedWarehouses.reduce(
-            (sum, warehouse) => sum + warehouse.available,
-            0,
-          );
-          const reservedInScope = scopedWarehouses.reduce(
-            (sum, warehouse) => sum + warehouse.reserved,
-            0,
-          );
+          let availableInScope = 0;
+          let reservedInScope = 0;
+          let bestWarehouseName: string | null = null;
+          let warehouseCount = 0;
+          if (summary?.warehouses) {
+            for (const w of summary.warehouses) {
+              if (!selectedWarehouseId || w.warehouseId === selectedWarehouseId) {
+                availableInScope += w.available;
+                reservedInScope += w.reserved;
+                if (!bestWarehouseName) bestWarehouseName = w.warehouseName;
+                warehouseCount++;
+              }
+            }
+          }
           const quantityNumber = Math.max(1, toNumber(item.quantity));
-          const bestWarehouseName = scopedWarehouses[0]?.warehouseName || null;
           const metadataProductName =
             typeof item.metadata === "object" &&
             item.metadata &&
@@ -284,7 +293,7 @@ const PreparationQueue: React.FC = () => {
             reservedInScope,
             shortage: Math.max(0, quantityNumber - availableInScope),
             bestWarehouseName,
-            warehouseCount: scopedWarehouses.length,
+            warehouseCount,
           };
         });
 
@@ -366,11 +375,11 @@ const PreparationQueue: React.FC = () => {
         shortageReasonFilter,
         shortageFollowUpFilter,
         shortageOwnerFilter.trim().toLowerCase(),
-        search.trim().toLowerCase(),
+        deferredSearch.trim().toLowerCase(),
       ].join("|"),
     [
       activeStage,
-      search,
+      deferredSearch,
       selectedWarehouseId,
       shortageFollowUpFilter,
       shortageOwnerFilter,
@@ -959,22 +968,26 @@ const PreparationQueue: React.FC = () => {
       />
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-2.5">
+        <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={toggleSelectAllVisible}
+              className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+            />
+            تحديد الكل
+          </label>
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">قائمة التنفيذ</span>
-          <div className="flex items-center gap-2">
-            {loading && (
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
-            )}
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
-              تحديد الكل
-              <input
-                type="checkbox"
-                checked={allVisibleSelected}
-                onChange={toggleSelectAllVisible}
-                className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-              />
-            </label>
-          </div>
+          {inventoryLoading && (
+            <div className="mr-auto flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700">
+              <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+              جاري التحقق من المتاح
+            </div>
+          )}
+          {!inventoryLoading && loading && (
+            <div className="mr-auto h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+          )}
         </div>
 
         {loading ? (

@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -68,6 +69,8 @@ interface UsePreparationQueueDataResult {
   orders: SimpleOrder[];
   setOrders: Dispatch<SetStateAction<SimpleOrder[]>>;
   inventory: InventoryRecord[];
+  inventoryLoading: boolean;
+  ensureInventory: () => Promise<void>;
   warehouses: WarehouseOption[];
   statusConfigs: StatusConfig[];
   preparationSettings: PreparationQueueSettings;
@@ -76,7 +79,7 @@ interface UsePreparationQueueDataResult {
   shortageOwnerOptions: string[];
   loading: boolean;
   refreshing: boolean;
-  fetchInventory: () => Promise<void>;
+  fetchInventory: () => Promise<InventoryRecord[]>;
   fetchAll: (showRefreshToast?: boolean) => Promise<void>;
 }
 
@@ -377,15 +380,6 @@ export const usePreparationQueueData = ({
     placeholderData: (previousData) => previousData,
   });
 
-  const inventoryQuery = useQuery({
-    queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...productIds],
-    queryFn: () => fetchInventoryData(productIds),
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    enabled: productIds.length > 0,
-  });
-
   const warehousesQuery = useQuery({
     queryKey: PREPARATION_QUERY_KEYS.warehouses,
     queryFn: fetchWarehousesData,
@@ -420,13 +414,11 @@ export const usePreparationQueueData = ({
       manualRefreshing ||
       [
         ordersQuery,
-        inventoryQuery,
         warehousesQuery,
         statusConfigsQuery,
         preparationSettingsQuery,
       ].some((query) => query.isFetching && !query.isPending),
     [
-      inventoryQuery,
       manualRefreshing,
       ordersQuery,
       preparationSettingsQuery,
@@ -436,12 +428,32 @@ export const usePreparationQueueData = ({
   );
 
   const fetchInventory = useCallback(async () => {
-    await queryClient.fetchQuery({
+    const data = await queryClient.fetchQuery({
       queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...productIds],
       queryFn: () => fetchInventoryData(productIds),
-      staleTime: 0,
+      staleTime: 2 * 60 * 1000,
     });
+    return data;
   }, [productIds, queryClient]);
+
+  const [inventory, setInventory] = useState<InventoryRecord[]>([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const fetchedProductIdsRef = useRef("");
+
+  const ensureInventory = useCallback(async () => {
+    const key = [...productIds].sort().join(",");
+    if (fetchedProductIdsRef.current === key || inventoryLoading || productIds.length === 0) return;
+    fetchedProductIdsRef.current = key;
+    setInventoryLoading(true);
+    try {
+      const data = await fetchInventory();
+      setInventory(data || []);
+    } catch {
+      fetchedProductIdsRef.current = "";
+    } finally {
+      setInventoryLoading(false);
+    }
+  }, [productIds, inventoryLoading, fetchInventory]);
 
   const fetchAll = useCallback(
     async (showRefreshToast = false) => {
@@ -488,11 +500,13 @@ export const usePreparationQueueData = ({
           });
         });
 
-        await queryClient.fetchQuery({
+        const freshInv = await queryClient.fetchQuery({
           queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...freshProductIds],
           queryFn: () => fetchInventoryData(freshProductIds),
           staleTime: 0,
         });
+        setInventory(freshInv || []);
+        fetchedProductIdsRef.current = freshProductIds.sort().join(",");
 
         if (showRefreshToast) {
           toast.success("تم تحديث قائمة التجهيز");
@@ -518,7 +532,9 @@ export const usePreparationQueueData = ({
   return {
     orders,
     setOrders: setOrdersState,
-    inventory: inventoryQuery.data || [],
+    inventory,
+    inventoryLoading,
+    ensureInventory,
     warehouses: warehousesQuery.data || [],
     statusConfigs: statusConfigsQuery.data || [],
     preparationSettings:
