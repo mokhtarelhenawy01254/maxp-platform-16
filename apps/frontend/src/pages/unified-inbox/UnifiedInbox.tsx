@@ -2418,8 +2418,8 @@ const UnifiedInbox: React.FC = () => {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* COLUMN 3 ΓÇö Customer Profile Panel */}
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* COLUMN 3 - Customer Profile Panel */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
         {showProfilePanel && selectedConversation && (
           <div className="business-inbox-column business-inbox-column--profile overflow-y-auto">
             {/* Profile Header */}
@@ -2513,7 +2513,7 @@ const UnifiedInbox: React.FC = () => {
                     background: "color-mix(in srgb, var(--color-primary) 10%, var(--color-background))",
                     borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
                   }}
-                  title={t("unifiedInbox.markUnread", { defaultValue: "╪¬╪¡╪»┘è╪» ┘â╪║┘è╪▒ ┘à┘é╪▒┘ê╪í" })}
+                  title={t("unifiedInbox.markUnread")}
                 >
                   <EnvelopeIcon className="w-5 h-5 shrink-0" />
                 </button>
@@ -2525,7 +2525,7 @@ const UnifiedInbox: React.FC = () => {
                     background: "color-mix(in srgb, var(--business-warning) 10%, var(--color-background))",
                     borderColor: "color-mix(in srgb, var(--business-warning) 20%, transparent)",
                   }}
-                  title={t("unifiedInbox.archive", { defaultValue: "╪ú╪▒╪┤┘ü╪⌐" })}
+                  title={t("unifiedInbox.archive")}
                 >
                   <ArchiveBoxIcon className="w-5 h-5 shrink-0" />
                 </button>
@@ -2537,7 +2537,7 @@ const UnifiedInbox: React.FC = () => {
                     background: "color-mix(in srgb, var(--business-danger) 10%, var(--color-background))",
                     borderColor: "color-mix(in srgb, var(--business-danger) 20%, transparent)",
                   }}
-                  title={t("unifiedInbox.block", { defaultValue: "╪¡╪╕╪▒" })}
+                  title={t("unifiedInbox.block")}
                 >
                   <NoSymbolIcon className="w-5 h-5 shrink-0" />
                 </button>
