@@ -85,6 +85,14 @@
 - Rationale: Changing LLM flow (`tool_choice="auto"`) is a larger refactor with unpredictable side effects. Handlers follow existing pattern.
 - Rejected: (1) Switching to `tool_choice="auto"` — DeepSeek still returns empty text; risky refactor. (2) Retry logic on empty follow-up — increases latency/cost. (3) Removing fallback — returns empty responses.
 
+## 2026-07-12 — GitHub Repo Migration (Quota Full)
+- **Context:** GitHub storage quota full on elhenawym124-ops/maxp-platform3 old org. Could not push. Two options: (A) new repo, (B) old repo with refreshed quota.
+- **Decision:** New repo at github.com/elhenawym124-ops/maxp-platform3. Changed origin remote, pushed main (~668MB). 
+- **Rationale:** Chosen by user. Option B (refreshing quota) wasn't explored in detail.
+- **Key actions:** Changed remote, pushed main, pulled team updates from old repo (2 new commits: WhatsApp Cloud OAuth + orders optimization), merged via fast-forward, committed local changes, pushed all. Cleaned old remotes.
+- **Secrets migration:** Deploy workflow failed — GitHub Secrets not carried over. Used `gh secret set` for SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, SERVER_PORT. Generated new ED25519 key (no passphrase — PowerShell `-N` flag with quotes passes passphrase incorrectly). Added public key to server's `~/.ssh/authorized_keys`.
+- **Deploy verification:** Full build + deploy succeeded ~10min. Backend health check passed on port 3007.
+
 ## 2026-07-06 — AI Agent Doc Rewrite (Complete Inaccuracy)
 - Context: `ai-agent-system.md` described a Node.js system (`backend/services/aiAgent/`) that was either never built or replaced years ago. The real system is Python FastAPI + Microsoft Agent Framework.
 - Decision: Full rewrite of the doc to match actual architecture.

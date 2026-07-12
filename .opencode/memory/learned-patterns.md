@@ -1,5 +1,11 @@
 # Learned Patterns
 
+## 2026-07-12 — SSH Key Generation in PowerShell (Passphrase Bug)
+- **Problem:** `ssh-keygen -t ed25519 -N "mysecret" -f keyfile` in PowerShell sets the passphrase to literal `"mysecret"` (with quotes) because PowerShell passes the double-quotes as part of the argument value.
+- **Solution:** Use single quotes for the `-N` argument: `-N 'mysecret'`. Or omit `-N` entirely and use stdin pipe. On Windows, `ssh-keygen` from OpenSSH for Windows interprets quoted strings literally.
+- **Verification:** `ssh-keygen -y -f keyfile` prompts for passphrase — if quotes were included, entering the value without quotes fails.
+- **Best practice for non-interactive CI:** Generate key with `-N '""'` (empty passphrase, single-quoted empty string) or pipe `""` via stdin.
+
 ## 2026-07-10 — TypeScript TS2367 Type Overlap in Tabs switching
 - **Problem:** Adding a new literal to a locally declared `type Tab = "settings" | "guardrails"` can trigger `TS2367: This comparison appears to be unintentional because the types have no overlap` error at compile-time, even if state and interfaces are correctly declared.
 - **Solution:** Cast the state variable to `string` in comparison blocks: `(tab as string) === "guardrails"`. This satisfies the compiler while preserving type safety for state functions.
