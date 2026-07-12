@@ -139,12 +139,68 @@ def _summarize_evidence(evidence: list[dict]) -> str:
         tool = item.get("tool", "unknown")
         result = item.get("result", {})
         if isinstance(result, dict):
-            keys = list(result.keys())[:10]
-            summary = ", ".join(f"{k}: {str(result[k])[:500]}" for k in keys if result[k] is not None)
+            keys = list(result.keys())[:15]
+            summary = ", ".join(f"{k}: {str(result[k])[:1500]}" for k in keys if result[k] is not None)
         else:
-            summary = str(result)[:2000]
+            summary = str(result)[:3000]
         parts.append(f"{tool}: {{{summary}}}")
     return " | ".join(parts)
+
+
+def _extract_agent_identity(ctx: PipelineContext) -> str:
+    """Extract a compact identity block from the agent's system prompt and config."""
+    parts: list[str] = []
+
+    # Agent template type
+    template_slug = str(
+        getattr(ctx.agent, "template_slug", None)
+        or getattr(ctx.agent, "slug", None)
+        or "unknown"
+    ) if ctx.agent else "unknown"
+    parts.append(f"نوع الأيجنت: {template_slug}")
+
+    # Channel
+    if ctx.channel:
+        parts.append(f"القناة: {ctx.channel}")
+
+    # System prompt summary (first 2000 chars to capture persona + core instructions)
+    sys_prompt = ctx.system_prompt or ""
+    if sys_prompt:
+        # Take the first meaningful chunk — usually contains persona, role, and key rules
+        prompt_summary = sys_prompt[:2000]
+        if len(sys_prompt) > 2000:
+            prompt_summary += "\n... (تم اختصار باقي التعليمات)"
+        parts.append(f"تعليمات الأيجنت:\n{prompt_summary}")
+    else:
+        parts.append("تعليمات الأيجنت: (غير متوفرة)")
+
+    return "\n".join(parts)
+
+
+def _extract_conversation_context(ctx: PipelineContext, max_turns: int = 5) -> str:
+    """Extract the last N conversation turns for review context."""
+    if not ctx.messages:
+        return "(لا يوجد تاريخ محادثة)"
+    # Take the last `max_turns` messages (excluding the current user message which is passed separately)
+    recent = ctx.messages[-(max_turns * 2):] if len(ctx.messages) > max_turns * 2 else ctx.messages
+    lines = []
+    for msg in recent:
+        role = msg.get("role", "unknown")
+        content = msg.get("content", "")
+        if isinstance(content, list):  # multimodal content
+            content = " ".join(
+                part.get("text", "[مرفق]") if isinstance(part, dict) else str(part)
+                for part in content
+            )
+        # Truncate individual messages to keep context manageable
+        content = str(content)[:400]
+        if role == "user":
+            lines.append(f"👤 العميل: {content}")
+        elif role == "assistant":
+            lines.append(f"🤖 المساعد: {content}")
+        elif role == "tool":
+            lines.append(f"🔧 أداة: {content[:200]}")
+    return "\n".join(lines) if lines else "(لا يوجد تاريخ محادثة)"
 
 
 async def _log_review(
@@ -175,12 +231,28 @@ async def _log_review(
 
 async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
     """LLM-as-Judge: review reply quality, merchant rules, accuracy, tone.
-    Returns None if approved, or a corrected reply string."""
+    Returns None if approved, or a corrected reply string.
+
+    The judge receives full context:
+    - Agent identity (template type, channel, system prompt summary)
+    - Conversation history (last 5 turns)
+    - Tool execution evidence
+    - Merchant guardrail rules
+    """
     client, model_name = await _get_flash_review_client(ctx)
     if not client:
         await _log_review(ctx, "skipped", reply=reply)
         return None
 
+    # --- Gather full context for the judge ---
+
+    # 1. Agent identity & instructions
+    agent_identity = _extract_agent_identity(ctx)
+
+    # 2. Conversation history
+    conversation_context = _extract_conversation_context(ctx, max_turns=5)
+
+    # 3. Merchant guardrail rules
     rules_text = "(لا توجد قوانين نشطة)"
     try:
         from src.db import session
@@ -198,22 +270,48 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
     except Exception as e:
         logger.warning("self_review_rules_fetch_failed", error=str(e))
 
+    # 4. Tool execution evidence
     evidence_text = _summarize_evidence(ctx.tool_evidence)
+
+    # --- Build the comprehensive review prompt ---
     review_prompt = (
-        "أنت مدقق جودة. راجع رد المساعد التالي:\n\n"
-        "1. الالتزام بقوانين التاجر - هل يخالف أي قاعدة؟\n"
-        f"{rules_text}\n\n"
-        "2. دقة المعلومات - هل المعلومات متوافقة مع بيانات الأدوات؟\n"
+        "أنت مدقق جودة متخصص في مراجعة ردود المساعد الذكي. "
+        "لديك كامل السياق اللازم للحكم على جودة الرد.\n\n"
+        "═══════════════════════════════════════\n"
+        "📋 هوية الأيجنت وتعليماته:\n"
+        "═══════════════════════════════════════\n"
+        f"{agent_identity}\n\n"
+        "═══════════════════════════════════════\n"
+        "💬 سياق المحادثة (آخر الرسائل):\n"
+        "═══════════════════════════════════════\n"
+        f"{conversation_context}\n\n"
+        "═══════════════════════════════════════\n"
+        "🔧 بيانات الأدوات المسترجعة من قاعدة البيانات:\n"
+        "═══════════════════════════════════════\n"
         f"{evidence_text}\n\n"
-        "3. النبرة واللغة - هل مناسبة للشخصية؟\n"
-        "4. التخيلات - هل يذكر شيء غير مدعوم بالسياق؟\n\n"
-        'رد بصيغة JSON:\n'
-        '{"approved": true/false, "reason": "سبب الرفض", "violations": ["انتهاكات"]}'
+        "═══════════════════════════════════════\n"
+        "⚖️ قوانين التاجر النشطة:\n"
+        "═══════════════════════════════════════\n"
+        f"{rules_text}\n\n"
+        "═══════════════════════════════════════\n"
+        "معايير المراجعة (راجع كل نقطة):\n"
+        "═══════════════════════════════════════\n"
+        "1. الالتزام بالتعليمات — هل يتبع تعليمات الأيجنت وشخصيته المحددة أعلاه؟\n"
+        "2. دقة المعلومات — هل كل المعلومات المذكورة (أسعار، خدمات، مواعيد، فروع) متطابقة مع بيانات الأدوات؟\n"
+        "3. التخيلات — هل يذكر أي شيء غير مدعوم ببيانات الأدوات أو سياق المحادثة؟\n"
+        "4. قوانين التاجر — هل يخالف أي قاعدة من القوانين النشطة؟\n"
+        "5. النبرة واللغة — هل مناسبة لنوع الأيجنت والقناة المستخدمة؟\n"
+        "6. الاتساق — هل الرد متسق مع ما قيل سابقاً في المحادثة؟\n\n"
+        "⚠️ هام: لا ترفض الرد إلا إذا كان فيه خطأ واضح وملموس. "
+        "الهدف هو منع الأخطاء الفعلية، وليس فرض أسلوب كتابة معين. "
+        "إذا كان الرد صحيحاً ومفيداً، وافق عليه حتى لو كان ممكن يكون أفضل.\n\n"
+        'رد بصيغة JSON فقط:\n'
+        '{"approved": true/false, "reason": "سبب الرفض إن وجد", "violations": ["قائمة الانتهاكات المحددة"]}'
     )
 
     messages = [
         {"role": "system", "content": review_prompt},
-        {"role": "user", "content": f"رسالة العميل:\n{ctx.message}\n\nرد المساعد:\n{reply}"},
+        {"role": "user", "content": f"رسالة العميل الحالية:\n{ctx.message}\n\nرد المساعد المطلوب مراجعته:\n{reply}"},
     ]
 
     t0 = time.monotonic()

@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-12 / 2026-03-09
+- **AI Service Self-Review Judge — Blind Context Overhaul (BUGFIX / CRITICAL)**: Major rewrite of the LLM-as-Judge self-review system in `validate_reply.py`:
+  1. The judge now receives the agent's system prompt (first 2000 chars including persona, soul, and core instructions) via `_extract_agent_identity()`.
+  2. The judge now receives the last 5 conversation turns via `_extract_conversation_context()` to understand context.
+  3. The judge now receives the agent's template type and channel for tone/style evaluation.
+  4. Tool evidence limits increased (500→1500 chars/value, 10→15 keys) to prevent data loss in rich responses.
+  5. The review prompt was restructured into a 6-criteria rubric with explicit bias toward approval (reject only on clear factual errors, not style preferences).
 - **AI Service Follow-up Request Tool Resolution & Thinking Mode Fix (BUGFIX / CRITICAL)**: Resolved DeepSeek follow-up API validation errors (400 Bad Request) after tool execution:
   1. Updated the follow-up tool definitions builder (`_build_tool_dicts`) in the AI Service pipeline (`skills_pipeline.py`) to resolve and include schemas from `allowed_skills` alongside `allowed_tools`.
   2. Set the follow-up call's default `tool_choice` to `"none"` in `_raw_llm_call`, allowing client.py to omit the `tools` and `tool_choice` parameters entirely for plain text generation. This prevents "Thinking mode does not support this tool_choice" errors when the chat history contains DeepSeek-R1 reasoning content.

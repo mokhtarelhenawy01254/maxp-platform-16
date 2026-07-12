@@ -1,5 +1,20 @@
 # Backend Bugs Log
 
+### [BUG FIX] AI Service Self-Review Judge — Blind Context (Major Overhaul)
+- **Date**: 2026-07-12
+- **Root Cause**: The self-review judge model (`_self_review` in `validate_reply.py`) was operating in a near-total vacuum:
+  1. **No system prompt**: The judge didn't receive the agent's instructions, persona, or soul — so it had no idea what the agent was supposed to do or how it should behave.
+  2. **No conversation history**: Only the current user message and agent reply were passed — the judge couldn't understand context from prior turns (e.g., "أيوه عايز أحجز" without knowing what was discussed before).
+  3. **No agent identity**: The judge didn't know if it was reviewing a medical center agent, an e-commerce agent, or a general assistant.
+  4. **Truncated tool evidence**: Tool results were capped at 500 chars per value and 10 keys, causing data loss for rich tool outputs.
+- **Resolution**:
+  1. Added `_extract_agent_identity()` helper that extracts template_slug, channel, and the first 2000 chars of the system prompt.
+  2. Added `_extract_conversation_context()` helper that extracts the last 5 conversation turns with role labels.
+  3. Restructured the judge review prompt into a comprehensive rubric with 6 evaluation criteria and a bias toward approval (reject only on clear errors).
+  4. Increased evidence limits: 500→1500 chars/value, 10→15 keys, 2000→3000 chars for non-dict results.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/validate_reply.py`
+
 ### [BUG FIX] AI Service Self-Review Context Loss & Over-Constraint
 - **Date**: 2026-07-12
 - **Root Cause**:
