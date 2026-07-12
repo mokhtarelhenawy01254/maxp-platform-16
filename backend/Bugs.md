@@ -1,5 +1,20 @@
 # Backend Bugs Log
 
+### [FEATURE] WhatsApp Direct Chat AI Correction Bridge (`/whatsapp/chat`)
+- **Date**: 2026-07-12
+- **Description**: The `/whatsapp/chat` page uses a completely different data pipeline (`whatsAppMessage` table + `whatsappController.getMessages`) than the `/whatsapp-inbox` page (unified `Message` table + `whatsappInboxService.getConversationDetail`). The correction endpoint requires unified `conversationId` + `message.id`, but the `/whatsapp/chat` workspace only has `whatsAppMessage.messageId` (a WhatsApp-native ID like `false_201xxx_3EBxxx`).
+- **Architecture Notes**:
+  1. Created a bridge endpoint `POST /api/whatsapp/messages/:whatsappMessageId/correct` in `whatsappController.js`.
+  2. The bridge resolves: `whatsAppMessage.messageId` → customer phone from `remoteJid` → unified `Customer` → unified `Conversation` (channel='whatsapp') → unified `Message` (by content + 30s timestamp window) → delegates to `whatsappInboxService.correctMessage()`.
+  3. Frontend `MessageBubble.tsx` (in `pages/whatsapp/components/`) now has self-contained correction state (no prop-drilling) with inline textarea editor.
+- **Tricky Behaviors**:
+  - The `whatsAppMessage` table and unified `Message` table are NOT linked by any foreign key. The bridge uses content + timestamp proximity matching (30s window) which is robust for production.
+  - `whatsAppMessage.messageId` is the WhatsApp protocol message ID (unique), not the database row `id`.
+- **Files Modified**:
+  - `apps/backend/controller/whatsappController.js` — Added `correctAIMessage()` bridge function
+  - `apps/backend/routes/whatsappRoutes.js` — Added `POST /messages/:whatsappMessageId/correct` route
+  - `apps/frontend/src/pages/whatsapp/components/MessageBubble.tsx` — Added correction button + inline editor
+
 ### [BUG FIX] AI Correction Button Not Visible Across All Inbox Pages
 - **Date**: 2026-07-12
 - **Root Cause**: Three cascading issues prevented the "✏️ تصحيح الرد" button from appearing:

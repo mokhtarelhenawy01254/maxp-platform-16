@@ -1,6 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-12 / 2026-03-09
+- **WhatsApp Direct Chat AI Correction Bridge (FEATURE / COMPLETE)**: Added AI correction capabilities directly into the direct WhatsApp chat page (`/whatsapp/chat` workspace):
+  1. Built a bridge endpoint `POST /api/whatsapp/messages/:whatsappMessageId/correct` that resolves native WhatsApp message ID to unified conversation and message records using proximity matching and customer identification.
+  2. Implemented inline correction UI in `MessageBubble.tsx` (the one under `pages/whatsapp/components/` used by the direct WhatsApp workspace) allowing users to correct AI replies, which dynamically triggers learning for the AI agent.
 - **AI Correction Button Visibility Fix (BUGFIX / CRITICAL)**: Fixed a 3-layer cascading bug that prevented the "✏️ تصحيح الرد" button from appearing on ANY inbox page (Unified, Facebook, Instagram, WhatsApp):
   1. Backend `sender` field returned `'agent'` instead of `'ai'` for AI-generated messages — frontend condition `sender === 'ai'` never matched.
   2. `agentInboxFacebookService.buildMessagePreview()` omitted `senderId`, `metadata`, and `isAIResponse` fields from serialized messages.
