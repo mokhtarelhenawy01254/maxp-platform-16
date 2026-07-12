@@ -2099,17 +2099,26 @@ async function deleteChat(req, res) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
-        });
-
-        if (!session) {
-            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        const targetSessionId = sessionId && sessionId !== 'all' ? sessionId : null;
+        let session = null;
+        if (targetSessionId) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: targetSessionId, companyId }
+            });
         }
+        if (!session) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId },
+                orderBy: { lastConnectedAt: 'desc' }
+            });
+        }
+        if (!session) {
+            return res.status(404).json({ error: 'لا توجد جلسة متاحة' });
+        }
+        const resolvedSessionId = session.id;
 
-        // Delete from Baileys (Clear chat)
-        const activeSession = WhatsAppManager.getSession(targetSessionId);
+        // Delete from Baileys (Clear chat) — best-effort
+        const activeSession = WhatsAppManager.getSession(resolvedSessionId);
         if (activeSession?.status === 'connected') {
             try {
                 await activeSession.sock.chatModify({
@@ -2127,11 +2136,11 @@ async function deleteChat(req, res) {
 
         // Delete from DB
         await getSharedPrismaClient().whatsAppMessage.deleteMany({
-            where: { sessionId: targetSessionId, remoteJid: jid }
+            where: { sessionId: resolvedSessionId, remoteJid: jid }
         });
 
         await getSharedPrismaClient().whatsAppContact.deleteMany({
-            where: { sessionId: targetSessionId, jid }
+            where: { sessionId: resolvedSessionId, jid }
         });
 
         res.json({ success: true });
