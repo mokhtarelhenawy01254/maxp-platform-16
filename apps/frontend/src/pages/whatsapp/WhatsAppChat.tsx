@@ -1301,9 +1301,11 @@ const WhatsAppChatContent: React.FC = () => {
     if (!window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
 
     try {
-      await api.delete(`/whatsapp/messages/${selectedMessageForMenu.messageId}`, {
-        data: {
-          sessionId: selectedSession,
+      await api.post('/whatsapp/messages/delete', {
+        sessionId: selectedSession,
+        to: selectedMessageForMenu.remoteJid,
+        key: {
+          id: selectedMessageForMenu.messageId,
           remoteJid: selectedMessageForMenu.remoteJid,
           fromMe: selectedMessageForMenu.fromMe
         }

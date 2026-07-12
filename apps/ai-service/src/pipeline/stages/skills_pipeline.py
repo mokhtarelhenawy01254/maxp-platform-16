@@ -172,7 +172,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
                 if not final_response.text:
                     logger.warning("skills_pipeline_followup_empty_retrying")
-                    final_response = await _raw_llm_call(ctx, followup_messages, tools=[], tool_choice=None)
+                    text_messages = _strip_tool_messages(followup_messages, executed)
+                    final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice=None)
                 ctx.final_reply = final_response.text or _format_tool_results(executed)
                 ctx.llm_response = final_response.text or ""
             except Exception as e:
@@ -647,6 +648,29 @@ async def _build_followup_messages(
             )
 
     return messages
+
+
+def _strip_tool_messages(messages: list[dict], executed: list[dict]) -> list[dict]:
+    """Remove tool_calls from assistant msgs and convert tool role msgs to system for APIs without tool support."""
+    result = [m for m in messages if m["role"] != "tool"]
+    for m in result:
+        m.pop("tool_calls", None)
+    tool_summaries = []
+    for item in executed:
+        tool_name = item.get("tool", "")
+        status = item.get("status", "")
+        result_data = item.get("result", {})
+        if tool_name == "booking_info" and isinstance(result_data, dict):
+            branches = len(result_data.get("branches", []))
+            services = len(result_data.get("services", []))
+            doctors = len(result_data.get("doctors", []))
+            tool_summaries.append(f"[{tool_name}: {branches} فرع, {services} خدمة, {doctors} دكتور]")
+        else:
+            tool_summaries.append(f"[{tool_name}: {'نجاح' if status == 'success' else 'فشل'}]")
+    if tool_summaries:
+        summary = "نتائج الأدوات:\n" + "\n".join(tool_summaries)
+        result.append({"role": "system", "content": summary})
+    return result
 
 
 def _inject_image_to_product_search(arguments: dict, attachments: list[dict]) -> None:

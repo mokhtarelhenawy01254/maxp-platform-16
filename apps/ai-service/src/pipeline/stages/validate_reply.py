@@ -16,7 +16,7 @@ from src.pipeline.context import PipelineContext
 logger = structlog.get_logger(__name__)
 
 MAX_OUTPUT_RETRIES = 2
-REVIEW_MODEL_PRIORITY = ["gemini-2.5-flash", "deepseek-v4-flash", "gpt-5.4-nano"]
+REVIEW_MODEL_PRIORITY = ["deepseek-v4-flash", "gemini-2.5-flash", "gpt-5.4-nano"]
 
 
 def _try_parse_json_object(text: str) -> dict[str, Any] | None:
@@ -230,8 +230,8 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         await _log_review(ctx, "error", reply=reply, model_used=model_name, latency_ms=latency or 0)
         return None
     except Exception as e:
-        logger.warning("self_review.failed", error=str(e))
-        await _log_review(ctx, "error", reply=reply)
+        logger.warning("self_review.failed", error=str(e), model=model_name)
+        await _log_review(ctx, "error", reply=reply, model_used=model_name, latency_ms=latency or 0)
         return None
 
 
