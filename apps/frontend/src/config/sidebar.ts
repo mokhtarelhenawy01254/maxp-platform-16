@@ -192,7 +192,7 @@ const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId:
         return true; 
     }
     
-    if (sectionId === 'settings') return true;
+    if (sectionId === 'settings' || sectionId === 'my-account') return true;
 
     const reqPerms = DOMAIN_PERMISSIONS[sectionId];
     if (reqPerms && reqPerms.length > 0) {
