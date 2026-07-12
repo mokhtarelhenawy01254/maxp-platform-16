@@ -409,6 +409,11 @@
   "selfReview": {
     "title": "Self-Review Logs",
     "description": "Review logs from LLM-as-Judge quality checks on agent replies before sending",
+    "tabs": {
+      "logs": "Logs",
+      "analytics": "Analytics",
+      "settings": "Settings"
+    },
     "sidebar": "Self-Review Logs",
     "stats": {
       "total": "Total Reviews",

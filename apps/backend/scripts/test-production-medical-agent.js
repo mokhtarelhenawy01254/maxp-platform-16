@@ -46,7 +46,7 @@ function apiRequest(method, path, body, token) {
       });
     });
     req.on('error', reject);
-    req.setTimeout(60000, () => { req.destroy(); reject(new Error('Timeout')); });
+    req.setTimeout(180000, () => { req.destroy(); reject(new Error('Timeout')); });
     if (payload) req.write(payload);
     req.end();
   });

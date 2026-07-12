@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models.review_log import ReviewLog
@@ -161,7 +161,10 @@ class ReviewLogRepo:
         since: datetime | None = None,
     ) -> list[dict[str, Any]]:
         """Most common violations by agent."""
-        where: list[Any] = [ReviewLog.violations.isnot(None)]
+        where: list[Any] = [
+            ReviewLog.violations.isnot(None),
+            func.jsonb_typeof(ReviewLog.violations) == "array",
+        ]
         if company_id:
             where.append(ReviewLog.company_id == company_id)
         if agent_id:
