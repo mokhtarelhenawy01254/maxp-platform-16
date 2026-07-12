@@ -1,5 +1,6 @@
 {
   "title": "Dashboard",
+  "welcome": "Welcome, {{name}}",
   "status": {
     "active": "Active",
     "inactive": "Inactive"
@@ -149,6 +150,20 @@
     "openOrdersFollowUp": "Need follow-up in the orders workspace",
     "noOpenOrders": "No open orders in this period",
     "openOrdersAction": "Open orders"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "orders": "Orders",
+    "products": "Products",
+    "customers": "Customers",
+    "whatsapp": "WhatsApp",
+    "inbox": "Inbox",
+    "aiAgent": "AI Agent",
+    "connections": "Connections",
+    "analytics": "Analytics",
+    "marketing": "Marketing",
+    "storefront": "Storefront",
+    "settings": "Settings"
   },
   "quickStart": {
     "title": "Quick start guide",

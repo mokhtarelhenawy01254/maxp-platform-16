@@ -1,5 +1,6 @@
 {
   "title": "لوحة تحكم",
+  "welcome": "أهلًا {{name}}",
   "status": {
     "active": "نشط",
     "inactive": "غير نشط"

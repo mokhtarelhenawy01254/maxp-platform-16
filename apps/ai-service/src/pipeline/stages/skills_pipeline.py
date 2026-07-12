@@ -164,7 +164,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
                 if not final_response.text:
                     logger.warning("skills_pipeline_followup_empty_retrying")
-                    final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="auto")
+                    final_response = await _raw_llm_call(ctx, followup_messages, tools=[], tool_choice=None)
                 ctx.final_reply = final_response.text or _format_tool_results(executed)
                 ctx.llm_response = final_response.text or ""
             except Exception as e:
@@ -382,7 +382,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         )
 
     # Build tool definitions so DeepSeek can understand tool_call history
-    tool_dicts = tools or _build_tool_dicts(ctx)
+    tool_dicts = _build_tool_dicts(ctx) if tools is None else tools
 
     # If message has images but current model doesn't support vision, switch to Gemini
     has_images = any(
