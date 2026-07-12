@@ -162,7 +162,9 @@ const platformStyles: Record<string, { label: string; icon: string }> = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const UnifiedInbox: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t: rawT, i18n } = useTranslation();
+  // ponytail: react-i18next v12 returns DefaultTFuncReturn, cast to string for aria-label/props
+  const t = rawT as ((key: string, opts?: any) => string);
   const isRtl = i18n.dir() === "rtl";
 
   // State
