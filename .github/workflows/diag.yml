@@ -40,8 +40,22 @@ jobs:
             echo "=== PM2 Status ==="
             pm2 list
             
-            echo "=== Recent AI Service Logs ==="
-            pm2 logs maxp-ai-service --lines 100 --nostream
-            
-            echo "=== Recent Backend Logs ==="
-            pm2 logs maxp-backend --lines 100 --nostream
+            echo "=== Recent Failed Provider Logs ==="
+            cd /var/www/backend2
+            node -e "
+              const path = require('path');
+              const { PrismaClient } = require('./prisma/generated/postgresql_v2');
+              const prisma = new PrismaClient();
+              async function run() {
+                // Since prisma is dynamically generated, let's list logs from raw query to be model-independent
+                const logs = await prisma.\$queryRaw\`
+                  SELECT * FROM public.ai_provider_logs 
+                  WHERE status = 'failed' 
+                  ORDER BY \"createdAt\" DESC 
+                  LIMIT 5
+                \`;
+                console.log(JSON.stringify(logs, null, 2));
+              }
+              run().catch(console.error).finally(() => prisma.\$disconnect());
+            "
+
