@@ -580,7 +580,7 @@ async def _build_followup_messages(
     """Build messages for the follow-up LLM call after tool execution."""
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
-    system_prompt = f"{base_prompt}\n\nاكتب رداً طبيعياً ومباشراً للعميل بالعامية المصرية بناءً على نتائج الأدوات أعلاه. لا تكرر التحية. لا تخبر العميل أنك استخدمت أدوات."
+    system_prompt = f"{base_prompt}\n\nاكتب رداً طبيعياً ومباشراً للعميل بالعامية المصرية. استخدم نتائج الأدوات أعلاه للرد. إذا كانت النتائج لا تحتوي على المعلومات المطلوبة بالكامل، رد بما هو متاح واسأل باستكمال الباقي."
 
     # Inject SKILL.md instructions (same as primary _llm_call)
     if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
