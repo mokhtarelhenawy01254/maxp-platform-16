@@ -1,5 +1,22 @@
 # Backend Bugs Log
 
+### [BUG FIX] AI Agent Self-Review Life Cycle & Model Selector Mismatch
+- **Date**: 2026-07-12
+- **Root Cause**:
+  1. **Backend (`self_review.py` API & `validate_reply.py` pipeline)**: There was a mismatch in referencing the Agent model primary identifier. The pipeline stages and self-review setup expected `Agent.agent_id`, but the correct SQLAlchemy field is `Agent.id`. This mismatch caused an `AttributeError` inside `set_review_model` and failed to query merchant guardrail rules correctly.
+  2. **Pipeline Stage (`validate_reply.py`)**: The stage was relying on `json.loads` directly for the JSON-as-Judge verdict, which failed when the LLM returned JSON wrapped in Markdown backticks. Additionally, evidence logs were aggressively truncated, which caused vital tool context to be lost.
+  3. **Frontend (`SuperAdminSelfReviewLogs.tsx`)**: The model selection dropdown for specific agent overrides used hardcoded static option values rather than dynamically querying the list of available models (`settingsData.available_models`) like global settings. Furthermore, pagination chevrons were reversed for LTR and RTL directions.
+- **Resolution**:
+  1. Updated `self_review.py` and `validate_reply.py` to correctly query and log agent properties using dynamic `getattr(ctx.agent, "id", None)` and `getattr(ctx.agent, "template_slug", None)` checks.
+  2. Integrated `_try_parse_json_object` in `validate_reply.py` to parse LLM JSON responses with markdown tags cleanly.
+  3. Increased evidence summarization limits to up to 10 dict keys, 500 characters per value, and 2000 characters for non-dict items.
+  4. Dynamically mapped available model choices from the settings schema in the agent model override select list in the frontend.
+  5. Corrected chevron arrow directions in the pagination control to respect Arabic RTL direction properly.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/self_review.py`
+  - `apps/ai-service/src/pipeline/stages/validate_reply.py`
+  - `apps/frontend/src/pages/super-admin/SuperAdminSelfReviewLogs.tsx`
+
 ### [FEATURE] WhatsApp Direct Chat AI Correction Bridge (`/whatsapp/chat`)
 - **Date**: 2026-07-12
 - **Description**: The `/whatsapp/chat` page uses a completely different data pipeline (`whatsAppMessage` table + `whatsappController.getMessages`) than the `/whatsapp-inbox` page (unified `Message` table + `whatsappInboxService.getConversationDetail`). The correction endpoint requires unified `conversationId` + `message.id`, but the `/whatsapp/chat` workspace only has `whatsAppMessage.messageId` (a WhatsApp-native ID like `false_201xxx_3EBxxx`).

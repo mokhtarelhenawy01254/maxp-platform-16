@@ -139,10 +139,10 @@ def _summarize_evidence(evidence: list[dict]) -> str:
         tool = item.get("tool", "unknown")
         result = item.get("result", {})
         if isinstance(result, dict):
-            keys = list(result.keys())[:3]
-            summary = ", ".join(f"{k}: {str(result[k])[:120]}" for k in keys if result[k] is not None)
+            keys = list(result.keys())[:10]
+            summary = ", ".join(f"{k}: {str(result[k])[:500]}" for k in keys if result[k] is not None)
         else:
-            summary = str(result)[:200]
+            summary = str(result)[:2000]
         parts.append(f"{tool}: {{{summary}}}")
     return " | ".join(parts)
 
@@ -159,8 +159,8 @@ async def _log_review(
             repo = ReviewLogRepo(db)
             await repo.create(
                 company_id=ctx.company_id,
-                agent_id=str(ctx.agent.agent_id) if ctx.agent and hasattr(ctx.agent, "agent_id") else "",
-                agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+                agent_id=str(getattr(ctx.agent, "id", None) or getattr(ctx.agent, "agent_id", None) or ""),
+                agent_slug=str(getattr(ctx.agent, "template_slug", None) or getattr(ctx.agent, "slug", None) or ""),
                 reply_preview=reply[:200],
                 model_used=model_used,
                 latency_ms=latency_ms,
@@ -187,7 +187,7 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         async with session.async_session() as db:
             from src.guardrails.merchant_rules import MerchantRuleGuardrail
             guardrail = MerchantRuleGuardrail()
-            agent_id = ctx.agent.agent_id if ctx.agent and hasattr(ctx.agent, "agent_id") else ""
+            agent_id = str(getattr(ctx.agent, "id", None) or getattr(ctx.agent, "agent_id", None) or "")
             if agent_id:
                 rules = await guardrail.get_relevant_rules(db, agent_id, ctx.message, top_k=5)
                 if rules:
@@ -220,7 +220,10 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
     try:
         response = await client.generate(messages=messages, tools=None, temperature=0.1)
         latency = int((time.monotonic() - t0) * 1000)
-        verdict = json.loads(response.text)
+        parsed_obj = _try_parse_json_object(response.text)
+        if parsed_obj is None:
+            raise json.JSONDecodeError("Failed to parse JSON object from review model output", response.text, 0)
+        verdict = parsed_obj
         if verdict.get("approved"):
             await _log_review(ctx, "approved", reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
             return None
@@ -228,13 +231,13 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         violations = verdict.get("violations", [])
         logger.info("self_review.rejected",
             reason=reason, violations=violations, latency_ms=latency,
-            agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+            agent_slug=str(getattr(ctx.agent, "template_slug", None) or getattr(ctx.agent, "slug", None) or ""),
         )
         corrected = await _correct_output(ctx, reply, reason, violations)
         if corrected:
             logger.info("self_review.corrected",
                 reason=reason, latency_ms=latency,
-                agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+                agent_slug=str(getattr(ctx.agent, "template_slug", None) or getattr(ctx.agent, "slug", None) or ""),
             )
             await _log_review(ctx, "corrected", reply=corrected, model_used=model_name, latency_ms=latency, verdict=verdict)
         else:
@@ -420,7 +423,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 continue
 
             logger.info("self_review.approved",
-                agent_slug=ctx.agent.slug if ctx.agent and hasattr(ctx.agent, "slug") else "",
+                agent_slug=str(getattr(ctx.agent, "template_slug", None) or getattr(ctx.agent, "slug", None) or ""),
             )
             ctx.llm_response = reply
             break  # Validation + review succeeded!

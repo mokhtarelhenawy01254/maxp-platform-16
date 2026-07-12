@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { selfReviewService, type PaginatedResponse, type ReviewStats, type ReviewLog } from "../../services/selfReviewService";
+import { selfReviewService, type PaginatedResponse, type ReviewStats } from "../../services/selfReviewService";
 import { apiClient } from "../../services/apiClient";
 
 interface AgentOption {
@@ -177,7 +177,7 @@ function SuperAdminSelfReviewLogs() {
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
             <label className="text-xs text-muted-foreground mb-1 block">{t("superAdmin.selfReview.modelControl.agent")}</label>
-            <Select value={ctrlAgent} onValueChange={(v) => { setCtrlAgent(v); setCtrlModel(""); setCtrlSaved(false); }}>
+            <Select value={ctrlAgent} onValueChange={(v) => { setCtrlAgent(v || ""); setCtrlModel(""); setCtrlSaved(false); }}>
               <SelectTrigger><SelectValue placeholder={t("superAdmin.selfReview.modelControl.placeholder")} /></SelectTrigger>
               <SelectContent>
                 {(agentsList || []).map((a: AgentOption) => (
@@ -188,13 +188,13 @@ function SuperAdminSelfReviewLogs() {
           </div>
           <div className="flex-1 min-w-[200px]">
             <label className="text-xs text-muted-foreground mb-1 block">{t("superAdmin.selfReview.modelControl.model")}</label>
-            <Select value={ctrlModel} onValueChange={setCtrlModel} disabled={!ctrlAgent}>
+            <Select value={ctrlModel} onValueChange={(v) => setCtrlModel(v || "")} disabled={!ctrlAgent}>
               <SelectTrigger><SelectValue placeholder={t("superAdmin.selfReview.modelControl.default")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__default__">{t("superAdmin.selfReview.modelControl.default")}</SelectItem>
-                <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                <SelectItem value="deepseek-v4-flash">DeepSeek V4 Flash</SelectItem>
-                <SelectItem value="gpt-5.4-nano">GPT 5.4 Nano</SelectItem>
+                {(settingsData?.available_models || []).map((m: string) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -211,7 +211,7 @@ function SuperAdminSelfReviewLogs() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px]">
               <label className="text-xs text-muted-foreground mb-1 block">{t("superAdmin.selfReview.globalSettings.model")}</label>
-              <Select value={globalModel} onValueChange={setGlobalModel}>
+              <Select value={globalModel} onValueChange={(v) => setGlobalModel(v || "")}>
                 <SelectTrigger><SelectValue placeholder={t("superAdmin.selfReview.globalSettings.placeholder")} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">{t("superAdmin.selfReview.globalSettings.default")}</SelectItem>
@@ -303,7 +303,7 @@ function SuperAdminSelfReviewLogs() {
                   <SelectItem value="90">{t("superAdmin.selfReview.filters.days", { n: 90 })}</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={agentFilter} onValueChange={(v) => { setAgentFilter(v); setPage(1); }}>
+              <Select value={agentFilter} onValueChange={(v) => { setAgentFilter(v || "all"); setPage(1); }}>
                 <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("superAdmin.selfReview.filters.allAgents")}</SelectItem>
@@ -312,7 +312,7 @@ function SuperAdminSelfReviewLogs() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v || "all"); setPage(1); }}>
                 <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("superAdmin.selfReview.filters.allStatuses")}</SelectItem>
@@ -362,8 +362,8 @@ function SuperAdminSelfReviewLogs() {
               <div className="flex items-center justify-between pt-4">
                 <p className="text-sm text-muted-foreground">{t("common.page")} {page} / {totalPages || 1}</p>
                 <div className="flex gap-1">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{i18n.dir() === "rtl" ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}</Button>
-                  <Button variant="outline" size="sm" disabled={totalPages === 0 || page >= totalPages} onClick={() => setPage(page + 1)}>{i18n.dir() === "rtl" ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}</Button>
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{i18n.dir() === "rtl" ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}</Button>
+                  <Button variant="outline" size="sm" disabled={totalPages === 0 || page >= totalPages} onClick={() => setPage(page + 1)}>{i18n.dir() === "rtl" ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}</Button>
                 </div>
               </div>
             </>

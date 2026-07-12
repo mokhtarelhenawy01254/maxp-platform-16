@@ -177,7 +177,7 @@ async def set_review_model(
 ) -> dict[str, bool]:
     from sqlalchemy import select, update
 
-    stmt = select(Agent).where(Agent.agent_id == agent_id)
+    stmt = select(Agent).where(Agent.id == agent_id)
     result = await session.execute(stmt)
     agent = result.scalar_one_or_none()
     if not agent:
@@ -190,7 +190,7 @@ async def set_review_model(
     else:
         cfg["reviewModel"] = body.model
     await session.execute(
-        update(Agent).where(Agent.agent_id == agent_id).values(config=cfg)
+        update(Agent).where(Agent.id == agent_id).values(config=cfg)
     )
     await session.commit()
     logger.info("review_model_updated", agent_id=agent_id, model=body.model)

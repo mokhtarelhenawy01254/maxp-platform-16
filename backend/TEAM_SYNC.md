@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-12 / 2026-03-09
+- **AI Agent Self-Review Life Cycle & Model Selector Mismatch (BUGFIX / CRITICAL)**: Resolved a critical database model query mismatch in the AI self-review logs:
+  1. Fixed the API `set_review_model` and `validate_reply.py` pipeline stage to query `Agent.id` instead of the non-existent `Agent.agent_id` property, stopping silent SQL failures and enabling proper guardrails checks.
+  2. Implemented flexible JSON block parsing via `_try_parse_json_object` in the pipeline validation stage, resolving crashes when the model responds with Markdown-wrapped JSON.
+  3. Increased evidence summarization limits to up to 10 keys, 500 characters per value, and 2000 characters for list/raw results, preserving tool execution context.
+  4. Updated the Super Admin model selector override interface to dynamically fetch options from the backend `settingsData` object instead of using hardcoded lists.
+  5. Corrected the LTR/RTL pagination control chevron arrow direction in the Arabic logs viewer dashboard.
 - **WhatsApp Direct Chat AI Correction Bridge (FEATURE / COMPLETE)**: Added AI correction capabilities directly into the direct WhatsApp chat page (`/whatsapp/chat` workspace):
   1. Built a bridge endpoint `POST /api/whatsapp/messages/:whatsappMessageId/correct` that resolves native WhatsApp message ID to unified conversation and message records using proximity matching and customer identification.
   2. Implemented inline correction UI in `MessageBubble.tsx` (the one under `pages/whatsapp/components/` used by the direct WhatsApp workspace) allowing users to correct AI replies, which dynamically triggers learning for the AI agent.
