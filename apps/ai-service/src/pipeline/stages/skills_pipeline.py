@@ -366,6 +366,10 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         tool_choice = None
 
     temperature = 1.0 if provider == "OLLAMA" else 0.3
+
+    # Persist assembled messages for downstream stages (self-review judge context)
+    ctx.messages = list(messages)
+
     return await client.generate(
         messages=messages,
         tools=tool_dicts,

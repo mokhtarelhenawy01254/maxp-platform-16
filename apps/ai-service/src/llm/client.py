@@ -257,14 +257,16 @@ class LLMClient:
                         )
 
             _latency_ms = int((time.monotonic() - _t0) * 1000)
+            meta: dict = {"parser": parser_key}
+            if response.usage:
+                meta["tokens"] = response.usage
+            if response.text:
+                meta["response"] = response.text[:5000]
             await self._write_provider_log(
                 action="generation_success",
                 status="success",
                 latency_ms=_latency_ms,
-                metadata={
-                    "tokens": response.usage,
-                    "parser": parser_key,
-                } if response.usage else {"parser": parser_key},
+                metadata=meta,
             )
             return response
         except Exception as exc:

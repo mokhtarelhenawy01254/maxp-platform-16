@@ -40,7 +40,7 @@ function apiRequest(method, path, body, token) {
       });
     });
     req.on('error', reject);
-    req.setTimeout(30000, () => { req.destroy(); reject(new Error('Timeout')); });
+    req.setTimeout(90000, () => { req.destroy(); reject(new Error('Timeout')); });
     if (payload) req.write(payload);
     req.end();
   });
@@ -64,20 +64,20 @@ async function getOrCreateYasmineAgent(token) {
   }
 
   const agents = listRes.body.agents || [];
-  let yasmine = agents.find(a => a.templateSlug === 'sales-rep-v2-agent' && a.name.includes('ياسمين'));
+  const existingAgents = agents.filter(a => a.templateSlug === 'sales-rep-v2-agent' && a.name.includes('ياسمين'));
 
-  if (yasmine) {
-    console.log(`${GREEN}✓${RESET} تم العثور على الوكيل "ياسمين" نشط بالفعل: ID = ${yasmine.id}`);
-    return yasmine.id;
+  for (const agent of existingAgents) {
+    console.log(`${YELLOW}⚠ حذف الوكيل ياسمين القديم لتحديث الموديل والاختبار: ID = ${agent.id}...${RESET}`);
+    await apiRequest('DELETE', `/api/v1/agent/agents/${agent.id}?permanent=true`, null, token);
   }
 
-  console.log(`${YELLOW}⚠ الوكيل ياسمين غير موجود في Sandbox. جاري تفعيلها الآن...${RESET}`);
+  console.log(`${CYAN}▶ تفعيل الوكيل ياسمين بموديل deepseek-v4-flash...${RESET}`);
   const spawnRes = await apiRequest('POST', '/api/v1/agent/agents', {
     name: 'ياسمين - خبيرة المبيعات وتنسيق المنتجات',
     role: 'SALES_REPRESENTATIVE',
     templateSlug: 'sales-rep-v2-agent',
     description: 'مستشارة مبيعات وستايل شخصية تحاكي البشر بالكامل',
-    model: 'gemini-2.5-flash', // Using gemini locally to ensure it is supported and fast
+    model: 'deepseek-v4-flash',
     config: {
       tone: 'friendly',
       persona: 'ياسمين - مستشارة المبيعات الشخصية في المتجر',

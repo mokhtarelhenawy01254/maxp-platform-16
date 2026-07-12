@@ -1,6 +1,13 @@
 # Team Sync Updates
 
 ## 2026-07-12 / 2026-03-09
+- **AI Service Self-Review Judge — Conversation History Context Fix (BUGFIX / CRITICAL)**: Fixed a bug where the self-review judge was operating without conversation history. Updated `_llm_call` in `skills_pipeline.py` to persist the assembled messages array (containing DB-backed conversation history and customer message) to `ctx.messages`. This ensures downstream stages (like the self-review judge) can access the full context of prior turns.
+- **AI Service Active Polishing & Refinement Layer (FEATURE / COMPLETE)**: Overhauled the self-review judge pipeline in `validate_reply.py` to act as an active editor/polishing layer rather than a strict gatekeeper:
+  1. Restructured the review judge prompt and guidelines to explicitly distinguish between harmful factual hallucinations (fake services, prices, doctors, branches) and natural human-like conversational initiative (paying cash, invoice retrieval, friendly greetings, apologies).
+  2. Upgraded the judge JSON schema to output `need_polish` and `polished_reply` fields alongside the approved status.
+  3. Modified `_self_review` logic to use the `polished_reply` directly when available, bypassing the redundant, slow, and dry fallback correction call to the main model (saving up to 30s of response latency).
+  4. Reduced the maximum output retries (`MAX_OUTPUT_RETRIES`) from 2 to 1 to bound latency and prevent timeouts under heavy load.
+  5. Enhanced `_correct_output` with persona-preserving instructions and guidelines from `create-premium-human-agent` to ensure fallback replies remain warm, natural, and human-like.
 - **AI Service Self-Review Judge — Blind Context Overhaul (BUGFIX / CRITICAL)**: Major rewrite of the LLM-as-Judge self-review system in `validate_reply.py`:
   1. The judge now receives the agent's system prompt (first 2000 chars including persona, soul, and core instructions) via `_extract_agent_identity()`.
   2. The judge now receives the last 5 conversation turns via `_extract_conversation_context()` to understand context.

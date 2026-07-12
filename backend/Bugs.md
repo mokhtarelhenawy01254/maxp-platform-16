@@ -1,5 +1,27 @@
 # Backend Bugs Log
 
+### [BUG FIX] AI Service Self-Review Judge — Conversation History Context Loss
+- **Date**: 2026-07-13
+- **Root Cause**: The self-review judge model was operating without the context of prior messages in the conversation. While `ContextAssembler.fetch_message_history` correctly retrieved the thread history from the database inside `_llm_call` (`skills_pipeline.py`), the resulting messages array was only used as a local variable. It was never written to `ctx.messages`, leaving `ctx.messages` empty. When the downstream `validate_reply.py` stage extracted conversation context via `_extract_conversation_context(ctx)`, it found an empty list and passed `(لا يوجد تاريخ محادثة)` to the judge.
+- **Resolution**: Added `ctx.messages = list(messages)` inside `_llm_call` in `skills_pipeline.py` right before the primary LLM call. This persists the compiled context (system instructions, message history, current user prompt) so that the downstream self-review judge and other components can access the full context.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
+### [BUG FIX / ENHANCEMENT] AI Service Active Polishing Layer & Rate-Limitation Over-Strictness
+- **Date**: 2026-07-12
+- **Root Cause**:
+  1. **Strict Gatekeeping**: The self-review judge model was too strict and treated natural human-like initiatives (e.g., offering cash payment and reimbursement invoices) as "hallucinations" because the exact words were missing from database tool outputs.
+  2. **Persona Loss**: When a response was rejected, the rewriting model received only a factual correction prompt, causing it to abandon its warm, human receptionist persona (e.g., Shahd or Ahmed) and output dry, robotic text to "play it safe".
+  3. **High Latency / Rate Limits**: Multiple consecutive LLM calls (generation -> review -> correction -> review) caused significant latency (up to 60s) and hit the Gemini free-tier rate limits (429 Resource Exhausted) on local environments.
+- **Resolution**:
+  1. Updated the judge prompt to distinguish between **harmful factual errors** (fake services, prices, dates) and **human-like common-sense initiatives** (reimbursement explanations, greetings, apologies).
+  2. Overhauled the judge JSON schema to output `need_polish: true` and `polished_reply: "..."` when the reply is factually correct but too dry or robotic, or when it needs minor corrections.
+  3. Integrated active polishing in `_self_review` to use the `polished_reply` directly instead of initiating an extra correction loop.
+  4. Bounded latency by reducing `MAX_OUTPUT_RETRIES` from 2 to 1.
+  5. Injected persona guidelines from `create-premium-human-agent` into `_correct_output` to ensure fallback rewrites preserve the receptionist identity.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/validate_reply.py`
+
 ### [BUG FIX] AI Service Self-Review Judge — Blind Context (Major Overhaul)
 - **Date**: 2026-07-12
 - **Root Cause**: The self-review judge model (`_self_review` in `validate_reply.py`) was operating in a near-total vacuum:

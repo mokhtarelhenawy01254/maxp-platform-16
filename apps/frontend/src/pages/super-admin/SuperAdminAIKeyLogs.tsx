@@ -483,6 +483,16 @@ function KeyLogsContent() {
                   </span>
                 </div>
               )}
+              {selectedLog.action === "generation_success" && selectedLog.response && (
+                <div className="space-y-2 pt-2 border-t">
+                  <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                    <Zap className="size-3 text-amber-500" /> الرد المولد
+                  </span>
+                  <div className="bg-muted/50 rounded-lg p-3 text-sm leading-relaxed whitespace-pre-wrap break-words max-h-80 overflow-y-auto" dir="auto">
+                    {selectedLog.response}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
