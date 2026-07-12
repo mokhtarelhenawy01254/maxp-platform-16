@@ -9,5 +9,7 @@ router.get("/history", authenticateToken, aiImageController.getHistory);
 router.delete("/:filename", authenticateToken, aiImageController.deleteImage);
 router.get("/models", authenticateToken, aiImageController.getModels);
 router.get("/model-config", authenticateToken, aiImageController.getModelConfig);
+router.put("/model-config", authenticateToken, aiImageController.saveModelConfig);
+router.get("/tier-config", authenticateToken, aiImageController.getTierConfig);
 
 module.exports = router;

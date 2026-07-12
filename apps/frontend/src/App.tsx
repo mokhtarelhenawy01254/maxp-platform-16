@@ -867,6 +867,9 @@ const SuperAdminVisualSearchLogs = React.lazy(
 const SuperAdminSupportSettings = React.lazy(
   () => import("./pages/super-admin/SuperAdminSupportSettings"),
 );
+const SuperAdminAIImageGeneratorSettings = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIImageGeneratorSettings"),
+);
 // Merchant AI Pages
 const AIHubLayout = React.lazy(
   () => import("./pages/admin/AIHubLayout"),
@@ -2043,6 +2046,16 @@ const AppContent = () => {
                 <Layout fullWidth>
                   <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                     <SuperAdminSupportSettings />
+                  </React.Suspense>
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-image-generator-settings"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminAIImageGeneratorSettings />
                   </React.Suspense>
                 </Layout>
               }

@@ -15,6 +15,36 @@ const ALLOWED_MODELS = [
   "openai/gpt-5.4-image-2",
   "x-ai/grok-imagine-image-quality",
 ];
+const CONFIG_SYSTEM_NAME = "ai_image_generator_config";
+
+async function getImageGeneratorConfig(prisma) {
+  const setting = await prisma.systemSettings.findUnique({
+    where: { systemName: CONFIG_SYSTEM_NAME },
+  });
+  if (!setting?.config) return null;
+  return typeof setting.config === "string" ? JSON.parse(setting.config) : setting.config;
+}
+
+function resolveTierConfig(config, companyId) {
+  const companyOverride = config.companies?.[companyId];
+  if (companyOverride && companyOverride.enabled === false) return { enabled: false };
+  const enabled = companyOverride?.enabled !== false;
+  const tierKey = companyOverride?.tier || config.defaultTier || "balanced";
+  const tier = config.tiers?.[tierKey];
+  const maxDaily = companyOverride?.maxRequestsPerDay || config.defaultMaxRequestsPerDay || 50;
+  return { enabled, tierKey, tier, maxDaily };
+}
+
+async function getDailyUsage(prisma, companyId) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int as count FROM public.ai_provider_logs
+     WHERE "companyId" = $1 AND scope = 'image_generation' AND "createdAt" >= $2`,
+    companyId, today
+  );
+  return rows?.[0]?.count || 0;
+}
 
 function getPrisma() {
   return getSharedPrismaClient();
@@ -50,11 +80,31 @@ async function writeProviderLog({ companyId, keyId, keyName, action, status, lat
 exports.generateImage = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage } = req.body;
+    let { prompt, model, aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage } = req.body;
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ success: false, message: "الصورة مطلوب" });
     }
+
+    const prisma = getPrisma();
+    if (companyId) {
+      const config = await getImageGeneratorConfig(prisma);
+      if (config) {
+        const tierCfg = resolveTierConfig(config, companyId);
+        if (!tierCfg.enabled) {
+          return res.status(403).json({ success: false, message: "مولد الصور غير مفعل لشركتك. تواصل مع الدعم الفني." });
+        }
+        if (tierCfg.maxDaily > 0) {
+          const usage = await getDailyUsage(prisma, companyId);
+          if (usage >= tierCfg.maxDaily) {
+            return res.status(429).json({ success: false, message: `لقد تجاوزت الحد اليومي المسموح (${tierCfg.maxDaily} صورة). حاول مرة أخرى غداً.` });
+          }
+        }
+        model = model || (tierCfg.tier?.model);
+      }
+    }
+    model = model || "google/gemini-3.1-flash-image";
+
     if (!ALLOWED_MODELS.includes(model)) {
       return res.status(400).json({ success: false, message: "موديل غير مدعوم" });
     }
@@ -222,11 +272,114 @@ exports.generateImage = async (req, res) => {
 
 exports.getModelConfig = async (req, res) => {
   try {
-    const template = await aiServiceAdminClient.getAgentTemplate("social-media-image-agent");
-    const model = template?.model_policy?.default || ALLOWED_MODELS[0];
-    res.json({ success: true, data: { model, allowedModels: ALLOWED_MODELS } });
+    const companyId = req.user?.companyId;
+    const prisma = getPrisma();
+    const config = await getImageGeneratorConfig(prisma);
+    const savedModel = null;
+
+    if (!config) {
+      let templateModel = null;
+      try {
+        const template = await aiServiceAdminClient.getAgentTemplate("social-media-image-agent");
+        templateModel = template?.model_policy?.default;
+      } catch {}
+      const model = templateModel || ALLOWED_MODELS[0];
+      return res.json({ success: true, data: { model, allowedModels: ALLOWED_MODELS, tiers: null } });
+    }
+
+    const tierCfg = resolveTierConfig(config, companyId);
+    const usage = companyId ? await getDailyUsage(prisma, companyId) : 0;
+
+    const tiers = {};
+    for (const [key, t] of Object.entries(config.tiers || {})) {
+      tiers[key] = { displayName: t.displayName, description: t.description };
+    }
+
+    const model = tierCfg.enabled ? (savedModel || tierCfg.tier?.model || ALLOWED_MODELS[0]) : null;
+
+    res.json({
+      success: true,
+      data: {
+        model,
+        allowedModels: ALLOWED_MODELS,
+        tiers,
+        currentTier: tierCfg.tierKey,
+        enabled: tierCfg.enabled,
+        dailyUsage: usage,
+        dailyLimit: tierCfg.maxDaily,
+      },
+    });
   } catch {
-    res.json({ success: true, data: { model: ALLOWED_MODELS[0], allowedModels: ALLOWED_MODELS } });
+    res.json({ success: true, data: { model: ALLOWED_MODELS[0], allowedModels: ALLOWED_MODELS, tiers: null } });
+  }
+};
+
+exports.getTierConfig = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const prisma = getPrisma();
+    const config = await getImageGeneratorConfig(prisma);
+
+    if (!config) {
+      return res.json({ success: true, data: { available: false } });
+    }
+
+    const tierCfg = resolveTierConfig(config, companyId);
+    const usage = companyId ? await getDailyUsage(prisma, companyId) : 0;
+
+    const tiers = {};
+    for (const [key, t] of Object.entries(config.tiers || {})) {
+      tiers[key] = { displayName: t.displayName, description: t.description };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        available: true,
+        enabled: tierCfg.enabled,
+        currentTier: tierCfg.tierKey,
+        tiers,
+        dailyUsage: usage,
+        dailyLimit: tierCfg.maxDaily,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.saveModelConfig = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: "companyId مطلوب" });
+    }
+    const { model } = req.body;
+    if (!model || !ALLOWED_MODELS.includes(model)) {
+      return res.status(400).json({ success: false, message: "موديل غير مدعوم" });
+    }
+
+    const prisma = getPrisma();
+    const existing = await prisma.aiSetting.findUnique({
+      where: { companyId },
+      select: { modelSettings: true },
+    });
+
+    let modelSettings = {};
+    if (existing?.modelSettings) {
+      try { modelSettings = JSON.parse(existing.modelSettings); } catch { modelSettings = {}; }
+    }
+    modelSettings.imageModel = model;
+
+    await prisma.aiSetting.upsert({
+      where: { companyId },
+      update: { modelSettings: JSON.stringify(modelSettings) },
+      create: { companyId, modelSettings: JSON.stringify(modelSettings) },
+    });
+
+    res.json({ success: true, data: { model } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
