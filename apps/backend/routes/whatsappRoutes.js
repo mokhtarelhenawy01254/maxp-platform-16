@@ -678,6 +678,16 @@ router.get('/products', verifyToken.authenticateToken, checkAppAccess('whatsapp-
 router.get('/cart', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getCart);
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// 🔗 Facebook Embedded Sign-Up
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// جلب إعدادات Facebook (App ID, Redirect URI)
+router.get('/facebook/config', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getFacebookConfig);
+
+// استلام كود OAuth من Facebook وإنشاء جلسة واتساب
+router.post('/facebook/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.facebookConnect);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 📝 قوالب الرسائل
 // ═══════════════════════════════════════════════════════════════════════════════
 

@@ -3954,7 +3954,11 @@ module.exports = {
     // Status Updates
     getStatuses,
     postStatus,
-    markStatusViewed
+    markStatusViewed,
+
+    // Facebook Embedded Sign-Up
+    getFacebookConfig,
+    facebookConnect
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4088,6 +4092,194 @@ async function markStatusViewed(req, res) {
     } catch (error) {
         console.error('❌ Error marking status:', error);
         res.status(500).json({ error: 'حدث خطأ' });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔗 Facebook Embedded Sign-Up (WhatsApp Cloud Connect)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const facebookAppConfig = require('../config/facebookAppConfig');
+const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v22.0';
+const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
+
+async function getFacebookConfig(req, res) {
+    try {
+        const config = facebookAppConfig.getFacebookOAuthConfig();
+        const envConfig = require('../config/environment');
+        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+
+        if (!config.appId || facebookAppConfig.isPlaceholderFacebookCredential(config.appId)) {
+            return res.status(200).json({
+                appId: config.appId,
+                redirectUri,
+                configured: false
+            });
+        }
+
+        res.json({
+            appId: config.appId,
+            redirectUri,
+            configured: true
+        });
+    } catch (error) {
+        console.error('❌ Error getting Facebook config:', error);
+        res.status(500).json({ error: 'فشل تحميل إعدادات Facebook' });
+    }
+}
+
+async function facebookConnect(req, res) {
+    try {
+        const { code, state, sessionName } = req.body;
+        const { companyId } = req.user;
+
+        if (!code) {
+            return res.status(400).json({ error: 'Authorization code مطلوب' });
+        }
+
+        const config = facebookAppConfig.getFacebookOAuthConfig();
+        const envConfig = require('../config/environment');
+        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+
+        if (!config.appSecret) {
+            return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });
+        }
+
+        // Step 1: Exchange auth code for access token
+        const axios = require('axios');
+        const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+            params: {
+                client_id: config.appId,
+                redirect_uri: redirectUri,
+                client_secret: config.appSecret,
+                code
+            },
+            timeout: 15000
+        });
+
+        const shortLivedToken = tokenResponse.data?.access_token;
+        if (!shortLivedToken) {
+            return res.status(400).json({ error: 'فشل الحصول على رمز الوصول من Facebook' });
+        }
+
+        // Step 2: Exchange for long-lived token
+        const longTokenResponse = await axios.get(`${META_GRAPH_BASE}/oauth/access_token`, {
+            params: {
+                grant_type: 'fb_exchange_token',
+                client_id: config.appId,
+                client_secret: config.appSecret,
+                fb_exchange_token: shortLivedToken
+            },
+            timeout: 15000
+        });
+
+        const longLivedToken = longTokenResponse.data?.access_token || shortLivedToken;
+        const tokenExpiresAt = longTokenResponse.data?.expires_in
+            ? new Date(Date.now() + longTokenResponse.data.expires_in * 1000)
+            : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // default 60 days
+
+        // Step 3: Get user's businesses
+        const meResponse = await axios.get(`${META_GRAPH_BASE}/me/businesses`, {
+            params: { access_token: longLivedToken },
+            timeout: 15000
+        });
+
+        const businesses = meResponse.data?.data || [];
+        let businessId = null;
+
+        if (businesses.length === 0) {
+            return res.status(400).json({
+                error: 'لا يوجد Business Manager مرتبط بحسابك. الرجاء إنشاء واحد من business.facebook.com أولاً.'
+            });
+        }
+
+        businessId = businesses[0].id;
+
+        // Step 4: Get or create WABA
+        let wabaId = null;
+        let phoneNumberId = null;
+        let displayPhoneNumber = null;
+
+        try {
+            const wabaResponse = await axios.get(`${META_GRAPH_BASE}/${businessId}/client_whatsapp_business_accounts`, {
+                params: { access_token: longLivedToken },
+                timeout: 15000
+            });
+
+            const existingWABAs = wabaResponse.data?.data || [];
+            if (existingWABAs.length > 0) {
+                wabaId = existingWABAs[0].id;
+            }
+        } catch (wabaErr) {
+            console.warn('⚠️ No existing WABA found, attempting to create one...');
+        }
+
+        // Step 5: Get phone numbers from WABA if available
+        let metaPhoneNumberId = null;
+        let metaDisplayPhone = null;
+
+        if (wabaId) {
+            try {
+                const phoneResponse = await axios.get(`${META_GRAPH_BASE}/${wabaId}/phone_numbers`, {
+                    params: { access_token: longLivedToken },
+                    timeout: 15000
+                });
+
+                const phoneNumbers = phoneResponse.data?.data || [];
+                if (phoneNumbers.length > 0) {
+                    const activePhone = phoneNumbers.find(p => p.code_verification_status === 'VERIFIED')
+                        || phoneNumbers[0];
+                    metaPhoneNumberId = activePhone.id;
+                    metaDisplayPhone = activePhone.display_phone_number;
+                }
+            } catch (phoneErr) {
+                console.warn('⚠️ Could not fetch phone numbers:', phoneErr.message);
+            }
+        }
+
+        // Step 6: Create WhatsAppSession in DB
+        const session = await getSharedPrismaClient().whatsAppSession.create({
+            data: {
+                companyId,
+                name: sessionName || `WhatsApp Cloud (${metaDisplayPhone || 'Connecting...'})`,
+                provider: 'META_CLOUD',
+                status: 'CONNECTED',
+                metaAccessToken: longLivedToken,
+                metaTokenExpiresAt: tokenExpiresAt,
+                metaWabaId: wabaId,
+                metaPhoneNumberId: metaPhoneNumberId,
+                metaBusinessId: businessId,
+                metaDisplayPhoneNumber: metaDisplayPhone,
+                metaApiVersion: META_GRAPH_VERSION,
+                aiEnabled: true,
+                autoReply: false,
+                aiMode: 'suggest',
+                loadBalanceWeight: 1,
+                updatedAt: new Date()
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            session: {
+                id: session.id,
+                name: session.name,
+                provider: session.provider,
+                status: session.status,
+                phoneNumber: metaDisplayPhone,
+                metaDisplayPhoneNumber: metaDisplayPhone,
+                metaPhoneNumberId: metaPhoneNumberId,
+                metaWabaId: wabaId,
+                createdAt: session.createdAt
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Facebook Connect Error:', error.response?.data || error.message);
+        const errorMsg = error.response?.data?.error?.message
+            || error.response?.data?.error?.error_user_msg
+            || 'فشل الاتصال بحساب Facebook. الرجاء التحقق من الإعدادات والمحاولة مرة أخرى.';
+        res.status(500).json({ error: errorMsg });
     }
 }
 

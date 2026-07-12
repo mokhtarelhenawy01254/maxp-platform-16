@@ -1,5 +1,21 @@
 # Latest Updates
 
+## 2026-07-11: WhatsApp Cloud Embedded Sign-Up (Facebook OAuth)
+
+### New Feature
+- **WhatsApp Cloud Connect page** at `/whatsapp/cloud-connect` — 3-step wizard (intro → connecting → success/error)
+- **Facebook OAuth flow**: Redirect → user grants permissions → code exchange → long-lived token → WABA query → DB session
+- **Backend**: `GET /facebook/config` (appId + redirectUri), `POST /facebook/connect` (code exchange + WABA provisioning)
+- **Prisma**: All fields exist (`metaPhoneNumberId`, `metaWabaId`, `metaBusinessId`, `metaAccessToken`, `metaApiVersion`, `META_CLOUD` enum)
+- **i18n**: Arabic/English sidebar label + page in-page text
+- **`.env`**: Created `apps/backend/.env` + `apps/frontend/.env` with Facebook App credentials
+- **Files modified**: `whatsappController.js`, `whatsappRoutes.js`, `App.tsx`, `sidebar.ts`, `sidebar.json`, `WhatsAppCloudConnect.tsx`, `whatsapp/index.ts`
+
+### Still Needed
+- Set real `FACEBOOK_APP_SECRET` in `apps/backend/.env`
+- Add `http://localhost:3001/whatsapp/cloud-connect` to Facebook App's Valid OAuth Redirect URIs
+- Enable `business_management`, `whatsapp_business_messaging`, `whatsapp_business_management` permissions (Advanced Access)
+
 ## 2026-07-08: AI Image Generator — Image Upload + Model Fixes
 
 ### Fix 1: `res.data.data.imageUrl` Nesting Bug

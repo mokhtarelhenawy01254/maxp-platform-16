@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Session Log — 2026-07-12 — Self-Review System (LLM-as-Judge) Full Stack
 
 ## What Happened
@@ -28,6 +29,39 @@
 - Monitor PM2 logs after deploy for latency (target: <500ms avg)
 
 ---
+=======
+# Session Log — 2026-07-11 — WhatsApp Cloud Embedded Sign-Up (Facebook OAuth)
+
+## What Happened
+1. **Goal**: Build WhatsApp Cloud Embedded Sign-Up feature — one-click Facebook OAuth to connect WhatsApp Business API.
+2. **Frontend**: Created `WhatsAppCloudConnect.tsx` with 3-step wizard (intro → connecting → success/error), Facebook login button, session name input, method comparison card, callback handling from URL params, and unconfigured warning alert.
+3. **Routing**: Added lazy import + route `/whatsapp/cloud-connect` in `App.tsx`, sidebar menu item with `GlobeAltIcon`, i18n keys in Arabic/English.
+4. **Backend Routes**: `GET /facebook/config` → returns `{ appId, redirectUri, configured }`, `POST /facebook/connect` → exchanges OAuth code → long-lived token → queries WABA/phone numbers → creates `WhatsAppSession` in DB.
+5. **Controller**: `getFacebookConfig` computes redirect URI from `FRONTEND_URL` env, `facebookConnect` calls Graph API v25.0 (from `META_GRAPH_API_VERSION` env var) for token exchange, business lookup, WABA query, and DB insert.
+6. **Environment**: Created `apps/backend/.env` and `apps/frontend/.env` with Facebook App credentials, `FRONTEND_URL`, `META_GRAPH_API_VERSION`.
+7. **OAuth Config**: Created `data/facebook-oauth-config.json` with permissions and webhook settings.
+8. **Validation**: Verified all Prisma fields exist (metaPhoneNumberId, metaWabaId, metaBusinessId, metaAccessToken, metaApiVersion, META_CLOUD enum). Verified route mounting in server.js line 681. Verified redirect URI construction uses `envConfig.frontendUrl`.
+
+## Key Files Modified / Created
+- `apps/frontend/src/pages/whatsapp/WhatsAppCloudConnect.tsx` [NEW]
+- `apps/frontend/src/pages/whatsapp/index.ts`
+- `apps/frontend/src/App.tsx`
+- `apps/frontend/src/config/sidebar.ts`
+- `apps/frontend/src/locales/*/sections/sidebar.json`
+- `apps/backend/controller/whatsappController.js`
+- `apps/backend/routes/whatsappRoutes.js`
+- `apps/backend/data/facebook-oauth-config.json` [NEW]
+- `apps/backend/.env` [NEW]
+- `apps/frontend/.env` [NEW]
+
+## Still Needed (user action)
+- Set real `FACEBOOK_APP_SECRET` in `apps/backend/.env`
+- Register redirect URI `http://localhost:3001/whatsapp/cloud-connect` in Facebook App settings
+- Enable `business_management`, `whatsapp_business_messaging`, `whatsapp_business_management` Advanced Access
+
+---
+
+>>>>>>> 581942ce (feat: WhatsApp Cloud Embedded Sign-Up (Facebook OAuth))
 # Session Log — 2026-07-10 — Merchant Agent Guardrails & Dynamic Learning System
 
 ## What Happened
