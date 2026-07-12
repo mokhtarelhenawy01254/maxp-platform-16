@@ -88,11 +88,7 @@ async def _get_flash_review_client(ctx: PipelineContext) -> tuple[LLMClient | No
     global_review_model = None
     try:
         global_config = await model_manager.get_global_ui_config()
-        settings = (global_config or {}).get("settings", {})
-        # Check if self-review is globally disabled
-        if settings.get("selfReviewEnabled") is False:
-            return None, ""
-        global_review_model = settings.get("reviewModel")
+        global_review_model = (global_config or {}).get("settings", {}).get("reviewModel")
     except Exception:
         pass
 
@@ -242,13 +238,21 @@ async def _log_review(
 async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
     """LLM-as-Judge: review reply quality, merchant rules, accuracy, tone.
     Returns None if approved, or a corrected reply string.
-
-    The judge receives full context:
-    - Agent identity (template type, channel, system prompt summary)
-    - Conversation history (last 5 turns)
-    - Tool execution evidence
-    - Merchant guardrail rules
     """
+    # Check global self-review toggle DIRECTLY from DB (no cache)
+    try:
+        from src.db import session as _db_session_module
+        from src.db.models.provider import GlobalAiConfig as _G
+        from sqlalchemy import select as _select
+        async with _db_session_module.async_session() as _db:
+            _r = await _db.execute(_select(_G))
+            _gc = _r.scalar_one_or_none()
+            if _gc and _gc.settings and _gc.settings.get("selfReviewEnabled") is False:
+                await _log_review(ctx, "skipped", reply=reply)
+                return None
+    except Exception:
+        pass
+
     client, model_name = await _get_flash_review_client(ctx)
     if not client:
         await _log_review(ctx, "skipped", reply=reply)
