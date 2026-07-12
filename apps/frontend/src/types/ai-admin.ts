@@ -54,6 +54,7 @@ export interface AiKeyLog {
 export interface AiTestResult {
   ok?: boolean;
   success?: boolean;
+  status?: string;
   latency_ms?: number;
   model?: string;
   reply?: string;

@@ -456,6 +456,15 @@
       "saved": "Saved",
       "default": "Default (priority order)",
       "placeholder": "Choose a model..."
+    },
+    "globalSettings": {
+      "title": "Default Review Model",
+      "description": "Fallback review model when agent has no override. Priority: per-agent > global default > built-in list.",
+      "save": "Save",
+      "saved": "Saved",
+      "model": "Global Review Model",
+      "default": "Built-in priority order",
+      "placeholder": "Choose a default model..."
     }
   }
 }

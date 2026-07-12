@@ -23,10 +23,28 @@ function getPrisma() {
 async function getOpenRouterKey() {
   const prisma = getPrisma();
   const rows = await prisma.$queryRawUnsafe(
-    `SELECT "apiKey" FROM public.ai_keys WHERE provider = 'OPENROUTER' AND "isActive" = true ORDER BY priority ASC LIMIT 1`
+    `SELECT id, "apiKey", name FROM public.ai_keys WHERE provider = 'OPENROUTER' AND "isActive" = true ORDER BY priority ASC LIMIT 1`
   );
-  if (rows?.length) return rows[0].apiKey;
+  if (rows?.length) return { apiKey: rows[0].apiKey, keyId: rows[0].id, keyName: rows[0].name };
   throw new Error("OPENROUTER_API_KEY not found in ai_keys table");
+}
+
+async function writeProviderLog({ companyId, keyId, keyName, action, status, latencyMs, model, message }) {
+  try {
+    const prisma = getPrisma();
+    const id = crypto.randomUUID();
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO public.ai_provider_logs (id, provider, "keyId", "keyName", "companyId", scope, action, status, "latencyMs", model, message, "createdAt")
+       VALUES ($1, 'OPENROUTER', $2, $3, $4, 'image_generation', $5, $6, $7, $8, $9, NOW())`,
+      id, keyId || null, keyName || null, companyId || null,
+      action, status,
+      latencyMs != null ? Math.round(latencyMs) : null,
+      model || null,
+      message || null
+    );
+  } catch (e) {
+    console.error("❌ [AI-IMAGE] Failed to write log:", e.message);
+  }
 }
 
 exports.generateImage = async (req, res) => {
@@ -41,7 +59,8 @@ exports.generateImage = async (req, res) => {
       return res.status(400).json({ success: false, message: "موديل غير مدعوم" });
     }
 
-    const apiKey = await getOpenRouterKey();
+    const { apiKey, keyId, keyName } = await getOpenRouterKey();
+    const startTime = Date.now();
 
     const systemPrompt = [
       "You are a professional social media image designer. Your ONLY output MUST be a valid image. NEVER return text descriptions.",

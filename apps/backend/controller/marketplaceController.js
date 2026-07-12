@@ -1790,7 +1790,7 @@ exports.getBundleDetails = async (req, res) => {
       });
     }
 
-    const bundle = await executeWithRetry(async () => {
+    let bundle = await executeWithRetry(async () => {
       const dbBundle = await getSharedPrismaClient().appBundle.findFirst({
         where: { slug, isActive: true }
       });
@@ -1845,6 +1845,25 @@ exports.getBundleDetails = async (req, res) => {
         success: false,
         message: 'Bundle not found'
       });
+    }
+
+    if (companyId && bundle.apps?.length > 0) {
+      try {
+        const prisma = getSharedPrismaClient();
+        const appSlugs = bundle.apps.map((a) => a.slug).filter(Boolean);
+        const companyApps = await prisma.companyApp.findMany({
+          where: {
+            companyId,
+            app: { slug: { in: appSlugs } },
+            status: { in: ['ACTIVE', 'TRIAL'] }
+          },
+          select: { appId: true, app: { select: { slug: true } } }
+        });
+        const installedSlugs = new Set(companyApps.map((ca) => ca.app.slug));
+        bundle = { ...bundle, isInstalled: appSlugs.every((s) => installedSlugs.has(s)) };
+      } catch (e) {
+        console.warn('[BUNDLE-DETAILS] Failed to check activation:', e.message);
+      }
     }
 
     return res.json({

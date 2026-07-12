@@ -769,7 +769,7 @@ function TestResultDialog({ data, onClose, isLoading }: {
         ) : (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              {r?.ok || r?.success ? (
+              {r?.ok || r?.success || r?.status === "ok" ? (
                 <Badge variant="default" className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-800"><Check className="size-3 ml-1" /> نجاح</Badge>
               ) : <Badge variant="destructive"><X className="size-3 ml-1" /> فشل</Badge>}
               {r?.latency_ms != null ? <span className="text-xs text-muted-foreground tabular-nums">{String(r.latency_ms)}ms</span> : null}

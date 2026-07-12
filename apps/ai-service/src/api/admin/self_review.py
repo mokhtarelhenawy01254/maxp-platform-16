@@ -20,6 +20,12 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
+AVAILABLE_REVIEW_MODELS = [
+    "deepseek-v4-flash",
+    "gemini-2.5-flash",
+    "gpt-5.4-nano",
+]
+
 
 def _parse_date(date_str: str | None) -> datetime | None:
     if not date_str:
@@ -188,4 +194,55 @@ async def set_review_model(
     )
     await session.commit()
     logger.info("review_model_updated", agent_id=agent_id, model=body.model)
+    return {"success": True}
+
+
+class GlobalReviewSettings(BaseModel):
+    global_review_model: str = Field(default="", pattern=r"^[a-zA-Z0-9_.-]*$")
+
+
+@router.get("/self-review/settings")
+async def get_review_settings(
+    session: SessionDep,
+) -> dict[str, Any]:
+    from src.db.models.provider import GlobalAiConfig
+    from sqlalchemy import select
+
+    result = await session.execute(select(GlobalAiConfig))
+    config = result.scalar_one_or_none()
+    global_review_model = ""
+    if config:
+        settings = config.settings or {}
+        global_review_model = settings.get("reviewModel", "")
+    return {
+        "success": True,
+        "data": {
+            "global_review_model": global_review_model,
+            "available_models": AVAILABLE_REVIEW_MODELS,
+        },
+    }
+
+
+@router.patch("/self-review/settings")
+async def set_review_settings(
+    body: GlobalReviewSettings,
+    session: SessionDep,
+) -> dict[str, bool]:
+    from src.db.models.provider import GlobalAiConfig
+    from sqlalchemy import select, update
+
+    result = await session.execute(select(GlobalAiConfig))
+    config = result.scalar_one_or_none()
+    if not config:
+        return {"success": False}
+    settings = dict(config.settings or {})
+    if body.global_review_model:
+        settings["reviewModel"] = body.global_review_model
+    else:
+        settings.pop("reviewModel", None)
+    await session.execute(
+        update(GlobalAiConfig).where(GlobalAiConfig.id == config.id).values(settings=settings)
+    )
+    await session.commit()
+    logger.info("global_review_model_updated", model=body.global_review_model)
     return {"success": True}

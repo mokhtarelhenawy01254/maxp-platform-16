@@ -371,6 +371,14 @@ async function updateReviewModel(agentId, modelName) {
   return request('PATCH', `/admin/self-review/agents/${encodeURIComponent(agentId)}/review-model`, { model: modelName });
 }
 
+async function getSelfReviewSettings() {
+  return request('GET', '/admin/self-review/settings');
+}
+
+async function updateSelfReviewSettings(data) {
+  return request('PATCH', '/admin/self-review/settings', data);
+}
+
 module.exports = {
   listTools,
   listSkills,
@@ -421,4 +429,6 @@ module.exports = {
   listSelfReviewLogs,
   exportSelfReviewCsv,
   updateReviewModel,
+  getSelfReviewSettings,
+  updateSelfReviewSettings,
 };

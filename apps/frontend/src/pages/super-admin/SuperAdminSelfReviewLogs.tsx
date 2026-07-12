@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -70,12 +70,19 @@ function SuperAdminSelfReviewLogs() {
   const [ctrlModel, setCtrlModel] = useState("");
   const [ctrlSaving, setCtrlSaving] = useState(false);
   const [ctrlSaved, setCtrlSaved] = useState(false);
+  const [globalModel, setGlobalModel] = useState("");
+  const [globalSaving, setGlobalSaving] = useState(false);
 
   const filters = { days, agent_id: agentFilter !== "all" ? agentFilter : undefined, status: statusFilter !== "all" ? statusFilter : undefined };
 
   const { data: stats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery({
     queryKey: ["self-review", "stats", days, agentFilter, statusFilter],
     queryFn: () => selfReviewService.getStats({ days, agent_id: agentFilter !== "all" ? agentFilter : undefined, status: statusFilter !== "all" ? statusFilter : undefined }),
+  });
+
+  const { data: settingsData, refetch: refetchSettings } = useQuery({
+    queryKey: ["self-review", "settings"],
+    queryFn: () => selfReviewService.getSettings(),
   });
 
   const { data: pageData, isLoading: logsLoading, isError: logsError, refetch: refetchLogs } = useQuery({
@@ -116,7 +123,25 @@ function SuperAdminSelfReviewLogs() {
     } finally { setCtrlSaving(false); }
   }, [ctrlAgent, ctrlModel, t]);
 
-  const handleRefresh = useCallback(() => { refetchStats(); refetchLogs(); }, [refetchStats, refetchLogs]);
+  const handleSaveGlobal = useCallback(async () => {
+    setGlobalSaving(true);
+    try {
+      await selfReviewService.updateGlobalReviewModel(globalModel);
+      await refetchSettings();
+      toast.success(t("superAdmin.selfReview.globalSettings.saved"));
+    } catch (e) {
+      toast.error(t("common.error"), { description: t("common.tryAgain") });
+    } finally { setGlobalSaving(false); }
+  }, [globalModel, refetchSettings, t]);
+
+  // Initialize globalModel from settings
+  const prevSettings = useRef<string>();
+  if (settingsData && settingsData.global_review_model !== prevSettings.current) {
+    prevSettings.current = settingsData.global_review_model;
+    setGlobalModel(settingsData.global_review_model);
+  }
+
+  const handleRefresh = useCallback(() => { refetchStats(); refetchLogs(); refetchSettings(); }, [refetchStats, refetchLogs, refetchSettings]);
 
   const s = stats as ReviewStats | undefined;
   const pd = pageData as PaginatedResponse | undefined;
@@ -176,6 +201,30 @@ function SuperAdminSelfReviewLogs() {
           <Button onClick={handleSaveModel} disabled={!ctrlAgent || ctrlSaving}>
             <Save className="size-4 ml-1" />{ctrlSaved ? t("superAdmin.selfReview.modelControl.saved") : t("superAdmin.selfReview.modelControl.save")}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">{t("superAdmin.selfReview.globalSettings.title")}</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-3">{t("superAdmin.selfReview.globalSettings.description")}</p>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs text-muted-foreground mb-1 block">{t("superAdmin.selfReview.globalSettings.model")}</label>
+              <Select value={globalModel} onValueChange={setGlobalModel}>
+                <SelectTrigger><SelectValue placeholder={t("superAdmin.selfReview.globalSettings.placeholder")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t("superAdmin.selfReview.globalSettings.default")}</SelectItem>
+                  {(settingsData?.available_models || []).map((m: string) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleSaveGlobal} disabled={globalSaving}>
+              <Save className="size-4 ml-1" />{t("superAdmin.selfReview.globalSettings.save")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

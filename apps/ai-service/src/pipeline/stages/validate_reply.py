@@ -80,10 +80,25 @@ async def _get_flash_review_client(ctx: PipelineContext) -> tuple[LLMClient | No
     """Returns (client, model_name). model_name used for logging."""
     from src.llm.model_manager import model_manager
 
+    # 1. Per-agent override
     agent_config = ctx.agent.config if ctx.agent and hasattr(ctx.agent, "config") else {}
     preferred = agent_config.get("reviewModel") if isinstance(agent_config, dict) else None
 
-    models_to_try = [preferred] + REVIEW_MODEL_PRIORITY if preferred else REVIEW_MODEL_PRIORITY
+    # 2. Global default from global_ai_config.settings.reviewModel
+    global_review_model = None
+    try:
+        global_config = await model_manager.get_global_ui_config()
+        global_review_model = (global_config or {}).get("settings", {}).get("reviewModel")
+    except Exception:
+        pass
+
+    # 3. Build priority: per-agent > global > hardcoded REVIEW_MODEL_PRIORITY
+    models_to_try = []
+    if preferred:
+        models_to_try.append(preferred)
+    if global_review_model and global_review_model not in models_to_try:
+        models_to_try.append(global_review_model)
+    models_to_try.extend(m for m in REVIEW_MODEL_PRIORITY if m not in models_to_try)
     seen = set()
     for model_name in models_to_try:
         if not model_name or model_name in seen:

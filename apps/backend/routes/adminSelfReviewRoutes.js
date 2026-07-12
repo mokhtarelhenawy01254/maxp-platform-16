@@ -51,4 +51,22 @@ router.patch('/agents/:agentId/review-model', async (req, res) => {
   }
 });
 
+router.get('/settings', async (req, res) => {
+  try {
+    const result = await aiServiceAdminClient.getSelfReviewSettings();
+    res.json(result);
+  } catch (error) {
+    res.status(502).json({ success: false, error: error.message });
+  }
+});
+
+router.patch('/settings', async (req, res) => {
+  try {
+    const result = await aiServiceAdminClient.updateSelfReviewSettings(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(502).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
