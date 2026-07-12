@@ -161,7 +161,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         if executed:
             followup_messages = await _build_followup_messages(ctx, provider_response, executed)
             try:
-                final_response = await _raw_llm_call(ctx, followup_messages)
+                final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
                 if final_response.tool_calls:
                     extra_results = await asyncio.gather(*[_execute_one(tc) for tc in final_response.tool_calls])
                     executed.extend(extra_results)

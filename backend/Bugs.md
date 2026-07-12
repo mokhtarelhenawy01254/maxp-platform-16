@@ -1,9 +1,13 @@
 # Backend Bugs Log
 
-### [BUG FIX] AI Service Follow-up Request Failure (400 Bad Request) on Modular Skills
+### [BUG FIX] AI Service Follow-up Request Failure (400 Bad Request) on Modular Skills & Thinking Mode
 - **Date**: 2026-07-12
-- **Root Cause**: In `apps/ai-service/src/pipeline/stages/skills_pipeline.py`, the `_build_tool_dicts` function (which constructs the tools schemas sent with follow-up LLM calls) only loaded tools defined in `ctx.agent.allowed_tools` and completely ignored `ctx.agent.allowed_skills`. Consequently, when the model executed a modular skill (such as `booking_packages` or `booking_info`), the follow-up request sent message history containing tool responses for tools not defined in the request's `tools` parameter list, resulting in a strict API validation failure (`HTTP 400 Bad Request`) from the DeepSeek completions endpoint.
-- **Resolution**: Updated `_build_tool_dicts` to match the exact tool loading logic used in the primary `_llm_call`, ensuring tools from both `allowed_skills` and `allowed_tools` are correctly compiled and passed in the follow-up client request.
+- **Root Cause**: Two cascading issues occurred in follow-up completions requests after tool execution:
+  1. The `_build_tool_dicts` function (which constructs the tools schemas sent with follow-up LLM calls) only loaded tools defined in `ctx.agent.allowed_tools` and completely ignored `ctx.agent.allowed_skills`. Consequently, when the model executed a modular skill, the follow-up request sent message history containing tool responses for tools not defined in the request's `tools` parameter list, resulting in a strict API validation failure (`HTTP 400 Bad Request`).
+  2. Because the assistant message history contains DeepSeek-R1 reasoning content (`reasoning_content`), the DeepSeek API restricts subsequent turns to "Thinking mode", which rejects the `tool_choice: "auto"` parameter sent by default in follow-up calls, throwing a `Thinking mode does not support this tool_choice` error.
+- **Resolution**:
+  1. Updated `_build_tool_dicts` to match the exact tool loading logic used in the primary `_llm_call`, ensuring tools from both `allowed_skills` and `allowed_tools` are correctly compiled.
+  2. Passed `tool_choice="none"` to the follow-up `_raw_llm_call`, allowing the client configuration to omit the `tools` and `tool_choice` parameters entirely for plain text generation, successfully satisfying the API requirements.
 - **Files Modified**:
   - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
 
