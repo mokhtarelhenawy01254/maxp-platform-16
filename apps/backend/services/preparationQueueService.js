@@ -740,12 +740,55 @@ const collectTopPreparationOrders = ({
   }
 };
 
+const STAGE_EFFECTIVE_STATUS_MAP = {
+  WAITING: ['PENDING', 'CONFIRMED', 'PENDING_PREPARATION'],
+  PREPARING: ['PROCESSING', 'PREPARING'],
+  QUALITY_CHECK: ['QUALITY_CHECK'],
+  PACKAGED: ['PACKAGED', 'PACKED'],
+  STOCK_SHORTAGE: ['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'],
+  READY_TO_SHIP: ['READY', 'READY_TO_SHIP'],
+  PENDING_CANCELLATION: ['PENDING_CANCELLATION'],
+};
+
+const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata) => {
+  const statuses = STAGE_EFFECTIVE_STATUS_MAP[stage];
+  if (!statuses) return null;
+
+  if (useMetadata) {
+    const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), ${tableAlias}."status"::text)`;
+    const placeholders = statuses.map((s) => builder.pushValue(s));
+    return `${effectiveStatus} IN (${placeholders.join(', ')})`;
+  }
+
+  const placeholders = statuses.map((s) => builder.pushValue(s));
+  return `UPPER(${tableAlias}."status") IN (${placeholders.join(', ')})`;
+};
+
+const buildSearchSqlCondition = (builder, search, tableAlias, isRegular) => {
+  if (!search) return null;
+
+  const searchPattern = builder.pushValue(`%${search}%`);
+
+  if (isRegular) {
+    return builder.orGroup([
+      `${tableAlias}."orderNumber" ILIKE ${searchPattern}`,
+      `c."firstName" ILIKE ${searchPattern}`,
+      `c."lastName" ILIKE ${searchPattern}`,
+      `c."phone" ILIKE ${searchPattern}`,
+    ]);
+  }
+
+  return `${tableAlias}."orderNumber" ILIKE ${searchPattern}`;
+};
+
 const fetchPreparationCandidateRows = async ({
   companyId,
   affiliateId,
   merchantId,
   offset,
-  limit
+  limit,
+  activeStage,
+  search,
 }) => {
   const createBuilder = () => {
     const values = [];
@@ -768,7 +811,8 @@ const fetchPreparationCandidateRows = async ({
         const placeholders = list.map((value) => pushValue(value));
         return `${column} NOT IN (${placeholders.join(', ')})`;
       },
-      orGroup: (parts) => `(${parts.join(' OR ')})`
+      orGroup: (parts) => `(${parts.join(' OR ')})`,
+      pushValue: (value) => pushValue(value),
     };
   };
 
@@ -777,6 +821,7 @@ const fetchPreparationCandidateRows = async ({
 
   const buildRegularSql = () => {
     const builder = createBuilder();
+    const lowerSearch = search ? search.toLowerCase() : '';
 
     builder.add(builder.equals('o."companyId"', companyId));
     builder.add(builder.notInList('o."status"::text', PREPARATION_DB_TERMINAL_STATUSES));
@@ -794,6 +839,14 @@ const fetchPreparationCandidateRows = async ({
       )`);
     }
 
+    if (activeStage && activeStage !== 'ALL') {
+      builder.add(buildStageSqlCondition(builder, activeStage, 'o', true));
+    }
+
+    if (lowerSearch) {
+      builder.add(buildSearchSqlCondition(builder, lowerSearch, 'o', true));
+    }
+
     return {
       sql: `SELECT 'regular'::text AS "orderType", o."id" AS "id", o."orderNumber" AS "orderNumber", o."createdAt" AS "createdAt"
         FROM "orders" o
@@ -809,12 +862,21 @@ const fetchPreparationCandidateRows = async ({
     }
 
     const builder = createBuilder();
+    const lowerSearch = search ? search.toLowerCase() : '';
 
     builder.add(builder.equals('g."companyId"', companyId));
     builder.add(builder.notInList('UPPER(g."status")', PREPARATION_DB_TERMINAL_STATUSES));
 
     if (affiliateId) {
       builder.add(builder.equals('g."affiliateId"', affiliateId));
+    }
+
+    if (activeStage && activeStage !== 'ALL') {
+      builder.add(buildStageSqlCondition(builder, activeStage, 'g', false));
+    }
+
+    if (lowerSearch) {
+      builder.add(buildSearchSqlCondition(builder, lowerSearch, 'g', false));
     }
 
     const duplicateConditions = [
@@ -1020,7 +1082,9 @@ const getPreparationQueue = async ({ user, query }) => {
       affiliateId,
       merchantId,
       offset: candidateOffset,
-      limit: batchSize
+      limit: batchSize,
+      activeStage,
+      search: searchQuery,
     });
 
     if (!candidateRows.length) {

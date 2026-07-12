@@ -44,7 +44,6 @@ import { usePreparationQueueUiState } from "./preparation/usePreparationQueueUiS
 import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
-import PreparationPageHeader from "./preparation/components/PreparationPageHeader";
 import PreparationStats from "./preparation/components/PreparationStats";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 
@@ -71,7 +70,6 @@ const PreparationQueue: React.FC = () => {
     summary,
     shortageOwnerOptions: serverShortageOwnerOptions,
     loading,
-    refreshing,
     fetchInventory,
     fetchAll,
   } = usePreparationQueueData({
@@ -851,11 +849,6 @@ const PreparationQueue: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <PreparationPageHeader
-        refreshing={refreshing}
-        onRefresh={() => void fetchAll(true)}
-      />
-
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
         <button
           type="button"
@@ -973,13 +966,13 @@ const PreparationQueue: React.FC = () => {
               <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
             )}
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
+              تحديد الكل
               <input
                 type="checkbox"
                 checked={allVisibleSelected}
                 onChange={toggleSelectAllVisible}
                 className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
               />
-              تحديد الكل
             </label>
           </div>
         </div>

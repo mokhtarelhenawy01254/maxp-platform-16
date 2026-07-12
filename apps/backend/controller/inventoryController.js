@@ -627,7 +627,7 @@ exports.createInventoryProduct = async (req, res) => {
 // Get all inventory items with filters
 exports.getInventory = async (req, res) => {
   try {
-    const { warehouseId, lowStock, outOfStock, search } = req.query;
+    const { warehouseId, lowStock, outOfStock, search, productIds } = req.query;
     const scope = await resolveInventoryScope(req);
 
     if (scope.isMerchantScope && warehouseId && scope.canEditStock) {
@@ -656,6 +656,13 @@ exports.getInventory = async (req, res) => {
         { name: { contains: search } },
         { sku: { contains: search } }
       ];
+    }
+
+    if (productIds) {
+      const ids = productIds.split(',').map(id => id.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        productWhere.id = { in: ids };
+      }
     }
 
     // Build the WHERE clause for Inventory (nested)

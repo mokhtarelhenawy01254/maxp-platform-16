@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { SHORTAGE_REASON_OPTIONS, STAGE_DEFINITIONS } from "../constants";
 import type {
@@ -62,6 +63,26 @@ const PreparationFilters = ({
   onProductFilterChange,
   onItemCountFilterChange,
 }: PreparationFiltersProps) => {
+  const [localSearch, setLocalSearch] = useState(search);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    setLocalSearch(search);
+  }, [search]);
+
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      if (localSearch !== search) onSearchChange(localSearch);
+    }, 300);
+    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+  }, [localSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const hasActiveFilters =
     activeStage !== "ALL" ||
     selectedWarehouseId !== "" ||
@@ -75,6 +96,7 @@ const PreparationFilters = ({
 
   const resetAll = () => {
     onActiveStageChange("ALL");
+    setLocalSearch("");
     onSearchChange("");
     onSelectedWarehouseChange("");
     onStockFilterChange("all");
@@ -150,8 +172,8 @@ const PreparationFilters = ({
           <div className="relative">
             <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="رقم الطلب، عميل، هاتف..."
               className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
             />

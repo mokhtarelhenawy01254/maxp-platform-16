@@ -205,9 +205,17 @@ const fetchOrdersData = async (
   };
 };
 
-const fetchInventoryData = async (): Promise<InventoryRecord[]> => {
-  const response =
-    await apiClient.get<ApiListResponse<ApiInventoryResponse>>("/inventory");
+const fetchInventoryData = async (
+  productIds: string[],
+): Promise<InventoryRecord[]> => {
+  if (productIds.length === 0) return [];
+
+  const response = await apiClient.get<ApiListResponse<ApiInventoryResponse>>(
+    "/inventory",
+    {
+      params: { productIds: productIds.join(",") },
+    },
+  );
   const payload = Array.isArray(response.data?.data) ? response.data.data : [];
 
   return payload.map(normalizeInventoryRecord);
@@ -281,6 +289,8 @@ export const usePreparationQueueData = ({
   const preparationSettingsQuery = useQuery({
     queryKey: PREPARATION_QUERY_KEYS.settings,
     queryFn: fetchPreparationSettingsData,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const prioritizeShortageOrders =
@@ -321,6 +331,16 @@ export const usePreparationQueueData = ({
     [ordersParams, prioritizeShortageOrders],
   );
 
+  const productIds = useMemo(() => {
+    const ids = new Set<string>();
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
+        if (item.productId) ids.add(item.productId);
+      });
+    });
+    return [...ids];
+  }, [orders]);
+
   const setOrdersState = useCallback<Dispatch<SetStateAction<SimpleOrder[]>>>(
     (value) => {
       setOrders((previous) => {
@@ -358,18 +378,27 @@ export const usePreparationQueueData = ({
   });
 
   const inventoryQuery = useQuery({
-    queryKey: PREPARATION_QUERY_KEYS.inventory,
-    queryFn: fetchInventoryData,
+    queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...productIds],
+    queryFn: () => fetchInventoryData(productIds),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    enabled: productIds.length > 0,
   });
 
   const warehousesQuery = useQuery({
     queryKey: PREPARATION_QUERY_KEYS.warehouses,
     queryFn: fetchWarehousesData,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const statusConfigsQuery = useQuery({
     queryKey: PREPARATION_QUERY_KEYS.statuses,
     queryFn: fetchStatusConfigsData,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -380,20 +409,10 @@ export const usePreparationQueueData = ({
 
   const loading = useMemo(
     () =>
-      [
-        ordersQuery,
-        inventoryQuery,
-        warehousesQuery,
-        statusConfigsQuery,
-        preparationSettingsQuery,
-      ].some((query) => query.isPending && typeof query.data === "undefined"),
-    [
-      inventoryQuery,
-      ordersQuery,
-      preparationSettingsQuery,
-      statusConfigsQuery,
-      warehousesQuery,
-    ],
+      [ordersQuery, preparationSettingsQuery].some(
+        (query) => query.isPending && typeof query.data === "undefined",
+      ),
+    [ordersQuery, preparationSettingsQuery],
   );
 
   const refreshing = useMemo(
@@ -418,11 +437,11 @@ export const usePreparationQueueData = ({
 
   const fetchInventory = useCallback(async () => {
     await queryClient.fetchQuery({
-      queryKey: PREPARATION_QUERY_KEYS.inventory,
-      queryFn: fetchInventoryData,
+      queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...productIds],
+      queryFn: () => fetchInventoryData(productIds),
       staleTime: 0,
     });
-  }, [queryClient]);
+  }, [productIds, queryClient]);
 
   const fetchAll = useCallback(
     async (showRefreshToast = false) => {
@@ -431,35 +450,49 @@ export const usePreparationQueueData = ({
           setManualRefreshing(true);
         }
 
-        const [nextOrders] = await Promise.all([
-          queryClient.fetchQuery({
-            queryKey: ordersQueryKey,
-            queryFn: () => fetchOrdersData(ordersParams, prioritizeShortageOrders),
-            staleTime: 0,
-          }),
-          queryClient.fetchQuery({
-            queryKey: PREPARATION_QUERY_KEYS.inventory,
-            queryFn: fetchInventoryData,
-            staleTime: 0,
-          }),
-          queryClient.fetchQuery({
-            queryKey: PREPARATION_QUERY_KEYS.warehouses,
-            queryFn: fetchWarehousesData,
-            staleTime: 0,
-          }),
-          queryClient.fetchQuery({
-            queryKey: PREPARATION_QUERY_KEYS.statuses,
-            queryFn: fetchStatusConfigsData,
-            staleTime: 0,
-          }),
-          queryClient.fetchQuery({
-            queryKey: PREPARATION_QUERY_KEYS.settings,
-            queryFn: fetchPreparationSettingsData,
-            staleTime: 0,
-          }),
-        ]);
+        const [freshOrders] =
+          await Promise.all([
+            queryClient.fetchQuery({
+              queryKey: ordersQueryKey,
+              queryFn: () =>
+                fetchOrdersData(ordersParams, prioritizeShortageOrders),
+              staleTime: 0,
+            }),
+            queryClient.fetchQuery({
+              queryKey: PREPARATION_QUERY_KEYS.warehouses,
+              queryFn: fetchWarehousesData,
+              staleTime: 0,
+            }),
+            queryClient.fetchQuery({
+              queryKey: PREPARATION_QUERY_KEYS.statuses,
+              queryFn: fetchStatusConfigsData,
+              staleTime: 0,
+            }),
+            queryClient.fetchQuery({
+              queryKey: PREPARATION_QUERY_KEYS.settings,
+              queryFn: fetchPreparationSettingsData,
+              staleTime: 0,
+            }),
+          ]);
 
-        setOrdersState(nextOrders.orders);
+        setOrdersState(freshOrders.orders);
+
+        const freshProductIds: string[] = [];
+        const seen = new Set<string>();
+        freshOrders.orders.forEach((order) => {
+          order.items.forEach((item) => {
+            if (item.productId && !seen.has(item.productId)) {
+              seen.add(item.productId);
+              freshProductIds.push(item.productId);
+            }
+          });
+        });
+
+        await queryClient.fetchQuery({
+          queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...freshProductIds],
+          queryFn: () => fetchInventoryData(freshProductIds),
+          staleTime: 0,
+        });
 
         if (showRefreshToast) {
           toast.success("تم تحديث قائمة التجهيز");

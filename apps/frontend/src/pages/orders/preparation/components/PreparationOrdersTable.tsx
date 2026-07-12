@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, memo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import {
@@ -389,4 +389,5 @@ const PreparationOrdersTable = ({
   );
 };
 
-export default PreparationOrdersTable;
+const MemoizedPreparationOrdersTable = memo(PreparationOrdersTable);
+export default MemoizedPreparationOrdersTable;
