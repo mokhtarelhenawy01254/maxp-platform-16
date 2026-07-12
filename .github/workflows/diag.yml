@@ -37,8 +37,11 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
-            echo "=== PM2 Status ==="
+            echo "=== PM2 Status & Update ==="
+            pm2 update
             pm2 list
+            echo "=== Restarting AI Service ==="
+            pm2 restart maxp-ai-service || pm2 start /var/www/ai-service/pm2.config.js || pm2 restart all
             
             echo "=== Recent Failed Provider Logs ==="
             cd /var/www/backend2
