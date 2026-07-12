@@ -254,6 +254,9 @@ router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkA
 // إرسال رسالة نصية
 router.post('/messages/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendMessage);
 
+// تصحيح رد الوكيل الآلي
+router.post('/messages/:whatsappMessageId/correct', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.correctAIMessage);
+
 // إرسال وسائط
 router.post('/messages/send-media', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendMedia);
 

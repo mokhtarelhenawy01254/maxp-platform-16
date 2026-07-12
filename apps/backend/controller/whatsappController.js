@@ -3721,6 +3721,103 @@ async function getDebugSessions(req, res) {
     }
 }
 
+/**
+ * تصحيح رد الوكيل الآلي من صفحة الواتساب المباشرة
+ * POST /api/whatsapp/messages/:whatsappMessageId/correct
+ * يحل مشكلة عدم وجود conversationId في صفحة /whatsapp/chat
+ * عن طريق الربط بين whatsAppMessage → unified Message → correctMessage service
+ */
+async function correctAIMessage(req, res) {
+    try {
+        const { whatsappMessageId } = req.params;
+        const { sessionId, correction } = req.body;
+        const { companyId, id: userId, role } = req.user;
+
+        if (!correction || !sessionId) {
+            return res.status(400).json({ error: 'correction and sessionId are required' });
+        }
+
+        const prisma = getSharedPrismaClient();
+
+        // 1. Find the WhatsApp message by its unique messageId
+        const waMessage = await prisma.whatsAppMessage.findUnique({
+            where: { messageId: whatsappMessageId }
+        });
+
+        if (!waMessage) {
+            return res.status(404).json({ error: 'WhatsApp message not found' });
+        }
+
+        if (!waMessage.isAIResponse) {
+            return res.status(400).json({ error: 'Can only correct AI-generated messages' });
+        }
+
+        // 2. Resolve the customer phone from remoteJid
+        const phoneNumber = waMessage.remoteJid.split('@')[0].replace(/\D/g, '');
+        const customer = await prisma.customer.findFirst({
+            where: {
+                companyId,
+                phone: { contains: phoneNumber.slice(-10) }
+            }
+        });
+
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found for this conversation' });
+        }
+
+        // 3. Find the unified Conversation for this customer
+        const conversation = await prisma.conversation.findFirst({
+            where: {
+                companyId,
+                customerId: customer.id,
+                channel: 'whatsapp'
+            },
+            orderBy: { updatedAt: 'desc' }
+        });
+
+        if (!conversation) {
+            return res.status(404).json({ error: 'Unified conversation not found' });
+        }
+
+        // 4. Find the corresponding unified Message by content + timestamp proximity
+        const tsWindow = 30000; // 30 seconds tolerance
+        const waTimestamp = new Date(waMessage.timestamp);
+        const unifiedMessage = await prisma.message.findFirst({
+            where: {
+                conversationId: conversation.id,
+                isFromCustomer: false,
+                content: waMessage.content || '',
+                createdAt: {
+                    gte: new Date(waTimestamp.getTime() - tsWindow),
+                    lte: new Date(waTimestamp.getTime() + tsWindow)
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!unifiedMessage) {
+            return res.status(404).json({ error: 'Unified message record not found' });
+        }
+
+        // 5. Delegate to the existing correctMessage service
+        const whatsappInboxService = require('../services/whatsappInboxService');
+        const result = await whatsappInboxService.correctMessage(
+            conversation.id,
+            unifiedMessage.id,
+            companyId,
+            userId,
+            role,
+            correction
+        );
+
+        res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        console.error('[WhatsAppController] correctAIMessage error:', error.message);
+        const statusCode = error.message?.includes('locked') ? 403 : 500;
+        res.status(statusCode).json({ error: error.message || 'Failed to correct message' });
+    }
+}
+
 module.exports = {
     // Sessions
     createSession,
@@ -3776,6 +3873,7 @@ module.exports = {
     editMessage,
     deleteMessage,
     forwardMessage,
+    correctAIMessage,
 
     // Chat Management
     archiveChat,

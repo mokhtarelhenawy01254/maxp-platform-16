@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format, isToday, isYesterday } from "date-fns";
 import {
@@ -10,8 +10,11 @@ import {
   Download,
   FileText,
   MapPin,
+  Pencil,
   Radio,
 } from "lucide-react";
+import { toast } from "sonner";
+import api from "../../../services/api";
 
 import { cn } from "@/lib/utils";
 import LinkifiedText from "../../../components/common/LinkifiedText";
@@ -23,9 +26,11 @@ interface MessageBubbleProps {
   message: Message;
   previousMessage?: Message;
   isGroup: boolean;
+  sessionId?: string;
   onContextMenu: (event: React.MouseEvent, message: Message) => void;
   getParticipantName: (jid: string) => string;
   onQuotedMessageClick?: (quotedMessageId: string) => void;
+  onCorrect?: () => void;
   highlighted?: boolean;
 }
 
@@ -65,13 +70,42 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
     message,
     previousMessage,
     isGroup,
+    sessionId,
     onContextMenu,
     getParticipantName,
     onQuotedMessageClick,
+    onCorrect,
     highlighted,
   }) => {
     const { t } = useTranslation();
     const senderName = message.fromMe && message.senderName ? message.senderName : null;
+
+    // ── AI Correction State ──
+    const [isEditing, setIsEditing] = useState(false);
+    const [correctionText, setCorrectionText] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const isAI = message.fromMe && message.isAIResponse;
+
+    const submitCorrection = async () => {
+      if (!correctionText.trim() || !sessionId) return;
+      try {
+        setSaving(true);
+        await api.post(`/whatsapp/messages/${encodeURIComponent(message.messageId)}/correct`, {
+          sessionId,
+          correction: correctionText,
+        });
+        toast.success('تم تصحيح الرد وتعليم الوكيل ✅');
+        setIsEditing(false);
+        setCorrectionText('');
+        onCorrect?.();
+      } catch (err: any) {
+        console.error('Correction failed:', err);
+        toast.error(err?.response?.data?.error || 'فشل تصحيح الرد');
+      } finally {
+        setSaving(false);
+      }
+    };
 
     const getDateSeparatorText = (timestamp: string) => {
       const date = new Date(timestamp);
@@ -327,12 +361,26 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               </div>
             ) : null}
 
-            {message.fromMe && message.isAIResponse ? (
-              <div className="mb-1 flex items-center gap-1.5">
+            {isAI ? (
+              <div className="mb-1 flex items-center justify-between gap-1.5">
                 <div className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-purple-600/10 to-violet-600/10 px-1.5 py-0.5 text-[11px] font-medium text-purple-700 dark:from-purple-400/20 dark:to-violet-400/20 dark:text-purple-300">
                   <Bot className="size-3" />
                   <span>AI</span>
                 </div>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                      setCorrectionText(message.content || '');
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-purple-600 transition-colors hover:bg-purple-500/10 dark:text-purple-300 dark:hover:bg-purple-400/10"
+                  >
+                    <Pencil className="size-2.5" />
+                    <span>تصحيح الرد</span>
+                  </button>
+                )}
               </div>
             ) : senderName ? (
               <p className="mb-1 text-xs font-semibold text-[color:var(--color-primary)]">
@@ -350,6 +398,46 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
             </div>
           </div>
         </div>
+
+        {/* Inline Correction Editor */}
+        {isEditing && isAI && (
+          <div className={cn(
+            "mt-1 w-full px-1.5",
+            message.fromMe ? "flex justify-end" : "flex justify-start"
+          )}>
+            <div className="w-[75%] rounded-xl border border-purple-300/50 bg-[var(--whatsapp-surface)] p-2.5 shadow-sm dark:border-purple-500/30">
+              <p className="mb-1.5 text-[11px] font-semibold text-purple-700 dark:text-purple-300">
+                تصحيح رد الوكيل:
+              </p>
+              <textarea
+                value={correctionText}
+                onChange={(e) => setCorrectionText(e.target.value)}
+                className="w-full min-h-[3.5rem] resize-none rounded-lg border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-muted)] p-2 text-sm text-[color:var(--color-foreground)] outline-none focus:border-purple-500 dark:focus:border-purple-400"
+                placeholder="اكتب الرد الصحيح للعميل هنا..."
+              />
+              <div className="mt-1.5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setCorrectionText('');
+                  }}
+                  className="rounded-lg px-3 py-1 text-xs font-medium text-[color:var(--color-muted-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={submitCorrection}
+                  disabled={saving || !correctionText.trim()}
+                  className="rounded-lg bg-purple-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50 dark:bg-purple-500 dark:hover:bg-purple-600"
+                >
+                  {saving ? 'جارٍ الحفظ...' : 'حفظ وتصحيح'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   },
