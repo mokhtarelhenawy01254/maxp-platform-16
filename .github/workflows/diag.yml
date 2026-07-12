@@ -48,9 +48,9 @@ jobs:
               const prisma = new PrismaClient();
               async function run() {
                 const logs = await prisma.\$queryRaw\`
-                  SELECT id, status, reply_preview, reason, violations, \"createdAt\" 
+                  SELECT id, status, reply_preview, reason, violations, created_at 
                   FROM ai.self_review_log 
-                  ORDER BY \"createdAt\" DESC 
+                  ORDER BY created_at DESC 
                   LIMIT 15
                 \`;
                 console.log(JSON.stringify(logs, null, 2));
