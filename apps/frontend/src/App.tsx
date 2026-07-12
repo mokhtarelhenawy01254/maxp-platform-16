@@ -12,6 +12,7 @@ import {
 import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
+import { RoleProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
 const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
