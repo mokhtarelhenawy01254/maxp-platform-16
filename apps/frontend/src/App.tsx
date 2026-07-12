@@ -2456,7 +2456,9 @@ const AppContent = () => {
                   path="/company-dashboard"
                   element={
                     <Layout>
-                      <MainDashboardPage />
+                      <RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']}>
+                        <MainDashboardPage />
+                      </RoleProtectedRoute>
                     </Layout>
                   }
                 />
