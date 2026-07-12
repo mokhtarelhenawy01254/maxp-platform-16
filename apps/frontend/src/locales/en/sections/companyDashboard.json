@@ -87,6 +87,10 @@
     "outOfStock": "Out of Stock"
   },
   "metrics": {
+    "totalOrders": "Total Orders",
+    "confirmedOrders": "Confirmed Orders",
+    "cancelledOrders": "Cancelled Orders",
+    "returnedOrders": "Returned Orders",
     "totalCustomers": "Total Customers",
     "totalCustomersSubtitle": "Total number of registered customers",
     "newCustomers": "New Customers",

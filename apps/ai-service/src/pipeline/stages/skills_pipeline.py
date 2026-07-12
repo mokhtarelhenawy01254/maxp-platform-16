@@ -161,7 +161,15 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         if executed:
             followup_messages = await _build_followup_messages(ctx, provider_response, executed)
             try:
-                final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+                final_response = await _raw_llm_call(ctx, followup_messages)
+                if final_response.tool_calls:
+                    extra_results = await asyncio.gather(*[_execute_one(tc) for tc in final_response.tool_calls])
+                    executed.extend(extra_results)
+                    for item in extra_results:
+                        if item["status"] == "success":
+                            ctx.tool_evidence.append({"tool": item["tool"], "result": item["result"]})
+                    followup_messages = await _build_followup_messages(ctx, final_response, extra_results)
+                    final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
                 if not final_response.text:
                     logger.warning("skills_pipeline_followup_empty_retrying")
                     final_response = await _raw_llm_call(ctx, followup_messages, tools=[], tool_choice=None)

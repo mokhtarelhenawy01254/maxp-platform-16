@@ -1626,6 +1626,7 @@
   },
   "companyDashboard": {
     "title": "لوحة تحكم",
+    "welcome": "أهلًا {{name}}",
     "status": {
       "active": "نشط",
       "inactive": "غير نشط"
@@ -1712,6 +1713,10 @@
       "outOfStock": "منتجات نافذة"
     },
     "metrics": {
+      "totalOrders": "إجمالي الطلبات",
+      "confirmedOrders": "الطلبات المؤكدة",
+      "cancelledOrders": "الطلبات الملغية",
+      "returnedOrders": "الطلبات المرتجعة",
       "totalCustomers": "إجمالي العملاء",
       "totalCustomersSubtitle": "إجمالي عدد العملاء المسجلين",
       "newCustomers": "عملاء جدد",
@@ -1774,6 +1779,20 @@
       "openOrdersFollowUp": "تحتاج متابعة داخل لوحة الطلبات",
       "noOpenOrders": "لا توجد طلبات مفتوحة في الفترة",
       "openOrdersAction": "فتح الطلبات"
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "orders": "الطلبات",
+      "products": "المنتجات",
+      "customers": "العملاء",
+      "whatsapp": "واتساب",
+      "inbox": "صندوق الوارد",
+      "aiAgent": "وكيل الذكاء الاصطناعي",
+      "connections": "الاتصالات",
+      "analytics": "التحليلات",
+      "marketing": "التسويق",
+      "storefront": "المتجر",
+      "settings": "الإعدادات"
     },
     "quickStart": {
       "title": "دليل البداية السريعة",
@@ -1850,11 +1869,11 @@
       "summary": "جلب أحدث بيانات الشركة..."
     },
     "orderStats": {
-      "title": "[AR] Order Status",
-      "newOrders": "[AR] New Orders",
-      "viewedOrders": "[AR] Reviewed Orders",
-      "totalOrders": "[AR] Total Orders",
-      "requiresAttention": "[AR] Needs attention"
+      "title": "حالة الطلبات",
+      "newOrders": "طلبات جديدة",
+      "viewedOrders": "طلبات تمت مراجعتها",
+      "totalOrders": "إجمالي الطلبات",
+      "requiresAttention": "تحتاج انتباه"
     },
     "live": {
       "label": "مباشر",

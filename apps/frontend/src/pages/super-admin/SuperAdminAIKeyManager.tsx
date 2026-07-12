@@ -119,14 +119,10 @@ function SortHeader({ label, sortKey, sort, onSort }: { label: string; sortKey: 
 
 function StatsGrid({ dashboard }: { dashboard: DashboardStats }) {
   const providerCount = Object.keys(dashboard.keys_by_provider).length;
-  const rate = dashboard.last_24h_success_rate;
-  const rateColor = rate >= 95 ? "bg-emerald-500" : rate >= 80 ? "bg-amber-500" : "bg-red-500";
-  const rateTextColor = rate >= 95 ? "text-emerald-600 dark:text-emerald-400" : rate >= 80 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
 
   const stats = [
     { label: "إجمالي المفاتيح", value: dashboard.total_keys, sub: `${dashboard.active_keys} نشط` },
     { label: "المزودون", value: providerCount, sub: "مزود متصل" },
-    { label: "طلبات اليوم", value: dashboard.requests_today + dashboard.failures_today, sub: `${dashboard.failures_today} فشل` },
   ];
 
   return (
@@ -140,16 +136,6 @@ function StatsGrid({ dashboard }: { dashboard: DashboardStats }) {
           </div>
         </div>
       ))}
-      {/* Success rate — inline */}
-      <div className="flex-1 min-w-[180px] px-4 py-3 rounded-xl bg-card shadow-sm flex items-center gap-3">
-        <span className={`text-2xl font-bold tabular-nums tracking-tight ${rateTextColor}`}>{rate}%</span>
-        <div className="flex flex-col flex-1">
-          <span className="text-xs text-muted-foreground">نسبة النجاح</span>
-          <div className="h-1.5 mt-1.5 bg-muted/60 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-500 ${rateColor}`} style={{ width: `${rate}%` }} />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
