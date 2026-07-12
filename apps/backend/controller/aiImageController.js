@@ -160,8 +160,19 @@ exports.generateImage = async (req, res) => {
       if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     }
 
+    const latencyMs = Date.now() - startTime;
+    const usedModel = result?.model || model;
+
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: imageUrl ? 'generation_success' : 'generation_success',
+      status: 'success',
+      latencyMs,
+      model: usedModel,
+    });
+
     if (!imageUrl) {
-      return res.status(200).json({ success: true, data: { imageUrl: "", model: result?.model || model, usage: result?.usage || null } });
+      return res.status(200).json({ success: true, data: { imageUrl: "", model: usedModel, usage: result?.usage || null } });
     }
 
     if (imageUrl.startsWith("data:")) {
@@ -178,7 +189,7 @@ exports.generateImage = async (req, res) => {
           platform: req.body.structured?.platform || "",
           aspectRatio: req.body.structured?.aspectRatio || aspectRatio,
           purpose: req.body.structured?.campaign?.purpose || "",
-          model: result.model || model,
+          model: usedModel,
         };
         fs.writeFileSync(path.join(absoluteDir, `${filename}.meta.json`), JSON.stringify(meta));
       } catch {}
@@ -189,13 +200,22 @@ exports.generateImage = async (req, res) => {
       success: true,
       data: {
         imageUrl,
-        model: result.model || model,
+        model: usedModel,
         usage: result.usage || null,
       },
     });
   } catch (error) {
+    const elapsed = typeof startTime === 'number' ? Date.now() - startTime : 0;
     const status = error.response?.status || 500;
     const detail = error.response?.data?.error?.message || error.message;
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: 'generation_failed',
+      status: 'failed',
+      latencyMs: elapsed,
+      model: req.body?.model || ALLOWED_MODELS[0],
+      message: detail,
+    });
     return res.status(status).json({ success: false, message: detail });
   }
 };
@@ -261,7 +281,8 @@ exports.generateCaption = async (req, res) => {
       return res.status(400).json({ success: false, message: "البيانات المنظمة مطلوبة" });
     }
 
-    const apiKey = await getOpenRouterKey();
+    const { apiKey, keyId, keyName } = await getOpenRouterKey();
+    const startTime = Date.now();
 
     const system = [
       "You are a social media copywriter for Arabic brands.",
@@ -327,11 +348,28 @@ exports.generateCaption = async (req, res) => {
         : [],
     };
 
+    const latencyMs = Date.now() - startTime;
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: 'generation_success',
+      status: 'success',
+      latencyMs,
+      model: "google/gemini-3.1-flash-lite-001",
+    });
+
     return res.json({ success: true, data: result });
   } catch (error) {
+    const elapsed = typeof startTime === 'number' ? Date.now() - startTime : 0;
     const status = error.response?.status || 500;
     const detail = error.response?.data?.error?.message || error.message;
-    console.error("❌ [AI-CAPTION] Error:", detail);
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: 'generation_failed',
+      status: 'failed',
+      latencyMs: elapsed,
+      model: "google/gemini-3.1-flash-lite-001",
+      message: detail,
+    });
     return res.status(status).json({ success: false, message: detail });
   }
 };
