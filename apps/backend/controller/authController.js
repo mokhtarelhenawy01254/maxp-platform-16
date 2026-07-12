@@ -1641,26 +1641,7 @@ const getUserCompanies = async (req, res) => {
 const switchCompany = async (req, res) => {
   try {
     const { companyId } = req.params;
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'رمز المصادقة مطلوب'
-      });
-    }
-
-    if (!userId || !companyId) {
-      return res.status(400).json({
-        success: false,
-        message: 'معرف المستخدم أو معرف الشركة مطلوبان'
-      });
-    }
-
-    // Verify token and check permissions
-    const decoded = jwt.verify(token, getJwtSecret());
-    const userId = decoded.userId;
+    const userId = req.user.userId;
 
     console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ [SWITCH-COMPANY] User:', userId, 'switching to company:', companyId);
 

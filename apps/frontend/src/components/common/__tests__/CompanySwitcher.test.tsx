@@ -51,7 +51,7 @@ describe("CompanySwitcher", () => {
 
     expect(trigger).toBeInTheDocument();
     expect(trigger).toHaveTextContent("H2m");
-    expect(trigger).toHaveTextContent("الحالية");
+    expect(trigger).toHaveTextContent("2 شركات");
   });
 
   it("marks the current company clearly inside the switcher menu", () => {
@@ -62,6 +62,6 @@ describe("CompanySwitcher", () => {
     );
 
     expect(screen.getByText("Alpha Agent")).toBeInTheDocument();
-    expect(screen.getByText("الحالية")).toBeInTheDocument();
+    expect(screen.getAllByText("H2m")).toHaveLength(2);
   });
 });

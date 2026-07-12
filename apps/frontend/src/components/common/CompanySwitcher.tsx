@@ -33,7 +33,6 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
   const currentCompany =
     companies.find((company) => company.isCurrent) || user?.company;
   const currentCompanyName = currentCompany?.name || "الشركة الحالية";
-  const currentCompanyStatusLabel = "الحالية";
   const switcherLabel = `تبديل الشركة الحالية: ${currentCompanyName}`;
 
   useEffect(() => {
@@ -83,29 +82,24 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
         type="button"
         onClick={() => handleSwitchCompany(company.id)}
         disabled={isSwitchingCompany}
-        className={`w-full rounded-xl px-4 py-3 text-right transition-all disabled:opacity-50 ${
+        className={`w-full text-right transition-all disabled:opacity-50 ${
           isCurrent
-            ? "bg-blue-50 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200"
-            : "text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-        } ${mobile ? "min-h-12" : ""}`}
+            ? "bg-violet-50 text-violet-900 dark:bg-violet-900/30 dark:text-violet-200"
+            : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+        } ${mobile ? "px-5 py-4" : "px-4 py-2.5"}`}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold">{company.name}</p>
-            <div className="mt-1 flex flex-wrap items-center justify-end gap-1.5">
-              <p className="text-[11px] uppercase tracking-widest text-gray-500 dark:text-gray-400">
-                {company.role || "COMPANY"}
-              </p>
-              {isCurrent ? (
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/60 dark:text-blue-200">
-                  الحالية
-                </span>
-              ) : null}
-            </div>
+            <p className={`truncate font-semibold ${mobile ? "text-base" : "text-sm"}`}>
+              {company.name}
+            </p>
+            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              {company.role || "شركة"}
+            </p>
           </div>
 
           {isCurrent ? (
-            <span className="flex items-center justify-center rounded-full bg-blue-600 p-0.5 dark:bg-blue-500">
+            <span className="flex items-center justify-center rounded-full bg-violet-600 p-0.5 dark:bg-violet-500">
               <CheckIcon className="h-3 w-3 text-white" />
             </span>
           ) : null}
@@ -121,49 +115,49 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
           type="button"
           onClick={() => setIsOpen(true)}
           disabled={isSwitchingCompany}
-          className="flex min-w-0 max-w-[7.75rem] items-center gap-2 rounded-2xl border-2 border-blue-200 bg-white px-2.5 py-2 text-right text-blue-600 shadow-md transition-all hover:border-blue-400 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 dark:border-blue-700 dark:bg-gray-800 dark:text-blue-300 dark:hover:border-blue-500"
+          className="flex min-w-0 max-w-[7.75rem] items-center gap-2 rounded-xl border border-gray-200 bg-white px-2.5 py-2 text-right text-violet-600 transition-all hover:border-violet-200 hover:bg-violet-50/50 active:scale-[0.98] disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-violet-400 dark:hover:border-violet-800 dark:hover:bg-violet-900/20"
           title={switcherLabel}
           aria-label={switcherLabel}
         >
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-sm dark:bg-blue-900/50 dark:text-blue-300">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
             {isSwitchingCompany ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-300" />
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-violet-600 border-t-transparent dark:border-violet-400" />
             ) : (
-              <ArrowsRightLeftIcon className="h-4 w-4" />
+              <ArrowsRightLeftIcon className="h-3.5 w-3.5" />
             )}
           </span>
 
           <span className="min-w-0 flex-1 text-right">
-            <span className="block truncate text-[12px] font-bold leading-tight text-gray-900 dark:text-white">
+            <span className="block truncate text-xs font-semibold leading-tight text-gray-900 dark:text-white">
               {currentCompanyName}
             </span>
-            <span className="block truncate text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-              {currentCompanyStatusLabel}
+            <span className="block truncate text-[10px] text-gray-500 dark:text-gray-400">
+              {companies.length} شركات
             </span>
           </span>
 
-          <span className="business-shell-switch-badge inline-flex min-h-[20px] min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm dark:from-blue-500 dark:to-indigo-600">
+          <span className="inline-flex min-h-[18px] min-w-[18px] flex-shrink-0 items-center justify-center rounded-md bg-gray-100 px-1 text-[10px] font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300">
             {companies.length}
           </span>
         </button>
 
         <SheetContent
           side="bottom"
-          className="gap-0 rounded-t-[28px] border-border/80 px-0 pb-5"
+          className="gap-0 rounded-t-2xl px-0 pb-6"
           showCloseButton={false}
         >
-          <SheetHeader className="gap-1 border-b border-border/70 px-4 pb-3 pt-3 text-right">
-            <div className="mx-auto mb-1 h-1.5 w-12 rounded-full bg-muted" />
-            <SheetTitle className="flex items-center gap-2 text-right">
-              <BuildingOfficeIcon className="h-4 w-4 text-blue-500" />
+          <SheetHeader className="border-b border-gray-100 px-5 pb-3 pt-2 text-right dark:border-gray-800">
+            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+            <SheetTitle className="flex items-center gap-2 text-base text-right">
+              <BuildingOfficeIcon className="h-4 w-4 text-violet-500" />
               تبديل الشركة
             </SheetTitle>
-            <SheetDescription className="text-right">
-              أنت تعمل الآن داخل <span className="font-medium text-foreground">{currentCompanyName}</span>.
+            <SheetDescription className="text-sm text-right text-gray-500">
+              تعمل الآن داخل <span className="font-medium text-gray-900 dark:text-white">{currentCompanyName}</span>
             </SheetDescription>
           </SheetHeader>
 
-          <div className="max-h-[70vh] space-y-1 overflow-y-auto px-2 pt-2">
+          <div className="max-h-[70vh] space-y-0.5 overflow-y-auto pt-1">
             {companies.map((company) => renderCompanyOption(company, true))}
           </div>
         </SheetContent>
@@ -179,25 +173,29 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
         disabled={isSwitchingCompany}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        className="flex w-full items-center gap-3 rounded-xl border-2 border-blue-200 bg-white px-4 py-2.5 shadow-md transition-all hover:border-blue-400 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-blue-500"
+        className={`flex w-full items-center gap-2.5 rounded-xl border bg-white px-3 py-2 text-right transition-all disabled:opacity-50 dark:bg-gray-800 ${
+          isOpen
+            ? "border-violet-200 shadow-sm dark:border-violet-800"
+            : "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+        }`}
       >
-        <span className="flex items-center justify-center rounded-lg bg-blue-100 p-1.5 dark:bg-blue-900/50">
-          <ArrowsRightLeftIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <span className="flex items-center justify-center rounded-lg bg-violet-50 p-1.5 dark:bg-violet-900/30">
+          <ArrowsRightLeftIcon className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
         </span>
 
-        <span className="flex-1 truncate text-right text-sm font-bold text-gray-900 dark:text-white">
+        <span className="flex-1 truncate text-sm font-semibold text-gray-900 dark:text-white">
           {currentCompany?.name || "الشركة"}
         </span>
 
-        <span className="flex-shrink-0 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm dark:from-blue-500 dark:to-indigo-600">
+        <span className="flex-shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400">
           {companies.length}
         </span>
 
         {isSwitchingCompany ? (
-          <div className="h-4 w-4 flex-shrink-0 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400" />
+          <div className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
         ) : (
           <ChevronDownIcon
-            className={`h-4 w-4 flex-shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400 ${
+            className={`h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             }`}
           />
@@ -205,9 +203,9 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-800">
-          <div className="px-4 pb-1.5 pt-2.5">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+        <div className="absolute inset-x-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+          <div className="border-b border-gray-100 px-4 py-2 dark:border-gray-700/50">
+            <p className="text-xs font-medium text-gray-400 dark:text-gray-500">
               اختر الشركة
             </p>
           </div>
