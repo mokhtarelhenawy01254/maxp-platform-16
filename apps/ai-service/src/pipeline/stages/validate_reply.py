@@ -256,10 +256,12 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
 async def _correct_output(
     ctx: PipelineContext, reply: str, reason: str, violations: list[str]
 ) -> str | None:
+    evidence_text = _summarize_evidence(ctx.tool_evidence)
     correction_msg = (
         f"تم حظر ردك السابق بسبب: {reason}\n"
         f"التفاصيل: {', '.join(violations)}\n"
-        "يرجى إعادة الصياغة بدون هذه المشكلة."
+        f"بيانات الأدوات الفعلية المسترجعة من قاعدة البيانات: {evidence_text}\n"
+        "يرجى إعادة الصياغة لتجنب هذه المشكلة تماماً، مع الالتزام المطلق ببيانات الأدوات المتوفرة وعدم اقتراح أي خدمات أو فروع غير موجودة فيها."
     )
     messages = [
         {"role": "system", "content": ctx.system_prompt or "أنت مساعد ذكي."},

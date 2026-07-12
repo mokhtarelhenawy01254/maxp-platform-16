@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [BUG FIX] AI Service Self-Review Context Loss & Over-Constraint
+- **Date**: 2026-07-12
+- **Root Cause**:
+  1. In `apps/ai-service/src/pipeline/stages/validate_reply.py`, the `_correct_output` function (which rewrites assistant responses when they are rejected by the judge model) constructed a message history containing only the initial user message and the rejected reply, completely omitting the tool execution outputs. As a result, when the model attempted to rewrite the response, it lost all database context (such as services, pricing, branch names, and slot availability) and was forced to generate generic or guessed messages.
+  2. In `apps/ai-service/src/guardrails/merchant_rules.py`, the `get_relevant_rules` fallback logic incorrectly returned the first 5 active rules from the database (`rules_data[:top_k]`) when no semantic or keyword matching was found. This flooded the system prompt with unrelated constraints on every single message (even simple greetings), causing the agent to act paranoid or ignore its core instructions.
+- **Resolution**:
+  1. Updated `_correct_output` to summarize the tool execution outputs and explicitly pass `evidence_text` to the correction prompt, ensuring the model retains full context during rewrites.
+  2. Fixed `get_relevant_rules` fallback to return an empty list `[]` instead of `rules_data[:top_k]` when no matches are found, stopping prompt pollution.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/validate_reply.py`
+  - `apps/ai-service/src/guardrails/merchant_rules.py`
+
 ### [BUG FIX] AI Service Follow-up Request Failure (400 Bad Request) on Modular Skills & Thinking Mode
 - **Date**: 2026-07-12
 - **Root Cause**: Two cascading issues occurred in follow-up completions requests after tool execution:
