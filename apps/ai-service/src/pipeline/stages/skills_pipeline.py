@@ -437,16 +437,34 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
     from src.skills.registry import get_skill_registry
     registry = get_skill_registry()
-    tool_dicts = []
+    
+    skills = []
+    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+        for skill_name in ctx.agent.allowed_skills:
+            skill = registry.resolve(skill_name)
+            if skill:
+                skills.append(skill)
+                
+    tool_dicts = [s.to_openai_tool() for s in skills]
+    skill_names = {s.name.lower() for s in skills}
+    
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
     for tool_name in allowed:
         tname = tool_name.lower()
-        tool = registry.resolve(tname)
-        if tool:
-            tool_dicts.append(
-                tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
-                else {"type": "function", "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}}
-            )
+        if tname not in skill_names:
+            tool = registry.resolve(tname)
+            if tool:
+                tool_dicts.append(
+                    tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
+                    else {
+                        "type": "function",
+                        "function": {
+                            "name": tool.name,
+                            "description": getattr(tool, 'description', ''),
+                            "parameters": {"type": "object", "properties": {}}
+                        }
+                    }
+                )
     return tool_dicts
 
 

@@ -1,6 +1,7 @@
 # Team Sync Updates
 
 ## 2026-07-12 / 2026-03-09
+- **AI Service Follow-up Request Tool Resolution Fix (BUGFIX / CRITICAL)**: Fixed the follow-up tool definitions builder (`_build_tool_dicts`) in the AI Service pipeline (`skills_pipeline.py`) to resolve and include schemas from `allowed_skills` alongside `allowed_tools`. This prevents `HTTP 400 Bad Request` API validation errors from DeepSeek when modular skills (such as package upselling or booking info) are executed in a turn.
 - **AI Agent Self-Review Life Cycle & Model Selector Mismatch (BUGFIX / CRITICAL)**: Resolved a critical database model query mismatch in the AI self-review logs:
   1. Fixed the API `set_review_model` and `validate_reply.py` pipeline stage to query `Agent.id` instead of the non-existent `Agent.agent_id` property, stopping silent SQL failures and enabling proper guardrails checks.
   2. Implemented flexible JSON block parsing via `_try_parse_json_object` in the pipeline validation stage, resolving crashes when the model responds with Markdown-wrapped JSON.

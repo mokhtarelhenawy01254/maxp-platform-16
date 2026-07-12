@@ -1,5 +1,12 @@
 # Backend Bugs Log
 
+### [BUG FIX] AI Service Follow-up Request Failure (400 Bad Request) on Modular Skills
+- **Date**: 2026-07-12
+- **Root Cause**: In `apps/ai-service/src/pipeline/stages/skills_pipeline.py`, the `_build_tool_dicts` function (which constructs the tools schemas sent with follow-up LLM calls) only loaded tools defined in `ctx.agent.allowed_tools` and completely ignored `ctx.agent.allowed_skills`. Consequently, when the model executed a modular skill (such as `booking_packages` or `booking_info`), the follow-up request sent message history containing tool responses for tools not defined in the request's `tools` parameter list, resulting in a strict API validation failure (`HTTP 400 Bad Request`) from the DeepSeek completions endpoint.
+- **Resolution**: Updated `_build_tool_dicts` to match the exact tool loading logic used in the primary `_llm_call`, ensuring tools from both `allowed_skills` and `allowed_tools` are correctly compiled and passed in the follow-up client request.
+- **Files Modified**:
+  - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+
 ### [BUG FIX] AI Agent Self-Review Life Cycle & Model Selector Mismatch
 - **Date**: 2026-07-12
 - **Root Cause**:
