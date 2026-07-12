@@ -60,7 +60,9 @@ class ReviewLogRepo:
         limit: int = 50,
         offset: int = 0,
     ) -> list[ReviewLog]:
-        where = [ReviewLog.company_id == company_id]
+        where: list[Any] = []
+        if company_id:
+            where.append(ReviewLog.company_id == company_id)
         if agent_id:
             where.append(ReviewLog.agent_id == agent_id)
         if status:
@@ -87,7 +89,9 @@ class ReviewLogRepo:
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> int:
-        where = [ReviewLog.company_id == company_id]
+        where: list[Any] = []
+        if company_id:
+            where.append(ReviewLog.company_id == company_id)
         if agent_id:
             where.append(ReviewLog.agent_id == agent_id)
         if status:
@@ -106,7 +110,9 @@ class ReviewLogRepo:
         agent_id: str | None = None,
         since: datetime | None = None,
     ) -> dict[str, Any]:
-        where = [ReviewLog.company_id == company_id]
+        where: list[Any] = []
+        if company_id:
+            where.append(ReviewLog.company_id == company_id)
         if agent_id:
             where.append(ReviewLog.agent_id == agent_id)
         if since:
@@ -155,7 +161,9 @@ class ReviewLogRepo:
         since: datetime | None = None,
     ) -> list[dict[str, Any]]:
         """Most common violations by agent."""
-        where = [ReviewLog.company_id == company_id, ReviewLog.violations.isnot(None)]
+        where: list[Any] = [ReviewLog.violations.isnot(None)]
+        if company_id:
+            where.append(ReviewLog.company_id == company_id)
         if agent_id:
             where.append(ReviewLog.agent_id == agent_id)
         if since:
@@ -194,7 +202,9 @@ class ReviewLogRepo:
         """Per-agent review stats for dashboard (single query)."""
         from sqlalchemy import case, Integer
 
-        where = [ReviewLog.company_id == company_id]
+        where: list[Any] = []
+        if company_id:
+            where.append(ReviewLog.company_id == company_id)
         if since:
             where.append(ReviewLog.created_at >= since)
 
