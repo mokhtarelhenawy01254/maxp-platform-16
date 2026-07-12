@@ -15,7 +15,7 @@ from src.pipeline.context import PipelineContext
 
 logger = structlog.get_logger(__name__)
 
-MAX_OUTPUT_RETRIES = 2
+MAX_OUTPUT_RETRIES = 1
 REVIEW_MODEL_PRIORITY = ["deepseek-v4-flash", "gemini-2.5-flash", "gpt-5.4-nano"]
 
 
@@ -211,12 +211,17 @@ async def _log_review(
     ctx: PipelineContext, status: str, *,
     reply: str = "", model_used: str = "", latency_ms: int = 0,
     verdict: dict | None = None,
+    original_reply: str = "",
 ) -> None:
     try:
         from src.db import session
         from src.db.repo.review_log_repo import ReviewLogRepo
         async with session.async_session() as db:
             repo = ReviewLogRepo(db)
+            agent_name = str(getattr(ctx.agent, "name", None) or "")
+            metadata_: dict[str, Any] = {"agent_name": agent_name}
+            if original_reply:
+                metadata_["original_reply"] = original_reply[:200]
             await repo.create(
                 company_id=ctx.company_id,
                 agent_id=str(getattr(ctx.agent, "id", None) or getattr(ctx.agent, "agent_id", None) or ""),
@@ -228,6 +233,7 @@ async def _log_review(
                 violations=verdict.get("violations") if verdict else None,
                 reason=verdict.get("reason") if verdict else None,
                 verdict_raw=verdict,
+                metadata_=metadata_,
             )
     except Exception as e:
         logger.warning("self_review.log_failed", error=str(e))
@@ -279,8 +285,9 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
 
     # --- Build the comprehensive review prompt ---
     review_prompt = (
-        "أنت مدقق جودة متخصص في مراجعة ردود المساعد الذكي. "
-        "لديك كامل السياق اللازم للحكم على جودة الرد.\n\n"
+        "أنت مدقق جودة ومُحسِّن نشط لردود المساعد الذكي. "
+        "لديك كامل السياق اللازم للحكم على جودة الرد وتحسينه إذا لزم الأمر.\n"
+        "دورك ليس فقط الموافقة أو الرفض — بل أيضاً تحسين الرد ليبدو كأنه من موظف بشري محترف.\n\n"
         "═══════════════════════════════════════\n"
         "📋 هوية الأيجنت وتعليماته:\n"
         "═══════════════════════════════════════\n"
@@ -298,19 +305,49 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         "═══════════════════════════════════════\n"
         f"{rules_text}\n\n"
         "═══════════════════════════════════════\n"
+        "🔴 تخيلات ضارة (يجب الرفض والتصحيح):\n"
+        "═══════════════════════════════════════\n"
+        "- اختراع أسعار أو خصومات أو عروض غير موجودة في بيانات الأدوات\n"
+        "- ذكر فروع أو عناوين أو أرقام تليفونات وهمية\n"
+        "- ذكر خدمات أو منتجات لا يقدمها المركز/الشركة\n"
+        "- ذكر أسماء أطباء أو موظفين غير موجودين\n"
+        "- تأكيد حجز أو طلب لم يتم فعلياً\n\n"
+        "🟢 بداهة خدمية بشرية (مسموح بها ويجب الحفاظ عليها):\n"
+        "═══════════════════════════════════════\n"
+        "- اقتراح الدفع نقداً والحصول على فاتورة لتقديمها لشركة التأمين (بداهة خدمية عامة)\n"
+        "- الترحيب اللطيف والاعتذار عن التأخير أو الإزعاج\n"
+        "- اقتراح بدائل منطقية عامة (مثل: 'يمكنك زيارتنا في أي وقت خلال ساعات العمل')\n"
+        "- التعاطف مع العميل وإظهار الاهتمام الشخصي\n"
+        "- شرح إجراءات عامة معروفة (مثل: آلية التأمين، طريقة الحجز)\n"
+        "- استخدام تعبيرات ودية طبيعية تضيف دفئاً بشرياً\n"
+        "⚠️ هذه ليست هلوسة! هذه مبادرات يفعلها أي موظف استقبال بشري محترف.\n\n"
+        "═══════════════════════════════════════\n"
         "معايير المراجعة (راجع كل نقطة):\n"
         "═══════════════════════════════════════\n"
         "1. الالتزام بالتعليمات — هل يتبع تعليمات الأيجنت وشخصيته المحددة أعلاه؟\n"
-        "2. دقة المعلومات — هل كل المعلومات المذكورة (أسعار، خدمات، مواعيد، فروع) متطابقة مع بيانات الأدوات؟\n"
-        "3. التخيلات — هل يذكر أي شيء غير مدعوم ببيانات الأدوات أو سياق المحادثة؟\n"
+        "2. دقة المعلومات — هل المعلومات الواقعية (أسعار، خدمات، مواعيد، فروع) متطابقة مع بيانات الأدوات؟\n"
+        "3. التخيلات الضارة فقط — هل يذكر معلومات واقعية مختلقة (وليس بداهة خدمية عامة)؟\n"
         "4. قوانين التاجر — هل يخالف أي قاعدة من القوانين النشطة؟\n"
         "5. النبرة واللغة — هل مناسبة لنوع الأيجنت والقناة المستخدمة؟\n"
-        "6. الاتساق — هل الرد متسق مع ما قيل سابقاً في المحادثة؟\n\n"
-        "⚠️ هام: لا ترفض الرد إلا إذا كان فيه خطأ واضح وملموس. "
-        "الهدف هو منع الأخطاء الفعلية، وليس فرض أسلوب كتابة معين. "
-        "إذا كان الرد صحيحاً ومفيداً، وافق عليه حتى لو كان ممكن يكون أفضل.\n\n"
+        "6. الاتساق — هل الرد متسق مع ما قيل سابقاً في المحادثة؟\n"
+        "7. البشرية — هل الرد يبدو طبيعياً كموظف بشري أم جاف وآلي؟\n\n"
+        "═══════════════════════════════════════\n"
+        "📝 قواعد القرار:\n"
+        "═══════════════════════════════════════\n"
+        "• إذا الرد صحيح وطبيعي ← approved: true, need_polish: false\n"
+        "• إذا الرد صحيح لكن جاف/آلي/ممكن يتحسن ← approved: true, need_polish: true, واكتب polished_reply\n"
+        "• إذا الرد فيه خطأ واقعي ضار ← approved: false, واكتب polished_reply بالتصحيح الكامل\n\n"
+        "⚠️ عند كتابة polished_reply:\n"
+        "- حافظ على نفس شخصية الأيجنت ونبرته المحددة في التعليمات أعلاه\n"
+        "- اجعل الرد يبدو كأنه من موظف بشري حقيقي — ودود، طبيعي، وفيه لمسة شخصية\n"
+        "- لا تكتب رداً جافاً أو رسمياً زائد عن اللزوم\n"
+        "- حافظ على كل المعلومات الصحيحة من الرد الأصلي\n"
+        "- صحح فقط الأخطاء الواقعية وحسّن الأسلوب البشري\n\n"
         'رد بصيغة JSON فقط:\n'
-        '{"approved": true/false, "reason": "سبب الرفض إن وجد", "violations": ["قائمة الانتهاكات المحددة"]}'
+        '{"approved": true/false, "reason": "سبب التعديل أو الرفض إن وجد", '
+        '"violations": ["قائمة المخالفات الواقعية فقط"], '
+        '"need_polish": true/false, '
+        '"polished_reply": "الرد بعد التحسين البشري الكامل (مطلوب إذا need_polish=true أو approved=false)"}'
     )
 
     messages = [
@@ -326,25 +363,54 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         if parsed_obj is None:
             raise json.JSONDecodeError("Failed to parse JSON object from review model output", response.text, 0)
         verdict = parsed_obj
-        if verdict.get("approved"):
-            await _log_review(ctx, "approved", reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
-            return None
-        reason = verdict.get("reason", "مخالفة قواعد المراجعة")
+
+        is_approved = verdict.get("approved", False)
+        need_polish = verdict.get("need_polish", False)
+        polished_reply = (verdict.get("polished_reply") or "").strip()
+        reason = verdict.get("reason", "")
         violations = verdict.get("violations", [])
-        logger.info("self_review.rejected",
-            reason=reason, violations=violations, latency_ms=latency,
-            agent_slug=str(getattr(ctx.agent, "template_slug", None) or getattr(ctx.agent, "slug", None) or ""),
-        )
-        corrected = await _correct_output(ctx, reply, reason, violations)
-        if corrected:
-            logger.info("self_review.corrected",
-                reason=reason, latency_ms=latency,
-                agent_slug=str(getattr(ctx.agent, "template_slug", None) or getattr(ctx.agent, "slug", None) or ""),
+        agent_slug = str(getattr(ctx.agent, "template_slug", None) or getattr(ctx.agent, "slug", None) or "")
+
+        # Case 1: Approved, no polish needed — pass through
+        if is_approved and not need_polish:
+            await _log_review(ctx, "approved", reply=reply, original_reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
+            return None
+
+        # Case 2: Approved but needs polish — use polished_reply directly (saves an LLM call)
+        if is_approved and need_polish and polished_reply:
+            logger.info("self_review.polished",
+                reason=reason, latency_ms=latency, agent_slug=agent_slug,
             )
-            await _log_review(ctx, "corrected", reply=corrected, model_used=model_name, latency_ms=latency, verdict=verdict)
-        else:
-            await _log_review(ctx, "rejected", reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
-        return corrected
+            await _log_review(ctx, "polished", reply=polished_reply, original_reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
+            return polished_reply
+
+        # Case 3: Rejected — use polished_reply if available, otherwise fall back to _correct_output
+        if not is_approved:
+            logger.info("self_review.rejected",
+                reason=reason, violations=violations, latency_ms=latency, agent_slug=agent_slug,
+            )
+            if polished_reply:
+                # Judge already provided a corrected version — use it directly
+                logger.info("self_review.corrected_by_judge",
+                    reason=reason, latency_ms=latency, agent_slug=agent_slug,
+                )
+                await _log_review(ctx, "corrected", reply=polished_reply, original_reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
+                return polished_reply
+            else:
+                # Fallback: ask the main model to correct (slower path)
+                corrected = await _correct_output(ctx, reply, reason, violations)
+                if corrected:
+                    logger.info("self_review.corrected_by_main_model",
+                        reason=reason, latency_ms=latency, agent_slug=agent_slug,
+                    )
+                    await _log_review(ctx, "corrected", reply=corrected, original_reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
+                else:
+                    await _log_review(ctx, "rejected", reply=reply, original_reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
+                return corrected
+
+        # Case 4: Approved + need_polish but no polished_reply provided — pass through
+        await _log_review(ctx, "approved", reply=reply, original_reply=reply, model_used=model_name, latency_ms=latency, verdict=verdict)
+        return None
     except (json.JSONDecodeError, KeyError) as e:
         logger.warning("self_review.parse_failed", error=str(e), text=getattr(response, 'text', '')[:200])
         await _log_review(ctx, "error", reply=reply, model_used=model_name, latency_ms=latency or 0)
@@ -359,11 +425,31 @@ async def _correct_output(
     ctx: PipelineContext, reply: str, reason: str, violations: list[str]
 ) -> str | None:
     evidence_text = _summarize_evidence(ctx.tool_evidence)
+    # Extract agent persona name from system prompt for identity reinforcement
+    agent_name = ""
+    if ctx.system_prompt:
+        import re as _re
+        name_match = _re.search(r"Name:\s*(.+)", ctx.system_prompt)
+        if name_match:
+            agent_name = name_match.group(1).strip()
+
+    persona_reminder = ""
+    if agent_name:
+        persona_reminder = (
+            f"\n\n⚠️ تذكير هام بالهوية: أنت {agent_name}. "
+            "يجب أن يبدو ردك كأنه من موظف بشري حقيقي — ودود وطبيعي. "
+            "لا تكتب رداً جافاً أو رسمياً أو آلياً. "
+            "حافظ على شخصيتك ونبرتك البشرية الدافئة. "
+            "استخدم تعبيرات طبيعية وأضف لمسة شخصية."
+        )
+
     correction_msg = (
         f"تم حظر ردك السابق بسبب: {reason}\n"
         f"التفاصيل: {', '.join(violations)}\n"
         f"بيانات الأدوات الفعلية المسترجعة من قاعدة البيانات: {evidence_text}\n"
-        "يرجى إعادة الصياغة لتجنب هذه المشكلة تماماً، مع الالتزام المطلق ببيانات الأدوات المتوفرة وعدم اقتراح أي خدمات أو فروع غير موجودة فيها."
+        "يرجى إعادة الصياغة لتجنب هذه المشكلة تماماً، مع الالتزام ببيانات الأدوات المتوفرة وعدم اختراع أي أسعار أو خدمات أو فروع غير موجودة فيها.\n"
+        "لكن يمكنك استخدام البداهة الخدمية العامة مثل: اقتراح الدفع نقداً مع فاتورة، الترحيب، الاعتذار، اقتراح بدائل منطقية عامة."
+        f"{persona_reminder}"
     )
     messages = [
         {"role": "system", "content": ctx.system_prompt or "أنت مساعد ذكي."},

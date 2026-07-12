@@ -478,6 +478,8 @@
       "disabled": "Service stopped — replies are not reviewed"
     },
     "serviceEnabled": "Service enabled",
-    "serviceDisabled": "Service disabled"
+    "serviceDisabled": "Service disabled",
+    "originalReply": "Original Reply",
+    "correctedReply": "Corrected Reply"
   }
 }

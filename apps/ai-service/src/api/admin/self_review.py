@@ -81,6 +81,7 @@ async def list_logs(
                     "model_used": log.model_used,
                     "latency_ms": log.latency_ms,
                     "reply_preview": log.reply_preview,
+                    "metadata_": log.metadata_,
                     "created_at": log.created_at.isoformat(),
                 }
                 for log in logs

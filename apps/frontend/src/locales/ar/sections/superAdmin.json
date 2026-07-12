@@ -478,6 +478,8 @@
       "disabled": "الخدمة متوقفة — لا تتم مراجعة الردود"
     },
     "serviceEnabled": "تم تفعيل الخدمة",
-    "serviceDisabled": "تم إيقاف الخدمة"
+    "serviceDisabled": "تم إيقاف الخدمة",
+    "originalReply": "الرد الأصلي",
+    "correctedReply": "الرد بعد التصحيح"
   }
 }

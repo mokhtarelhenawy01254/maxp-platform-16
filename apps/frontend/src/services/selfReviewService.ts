@@ -11,6 +11,7 @@ export interface ReviewLog {
   model_used: string | null;
   latency_ms: number | null;
   reply_preview: string | null;
+  metadata_?: { agent_name?: string; original_reply?: string } | null;
   created_at: string;
 }
 
