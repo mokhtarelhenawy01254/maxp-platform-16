@@ -84,11 +84,15 @@ async def _get_flash_review_client(ctx: PipelineContext) -> tuple[LLMClient | No
     agent_config = ctx.agent.config if ctx.agent and hasattr(ctx.agent, "config") else {}
     preferred = agent_config.get("reviewModel") if isinstance(agent_config, dict) else None
 
-    # 2. Global default from global_ai_config.settings.reviewModel
+    # 2. Global default from global_ai_config.settings
     global_review_model = None
     try:
         global_config = await model_manager.get_global_ui_config()
-        global_review_model = (global_config or {}).get("settings", {}).get("reviewModel")
+        settings = (global_config or {}).get("settings", {})
+        # Check if self-review is globally disabled
+        if settings.get("selfReviewEnabled") is False:
+            return None, ""
+        global_review_model = settings.get("reviewModel")
     except Exception:
         pass
 

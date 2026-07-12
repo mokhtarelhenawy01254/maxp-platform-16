@@ -70,12 +70,16 @@ export const selfReviewService = {
     await apiClient.patch(`/admin/self-review/agents/${agentId}/review-model`, { model: modelName });
   },
 
-  async getSettings(): Promise<{ global_review_model: string; available_models: string[] }> {
+  async getSettings(): Promise<{ global_review_model: string; self_review_enabled: boolean; available_models: string[] }> {
     const res = await apiClient.get("/admin/self-review/settings");
     return res.data.data;
   },
 
   async updateGlobalReviewModel(modelName: string): Promise<void> {
     await apiClient.patch("/admin/self-review/settings", { global_review_model: modelName });
+  },
+
+  async updateSelfReviewEnabled(enabled: boolean): Promise<void> {
+    await apiClient.patch("/admin/self-review/settings", { self_review_enabled: enabled });
   },
 };

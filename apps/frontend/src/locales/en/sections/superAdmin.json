@@ -470,6 +470,14 @@
       "model": "Global Review Model",
       "default": "Built-in priority order",
       "placeholder": "Choose a default model..."
-    }
+    },
+    "serviceToggle": {
+      "title": "Service Status",
+      "description": "Globally enable or disable self-review. When disabled, no agent replies will be reviewed.",
+      "enabled": "Service active — replies are reviewed before sending",
+      "disabled": "Service stopped — replies are not reviewed"
+    },
+    "serviceEnabled": "Service enabled",
+    "serviceDisabled": "Service disabled"
   }
 }

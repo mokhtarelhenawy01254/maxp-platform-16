@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   RefreshCw, Download, CheckCircle, AlertTriangle,
-  Clock, Activity, Save, BarChart3, Settings2, ListChecks,
+  Clock, Activity, Save, BarChart3, Settings2, ListChecks, Power,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -74,6 +76,8 @@ function SuperAdminSelfReviewLogs() {
   const [ctrlSaved, setCtrlSaved] = useState(false);
   const [globalModel, setGlobalModel] = useState("");
   const [globalSaving, setGlobalSaving] = useState(false);
+  const [selfReviewEnabled, setSelfReviewEnabled] = useState(true);
+  const [toggleSaving, setToggleSaving] = useState(false);
 
   const af = agentFilter !== "all" ? agentFilter : undefined;
   const sf = statusFilter !== "all" ? statusFilter : undefined;
@@ -138,10 +142,24 @@ function SuperAdminSelfReviewLogs() {
     } finally { setGlobalSaving(false); }
   }, [globalModel, refetchSettings, t]);
 
+  const handleToggleService = useCallback(async (enabled: boolean) => {
+    setToggleSaving(true);
+    try {
+      await selfReviewService.updateSelfReviewEnabled(enabled);
+      setSelfReviewEnabled(enabled);
+      toast.success(enabled ? t("superAdmin.selfReview.serviceEnabled") : t("superAdmin.selfReview.serviceDisabled"));
+    } catch (e) {
+      toast.error(t("common.error"), { description: t("common.tryAgain") });
+    } finally { setToggleSaving(false); }
+  }, [t]);
+
   const prevSettings = useRef<string>();
   if (settingsData && settingsData.global_review_model !== prevSettings.current) {
     prevSettings.current = settingsData.global_review_model;
     setGlobalModel(settingsData.global_review_model);
+    if (settingsData.self_review_enabled !== undefined) {
+      setSelfReviewEnabled(settingsData.self_review_enabled);
+    }
   }
 
   const handleRefresh = useCallback(() => { refetchStats(); refetchLogs(); refetchSettings(); }, [refetchStats, refetchLogs, refetchSettings]);
@@ -337,6 +355,25 @@ function SuperAdminSelfReviewLogs() {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4 mt-0">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("superAdmin.selfReview.serviceToggle.title")}</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">{t("superAdmin.selfReview.serviceToggle.description")}</p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="self-review-toggle"
+                  checked={selfReviewEnabled}
+                  onCheckedChange={handleToggleService}
+                  disabled={toggleSaving}
+                />
+                <Label htmlFor="self-review-toggle" className="text-sm cursor-pointer">
+                  {selfReviewEnabled
+                    ? t("superAdmin.selfReview.serviceToggle.enabled")
+                    : t("superAdmin.selfReview.serviceToggle.disabled")}
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-base">{t("superAdmin.selfReview.modelControl.title")}</CardTitle></CardHeader>
             <CardContent className="flex flex-wrap items-end gap-3">

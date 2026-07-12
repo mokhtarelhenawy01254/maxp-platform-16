@@ -199,6 +199,7 @@ async def set_review_model(
 
 class GlobalReviewSettings(BaseModel):
     global_review_model: str = Field(default="", pattern=r"^[a-zA-Z0-9_.-]*$")
+    self_review_enabled: bool | None = Field(default=None)
 
 
 @router.get("/self-review/settings")
@@ -211,13 +212,16 @@ async def get_review_settings(
     result = await session.execute(select(GlobalAiConfig))
     config = result.scalar_one_or_none()
     global_review_model = ""
+    self_review_enabled = True
     if config:
         settings = config.settings or {}
         global_review_model = settings.get("reviewModel", "")
+        self_review_enabled = settings.get("selfReviewEnabled", True)
     return {
         "success": True,
         "data": {
             "global_review_model": global_review_model,
+            "self_review_enabled": self_review_enabled,
             "available_models": AVAILABLE_REVIEW_MODELS,
         },
     }
@@ -240,9 +244,13 @@ async def set_review_settings(
         settings["reviewModel"] = body.global_review_model
     else:
         settings.pop("reviewModel", None)
+    if body.self_review_enabled is not None:
+        settings["selfReviewEnabled"] = body.self_review_enabled
+    else:
+        settings.pop("selfReviewEnabled", None)
     await session.execute(
         update(GlobalAiConfig).where(GlobalAiConfig.id == config.id).values(settings=settings)
     )
     await session.commit()
-    logger.info("global_review_model_updated", model=body.global_review_model)
+    logger.info("global_review_settings_updated", model=body.global_review_model, enabled=body.self_review_enabled)
     return {"success": True}
