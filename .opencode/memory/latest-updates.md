@@ -1,5 +1,18 @@
 # Latest Updates
 
+## 2026-07-13: Unified Comments Page (PostsManagement.jsx) Fixes
+
+### Fixes Applied
+- **File:** `apps/frontend/src/pages/comments/PostsManagement.jsx` — complete rewrite
+- **Layout:** Removed 3-column layout; middle column (page details, Delay Reply toggle, stats) moved to **settings bar at top**
+- **Mobile responsive:** Desktop = 2-column (pages sidebar | posts). Mobile = collapsible pages dropdown with ChevronDown, sidebar becomes modal dialog, settings bar wraps
+- **Connected dead elements:** Delay Reply toggle calls `CommentService.setPageResponseMethod()`, stats show real post data (auto-reply count, total comments), settings gear → `/posts/:postId/settings`, "التعليقات" button → `/posts/:postId/comments`, refresh button
+- **Arabic text:** All text converted (timeAgo, labels, headers, placeholders, stats)
+- **Error handling:** Error banner with AlertCircle icon + "إعادة المحاولة" retry button + dismiss
+- **Performance:** `loading="lazy"` on images, proper loading/empty states
+- **Build:** `npx eslint` passed, `npx vite build` succeeded
+- **Testing:** Desktop (1440x900) + Mobile (375x812) verified — loads, renders, responsive
+
 ## 2026-07-11: WhatsApp Cloud Embedded Sign-Up (Facebook OAuth)
 
 ### New Feature
