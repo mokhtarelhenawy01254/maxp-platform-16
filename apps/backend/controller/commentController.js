@@ -1109,13 +1109,20 @@ const applyPostResponseMethod = async (req, res) => {
     // Process each comment based on the response method
     for (const comment of pendingComments) {
       if (postSettings.responseMethod === 'fixed') {
-        // Send fixed message
         if (postSettings.fixedMessage) {
           await sendFixedResponse(comment, postSettings.fixedMessage);
           processedComments++;
         }
+      } else if (postSettings.responseMethod === 'ai') {
+        const aiPrompt = postSettings.aiPrompt || postSettings[LEGACY_RESPONSE_PROMPT_FIELD];
+        if (aiPrompt) {
+          const aiReply = await sendAiResponse(comment, aiPrompt);
+          if (aiReply) {
+            await sendFixedResponse(comment, aiReply);
+            processedComments++;
+          }
+        }
       }
-      // For 'manual' method, we don't do anything automatically
     }
 
     res.json({
@@ -1298,6 +1305,32 @@ async function sendFixedResponse(comment, fixedMessage) {
     }
   } catch (error) {
     console.error(`❌ Error sending fixed response for comment ${comment.id}:`, error);
+  }
+}
+
+async function sendAiResponse(comment, aiPrompt) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn(`⚠️ [AI-REPLY] OPENAI_API_KEY not set, falling back to prompt as message for comment ${comment.id}`);
+    return aiPrompt;
+  }
+  try {
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: aiPrompt },
+        { role: 'user', content: `رد على هذا التعليق: "${comment.message}"` }
+      ],
+      max_tokens: 300,
+      temperature: 0.7,
+    }, {
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      timeout: 15000,
+    });
+    return response.data?.choices?.[0]?.message?.content?.trim() || aiPrompt;
+  } catch (error) {
+    console.error(`❌ [AI-REPLY] Error generating AI response for comment ${comment.id}:`, error?.response?.data || error.message);
+    return aiPrompt;
   }
 }
 
@@ -1636,7 +1669,7 @@ const getPostsByPageId = async (req, res) => {
       postWhereClause.message = { contains: search };
     }
 
-    const localPosts = await getSharedPrismaClient().facebookPost.findMany({
+    let localPosts = await getSharedPrismaClient().facebookPost.findMany({
       where: postWhereClause,
       select: { postId: true, message: true, mediaUrl: true, postedAt: true },
       orderBy: { postedAt: 'desc' },
@@ -1645,7 +1678,23 @@ const getPostsByPageId = async (req, res) => {
     });
 
     if (localPosts.length === 0) {
-      return res.json({ success: true, data: [] });
+      const commentGroups = await getSharedPrismaClient().facebookComment.groupBy({
+        by: ['postId'],
+        where: { companyId, pageId },
+        _min: { createdTime: true },
+        _count: { id: true },
+      });
+
+      if (commentGroups.length > 0) {
+        localPosts = commentGroups.map(g => ({
+          postId: g.postId,
+          message: null,
+          mediaUrl: null,
+          postedAt: g._min.createdTime,
+        }));
+      } else {
+        return res.json({ success: true, data: [] });
+      }
     }
 
     const postIds = localPosts.map(p => p.postId);
