@@ -94,9 +94,11 @@ function Content() {
   const sorted = useMemo(() => {
     const list = [...filtered];
     list.sort((a, b) => {
+      const aTime = a.lastActivity ? new Date(a.lastActivity).getTime() : 0;
+      const bTime = b.lastActivity ? new Date(b.lastActivity).getTime() : 0;
       const order = { active: 0, dormant: 1, dead: 2 };
       return (order[a.status] ?? 9) - (order[b.status] ?? 9) ||
-        a.daysSinceLastActivity - b.daysSinceLastActivity;
+        bTime - aTime;
     });
     return list;
   }, [filtered]);
@@ -242,11 +244,9 @@ function Content() {
                       <TableCell className="text-center font-mono text-sm">{c.metrics.recentOrders}</TableCell>
                       <TableCell className="text-center font-mono text-sm">{c.metrics.recentConversations}</TableCell>
                       <TableCell className="text-center font-mono text-sm">{c.metrics.recentAiInteractions}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {c.lastActivity ? (
-                          <span title={formatDate(c.lastActivity)}>
-                            {daysLabel(c.daysSinceLastActivity)}
-                          </span>
+                          <span>{formatDate(c.lastActivity)}</span>
                         ) : (
                           <span className="text-slate-400">لا يوجد</span>
                         )}
