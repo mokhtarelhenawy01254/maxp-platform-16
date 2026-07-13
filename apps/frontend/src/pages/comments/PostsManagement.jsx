@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const PostsManagement = ({ embedded = false }) => {
   const navigate = useNavigate();
@@ -187,6 +188,7 @@ const PostsManagement = ({ embedded = false }) => {
   };
 
   const imgErrorHandler = (e, name) => {
+    e.target.onerror = null;
     e.target.src =
       "https://ui-avatars.com/api/?name=" +
       encodeURIComponent(name || "Page") +
@@ -290,7 +292,7 @@ const PostsManagement = ({ embedded = false }) => {
                 </div>
               </div>
 
-              <Button variant="outline" size="sm" className="text-[#6b52a3] font-bold text-[10px] md:text-xs shadow-sm gap-1.5">
+              <Button onClick={() => toast("هذه الخاصية قيد التطوير حالياً", { icon: "🚧" })} variant="outline" size="sm" className="text-[#6b52a3] font-bold text-[10px] md:text-xs shadow-sm gap-1.5">
                 <Eye className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 تقارير الحملة ▾
               </Button>
@@ -448,7 +450,7 @@ const PostsManagement = ({ embedded = false }) => {
               <span>آخر المنشورات</span>
             </div>
             <div className="flex items-center gap-2 md:gap-4">
-              <button className="hidden md:inline-flex bg-white hover:bg-gray-50 text-[#e84b5c] text-[10px] md:text-sm font-bold px-3 md:px-5 py-1 md:py-1.5 rounded-full shadow-sm transition-colors whitespace-nowrap">
+              <button onClick={() => toast("هذه الخاصية قيد التطوير حالياً", { icon: "🚧" })} className="hidden md:inline-flex bg-white hover:bg-gray-50 text-[#e84b5c] text-[10px] md:text-sm font-bold px-3 md:px-5 py-1 md:py-1.5 rounded-full shadow-sm transition-colors whitespace-nowrap">
                 تعيين حملة بالمعرف
               </button>
               <input

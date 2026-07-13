@@ -386,3 +386,8 @@ Each under `apps/backend/agents/<slug>/` with agent.json, SOUL.md, TOOLS.md, AGE
 - PM2: maxp-ai-service, maxp-backend, maxp-webhook-worker
 - DB: `maxp` with pgvector, 331 products, 86 Swan image_embeddings
 - Deploy: commit `90864f65` → GitHub Actions → success
+
+ # #   2 0 2 6 - 0 7 - 1 3 :   F a c e b o o k   U n i f i e d   C o m m e n t s   -   D e l a y   R e p l y   &   F e t c h   P o s t s   F i x 
+ -   * * B u g   1   ( D e l a y   R e p l y ) * * :   F r o n t e n d   t o g g l i n g   ' d e l a y   r e p l y '   s e n t   i n v a l i d   r e s p o n s e M e t h o d   ( u n d e f i n e d )   a n d   u n r e c o g n i z e d   d e l a y R e p l y   f i e l d .   F i x e d   b y   a d d i n g   d e l a y R e p l y   t o   P a g e R e s p o n s e S e t t i n g s   s c h e m a   a n d   u p d a t i n g   c o m m e n t C o n t r o l l e r . j s   t o   d e f a u l t   r e s p o n s e M e t h o d   t o   ' m a n u a l '   a n d   m a p   d e l a y R e p l y . 
+ -   * * B u g   2   ( F e t c h   P o s t s ) * * :   g e t P o s t s B y P a g e I d   t h r e w   P r i s m a   5 0 0   e r r o r   d u e   t o   i n v a l i d   g r o u p B y   s y n t a x   m i s s i n g   _ m a x :   {   c r e a t e d T i m e :   t r u e   } .   F i x e d   i n   c o m m e n t C o n t r o l l e r . j s .  
+ 

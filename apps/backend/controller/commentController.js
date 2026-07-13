@@ -887,11 +887,21 @@ const setPostResponseMethod = async (req, res) => {
     const { responseMethod, commentMessages, fixedMessengerMessage } = req.body; // responseMethod: 'fixed', 'manual'
 
     // Validate response method
-    if (!['fixed', 'manual'].includes(responseMethod)) {
+    if (!['fixed', 'manual', 'ai'].includes(responseMethod)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid response method. Must be fixed or manual'
+        error: 'Invalid response method'
       });
+    }
+
+    if (responseMethod === 'ai') {
+      const { aiPrompt } = req.body;
+      if (!aiPrompt || typeof aiPrompt !== 'string' || aiPrompt.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          error: 'AI prompt is required when response method is AI'
+        });
+      }
     }
 
     // If fixed method, ensure commentMessages is provided
@@ -922,7 +932,7 @@ const setPostResponseMethod = async (req, res) => {
             responseMethod: responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? req.body.aiPrompt : null,
             updatedAt: new Date()
           },
           create: {
@@ -931,7 +941,7 @@ const setPostResponseMethod = async (req, res) => {
             responseMethod: responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? req.body.aiPrompt : null,
             updatedAt: new Date()
           }
         });
@@ -949,7 +959,7 @@ const setPostResponseMethod = async (req, res) => {
         responseMethod: responseMethod,
         commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
         fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-        [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+        [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? req.body.aiPrompt : null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -1446,15 +1456,21 @@ const setPageResponseMethod = async (req, res) => {
 
     const companyId = user.companyId;
     const { pageId } = req.params;
-    const { responseMethod, commentMessages, fixedMessengerMessage } = req.body;
+    const { responseMethod = 'manual', commentMessages, fixedMessengerMessage, delayReply, aiPrompt } = req.body;
 
-    if (!['fixed', 'manual'].includes(responseMethod)) {
+    if (!['fixed', 'manual', 'ai'].includes(responseMethod)) {
       return res.status(400).json({ success: false, error: 'Invalid response method' });
     }
 
     if (responseMethod === 'fixed') {
       if (!commentMessages || (Array.isArray(commentMessages) && commentMessages.length === 0) || (typeof commentMessages === 'string' && commentMessages.trim() === '')) {
         return res.status(400).json({ success: false, error: 'At least one comment message is required' });
+      }
+    }
+
+    if (responseMethod === 'ai') {
+      if (!aiPrompt || typeof aiPrompt !== 'string' || aiPrompt.trim() === '') {
+        return res.status(400).json({ success: false, error: 'AI prompt is required' });
       }
     }
 
@@ -1469,7 +1485,8 @@ const setPageResponseMethod = async (req, res) => {
             responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+            delayReply: typeof delayReply === 'boolean' ? delayReply : undefined,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? aiPrompt : null,
             updatedAt: new Date()
           },
           create: {
@@ -1478,7 +1495,8 @@ const setPageResponseMethod = async (req, res) => {
             responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null
+            delayReply: typeof delayReply === 'boolean' ? delayReply : false,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? aiPrompt : null
           }
         });
       } else {
@@ -1493,7 +1511,8 @@ const setPageResponseMethod = async (req, res) => {
         responseMethod,
         commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
         fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-        [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+        delayReply: typeof delayReply === 'boolean' ? delayReply : false,
+        [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? aiPrompt : null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -1614,6 +1633,7 @@ const getPostsByPageId = async (req, res) => {
     const posts = await getSharedPrismaClient().facebookComment.groupBy({
       by: ['postId'],
       where: { companyId, pageId },
+      _max: { createdTime: true },
       orderBy: { _max: { createdTime: 'desc' } }
     });
 
