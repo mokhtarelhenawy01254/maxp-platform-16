@@ -1272,8 +1272,14 @@ async function createSession(sessionId, companyId, options = {}) {
             }
         });
 
-        // حفظ بيانات المصادقة
-        sock.ev.on('creds.update', saveCreds);
+        // حفظ بيانات المصادقة مع تحديث الذاكرة
+        sock.ev.on('creds.update', (updatedCreds) => {
+            const sd = activeSessions.get(sessionId);
+            if (sd) {
+                sd.creds = updatedCreds;
+            }
+            saveCreds(updatedCreds);
+        });
 
         // إضافة معالج أخطاء عام
         sock.ev.on('error', (error) => {
@@ -1551,6 +1557,7 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
 
             // تحديث الحالة
             const sessionData = activeSessions.get(sessionId);
+            const previousStatus = sessionData?.status;
             if (sessionData) {
                 sessionData.status = 'connected';
                 sessionData.phoneNumber = phoneNumber;
@@ -1573,21 +1580,30 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
 
             WA_LOG.ok(sessionId, `DB updated to CONNECTED`);
 
-            // ponytail: detect zombie sessions (connected but not registered)
-            const sd = activeSessions.get(sessionId);
-            if (sd?.creds && !sd.creds.registered) {
-                WA_LOG.error(sessionId, `ZOMBIE SESSION: connected but registered=false. Auth state lost during crash. Forcing relink.`);
-                await clearDatabaseAuthState(sessionId);
-                if (io) {
-                    io.to(`company_${companyId}`).emit('whatsapp:connection', {
-                        sessionId,
-                        status: 'relink_required',
-                        phoneNumber
-                    });
+            // ponytail: skip zombie check on first-time pairing (QR/authenticating flow)
+            // Only detect zombies during reconnection where auth was previously valid
+            if (previousStatus !== 'qr_pending' && previousStatus !== 'QR_PENDING' && previousStatus !== 'pairing_code_pending' && previousStatus !== 'authenticating') {
+                const sd = activeSessions.get(sessionId);
+                if (sd?.creds && !sd.creds.registered) {
+                    WA_LOG.error(sessionId, `ZOMBIE SESSION: connected but registered=false. Auth state lost during crash. Forcing relink.`);
+                    await clearDatabaseAuthState(sessionId);
+                    if (io) {
+                        io.to(`company_${companyId}`).emit('whatsapp:connection', {
+                            sessionId,
+                            status: 'relink_required',
+                            phoneNumber
+                        });
+                    }
+                    await logEvent(sessionId, companyId, 'relink_required', { reason: 'registered_false', phoneNumber }, 'critical');
+                    await endSocketQuietly(sock, 'Unregistered session - forcing relink');
+                    return;
                 }
-                await logEvent(sessionId, companyId, 'relink_required', { reason: 'registered_false', phoneNumber }, 'critical');
-                await endSocketQuietly(sock, 'Unregistered session - forcing relink');
-                return;
+            }
+
+            // Ensure auth state is saved immediately (critical for first-time pairing)
+            const connectedSessionData = activeSessions.get(sessionId);
+            if (connectedSessionData?.saveCreds?.flush) {
+                connectedSessionData.saveCreds.flush().catch(err => WA_LOG.warn(sessionId, `Auth flush failed: ${err.message}`));
             }
 
             // ✅ Sync Profile Automatically
