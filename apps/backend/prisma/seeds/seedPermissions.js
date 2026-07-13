@@ -10,7 +10,7 @@ const PERMISSIONS = [
   { key: 'analytics.view', name: 'عرض التحليلات', domain: 'DASHBOARD' },
   { key: 'analytics.view.own', name: 'عرض تحليلاتي فقط', domain: 'DASHBOARD' },
 
-  // Orders
+  // Orders — main
   { key: 'orders.view', name: 'عرض الطلبات', domain: 'ORDERS' },
   { key: 'orders.create', name: 'إنشاء طلب', domain: 'ORDERS' },
   { key: 'orders.edit', name: 'تعديل طلب', domain: 'ORDERS' },
@@ -19,6 +19,40 @@ const PERMISSIONS = [
   { key: 'orders.assign', name: 'تعيين طلب لمستخدم', domain: 'ORDERS' },
   { key: 'orders.export', name: 'تصدير الطلبات', domain: 'ORDERS' },
   { key: 'orders.bulk.create', name: 'إنشاء طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.invoice.print', name: 'طباعة الفواتير', domain: 'ORDERS' },
+
+  // Orders — Incomplete Orders section
+  { key: 'orders.incomplete.view', name: 'عرض الطلبات الناقصة', domain: 'ORDERS' },
+  { key: 'orders.incomplete.edit', name: 'تعديل الطلبات الناقصة', domain: 'ORDERS' },
+  { key: 'orders.incomplete.delete', name: 'حذف الطلبات الناقصة', domain: 'ORDERS' },
+
+  // Orders — Preparation Queue section
+  { key: 'orders.preparation.view', name: 'عرض قائمة التجهيز', domain: 'ORDERS' },
+  { key: 'orders.preparation.manage', name: 'إدارة قائمة التجهيز', domain: 'ORDERS' },
+
+  // Orders — Agent Workspace / Confirmation Queue section
+  { key: 'orders.workspace.view', name: 'عرض مساحة العمل', domain: 'ORDERS' },
+  { key: 'orders.confirmation.view', name: 'عرض تأكيدات الطلبات', domain: 'ORDERS' },
+  { key: 'orders.confirmation.manage', name: 'إدارة تأكيدات الطلبات', domain: 'ORDERS' },
+
+  // Orders — Quick Status Change section
+  { key: 'orders.quickstatus.view', name: 'عرض تغيير الحالة السريع', domain: 'ORDERS' },
+  { key: 'orders.quickstatus.manage', name: 'إدارة تغيير الحالة السريع', domain: 'ORDERS' },
+
+  // Orders — Turbo Records section
+  { key: 'orders.turbo.view', name: 'عرض سجلات Turbo', domain: 'ORDERS' },
+  { key: 'orders.turbo.manage', name: 'إدارة سجلات Turbo', domain: 'ORDERS' },
+
+  // Orders — Bosta Records section
+  { key: 'orders.bosta.view', name: 'عرض سجلات Bosta', domain: 'ORDERS' },
+  { key: 'orders.bosta.manage', name: 'إدارة سجلات Bosta', domain: 'ORDERS' },
+
+  // Orders — Stats section
+  { key: 'orders.stats.view', name: 'عرض إحصائيات الطلبات', domain: 'ORDERS' },
+
+  // Orders — Automation
+  { key: 'orders.automation.view', name: 'عرض أتمتة الطلبات', domain: 'ORDERS' },
+  { key: 'orders.automation.manage', name: 'إدارة أتمتة الطلبات', domain: 'ORDERS' },
 
   // Products
   { key: 'products.view', name: 'عرض المنتجات', domain: 'PRODUCTS' },

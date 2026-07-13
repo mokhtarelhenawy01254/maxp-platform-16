@@ -89,7 +89,8 @@ export const getImageUrl = (message: any): string => {
       imageUrl.startsWith("https://www.mokhtarelhenawy.online/") ||
       imageUrl.startsWith("https://files.easy-orders.net/") ||
       imageUrl.startsWith("https://scontent.") ||
-      imageUrl.startsWith("https://platform-lookaside.fbsbx.com/")
+      imageUrl.startsWith("https://platform-lookaside.fbsbx.com/") ||
+      imageUrl.includes("fbcdn.net")
     ) {
       // في بيئة التطوير، استخدم رابط ال proxy المحلي
       if (envConfig.isDevelopment) {

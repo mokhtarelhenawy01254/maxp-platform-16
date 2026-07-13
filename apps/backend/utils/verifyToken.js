@@ -267,14 +267,9 @@ const authenticateToken = async (req, res, next) => {
         );
 
         if (!allowLegacyPrimary) {
-          console.error(`🚫 [VERIFY-TOKEN] 403 ACCESS_REVOKED | userId=${userId} | email=${user.email} | effectiveCompanyId=${effectiveCompanyId} | primaryCompany=${user.companyId} | membershipActive=${!!(membership && membership.isActive)} | path=${req.path}`);
-          return res.status(403).json({
-            success: false,
-            message: 'User no longer has access to this company',
-            code: 'ACCESS_REVOKED',
-            requestedCompanyId: effectiveCompanyId,
-            userPrimaryCompany: user.companyId
-          });
+          console.warn(`⚠️ [VERIFY-TOKEN] User ${user.id} has no active membership for company ${effectiveCompanyId} — continuing for downstream authorization checks (path=${req.path})`);
+          // Do NOT block here — let downstream middleware (requireCompanyAccess, requireOwnerRole, requireRole)
+          // handle authorization. This allows owner routes to check ALL companies, not just the JWT context.
         }
       } else {
         effectiveRole = membership.roleRef?.key || membership.role || effectiveRole;

@@ -30,6 +30,7 @@ import { Activity, ShoppingBag as ShoppingBagLucide, User as UserLucide } from "
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
+import { getInboxExternalImageUrl } from "../../utils/imageUrl";
 import EmojiPicker from "emoji-picker-react";
 
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
@@ -1848,10 +1849,12 @@ const UnifiedInbox: React.FC = () => {
                                 const isVideo = msg.type === "video" || msg.mediaType?.includes("video");
                                 const isAudio = msg.type === "audio" || msg.mediaType?.includes("audio");
 
+                                const proxiedMediaUrl = getInboxExternalImageUrl(msg.mediaUrl, { messageId: msg.id });
+
                                 if (isImage) {
                                   return (
                                     <img
-                                      src={msg.mediaUrl}
+                                      src={proxiedMediaUrl}
                                       alt=""
                                       className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
                                     />
@@ -1861,7 +1864,7 @@ const UnifiedInbox: React.FC = () => {
                                 if (isVideo) {
                                   return (
                                     <video
-                                      src={msg.mediaUrl}
+                                      src={proxiedMediaUrl}
                                       controls
                                       className="rounded-lg max-w-full mb-1.5"
                                       style={{ maxHeight: "300px" }}
@@ -1874,7 +1877,7 @@ const UnifiedInbox: React.FC = () => {
                                 if (isAudio) {
                                   return (
                                     <audio
-                                      src={msg.mediaUrl}
+                                      src={proxiedMediaUrl}
                                       controls
                                       className="w-full mb-1.5"
                                       style={{ minWidth: "200px" }}
@@ -1914,7 +1917,7 @@ const UnifiedInbox: React.FC = () => {
                                 if (isImage) {
                                   return (
                                     <img
-                                      src={url}
+                                      src={getInboxExternalImageUrl(url, { messageId: msg.id })}
                                       alt=""
                                       className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
                                       loading="lazy"
