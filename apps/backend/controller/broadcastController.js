@@ -1211,7 +1211,7 @@ exports.sendCampaign = async (req, res) => {
           recipientCount: recipients.length,
           sentCount: sentCount,
           failedCount: failedCount,
-          deliveredCount: 0, // ponytail: starts at 0, updated by webhooks on actual delivery
+          deliveredCount: 0, // ponytail: starts at 0, updated by webhooks
           status: sentCount > 0 ? 'sent' : 'failed'
         }
       });
