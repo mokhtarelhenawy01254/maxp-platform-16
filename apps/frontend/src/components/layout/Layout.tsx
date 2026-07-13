@@ -6,7 +6,6 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   UsersIcon,
-  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import "../../styles/hr-theme.css";
 import { useTranslation } from "react-i18next";
@@ -27,7 +26,6 @@ import ThemeToggle from "../ui/theme-toggle";
 import { apiClient } from "../../services/apiClient";
 import type { ApiRequestConfig } from "../../services/apiClient";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
-import FloatingWhatsAppSupport from "../support/FloatingWhatsAppSupport";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 import PageExplanations from "../common/PageExplanations";
 
@@ -510,10 +508,12 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               href={`https://wa.me/${import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER || "201123087745"}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="business-icon-button"
+              className="flex items-center justify-center w-9 h-9 bg-[#25D366] hover:bg-[#20BD5A] text-white rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
               title={t("header.whatsapp") || "الدعم عبر واتساب"}
             >
-              <ChatBubbleLeftRightIcon className="h-5 w-5" />
+              <svg viewBox="0 0 32 32" className="w-5 h-5" fill="currentColor" aria-hidden="true">
+                <path d="M16 0C7.164 0 0 7.164 0 16c0 3.098.88 5.992 2.398 8.44L.812 31.188l7.027-1.844A15.926 15.926 0 0016 32c8.836 0 16-7.164 16-16S24.836 0 16 0zm8.496 22.684c-.578 1.633-2.879 3.02-4.715 3.422-1.258.277-2.844.5-8.285-1.781-6.977-2.926-8.539-7.352-8.797-7.688-.258-.34-2.098-2.801-2.098-5.344 0-2.543 1.332-3.793 1.805-4.309s.996-.414 1.328-.414c.332 0 .664.004.957.018.308.015.719-.117 1.125.86.422 1.02 1.434 3.535 1.563 3.789.129.254.215.55.043.887-.172.34-.258.55-.516.848-.258.3-.543.668-.777.895-.258.258-.528.539-.227 1.059.301.52 1.332 2.199 2.863 3.562 1.965 1.746 3.621 2.29 4.137 2.543.516.254.82.211 1.125-.129.301-.34 1.289-1.508 1.632-2.027.344-.516.687-.43 1.16-.258.472.172 2.996 1.414 3.512 1.672.52.258.86.387.992.601.129.215.129 1.227-.449 2.86z" />
+              </svg>
             </a>
             <PageExplanations />
             
@@ -748,7 +748,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
            onClose={() => setShowActiveUsers(false)}
          />
        )}
-       <FloatingWhatsAppSupport />
      </div>
    );
  };

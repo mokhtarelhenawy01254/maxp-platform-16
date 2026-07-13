@@ -356,9 +356,12 @@ exports.getEmployeeAnalytics = async (req, res) => {
       orderBy: { createdAt: 'asc' },
     });
 
-    const repliedConversationIds = new Set(employeeMessages.map(m => m.conversationId));
-    const totalReplied = repliedConversationIds.size;
-    const totalUnreplied = Math.max(0, totalIncomingConversations - totalReplied);
+    const incomingConvIdSet = new Set(incomingConversationIds);
+    const repliedIncomingConvIds = new Set(
+      employeeMessages.filter(m => incomingConvIdSet.has(m.conversationId)).map(m => m.conversationId)
+    );
+    const totalReplied = repliedIncomingConvIds.size;
+    const totalUnreplied = totalIncomingConversations - totalReplied;
 
     const totalIncomingMessages = customerMessages.length;
     const totalOutgoingMessages = employeeMessages.length;
@@ -398,15 +401,18 @@ exports.getEmployeeAnalytics = async (req, res) => {
       }
     }
 
-    // Track employee replies
+    // Track employee replies — only count replies in conversations assigned TO them
     const employeeRepliedConvos = new Map();
     for (const msg of employeeMessages) {
       if (msg.senderId && msg.conversationId) {
-        if (!employeeRepliedConvos.has(msg.senderId)) {
-          employeeRepliedConvos.set(msg.senderId, new Set());
-        }
-        employeeRepliedConvos.get(msg.senderId).add(msg.conversationId);
         addToEmployee(msg.senderId, 'outgoingMessages');
+        const conv = assignedConvMap.get(msg.conversationId);
+        if (conv?.assignedUserId === msg.senderId) {
+          if (!employeeRepliedConvos.has(msg.senderId)) {
+            employeeRepliedConvos.set(msg.senderId, new Set());
+          }
+          employeeRepliedConvos.get(msg.senderId).add(msg.conversationId);
+        }
       }
     }
 
@@ -416,7 +422,7 @@ exports.getEmployeeAnalytics = async (req, res) => {
     }
 
     for (const [userId, emp] of employeeMap) {
-      emp.unrepliedConversations = Math.max(0, emp.assignedConversations - emp.repliedConversations);
+      emp.unrepliedConversations = emp.assignedConversations - emp.repliedConversations;
     }
 
     // 5. Response time: per-turn, from last customer msg to next employee reply
