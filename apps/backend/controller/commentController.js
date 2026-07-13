@@ -1624,65 +1624,76 @@ const getPostsByPageId = async (req, res) => {
     const companyId = user.companyId;
     const { pageId } = req.params;
 
-    // Get the page access token for Graph API calls
-    const pageRecord = await getSharedPrismaClient().facebookPage.findUnique({
-      where: { pageId },
-      select: { pageAccessToken: true }
-    });
+    // Pagination to prevent timeouts on pages with many posts
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
 
+    let whereClause = { companyId, pageId };
+    if (search) {
+      whereClause.postId = { contains: search };
+    }
+
+    // ✅ Step 1: Get distinct post IDs with pagination (single query)
     const posts = await getSharedPrismaClient().facebookComment.groupBy({
       by: ['postId'],
-      where: { companyId, pageId },
+      where: whereClause,
       _max: { createdTime: true },
-      orderBy: { _max: { createdTime: 'desc' } }
+      orderBy: { _max: { createdTime: 'desc' } },
+      take,
+      skip
     });
 
-    const postDetails = [];
-    for (const post of posts) {
-      const comments = await getSharedPrismaClient().facebookComment.findMany({
-        where: { postId: post.postId, companyId },
-        orderBy: { createdTime: 'desc' }
-      });
+    if (posts.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
 
+    const postIds = posts.map(p => p.postId);
+
+    // ✅ Step 2: Get ALL comments for all posts in ONE bulk query (no N+1 loop)
+    const allComments = await getSharedPrismaClient().facebookComment.findMany({
+      where: { postId: { in: postIds }, companyId },
+      select: {
+        id: true,
+        postId: true,
+        respondedAt: true,
+        createdTime: true,
+        message: true,
+        senderName: true,
+        senderId: true,
+        response: true
+      },
+      orderBy: { createdTime: 'desc' }
+    });
+
+    // ✅ Step 3: Get local post metadata in ONE bulk query (no per-post API calls)
+    const localPosts = await getSharedPrismaClient().facebookPost.findMany({
+      where: { postId: { in: postIds } },
+      select: { postId: true, message: true, mediaUrl: true }
+    });
+
+    // Build lookup maps for O(1) access
+    const localPostMap = new Map(localPosts.map(p => [p.postId, p]));
+    const commentsByPost = new Map();
+    for (const comment of allComments) {
+      if (!commentsByPost.has(comment.postId)) {
+        commentsByPost.set(comment.postId, []);
+      }
+      commentsByPost.get(comment.postId).push(comment);
+    }
+
+    // Build final response — no extra queries, no HTTP calls per post
+    const postDetails = posts.map(post => {
+      const comments = commentsByPost.get(post.postId) || [];
       const totalComments = comments.length;
       const respondedComments = comments.filter(c => c.respondedAt !== null).length;
 
-      // --- Fetch post message & picture ---
-      // 1) Try local FacebookPost table first (fast, no API call)
-      let postMessage = null;
-      let pictureUrl = null;
-      const localPost = await getSharedPrismaClient().facebookPost.findUnique({
-        where: { postId: post.postId },
-        select: { message: true, mediaUrl: true }
-      });
+      const localPost = localPostMap.get(post.postId);
+      const postMessage = localPost?.message
+        || (comments.length > 0 ? comments[comments.length - 1].message : null);
+      const pictureUrl = localPost?.mediaUrl || null;
 
-      if (localPost) {
-        postMessage = localPost.message || null;
-        pictureUrl = localPost.mediaUrl || null;
-      }
-
-      // 2) If no picture locally and we have a token, fetch from Facebook Graph API
-      if (!pictureUrl && pageRecord?.pageAccessToken) {
-        try {
-          const graphUrl = `https://graph.facebook.com/v19.0/${post.postId}?fields=full_picture,message&access_token=${pageRecord.pageAccessToken}`;
-          const graphRes = await fetch(graphUrl);
-          if (graphRes.ok) {
-            const graphData = await graphRes.json();
-            pictureUrl = graphData.full_picture || null;
-            if (!postMessage) postMessage = graphData.message || null;
-          }
-        } catch (apiErr) {
-          // Silently ignore — Graph API errors should not break the response
-          console.warn(`⚠️ Could not fetch picture for post ${post.postId}:`, apiErr.message);
-        }
-      }
-
-      // 3) Final fallback: use oldest comment message as post context
-      if (!postMessage && comments.length > 0) {
-        postMessage = comments[comments.length - 1].message;
-      }
-
-      postDetails.push({
+      return {
         postId: post.postId,
         pageId,
         message: postMessage,
@@ -1695,12 +1706,12 @@ const getPostsByPageId = async (req, res) => {
         latestComment: comments[0] || null,
         firstCommentTime: comments.length > 0 ? comments[comments.length - 1].createdTime : null,
         lastCommentTime: comments.length > 0 ? comments[0].createdTime : null
-      });
-    }
+      };
+    });
 
     res.json({ success: true, data: postDetails });
   } catch (error) {
-    console.error('❌ Error fetching posts by page ID:', error);
+    console.error('\u274c Error fetching posts by page ID:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

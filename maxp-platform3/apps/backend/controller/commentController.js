@@ -1594,7 +1594,7 @@ const getFacebookPages = async (req, res) => {
   }
 };
 
-// NEW: Get posts for a specific page
+// NEW: Get posts for a specific page — optimized bulk queries
 const getPostsByPageId = async (req, res) => {
   try {
     const user = req.user;
@@ -1605,25 +1605,81 @@ const getPostsByPageId = async (req, res) => {
     const companyId = user.companyId;
     const { pageId } = req.params;
 
+    // Pagination — prevents timeouts on pages with many posts
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    let whereClause = { companyId, pageId };
+    if (search) {
+      whereClause.postId = { contains: search };
+    }
+
+    // ✅ Step 1: Get distinct post IDs (single query)
     const posts = await getSharedPrismaClient().facebookComment.groupBy({
       by: ['postId'],
-      where: { companyId, pageId },
-      orderBy: { _max: { createdTime: 'desc' } }
+      where: whereClause,
+      _max: { createdTime: true },
+      orderBy: { _max: { createdTime: 'desc' } },
+      take,
+      skip
     });
 
-    const postDetails = [];
-    for (const post of posts) {
-      const comments = await getSharedPrismaClient().facebookComment.findMany({
-        where: { postId: post.postId, companyId },
-        orderBy: { createdTime: 'desc' }
-      });
+    if (posts.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
 
+    const postIds = posts.map(p => p.postId);
+
+    // ✅ Step 2: Get ALL comments for all posts in ONE bulk query (no N+1 loop)
+    const allComments = await getSharedPrismaClient().facebookComment.findMany({
+      where: { postId: { in: postIds }, companyId },
+      select: {
+        id: true,
+        postId: true,
+        respondedAt: true,
+        createdTime: true,
+        message: true,
+        senderName: true,
+        senderId: true,
+        response: true
+      },
+      orderBy: { createdTime: 'desc' }
+    });
+
+    // ✅ Step 3: Get local post metadata in ONE bulk query (no per-post API calls)
+    const localPosts = await getSharedPrismaClient().facebookPost.findMany({
+      where: { postId: { in: postIds } },
+      select: { postId: true, message: true, mediaUrl: true }
+    });
+
+    // Build lookup maps for O(1) access
+    const localPostMap = new Map(localPosts.map(p => [p.postId, p]));
+    const commentsByPost = new Map();
+    for (const comment of allComments) {
+      if (!commentsByPost.has(comment.postId)) {
+        commentsByPost.set(comment.postId, []);
+      }
+      commentsByPost.get(comment.postId).push(comment);
+    }
+
+    // Build final response — no extra queries, no HTTP calls per post
+    const postDetails = posts.map(post => {
+      const comments = commentsByPost.get(post.postId) || [];
       const totalComments = comments.length;
       const respondedComments = comments.filter(c => c.respondedAt !== null).length;
 
-      postDetails.push({
+      const localPost = localPostMap.get(post.postId);
+      const postMessage = localPost?.message
+        || (comments.length > 0 ? comments[comments.length - 1].message : null);
+      const pictureUrl = localPost?.mediaUrl || null;
+
+      return {
         postId: post.postId,
         pageId,
+        message: postMessage,
+        pictureUrl,
+        responseMethod: comments.length > 0 ? (comments[0].response ? 'fixed' : 'manual') : 'manual',
         totalComments,
         respondedComments,
         pendingComments: totalComments - respondedComments,
@@ -1631,8 +1687,8 @@ const getPostsByPageId = async (req, res) => {
         latestComment: comments[0] || null,
         firstCommentTime: comments.length > 0 ? comments[comments.length - 1].createdTime : null,
         lastCommentTime: comments.length > 0 ? comments[0].createdTime : null
-      });
-    }
+      };
+    });
 
     res.json({ success: true, data: postDetails });
   } catch (error) {
