@@ -353,6 +353,18 @@ async function saveIncomingMessage(payload) {
             await WhatsAppMessageHandler.sendText(first.sessionId, first.normalizedJid, replyText, {
               isAIResponse: true,
             });
+            // Save AI reply to public.messages for conversation continuity
+            if (first.conversationId) {
+              getSharedPrismaClient().message.create({
+                data: {
+                  conversationId: first.conversationId,
+                  content: replyText,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  metadata: JSON.stringify({ platform: 'whatsapp', source: 'ai_reply' }),
+                },
+              }).catch(e => console.error('[WA-AI] Failed to save AI reply to DB:', e.message));
+            }
           }
           const attachments = result.response_attachments || result.responseAttachments;
           console.log(`[WA-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);

@@ -286,7 +286,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         {"role": "system", "content": enriched_prompt},
     ]
 
-    history = await assembler.fetch_message_history(ctx, limit=15)
+    history = await assembler.fetch_message_history(ctx, limit=50)
     for msg in history:
         messages.append({"role": msg["role"], "content": msg["content"]})
 
@@ -643,7 +643,7 @@ async def _build_followup_messages(
     # Add DB-backed conversation history (same as primary _llm_call)
     from src.context.assembler import ContextAssembler
     assembler = ContextAssembler()
-    history = await assembler.fetch_message_history(ctx, limit=15)
+    history = await assembler.fetch_message_history(ctx, limit=50)
     for msg in history:
         messages.append({"role": msg["role"], "content": msg.get("content", "")})
 
