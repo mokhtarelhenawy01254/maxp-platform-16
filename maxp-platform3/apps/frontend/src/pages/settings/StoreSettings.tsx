@@ -1,0 +1,1899 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  BuildingStorefrontIcon,
+  TruckIcon,
+  GiftIcon,
+  DocumentTextIcon,
+  CreditCardIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import { toast } from "sonner";
+import { apiClient } from "../../services/apiClient";
+import {
+  storeSettingsService,
+  Branch,
+  ShippingZone,
+  CanonicalGovernorate,
+} from "../../services/storeSettingsService";
+import {
+  footerSettingsService,
+  FooterSettings,
+} from "../../services/footerSettingsService";
+import { BranchesSection } from "../../components/store/BranchesSection";
+import { ShippingSectionV2 } from "../../components/store/ShippingSectionV2";
+import { CheckoutFormSection } from "../../components/store/CheckoutFormSection";
+import { FooterSettingsSection } from "../../components/store/FooterSettingsSection";
+import { BranchModal } from "../../components/store/BranchModal";
+import { ShippingModalV2 } from "../../components/store/ShippingModalV2";
+import PromotionSettings from "./PromotionSettings";
+import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
+import {
+  DEFAULT_SHIPPING_CLASSES,
+  ShippingClassOption,
+  buildDefaultClassFees,
+  ensureShippingClassesForKeys,
+  mergeShippingClasses,
+  normalizeFeesMap,
+  normalizeShippingClassKey,
+} from "../../constants/shippingClasses";
+import { StorefrontSettings } from "../../services/storefrontSettingsService";
+import { storefrontSettingsService } from "../../services/storefrontSettingsService";
+import {
+  DEFAULT_STOREFRONT_THEME_ID,
+  getStorefrontThemePreset,
+} from "../../storefront/themes";
+import {
+  applyStorefrontPageOverrides,
+  getStorefrontPageOverridesFromDesignTokens,
+  upsertStorefrontPageOverridesInDesignTokens,
+} from "../../storefront/utils/pageOverrides";
+import {
+  DEFAULT_CHECKOUT_FORM_SETTINGS,
+  useCheckoutFormSettings,
+} from "../../hooks/useCheckoutFormSettings";
+import { useAuth } from "../../hooks/useAuthSimple";
+import {
+  resolveStorefrontThemeId,
+  getErrorMessage,
+} from "../../utils/storefrontSettingsHelpers";
+import { checkoutFormSettingsService } from "../../services/checkoutFormSettingsService";
+import { PDP_CHECKOUT_SECTION_ID } from "../../storefront/utils/pdpCheckout";
+import {
+  DEFAULT_PDP_QUICK_ORDER_SETTINGS,
+  getPdpQuickOrderSettingsFromDesignTokens,
+  PdpQuickOrderSettings,
+  upsertPdpQuickOrderSettingsInDesignTokens,
+} from "../../storefront/utils/pdpQuickOrderSettings";
+import type { StorefrontSectionConfig } from "../../storefront/types/theme.types";
+
+type StoreSettingsTab =
+  | "branches"
+  | "shipping"
+  | "storefront"
+  | "checkout"
+  | "footer"
+  | "promotion"
+  | "delivery"
+  | "recommendations"
+  | "features"
+  | "homepage"
+  | "product-gallery";
+
+const VALID_STORE_SETTINGS_TABS = new Set<StoreSettingsTab>([
+  "branches",
+  "shipping",
+  "storefront",
+  "checkout",
+  "footer",
+  "promotion",
+  "delivery",
+  "recommendations",
+  "features",
+  "homepage",
+  "product-gallery",
+]);
+
+const resolveRequestedTab = (value: string | null): StoreSettingsTab =>
+  VALID_STORE_SETTINGS_TABS.has(value as StoreSettingsTab)
+    ? (value as StoreSettingsTab)
+    : "branches";
+
+type StorefrontSectionEntry = string | StorefrontSectionConfig;
+type PromotionSettingsState = Record<string, unknown>;
+const GOVERNORATE_CODE_ALIASES: Record<string, string> = {
+  october: "6th-october",
+  "6-october": "6th-october",
+  zayed: "sheikh-zayed",
+  "new-cairo-city": "new-cairo",
+  may15: "15th-may",
+  assiut: "asyut",
+  cairo: "cairo",
+  giza: "giza",
+  qalyubia: "qalyubia",
+  alexandria: "alexandria",
+  beheira: "beheira",
+  gharbia: "gharbia",
+  sharqia: "sharqia",
+  monufia: "monufia",
+  dakahlia: "dakahlia",
+  "port-said": "port-said",
+  ismailia: "ismailia",
+  suez: "suez",
+  fayoum: "fayoum",
+  "beni-suef": "beni-suef",
+  minya: "minya",
+  asyut: "asyut",
+  sohag: "sohag",
+  qena: "qena",
+  luxor: "luxor",
+  aswan: "aswan",
+  "red-sea": "red-sea",
+  "new-valley": "new-valley",
+  matrouh: "matrouh",
+  "north-sinai": "north-sinai",
+  "south-sinai": "south-sinai",
+  "6th-october": "6th-october",
+  "sheikh-zayed": "sheikh-zayed",
+  "new-cairo": "new-cairo",
+  helwan: "helwan",
+  "15th-may": "15th-may",
+};
+
+const getStorefrontSectionType = (section: StorefrontSectionEntry): string =>
+  typeof section === "string" ? section : section.type;
+
+const hasPdpCheckoutSection = (sections: StorefrontSectionEntry[]): boolean =>
+  sections.some(
+    (section) => getStorefrontSectionType(section) === PDP_CHECKOUT_SECTION_ID,
+  );
+
+const insertPdpCheckoutSection = (
+  sections: StorefrontSectionEntry[],
+): StorefrontSectionEntry[] => {
+  if (hasPdpCheckoutSection(sections)) {
+    return sections;
+  }
+
+  const nextSections = [...sections];
+  const insertionAnchorTypes = ["conversion-stack", "product-info"];
+  const anchorIndex = insertionAnchorTypes
+    .map((anchorType) =>
+      nextSections.findIndex(
+        (section) => getStorefrontSectionType(section) === anchorType,
+      ),
+    )
+    .find((index) => index >= 0);
+
+  const pdpCheckoutSection: StorefrontSectionConfig = {
+    type: PDP_CHECKOUT_SECTION_ID,
+  };
+
+  if (typeof anchorIndex === "number" && anchorIndex >= 0) {
+    nextSections.splice(anchorIndex + 1, 0, pdpCheckoutSection);
+    return nextSections;
+  }
+
+  nextSections.push(pdpCheckoutSection);
+  return nextSections;
+};
+
+const removePdpCheckoutSection = (
+  sections: StorefrontSectionEntry[],
+): StorefrontSectionEntry[] =>
+  sections.filter(
+    (section) => getStorefrontSectionType(section) !== PDP_CHECKOUT_SECTION_ID,
+  );
+
+const resolvePdpCheckoutSections = (
+  settings?: StorefrontSettings | null,
+): StorefrontSectionEntry[] => {
+  const themeId = resolveStorefrontThemeId(settings);
+  const baseTheme = getStorefrontThemePreset(themeId);
+  const pageOverrides = getStorefrontPageOverridesFromDesignTokens(
+    settings?.designTokens,
+  );
+  const resolvedTheme = applyStorefrontPageOverrides(baseTheme, pageOverrides);
+
+  return (resolvedTheme.pages.pdp?.sections || []) as StorefrontSectionEntry[];
+};
+
+const resolvePdpCheckoutEnabled = (
+  settings?: StorefrontSettings | null,
+): boolean => {
+  return settings?.productPageShowCheckoutForm !== false;
+};
+
+const applyPdpCheckoutVisibilityToStorefrontSettings = (
+  currentSettings?: StorefrontSettings | null,
+  enabled = true,
+): StorefrontSettings => {
+  const nextSettings = {
+    ...(currentSettings || ({} as StorefrontSettings)),
+  };
+  const designTokens =
+    typeof nextSettings.designTokens === "object" && nextSettings.designTokens !== null
+      ? nextSettings.designTokens
+      : {};
+  const pageOverrides = getStorefrontPageOverridesFromDesignTokens(designTokens);
+  const currentPdpOverride = pageOverrides.pdp;
+  const basePdpSections = (
+    getStorefrontThemePreset(resolveStorefrontThemeId(nextSettings)).pages.pdp
+      ?.sections || []
+  ) as StorefrontSectionEntry[];
+  const currentPdpSections =
+    currentPdpOverride && Array.isArray(currentPdpOverride.sections)
+      ? (currentPdpOverride.sections as StorefrontSectionEntry[])
+      : basePdpSections;
+  const nextPdpSections = enabled
+    ? insertPdpCheckoutSection(currentPdpSections)
+    : removePdpCheckoutSection(currentPdpSections);
+  const nextPageOverrides = {
+    ...pageOverrides,
+    pdp: {
+      ...(currentPdpOverride || {}),
+      sections: nextPdpSections,
+    },
+  };
+
+  return {
+    ...nextSettings,
+    productPageShowCheckoutForm: enabled,
+    designTokens: upsertStorefrontPageOverridesInDesignTokens(
+      designTokens,
+      nextPageOverrides,
+    ),
+  };
+};
+
+const applyPdpQuickOrderSettingsToStorefrontSettings = (
+  currentSettings?: StorefrontSettings | null,
+  pdpQuickOrderSettings?: PdpQuickOrderSettings,
+): StorefrontSettings => {
+  const nextSettings = {
+    ...(currentSettings || ({} as StorefrontSettings)),
+  };
+
+  return {
+    ...nextSettings,
+    designTokens: upsertPdpQuickOrderSettingsInDesignTokens(
+      nextSettings.designTokens,
+      pdpQuickOrderSettings || DEFAULT_PDP_QUICK_ORDER_SETTINGS,
+    ),
+  };
+};
+
+const isExpectedOptionalLoadError = (error: unknown): boolean => {
+  const status =
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof (error as { response?: { status?: unknown } }).response?.status ===
+      "number"
+      ? Number((error as { response?: { status?: number } }).response?.status)
+      : 0;
+
+  return status === 404;
+};
+
+interface StoreSettingsProps {
+  forcedTab?: StoreSettingsTab;
+  hideNavigation?: boolean;
+  pageTitle?: string;
+  pageDescription?: string;
+}
+
+const StoreSettings: React.FC<StoreSettingsProps> = ({
+  forcedTab,
+  hideNavigation = false,
+  pageTitle = "إعدادات المتجر الأساسية",
+  pageDescription = "إدارة الفروع، الشحن، الفوتر، وإعدادات التوصيل",
+}) => {
+  const { isLoading: isAuthLoading, isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<StoreSettingsTab>(() =>
+    forcedTab || resolveRequestedTab(searchParams.get("tab")),
+  );
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
+  const [canonicalGovernorates, setCanonicalGovernorates] = useState<CanonicalGovernorate[]>([]);
+  const [footerSettings, setFooterSettings] = useState<Partial<FooterSettings>>(
+    {},
+  );
+  const [storefrontSettings, setStorefrontSettings] = useState<StorefrontSettings>({} as StorefrontSettings);
+  const [promotionSettings, setPromotionSettings] =
+    useState<PromotionSettingsState>({});
+  const [loading, setLoading] = useState(true);
+  const [showBranchModal, setShowBranchModal] = useState(false);
+  const [showShippingModal, setShowShippingModal] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [editingShipping, setEditingShipping] = useState<ShippingZone | null>(
+    null,
+  );
+  const [shippingClassMode, setShippingClassMode] = useState<
+    "max" | "per_item"
+  >("max");
+  const [shippingClassFees, setShippingClassFees] = useState<
+    Record<string, number>
+  >({ ...buildDefaultClassFees(DEFAULT_SHIPPING_CLASSES) });
+  const [shippingClasses, setShippingClasses] = useState<ShippingClassOption[]>(
+    DEFAULT_SHIPPING_CLASSES,
+  );
+  const [savingShippingClassFees, setSavingShippingClassFees] =
+    useState(false);
+  const [newShippingClassLabel, setNewShippingClassLabel] = useState("");
+  const [newShippingClassKey, setNewShippingClassKey] = useState("");
+  const [processingCheckoutTab, setProcessingCheckoutTab] = useState(false);
+  const checkoutSettingsEnabled =
+    activeTab === "checkout" && isAuthenticated && Boolean(user?.companyId);
+  const {
+    settings: checkoutFormSettings,
+    loading: checkoutFormSettingsLoading,
+    saving: checkoutFormSettingsSaving,
+    applySettings: applyCheckoutFormSettings,
+    handleSave: handleSaveCheckoutFormSettings,
+    loadSettings: reloadCheckoutFormSettings,
+  } = useCheckoutFormSettings({
+    enabled: checkoutSettingsEnabled,
+  });
+
+  // Branch form state
+  const [branchForm, setBranchForm] = useState<Partial<Branch>>({
+    name: "",
+    address: "",
+    city: "",
+    phone: "",
+    email: "",
+    workingHours: "",
+    isActive: true,
+  });
+
+  // Shipping form state
+  const [shippingForm, setShippingForm] = useState<Partial<ShippingZone>>({
+    name: "",
+    governorateIds: [],
+    governorates: [],
+    pricingType: "flat",
+    price: 0,
+    deliveryTime: "",
+    deliveryTimeType: "1-2",
+    isActive: true,
+  });
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    if (!isAuthenticated || !user?.companyId) {
+      setLoading(false);
+      return;
+    }
+
+    loadData();
+  }, [isAuthLoading, isAuthenticated, user?.companyId]);
+
+  useEffect(() => {
+    if (forcedTab) {
+      setActiveTab(forcedTab);
+      return;
+    }
+
+    if (searchParams.get("tab")) {
+      return;
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", "branches");
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [forcedTab, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (forcedTab) {
+      setActiveTab(forcedTab);
+      return;
+    }
+
+      const requestedTab = resolveRequestedTab(searchParams.get("tab"));
+      if (requestedTab === "storefront") {
+        navigate("/settings/storefront/editor", { replace: true });
+        return;
+      }
+    setActiveTab((currentTab) =>
+      currentTab === requestedTab ? currentTab : requestedTab,
+    );
+  }, [forcedTab, navigate, searchParams]);
+
+  const loadOptionalTabData = async (tab: StoreSettingsTab) => {
+    if (tab === "footer") {
+      try {
+        const footerRes = await footerSettingsService.getSettings({
+          _skipErrorToast: true,
+        });
+        setFooterSettings(footerRes.data.data || {});
+      } catch (error) {
+        if (!isExpectedOptionalLoadError(error)) {
+          console.error("Error loading footer settings:", error);
+        }
+      }
+
+      return;
+    }
+
+    if (tab === "promotion" || tab === "shipping") {
+      try {
+        const promotionRes = await apiClient.get("/promotion-settings", {
+          _skipErrorToast: true,
+        });
+        setPromotionSettings(promotionRes.data.data || {});
+      } catch (error) {
+        if (!isExpectedOptionalLoadError(error)) {
+          console.error("Error loading promotion settings:", error);
+        }
+      }
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [
+        branchesRes,
+        zonesRes,
+        canonicalGovernoratesRes,
+        storefrontRes,
+        settingsRes,
+      ] = await Promise.allSettled([
+        storeSettingsService.getBranches(),
+        storeSettingsService.getShippingZones(),
+        storeSettingsService.getCanonicalGovernorates(),
+        storefrontSettingsService.getSettings(undefined, {
+          allowFallback: false,
+        }),
+        apiClient.get("/settings/company"),
+      ]);
+
+      if (branchesRes.status === "fulfilled") {
+        setBranches(branchesRes.value.data.data || []);
+      }
+
+      if (zonesRes.status === "fulfilled") {
+        setShippingZones(zonesRes.value.data.data || []);
+      }
+
+      if (canonicalGovernoratesRes.status === "fulfilled") {
+        setCanonicalGovernorates(canonicalGovernoratesRes.value.data.data || []);
+      }
+
+      if (storefrontRes.status === "fulfilled") {
+        const nextStorefrontSettings = (storefrontRes.value.data ||
+          {}) as StorefrontSettings;
+        setStorefrontSettings(nextStorefrontSettings);
+      }
+
+      const companySettings =
+        settingsRes.status === "fulfilled"
+          ? settingsRes.value?.data?.data?.settings || {}
+          : {};
+      const feesFromSettings = normalizeFeesMap(
+        companySettings.shippingClassFees || companySettings.classFees || {},
+      );
+      const modeFromSettings =
+        companySettings.shippingClassMode || companySettings.classMode || "max";
+      const storedClasses =
+        companySettings.shippingClasses ||
+        companySettings.shippingClassOptions ||
+        companySettings.classOptions ||
+        [];
+      let mergedClasses = mergeShippingClasses(storedClasses);
+      mergedClasses = ensureShippingClassesForKeys(
+        mergedClasses,
+        Object.keys(feesFromSettings),
+      );
+      setShippingClasses(mergedClasses);
+
+      const baseFees = buildDefaultClassFees(mergedClasses);
+      setShippingClassFees({ ...baseFees, ...feesFromSettings });
+      setShippingClassMode(modeFromSettings === "per_item" ? "per_item" : "max");
+
+      const hasBlockingFailures = [
+        branchesRes,
+        zonesRes,
+        canonicalGovernoratesRes,
+        storefrontRes,
+        settingsRes,
+      ].some((result) => result.status === "rejected");
+
+      if (hasBlockingFailures) {
+        toast.error("تم تحميل جزء من البيانات وتعذر تحميل بعض الأقسام");
+      }
+    } catch (error) {
+      toast.error("فشل تحميل البيانات");
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const syncStorefrontSettingsState = (nextStorefrontSettings: StorefrontSettings) => {
+    setStorefrontSettings(nextStorefrontSettings);
+  };
+
+  // Branch operations
+  const handleAddBranch = () => {
+    setEditingBranch(null);
+    setBranchForm({
+      name: "",
+      address: "",
+      city: "",
+      phone: "",
+      email: "",
+      workingHours: "",
+      isActive: true,
+    });
+    setShowBranchModal(true);
+  };
+
+  const handleEditBranch = (branch: Branch) => {
+    setEditingBranch(branch);
+    setBranchForm(branch);
+    setShowBranchModal(true);
+  };
+
+  const handleSaveBranch = async () => {
+    try {
+      if (!branchForm.name || !branchForm.phone) {
+        toast.error("يرجى ملء جميع الحقول المطلوبة (الاسم والهاتف)");
+        return;
+      }
+
+      if (editingBranch) {
+        await storeSettingsService.updateBranch(editingBranch.id, branchForm);
+        toast.success("تم تحديث الفرع بنجاح");
+      } else {
+        await storeSettingsService.createBranch(branchForm);
+        toast.success("تم إضافة الفرع بنجاح");
+      }
+
+      setShowBranchModal(false);
+      loadData();
+    } catch (error) {
+      toast.error("فشل حفظ الفرع");
+      console.error("Error saving branch:", error);
+    }
+  };
+
+  const handleDeleteBranch = async (id: string) => {
+    if (!confirm("هل أنت متأكد من حذف هذا الفرع؟")) return;
+
+    try {
+      await storeSettingsService.deleteBranch(id);
+      toast.success("تم حذف الفرع بنجاح");
+      loadData();
+    } catch (error) {
+      toast.error("فشل حذف الفرع");
+      console.error("Error deleting branch:", error);
+    }
+  };
+
+  // Shipping operations
+  const handleAddShipping = () => {
+    setEditingShipping(null);
+    setShippingForm({
+      name: "",
+      governorateIds: [],
+      governorates: [],
+      pricingType: "flat",
+      price: 0,
+      deliveryTime: "1-2 يوم",
+      deliveryTimeType: "1-2",
+      isActive: true,
+    });
+    setShowShippingModal(true);
+  };
+
+  const normalizeGovernorateCode = useCallback((value: string) => {
+    const raw = String(value || '').trim();
+    return GOVERNORATE_CODE_ALIASES[raw] || raw;
+  }, []);
+
+  const resolveZoneGovernorateIds = useCallback(
+    (zone: ShippingZone): string[] => {
+      const ids = new Set<string>();
+      const governorateNameToId = new Map(
+        EGYPT_GOVERNORATES.map((gov) => [gov.nameAr, gov.id]),
+      );
+
+      (zone.governorateIds || []).forEach((id) => {
+        const normalizedId = normalizeGovernorateCode(id);
+        if (normalizedId) ids.add(normalizedId);
+      });
+
+      (zone.canonicalGovernorates || []).forEach((gov) => {
+        const normalizedCode = normalizeGovernorateCode(gov?.code || '');
+        if (normalizedCode) ids.add(normalizedCode);
+      });
+
+      const zoneGovernorates = Array.isArray(zone.governorates)
+        ? zone.governorates
+        : [];
+
+      zoneGovernorates.forEach((name) => {
+        const normalized = String(name || '').trim();
+        if (!normalized) return;
+
+        const directUiId = governorateNameToId.get(normalized);
+        if (directUiId) {
+          ids.add(directUiId);
+        }
+
+        const canonical = canonicalGovernorates.find((gov) => {
+          const normalizedCode = normalizeGovernorateCode(gov.code);
+          if (
+            gov.nameAr === normalized ||
+            gov.nameEn === normalized ||
+            normalizedCode === normalized ||
+            gov.code === normalized
+          ) {
+            return true;
+          }
+
+          return (gov.aliases || []).some((alias) => alias.alias === normalized);
+        });
+
+        if (canonical?.code) {
+          ids.add(normalizeGovernorateCode(canonical.code));
+        }
+      });
+
+      return [...ids];
+    },
+    [canonicalGovernorates, normalizeGovernorateCode],
+  );
+
+  const handleEditShipping = (zone: ShippingZone) => {
+    setEditingShipping(zone);
+    setShippingForm({
+      ...zone,
+      governorateIds: resolveZoneGovernorateIds(zone),
+      pricingType: zone.pricingType || "flat",
+      deliveryTimeType: zone.deliveryTimeType || "custom",
+    });
+    setShowShippingModal(true);
+  };
+
+  useEffect(() => {
+    if (!showShippingModal || !editingShipping || canonicalGovernorates.length === 0) {
+      return;
+    }
+
+    setShippingForm((prev) => ({
+      ...prev,
+      ...editingShipping,
+      governorateIds: resolveZoneGovernorateIds(editingShipping),
+      pricingType: editingShipping.pricingType || prev.pricingType || 'flat',
+      deliveryTimeType: editingShipping.deliveryTimeType || prev.deliveryTimeType || 'custom',
+    }));
+  }, [
+    showShippingModal,
+    editingShipping,
+    canonicalGovernorates,
+    resolveZoneGovernorateIds,
+  ]);
+
+  const handleSaveShipping = async () => {
+    try {
+      if (
+        !shippingForm.governorateIds?.length ||
+        !shippingForm.deliveryTime
+      ) {
+        toast.error("يرجى ملء جميع الحقول المطلوبة");
+        return;
+      }
+
+      if (
+        shippingForm.pricingType === "flat" &&
+        (!shippingForm.price || shippingForm.price <= 0)
+      ) {
+        toast.error("يرجى إدخال سعر صحيح");
+        return;
+      }
+
+      if (
+        shippingForm.pricingType === "tiered" &&
+        (!shippingForm.pricingTiers?.length ||
+          shippingForm.pricingTiers.some((t) => !t.price || t.price <= 0))
+      ) {
+        toast.error("يرجى إدخال أسعار صحيحة لجميع الشرائح");
+        return;
+      }
+
+      const governorateNames = shippingForm.governorateIds
+        ?.map((id) => {
+          const canonical = canonicalGovernorates.find((g) => g.code === id);
+          if (canonical?.nameAr) return canonical.nameAr;
+          const gov = EGYPT_GOVERNORATES.find((g) => g.id === id);
+          return gov?.nameAr;
+        })
+        .filter(Boolean) as string[];
+
+      const fallbackVariations: string[] = [];
+      governorateNames.forEach((name) => {
+        const variations =
+          storeSettingsService.generateGovernorateVariations(name);
+        fallbackVariations.push(...variations);
+      });
+
+      const dataToSave = {
+        ...shippingForm,
+        governorates: governorateNames.length > 0 ? governorateNames : fallbackVariations,
+      };
+
+      if (editingShipping) {
+        await storeSettingsService.updateShippingZone(
+          editingShipping.id,
+          dataToSave,
+        );
+        toast.success("تم تحديث منطقة الشحن بنجاح");
+      } else {
+        await storeSettingsService.createShippingZone(dataToSave);
+        toast.success("تم إضافة منطقة الشحن بنجاح");
+      }
+
+      setShowShippingModal(false);
+      loadData();
+    } catch (error) {
+      toast.error("فشل حفظ منطقة الشحن");
+      console.error("Error saving shipping zone:", error);
+    }
+  };
+
+  const handleDeleteShipping = async (id: string) => {
+    if (!confirm("هل أنت متأكد من حذف هذه المنطقة؟")) return;
+
+    try {
+      await storeSettingsService.deleteShippingZone(id);
+      toast.success("تم حذف منطقة الشحن بنجاح");
+      loadData();
+    } catch (error) {
+      toast.error("فشل حذف منطقة الشحن");
+      console.error("Error deleting shipping zone:", error);
+    }
+  };
+
+  const handleUpdatePromotionSettings = async (
+    data: PromotionSettingsState,
+  ) => {
+    try {
+      setLoading(true);
+      await apiClient.post("/promotion-settings", data);
+      setPromotionSettings(data);
+      toast.success("تم تحديث إعدادات الشحن بنجاح");
+    } catch (error) {
+      toast.error("فشل تحديث الإعدادات");
+      console.error("Error updating promotion settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddShippingClass = async () => {
+    const rawLabel = newShippingClassLabel.trim();
+    const rawKey = newShippingClassKey.trim() || rawLabel;
+    if (!rawLabel && !rawKey) {
+      toast.error("يرجى إدخال اسم فئة الشحن");
+      return;
+    }
+
+    const normalizedKey = normalizeShippingClassKey(rawKey) || `class-${Date.now()}`;
+    const exists = shippingClasses.some(
+      (option) => normalizeShippingClassKey(option.key) === normalizedKey,
+    );
+    if (exists) {
+      toast.error("هذه الفئة موجودة بالفعل");
+      return;
+    }
+
+    const nextLabel = rawLabel || normalizedKey;
+    const newClass = { key: normalizedKey, label: nextLabel };
+
+    // Keep track of previous state for rollback
+    const prevClasses = [...shippingClasses];
+    const prevFees = { ...shippingClassFees };
+
+    // Update local state optimistically
+    const nextClasses = [...shippingClasses, newClass];
+    const nextFees = {
+      ...shippingClassFees,
+      [normalizedKey]: shippingClassFees[normalizedKey] ?? 0,
+    };
+
+    setShippingClasses(nextClasses);
+    setShippingClassFees(nextFees);
+    setNewShippingClassLabel("");
+    setNewShippingClassKey("");
+
+    try {
+      const classesToSave = nextClasses.length > 0 ? nextClasses : DEFAULT_SHIPPING_CLASSES;
+      const normalizedClasses = classesToSave
+        .map((option) => ({
+          key: normalizeShippingClassKey(option.key),
+          label: option.label?.trim() || option.key,
+        }))
+        .filter((option) => option.key);
+      const normalizedFees = normalizeFeesMap(nextFees);
+      const baseFees = buildDefaultClassFees(normalizedClasses);
+      const mergedFees = { ...baseFees, ...normalizedFees };
+      normalizedClasses.forEach((option) => {
+        if (mergedFees[option.key] === undefined) {
+          mergedFees[option.key] = 0;
+        }
+      });
+
+      await apiClient.put("/settings/company", {
+        settings: {
+          shippingClassFees: mergedFees,
+          shippingClassMode,
+          shippingClasses: normalizedClasses,
+        },
+      });
+
+      toast.success("تمت إضافة الفئة وحفظها");
+    } catch (error) {
+      // Revert optimistic updates
+      setShippingClasses(prevClasses);
+      setShippingClassFees(prevFees);
+      // Restore input values
+      setNewShippingClassLabel(rawLabel);
+      setNewShippingClassKey(rawKey !== rawLabel ? rawKey : "");
+
+      toast.error("فشل حفظ إعدادات فئات الشحن");
+      console.error("Error saving shipping class:", error);
+    }
+  };
+
+  const handleUpdateShippingClassLabel = (key: string, label: string) => {
+    setShippingClasses((prev) =>
+      prev.map((option) =>
+        normalizeShippingClassKey(option.key) === normalizeShippingClassKey(key)
+          ? { ...option, label }
+          : option,
+      ),
+    );
+  };
+
+  const handleRemoveShippingClass = (key: string) => {
+    const defaultKeys = new Set(
+      DEFAULT_SHIPPING_CLASSES.map((option) =>
+        normalizeShippingClassKey(option.key),
+      ),
+    );
+    const normalizedKey = normalizeShippingClassKey(key);
+    if (defaultKeys.has(normalizedKey)) {
+      toast.error("لا يمكن حذف الفئات الافتراضية");
+      return;
+    }
+
+    setShippingClasses((prev) =>
+      prev.filter(
+        (option) => normalizeShippingClassKey(option.key) !== normalizedKey,
+      ),
+    );
+    setShippingClassFees((prev) => {
+      const next = { ...prev };
+      delete next[normalizedKey];
+      return next;
+    });
+  };
+
+  const handleSaveShippingClassFees = async () => {
+    try {
+      setSavingShippingClassFees(true);
+      const classesToSave =
+        shippingClasses.length > 0 ? shippingClasses : DEFAULT_SHIPPING_CLASSES;
+      const normalizedClasses = classesToSave
+        .map((option) => ({
+          key: normalizeShippingClassKey(option.key),
+          label: option.label?.trim() || option.key,
+        }))
+        .filter((option) => option.key);
+      const normalizedFees = normalizeFeesMap(shippingClassFees);
+      const baseFees = buildDefaultClassFees(normalizedClasses);
+      const mergedFees = { ...baseFees, ...normalizedFees };
+      normalizedClasses.forEach((option) => {
+        if (mergedFees[option.key] === undefined) {
+          mergedFees[option.key] = 0;
+        }
+      });
+      await apiClient.put("/settings/company", {
+        settings: {
+          shippingClassFees: mergedFees,
+          shippingClassMode,
+          shippingClasses: normalizedClasses,
+        },
+      });
+      setShippingClassFees(mergedFees);
+      setShippingClasses(normalizedClasses);
+      toast.success("تم حفظ إعدادات فئات الشحن");
+    } catch (error) {
+      toast.error("فشل حفظ إعدادات فئات الشحن");
+      console.error("Error saving shipping class fees:", error);
+    } finally {
+      setSavingShippingClassFees(false);
+    }
+  };
+
+  // Footer settings operations
+  const handleSaveFooter = async () => {
+    try {
+      setLoading(true);
+      await footerSettingsService.updateSettings(footerSettings);
+      const storefrontResponse = await storefrontSettingsService.updateSettings({
+        themeId: resolveStorefrontThemeId(storefrontSettings),
+        designTokens: storefrontSettings.designTokens || {},
+      });
+      syncStorefrontSettingsState(storefrontResponse.data);
+      toast.success("تم حفظ إعدادات الفوتر بنجاح");
+      loadData();
+    } catch (error) {
+      toast.error("فشل حفظ إعدادات الفوتر");
+      console.error("Error saving footer settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetFooter = async () => {
+    if (
+      !confirm("هل أنت متأكد من إعادة تعيين إعدادات الفوتر للقيم الافتراضية؟")
+    )
+      return;
+
+    try {
+      setLoading(true);
+      await footerSettingsService.resetSettings();
+      toast.success("تم إعادة تعيين إعدادات الفوتر بنجاح");
+      loadData();
+    } catch (error) {
+      toast.error("فشل إعادة تعيين إعدادات الفوتر");
+      console.error("Error resetting footer settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    void loadOptionalTabData(activeTab);
+  }, [activeTab, isAuthLoading, isAuthenticated, user?.companyId]);
+
+  const handleTabChange = (nextTab: StoreSettingsTab) => {
+    if (forcedTab) {
+      return;
+    }
+
+    setActiveTab(nextTab);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", nextTab);
+    setSearchParams(nextSearchParams, { replace: true });
+  };
+
+  const handleToggleProductPageCheckout = (enabled: boolean) => {
+    setStorefrontSettings((current) =>
+      applyPdpCheckoutVisibilityToStorefrontSettings(current, enabled),
+    );
+  };
+
+  const handleChangePdpQuickOrderSettings = (
+    nextPdpQuickOrderSettings: PdpQuickOrderSettings,
+  ) => {
+    setStorefrontSettings((current) =>
+      applyPdpQuickOrderSettingsToStorefrontSettings(
+        current,
+        nextPdpQuickOrderSettings,
+      ),
+    );
+  };
+
+  const handleSaveCheckoutTabSettings = async () => {
+    const checkoutFieldsSaved = await handleSaveCheckoutFormSettings(undefined, {
+      silent: true,
+    });
+
+    if (!checkoutFieldsSaved) {
+      toast.error("تعذر حفظ إعدادات حقول الشيك أوت");
+      return false;
+    }
+
+    try {
+      setProcessingCheckoutTab(true);
+      const nextStorefrontDraft = applyPdpQuickOrderSettingsToStorefrontSettings(
+        applyPdpCheckoutVisibilityToStorefrontSettings(
+          storefrontSettings,
+          resolvePdpCheckoutEnabled(storefrontSettings),
+        ),
+        getPdpQuickOrderSettingsFromDesignTokens(storefrontSettings.designTokens),
+      );
+      const storefrontResponse = await storefrontSettingsService.updateSettings({
+        themeId: resolveStorefrontThemeId(nextStorefrontDraft),
+        productPageShowCheckoutForm:
+          nextStorefrontDraft.productPageShowCheckoutForm,
+        designTokens: nextStorefrontDraft.designTokens || {},
+      });
+
+      syncStorefrontSettingsState(storefrontResponse.data);
+      toast.success("تم حفظ إعدادات الشيك أوت بنجاح");
+      return true;
+    } catch (error) {
+      console.error("Error saving product page checkout settings:", error);
+      toast.error(
+        getErrorMessage(
+          error,
+          "تم حفظ حقول الشيك أوت لكن تعذر حفظ تفعيل الشيك أوت داخل صفحة المنتج",
+        ),
+      );
+      return false;
+    } finally {
+      setProcessingCheckoutTab(false);
+    }
+  };
+
+  const handleResetCheckoutTabSettings = async () => {
+    if (!window.confirm("هل أنت متأكد من إعادة ضبط إعدادات الشيك أوت؟")) {
+      return;
+    }
+
+    try {
+      setProcessingCheckoutTab(true);
+      await checkoutFormSettingsService.resetSettings();
+      await reloadCheckoutFormSettings();
+
+      const nextStorefrontDraft = applyPdpQuickOrderSettingsToStorefrontSettings(
+        applyPdpCheckoutVisibilityToStorefrontSettings(storefrontSettings, true),
+        DEFAULT_PDP_QUICK_ORDER_SETTINGS,
+      );
+      const storefrontResponse = await storefrontSettingsService.updateSettings({
+        themeId: resolveStorefrontThemeId(nextStorefrontDraft),
+        productPageShowCheckoutForm: true,
+        designTokens: nextStorefrontDraft.designTokens || {},
+      });
+
+      syncStorefrontSettingsState(storefrontResponse.data);
+      toast.success("تمت إعادة ضبط إعدادات الشيك أوت");
+    } catch (error) {
+      console.error("Error resetting checkout tab settings:", error);
+      toast.error(
+        getErrorMessage(error, "فشل في إعادة ضبط إعدادات الشيك أوت"),
+      );
+    } finally {
+      setProcessingCheckoutTab(false);
+    }
+  };
+
+
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  const effectiveCheckoutFormSettings =
+    checkoutFormSettings || DEFAULT_CHECKOUT_FORM_SETTINGS;
+  const productPageCheckoutEnabled =
+    resolvePdpCheckoutEnabled(storefrontSettings);
+  const pdpQuickOrderSettings = getPdpQuickOrderSettingsFromDesignTokens(
+    storefrontSettings.designTokens,
+  );
+  const storefrontDesignTokens =
+    storefrontSettings.designTokens && typeof storefrontSettings.designTokens === "object"
+      ? storefrontSettings.designTokens
+      : {};
+  const storefrontSocialLinks =
+    storefrontDesignTokens.socialLinks &&
+    typeof storefrontDesignTokens.socialLinks === "object" &&
+    !Array.isArray(storefrontDesignTokens.socialLinks)
+      ? (storefrontDesignTokens.socialLinks as Record<string, string>)
+      : {};
+  const handleChangeStorefrontSocialLinks = (
+    socialLinks: Record<string, string>,
+  ) => {
+    setStorefrontSettings((current) => ({
+      ...current,
+      designTokens: {
+        ...(current.designTokens || {}),
+        socialLinks,
+      },
+    }));
+  };
+  const checkoutTabBusy =
+    checkoutFormSettingsLoading ||
+    checkoutFormSettingsSaving ||
+    processingCheckoutTab;
+  const tabs = [
+    { id: "branches", label: "الفروع والمخازن", icon: BuildingStorefrontIcon },
+    { id: "shipping", label: "مناطق الشحن وتكلفتها", icon: TruckIcon },
+    { id: "footer", label: "إعدادات الفوتر", icon: DocumentTextIcon },
+    { id: "promotion", label: "إعدادات التوصيل المجاني", icon: GiftIcon },
+  ];
+
+  const tabsWithCheckout = [
+    ...tabs.slice(0, 2),
+    { id: "checkout", label: "إعدادات الشيك أوت", icon: CreditCardIcon },
+    { id: "payment", label: "بوابات الدفع", icon: CreditCardIcon },
+    ...tabs.slice(2),
+  ];
+
+  return (
+    <div className="space-y-6" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+            {pageTitle}
+          </h2>
+          <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
+            {pageDescription}
+          </p>
+        </div>
+      </div>
+
+      <div className={hideNavigation ? "block" : "flex flex-col lg:flex-row gap-8"}>
+        {!hideNavigation ? (
+          <aside className="lg:w-72 flex-shrink-0">
+            <nav className="flex flex-col space-y-2 bg-gray-50/50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+              {tabsWithCheckout.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id as StoreSettingsTab)}
+                  className={`
+                    w-full flex items-center gap-3 px-4 py-3.5 text-sm font-semibold rounded-xl transition-all duration-200
+                    ${activeTab === tab.id
+                      ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600"
+                      : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                    }
+                  `}
+                >
+                  <div className={`p-1.5 rounded-lg ${activeTab === tab.id ? "bg-indigo-50 dark:bg-indigo-900/30" : "bg-transparent"}`}>
+                    <tab.icon className="h-5 w-5" />
+                  </div>
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
+        ) : null}
+
+        <main className={hideNavigation ? "w-full" : "flex-1 min-w-0"}>
+          <div className="bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl border border-gray-100 dark:border-gray-700/50 p-6 lg:p-8 shadow-xl shadow-gray-200/20 dark:shadow-none min-h-[600px]">
+            {activeTab === "branches" ? (
+              <BranchesSection
+                branches={branches}
+                onAdd={handleAddBranch}
+                onEdit={handleEditBranch}
+                onDelete={handleDeleteBranch}
+              />
+            ) : activeTab === "shipping" ? (
+              <div className="space-y-6">
+                <ShippingSectionV2
+                  zones={shippingZones}
+                  canonicalGovernorates={canonicalGovernorates}
+                  onAdd={handleAddShipping}
+                  onEdit={handleEditShipping}
+                  onDelete={handleDeleteShipping}
+                  shippingClasses={shippingClasses}
+                  promotionSettings={promotionSettings}
+                  onUpdatePromotionSettings={handleUpdatePromotionSettings}
+                />
+
+                <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      رسوم فئات الشحن
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      حدّد الزيادة حسب فئة المنتج وطريقة احتسابها.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        طريقة الحساب
+                      </label>
+                      <select
+                        value={shippingClassMode}
+                        onChange={(e) =>
+                          setShippingClassMode(
+                            e.target.value === "per_item" ? "per_item" : "max",
+                          )
+                        }
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="max">أعلى قيمة داخل الطلب</option>
+                        <option value="per_item">لكل قطعة</option>
+                      </select>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 flex items-end">
+                      وضع &quot;أعلى قيمة&quot; يضيف أعلى رسوم بين العناصر، بينما
+                      &quot;لكل قطعة&quot; يجمع الرسوم على كل عنصر.
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                      <div className="md:col-span-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          اسم فئة الشحن
+                        </label>
+                        <input
+                          type="text"
+                          value={newShippingClassLabel}
+                          onChange={(e) => setNewShippingClassLabel(e.target.value)}
+                          placeholder="مثال: مبرد، هدايا"
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="md:col-span-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          المعرّف (اختياري)
+                        </label>
+                        <input
+                          type="text"
+                          value={newShippingClassKey}
+                          onChange={(e) => setNewShippingClassKey(e.target.value)}
+                          placeholder="slug أو اسم مختصر"
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddShippingClass}
+                        className="px-4 py-2 h-11 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
+                      >
+                        إضافة فئة
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {shippingClasses.map((option) => {
+                        const isDefaultClass = DEFAULT_SHIPPING_CLASSES.some(
+                          (defaultOption) =>
+                            normalizeShippingClassKey(defaultOption.key) ===
+                            normalizeShippingClassKey(option.key),
+                        );
+                        return (
+                          <div
+                            key={option.key}
+                            className="flex flex-col md:flex-row md:items-end gap-3 p-3 bg-white/70 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-xl"
+                          >
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                الاسم
+                              </label>
+                              <input
+                                type="text"
+                                value={option.label}
+                                onChange={(e) =>
+                                  handleUpdateShippingClassLabel(
+                                    option.key,
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                المعرّف: {option.key}
+                              </p>
+                            </div>
+                            <div className="w-full md:w-40">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                الرسوم
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={shippingClassFees[option.key] ?? 0}
+                                onChange={(e) =>
+                                  setShippingClassFees((prev) => ({
+                                    ...prev,
+                                    [option.key]: Number(e.target.value) || 0,
+                                  }))
+                                }
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveShippingClass(option.key)}
+                                disabled={isDefaultClass}
+                                className={`px-3 py-2 rounded-md text-sm font-semibold ${isDefaultClass
+                                  ? "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
+                                  : "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300"
+                                  }`}
+                              >
+                                حذف
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={handleSaveShippingClassFees}
+                      disabled={savingShippingClassFees}
+                      className={`px-4 py-2 rounded-md text-sm font-semibold ${savingShippingClassFees
+                        ? "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700"
+                        }`}
+                    >
+                      {savingShippingClassFees ? "جاري الحفظ..." : "حفظ الرسوم"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === "checkout" ? (
+              <div className="space-y-6">
+                <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        إعدادات حقول الشيك أوت
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        اضبط صفحة الشيك أوت الكاملة، وفورم الطلب السريع داخل صفحة المنتج، وترتيب ظهوره من نفس المكان.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => navigate("/settings/store/product-conversion")}
+                        className="px-4 py-2 rounded-md text-sm font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
+                      >
+                        فتح أدوات التحويل
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleResetCheckoutTabSettings();
+                        }}
+                        disabled={checkoutTabBusy}
+                        className={`px-4 py-2 rounded-md text-sm font-semibold ${
+                          checkoutTabBusy
+                            ? "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        إعادة الضبط الافتراضي
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {checkoutFormSettingsLoading && !checkoutFormSettings ? (
+                  <div className="flex items-center justify-center min-h-[240px] rounded-2xl border border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/30">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  <CheckoutFormSection
+                    settings={effectiveCheckoutFormSettings}
+                    onChange={applyCheckoutFormSettings}
+                    productPageCheckoutEnabled={productPageCheckoutEnabled}
+                    onProductPageCheckoutToggle={handleToggleProductPageCheckout}
+                    pdpQuickOrderSettings={pdpQuickOrderSettings}
+                    onPdpQuickOrderSettingsChange={
+                      handleChangePdpQuickOrderSettings
+                    }
+                    onSave={() => {
+                      void handleSaveCheckoutTabSettings();
+                    }}
+                    onReset={() => {
+                      void handleResetCheckoutTabSettings();
+                    }}
+                    loading={checkoutTabBusy}
+                  />
+                )}
+              </div>
+            ) : activeTab === "footer" ? (
+              <FooterSettingsSection
+                settings={footerSettings}
+                onChange={setFooterSettings}
+                socialLinks={storefrontSocialLinks}
+                onSocialLinksChange={handleChangeStorefrontSocialLinks}
+                onSave={handleSaveFooter}
+                onReset={handleResetFooter}
+                loading={loading}
+              />
+            ) : activeTab === "promotion" ? (
+              <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                <PromotionSettings />
+              </div>
+            ) : activeTab === "payment" ? (
+              <PaymentGatewaySettingsSection
+                settings={storefrontSettings}
+                onChange={setStorefrontSettings}
+                onSave={() => { /* Save handled internally by the component */ }}
+                loading={loading}
+              />
+            ) : null}
+          </div>
+        </main>
+      </div>
+
+      {/* Modals */}
+      {showBranchModal && (
+        <BranchModal
+          onClose={() => setShowBranchModal(false)}
+          onSave={handleSaveBranch}
+          branch={branchForm}
+          onChange={setBranchForm}
+          isEditing={!!editingBranch}
+        />
+      )}
+
+
+
+      {showShippingModal && (
+        <ShippingModalV2
+          key={editingShipping?.id || 'new-shipping-zone'}
+          onClose={() => setShowShippingModal(false)}
+          onSave={handleSaveShipping}
+          zone={shippingForm}
+          onChange={(nextZone) =>
+            setShippingForm((prev) => ({
+              ...prev,
+              ...nextZone,
+            }))
+          }
+          canonicalGovernorates={canonicalGovernorates}
+          isEditing={!!editingShipping}
+        />
+      )}
+    </div>
+  );
+};
+
+const PaymentGatewaySettingsSection: React.FC<{
+  settings: StorefrontSettings;
+  onChange: (settings: Partial<StorefrontSettings>) => void;
+  onSave: () => void;
+  loading: boolean;
+}> = ({ settings, onChange, onSave, loading }) => {
+  const [gatewayConfig, setGatewayConfig] = useState<{
+    merchantId: string;
+    apiKey: string;
+    secretKey: string;
+    mode: "test" | "live";
+  }>({
+    merchantId: "",
+    apiKey: "",
+    secretKey: "",
+    mode: "test",
+  });
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [enabledMethods, setEnabledMethods] = useState<string[]>(
+    settings.enabledPaymentMethods
+      ? JSON.parse(settings.enabledPaymentMethods)
+      : ["cod"]
+  );
+
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("disconnected");
+  const [testMessage, setTestMessage] = useState("");
+
+  const isConfigured = gatewayConfig.merchantId && gatewayConfig.apiKey && gatewayConfig.secretKey;
+
+  useEffect(() => {
+    console.log('[LOAD] Settings received:', {
+      hasPaymentConfig: !!settings.paymentGatewayConfig,
+      configType: typeof settings.paymentGatewayConfig,
+      configValue: settings.paymentGatewayConfig ? (typeof settings.paymentGatewayConfig === 'string' ? 'STRING' : 'OBJECT') : 'NONE',
+      enabledMethods: settings.enabledPaymentMethods,
+    });
+    let hasConfig = false;
+    if (settings.paymentGatewayConfig) {
+      const config = typeof settings.paymentGatewayConfig === "string"
+        ? JSON.parse(settings.paymentGatewayConfig)
+        : settings.paymentGatewayConfig;
+      setGatewayConfig({
+        merchantId: config.merchantId || "",
+        apiKey: config.apiKey || "",
+        secretKey: config.secretKey || "",
+        mode: config.mode || "test",
+      });
+      hasConfig = Boolean(config.merchantId && config.apiKey && config.secretKey);
+    }
+    if (settings.enabledPaymentMethods) {
+      setEnabledMethods(
+        typeof settings.enabledPaymentMethods === "string"
+          ? JSON.parse(settings.enabledPaymentMethods)
+          : settings.enabledPaymentMethods
+      );
+    }
+    // Check connection status on load using the parsed settings
+    const config = settings.paymentGatewayConfig
+      ? (typeof settings.paymentGatewayConfig === "string"
+        ? JSON.parse(settings.paymentGatewayConfig)
+        : settings.paymentGatewayConfig)
+      : null;
+    const hasConfigLoaded = config && config.merchantId && config.apiKey && config.secretKey;
+    setConnectionStatus(
+      hasConfigLoaded ? "connected" : "disconnected"
+    );
+    // Default to read-only if configured, otherwise show edit inputs
+    setIsEditing(!hasConfigLoaded);
+  }, [settings]);
+
+  const handleConfigChange = (key: string, value: string) => {
+    setGatewayConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleMethodToggle = (method: string) => {
+    setEnabledMethods((prev) =>
+      prev.includes(method)
+        ? prev.filter((m) => m !== method)
+        : [...prev, method]
+    );
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("هل أنت متأكد من رغبتك في إزالة إعدادات بوابة الدفع؟ سيؤدي ذلك إلى تعطيل الدفع الإلكتروني.")) {
+      return;
+    }
+
+    const updatedSettings = {
+      paymentGatewayConfig: null,
+      enabledPaymentMethods: JSON.stringify(enabledMethods.filter((m) => m === "cod")),
+    };
+
+    try {
+      const result = await storefrontSettingsService.updateSettings(updatedSettings);
+      if (result?.data) {
+        onChange(result.data);
+        setGatewayConfig({
+          merchantId: "",
+          apiKey: "",
+          secretKey: "",
+          mode: "test",
+        });
+        setEnabledMethods(["cod"]);
+        setIsEditing(true);
+      }
+      toast.success("تم إزالة إعدادات بوابة الدفع بنجاح");
+    } catch (error) {
+      console.error("[DELETE] Failed to delete settings:", error);
+      toast.error("حدث خطأ أثناء الحذف: " + (error?.message || "Unknown error"));
+    }
+  };
+
+  const handleSave = async () => {
+    const updatedSettings = {
+      paymentGatewayConfig: {
+        merchantId: gatewayConfig.merchantId,
+        apiKey: gatewayConfig.apiKey,
+        secretKey: gatewayConfig.secretKey,
+        mode: gatewayConfig.mode,
+      },
+      enabledPaymentMethods: JSON.stringify(enabledMethods),
+    };
+
+    console.log('[SAVE] Sending settings:', { ...updatedSettings, paymentGatewayConfig: '***MASKED***' });
+
+    try {
+      const result = await storefrontSettingsService.updateSettings(updatedSettings);
+      console.log('[SAVE] Result:', result);
+      // Update parent state with server response, but preserve the local
+      // gatewayConfig values (the server returns masked keys which would
+      // overwrite our real values via the useEffect).
+      if (result?.data) {
+        onChange({
+          ...result.data,
+          // Keep the un-masked config we just sent so the useEffect
+          // doesn't replace our local state with masked tokens.
+          paymentGatewayConfig: updatedSettings.paymentGatewayConfig,
+        });
+        setIsEditing(false);
+      }
+      toast.success("تم حفظ إعدادات بوابة الدفع بنجاح");
+    } catch (error) {
+      console.error("[SAVE] Failed to save payment gateway settings:", error);
+      toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || error?.response?.data?.message || "Unknown error"));
+    }
+  };
+
+  const testConnection = async () => {
+    if (!isConfigured) {
+      setTestMessage("أكمل البيانات أولاً");
+      return;
+    }
+
+    setConnectionStatus("testing");
+    setTestMessage("جاري الاختبار...");
+
+    try {
+      console.log('[TEST] Sending config:', { ...gatewayConfig, secretKey: '***' });
+      const response = await fetch("/api/v1/payment/kashier/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(gatewayConfig),
+      });
+
+      console.log('[TEST] Response status:', response.status);
+      const responseText = await response.text();
+      console.log('[TEST] Response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        data = { error: 'Invalid JSON response' };
+      }
+
+      if (response.ok && data.success) {
+        setConnectionStatus("connected");
+        setTestMessage("✅ تم الاتصال بنجاح!");
+      } else {
+        setConnectionStatus("disconnected");
+        setTestMessage(`❌ ${data.error || data.message || responseText || "فشل الاتصال"}`);
+      }
+    } catch (error) {
+      console.error('[TEST] Error:', error);
+      setConnectionStatus("disconnected");
+      setTestMessage(`❌ خطأ: ${error.message}`);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              إعدادات بوابة الدفع - Kashier
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              أدخل مفاتيح Kashier لتفعيل الدفع بالبطاقات في متجرك.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              connectionStatus === "connected"
+                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                : connectionStatus === "testing"
+                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+            }`}>
+              {connectionStatus === "connected" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  متصل
+                </>
+              )}
+              {connectionStatus === "testing" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                  جاري الاختبار...
+                </>
+              )}
+              {connectionStatus === "disconnected" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  غير متصل
+                </>
+              )}
+            </span>
+            {isConfigured && connectionStatus !== "testing" && (
+              <button
+                onClick={testConnection}
+                disabled={connectionStatus === "testing" || loading}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-white text-indigo-600 border border-indigo-300 hover:bg-indigo-50 dark:bg-gray-800 dark:text-indigo-400 dark:border-indigo-700 disabled:opacity-50"
+              >
+                {connectionStatus === "testing" ? "جاري الاختبار..." : "اختبار الاتصال"}
+              </button>
+            )}
+          </div>
+        </div>
+        {testMessage && (
+          <p className={`mt-2 text-sm ${connectionStatus === "connected" ? "text-green-600 dark:text-green-400" : connectionStatus === "disconnected" ? "text-red-600 dark:text-red-400" : "text-yellow-600 dark:text-yellow-400"}`}>
+            {testMessage}
+          </p>
+        )}
+      </div>
+
+      {isEditing ? (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+              بيانات الاعتماد (Credentials)
+            </h4>
+            {isConfigured && (
+              <button
+                onClick={() => setIsEditing(false)}
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                إلغاء التعديل
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Merchant ID
+              </label>
+              <input
+                type="text"
+                value={gatewayConfig.merchantId}
+                onChange={(e) => handleConfigChange("merchantId", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="MID-XXXX-XXX"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                API Key
+              </label>
+              <input
+                type="password"
+                value={gatewayConfig.apiKey}
+                onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Secret Key
+              </label>
+              <input
+                type="password"
+                value={gatewayConfig.secretKey}
+                onChange={(e) => handleConfigChange("secretKey", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                الوضع
+              </label>
+              <select
+                value={gatewayConfig.mode}
+                onChange={(e) => handleConfigChange("mode", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="test">Test (Sandbox)</option>
+                <option value="live">Live</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
+            <div>
+              <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                بيانات الربط الحالية
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                تفاصيل الاتصال النشط ببوابة دفع Kashier.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-900"
+              >
+                <PencilIcon className="w-3.5 h-3.5" />
+                تعديل البيانات
+              </button>
+              <button
+                onClick={handleDelete}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30"
+              >
+                <TrashIcon className="w-3.5 h-3.5" />
+                إزالة الإعدادات
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">Merchant ID</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+                {gatewayConfig.merchantId}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">الوضع (Mode)</span>
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded inline-block uppercase ${
+                gatewayConfig.mode === "live"
+                  ? "bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/50"
+                  : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50"
+              }`}>
+                {gatewayConfig.mode === "live" ? "Live" : "Test (Sandbox)"}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">API Key</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+                {gatewayConfig.apiKey}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">Secret Key</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+                {gatewayConfig.secretKey}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+        <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+          طرق الدفع المفعّلة
+        </h4>
+        <div className="flex flex-wrap gap-3">
+          {["cod", "card", "wallet"].map((method) => (
+            <label
+              key={method}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 cursor-pointer transition-colors ${
+                enabledMethods.includes(method)
+                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
+                  : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={enabledMethods.includes(method)}
+                onChange={() => handleMethodToggle(method)}
+                className="sr-only"
+              />
+              <span className="text-sm font-medium">
+                {method === "cod" && "الدفع عند الاستلام"}
+                {method === "card" && "بطاقة ائتمان / خصم"}
+                {method === "wallet" && "محفظة إلكترونية"}
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          اختر طرق الدفع التي تظهر للعملاء في صفحة الشيك أوت.
+        </p>
+      </div>
+
+      <div className="flex justify-end gap-3">
+        {isEditing && isConfigured && (
+          <button
+            onClick={() => setIsEditing(false)}
+            className="px-6 py-3 rounded-lg text-sm font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+          >
+            إلغاء
+          </button>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="px-6 py-3 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "جاري الحفظ..." : "حفظ الإعدادات"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default StoreSettings;

@@ -1,0 +1,53 @@
+{
+  "title": "Volume Discounts",
+  "description": "Add automatic discounts when purchasing certain quantities of a product",
+  "addDiscount": "Add Discount",
+  "editDiscount": "Edit Volume Discount",
+  "addNewDiscount": "Add New Volume Discount",
+  "fetchError": "Failed to fetch volume discounts",
+  "saveError": "Failed to save discount",
+  "deleteError": "Failed to delete discount",
+  "updateSuccess": "Discount updated successfully",
+  "createSuccess": "Discount created successfully",
+  "deleteSuccess": "Discount deleted successfully",
+  "confirmDelete": "Are you sure you want to delete this discount?",
+  "columns": {
+    "quantityRange": "Quantity Range",
+    "discountType": "Discount Type",
+    "discountValue": "Discount Value",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "emptyState": "No volume discounts yet. Add a discount to encourage customers to buy in larger quantities",
+  "type": {
+    "percentage": "Percentage",
+    "fixed": "Fixed Amount"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "label": {
+    "minQuantity": "Minimum Quantity",
+    "maxQuantity": "Maximum Quantity (optional)",
+    "discountType": "Discount Type",
+    "discountValuePercentage": "Discount Percentage (%)",
+    "discountValueFixed": "Discount Amount (EGP)",
+    "enableDiscount": "Enable Discount"
+  },
+  "preview": {
+    "title": "Preview:",
+    "buy": "When buying",
+    "pieces": "pieces",
+    "discount": "Discount",
+    "customerGets": "Customer gets",
+    "currency": " EGP"
+  },
+  "tip": {
+    "description": "Make sure quantity ranges do not overlap. The discount will be applied automatically when the product is added to the cart."
+  },
+  "actions": {
+    "update": "Update",
+    "add": "Add"
+  }
+}

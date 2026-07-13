@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500" fill="none">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#f5ede8"/>
+    <stop offset="100%" stop-color="#cbb7aa"/>
+  </linearGradient>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="26" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.16"/>
+  </filter>
+</defs>
+
+    
+  <rect width="1200" height="1500" rx="32" fill="url(#bg)"/>
+  <circle cx="216" cy="240" r="120" fill="#d1a585" opacity="0.58"/>
+  <circle cx="983.9999999999999" cy="330" r="144" fill="#6f7b83" opacity="0.42"/>
+  <path d="M0 1080C288 869.9999999999999 648 1290 1200 1050V1500H0Z" fill="#fdfaf7" opacity="0.95"/>
+  <rect x="96" y="120" width="1008" height="1260" rx="28" stroke="#80685d" stroke-opacity="0.38"/>
+
+    <rect x="120" y="130" width="960" height="1050" rx="44" fill="#fdfaf7" opacity="0.96"/>
+    
+  <g filter="url(#shadow)">
+    <path d="M 384.4 617.08 L 482.4 515.16 H 717.6 L 815.6 617.08 L 764.64 887.56 H 435.36 Z" fill="#48535d"/>
+    <path d="M 498.08 521.04 C 541.2 464.20000000000005, 658.8 464.20000000000005, 701.92 521.04 L 674.48 579.84 H 525.52 Z" fill="#b9c2c9" opacity="0.95"/>
+    <path d="M 543.16 589.64 V 875.8" stroke="#f0eee9" stroke-width="13.719999999999999" stroke-linecap="round" opacity="0.55"/>
+    <path d="M 656.84 589.64 V 875.8" stroke="#f0eee9" stroke-width="13.719999999999999" stroke-linecap="round" opacity="0.55"/>
+    <rect x="509.84000000000003" y="717.04" width="180.32" height="43.12" rx="19.6" fill="#f0eee9" opacity="0.14"/>
+    
+    
+  </g>
+
+    
+    <text x="120" y="1290" font-family="'League Spartan', Arial, sans-serif" font-size="42" font-weight="700" fill="#1a1513" text-anchor="start">Zip Layer Set</text>
+    <text x="120" y="1365" font-family="'League Spartan', Arial, sans-serif" font-size="20" font-weight="500" fill="#61544d" text-anchor="start">Ink finish</text>
+  
+  
+</svg>

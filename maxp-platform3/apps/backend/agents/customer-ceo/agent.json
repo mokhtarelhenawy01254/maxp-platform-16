@@ -1,0 +1,42 @@
+{
+  "slug": "customer-ceo",
+  "name": "Customer CEO Agent",
+  "role": "CEO",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "helpful",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "agent.run_task",
+    "agent.list_agents",
+    "agent.read_state",
+    "agent.handoff"
+  ],
+  "allowedSkills": [],
+  "channels": [
+    "chat",
+    "whatsapp",
+    "messenger"
+  ],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 5
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Public Store Builder"
+  short_description: "Create distinct storefront themes and flows"
+  default_prompt: "Use $public-store-builder to create a distinct storefront theme or refine a public storefront flow in this project."

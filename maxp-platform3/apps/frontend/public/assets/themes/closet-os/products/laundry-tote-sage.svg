@@ -1,0 +1,10 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="1000" fill="#F7F2E8"/>
+<rect x="44" y="44" width="712" height="912" rx="44" fill="#22312D"/>
+<rect x="608" y="80" width="98" height="840" rx="24" fill="#6F8E79"/>
+<path d="M240 308C240 274.863 266.863 248 300 248H444C477.137 248 504 274.863 504 308V660C504 693.137 477.137 720 444 720H300C266.863 720 240 693.137 240 660V308Z" fill="#7C9384"/>
+<path d="M292 298C292 245.533 334.533 203 387 203C439.467 203 482 245.533 482 298V338H442V298C442 267.624 417.376 243 387 243C356.624 243 332 267.624 332 298V338H292V298Z" fill="#A8B8AD"/>
+<rect x="148" y="770" width="392" height="92" rx="28" fill="#F7F2E8" fill-opacity="0.1"/>
+<text x="178" y="812" fill="#F7F2E8" font-size="42" font-family="Segoe UI, sans-serif" font-weight="700">LAUNDRY TOTE</text>
+<text x="178" y="846" fill="#F7F2E8" fill-opacity="0.76" font-size="22" font-family="Segoe UI, sans-serif">SAGE / CARRY + CARE</text>
+</svg>

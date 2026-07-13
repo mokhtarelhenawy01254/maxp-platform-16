@@ -1,0 +1,298 @@
+{
+  "id": "fastly-eg",
+  "name": "Fastly",
+  "description": "متجر عروض عربي كثيف يقدّم المنتجات مباشرة من أول الشاشة مع كروت سريعة وحدود واضحة وإضافة للسلة بدون تعقيد.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "0 0% 7%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 97%",
+      "secondaryForeground": "0 0% 7%",
+      "accent": "0 76% 49%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "0 0% 7%",
+      "muted": "0 0% 96%",
+      "mutedForeground": "0 0% 40%",
+      "border": "0 0% 10%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 7%",
+      "ring": "0 76% 49%"
+    },
+    "typography": {
+      "headingFont": "\"Alexandria\", \"IBM Plex Sans Arabic\", sans-serif",
+      "bodyFont": "\"Tajawal\", \"IBM Plex Sans Arabic\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.55rem",
+      "buttonRadius": "0.45rem"
+    },
+    "productCard": {
+      "borderRadius": "0.55rem",
+      "boxShadow": "none",
+      "hoverShadow": "none",
+      "badgeRadius": "0.35rem",
+      "buttonRadius": "0.45rem",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Fastly",
+    "description": "قالب عروض عربي كثيف بهيدر بسيط وكروت منتجات مباشرة وأزرار إضافة للسلة واضحة مثل متاجر العروض السريعة."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/fastly-eg/preview.png",
+    "colors": [
+      "#000000",
+      "#ffffff",
+      "#cf1620"
+    ]
+  },
+  "header": {
+    "variant": "legacy-default-old",
+    "brandName": "Fastly",
+    "logoUrl": "/assets/themes/fastly-eg/logo.svg",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن للطلبات اكثر من 200 ريال",
+    "navigation": []
+  },
+  "footer": {
+    "variant": "legacy-default-old",
+    "description": "",
+    "copyrightText": "fastly . جميع الحقوق محفوظة . © 2026",
+    "navigation": [],
+    "legalLinks": []
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "product-grid",
+          "variant": "fastly-offer-wall",
+          "settings": {
+            "title": "أحدث الاضافات",
+            "limit": 10,
+            "defaultCategorySlug": "featured-deals",
+            "ctaText": "المزيد",
+            "ctaLink": "/collections/featured-deals",
+            "productsFoundLabel": "منتج متاح"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "fastly-offer-wall",
+          "settings": {
+            "title": "اخترنا لك",
+            "limit": 5,
+            "defaultCategorySlug": "featured-deals",
+            "ctaText": "المزيد",
+            "ctaLink": "/collections/featured-deals",
+            "productsFoundLabel": "منتج متاح"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "fastly-offer-wall",
+          "settings": {
+            "title": "الاكثر مبيعاً",
+            "limit": 12,
+            "defaultCategorySlug": "featured-deals",
+            "ctaText": "المزيد",
+            "ctaLink": "/collections/featured-deals",
+            "productsFoundLabel": "منتج متاح"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "stack",
+      "sections": [
+        {
+          "type": "product-grid",
+          "variant": "fastly-offer-wall",
+          "settings": {
+            "title": "كل المنتجات",
+            "limit": 12,
+            "defaultCategorySlug": "featured-deals",
+            "productsFoundLabel": "منتج متاح",
+            "emptyStateTitle": "لا توجد منتجات مطابقة",
+            "emptyStateDescription": "جرّب البحث باسم منتج آخر أو امسح الفلاتر الحالية.",
+            "clearButtonText": "عرض الكل"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "settings": {
+        "categoryTitles": {
+          "featured-deals": "عروض تاجر الحصرية"
+        },
+        "sortLabel": "الأعلى تقييما"
+      },
+      "sections": [
+        {
+          "type": "product-grid",
+          "variant": "fastly-offer-wall",
+          "settings": {
+            "title": "كل العروض",
+            "limit": 12,
+            "defaultCategorySlug": "featured-deals",
+            "productsFoundLabel": "منتج متاح"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "product-grid",
+          "variant": "fastly-offer-wall",
+          "settings": {
+            "title": "كل العروض",
+            "limit": 12,
+            "defaultCategorySlug": "featured-deals",
+            "productsFoundLabel": "منتج متاح"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "addToCartText": "أضف للسلة",
+            "buyNowText": "اطلب الآن",
+            "descriptionTitle": "تفاصيل المنتج",
+            "shippingTitle": "الشحن والتوصيل",
+            "shippingText": "الشحن سريع ويظهر لك ملخص الطلب بوضوح قبل التأكيد النهائي.",
+            "fitNote": "اضغط أضف للسلة مباشرة أو أكمل الطلب من نفس الصفحة.",
+            "showGuarantees": false,
+            "showReturnsAccordion": false
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "آراء العملاء",
+            "listTitle": "أحدث الآراء",
+            "verifiedLabel": "طلب موثق",
+            "reviewsLabel": "مراجعة",
+            "writeReviewText": "أضف رأيك",
+            "showMediaFeed": false,
+            "reviewLimit": 4,
+            "mobileReviewLimit": 2
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "standard",
+          "settings": {
+            "title": "منتجات مشابهة",
+            "subtitle": "اختيارات أخرى من نفس روح العروض السريعة.",
+            "limit": 4,
+            "mobileLimit": 2
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة السلة",
+            "subtitle": "راجعي اختياراتك قبل الانتقال لخطوة التأكيد.",
+            "continueShoppingText": "كمّل التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "كل شيء واضح قبل الإرسال.",
+            "checkoutButtonText": "إتمام الطلب",
+            "secureCheckoutText": "طلب آمن",
+            "returnsText": "تأكيد سريع",
+            "showTrustRow": true,
+            "showFreeShippingProgress": false
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة الطلب",
+            "subtitle": "خطوة أخيرة قبل تأكيد البيانات."
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "الاسم، الهاتف، والعنوان لإتمام الطلب بسرعة.",
+            "shippingTitle": "التوصيل",
+            "shippingDescription": "اكتب العنوان بوضوح ليصلك الطلب بسهولة.",
+            "notesTitle": "ملاحظات الطلب",
+            "notesDescription": "أي ملاحظة خاصة بالشحن أو موعد التسليم."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "minimal",
+          "settings": {
+            "title": "تأكيد الطلب",
+            "subtitle": "ملخص واضح وخطوة أخيرة سريعة.",
+            "summaryTitle": "ملخص سريع",
+            "summaryDescription": "راجعي الإجمالي ثم أكدي الطلب.",
+            "confirmOrderText": "تأكيد الطلب",
+            "securityText": "بياناتك محمية أثناء الإرسال",
+            "codLabel": "الدفع عند الاستلام",
+            "cardLabel": "بطاقة بنكية",
+            "walletLabel": "محفظة إلكترونية"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "شكرًا لإتمام الطلب",
+            "description": "تم استلام الطلب وسنراجع البيانات ونتواصل معك قريبًا.",
+            "continueShoppingText": "العودة للرئيسية",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "إذا احتجت مساعدة تواصل معنا عبر",
+            "showTimeline": false,
+            "showRecommended": false,
+            "showTrackOrder": false,
+            "showReorder": false
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        "member-registration"
+      ]
+    }
+  }
+}

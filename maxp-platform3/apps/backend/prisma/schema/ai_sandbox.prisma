@@ -1,0 +1,52 @@
+model AiSandboxSession {
+  id             String             @id @default(cuid())
+  companyId      String
+  userId         String
+  title          String             @default("New Session")
+  agentId        String
+  agentName      String?
+  agentRole      String?
+  model          String
+  provider       String
+  keyId          String?
+  messageCount   Int                @default(0)
+  toolCallCount  Int                @default(0)
+  totalCost      Float              @default(0)
+  totalTokens    Int                @default(0)
+  avgLatency     Float              @default(0)
+  score          Int?
+  isDeleted      Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  messages       AiSandboxMessage[]
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, userId])
+  @@index([companyId, updatedAt(sort: Desc)])
+  @@map("ai_sandbox_sessions")
+}
+
+model AiSandboxMessage {
+  id             String           @id @default(cuid())
+  sessionId      String
+  role           String
+  content        String           @db.Text
+  model          String?
+  provider       String?
+  keyId          String?
+  keyName        String?
+  tokensInput    Int              @default(0)
+  tokensOutput   Int              @default(0)
+  tokensTotal    Int              @default(0)
+  latencyMs      Int?
+  cost           Float            @default(0)
+  toolCalls      String?          @db.Text
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+  session        AiSandboxSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([sessionId, createdAt])
+  @@map("ai_sandbox_messages")
+}

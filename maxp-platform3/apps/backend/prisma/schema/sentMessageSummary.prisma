@@ -1,0 +1,22 @@
+model SentMessageDailySummary {
+  id                   String   @id @default(cuid())
+  companyId            String
+  facebookPageId       String?
+  date                 DateTime
+  totalSent            Int      @default(0)
+  totalSaved           Int      @default(0)
+  totalIgnored         Int      @default(0)
+  totalRevenue         Decimal  @default(0) @db.Decimal(10, 2)
+  orderCount           Int      @default(0)
+  conversationsCreated Int      @default(0)
+  conversationsExisted Int      @default(0)
+  uniqueReach          Int      @default(0)
+  savedReach           Int      @default(0)
+  ignoredReach         Int      @default(0)
+
+  company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, facebookPageId, date])
+  @@index([companyId, date])
+  @@map("sent_message_daily_summaries")
+}

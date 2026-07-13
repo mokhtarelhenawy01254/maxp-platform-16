@@ -1,0 +1,543 @@
+{
+  "id": "legacy-default-old",
+  "name": "defalut-theme-old",
+  "description": "Classic department-store storefront with local photo merchandising, simple collection pages, and an intentional LTR shopping flow.",
+  "direction": "ltr",
+  "tokens": {
+    "colors": {
+      "primary": "0 0% 7%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 96%",
+      "secondaryForeground": "0 0% 7%",
+      "accent": "42 92% 68%",
+      "accentForeground": "0 0% 7%",
+      "background": "0 0% 100%",
+      "foreground": "0 0% 7%",
+      "muted": "0 0% 95%",
+      "mutedForeground": "0 0% 40%",
+      "border": "0 0% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 7%",
+      "ring": "0 0% 7%"
+    },
+    "typography": {
+      "headingFont": "\"League Spartan\", \"Arial\", sans-serif",
+      "bodyFont": "\"League Spartan\", \"Arial\", sans-serif",
+      "baseSize": "16px",
+      "direction": "ltr"
+    },
+    "shape": {
+      "borderRadius": "0.4rem",
+      "buttonRadius": "0.25rem"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 14px 34px -28px rgba(17, 17, 17, 0.18)",
+      "hoverShadow": "0 18px 44px -28px rgba(17, 17, 17, 0.26)",
+      "badgeRadius": "999px",
+      "buttonRadius": "0.25rem",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | defalut-theme-old",
+    "description": "Watch-led legacy storefront with local photo sets, direct category routing, and a clean left-to-right retail rhythm."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/legacy-default-old/preview.jpg",
+    "colors": ["0 0% 7%", "0 0% 100%", "42 92% 68%"]
+  },
+  "header": {
+    "variant": "legacy-default-old",
+    "brandName": "defalut-theme-old",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "FREE SHIPPING ANYWHERE IN EGYPT",
+    "navigation": [
+      { "label": "MINI EDDY", "to": "/collections/watches" },
+      { "label": "SHOES", "to": "/collections/sneakers" },
+      { "label": "CLOTHES", "to": "/collections/sports-clothes" },
+      { "label": "BAGS", "to": "/collections/bags" },
+      { "label": "Shipping-policy", "to": "/shipping-policy" },
+      { "label": "Refund-policy", "to": "/refund-policy" }
+    ]
+  },
+  "footer": {
+    "variant": "legacy-default-old",
+    "description": "Classic photo-led merch flow with local assets and direct department routing.",
+    "copyrightText": "defalut-theme-old. All Rights Reserved. © 2026",
+    "contactRows": [
+      { "label": "Phone", "value": "010000000000", "href": "tel:010000000000" },
+      { "label": "Email", "value": "info@easy-orders.com", "href": "mailto:info@easy-orders.com" },
+      { "label": "Address", "value": "SOdic\\ZAyed" }
+    ],
+    "socialLinks": {},
+    "navigation": [
+      {
+        "title": "Store",
+        "links": [
+          { "label": "Home", "to": "/" },
+          { "label": "Shop", "to": "/shop" },
+          { "label": "Collections", "to": "/collections" }
+        ]
+      },
+      {
+        "title": "Policies",
+        "links": [
+          { "label": "Privacy policy", "to": "/privacy-policy" },
+          { "label": "Shipping-policy", "to": "/shipping-policy" },
+          { "label": "Refund-policy", "to": "/refund-policy" },
+          { "label": "Terms and conditions", "to": "/terms-and-conditions" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "Privacy policy", "to": "/privacy-policy" },
+      { "label": "Shipping-policy", "to": "/shipping-policy" },
+      { "label": "Refund-policy", "to": "/refund-policy" },
+      { "label": "Terms and conditions", "to": "/terms-and-conditions" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "legacy-image-slider",
+          "settings": {
+            "slides": [
+              {
+                "image": "/assets/themes/legacy-default-old/hero-watch.jpg",
+                "alt": "Legacy storefront hero slide one"
+              },
+              {
+                "image": "/assets/themes/legacy-default-old/hero-shoes.jpg",
+                "alt": "Legacy storefront hero slide two"
+              },
+              {
+                "image": "/assets/themes/legacy-default-old/hero-bags.jpg",
+                "alt": "Legacy storefront hero slide three"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "legacy-circle-categories",
+          "settings": {
+            "title": "Categories",
+            "subtitle": "Start from the department you want, then move straight into the collection.",
+            "limit": 4,
+            "collections": [
+              {
+                "title": "MINI EDDY",
+                "subtitle": "Classic watch-led collection.",
+                "image": "/assets/themes/legacy-default-old/category-watches.jpg",
+                "link": "/collections/watches"
+              },
+              {
+                "title": "SHOES",
+                "subtitle": "Street pairs and everyday sneakers.",
+                "image": "/assets/themes/legacy-default-old/category-shoes.jpg",
+                "link": "/collections/sneakers"
+              },
+              {
+                "title": "CLOTHES",
+                "subtitle": "Sportswear and casual layers.",
+                "image": "/assets/themes/legacy-default-old/category-clothes.jpg",
+                "link": "/collections/sports-clothes"
+              },
+              {
+                "title": "BAGS",
+                "subtitle": "Carry pieces and small essentials.",
+                "image": "/assets/themes/legacy-default-old/category-bags.jpg",
+                "link": "/collections/bags"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "legacy-compact-listing",
+          "settings": {
+            "title": "NEW ARRIVAL",
+            "limit": 6,
+            "productsFoundLabel": "products",
+            "ctaText": "More",
+            "ctaLink": "/collections/watches"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "legacy-image-slider",
+          "settings": {
+            "compact": true,
+            "slides": [
+              {
+                "image": "/assets/themes/legacy-default-old/hero-bags.jpg",
+                "alt": "Legacy mid-page promotional banner"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "BBEST SELLER",
+            "limit": 8,
+            "productsFoundLabel": "products",
+            "ctaText": "More",
+            "ctaLink": "/collections/sneakers"
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "stack",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar",
+          "settings": {
+            "title": "All Products",
+            "subtitle": "",
+            "searchPlaceholder": "Search products",
+            "allCategoriesLabel": "All Categories",
+            "resultsLabel": "products",
+            "clearButtonText": "View all products",
+            "stickyLabel": "Shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "hideHeader": true,
+            "limit": 12,
+            "productsFoundLabel": "products"
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "collections": {
+      "settings": {
+        "categoryTitles": {
+          "watches": "MINI EDDY",
+          "sneakers": "SHOES",
+          "sports-clothes": "CLOTHES",
+          "bags": "BAGS"
+        },
+        "sortLabel": "Highest Rate"
+      },
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "legacy-circle-categories",
+          "settings": {
+            "title": "Collections",
+            "subtitle": "Browse the same departments shown on the home page.",
+            "limit": 4,
+            "collections": [
+              {
+                "title": "MINI EDDY",
+                "subtitle": "Classic watch-led collection.",
+                "image": "/assets/themes/legacy-default-old/category-watches.jpg",
+                "link": "/collections/watches"
+              },
+              {
+                "title": "SHOES",
+                "subtitle": "Street pairs and everyday sneakers.",
+                "image": "/assets/themes/legacy-default-old/category-shoes.jpg",
+                "link": "/collections/sneakers"
+              },
+              {
+                "title": "CLOTHES",
+                "subtitle": "Sportswear and casual layers.",
+                "image": "/assets/themes/legacy-default-old/category-clothes.jpg",
+                "link": "/collections/sports-clothes"
+              },
+              {
+                "title": "BAGS",
+                "subtitle": "Carry pieces and small essentials.",
+                "image": "/assets/themes/legacy-default-old/category-bags.jpg",
+                "link": "/collections/bags"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "All Products",
+            "limit": 12,
+            "productsFoundLabel": "products"
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "addToCartText": "Add to cart",
+            "buyNowText": "BUY IT NOW",
+            "descriptionTitle": "Description",
+            "shippingTitle": "Shipping & Returns",
+            "shippingText": "Delivery time and return support are shown clearly before the order is confirmed.",
+            "showGuarantees": false,
+            "showReturnsAccordion": true,
+            "fitNote": "If you are choosing between two options, pick the one that matches your daily use first."
+          }
+        },
+        {
+          "type": "viewer-counter",
+          "variant": "minimal",
+          "settings": {
+            "title": "Watching this product Now",
+            "fakeVisitorMessage": "{{count}} Client"
+          }
+        },
+        {
+          "type": "countdown",
+          "variant": "minimal",
+          "settings": {
+            "title": "Time Left For Discount",
+            "countdownLabel": "Discount ends in",
+            "countdownStyle": "minimal"
+          }
+        },
+        {
+          "type": "pdp-checkout",
+          "settings": {
+            "title": "Please fill your information to complete the order",
+            "subtitle": "Leave your details and we will confirm the order with you.",
+            "badgeText": "",
+            "showPanelHeader": true,
+            "showQuantity": true,
+            "showAddToCartButton": false,
+            "submitButtonText": "Confirm order",
+            "shippingSummaryText": "Shipping",
+            "shippingSummaryValueText": "Calculated at checkout"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "Users Reviews",
+            "writeReviewText": "Rate",
+            "emptyText": "No Reviews",
+            "reviewsLabel": "reviews",
+            "outOfText": "out of 5 stars",
+            "mediaTitle": "Reviews Data",
+            "mediaDescription": "Customer photos attached to verified orders.",
+            "listTitle": "Latest Reviews",
+            "reviewLimit": 6
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "standard",
+          "settings": {
+            "title": "Similar Products",
+            "subtitle": "More pieces from the same shopping mood.",
+            "limit": 4
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "Shopping cart",
+            "subtitle": "Review your selected products before checkout.",
+            "continueShoppingText": "Continue shopping",
+            "emptyTitle": "Your cart is empty",
+            "emptyText": "Browse the collections and add the products you want first."
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "Order summary",
+            "subtitle": "Total, shipping, and next step in one place.",
+            "checkoutButtonText": "Proceed to checkout",
+            "secureCheckoutText": "Secure checkout",
+            "returnsText": "Returns support available",
+            "showTrustRow": true,
+            "showFreeShippingProgress": false
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "Review order",
+            "subtitle": "Final review before you place the order."
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactTitle": "Contact information",
+            "contactDescription": "Your name and phone number are enough for order confirmation.",
+            "shippingTitle": "Shipping address",
+            "shippingDescription": "Add your governorate and detailed address clearly.",
+            "notesTitle": "Order notes",
+            "notesDescription": "Any timing or delivery note goes here.",
+            "fullNamePlaceholder": "Your full name",
+            "emailPlaceholder": "you@example.com",
+            "notesPlaceholder": "Optional delivery or timing note"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "Payment method",
+            "subtitle": "Choose the method that works best for you."
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "Payment summary",
+            "checkoutButtonText": "Confirm order",
+            "secureCheckoutText": "Secure checkout"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": ["order-confirmation"]
+    },
+    "privacy-policy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Privacy policy",
+            "title": "Privacy policy",
+            "subtitle": "How we use your information inside this storefront.",
+            "body": "We collect only the information needed to process orders, confirm delivery, and support customers after purchase. Personal data is handled only for those purposes unless the law requires otherwise."
+          }
+        }
+      ]
+    },
+    "shipping-policy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Shipping-policy",
+            "title": "Shipping-policy",
+            "subtitle": "Delivery timing and shipping notes before checkout.",
+            "body": "Orders are prepared and confirmed as quickly as possible. Shipping timing depends on location, order confirmation, and courier availability. Final shipping costs appear before the order is confirmed."
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Shipping",
+            "title": "Shipping & Returns",
+            "subtitle": "Delivery timing and handoff notes before checkout.",
+            "body": "Orders are prepared and confirmed as quickly as possible. Shipping timing depends on location, order confirmation, and courier availability. Final shipping costs appear before the order is confirmed.",
+            "details": "Order confirmation|Within 24 hours\nDelivery window|1 to 4 business days across Egypt\nShipping fee|Calculated by governorate before final confirmation"
+          }
+        }
+      ]
+    },
+    "refund-policy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Refund-policy",
+            "title": "Refund-policy",
+            "subtitle": "Return and refund guidance before you place the order.",
+            "body": "If your order arrives with an issue, contact support using your order reference. Refund and return eligibility depends on item condition, timing, and the active store policy shown during checkout."
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Returns",
+            "title": "Request a Return | Exchange",
+            "subtitle": "How returns and exchanges are handled after delivery.",
+            "body": "If your order arrives with an issue or the fit is not right, contact support using your order reference. Return and exchange eligibility depends on item condition, timing, and the active store policy shown during checkout.",
+            "details": "Request window|Contact support within 48 hours from delivery\nCondition|Item should remain unused and in its original condition\nConfirmation|The support team confirms exchange or return details with you before pickup"
+          }
+        }
+      ]
+    },
+    "terms-and-conditions": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Terms and conditions",
+            "title": "Terms and conditions",
+            "subtitle": "Basic storefront rules for browsing and ordering.",
+            "body": "Orders remain subject to stock availability, confirmation, pricing validation, and delivery rules shown during checkout. By placing an order, you agree to the active shipping, payment, and refund policies."
+          }
+        }
+      ]
+    }
+  }
+}

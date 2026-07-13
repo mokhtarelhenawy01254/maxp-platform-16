@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Blood pressure monitor placeholder</title>
+  <desc id="desc">Branded placeholder for the Max Care Go blood pressure monitor product card.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef8ff"/>
+      <stop offset="100%" stop-color="#dff3ff"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1200" rx="72" fill="url(#bg)"/>
+  <circle cx="950" cy="250" r="160" fill="#ffffff" opacity="0.7"/>
+  <circle cx="240" cy="960" r="190" fill="#ffffff" opacity="0.45"/>
+  <g transform="translate(230 220)">
+    <rect x="0" y="0" width="520" height="620" rx="56" fill="url(#card)"/>
+    <rect x="88" y="88" width="344" height="210" rx="34" fill="#ffffff"/>
+    <path d="M175 525c34-78 146-88 204-20" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round"/>
+    <circle cx="150" cy="530" r="42" fill="#ffffff"/>
+    <circle cx="370" cy="530" r="42" fill="#ffffff"/>
+    <path d="M548 242h128c66 0 120 54 120 120v112" fill="none" stroke="#0f172a" stroke-width="30" stroke-linecap="round"/>
+    <rect x="610" y="454" width="110" height="180" rx="44" fill="#0f172a"/>
+    <path d="M664 382v80" stroke="#0f172a" stroke-width="26" stroke-linecap="round"/>
+  </g>
+  <text x="600" y="1022" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="62" font-weight="700">جهاز قياس ضغط ذكي</text>
+  <text x="600" y="1092" text-anchor="middle" fill="#0f766e" font-family="Arial, sans-serif" font-size="34" letter-spacing="4">MAX CARE GO</text>
+</svg>

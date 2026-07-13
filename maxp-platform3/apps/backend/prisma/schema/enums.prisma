@@ -1,0 +1,1980 @@
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum InvoiceType {
+  SUBSCRIPTION
+  ONE_TIME
+  INCOME
+  EXPENSE
+
+  @@map("invoices_type")
+}
+
+enum CustomerStatus {
+  LEAD
+  PROSPECT
+  CUSTOMER
+  VIP
+  INACTIVE
+}
+
+enum CommunicationChannel {
+  FACEBOOK
+  INSTAGRAM
+  WHATSAPP
+  TELEGRAM
+  EMAIL
+  SMS
+  PHONE
+  WEBSITE
+  TEST
+}
+
+enum ConversationStatus {
+  ACTIVE
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  LOCATION
+  STICKER
+  EMOJI
+  TEMPLATE
+  CONTACT
+  BUTTONS
+  LIST
+  REACTION
+  UNKNOWN
+
+  @@map("messages_type")
+}
+
+  enum OrderStatus {
+    PENDING
+    CONFIRMED
+    SCHEDULED
+    READY_FOR_PROCESSING
+    PROCESSING
+    SHIPPED
+    DELIVERED
+    CANCELLED
+    DUPLICATE_ORDER
+    REFUNDED
+    RETURNED
+    PARTIALLY_RETURNED
+    EXCHANGED
+    PARTIALLY_REFUNDED
+    WOO_TAGHEZ
+    DRAFT
+    TRASH
+    READY_TO_SHIP
+    ON_HOLD
+    NOT_SHIPPED
+    OUT_FOR_DELIVERY
+    LOST
+    PENDING_PREPARATION
+    PREPARING
+    READY
+    QUALITY_CHECK
+  PACKAGED
+  ON_HOLD_PREP
+  PARTIALLY_DELIVERED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  BANK_TRANSFER
+  PAYPAL
+  STRIPE
+  WALLET
+  INSTAPAY
+  VISA
+  MASTERCARD
+  VODAFONE_CASH
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  TRANSFER
+  RETURN
+
+  @@map("stock_movements_type")
+}
+
+enum AlertPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum GlobalAiProvider {
+  GOOGLE
+  DEEPSEEK
+  OPENAI
+  ANTHROPIC
+  HUGGINGFACE
+  OLLAMA
+  GROQ
+  OPENROUTER
+  NVIDIA
+  CEREBRAS
+  GITHUB
+  SAMBANOVA
+  MISTRAL
+}
+
+enum StockAlertType {
+  LOW_STOCK
+  OUT_OF_STOCK
+  OVERSTOCK
+  EXPIRY_WARNING
+
+  @@map("stock_alerts_type")
+}
+
+enum StockAlertPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum HrLeaveRequestType {
+  ANNUAL
+  SICK
+  UNPAID
+  MATERNITY
+  PATERNITY
+  BEREAVEMENT
+  MARRIAGE
+  HAJJ
+  STUDY
+  EMERGENCY
+  OTHER
+
+  @@map("hr_leave_requests_type")
+}
+
+enum HrPermissionType {
+  DEDUCTIBLE
+  NON_DEDUCTIBLE
+  FIXED_HOURS
+  COMPENSATORY
+}
+
+enum HrPermissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DevTaskType {
+  BUG
+  FEATURE
+  ENHANCEMENT
+  DOCUMENTATION
+  SECURITY
+  PERFORMANCE
+  TESTING
+  REFACTOR
+  MAINTENANCE
+  HOTFIX
+
+  @@map("dev_tasks_type")
+}
+
+enum HrEmployeeWarningType {
+  VERBAL
+  WRITTEN
+  FINAL
+  TERMINATION
+
+  @@map("hr_employee_warnings_type")
+}
+
+enum TaskTemplateStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DevProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum DevTaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  TESTING
+  DONE
+  CANCELLED
+}
+
+enum TaskTemplatePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DevReleaseStatus {
+  PLANNING
+  IN_PROGRESS
+  READY
+  RELEASED
+  CANCELLED
+}
+
+enum WhatsAppSessionStatus {
+  CONNECTED
+  DISCONNECTED
+  QR_PENDING
+  CONNECTING
+  LOGGED_OUT
+}
+
+enum WhatsAppProvider {
+  BAILEYS
+  META_CLOUD
+
+  @@map("whatsapp_providers")
+}
+
+enum DevProjectsPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+
+  @@map("dev_projects_priority")
+}
+
+enum WhatsAppStatusType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+  LOCATION
+  CONTACT
+  POLL
+  PRODUCT
+  ORDER
+  CATALOG
+  INTERACTIVE
+  BUTTON_REPLY
+  LIST_REPLY
+  TEMPLATE
+  UNKNOWN
+  REACTION
+
+  @@map("whatsapp_statuses_type")
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum DevTaskPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum StorePageType {
+  HOME
+  ABOUT
+  CONTACT
+  SHIPPING_POLICY
+  RETURN_POLICY
+  REFUND_POLICY
+  PRIVACY_POLICY
+  TERMS_CONDITIONS
+  ABOUT_US
+  CONTACT_US
+  FAQ
+  PAYMENT_METHODS
+  CUSTOM
+
+  @@map("store_pages_pageType")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  PENDING
+  ON_HOLD
+
+  @@map("SupportTicket_status")
+}
+
+enum WhatsAppMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+  LOCATION
+  CONTACT
+  REACTION
+  POLL
+  TEMPLATE
+  BUTTONS
+  LIST
+  PRODUCT
+  INTERACTIVE
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+
+  @@map("coupons_type")
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum TrainingStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum SupportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum WhatsAppMessagesStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+
+  @@map("whatsapp_messages_status")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  ON_LEAVE
+  HOLIDAY
+  WEEKEND
+  REMOTE
+}
+
+enum CustomerRating {
+  EXCELLENT
+  GOOD
+  AVERAGE
+  BAD
+  UNKNOWN
+}
+
+enum ReviewStatus {
+  DRAFT
+  SUBMITTED
+  ACKNOWLEDGED
+  COMPLETED
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum PayrollStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum ContractType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  TEMPORARY
+  INTERNSHIP
+  FREELANCE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+  RESIGNED
+}
+
+enum WarningType {
+  VERBAL
+  WRITTEN
+  FINAL
+  TERMINATION
+}
+
+enum SupportCategory {
+  INQUIRY
+  TECHNICAL
+  BILLING
+  OTHER
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+  MATERNITY
+  PATERNITY
+  OTHER
+}
+
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+  CASHBACK
+  REFUND
+  REFERRAL_BONUS
+  REWARD
+  ADMIN_ADJUSTMENT
+
+  @@map("wallet_transactions_type")
+}
+
+enum GlobalAiConfigsDefaultProvider {
+  GOOGLE
+  DEEPSEEK
+  OPENAI
+  ANTHROPIC
+  HUGGINGFACE
+  OLLAMA
+  GROQ
+  OPENROUTER
+  NVIDIA
+  CEREBRAS
+  GITHUB
+  SAMBANOVA
+  MISTRAL
+
+  @@map("global_ai_configs_defaultProvider")
+}
+
+enum AiKeysProvider {
+  GOOGLE
+  DEEPSEEK
+  OPENAI
+  ANTHROPIC
+  HUGGINGFACE
+  OLLAMA
+  GROQ
+  OPENROUTER
+  NVIDIA
+  CEREBRAS
+  GITHUB
+  SAMBANOVA
+  MISTRAL
+
+  @@map("ai_keys_provider")
+}
+
+enum SubscriptionsPlanType {
+  BASIC
+  PRO
+  ENTERPRISE
+
+  @@map("subscriptions_planType")
+}
+
+enum ReturnReasonCategoriesDefaultRole {
+  CUSTOMER
+  STORE
+  SHIPPING
+  OTHER
+
+  @@map("return_reason_categories_defaultRole")
+}
+
+enum StockAlertsPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("stock_alerts_priority")
+}
+
+enum WhatsAppNotificationTemplatesCategory {
+  ORDER
+  ORDERS
+  PAYMENT
+  DELIVERY
+  CUSTOMER
+  MARKETING
+  PRODUCTS
+  ABANDONED_CART
+  HR
+  SYSTEM
+  GENERAL
+  ORDER_NOTIFICATION
+
+  @@map("whatsapp_notification_templates_category")
+}
+
+enum TaskTemplatesDefaultStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@map("task_templates_defaultStatus")
+}
+
+enum SubscriptionsStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  TRIAL
+  SUSPENDED
+
+  @@map("subscriptions_status")
+}
+
+enum HrManualDeductionType {
+  PENALTY
+  VIOLATION
+  DAMAGE
+  INSURANCE
+  LOAN_REPAYMENT
+  ADVANCE_REPAYMENT
+  TAX
+  SOCIAL_INSURANCE
+  ABSENCE
+  LATE
+  EARLY_LEAVE
+  OTHER
+  LOAN
+
+  @@map("hr_manual_deductions_type")
+}
+
+enum ConversationsChannel {
+  FACEBOOK
+  WHATSAPP
+  TELEGRAM
+  EMAIL
+  SMS
+  PHONE
+  WEBSITE
+  TEST
+
+  @@map("conversations_channel")
+}
+
+enum DevProjectsStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+
+  @@map("dev_projects_status")
+}
+
+enum ProjectsStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+
+  @@map("Project_status")
+}
+
+enum UserCompaniesRole {
+  OWNER
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  MANAGER
+  AGENT
+  AFFILIATE
+
+  @@map("user_companies_role")
+}
+
+enum WhatsAppNotificationTemplatesEventType {
+  ORDER_CREATED
+  ORDER_CONFIRMED
+  ORDER_PROCESSING
+  ORDER_SHIPPED
+  ORDER_OUT_FOR_DELIVERY
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  ORDER_REFUNDED
+  PAYMENT_REMINDER
+  PAYMENT_RECEIVED
+  BACK_IN_STOCK
+  PRICE_DROP
+  NEW_PRODUCT
+  LOW_STOCK_ALERT
+  CART_ABANDONED_1H
+  CART_ABANDONED_24H
+  CART_ABANDONED_72H
+  CART_ABANDONED_WITH_DISCOUNT
+  PROMOTIONAL
+  COUPON_SENT
+  BIRTHDAY_WISH
+  LOYALTY_POINTS
+  LOYALTY_POINTS_AWARDED
+  LOYALTY_REWARD
+  REVIEW_REQUEST
+  ATTENDANCE_REMINDER
+  ATTENDANCE_CONFIRMED
+  ATTENDANCE_LATE
+  ATTENDANCE_LATE_WITH_DEDUCTION
+  CHECKOUT_CONFIRMED
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  PAYROLL_READY
+  BIRTHDAY_EMPLOYEE
+  WARNING_ISSUED
+  CONTRACT_EXPIRY
+  TRAINING_REMINDER
+  ANNOUNCEMENT
+  OTP
+  ASSET_REQUEST_APPROVED
+  ASSET_REQUEST_REJECTED
+  ASSET_REQUEST_FULFILLED
+  MANUAL_DEDUCTION
+  NEW_SIGNUP_WELCOME
+  NEW_SIGNUP_ADMIN_ALERT
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_CANCELLED
+  NEWSLETTER_SUBSCRIBED
+  BENEFIT_GRANTED
+  
+  // New Order Statuses
+  DRAFT
+  PENDING
+  AWAITING_CUSTOMER_INFO
+  AWAITING_VERIFICATION
+  AWAITING_APPROVAL
+  QUOTE_SENT
+  QUOTE_APPROVED
+  PENDING_PAYMENT
+  PAYMENT_INITIATED
+  PAYMENT_PROCESSING
+  PAYMENT_AUTHORIZED
+  PAYMENT_CAPTURED
+  PAYMENT_PARTIALLY_CAPTURED
+  PAYMENT_DECLINED
+  PAYMENT_EXPIRED
+  PARTIAL_REFUND
+  CHARGEBACK
+  CHARGEBACK_RESOLVED
+  COD_PENDING
+  COD_CONFIRMED
+  UNDER_REVIEW
+  AWAITING_STOCK
+  BACKORDERED
+  PRE_ORDER
+  ALLOCATED
+  PICKING
+  QUALITY_CHECK
+  PACKED
+  LABEL_CREATED
+  READY_FOR_PICKUP
+  READY_TO_SHIP
+  CANCEL_REQUESTED
+  CANCELLATION_UNDER_REVIEW
+  CANCELLED_BY_CUSTOMER
+  CANCELLED_BY_ADMIN
+  CANCELLED_BY_SYSTEM
+  ORDER_EXPIRED
+  RETURN_REQUESTED
+  RETURN_UNDER_REVIEW
+  RETURN_APPROVED
+  RETURN_REJECTED
+  RETURN_PICKUP_SCHEDULED
+  RETURN_IN_TRANSIT
+  RETURN_RECEIVED
+  RETURN_INSPECTED
+  REFUND_PROCESSING
+  EXCHANGE_REQUESTED
+  EXCHANGE_APPROVED
+  EXCHANGE_SHIPPED
+  EXCHANGE_COMPLETED
+  FRAUD_SUSPECTED
+  BLACKLISTED_CUSTOMER
+  MANUAL_REVIEW_REQUIRED
+  SPLIT_SHIPMENT
+  MERGED_ORDER
+  DUPLICATE_ORDER
+  ON_HOLD
+  ESCALATED
+  DISPUTED
+  AWAITING_DOCUMENTS
+  SHIPMENT_CREATED
+  IN_TRANSIT
+  AT_SORTING_FACILITY
+  AT_LOCAL_HUB
+  CUSTOMS_CLEARANCE
+  CUSTOMS_HOLD
+  OUT_FOR_DELIVERY
+  DELIVERY_ATTEMPTED
+  DELIVERY_FAILED
+  RESCHEDULED_DELIVERY
+  AWAITING_PICKUP_BRANCH
+  PARTIALLY_DELIVERED
+  LOST_IN_TRANSIT
+  DAMAGED_IN_TRANSIT
+  RETURNED_TO_SENDER
+  ORDER_RETURNED
+  PAYMENT_CONFIRMED
+  PAYMENT_FAILED
+  WELCOME_MESSAGE
+  ABANDONED_CART
+  PRODUCT_REVIEW_REQUEST
+  BIRTHDAY_GREETING
+
+  @@map("whatsapp_notification_templates_eventType")
+}
+
+enum TasksStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+
+  @@map("Task_status")
+}
+
+enum GoalType {
+  COMPANY
+  DEPARTMENT
+  PROJECT
+  EMPLOYEE
+  DAILY
+
+  @@map("goal_type")
+}
+
+enum GoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("goal_priority")
+}
+
+enum GoalGenerationSource {
+  MANUAL
+  AUTO_DAILY_DISTRIBUTION
+  ATTENDANCE_CHECK_IN
+
+  @@map("goal_generation_source")
+}
+
+enum DevTasksStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  TESTING
+  DONE
+  CANCELLED
+
+  @@map("dev_tasks_status")
+}
+
+enum StockMovementsReason {
+  PURCHASE
+  SALE
+  DAMAGE
+  EXPIRED
+  LOST
+  FOUND
+  TRANSFER
+  RETURN
+  ADJUSTMENT
+
+  @@map("stock_movements_reason")
+}
+
+enum InvoicesStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+
+  @@map("invoices_status")
+}
+
+enum MerchantOrdersStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  FULFILLED
+  CANCELLED
+  FAILED
+
+  @@map("merchant_orders_status")
+}
+
+enum AffiliatesCommissionType {
+  PERCENTAGE
+  MARKUP
+  FIXED
+
+  @@map("affiliates_commissionType")
+}
+
+enum TaskTemplatesDefaultPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("task_templates_defaultPriority")
+}
+
+enum SupportTicketCategory {
+  INQUIRY
+  TECHNICAL
+  BILLING
+  OTHER
+
+  @@map("SupportTicket_category")
+}
+
+enum DevReleasesStatus {
+  PLANNING
+  IN_PROGRESS
+  READY
+  RELEASED
+  CANCELLED
+
+  @@map("dev_releases_status")
+}
+
+enum OrdersStatus {
+  PENDING
+  CONFIRMED
+  SCHEDULED
+  READY_FOR_PROCESSING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  RETURNED
+  PARTIALLY_REFUNDED
+  WOO_TAGHEZ
+  DRAFT
+
+  @@map("orders_status")
+}
+
+enum WhatsAppSessionsStatus {
+  CONNECTED
+  DISCONNECTED
+  QR_PENDING
+  CONNECTING
+  LOGGED_OUT
+
+  @@map("whatsapp_sessions_status")
+}
+
+enum ConversationsStatus {
+  ACTIVE
+  PENDING
+  RESOLVED
+  CLOSED
+
+  @@map("conversations_status")
+}
+
+enum ProjectsPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("Project_priority")
+}
+
+enum ReturnRole {
+  CUSTOMER
+  STORE
+  SHIPPING
+  OTHER
+}
+
+enum PromotionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum DeductionType {
+  PENALTY
+  VIOLATION
+  DAMAGE
+  INSURANCE
+  LOAN_REPAYMENT
+  ADVANCE_REPAYMENT
+  TAX
+  SOCIAL_INSURANCE
+  ABSENCE
+  LATE
+  EARLY_LEAVE
+  OTHER
+}
+
+enum DeductionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  APPLIED
+  CANCELLED
+}
+
+enum AssetStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  RETIRED
+  LOST
+  RESERVED
+}
+
+enum AssetCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+}
+
+enum AssetRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+  CANCELLED
+}
+
+enum AffiliatesStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+
+  @@map("affiliates_status")
+}
+
+enum AffiliatesPaymentMethod {
+  TRANSFERS
+  WALLET
+  CASH
+
+  @@map("affiliates_paymentMethod")
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("SupportTicket_priority")
+}
+
+enum AiKeysKeyType {
+  CENTRAL
+  COMPANY
+
+  @@map("ai_keys_keyType")
+}
+
+enum AssetsStatus {
+  AVAILABLE
+  ASSIGNED
+  MAINTENANCE
+  DAMAGED
+  LOST
+  DISPOSED
+
+  @@map("assets_status")
+}
+
+enum AssetsCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+
+  @@map("assets_condition")
+}
+
+enum WhatsAppNotificationQueueStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+
+  @@map("whatsapp_notification_queue_status")
+}
+
+enum WhatsAppNotificationLogsStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+
+  @@map("whatsapp_notification_logs_status")
+}
+
+enum WhatsAppNotificationLogsRecipientType {
+  CUSTOMER
+  EMPLOYEE
+  ADMIN
+
+  @@map("whatsapp_notification_logs_recipientType")
+}
+
+enum WhatsAppNotificationLogsCategory {
+  ORDER
+  ORDERS
+  PAYMENT
+  DELIVERY
+  CUSTOMER
+  MARKETING
+  PRODUCTS
+  ABANDONED_CART
+  HR
+  SYSTEM
+  GENERAL
+
+  @@map("whatsapp_notification_logs_category")
+}
+
+enum WhatsAppNotificationLogsEventType {
+  ORDER_CREATED
+  ORDER_CONFIRMED
+  ORDER_PROCESSING
+  ORDER_SHIPPED
+  ORDER_OUT_FOR_DELIVERY
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_REMINDER
+  BACK_IN_STOCK
+  PROMOTIONAL
+  ORDER_REFUNDED
+  PAYMENT_RECEIVED
+  PRICE_DROP
+  NEW_PRODUCT
+  LOW_STOCK_ALERT
+  CART_ABANDONED_1H
+  CART_ABANDONED_24H
+  CART_ABANDONED_72H
+  CART_ABANDONED_WITH_DISCOUNT
+  COUPON_SENT
+  BIRTHDAY_WISH
+  LOYALTY_POINTS
+  LOYALTY_POINTS_AWARDED
+  LOYALTY_REWARD
+  REVIEW_REQUEST
+  ATTENDANCE_REMINDER
+  ATTENDANCE_CONFIRMED
+  ATTENDANCE_LATE
+  ATTENDANCE_LATE_WITH_DEDUCTION
+  CHECKOUT_CONFIRMED
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  PAYROLL_READY
+  BIRTHDAY_EMPLOYEE
+  WARNING_ISSUED
+  CONTRACT_EXPIRY
+  TRAINING_REMINDER
+  ANNOUNCEMENT
+  OTP
+  ASSET_REQUEST_APPROVED
+  ASSET_REQUEST_REJECTED
+  ASSET_REQUEST_FULFILLED
+  MANUAL_DEDUCTION
+  NEW_SIGNUP_WELCOME
+  NEW_SIGNUP_ADMIN_ALERT
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_CANCELLED
+  NEWSLETTER_SUBSCRIBED
+  BENEFIT_GRANTED
+  
+  // New Order Statuses
+  DRAFT
+  PENDING
+  AWAITING_CUSTOMER_INFO
+  AWAITING_VERIFICATION
+  AWAITING_APPROVAL
+  QUOTE_SENT
+  QUOTE_APPROVED
+  PENDING_PAYMENT
+  PAYMENT_INITIATED
+  PAYMENT_PROCESSING
+  PAYMENT_AUTHORIZED
+  PAYMENT_CAPTURED
+  PAYMENT_PARTIALLY_CAPTURED
+  PAYMENT_DECLINED
+  PAYMENT_EXPIRED
+  PARTIAL_REFUND
+  CHARGEBACK
+  CHARGEBACK_RESOLVED
+  COD_PENDING
+  COD_CONFIRMED
+  UNDER_REVIEW
+  AWAITING_STOCK
+  BACKORDERED
+  PRE_ORDER
+  ALLOCATED
+  PICKING
+  QUALITY_CHECK
+  PACKED
+  LABEL_CREATED
+  READY_FOR_PICKUP
+  READY_TO_SHIP
+  CANCEL_REQUESTED
+  CANCELLATION_UNDER_REVIEW
+  CANCELLED_BY_CUSTOMER
+  CANCELLED_BY_ADMIN
+  CANCELLED_BY_SYSTEM
+  ORDER_EXPIRED
+  RETURN_REQUESTED
+  RETURN_UNDER_REVIEW
+  RETURN_APPROVED
+  RETURN_REJECTED
+  RETURN_PICKUP_SCHEDULED
+  RETURN_IN_TRANSIT
+  RETURN_RECEIVED
+  RETURN_INSPECTED
+  REFUND_PROCESSING
+  EXCHANGE_REQUESTED
+  EXCHANGE_APPROVED
+  EXCHANGE_SHIPPED
+  EXCHANGE_COMPLETED
+  FRAUD_SUSPECTED
+  BLACKLISTED_CUSTOMER
+  MANUAL_REVIEW_REQUIRED
+  SPLIT_SHIPMENT
+  MERGED_ORDER
+  DUPLICATE_ORDER
+  ON_HOLD
+  ESCALATED
+  DISPUTED
+  AWAITING_DOCUMENTS
+  SHIPMENT_CREATED
+  IN_TRANSIT
+  AT_SORTING_FACILITY
+  AT_LOCAL_HUB
+  CUSTOMS_CLEARANCE
+  CUSTOMS_HOLD
+  OUT_FOR_DELIVERY
+  DELIVERY_ATTEMPTED
+  DELIVERY_FAILED
+  RESCHEDULED_DELIVERY
+  AWAITING_PICKUP_BRANCH
+  PARTIALLY_DELIVERED
+  LOST_IN_TRANSIT
+  DAMAGED_IN_TRANSIT
+  RETURNED_TO_SENDER
+  ORDER_RETURNED
+  PAYMENT_CONFIRMED
+  PAYMENT_FAILED
+  WELCOME_MESSAGE
+  ABANDONED_CART
+  PRODUCT_REVIEW_REQUEST
+  BIRTHDAY_GREETING
+
+  @@map("whatsapp_notification_logs_eventType")
+}
+
+enum WhatsAppNotificationQueueRecipientType {
+  CUSTOMER
+  EMPLOYEE
+  ADMIN
+
+  @@map("whatsapp_notification_queue_recipientType")
+}
+
+enum WhatsAppNotificationQueueCategory {
+  ORDER
+  ORDERS
+  PAYMENT
+  DELIVERY
+  CUSTOMER
+  MARKETING
+  PRODUCTS
+  ABANDONED_CART
+  HR
+  SYSTEM
+  GENERAL
+
+  @@map("whatsapp_notification_queue_category")
+}
+
+enum WhatsAppNotificationQueueEventType {
+  ORDER_CREATED
+  ORDER_CONFIRMED
+  ORDER_PROCESSING
+  ORDER_SHIPPED
+  ORDER_OUT_FOR_DELIVERY
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_REMINDER
+  BACK_IN_STOCK
+  PROMOTIONAL
+  ORDER_REFUNDED
+  PAYMENT_RECEIVED
+  PRICE_DROP
+  NEW_PRODUCT
+  LOW_STOCK_ALERT
+  CART_ABANDONED_1H
+  CART_ABANDONED_24H
+  CART_ABANDONED_72H
+  CART_ABANDONED_WITH_DISCOUNT
+  COUPON_SENT
+  BIRTHDAY_WISH
+  LOYALTY_POINTS
+  LOYALTY_POINTS_AWARDED
+  LOYALTY_REWARD
+  REVIEW_REQUEST
+  ATTENDANCE_REMINDER
+  ATTENDANCE_CONFIRMED
+  ATTENDANCE_LATE
+  ATTENDANCE_LATE_WITH_DEDUCTION
+  CHECKOUT_CONFIRMED
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  PAYROLL_READY
+  BIRTHDAY_EMPLOYEE
+  WARNING_ISSUED
+  CONTRACT_EXPIRY
+  TRAINING_REMINDER
+  ANNOUNCEMENT
+  OTP
+  ASSET_REQUEST_APPROVED
+  ASSET_REQUEST_REJECTED
+  ASSET_REQUEST_FULFILLED
+  MANUAL_DEDUCTION
+  NEW_SIGNUP_WELCOME
+  NEW_SIGNUP_ADMIN_ALERT
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_CANCELLED
+  NEWSLETTER_SUBSCRIBED
+  BENEFIT_GRANTED
+  
+  // New Order Statuses
+  DRAFT
+  PENDING
+  AWAITING_CUSTOMER_INFO
+  AWAITING_VERIFICATION
+  AWAITING_APPROVAL
+  QUOTE_SENT
+  QUOTE_APPROVED
+  PENDING_PAYMENT
+  PAYMENT_INITIATED
+  PAYMENT_PROCESSING
+  PAYMENT_AUTHORIZED
+  PAYMENT_CAPTURED
+  PAYMENT_PARTIALLY_CAPTURED
+  PAYMENT_DECLINED
+  PAYMENT_EXPIRED
+  PARTIAL_REFUND
+  CHARGEBACK
+  CHARGEBACK_RESOLVED
+  COD_PENDING
+  COD_CONFIRMED
+  UNDER_REVIEW
+  AWAITING_STOCK
+  BACKORDERED
+  PRE_ORDER
+  ALLOCATED
+  PICKING
+  QUALITY_CHECK
+  PACKED
+  LABEL_CREATED
+  READY_FOR_PICKUP
+  READY_TO_SHIP
+  CANCEL_REQUESTED
+  CANCELLATION_UNDER_REVIEW
+  CANCELLED_BY_CUSTOMER
+  CANCELLED_BY_ADMIN
+  CANCELLED_BY_SYSTEM
+  ORDER_EXPIRED
+  RETURN_REQUESTED
+  RETURN_UNDER_REVIEW
+  RETURN_APPROVED
+  RETURN_REJECTED
+  RETURN_PICKUP_SCHEDULED
+  RETURN_IN_TRANSIT
+  RETURN_RECEIVED
+  RETURN_INSPECTED
+  REFUND_PROCESSING
+  EXCHANGE_REQUESTED
+  EXCHANGE_APPROVED
+  EXCHANGE_SHIPPED
+  EXCHANGE_COMPLETED
+  FRAUD_SUSPECTED
+  BLACKLISTED_CUSTOMER
+  MANUAL_REVIEW_REQUIRED
+  SPLIT_SHIPMENT
+  MERGED_ORDER
+  DUPLICATE_ORDER
+  ON_HOLD
+  ESCALATED
+  DISPUTED
+  AWAITING_DOCUMENTS
+  SHIPMENT_CREATED
+  IN_TRANSIT
+  AT_SORTING_FACILITY
+  AT_LOCAL_HUB
+  CUSTOMS_CLEARANCE
+  CUSTOMS_HOLD
+  OUT_FOR_DELIVERY
+  DELIVERY_ATTEMPTED
+  DELIVERY_FAILED
+  RESCHEDULED_DELIVERY
+  AWAITING_PICKUP_BRANCH
+  PARTIALLY_DELIVERED
+  LOST_IN_TRANSIT
+  DAMAGED_IN_TRANSIT
+  RETURNED_TO_SENDER
+  ORDER_RETURNED
+  PAYMENT_CONFIRMED
+  PAYMENT_FAILED
+  WELCOME_MESSAGE
+  ABANDONED_CART
+  PRODUCT_REVIEW_REQUEST
+  BIRTHDAY_GREETING
+
+  @@map("whatsapp_notification_queue_eventType")
+}
+
+enum AffiliatePayoutsStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  CANCELLED
+
+  @@map("affiliate_payouts_status")
+}
+
+enum AffiliatePayoutsPaymentMethod {
+  TRANSFERS
+  WALLET
+  CASH
+
+  @@map("affiliate_payouts_paymentMethod")
+}
+
+enum MerchantPayoutsStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  CANCELLED
+
+  @@map("merchant_payouts_status")
+}
+
+enum MerchantPayoutsPaymentMethod {
+  TRANSFERS
+  WALLET
+  CASH
+
+  @@map("merchant_payouts_paymentMethod")
+}
+
+enum AssetAssignmentsReturnCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+
+  @@map("asset_assignments_returnCondition")
+}
+
+enum AssetAssignmentsConditionOnAssign {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+
+  @@map("asset_assignments_conditionOnAssign")
+}
+
+enum AssetAssignmentsStatus {
+  ACTIVE
+  RETURNED
+  LOST
+  DAMAGED
+
+  @@map("asset_assignments_status")
+}
+
+enum CommissionType {
+  SALE
+  RECURRING
+  BONUS
+  ORDER
+  SUBSCRIPTION
+  REFERRAL
+  AFFILIATE
+  MERCHANT
+  PLATFORM
+
+  @@map("commissions_type")
+}
+
+enum CommissionsCalculationType {
+  PERCENTAGE
+  FIXED_AMOUNT
+
+  @@map("commissions_calculationType")
+}
+
+enum CommissionsStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
+
+  @@map("commissions_status")
+}
+
+enum CustomerLoyaltyProgramType {
+  POINTS
+  TIERS
+  CASHBACK
+  REFERRAL
+
+  @@map("customer_loyalty_programs_type")
+}
+
+enum CustomerLoyaltyProgramsStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+
+  @@map("customer_loyalty_programs_status")
+}
+
+enum CustomerLoyaltyRecordsStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+
+  @@map("customer_loyalty_records_status")
+}
+
+enum CustomersStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+  BLOCKED
+
+  @@map("customers_status")
+}
+
+enum CustomersCustomerRating {
+  EXCELLENT
+  GOOD
+  AVERAGE
+  POOR
+  UNKNOWN
+
+  @@map("customers_customerRating")
+}
+
+enum DevTasksPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("dev_tasks_priority")
+}
+
+enum HrAttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EARLY_LEAVE
+  HALF_DAY
+  ON_LEAVE
+  HOLIDAY
+  WEEKEND
+  REMOTE
+
+  @@map("hr_attendance_status")
+}
+
+enum AttendanceAutoCloseReviewStatus {
+  PENDING
+  REVIEWED
+  ADJUSTED
+  DISMISSED
+
+  @@map("attendance_auto_close_review_status")
+}
+
+enum HrEmployeeTrainingStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+
+  @@map("hr_employee_training_status")
+}
+
+enum HrLeaveRequestsStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+
+  @@map("hr_leave_requests_status")
+}
+
+enum HrManualDeductionsStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("hr_manual_deductions_status")
+}
+
+enum HrPayrollStatus {
+  DRAFT
+  PENDING
+  PROCESSED
+  PAID
+
+  @@map("hr_payroll_status")
+}
+
+enum HrPerformanceReviewsStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+  COMPLETED
+
+  @@map("hr_performance_reviews_status")
+}
+
+enum HrPromotionsStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("hr_promotions_status")
+}
+
+enum HrRewardRecordsRewardCategory {
+  PERFORMANCE
+  ATTENDANCE
+  SERVICE_ANNIVERSARY
+  OTHER
+
+  @@map("hr_reward_records_rewardCategory")
+}
+
+enum HrRewardRecordsStatus {
+  PENDING
+  APPROVED
+  GIVEN
+  CANCELLED
+
+  @@map("hr_reward_records_status")
+}
+
+enum HrRewardTypesCategory {
+  FINANCIAL
+  NON_FINANCIAL
+
+  @@map("hr_reward_types_category")
+}
+
+enum HrRewardTypesCalculationMethod {
+  FIXED
+  PERCENTAGE
+
+  @@map("hr_reward_types_calculationMethod")
+}
+
+enum HrRewardTypesTriggerType {
+  MANUAL
+  AUTOMATIC
+
+  @@map("hr_reward_types_triggerType")
+}
+
+enum HrRewardTypesFrequency {
+  ONCE
+  MONTHLY
+  QUARTERLY
+  YEARLY
+
+  @@map("hr_reward_types_frequency")
+}
+
+enum OrdersPaymentStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  FAILED
+  REFUNDED
+
+  @@map("orders_paymentStatus")
+}
+
+enum OrdersPaymentMethod {
+  CASH
+  BANK_TRANSFER
+  ONLINE_PAYMENT
+  WALLET
+
+  @@map("orders_paymentMethod")
+}
+
+enum OrdersOrderSource {
+  REGULAR
+  DROP_SHIPPING
+  POS
+  MOBILE
+
+  @@map("orders_orderSource")
+}
+
+enum PaymentsStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+
+  @@map("payments_status")
+}
+
+enum PaymentsMethod {
+  BANK_TRANSFER
+  CASH
+  ONLINE
+  WALLET
+
+  @@map("payments_method")
+}
+
+enum PurchaseInvoicesStatus {
+  PENDING
+  PAID
+  CANCELLED
+
+  @@map("purchase_invoices_status")
+}
+
+enum PurchaseOrdersStatus {
+  DRAFT
+  PENDING
+  ORDERED
+  RECEIVED
+  CANCELLED
+
+  @@map("purchase_orders_status")
+}
+
+enum ReturnRequestsStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+
+  @@map("return_requests_status")
+}
+
+enum ReturnRequestsResponsibleParty {
+  CUSTOMER
+  STORE
+  SHIPPING
+  OTHER
+
+  @@map("return_requests_responsibleParty")
+}
+
+// Redundant StorePagesPageType removed
+
+enum SupplierPaymentsPaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+
+  @@map("supplier_payments_paymentMethod")
+}
+
+enum TasksPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("Task_priority")
+}
+
+enum TaskMeasurementType {
+  TIME
+  COUNT
+  VALUE
+
+  @@map("task_measurement_type")
+}
+
+enum UserInvitationsStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+
+  @@map("user_invitations_status")
+}
+
+enum UsersContractType {
+  FULL_TIME
+  PART_TIME
+  CONTRACTOR
+  INTERN
+
+  @@map("users_contractType")
+}
+
+enum WhatsAppMessagesMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LOCATION
+
+  @@map("whatsapp_messages_messageType")
+}
+
+enum OrderSource {
+  REGULAR
+  AFFILIATE_REFERRAL
+  AFFILIATE_DIRECT
+  INTERNAL_IMPORT
+}
+
+enum BillingHistoryType {
+  PLATFORM_FEE
+  APP_SUBSCRIPTION
+  APP_USAGE
+  MARKETPLACE_PURCHASE
+  OTHER
+
+  @@map("billing_history_type")
+}
+enum PricingModel {
+  FREE
+  SUBSCRIPTION
+  PAY_PER_USE
+
+  @@map("pricing_model")
+}
+
+enum PartnerTitle {
+  PARTNER
+  SENIOR_PARTNER
+  MASTER_PARTNER
+  EXECUTIVE_PARTNER
+
+  @@map("partner_titles")
+}
+
+enum PlatformPartnerStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+
+  @@map("platform_partner_status")
+}
+
+enum PartnerPayoutMethod {
+  BANK_TRANSFER
+  PAYPAL
+  WALLET
+  CASH
+
+  @@map("partner_payout_methods")
+}
+
+enum PartnerCommissionStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
+  DENIED
+
+  @@map("partner_commission_status")
+}
+
+enum PartnerPayoutStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  CANCELLED
+
+  @@map("partner_payout_status")
+}
+
+// ── Dev Goals (OKRs) ────────────────────────────────────────────────
+enum DevGoalType {
+  COMPANY
+  TEAM
+  INDIVIDUAL
+
+  @@map("dev_goal_type")
+}
+
+enum DevGoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+
+  @@map("dev_goal_status")
+}
+
+enum DevGoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("dev_goal_priority")
+}
+
+enum DevGoalTargetType {
+  NUMBER
+  CURRENCY
+  BOOLEAN
+  TASK_COMPLETION
+
+  @@map("dev_goal_target_type")
+}
+
+enum DevGoalConfidence {
+  ON_TRACK
+  AT_RISK
+  OFF_TRACK
+
+  @@map("dev_goal_confidence")
+}
+
+enum EducationSessionStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+
+  @@map("education_session_status")
+}
+
+enum ServiceOrderStatus {
+  NEW
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@map("service_order_status")
+}

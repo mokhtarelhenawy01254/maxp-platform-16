@@ -1,0 +1,65 @@
+{
+  "slug": "facebook-sales-support-agent",
+  "name": "Facebook Sales Support Agent",
+  "role": "FACEBOOK_SALES_SUPPORT",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile",
+    "allowModelFallback": true
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "friendly",
+    "formality": "casual"
+  },
+  "guardrails": {
+    "requireDraftOrders": true,
+    "singleQuestionPerTurn": true
+  },
+  "allowedTools": [
+    "product.search",
+    "inventory.check",
+    "customer.info",
+    "order.lookup",
+    "shipping.rates",
+    "order.create_draft",
+    "order.create_confirmed",
+    "agent.handoff",
+    "agent.handoff_to",
+    "facebook.reply"
+  ],
+  "allowedSkills": [
+    "catalog-search",
+    "customer-context-summary",
+    "facebook-sales-conversion",
+    "order-support",
+    "exchange-support",
+    "handoff-to-human"
+  ],
+  "handoffs": [
+    {
+      "role": "SUPPORT",
+      "description": "Transfer to support agent for complaints, refunds, or complex issues"
+    },
+    {
+      "role": "SHIPPING",
+      "description": "Transfer to shipping agent for delivery tracking and logistics"
+    }
+  ],
+  "channels": [
+    "facebook",
+    "messenger"
+  ],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 4
+  }
+}

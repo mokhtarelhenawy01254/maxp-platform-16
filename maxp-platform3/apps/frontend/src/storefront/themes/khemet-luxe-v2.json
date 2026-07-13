@@ -1,0 +1,865 @@
+{
+  "id": "khemet-luxe-v2",
+  "name": "KHEMET LUXE — Editorial Premium",
+  "description": "نسخة بريميم 2026: أهداف تحويل بدل ثقة، دليل إيجاد الحذاء، إثبات اجتماعي، تكملات إطلالة، فيديو، لوكبوك، وجورنال الصنعة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "151 28% 18%",
+      "primaryForeground": "40 10% 97%",
+      "secondary": "40 10% 94%",
+      "secondaryForeground": "40 10% 16%",
+      "accent": "41 30% 58%",
+      "accentForeground": "40 10% 16%",
+      "background": "40 6% 97%",
+      "foreground": "40 8% 12%",
+      "muted": "40 8% 90%",
+      "mutedForeground": "40 5% 38%",
+      "border": "40 10% 84%",
+      "card": "40 4% 99%",
+      "cardForeground": "40 8% 12%",
+      "ring": "151 28% 18%"
+    },
+    "typography": {
+      "headingFont": "\"Noto Serif\", serif",
+      "bodyFont": "\"Manrope\", \"IBM Plex Sans Arabic\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.9rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0.8rem",
+      "boxShadow": "0 22px 54px -42px rgba(40, 8%, 12%, 0.14)",
+      "hoverShadow": "0 28px 68px -40px rgba(40, 8%, 12%, 0.20)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | KHEMET LUXE",
+    "description": "بوتيك أحذية حريمي بريميم: دليل الحذاء المناسب، إثبات اجتماعي، تكملات إطلالة، وفيديو من القاهرة."
+  },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+    "colors": [
+      "151 28% 18%",
+      "41 30% 58%",
+      "40 6% 97%"
+    ]
+  },
+  "header": {
+    "variant": "floating-dark",
+    "transparentOnHome": true,
+    "brandName": "KHEMET LUXE",
+    "showSearch": true,
+    "showCart": true,
+    "showWishlist": true,
+    "showAccount": true,
+    "showOrderTracking": true,
+    "navigation": [
+      {
+        "label": "كل الأحذية",
+        "to": "/shop"
+      },
+      {
+        "label": "الكوتشيات",
+        "to": "/shop?category=sneakers"
+      },
+      {
+        "label": "الفلات",
+        "to": "/shop?category=flats"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "أحذية حريمي بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلّي القرار أسرع.",
+    "copyrightText": "© 2026 KHEMET LUXE. CRAFTED IN EGYPT.",
+    "contactRows": [
+      {
+        "label": "واتساب",
+        "value": "+20 100 000 0000",
+        "href": "https://wa.me/201000000000"
+      },
+      {
+        "label": "البريد",
+        "value": "hello@khemetluxe.com",
+        "href": "mailto:hello@khemetluxe.com"
+      }
+    ],
+    "socialLinks": {
+      "instagram": "https://instagram.com/khemetluxe",
+      "facebook": "https://facebook.com/khemetluxe",
+      "whatsapp": "https://wa.me/201000000000",
+      "tiktok": "https://tiktok.com/@khemetluxe"
+    },
+    "navigation": [
+      {
+        "title": "الدار",
+        "links": [
+          {
+            "label": "حكاية الصنعة",
+            "to": "/collections"
+          },
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "العناية بالجلد",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل الأحذية",
+            "to": "/shop"
+          },
+          {
+            "label": "العروض الحصرية",
+            "to": "/sale"
+          },
+          {
+            "label": "المجموعات",
+            "to": "/collections"
+          },
+          {
+            "label": "الأكثر مبيعًا",
+            "to": "/shop?sortBy=bestSelling"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "luxury-minimal",
+          "settings": {
+            "eyebrow": "Crafted in Cairo — توصيل مجاني داخل مصر",
+            "title": "أناقة قبل خطواتك",
+            "subtitle": "جلد مصري — كبسولات محدودة — شحن خلال ٤٨ ساعة.",
+            "ctaText": "تسوقي دلوقتي",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شوفي المجموعات",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=85&w=1920",
+            "backgroundVideo": "https://cdn.coverr.co/videos/coverr-a-woman-trying-on-shoes-in-a-boutique-2586/1080p.mp4"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "مجموعاتنا",
+            "subtitle": "تلات مسارات توصلك للإحساس الصح.",
+            "limit": 3,
+            "preferRuntimeCategories": true,
+            "ctaText": "عرض كل المجموعات",
+            "ctaLink": "/collections",
+            "collections": [
+              {
+                "title": "Run-Luxe",
+                "subtitle": "سنيكرز فاخر للحركة اليومية.",
+                "image": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=sneakers"
+              },
+              {
+                "title": "Casual Chic",
+                "subtitle": "موديلات خفيفة للمشاوير والعمل.",
+                "image": "https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=flats"
+              },
+              {
+                "title": "Heritage",
+                "subtitle": "جلود وخطوط أهدأ بلمسة مصرية.",
+                "image": "https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=heels"
+              }
+            ]
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "boutique-storyboard",
+          "settings": {
+            "badge": "لوك بوك الموسم",
+            "title": "إطلالات من ضوء القاهرة",
+            "subtitle": "كبسولة الموسم من شوارع القاهرة."
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "split-editorial",
+          "settings": {
+            "badge": "حكاية الصنعة",
+            "title": "جلود مصرية… صنعة بإيدين",
+            "content": "مهارة الحرفي المصري… كل موديل قطعة توقيع.",
+            "image": "https://images.unsplash.com/photo-1564013443919-43c31a1e9fef?auto=format&fit=crop&q=85&w=1400",
+            "ctaText": "شاهدي كل المجموعات",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "shoe-fit-finder",
+          "settings": {
+            "badge": "إختاري الصح",
+            "title": "الحذاء اللي يناسب يومك",
+            "subtitle": "مش كل الأيام زي بعضها — ومش كل الأحذية مناسبة لكل يوم. اختاري حسب نشاطك.",
+            "primaryCtaText": "تسوقي كل الأحذية",
+            "primaryCtaLink": "/shop",
+            "routes": "جري ومشي|سنيكرز رياضي|نعل مبطن وسهل للحركة.|https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=600||/shop?category=sneakers\nطلعات خفيفة|فلات وباليرينا|خفة وأناقة تناسب المشاوير.|https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=600||/shop?category=flats\nسهرات وزيارات|كعب عالي ومطفي|لما المناسبة تستحق إطلالة مختلفة.|https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=600||/shop?category=heels"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "boutique-rail",
+          "settings": {
+            "eyebrow": "Best Sellers",
+            "title": "الأكثر مبيعاً",
+            "subtitle": "الأكثر طلباً",
+            "ctaText": "عرض الكل",
+            "ctaLink": "/shop",
+            "limit": 6
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "badge": "جورنال الدار",
+            "title": "إقرأي قبل ما تشتري",
+            "articles": [
+              {
+                "title": "إزاي تعتني بالجلد الطبيعي",
+                "excerpt": "٥ خطوات تحافظ على لمعة الحذاء سنين.",
+                "link": "/collections",
+                "tag": "عناية"
+              },
+              {
+                "title": "إزاي تختاري مقاسك من غير تفكير",
+                "excerpt": "دليل سريع لقياس رجلك وتجنّبي الاستبدال.",
+                "link": "/size-guide",
+                "tag": "مقاسات"
+              },
+              {
+                "title": "حكاية الصنعة في القاهرة",
+                "excerpt": "من ورش الجلد في مصر القديمة لكبسولات معاصرة.",
+                "link": "/collections",
+                "tag": "حرفة"
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "انضمي لنادي Luxe",
+            "subtitle": "أول واحدة تعرف بالعروض.",
+            "buttonText": "اشتراك",
+            "placeholder": "إيميلك"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": false
+      }
+    },
+    "shop": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar",
+          "settings": {
+            "simpleToolbar": true,
+            "clearButtonText": "مسح",
+            "hideHeader": true,
+            "hideSearch": false,
+            "hideDesktopCategoryChips": false
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "simpleCatalog": true,
+            "categoryLabel": "التصنيفات",
+            "priceLabel": "السعر",
+            "allProductsLabel": "كل الأحذية",
+            "clearButtonText": "مسح الفلاتر",
+            "showSearch": true,
+            "showSort": true,
+            "showCategories": true,
+            "showPriceFilter": true,
+            "showMobileLabel": "الفلاتر",
+            "hideMobileLabel": "إغلاق"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "boutique-shelf",
+          "settings": {
+            "hideHeader": true,
+            "limit": 48
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": false
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "settings": {
+        "compactMobileLayout": true
+      },
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "elessi-showroom"
+        },
+        {
+          "type": "shoe-fit-finder",
+          "settings": {
+            "badge": "اختيار أسرع",
+            "title": "اختاري الحذاء حسب يومك",
+            "subtitle": "مشي كتير ولا طلعة خفيفة؟ اختاري النوع اللي يناسب إيقاع يومك.",
+            "primaryCtaText": "شاهدي كل الأحذية",
+            "primaryCtaLink": "/shop",
+            "routes": "جري ومشي|كوتشي رياضي|سنيكرز كاجوال لكل يوم.|https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=600||/shop?category=sneakers\nطلعات خفيفة|باليرينا وفلات|أناقة بدون تعب للمشاوير اليومية.|https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=600||/shop?category=flats\nسهرة وزيارة|كعب ومطفي|خطوط أنعم وخامات أهدأ للمناسبات.|https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=600||/shop?category=heels"
+          }
+        },
+        {
+          "type": "product-info",
+          "variant": "elessi-care-buybox",
+          "settings": {
+            "addToCartText": "ضيفيه للسلة",
+            "buyNowText": "اشتريه الآن",
+            "descriptionTitle": "تفاصيل المنتج",
+            "shippingTitle": "التوصيل وتبديل المقاس",
+            "shippingText": "شحن خلال 48 ساعة • تبديل مقاس خلال 14 يوم",
+            "shippingInteraction": "modal",
+            "shippingTriggerText": "شوفي سياسة التوصيل وتبديل المقاس",
+            "shippingModalTitle": "التوصيل وتبديل المقاس",
+            "guaranteesTitle": "الخدمة باينة قبل الطلب",
+            "guaranteesSubtitle": "المقاس والخامة والتوصيل باينين من بدري.",
+            "guaranteeItems": "[{\"title\":\"تبديل المقاس\",\"description\":\"سهل وواضح من البداية.\"},{\"title\":\"جلد طبيعي مختار\",\"description\":\"الخامة واللون ظاهرين في الصور.\"},{\"title\":\"شحن داخل مصر\",\"description\":\"متابعة لحد ما الطلب يوصلك.\"}]",
+            "sizeGuideText": "شوفي دليل المقاسات",
+            "sizeGuideLink": "/size-guide",
+            "sizeGuideInteraction": "modal",
+            "sizeGuideModalTitle": "دليل المقاسات",
+            "fitNote": "لو مقاسك بين رقمين، اختاري الأكبر.",
+            "guideRows": "default|35|2|4|22.0\ndefault|36|3|5|22.5\ndefault|37|4|6|23.2\ndefault|38|5|7|24.0\ndefault|39|6|8|24.7\ndefault|40|6.5|8.5|25.4\ndefault|41|7|9|26.0\ndefault|42|8|10|26.7"
+          }
+        },
+        {
+          "type": "sold-counter",
+          "variant": "seamless",
+          "settings": {
+            "title": "",
+            "soldCounterMessage": "اتطلب {count} قطعة في آخر ٣٠ يوم",
+            "soldCounterStyle": "minimal",
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "delivery-proof",
+          "settings": {
+            "estimatedDeliveryLabel": "موعد الوصول المتوقع",
+            "estimatedDeliveryStyle": "pill",
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "quantity-offers",
+          "variant": "look-builder",
+          "settings": {
+            "title": "كمّلي الإطلالة",
+            "subtitle": "اضيفي جورب فاخر أو حامي جلد — ووفّري.",
+            "continueToFormLabel": "كمّلي البيانات"
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look",
+          "settings": {
+            "title": "العميلات اشتروه مع"
+          }
+        },
+        {
+          "type": "pdp-checkout",
+          "settings": {
+            "badgeText": "جهزي طلبك",
+            "title": "بيانات الشحن",
+            "subtitle": "اكتبي بياناتك عشان نأكد الطلب ونتواصل معاكي.",
+            "formVariant": "compact",
+            "placement": "after-description",
+            "surfaceMode": "standalone",
+            "paymentVariant": "minimal"
+          }
+        },
+        {
+          "type": "back-in-stock",
+          "settings": {
+            "title": "نبهيني لما يتوفر",
+            "subtitle": "المقاس دا نفد بسرعة. سيبيلنا إيميلك ونبعتلك أول ما يتوفر.",
+            "backInStockTitle": "نبيهيني عندما يتوفر",
+            "backInStockDescription": "اكتبي إيميلك عشان نكلمك أول ما المقاس يرجع",
+            "backInStockSuccessMessage": "هنبعتلك إيميل أول ما يتوفر",
+            "backInStockStyle": "inline",
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "pre-order",
+          "settings": {
+            "title": "اطلبي قبل النزول",
+            "subtitle": "الكبسولة الجديدة تقدر تحجزيها دلوقتي وتوصلك أول يوم نزول.",
+            "preOrderLabel": "احجزي الآن",
+            "preOrderStyle": "pulse",
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "elessi-story-grid",
+          "settings": {
+            "title": "العميلات رأيهم",
+            "mediaTitle": "صور وملاحظات من العميلات",
+            "mediaDescription": "صور حقيقية من العميلات.",
+            "listTitle": "كل التقييمات",
+            "writeReviewText": "شاركي رأيك",
+            "emptyText": "كوني أول واحدة تشارك رأيك.",
+            "verifiedLabel": "شراء موثق",
+            "reviewsLabel": "تقييمات",
+            "reviewLimit": 6,
+            "showMediaFeed": true
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "elessi-complete-set",
+          "settings": {
+            "title": "ممكن يعجبك كمان",
+            "subtitle": "نفس الروح والخامة.",
+            "limit": 6
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": false
+      }
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "سلة KHEMET LUXE",
+            "emptyText": "سلتك فاضية دلوقتي.",
+            "continueShoppingText": "متابعة التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "shippingHelpText": "الشحن هيتحسب بعد اختيار المحافظة.",
+            "couponPlaceholder": "كود الخصم",
+            "couponButtonText": "تطبيق",
+            "checkoutButtonText": "إتمام الشراء",
+            "showFreeShippingProgress": true,
+            "assuranceTitle": "يشملك مع الطلب",
+            "assuranceItems": [
+              "تغليف محترم يحافظ على الحذاء لحد ما تستلميه",
+              "نتأكد من المقاس واللون قبل التجهيز لو محتاجة",
+              "متابعة واضحة لحد الاستلام أو الاستبدال"
+            ]
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "settings": {
+        "injectCartItems": false,
+        "sidebarVisualDirection": "ltr",
+        "surfaceTone": "flat-checkout"
+      },
+      "sections": [
+        {
+          "type": "payment",
+          "variant": "boutique-payment",
+          "settings": {
+            "title": "طريقة الدفع",
+            "subtitle": "اختاري وسيلة الدفع وبعد كده أكّدي الطلب.",
+            "summaryTitle": "ملخص الطلب",
+            "confirmOrderText": "تأكيد الطلب",
+            "payButtonPrefix": "ادفعي",
+            "processingText": "بنحضر طلبك...",
+            "shippingPromptText": "اختاري المحافظة عشان نحسب الشحن.",
+            "enterGovernorateText": "اختاري المحافظة",
+            "enabledMethods": [
+              "cod",
+              "card",
+              "wallet"
+            ],
+            "codLabel": "الدفع عند الاستلام",
+            "codDesc": "ادفعي كاش لما الطلب يوصل",
+            "cardLabel": "بطاقة الائتمان",
+            "cardDesc": "Visa, Mastercard",
+            "walletLabel": "محفظة إلكترونية",
+            "walletDesc": "Apple Pay, Google Pay, Vodafone Cash",
+            "showHeaderBadge": false,
+            "showSummaryCard": false,
+            "showAssuranceCard": false,
+            "showNextSteps": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "soft-flow",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "",
+            "shippingTitle": "عنوان الشحن",
+            "shippingDescription": "",
+            "notesTitle": "ملاحظات على الطلب",
+            "showNotesSection": false,
+            "notesOptionalLabel": "(اختياري)",
+            "fullNameLabel": "الاسم بالكامل",
+            "fullNamePlaceholder": "مثال: سارة أحمد",
+            "emailLabel": "الإيميل",
+            "emailPlaceholder": "name@example.com",
+            "phoneLabel": "رقم الهاتف",
+            "phonePlaceholder": "01xxxxxxxxx",
+            "addressLabel": "العنوان بالتفصيل",
+            "addressPlaceholder": "الشارع، المنطقة، ورقم العمارة",
+            "cityLabel": "المدينة",
+            "cityPlaceholder": "مثال: مدينة نصر",
+            "governorateLabel": "المحافظة",
+            "governoratePlaceholder": "اختاري المحافظة",
+            "notesPlaceholder": "أي ملاحظات خاصة بالتوصيل أو الطلب"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "headerBadge": "",
+            "lineItemsTitle": "",
+            "showLineItems": true,
+            "lineItemsEditable": true,
+            "shippingHelpText": "رسوم الشحن تظهر فور اختيار المحافظة.",
+            "couponPlaceholder": "كود الخصم",
+            "couponButtonText": "تطبيق",
+            "subtotalLabel": "المجموع الفرعي",
+            "shippingLabel": "الشحن",
+            "shippingValueText": "يحسب بعد اختيار المحافظة",
+            "totalLabel": "الإجمالي",
+            "showCouponField": true,
+            "showFreeShippingProgress": true,
+            "hideCheckoutButton": true,
+            "showTrustRow": false,
+            "showAssuranceCard": false,
+            "showNextSteps": false
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks",
+          "settings": {
+            "title": "تم تأكيد طلبك بنجاح!",
+            "description": "استلمنا طلبك، وهنراجع المقاس والعنوان ونتواصل معاكي لتأكيد الشحن خلال 24 ساعة.",
+            "continueShoppingText": "كمّلي التسوق",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لو حبيتي تسألي عن الشحن أو تعدلي العنوان، كلمينا على",
+            "statusLabel": "قيد التجهيز",
+            "whatsappSupportLabel": "واتساب الدعم",
+            "trackOrderTitle": "راجعي حالة الطلب",
+            "trackOrderDescription": "اكتبي نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث على التأكيد والتجهيز والشحن.",
+            "trackOrderButtonText": "اعرضي حالة الطلب",
+            "reorderTitle": "رجّعي نفس الاختيارات للسلة",
+            "reorderDescription": "لو حبيتي تكرري نفس الموديلات أو تعدلي المقاس في خطوة جديدة، رجعيها للسلة بضغطة واحدة.",
+            "reorderButtonText": "رجّعي المنتجات للسلة",
+            "reorderSuccessText": "رجعنا نفس الاختيارات للسلة.",
+            "recommendedTitle": "ممكن يعجبك كمان",
+            "recommendedSubtitle": "موديلات وإضافات خفيفة بنفس الروح لو حبيتي تكملي الطلب بقطعة أخيرة.",
+            "recommendedBadge": "اختيارات مكملة",
+            "recommendedVariant": "boutique-afterglow"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "عروض حصرية",
+            "message": "خصومات على موديلات مختارة لفترة محدودة مع نفس جودة الخامة والتشطيب.",
+            "saleLabel": "حتى 30% خصم",
+            "shippingLabel": "شحن داخل مصر",
+            "returnLabel": "استبدال سهل",
+            "ctaText": "تسوقي العروض",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "عروض KHEMET LUXE",
+            "subtitle": "إصدارات مختارة بأسعار موسمية قبل نفاد المقاسات.",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهدي المجموعات",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "عروض محدودة",
+            "limit": 12,
+            "saleOnly": true,
+            "emptyStateTitle": "لا توجد عروض متاحة الآن",
+            "emptyStateDescription": "ارجعي لاحقًا أو تصفحي بقية التشكيلة الحالية.",
+            "clearButtonText": "كل المنتجات"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "العروض الخاصة أولاً",
+            "subtitle": "اشتركي لتصلك الخصومات والكبسولات الجديدة قبل الجميع.",
+            "buttonText": "اشتركي الآن",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "مجموعات KHEMET LUXE",
+            "subtitle": "اختاري حسب الإيقاع أو المناسبة أو نوع الحذاء.",
+            "limit": 3,
+            "preferRuntimeCategories": true,
+            "ctaText": "كل المنتجات",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "Run-Luxe",
+                "subtitle": "سنيكرز بخط فاخر للحركة اليومية.",
+                "image": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=sneakers"
+              },
+              {
+                "title": "Casual Chic",
+                "subtitle": "يوميات العمل والمشاوير بإحساس أنعم.",
+                "image": "https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=flats"
+              },
+              {
+                "title": "Heritage",
+                "subtitle": "موديلات تلتقط الحرفة والخامة في صورة أهدأ.",
+                "image": "https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=heels"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "boutique-shelf",
+          "settings": {
+            "title": "ابدئي من الأكثر مبيعًا",
+            "subtitle": "اختيارات تحمل نفس الخط البصري للمجموعات الرئيسية.",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "دعم المقاس",
+            "message": "اختيار المقاس الصحيح يقلل الاستبدال ويسرّع قرار الشراء.",
+            "saleLabel": "جدول أوروبي / بريطاني / أمريكي",
+            "shippingLabel": "نصائح قياس سريعة",
+            "returnLabel": "وضوح قبل الطلب",
+            "ctaText": "تسوقي الآن",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "badge": "دليل المقاسات",
+            "title": "دليل المقاسات الكامل",
+            "subtitle": "مرجع واضح لاختيار المقاس الأنسب قبل الشراء وتقليل احتمالات الاستبدال.",
+            "note": "إذا كنتِ بين مقاسين أو ستستخدمين جوربًا أكثر سماكة، فاختاري المقاس الأكبر غالبًا.",
+            "ctaText": "ارجعي للتسوق",
+            "ctaLink": "/shop",
+            "guideRows": "default|35|2|4|22.0\ndefault|36|3|5|22.5\ndefault|37|4|6|23.2\ndefault|38|5|7|24.0\ndefault|39|6|8|24.7\ndefault|40|6.5|8.5|25.4\ndefault|41|7|9|26.0\ndefault|42|8|10|26.7"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "خذي الجديد أولاً",
+            "subtitle": "اشتركي لتصلك الإصدارات الجديدة والعروض الخاصة قبل نفاد المقاسات.",
+            "buttonText": "اشتركي",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "الشحن والاستبدال",
+            "subtitle": "توصيل داخل مصر مع مراجعة المقاس واللون قبل التجهيز، وسياسة استبدال واضحة لو احتجتي تعديل المقاس.",
+            "ctaText": "ارجعي للتسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "دليل المقاسات",
+            "secondaryCtaLink": "/size-guide"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "قبل الشحن",
+            "title": "تفاصيل الخدمة قبل تأكيد الطلب",
+            "subtitle": "كل خطوة في الشحن مصممة تقلل التردد وتخلي قرار الشراء أوضح.",
+            "body": "نراجع بيانات الطلب ثم نبدأ التجهيز والشحن حسب المحافظة.\n\nلو المنتج يحتاج تأكيد مقاس أو لون، يتم التواصل قبل خروج الطلب.\n\nالاستبدال متاح للمقاس خلال 14 يوم بشرط الحفاظ على حالة القطعة والتغليف.",
+            "detailsTitle": "ملخص سريع",
+            "details": "التجهيز|غالبًا خلال 24 ساعة\nالشحن|داخل مصر حسب المحافظة\nالاستبدال|مقاس خلال 14 يوم\nالدعم|متاح عبر واتساب",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "نستخدم بيانات التواصل والشحن فقط لتأكيد الطلب، توصيله، وتحسين خدمة ما بعد البيع.",
+            "ctaText": "تسوقي بثقة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "الشحن والاستبدال",
+            "secondaryCtaLink": "/shipping"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "البيانات والثقة",
+            "title": "بياناتك داخل مسار الطلب",
+            "subtitle": "الخصوصية هنا جزء من الثقة، لذلك تبقى البيانات محدودة وواضحة الاستخدام.",
+            "body": "نستخدم بياناتك لتأكيد الطلب والتواصل بخصوص الشحن أو الاستبدال.\n\nنشارك بيانات التوصيل اللازمة فقط مع شركة الشحن لإتمام الطلب.\n\nقد نحتفظ بسجل الطلب لتسهيل التتبع أو خدمة ما بعد البيع عند الحاجة.",
+            "detailsTitle": "ما الذي نحتفظ به؟",
+            "details": "بيانات التواصل|الاسم ورقم الهاتف\nبيانات التوصيل|العنوان والمحافظة\nسجل الطلب|المنتجات والمقاسات المطلوبة\nسبب الاستخدام|التأكيد والشحن والدعم",
+            "ctaText": "تسوقي بثقة",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "شراء KHEMET LUXE يعني موافقتك على تفاصيل السعر، الشحن، الاستبدال، وتأكيد الطلب الموضحة قبل الدفع.",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "دليل المقاسات",
+            "secondaryCtaLink": "/size-guide"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "قواعد الشراء",
+            "title": "قواعد واضحة قبل القرار",
+            "subtitle": "نحافظ على مسار شراء بسيط: سعر واضح، بيانات شحن صحيحة، واستبدال مرتبط بحالة المنتج.",
+            "body": "الأسعار والعروض تخضع للتوافر وقت تأكيد الطلب، خصوصًا المقاسات المحدودة.\n\nرسوم الشحن تظهر حسب المحافظة وتُراجع قبل تأكيد الطلب النهائي.\n\nالاستبدال يتم وفق حالة المنتج وتوافر المقاس البديل خلال المدة المحددة.",
+            "detailsTitle": "الشروط الأساسية",
+            "details": "السعر|حسب العرض الظاهر وقت الطلب\nالتوافر|مرتبط بالمقاس واللون\nالشحن|يحسب حسب المحافظة\nالاستبدال|حسب حالة المنتج وتوافر البديل",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    }
+  }
+}

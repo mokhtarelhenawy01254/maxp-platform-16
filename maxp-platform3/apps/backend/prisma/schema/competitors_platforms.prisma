@@ -1,0 +1,150 @@
+model CompetitorAmazonData {
+  id                String                 @id @default(cuid())
+  asin              String?
+  productTitle      String?
+  productUrl        String?
+  brand             String?
+  category          String?
+  subcategory       String?
+  bsrCategory       String?
+  bsrRank           Int?
+  reviewCount       Int                    @default(0)
+  reviewRating      Decimal?               @db.Decimal(3, 1)
+  price             Decimal?               @db.Decimal(10, 2)
+  listPrice         Decimal?               @db.Decimal(10, 2)
+  currency         String                  @default("USD")
+  fulfillmentType   String?
+  isPrime           Boolean                @default(false)
+  isAvailable       Boolean                @default(true)
+  inventoryLevel    String?
+  fbaFees           Decimal?               @db.Decimal(10, 2)
+  referralFees      Decimal?               @db.Decimal(5, 2)
+  imageUrl          String?
+  images            Json?
+  variantsCount     Int?
+  salesRankHistory   Json?
+  reviewHistory      Json?
+  lastUpdated       DateTime               @default(now())
+  metadata          Json?
+  competitorId      String
+  companyId         String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  competitor        Competitor             @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@unique([competitorId, asin])
+  @@index([competitorId])
+  @@index([companyId])
+  @@index([competitorId, bsrRank])
+  @@map("competitor_amazon_data")
+}
+
+model CompetitorGoogleBusiness {
+  id                String                 @id @default(cuid())
+  placeId            String?
+  googleMapsUrl      String?
+  address            String?
+  city               String?
+  state              String?
+  country            String?
+  postalCode         String?
+  latitude           Decimal?                @db.Decimal(10, 8)
+  longitude          Decimal?               @db.Decimal(11, 8)
+  phone              String?
+  website            String?
+  rating             Decimal?               @db.Decimal(2, 1)
+  reviewsCount       Int                    @default(0)
+  reviewsUrl        String?
+  photosCount       Int?
+  hours              Json?
+  categories         String[]
+  attributes         Json?
+  lastScrapedAt      DateTime?
+  metadata           Json?
+  competitorId       String
+  companyId          String
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  competitor         Competitor             @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  googleReviews      CompetitorGoogleReview[]
+
+  @@unique([competitorId, placeId])
+  @@index([competitorId])
+  @@index([companyId])
+  @@map("competitor_google_business")
+}
+
+model CompetitorGoogleReview {
+  id                String                 @id @default(cuid())
+  reviewId          String?
+  authorName        String?
+  authorUrl         String?
+  profilePhotoUrl   String?
+  rating            Int
+  content           String?                @db.Text
+  responseContent   String?                @db.Text
+  responseDate      DateTime?
+  publishedAt       DateTime?
+  lastScrapedAt     DateTime               @default(now())
+  sentiment         String?
+  metadata          Json?
+  googleDataId      String
+  createdAt         DateTime               @default(now())
+
+  googleData        CompetitorGoogleBusiness @relation(fields: [googleDataId], references: [id], onDelete: Cascade)
+
+  @@index([googleDataId])
+  @@index([googleDataId, publishedAt])
+  @@map("competitor_google_reviews")
+}
+
+model CompetitorTechStack {
+  id                String                 @id @default(cuid())
+  category          String
+  name              String
+  version           String?
+  confidence        String?
+  detectedAt        DateTime               @default(now())
+  metadata          Json?
+  competitorId      String
+  companyId         String
+  createdAt         DateTime               @default(now())
+
+  competitor        Competitor             @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@index([competitorId])
+  @@index([companyId])
+  @@index([competitorId, category])
+  @@unique([competitorId, category, name])
+  @@map("competitor_tech_stack")
+}
+
+model CompetitorShopifyStore {
+  id                String                 @id @default(cuid())
+  storeUrl          String                 @unique
+  storeName         String?
+  description       String?                @db.Text
+  logoUrl           String?
+  facebookUrl      String?
+  instagramUrl     String?
+  twitterUrl       String?
+  currency         String?
+  country           String?
+  productsCount     Int?
+  themes            Json?
+  appsCount         Int?
+  lastScrapedAt     DateTime?
+  metadata          Json?
+  competitorId      String
+  companyId         String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  competitor        Competitor             @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@index([competitorId])
+  @@index([companyId])
+  @@map("competitor_shopify_stores")
+}

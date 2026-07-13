@@ -1,0 +1,822 @@
+{
+  "id": "smart-bazaar",
+  "name": "Smart Bazaar",
+  "tokens": {
+    "colors": {
+      "primary": "213 88% 45%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "210 55% 96%",
+      "secondaryForeground": "213 70% 18%",
+      "accent": "34 95% 54%",
+      "accentForeground": "215 35% 12%",
+      "background": "210 40% 98%",
+      "foreground": "215 32% 14%",
+      "muted": "210 32% 93%",
+      "mutedForeground": "215 14% 42%",
+      "border": "214 26% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "215 32% 14%",
+      "ring": "213 88% 45%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", \"Cairo\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Cairo\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.25rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.15rem",
+      "boxShadow": "0 18px 48px -36px rgba(20, 51, 92, 0.28)",
+      "hoverShadow": "0 24px 60px -34px rgba(20, 51, 92, 0.34)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | بيتك اليوم",
+    "description": "متجر عملي لأساسيات البيت والتنظيم والهدايا السريعة مع عروض متجددة وشحن واضح داخل مصر."
+  },
+  "header": {
+    "brandName": "بيتك اليوم",
+    "showSearch": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "الأقسام",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "الأكثر طلبًا",
+        "to": "/shop?sort=popular"
+      }
+    ]
+  },
+  "footer": {
+    "description": "أساسيات البيت والتنظيم والهدايا السريعة في مكان واحد مع عروض واضحة وشحن موثوق داخل مصر.",
+    "copyrightText": "© 2026 بيتك اليوم. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل المنتجات",
+            "to": "/shop"
+          },
+          {
+            "label": "الأقسام",
+            "to": "/collections"
+          },
+          {
+            "label": "العروض السريعة",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "الدعم",
+        "links": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال والاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "اتصل بنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض ذكية",
+            "message": "خصومات أسبوعية على أساسيات البيت والتنظيم والهدايا السريعة مع شحن سريع داخل مصر.",
+            "saleLabel": "خصومات متجددة",
+            "shippingLabel": "شحن خلال 48 ساعة",
+            "returnLabel": "استبدال واضح",
+            "ctaText": "اكتشف العروض",
+            "ctaLink": "/sale"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "بيتك اليوم",
+            "title": "كل احتياجات البيت واليوم العادي في متجر واحد واضح",
+            "subtitle": "منظمات المطبخ، أساسيات البيت، الهدايا السريعة، واللقطات الاقتصادية مرتبة لتصل لما تحتاجه من أول دقيقة.",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهد الأقسام",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "/assets/themes/smart-bazaar/hero.png"
+          }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "ليه العملاء يحبون الشراء من بيتك اليوم؟",
+            "subtitle": "منتجات عملية، أسعار واضحة، ورسائل ثقة تظهر قبل الدفع حتى تصبح رحلة الشراء أبسط وأسرع.",
+            "items": [
+              {
+                "icon": "target",
+                "title": "منتجات عملية",
+                "description": "اختيارات يومية تمشي مع البيت والعمل والطلبات المتكررة."
+              },
+              {
+                "icon": "grid",
+                "title": "سعر واضح",
+                "description": "العروض والخصومات تظهر ببساطة من أول نظرة بدون إرباك."
+              },
+              {
+                "icon": "search",
+                "title": "وصول أسرع",
+                "description": "الأقسام مرتبة بحيث يصل العميل لما يحتاجه بأقل عدد من الخطوات."
+              },
+              {
+                "icon": "shield",
+                "title": "شراء مطمئن",
+                "description": "الشحن والاستبدال والدفع الآمن ظاهرون طوال رحلة الطلب."
+              }
+            ]
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "badge": "ابدأ من احتياجك",
+            "title": "ابدأ من الشيء الناقص عندك اليوم",
+            "subtitle": "اختر الطريق الأقرب لطلبك: أساسيات المطبخ، عروض اليوم، ركنة التنظيم، أو هدية جاهزة.",
+            "items": [
+              {
+                "eyebrow": "طلبات يومية",
+                "title": "أساسيات المطبخ والتنظيم",
+                "subtitle": "علب تخزين ومنظمات وأدوات صغيرة تتكرر في الطلبات اليومية.",
+                "link": "/shop?sort=popular",
+                "tone": "primary",
+                "chip": "من 79"
+              },
+              {
+                "eyebrow": "وفر اليوم",
+                "title": "عروض أقل من 299 جنيه",
+                "subtitle": "منتجات عملية بأسعار أوضح لعميل يريد أن يحسم بسرعة.",
+                "link": "/sale",
+                "tone": "accent",
+                "chip": "خصم"
+              },
+              {
+                "eyebrow": "لترتيب البيت",
+                "title": "ركنة البيت والتنظيم",
+                "subtitle": "سلال ومنظمات وملحقات تساعد على ترتيب البيت والمكتب بسهولة.",
+                "link": "/collections",
+                "tone": "emerald",
+                "chip": "الأكثر زيارة"
+              },
+              {
+                "eyebrow": "جاهزة للتغليف",
+                "title": "هدايا عملية سريعة",
+                "subtitle": "اختيارات مرتبة للمواسم والزيارات المفاجئة والهدايا اليومية.",
+                "link": "/shop?sort=newest",
+                "tone": "slate",
+                "chip": "جاهز"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "أقسام مرتبة مثل المتجر الحقيقي",
+            "subtitle": "كل قسم يجمع منتجات متقاربة وسعرًا أوضح لتشعر من أول نظرة كيف سيظهر متجرك فعليًا.",
+            "limit": 4,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "collections": [
+              {
+                "title": "أساسيات يومية",
+                "subtitle": "علب تخزين، منظمات أدراج، وأساسيات صغيرة للبيت والمطبخ.",
+                "image": "/assets/themes/smart-bazaar/daily.png",
+                "link": "/shop?sort=popular"
+              },
+              {
+                "title": "البيت والتنظيم",
+                "subtitle": "حلول عملية للحمام والمكتب والزوايا الصغيرة داخل البيت.",
+                "image": "/assets/themes/smart-bazaar/home.png",
+                "link": "/collections"
+              },
+              {
+                "title": "عروض سريعة",
+                "subtitle": "خصومات متغيرة على المنتجات العملية والطلبات الحساسة للسعر.",
+                "image": "/assets/themes/smart-bazaar/deals.png",
+                "link": "/sale"
+              },
+              {
+                "title": "هدايا جاهزة",
+                "subtitle": "بوكسات هدية وإضافات تغليف وخيارات جاهزة للطلب السريع.",
+                "image": "/assets/themes/smart-bazaar/gifts.png",
+                "link": "/shop?sort=newest"
+              }
+            ]
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "badge": "عروض هذا الأسبوع",
+            "title": "اختيارات سريعة قبل أن تنفد الكمية",
+            "subtitle": "عروض مجمعة ورسائل ثقة وأسعار واضحة تساعد العميل على الحسم من الصفحة الرئيسية.",
+            "cards": [
+              {
+                "label": "الأكثر طلبًا",
+                "title": "ركنة تجهيز البيت اليومي",
+                "subtitle": "منتجات سريعة الدوران مثل العلب والمنظمات والإضافات العملية التي يكررها العملاء.",
+                "ctaText": "شاهد الأكثر طلبًا",
+                "link": "/shop?sort=popular",
+                "tone": "primary",
+                "stat": "تجهيز سريع"
+              },
+              {
+                "label": "سعر محسوم",
+                "title": "اختيارات عملية بأسعار أقل من المعتاد",
+                "subtitle": "جمعنا المنتجات الاقتصادية والباقات السريعة في مساحة واحدة واضحة.",
+                "ctaText": "اذهب للعروض",
+                "link": "/sale",
+                "tone": "accent",
+                "stat": "خصم حتى 25%"
+              },
+              {
+                "label": "شراء مطمئن",
+                "title": "الشحن والاستبدال واضحان قبل الدفع",
+                "subtitle": "سياسة الشحن والدفع والاستبدال ظاهرة دائمًا لتقليل التردد قبل إتمام الطلب.",
+                "ctaText": "اعرف أكثر",
+                "link": "/shipping",
+                "tone": "slate",
+                "stat": "ثقة أوضح"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "standard",
+          "settings": {
+            "title": "الأكثر طلبًا هذا الأسبوع",
+            "limit": 8
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "وصلك الجديد من غير دوشة",
+            "subtitle": "تنبيهات بالعروض والمنتجات السريعة قبل نفاد الكمية.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "بيتك اليوم",
+            "title": "تسوّق براحتك واختر على مهلك",
+            "subtitle": "كل المنتجات مرتبة بالأقسام والسعر والأكثر طلبًا حتى يعرف العميل أين يبدأ وماذا يضيف إلى سلة الشراء.",
+            "ctaText": "ابدأ التصفح",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهد العروض",
+            "secondaryCtaLink": "/sale",
+            "backgroundImage": "/assets/themes/smart-bazaar/hero.png"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "دوّر بسرعة وفلتر بوضوح",
+            "subtitle": "ابحث عن المنتج أو القسم المناسب، ثم صفّي النتائج حسب السعر أو الأحدث أو الأكثر طلبًا.",
+            "searchPlaceholder": "ابحث عن المنتج أو الفئة المناسبة",
+            "allCategoriesLabel": "كل الأقسام",
+            "resultsLabel": "نتيجة جاهزة",
+            "clearButtonText": "مسح الفلاتر",
+            "stickyLabel": "تصفية سريعة",
+            "chipLimit": 7
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "كل المنتجات",
+            "limit": 12,
+            "productsFoundLabel": "منتج متاح",
+            "emptyStateTitle": "لا توجد منتجات مطابقة",
+            "emptyStateDescription": "جرب تغيير الفلاتر أو تصفح الأقسام للعثور على ما تبحث عنه.",
+            "clearButtonText": "عرض كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "settings": {
+            "badge": "رادار العروض",
+            "title": "أفضل ما نرشحه لك أثناء التصفح",
+            "subtitle": "عروض واضحة ورسائل ثقة تبقى بجانب الشبكة حتى لا يضيع العميل بين كثرة المنتجات.",
+            "spotlightTitle": "أفضل العروض الجارية الآن",
+            "spotlightText": "خصومات على منظمات البيت والهدايا السريعة والمنتجات العملية التي تتحرك هذا الأسبوع.",
+            "ctaText": "اذهب إلى العروض",
+            "ctaLink": "/sale",
+            "trustItems": "شحن سريع|طلبات المدن الرئيسية يتم تجهيزها خلال 24 إلى 48 ساعة مع متابعة واضحة.\nاستبدال أسهل|الاستبدال والاسترجاع موضحان قبل الدفع لتقليل التردد.\nشراء مطمئن|الدفع عند الاستلام ووسائل الدفع الأخرى تظهر بوضوح أثناء التصفح.",
+            "highlights": "خصومات يومية|مباشرة الآن\nالأكثر طلبًا|تحديث أسبوعي\nجاهز للموبايل|تصفح أسرع"
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "badge": "اختصارات",
+            "title": "انتقل لما تحتاجه مباشرة",
+            "subtitle": "أسرع طريقة للوصول إلى الأقسام الأكثر زيارة.",
+            "items": [
+              {
+                "eyebrow": "عروض حية",
+                "title": "خصومات الآن",
+                "subtitle": "منتجات انخفض سعرها اليوم.",
+                "link": "/sale",
+                "tone": "accent",
+                "chip": "عرض"
+              },
+              {
+                "eyebrow": "الأعلى مبيعًا",
+                "title": "الأكثر طلبًا",
+                "subtitle": "منتجات مجربة يكررها العملاء.",
+                "link": "/shop?sort=popular",
+                "tone": "primary",
+                "chip": "مميز"
+              },
+              {
+                "eyebrow": "ترتيب",
+                "title": "البيت والتنظيم",
+                "subtitle": "حلول عملية للمنزل والمكتب.",
+                "link": "/collections",
+                "tone": "emerald",
+                "chip": "بيت"
+              },
+              {
+                "eyebrow": "جديد",
+                "title": "وصل هذا الأسبوع",
+                "subtitle": "إضافات جديدة تستحق نظرة.",
+                "link": "/shop?sort=newest",
+                "tone": "slate",
+                "chip": "جديد"
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تابع الجديد أولًا",
+            "subtitle": "تنبيهات سريعة بالعروض والمنتجات التي تتحرك بسرعة داخل المتجر.",
+            "buttonText": "أرسل لي العروض",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "اختر القسم الذي يشبه طلبك",
+            "subtitle": "كل قسم هنا مبني كأنه ركن مستقل داخل المتجر ليسهل القرار والمقارنة.",
+            "limit": 4,
+            "ctaText": "ارجع إلى المتجر",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "أساسيات يومية",
+                "subtitle": "علب تخزين ومنظمات وأساسيات صغيرة للبيت والمطبخ.",
+                "image": "/assets/themes/smart-bazaar/daily.png",
+                "link": "/shop?sort=popular"
+              },
+              {
+                "title": "البيت والتنظيم",
+                "subtitle": "حلول عملية للحمام والمكتب والزوايا الصغيرة داخل البيت.",
+                "image": "/assets/themes/smart-bazaar/home.png",
+                "link": "/collections"
+              },
+              {
+                "title": "عروض سريعة",
+                "subtitle": "خصومات متغيرة على المنتجات العملية والطلبات الحساسة للسعر.",
+                "image": "/assets/themes/smart-bazaar/deals.png",
+                "link": "/sale"
+              },
+              {
+                "title": "هدايا جاهزة",
+                "subtitle": "بوكسات هدية وإضافات تغليف وخيارات جاهزة للطلب السريع.",
+                "image": "/assets/themes/smart-bazaar/gifts.png",
+                "link": "/shop?sort=newest"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "list-card",
+          "settings": {
+            "title": "منتجات مختارة داخل الأقسام",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "تواصل معنا بسهولة",
+            "subtitle": "كل قنوات الدعم التي قد تحتاجها قبل الطلب أو بعده في مكان واحد."
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الدعم",
+            "title": "كيف تتواصل مع فريق بيتك اليوم",
+            "subtitle": "سواء كان لديك سؤال قبل الشراء أو تحتاج متابعة لطلب قائم، ستجد القناة الأنسب هنا.",
+            "body": "فريق خدمة العملاء يرد على أسئلة الطلبات والتوصيل والاستبدال يوميًا خلال ساعات العمل المعلنة.\n\nإذا كنت تراسلنا بخصوص طلب قائم، أرسل رقم الطلب واسم المستلم حتى نراجع الحالة أسرع ونرسل لك التحديث المناسب.",
+            "detailsTitle": "بيانات التواصل",
+            "details": "واتساب خدمة العملاء|+20 100 123 4567\nالبريد الإلكتروني|care@baytakalyoum.demo\nساعات العمل|يوميًا من 10 صباحًا حتى 10 مساءً\nمتابعة الطلبات|ترسل أولوية أعلى للرسائل المرفق معها رقم الطلب",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "الشحن والتوصيل",
+            "subtitle": "نعرض لك خطوات تجهيز الطلب ووقت الخروج للشحن بصورة واضحة قبل الدفع."
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "سياسة الشحن",
+            "title": "كيف نجهز ونشحن طلبك",
+            "subtitle": "كل ما تحتاج معرفته عن التجهيز، التسليم، ومتابعة الشحنة.",
+            "body": "بعد تأكيد الطلب يبدأ فريق المتجر في مراجعة المنتجات وتجهيز الشحنة حسب أولوية الطلبات وتوفر الأصناف.\n\nبمجرد تسليم الطلب لشركة الشحن يتم تحديث الحالة حتى يعرف العميل أين وصل طلبه ومتى يتوقع الاستلام.",
+            "detailsTitle": "نقاط سريعة",
+            "details": "مدة التجهيز|من 24 إلى 48 ساعة عمل في المعتاد\nتكلفة الشحن|تُحسب حسب المحافظة وتظهر قبل تأكيد الطلب\nمتابعة الطلب|يتم تحديث حالة الطلب بعد تسليم الشحنة لشركة التوصيل",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "سياسة واضحة تساعدك على الشراء وأنت مطمئن من أول خطوة."
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "سياسة الاستبدال",
+            "title": "متى يمكن طلب الاستبدال أو الاسترجاع",
+            "subtitle": "المقصود هنا إعطاء العميل صورة واضحة وسريعة عن الخطوات قبل تقديم الطلب.",
+            "body": "يمكن طلب الاستبدال أو الاسترجاع خلال المدة المعلنة من تاريخ الاستلام بشرط بقاء المنتج بحالته الأصلية وملحقاته كما هي.\n\nتختلف آلية المعالجة بحسب حالة المنتج وسبب الطلب، لذلك يراجع فريق الدعم كل حالة ثم يرسل الخطوات التالية بوضوح.",
+            "detailsTitle": "قبل إرسال الطلب",
+            "details": "المدة|خلال 14 يومًا من تاريخ الاستلام\nحالة المنتج|غير مستخدم وبحالته الأصلية\nبدء الطلب|من خلال فريق الدعم مع رقم الطلب وسبب الطلب",
+            "ctaText": "تواصل معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "معلومات مختصرة وواضحة عن طريقة استخدام بيانات العميل داخل المتجر."
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "كيف نتعامل مع البيانات",
+            "subtitle": "هذه الصفحة توضح باختصار كيف نحافظ على بيانات العميل داخل المتجر.",
+            "body": "يتم استخدام بيانات الطلب والتواصل فقط لتنفيذ الطلبات، وتأكيد التوصيل، وتقديم الدعم المرتبط بتجربة الشراء.\n\nلا يتم استخدام البيانات خارج أغراض تشغيل المتجر وتحسين الخدمة إلا ضمن ما يوافق عليه العميل أو ما تفرضه المتطلبات النظامية المعمول بها.",
+            "detailsTitle": "أمثلة على البيانات",
+            "details": "بيانات التواصل|الاسم ورقم الهاتف والبريد عند الحاجة\nبيانات الطلب|العنوان وتفاصيل المنتجات المرتبطة بالشراء\nالهدف|تنفيذ الطلب وتأكيد التوصيل وخدمة ما بعد البيع",
+            "ctaText": "تواصل معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "نظرة مختصرة على القواعد العامة التي تنظّم استخدام المتجر وتنفيذ الطلبات."
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط",
+            "title": "القواعد العامة للتصفح والشراء",
+            "subtitle": "المحتوى هنا صيغته مختصرة حتى يفهم العميل الأساسيات بسرعة قبل المتابعة.",
+            "body": "باستخدامك للمتجر فأنت توافق على الالتزام بسياسات الشراء والدفع والتوصيل والاستبدال المعلنة داخل الصفحات المرتبطة بها.\n\nقد يتم تحديث بعض التفاصيل التشغيلية من وقت لآخر بما يتوافق مع طبيعة العمل وتوفر المنتجات ومتطلبات الشحن، مع بقاء الرسائل الأساسية واضحة أثناء رحلة الشراء.",
+            "detailsTitle": "يشمل ذلك",
+            "details": "الطلبات|تأكيد الطلب مرتبط بتوفر المنتج وصحة بيانات التواصل\nالدفع|تطبق طريقة الدفع المختارة وما يرتبط بها من خطوات تحقق أو رسوم\nالخدمة|يحق للمتجر تحديث المعلومات التشغيلية بما لا يخل بالحقوق النظامية للعميل",
+            "ctaText": "سياسة الشحن",
+            "ctaLink": "/shipping"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض خاطفة",
+            "message": "خصومات متغيرة على المنتجات العملية والأكثر طلبًا هذا الأسبوع قبل نفاد الكمية.",
+            "saleLabel": "خصومات حية",
+            "shippingLabel": "شحن سريع",
+            "returnLabel": "شراء آمن",
+            "ctaText": "ارجع إلى المتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "badge": "عروض اليوم",
+            "title": "خصومات جاهزة للحسم السريع",
+            "subtitle": "ترتيب أوضح للعروض حسب القيمة والباقة والثقة أثناء الخصم.",
+            "cards": [
+              {
+                "label": "أقل من 299",
+                "title": "منتجات عملية بسعر اقتصادي",
+                "subtitle": "اختيارات مناسبة للطلبات اليومية أو الإضافات السريعة على السلة.",
+                "ctaText": "شاهد العروض",
+                "link": "/sale",
+                "tone": "accent",
+                "stat": "وفر الآن"
+              },
+              {
+                "label": "اشتر أكثر ووفر",
+                "title": "باقات أو عروض مجمعة أسهل في الإقناع",
+                "subtitle": "منتجات يكمل بعضها بعضًا بسعر أوفر داخل نفس الصفحة.",
+                "ctaText": "اذهب للمنتجات",
+                "link": "/shop?sort=popular",
+                "tone": "primary",
+                "stat": "حزمة ذكية"
+              },
+              {
+                "label": "شحن موضح",
+                "title": "حتى أثناء الخصم تبقى الثقة واضحة",
+                "subtitle": "طرق الدفع والتوصيل والاستبدال ظاهرة لطمأنة العميل قبل إتمام الطلب.",
+                "ctaText": "اعرف أكثر",
+                "link": "/shipping",
+                "tone": "slate",
+                "stat": "دفع آمن"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "compact",
+          "settings": {
+            "title": "عروض تستحق القرار السريع",
+            "limit": 12,
+            "saleOnly": true,
+            "productsFoundLabel": "منتج بخصم",
+            "emptyStateTitle": "لا توجد عروض حاليًا",
+            "emptyStateDescription": "ترقب العروض القادمة أو تصفح كل المنتجات.",
+            "clearButtonText": "تصفح كل المنتجات"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "لا تفوّت التخفيضات القادمة",
+            "subtitle": "سجل بريدك لتصلك العروض الجديدة بمجرد إطلاقها.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "descriptionTitle": "وصف المنتج",
+            "shippingTitle": "الشحن والتوصيل",
+            "shippingText": "تجهيز الطلب يتم خلال 24-48 ساعة عمل. مدة التوصيل تعتمد على المحافظة وتظهر بوضوح عند الدفع.",
+            "guaranteesTitle": "ضمانات بيتك اليوم",
+            "guaranteesSubtitle": "تسوق باطمئنان كما تفعل في المتجر الحقيقي تمامًا.",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "أصلية 100%|كل المنتجات مجربة ومضمونة في المتجر.\nاستبدال سهل|سياسة استبدال واضحة خلال 14 يومًا.\nدفع عند الاستلام|ادفع بعد معاينة جودة المنتج مع المندوب."
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "balanced"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact",
+          "settings": {
+            "title": "أضف ما يكمل الطلب",
+            "subtitle": "اقتراحات عملية ومنتجات مكملة تساعد العميل على رفع قيمة السلة بشكل منطقي.",
+            "limit": 3,
+            "addBundleText": "أضف الحزمة المختارة",
+            "totalLabel": "إجمالي الإضافة"
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "compact",
+          "settings": {
+            "title": "بدائل ومكملات مشابهة",
+            "subtitle": "خيارات تساعد العميل على المقارنة السريعة أو استكمال الطلب دون الرجوع إلى بداية الرحلة.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعات العملاء",
+            "listTitle": "أحدث الآراء",
+            "verifiedLabel": "عميل موثق",
+            "reviewsLabel": "تقييمات",
+            "showMediaFeed": false,
+            "reviewLimit": 4
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "راجع طلبك قبل الدفع",
+            "subtitle": "خطوة مراجعة سريعة وواضحة للكمية والسعر قبل الانتقال إلى الشحن والدفع.",
+            "continueShoppingText": "العودة للمتجر"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "ملخص واضح يدعم الكوبون والتوصيل ورسائل الأمان دون إرباك العميل.",
+            "checkoutButtonText": "الانتقال إلى الدفع",
+            "secureCheckoutText": "دفع آمن ومشفّر",
+            "returnsText": "استبدال سهل",
+            "showTrustRow": true,
+            "showFreeShippingProgress": true
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "تسوق آمن",
+            "message": "بياناتك مشفرة بالكامل. شحن سريع وضمان استبدال واضح داخل مصر.",
+            "saleLabel": "دفع محمي",
+            "shippingLabel": "دفع عند الاستلام",
+            "returnLabel": "استبدال 14 يوم"
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "اجمع أقل قدر ممكن من البيانات لكن بشكل واضح حتى يكتمل الطلب بسرعة.",
+            "shippingTitle": "تفاصيل التوصيل",
+            "shippingDescription": "العنوان والمحافظة يظلان واضحين حتى يمكن احتساب الشحن بدقة ومن غير مفاجآت.",
+            "notesTitle": "ملاحظات على الطلب",
+            "notesDescription": "استخدم هذا الحقل لعلامات الوصول أو توقيت الاستلام أو أي تفاصيل مهمة للمندوب."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "اختر طريقة الدفع",
+            "subtitle": "الخطوة الأخيرة تحافظ على الملخص المباشر وتعرض وسائل الدفع بشكل أوضح وأسهل للمقارنة.",
+            "summaryTitle": "الملخص المباشر",
+            "summaryDescription": "تابع أثر المحافظة وطريقة الدفع على الإجمالي النهائي قبل تأكيد الطلب.",
+            "confirmOrderText": "تأكيد الطلب",
+            "securityText": "الدفع محمي ومشفّر بالكامل",
+            "codLabel": "الدفع عند الاستلام",
+            "cardLabel": "بطاقة بنكية",
+            "walletLabel": "محفظة إلكترونية"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تأكيد طلبك بنجاح",
+            "description": "شكرًا لتسوقك من بيتك اليوم. فريقنا يراجع الطلب الآن وسنرسل لك تحديث الشحن بمجرد تجهيز الشحنة.",
+            "continueShoppingText": "العودة إلى المتجر",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "إذا احتجت أي مساعدة يمكنك التواصل معنا عبر"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        "member-registration"
+      ]
+    }
+  }
+}

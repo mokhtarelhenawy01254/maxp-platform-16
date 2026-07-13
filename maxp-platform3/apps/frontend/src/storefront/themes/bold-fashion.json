@@ -1,0 +1,249 @@
+{
+  "id": "bold-fashion",
+  "name": "Bold Fashion",
+  "tokens": {
+    "colors": {
+      "primary": "345 82% 46%",
+      "primaryForeground": "0 0% 98%",
+      "secondary": "340 33% 96%",
+      "secondaryForeground": "345 52% 18%",
+      "accent": "28 92% 55%",
+      "accentForeground": "0 0% 9%",
+      "background": "24 100% 98%",
+      "foreground": "345 22% 12%",
+      "muted": "340 22% 94%",
+      "mutedForeground": "345 12% 42%",
+      "border": "340 24% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "345 22% 12%",
+      "ring": "345 82% 46%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", Cairo, sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", Cairo, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "999px"
+    }
+  },
+  "header": {
+    "brandName": "Bold Fashion",
+    "showSearch": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "تسوّقي", "to": "/shop" }
+    ]
+  },
+  "footer": {
+    "description": "أزياء جريئة لواجهة تعتمد على الإيقاع السريع والعروض الواضحة.",
+    "copyrightText": "© 2026 Bold Fashion.",
+    "socialLinks": {},
+    "navigation": []
+  },
+  "seo": {
+    "titleTemplate": "%s | Bold Fashion",
+    "description": "أزياء جريئة لواجهة تعتمد على الإيقاع السريع والعروض الواضحة."
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "full-bleed",
+          "settings": {
+            "title": "جرأة أسرع من أول نظرة",
+            "subtitle": "واجهة ترندات وعروض مباشرة ترفع الإيقاع البصري وتوجّه العميل للقطع الأوضح فورًا.",
+            "ctaText": "ابدئي بالترند",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهدي الجديد",
+            "secondaryCtaLink": "/shop?sortBy=createdAt&sortOrder=desc",
+            "backgroundImage": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1600"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "الترند الآن",
+            "subtitle": "قطع جريئة بإحساس أسرع ورسالة شراء أوضح من أول Scroll.",
+            "limit": 8
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "خلك داخل موجة الترند",
+            "subtitle": "اشتركي لتصلك الإصدارات الجديدة والعروض الخاطفة قبل أن تختفي القطع الأكثر لفتًا.",
+            "buttonText": "اشتركي الآن",
+            "placeholder": "اكتبي بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "full-bleed",
+          "settings": {
+            "title": "اختيارات جريئة لخزانة تتحرك بسرعة",
+            "subtitle": "تجربة متجر أسرع بإبراز أقوى للمنتجات، فلاتر أوضح، ورسائل ثقة تبقى ظاهرة أثناء التصفح.",
+            "ctaText": "ابدأ التصفح",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "وصل حديثًا",
+            "secondaryCtaLink": "/shop?sort=newest"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "فلترة أسرع وقرار أوضح",
+            "subtitle": "ابحث، رتّب، وانتقل بين التصنيفات بدون أن تضيع من الشبكة.",
+            "searchPlaceholder": "ابحث عن منتج أو تصنيف",
+            "resultsLabel": "قطعة متاحة",
+            "clearButtonText": "مسح الفلاتر",
+            "stickyLabel": "أدوات التصفح",
+            "chipLimit": 6
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "editorial-card",
+          "settings": {
+            "title": "الترند الآن",
+            "limit": 12
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "settings": {
+            "badge": "إشارة الموسم",
+            "title": "أبقِ الزخم ظاهرًا",
+            "subtitle": "شريط جانبي يلخص العروض والثقة وأهم الرسائل أثناء التصفح بدون تشتيت الشبكة.",
+            "spotlightTitle": "إصدارات محدودة هذا الأسبوع",
+            "spotlightText": "ركّز على القطع الأحدث أو الرسالة الأقوى للعرض الحالي بدون ازدحام بصري.",
+            "ctaText": "شاهدي الجديد",
+            "ctaLink": "/shop?sort=newest",
+            "trustItems": "تجهيز أسرع|الطلبات تتحضر بسرعة لتجربة شراء أكثر سلاسة.\nحسم أوضح|بطاقات منتج ورسائل شراء تقلل التردد.\nعرض أقوى|كتالوج منظم بإيقاع بصري أشد وضوحًا.",
+            "highlights": "وصل جديد|متاح الآن\nشراء أسرع|نية أعلى\nعرض المتجر|أكثر جرأة"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "grid" },
+        { "type": "product-info", "variant": "accordion" },
+        {
+          "type": "conversion-stack",
+          "variant": "editorial",
+          "settings": {
+            "countdownStyle": "split",
+            "lowStockStyle": "meter",
+            "estimatedDeliveryStyle": "timeline",
+            "fakeVisitorStyle": "pulse",
+            "soldCounterStyle": "spotlight",
+            "purchaseFomoStyle": "timeline",
+            "backInStockStyle": "accent"
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "editorial",
+          "settings": {
+            "title": "كمّلي الإطلالة",
+            "subtitle": "قطع يضيفها العملاء معًا للحصول على لوك أكثر اكتمالًا.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "نسّقيها مع",
+            "subtitle": "اختيارات تكمّل الإطلالة وتحافظ على نفس الإيقاع الجريء.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "mediaTitle": "إطلالات من العملاء",
+            "mediaDescription": "صور قريبة وتنسيقات حقيقية من طلبات حديثة.",
+            "listTitle": "ماذا يقول العملاء؟",
+            "galleryStyle": "carousel",
+            "cardStyle": "editorial",
+            "reviewLimit": 6
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "راجعي الإطلالة",
+            "subtitle": "عرض أوضح للسلة يحافظ على الإحساس القوي للثيم حتى آخر خطوة."
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "subtitle": "ملخص أقوى يدعم كوبون الخصم ورسائل الثقة قبل الإتمام.",
+            "secureCheckoutText": "دفع محمي",
+            "returnsText": "استبدال مرن"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactDescription": "قسّمنا الدفع إلى بطاقات أوضح حتى تبقى كل خطوة مفهومة.",
+            "shippingDescription": "حقول الشحن مرتبة لتسريع الإدخال وتقليل التردد.",
+            "notesDescription": "أضيفي ملاحظات عن التنسيق أو التغليف أو معالم التوصيل إذا احتجت."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "subtitle": "بطاقات دفع أوضح مع ملخص حي يظل ظاهرًا أثناء الإتمام.",
+            "summaryDescription": "الإجمالي والشحن وطريقة الدفع في بلوك واحد واضح.",
+            "securityText": "الدفع مشفّر ومحمي من البداية للنهاية"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تأكيد الطلب",
+            "description": "شكرًا لتسوقك من Bold Fashion. نجهز طلبك الآن ونتابع الشحن بأقرب وقت.",
+            "continueShoppingText": "مواصلة التسوق",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "تحتاج مساعدة؟ تواصل معنا عبر"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": ["member-registration"]
+    }
+  }
+}

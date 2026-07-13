@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="✔ خامات Premium عالية الجودة تعيش معاكي لفترة طويلة. ✔ نعل مرن وخفيف بيوفر راحة في المشي والوقوف لساعات. ✔ تصميم مريح يقلل الإحساس بالإجهاد أثناء الحركة. ✔ إغلاق عملي بشريط لاصق (فيلكرو) لسهولة اللبس والخلع في ثواني. ✔ خامات سهلة التنضيف وتحافظ على اللون الأبيض بأفضل شكل. ✔ فنش احترافي وخياطة دقيقة لضمان أفضل جودة. ✔ تصميم عصري يناسبك الجودة اللي تستحقيها في Swan بنهتم بأدق التفاصيل، بداية من اختيار الخامات وحتى التشطيب النهائي، عشان يوصلك منتج أصلي بجودة تضمنلك الراحة والشكل الأنيق في كل مرة تلبسيه. مناسب لـ: الشغل الجامعة المشاوير اليومية السفر الخروجات الكاجوال" />
+  <meta name="keywords"
+    content="تواصل, إدارة عملاء, تجارة إلكترونية, ذكاء اصطناعي, فيسبوك ماسنجر, posts management, ai tracking" />
+  <meta name="author" content="Communication Platform" />
+  <meta name="google" content="notranslate" />
+  <meta name="notranslate" content="on" />
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="كوتشي الاسكوتش من سوان | Swan" />
+  <meta property="og:description" content="✔ خامات Premium عالية الجودة تعيش معاكي لفترة طويلة. ✔ نعل مرن وخفيف بيوفر راحة في المشي والوقوف لساعات. ✔ تصميم مريح يقلل الإحساس بالإجهاد أثناء الحركة. ✔ إغلاق عملي بشريط لاصق (فيلكرو) لسهولة اللبس والخلع في ثواني. ✔ خامات سهلة التنضيف وتحافظ على اللون الأبيض بأفضل شكل. ✔ فنش احترافي وخياطة دقيقة لضمان أفضل جودة. ✔ تصميم عصري يناسبك الجودة اللي تستحقيها في Swan بنهتم بأدق التفاصيل، بداية من اختيار الخامات وحتى التشطيب النهائي، عشان يوصلك منتج أصلي بجودة تضمنلك الراحة والشكل الأنيق في كل مرة تلبسيه. مناسب لـ: الشغل الجامعة المشاوير اليومية السفر الخروجات الكاجوال" />
+  <meta property="og:type" content="product" />
+  <meta property="og:url" content="https://swan.maxp.online/product/sswan" />
+  <meta property="og:image" content="https://swan.maxp.online/uploads/products/product-c119839c-17ca-488c-8cfb-4be0db93e248.jpeg" />
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="كوتشي الاسكوتش من سوان | Swan" />
+  <meta name="twitter:description" content="✔ خامات Premium عالية الجودة تعيش معاكي لفترة طويلة. ✔ نعل مرن وخفيف بيوفر راحة في المشي والوقوف لساعات. ✔ تصميم مريح يقلل الإحساس بالإجهاد أثناء الحركة. ✔ إغلاق عملي بشريط لاصق (فيلكرو) لسهولة اللبس والخلع في ثواني. ✔ خامات سهلة التنضيف وتحافظ على اللون الأبيض بأفضل شكل. ✔ فنش احترافي وخياطة دقيقة لضمان أفضل جودة. ✔ تصميم عصري يناسبك الجودة اللي تستحقيها في Swan بنهتم بأدق التفاصيل، بداية من اختيار الخامات وحتى التشطيب النهائي، عشان يوصلك منتج أصلي بجودة تضمنلك الراحة والشكل الأنيق في كل مرة تلبسيه. مناسب لـ: الشغل الجامعة المشاوير اليومية السفر الخروجات الكاجوال" />
+  <meta name="twitter:image" content="https://swan.maxp.online/uploads/products/product-c119839c-17ca-488c-8cfb-4be0db93e248.jpeg" />
+
+  <!-- Preconnect to API server for faster first request -->
+  <link rel="preconnect" href="https://maxp.online" crossorigin />
+  <link rel="dns-prefetch" href="https://maxp.online" />
+
+  <!--
+    Storefront font loading is route-aware:
+    - admin shell fonts are injected only for admin routes in main.tsx
+    - storefront theme fonts are injected by ThemeProvider with display=optional
+  -->
+
+  <!-- Security Headers -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+
+  <title>كوتشي الاسكوتش من سوان | Swan</title>
+
+  <!-- Critical CSS (inline for performance) -->
+  <style>*{box-sizing:border-box}html{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Tahoma,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4}body{background-color:#f9fafb;color:#111827;font-family:inherit;line-height:inherit;margin:0}.loading-spinner{animation:spin 1s ease-in-out infinite;border:3px solid #f3f4f6;display:inline-block;height:40px;width:40px}#initial-loading{background-color:#fff;flex-direction:column;height:100%;left:0;position:fixed;top:0;transition:opacity .5s ease,visibility .5s ease;width:100%;z-index:9999}#initial-loading,#initial-loading .spinner-container{align-items:center;display:flex;justify-content:center}#initial-loading .spinner-container{height:80px;position:relative;width:80px}.loading-spinner{animation:spin 1s cubic-bezier(.55,.055,.675,.19) infinite;border:2px solid #f3f4f6;border-radius:50%;border-top-color:#3b82f6;height:60px;position:absolute;width:60px}.loading-pulse{animation:pulse 2s ease-in-out infinite;background-color:#3b82f6;border-radius:50%;height:40px;opacity:.1;width:40px}@keyframes spin{to{transform:rotate(1turn)}}@keyframes pulse{0%,to{opacity:.1;transform:scale(1)}50%{opacity:.2;transform:scale(1.5)}}#initial-loading .text{color:#9ca3af;font-size:13px;font-weight:400;letter-spacing:.05em;margin-top:24px;text-transform:uppercase}.app-ready #initial-loading{opacity:0;pointer-events:none;visibility:hidden}[dir=rtl] #initial-loading .text{font-family:inherit;letter-spacing:0}#initial-loading.storefront-loading{background-color:#fff;color:#111827;display:block;height:100vh;margin:0;overflow:hidden;padding:0;width:100vw}.storefront-loading .skeleton-pulse{animation:skeleton-pulse-anim 1.5s cubic-bezier(.4,0,.6,1) infinite;background-color:#f3f4f6}@keyframes skeleton-pulse-anim{0%,to{opacity:1}50%{opacity:.4}}.storefront-loading .skeleton-header{align-items:center;border-bottom:1px solid rgba(229,231,235,.5);box-sizing:border-box;display:flex;height:80px;justify-content:space-between;padding:0 24px;width:100%}.storefront-loading .skeleton-logo{border-radius:4px;height:32px;width:120px}.storefront-loading .skeleton-nav{display:none;gap:16px}@media (min-width:768px){.storefront-loading .skeleton-nav{display:flex}}.storefront-loading .skeleton-nav-item{border-radius:4px;height:16px;width:64px}.storefront-loading .skeleton-actions{display:flex;gap:16px}.storefront-loading .skeleton-icon{border-radius:50%;height:32px;width:32px}.storefront-loading .skeleton-main{display:flex;flex-direction:column;height:calc(100vh - 80px);overflow:hidden}.storefront-loading .skeleton-hero{height:35vh;min-height:250px;width:100%}.storefront-loading .skeleton-container{box-sizing:border-box;margin:0 auto;max-width:1280px;padding:32px 24px;width:100%}.storefront-loading .skeleton-title{border-radius:4px;height:24px;margin-bottom:24px;width:180px}.storefront-loading .skeleton-grid{display:grid;gap:16px;grid-template-columns:repeat(2,1fr)}@media (min-width:768px){.storefront-loading .skeleton-grid{gap:24px;grid-template-columns:repeat(4,1fr)}}.storefront-loading .skeleton-card{display:flex;flex-direction:column;gap:12px}.storefront-loading .skeleton-card-media{aspect-ratio:3/4;border-radius:8px;width:100%}.storefront-loading .skeleton-card-title{border-radius:4px;height:16px;width:75%}.storefront-loading .skeleton-card-price{border-radius:4px;height:16px;width:50%}</style>
+  <script type="module" crossorigin src="/assets/index-DiPKVpx2.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/vendor-react-C5TxiE0X.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-data-utils-h8GlvTos.js">
+  <link rel="modulepreload" crossorigin href="/assets/storefront-variants-Ch7Xl4bo.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-mui-CTKcZgwx.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-radix-PrQ4t3zl.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-icons-B4DNW0z5.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-class-utils-Qm4_4bAc.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-viz-interactive-DJRQcMLw.js">
+  <link rel="modulepreload" crossorigin href="/assets/app-ui-primitives-Bsq8I_Mt.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-framer-motion-SCZXqwIM.js">
+  <link rel="modulepreload" crossorigin href="/assets/storefront-sections-DG74R2Fc.js">
+  <link rel="modulepreload" crossorigin href="/assets/storefront-theme-presets-BYnBKtG4.js">
+  <link rel="modulepreload" crossorigin href="/assets/storefront-themes-Dn2A7yjY.js">
+  <link rel="modulepreload" crossorigin href="/assets/storefront-engine-BeSLKO1H.js">
+  <link rel="modulepreload" crossorigin href="/assets/storefront-components-CDsd9Cyj.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-core-runtime-C0NROP_9.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-storefront-CyHkKcA3.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-dashboard-q44NWY6l.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-date-utils-DT5c3rqF.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-auth-Co42vXH2.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-customers-DLuBNZX-.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-inbox-C6hzqpfc.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-conversations-DnygobYt.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-support-CUAQzw2s.js">
+  <link rel="modulepreload" crossorigin href="/assets/route-admin-DAchfC6Y.js">
+  <link rel="stylesheet" crossorigin href="/assets/route-storefront-Dn8AiIjX.css">
+  <link rel="stylesheet" crossorigin href="/assets/route-auth-D00GT6Ol.css">
+  <meta property="og:site_name" content="Swan" />
+  <link rel="canonical" href="https://swan.maxp.online/product/sswan" />
+</head>
+
+<body>
+  <!-- Initial loading screen - Neutral and professional -->
+  <div id="initial-loading">
+    <div class="spinner-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-pulse"></div>
+    </div>
+    <div class="text">جاري التحميل...</div>
+  </div>
+
+  <script src="/js/storefront-detection.js"></script>
+
+  <!-- React app root -->
+  <div id="root"></div>
+
+  <!--
+    Non-critical font loading removed.
+    Theme-specific fonts are now loaded dynamically by ThemeProvider
+    based on the active theme's headingFont/bodyFont configuration.
+    This avoids loading all 11 Google Fonts for every store visit.
+  -->
+
+  <script src="/js/chunk-recovery.js"></script>
+
+  <!-- Module script will be injected by Vite -->
+
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"b2321f35f8924a2d888b90c0d76d11ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,0 +1,39 @@
+[
+  {
+    "id": "cat-bundle-messaging",
+    "slug": "messaging-bundle",
+    "name": "باقة المراسلة",
+    "nameEn": "Messaging Bundle",
+    "description": "كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent",
+    "monthlyPrice": 999,
+    "yearlyPrice": 9990,
+    "discount": 69,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "crm-lite",
+      "unified-inbox",
+      "ai-chat-basic"
+    ],
+    "createdAt": "2026-03-06T00:00:00.000Z",
+    "updatedAt": "2026-03-06T00:00:00.000Z"
+  },
+  {
+    "id": "cat-bundle-ai-inbox",
+    "slug": "ai-inbox-bundle",
+    "name": "AI + Inbox Bundle",
+    "nameEn": "AI + Inbox Bundle",
+    "description": "باقة متكاملة تجمع الذكاء الاصطناعي للمحادثات مع صندوق وارد موحد لكل المنصات — AI Agent يرد على العملاء وينشئ طلبات وحجوزات بشكل تلقائي.",
+    "monthlyPrice": 999,
+    "yearlyPrice": null,
+    "discount": 0,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "unified-inbox",
+      "ai-chat-basic"
+    ],
+    "createdAt": "2026-06-17T00:00:00.000Z",
+    "updatedAt": "2026-06-17T00:00:00.000Z"
+  }
+]

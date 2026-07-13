@@ -1,0 +1,69 @@
+{
+  "slug": "support-agent",
+  "name": "Support Agent",
+  "role": "SUPPORT",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "empathetic",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "product.search",
+    "order.lookup",
+    "order.cancel",
+    "customer.info",
+    "shipping.rates",
+    "shipping.update",
+    "order.create.confirmed",
+    "order.refund",
+    "whatsapp.send",
+    "agent.handoff.to",
+    "knowledge.search",
+    "knowledge.ask.merchant",
+    "knowledge.create.faq"
+  ],
+  "allowedSkills": [
+    "customer-context-summary",
+    "order-support",
+    "handoff-to-human"
+  ],
+  "channels": [
+    "dashboard",
+    "whatsapp",
+    "messenger"
+  ],
+  "humanApproval": {
+    "mode": "ON_WRITE",
+    "requiredTools": [
+      "order.confirm",
+      "order.cancel",
+      "order.refund",
+      "shipping.update"
+    ],
+    "approvalCode": true,
+    "merchantChannels": [
+      "DASHBOARD",
+      "WHATSAPP"
+    ]
+  },
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 5
+  }
+}

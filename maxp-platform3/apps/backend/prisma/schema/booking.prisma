@@ -1,0 +1,108 @@
+/// Booking module - Medical center branches
+model BookingBranch {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  address     String?
+  phone       String?
+  phones      Json?    /// List of phone numbers: ["01234567890","02-1234567"]
+  workingDays Json?    /// Working hours per day: {"sat":"3-9","sun":"12-9",...}
+  genderDays  Json?    /// Gender day mapping: {"male":["sat","mon","wed"],"female":["sun","tue","thu"]}
+  location      String?  /// Location description or coordinates
+  landmarkImage String?  /// Landmark image (base64)
+  maxBookingsPerSlot Int      @default(1) /// Max appointments allowed per time slot
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doctors     BookingDoctor[]
+  branchServices BookingBranchService[]
+  appointments Appointment[]
+
+  @@index([companyId])
+  @@map("booking_branches")
+}
+
+/// Booking module - Doctors
+model BookingDoctor {
+  id         String   @id @default(cuid())
+  companyId  String
+  branchId   String
+  title      String   /// e.g. "دكتور", "أخصائي"
+  name       String?  /// Doctor's full name
+  specialty  String?  /// Specialty: "علاج طبيعي", "عظام", etc.
+  phone      String?
+  gender     Gender?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch      BookingBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([companyId])
+  @@index([branchId])
+  @@map("booking_doctors")
+}
+
+/// Booking module - Service template (shared across branches)
+model BookingService {
+  id                   String   @id @default(cuid())
+  companyId            String
+  name                 String
+  description          String?
+  requiresConsultation Boolean  @default(true) /// Needs doctor assessment first
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branchServices       BookingBranchService[]
+  appointments         Appointment[]
+
+  @@index([companyId])
+  @@map("booking_services")
+}
+
+/// Per-branch service config (pricing, availability)
+model BookingBranchService {
+  id          String   @id @default(cuid())
+  serviceId   String
+  branchId    String
+  hasPackages Boolean  @default(true)
+  packages    Json?    /// Array of packages: [{"count":3,"price":500,"originalPrice":750},...]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  service BookingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  branch  BookingBranch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, branchId])
+  @@index([branchId])
+  @@map("booking_branch_services")
+}
+
+/// Multi-turn booking drafts - agent collects fields one at a time
+model BookingDraft {
+  id              String    @id @default(cuid())
+  companyId       String
+  branchId        String?
+  doctorId        String?
+  serviceId       String?
+  customerName    String?
+  customerPhone   String?
+  customerGender  String?
+  appointmentDate DateTime? @db.Date
+  startTime       String?
+  notes           String?
+  status          String    @default("in_progress") /// in_progress | ready | completed | expired
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("booking_drafts")
+}

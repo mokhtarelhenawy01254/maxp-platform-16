@@ -1,0 +1,1071 @@
+import React, { useEffect, useRef, useState, memo } from "react";
+import {
+  Trash2,
+  Reply,
+  Forward,
+  Star,
+  Smile,
+  MoreHorizontal,
+} from "lucide-react";
+import ReactionSelector from "../Generic/ReactionSelector";
+import LinkifiedText from "../../common/LinkifiedText";
+import {
+  getInboxExternalImageUrl,
+  getInboxMessageMediaUrl,
+} from "../../../utils/imageUrl";
+import { apiClient } from "../../../services/apiClient";
+
+interface ReplyReference {
+  senderName?: string;
+  type?: string;
+  content?: string;
+}
+
+interface MessageMetadata {
+  isStarred?: boolean;
+  replyTo?: ReplyReference;
+  myReaction?: string;
+  reactions?: Record<string, unknown>;
+}
+
+interface TemplateButton {
+  type?: string;
+  title?: string;
+  url?: string;
+}
+
+interface TemplateElement {
+  image_url?: string;
+  title?: string;
+  subtitle?: string;
+  buttons?: TemplateButton[];
+}
+
+interface MessageAttachment {
+  type?: string;
+  url?: string;
+  file_url?: string;
+  image_url?: string;
+  mime_type?: string;
+  image_data?: {
+    url?: string;
+  };
+  name?: string;
+  payload?: {
+    template_type?: string;
+    text?: string;
+    url?: string;
+    image_url?: string;
+    elements?: TemplateElement[];
+    buttons?: TemplateButton[];
+  };
+}
+
+interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  senderName: string;
+  timestamp: Date;
+  type:
+    | "text"
+    | "image"
+    | "file"
+    | "video"
+    | "audio"
+    | "template"
+    | "IMAGE"
+    | "FILE"
+    | "VIDEO"
+    | "AUDIO"
+    | "TEMPLATE";
+  isFromCustomer: boolean;
+  status: "sending" | "sent" | "delivered" | "read" | "error";
+  conversationId: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  metadata?: MessageMetadata | string | null;
+  attachments?: MessageAttachment[];
+  isStarred?: boolean; // We will map this from metadata in parent or handle it here
+}
+
+interface MessageBubbleProps {
+  message: Message;
+  onDelete?: (messageId: string) => void;
+  onForward?: (message: Message) => void;
+  onStar?: (messageId: string, isStarred: boolean) => void;
+  onReaction?: (messageId: string, reaction: string) => void;
+  onReply?: (message: Message) => void;
+  currentUserId?: string;
+  hasBeenReplied?: boolean; // جديد: هل تم الرد على هذه الرسالة
+  onCorrect?: () => void; // جديد: عند تصحيح الرد
+}
+
+type MediaKind = "image" | "video" | "audio" | "file";
+
+const MEDIA_URL_TOKEN_PATTERN =
+  /\s*\|(IMAGE|FILE|VIDEO|AUDIO)_URL\|[^\s|]+/gi;
+const ATTACHMENT_PLACEHOLDER_PREFIX = /^\s*\[attachment\]\s*/i;
+const GENERIC_ATTACHMENT_LABELS = new Set([
+  "[attachment]",
+  "attachment",
+  "مرفق",
+  "ملف",
+  "صورة",
+  "فيديو",
+  "صوت",
+]);
+
+const normalizeAttachmentType = (type?: string): string =>
+  (type || "").trim().toLowerCase();
+
+const isPotentialMediaPath = (value: string): boolean =>
+  /^(https?:\/\/|\/|uploads\/|assets\/|data:|blob:)/i.test(value.trim());
+
+const extractMediaTokenUrl = (
+  value: string | null | undefined,
+  kind: MediaKind,
+): string => {
+  if (typeof value !== "string" || !value.trim()) {
+    return "";
+  }
+
+  const token = kind.toUpperCase();
+  const match = value.match(new RegExp(`\\|${token}_URL\\|([^\\s|]+)`, "i"));
+  return match?.[1]?.trim() || "";
+};
+
+const getDirectMediaUrl = (
+  kind: MediaKind,
+  ...values: Array<string | null | undefined>
+): string => {
+  for (const value of values) {
+    if (typeof value !== "string" || !value.trim()) {
+      continue;
+    }
+
+    const tokenUrl = extractMediaTokenUrl(value, kind);
+    if (tokenUrl) {
+      return tokenUrl;
+    }
+
+    const trimmed = value.trim();
+    if (isPotentialMediaPath(trimmed)) {
+      return trimmed;
+    }
+  }
+
+  return "";
+};
+
+const getAttachmentRawUrl = (attachment: MessageAttachment): string =>
+  [
+    attachment.payload?.url,
+    attachment.payload?.image_url,
+    attachment.image_data?.url,
+    attachment.file_url,
+    attachment.url,
+    attachment.image_url,
+  ].find((candidate) => typeof candidate === "string" && candidate.trim())
+    ?.trim() || "";
+
+const getAttachmentMediaUrl = (
+  attachment: MessageAttachment,
+  kind: MediaKind,
+): string => {
+  const attachmentType = normalizeAttachmentType(attachment.type);
+  const mimeType = normalizeAttachmentType(attachment.mime_type);
+  const rawUrl = getAttachmentRawUrl(attachment);
+
+  if (!rawUrl) {
+    return "";
+  }
+
+  if (kind === "image") {
+    const isImage =
+      ["image", "animated_image", "sticker"].includes(attachmentType) ||
+      mimeType.startsWith("image/") ||
+      Boolean(attachment.image_data?.url);
+    return isImage ? rawUrl : "";
+  }
+
+  if (kind === "video") {
+    return attachmentType === "video" || mimeType.startsWith("video/")
+      ? rawUrl
+      : "";
+  }
+
+  if (kind === "audio") {
+    return attachmentType === "audio" || mimeType.startsWith("audio/")
+      ? rawUrl
+      : "";
+  }
+
+  return attachmentType === "file" || (!attachmentType && !mimeType)
+    ? rawUrl
+    : "";
+};
+
+const uniqueUrls = (urls: string[]): string[] => {
+  const seen = new Set<string>();
+  return urls.filter((url) => {
+    const normalized = url.trim();
+    if (!normalized || seen.has(normalized)) {
+      return false;
+    }
+
+    seen.add(normalized);
+    return true;
+  });
+};
+
+const getDisplayTextContent = (
+  content: string,
+  options: {
+    hasRenderedMedia: boolean;
+  },
+): string => {
+  const withoutMediaTokens = content.replace(MEDIA_URL_TOKEN_PATTERN, "").trim();
+  const hasQueuePlaceholders = /\[\d+\]|\[attachment\]/i.test(
+    withoutMediaTokens,
+  );
+  const withoutAttachmentPlaceholders = hasQueuePlaceholders
+    ? withoutMediaTokens
+        .replace(/\[\d+\]\s*/g, "")
+        .replace(/\[attachment\]\s*/gi, "")
+        .replace(/\s*\|\s*/g, " ")
+        .trim()
+    : withoutMediaTokens;
+  const withoutAttachmentPrefix = withoutAttachmentPlaceholders
+    .replace(ATTACHMENT_PLACEHOLDER_PREFIX, "")
+    .trim();
+
+  if (!withoutAttachmentPrefix) {
+    return "";
+  }
+
+  if (
+    options.hasRenderedMedia &&
+    (isPotentialMediaPath(withoutAttachmentPrefix) ||
+      GENERIC_ATTACHMENT_LABELS.has(withoutAttachmentPrefix.toLowerCase()))
+  ) {
+    return "";
+  }
+
+  return withoutAttachmentPrefix;
+};
+
+const MessageBubble: React.FC<MessageBubbleProps> = memo(
+  ({
+    message,
+    onDelete,
+    onForward,
+    onStar,
+    onReaction,
+    onReply,
+    hasBeenReplied,
+    onCorrect,
+  }) => {
+    const isCustomer = !!message.isFromCustomer;
+    const [showActions, setShowActions] = useState(false);
+    const [showReactionSelector, setShowReactionSelector] = useState(false);
+    const actionsRef = useRef<HTMLDivElement | null>(null);
+
+    // AI Correction state
+    const [isEditing, setIsEditing] = useState(false);
+    const [correctionText, setCorrectionText] = useState("");
+    const [saving, setSaving] = useState(false);
+
+    const submitCorrection = async () => {
+      if (!correctionText.trim()) return;
+      setSaving(true);
+      try {
+        await apiClient.post(
+          `/api/v1/unified-inbox/conversations/${message.conversationId}/messages/${message.id}/correct`,
+          { correction: correctionText.trim() }
+        );
+        setIsEditing(false);
+        setCorrectionText("");
+        if (onCorrect) {
+          onCorrect();
+        }
+      } catch (error: any) {
+        alert(error.response?.data?.error || error.message || "فشل إرسال التصحيح");
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    useEffect(() => {
+      if (!showActions) {
+        setShowReactionSelector(false);
+        return;
+      }
+
+      const handlePointerDown = (event: PointerEvent) => {
+        if (
+          actionsRef.current &&
+          !actionsRef.current.contains(event.target as Node)
+        ) {
+          setShowActions(false);
+        }
+      };
+
+      document.addEventListener("pointerdown", handlePointerDown);
+      return () =>
+        document.removeEventListener("pointerdown", handlePointerDown);
+    }, [showActions]);
+
+    // Parse metadata safely
+    let metadata: MessageMetadata = {};
+    try {
+      if (typeof message.metadata === "string") {
+        const parsedMetadata = JSON.parse(message.metadata) as MessageMetadata;
+        metadata =
+          parsedMetadata && typeof parsedMetadata === "object"
+            ? parsedMetadata
+            : {};
+      } else if (message.metadata && typeof message.metadata === "object") {
+        metadata = message.metadata;
+      }
+    } catch {
+      // ignore
+    }
+
+    const isStarred = metadata?.isStarred || message.isStarred;
+    const replyTo = metadata?.replyTo;
+    const myReaction = metadata?.myReaction;
+    const reactionCounts = Object.entries(metadata?.reactions ?? {}).reduce<
+      Record<string, number>
+    >((acc, [reaction, count]) => {
+      if (typeof count === "number") {
+        acc[reaction] = count;
+      }
+      return acc;
+    }, {});
+
+    const formatTime = (date: Date) => {
+      const now = new Date();
+      const messageDate = new Date(date);
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const msgDay = new Date(
+        messageDate.getFullYear(),
+        messageDate.getMonth(),
+        messageDate.getDate(),
+      );
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const diffDays = Math.floor(
+        (today.getTime() - msgDay.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      const timeStr = messageDate.toLocaleTimeString("ar-EG", {
+        hour: "2-digit",
+        minute: "2-digit",
+        calendar: "gregory",
+      });
+
+      if (diffDays === 0) {
+        // Today
+        return timeStr;
+      } else if (diffDays === 1) {
+        // Yesterday
+        return `أمس ${timeStr}`;
+      } else if (diffDays < 7) {
+        // Within this week
+        return messageDate.toLocaleDateString("ar-EG", {
+          weekday: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          calendar: "gregory",
+        });
+      } else {
+        // Older
+        return messageDate.toLocaleDateString("ar-EG", {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          calendar: "gregory",
+        });
+      }
+    };
+
+    const formatFileSize = (bytes?: number) => {
+      if (!bytes) return "";
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    };
+
+    const bubbleStyle = isCustomer
+      ? hasBeenReplied === false
+        ? {
+            background: "var(--business-message-incoming-bg)",
+            color: "var(--color-foreground)",
+            borderRadius: "1rem",
+            borderBottomRightRadius: "0.35rem",
+            border: "2px solid var(--business-message-unreplied-border)",
+          }
+        : {
+            background: "var(--business-message-incoming-bg)",
+            color: "var(--color-foreground)",
+            borderRadius: "1rem",
+            borderBottomRightRadius: "0.35rem",
+            border: "1px solid var(--business-message-incoming-border)",
+          }
+      : {
+          background:
+            "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+          color: "white",
+          borderRadius: "1rem",
+          borderBottomLeftRadius: "0.35rem",
+        };
+
+    const bubbleSubtleText = isCustomer
+      ? "var(--color-muted-foreground)"
+      : "rgba(255,255,255,0.72)";
+    const attachments = Array.isArray(message.attachments)
+      ? message.attachments
+      : [];
+    const isImageMessage = message.type === "image" || message.type === "IMAGE";
+    const isVideoMessage = message.type === "video" || message.type === "VIDEO";
+    const isAudioMessage = message.type === "audio" || message.type === "AUDIO";
+    const isFileMessage = message.type === "file" || message.type === "FILE";
+    const rawImageMediaUrls = uniqueUrls([
+      ...attachments.map((attachment) =>
+        getAttachmentMediaUrl(attachment, "image"),
+      ),
+      extractMediaTokenUrl(message.content, "image"),
+      extractMediaTokenUrl(message.fileUrl, "image"),
+      isImageMessage
+        ? getDirectMediaUrl("image", message.fileUrl, message.content)
+        : "",
+    ]);
+    const imageMediaUrls =
+      rawImageMediaUrls.length > 0
+        ? rawImageMediaUrls.map((url) => getInboxMessageMediaUrl(message.id, url))
+        : isImageMessage
+          ? [getInboxMessageMediaUrl(message.id, null)]
+          : [];
+    const rawVideoMediaUrl = uniqueUrls([
+      ...attachments.map((attachment) =>
+        getAttachmentMediaUrl(attachment, "video"),
+      ),
+      extractMediaTokenUrl(message.content, "video"),
+      extractMediaTokenUrl(message.fileUrl, "video"),
+      isVideoMessage
+        ? getDirectMediaUrl("video", message.fileUrl, message.content)
+        : "",
+    ])[0] || "";
+    const videoMediaUrl = rawVideoMediaUrl
+      ? getInboxMessageMediaUrl(message.id, rawVideoMediaUrl)
+      : "";
+    const rawAudioMediaUrl = uniqueUrls([
+      ...attachments.map((attachment) =>
+        getAttachmentMediaUrl(attachment, "audio"),
+      ),
+      extractMediaTokenUrl(message.content, "audio"),
+      extractMediaTokenUrl(message.fileUrl, "audio"),
+      isAudioMessage
+        ? getDirectMediaUrl("audio", message.fileUrl, message.content)
+        : "",
+    ])[0] || "";
+    const audioMediaUrl = rawAudioMediaUrl
+      ? getInboxMessageMediaUrl(message.id, rawAudioMediaUrl)
+      : "";
+    const rawFileMediaUrl = uniqueUrls([
+      ...attachments.map((attachment) =>
+        getAttachmentMediaUrl(attachment, "file"),
+      ),
+      extractMediaTokenUrl(message.content, "file"),
+      extractMediaTokenUrl(message.fileUrl, "file"),
+      isFileMessage
+        ? getDirectMediaUrl("file", message.fileUrl, message.content)
+        : "",
+    ])[0] || "";
+    const fileMediaUrl = rawFileMediaUrl
+      ? getInboxMessageMediaUrl(message.id, rawFileMediaUrl)
+      : "";
+    const hasRenderedMedia =
+      imageMediaUrls.length > 0 ||
+      Boolean(videoMediaUrl) ||
+      Boolean(audioMediaUrl) ||
+      Boolean(fileMediaUrl);
+    const displayTextContent = getDisplayTextContent(message.content, {
+      hasRenderedMedia,
+    });
+    const hasVideoMessage = isVideoMessage || Boolean(videoMediaUrl);
+    const hasAudioMessage = isAudioMessage || Boolean(audioMediaUrl);
+    const hasFileMessage = isFileMessage || Boolean(fileMediaUrl);
+    const hasTemplateAttachments =
+      message.type === "template" ||
+      message.type === "TEMPLATE" ||
+      attachments.some(
+        (attachment) =>
+          attachment.payload?.template_type === "generic" ||
+          attachment.payload?.template_type === "button",
+      );
+    const messageFileLabel =
+      message.fileName ||
+      attachments.find((attachment) => getAttachmentMediaUrl(attachment, "file"))
+        ?.name ||
+      displayTextContent ||
+      "ملف";
+    const hasMessageActions =
+      !!onReaction ||
+      !!onReply ||
+      !!onStar ||
+      !!onForward ||
+      (!isCustomer && !!onDelete);
+    const actionButtonClassName =
+      "business-chip-button flex items-center justify-center rounded-full transition-colors";
+    const actionButtonBaseStyle: React.CSSProperties = {
+      width: "1.75rem",
+      height: "1.75rem",
+      minWidth: "1.75rem",
+      minHeight: "1.75rem",
+      padding: 0,
+      background: "color-mix(in srgb, var(--color-primary) 6%, white)",
+    };
+
+    return (
+      <div className="flex w-full mb-4 relative">
+        <div
+          className={`relative max-w-[85%] sm:max-w-xs lg:max-w-md ${isCustomer ? "ml-auto" : "mr-auto"}`}
+          ref={actionsRef}
+        >
+          {hasMessageActions && (
+            <button
+              type="button"
+              onClick={() => setShowActions((current) => !current)}
+              className={`absolute z-20 flex h-6 w-6 items-center justify-center rounded-full shadow-sm transition-colors ${
+                isCustomer ? "-left-7 top-1.5" : "-right-7 top-1.5"
+              }`}
+              style={{
+                background: "var(--business-floating-surface)",
+                border: "1px solid var(--business-card-border)",
+                color: "var(--color-muted-foreground)",
+                backdropFilter: "blur(12px)",
+              }}
+              title="إجراءات الرسالة"
+              aria-label="إجراءات الرسالة"
+              aria-expanded={showActions}
+            >
+              <MoreHorizontal size={14} />
+            </button>
+          )}
+
+          {/* Action Buttons */}
+          {showActions && hasMessageActions && (
+            <div
+              className={`absolute z-30 flex items-center gap-0.5 rounded-full p-0.5 shadow-sm ${
+                isCustomer ? "left-0 top-9" : "right-0 top-9"
+              }`}
+              style={{
+                background: "var(--business-floating-surface)",
+                border: "1px solid var(--business-card-border)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              {onReaction && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowReactionSelector(!showReactionSelector)}
+                    className={actionButtonClassName}
+                    style={
+                      myReaction
+                        ? {
+                            ...actionButtonBaseStyle,
+                            color: "var(--business-warning)",
+                            background:
+                              "color-mix(in srgb, var(--business-warning) 12%, var(--color-background))",
+                          }
+                        : {
+                            ...actionButtonBaseStyle,
+                            color: "var(--business-warning)",
+                          }
+                    }
+                    title="إضافة تفاعل"
+                  >
+                    <Smile size={15} strokeWidth={2.4} />
+                  </button>
+                  {showReactionSelector && (
+                    <ReactionSelector
+                      onSelect={(r) => {
+                        if (onReaction) onReaction(message.id, r);
+                        setShowReactionSelector(false);
+                      }}
+                      currentReaction={myReaction}
+                    />
+                  )}
+                </div>
+              )}
+              {onReply && (
+                <button
+                  onClick={() => onReply(message)}
+                  className={actionButtonClassName}
+                  style={{
+                    ...actionButtonBaseStyle,
+                    color: "var(--color-primary)",
+                  }}
+                  title="رد"
+                >
+                  <Reply size={15} strokeWidth={2.4} />
+                </button>
+              )}
+              {onStar && (
+                <button
+                  onClick={() => onStar(message.id, !!isStarred)}
+                  className={actionButtonClassName}
+                  style={
+                    isStarred
+                      ? {
+                          ...actionButtonBaseStyle,
+                          color: "var(--business-warning)",
+                          background:
+                            "color-mix(in srgb, var(--business-warning) 12%, var(--color-background))",
+                        }
+                      : {
+                          ...actionButtonBaseStyle,
+                          color: "var(--business-warning)",
+                        }
+                  }
+                  title={isStarred ? "إلغاء التمييز" : "تمييز الرسالة"}
+                >
+                  <Star
+                    size={15}
+                    strokeWidth={2.4}
+                    fill={isStarred ? "currentColor" : "none"}
+                  />
+                </button>
+              )}
+              {onForward && (
+                <button
+                  onClick={() => onForward(message)}
+                  className={actionButtonClassName}
+                  style={{
+                    ...actionButtonBaseStyle,
+                    color: "var(--color-secondary)",
+                  }}
+                  title="إعادة توجيه"
+                >
+                  <Forward size={15} strokeWidth={2.4} />
+                </button>
+              )}
+              {!isCustomer && onDelete && (
+                <button
+                  onClick={() => onDelete(message.id)}
+                  className={actionButtonClassName}
+                  style={{
+                    ...actionButtonBaseStyle,
+                    color: "var(--business-danger)",
+                    background:
+                      "color-mix(in srgb, var(--business-danger) 8%, white)",
+                  }}
+                  title="حذف الرسالة"
+                >
+                  <Trash2 size={15} strokeWidth={2.4} />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Sender name for employee messages */}
+          {!isCustomer && (
+            <div
+              className="text-xs mb-1 text-left"
+              style={{ color: "var(--color-muted-foreground)" }}
+            >
+              {message.senderName}
+            </div>
+          )}
+
+          {/* Unreplied indicator for customer messages */}
+          {isCustomer && hasBeenReplied === false && (
+            <div
+              className="flex items-center gap-1 mb-1 text-xs font-medium"
+              style={{ color: "var(--business-danger)" }}
+            >
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ background: "var(--business-danger)" }}
+              ></span>
+              <span>غير مردود عليها</span>
+            </div>
+          )}
+
+          <div className="px-4 py-2 rounded-2xl" style={bubbleStyle}>
+            {/* Reply Context */}
+            {replyTo && (
+              <div
+                className="mb-2 text-xs border-l-2 pl-2"
+                style={{
+                  borderColor: isCustomer
+                    ? "var(--business-message-reply-accent)"
+                    : "rgba(255,255,255,0.5)",
+                  color: isCustomer
+                    ? "var(--color-muted-foreground)"
+                    : "rgba(255,255,255,0.8)",
+                }}
+              >
+                <div className="font-semibold">{replyTo.senderName}</div>
+                <div className="truncate opacity-80">
+                  {replyTo.type === "text" ? replyTo.content : "مرفق/صورة"}
+                </div>
+              </div>
+            )}
+
+            {/* Image message */}
+            {imageMediaUrls.length > 0 && (
+              <div className="mb-2 flex flex-col gap-2">
+                {imageMediaUrls.map((imageUrl, index) => (
+                  <img
+                    key={`${imageUrl}-${index}`}
+                    src={imageUrl}
+                    alt="صورة"
+                    loading="lazy"
+                    className="rounded-lg max-w-full h-auto"
+                    style={{ maxHeight: "300px" }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Video message */}
+            {hasVideoMessage && videoMediaUrl && (
+              <div className="mb-2">
+                <video
+                  src={videoMediaUrl}
+                  controls
+                  className="rounded-lg max-w-full h-auto"
+                  style={{ maxHeight: "300px" }}
+                />
+              </div>
+            )}
+
+            {/* Audio message */}
+            {hasAudioMessage && audioMediaUrl && (
+              <div className="mb-2">
+                <audio
+                  src={audioMediaUrl}
+                  controls
+                  className="w-full min-w-[200px]"
+                />
+              </div>
+            )}
+
+            {/* Template/Check for buttons in metadata or attachments */}
+            {hasTemplateAttachments && (
+              <div className="mb-2 flex flex-col gap-2">
+                {attachments.map((att, i) => {
+                  // Skip standard media as they might be handled above, unless we want to show everything from attachments
+                  if (att.type === "image" || att.type === "IMAGE") return null;
+                  if (att.type === "video" || att.type === "VIDEO") return null;
+                  if (att.type === "audio" || att.type === "AUDIO") return null;
+
+                  // Handle template
+                  if (att.payload && att.payload.template_type === "generic") {
+                    return (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-2 overflow-hidden rounded-lg border"
+                        style={{
+                          borderColor: isCustomer
+                            ? "var(--business-card-border)"
+                            : "rgba(255,255,255,0.2)",
+                        }}
+                      >
+                        {att.payload.elements?.map((el, j) => (
+                          <div
+                            key={j}
+                            className="p-2"
+                            style={{
+                              background: isCustomer
+                                ? "color-mix(in srgb, white 72%, var(--color-background) 28%)"
+                                : "rgba(0,0,0,0.12)",
+                            }}
+                          >
+                            {el.image_url && (
+                              <img
+                                src={getInboxExternalImageUrl(el.image_url, {
+                                  messageId: message.id,
+                                })}
+                                alt=""
+                                className="w-full h-32 object-cover rounded mb-2"
+                              />
+                            )}
+                            {el.title && (
+                              <div className="font-bold text-sm mb-1">
+                                {el.title}
+                              </div>
+                            )}
+                            {el.subtitle && (
+                              <div className="text-xs opacity-80 mb-2">
+                                {el.subtitle}
+                              </div>
+                            )}
+                            <div className="flex flex-col gap-1">
+                              {el.buttons &&
+                                el.buttons.map((btn, k) => (
+                                  <a
+                                    key={k}
+                                    href={btn.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block text-center py-1.5 px-3 rounded text-xs transition-colors truncate"
+                                    style={{
+                                      background: isCustomer
+                                        ? "color-mix(in srgb, var(--color-primary) 10%, white)"
+                                        : "rgba(255,255,255,0.2)",
+                                      color: isCustomer
+                                        ? "var(--color-primary)"
+                                        : "white",
+                                    }}
+                                  >
+                                    {btn.title}{" "}
+                                    {btn.type === "web_url" ? "🔗" : ""}
+                                  </a>
+                                ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // Handle button template
+                  if (att.payload && att.payload.template_type === "button") {
+                    return (
+                      <div key={i} className="flex flex-col gap-2">
+                        <div className="text-sm opacity-90 mb-1">
+                          {att.payload.text}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {att.payload.buttons &&
+                            att.payload.buttons.map((btn, k) => (
+                              <a
+                                key={k}
+                                href={btn.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block text-center py-1.5 px-3 rounded text-xs transition-colors truncate"
+                                style={{
+                                  background: isCustomer
+                                    ? "color-mix(in srgb, var(--color-primary) 10%, white)"
+                                    : "rgba(255,255,255,0.2)",
+                                  color: isCustomer
+                                    ? "var(--color-primary)"
+                                    : "white",
+                                }}
+                              >
+                                {btn.title}
+                              </a>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+            )}
+
+            {/* File message */}
+            {hasFileMessage && fileMediaUrl && (
+                <a
+                  href={fileMediaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-2 rounded-lg mb-2"
+                  style={{
+                    background: isCustomer
+                      ? "color-mix(in srgb, var(--color-border) 34%, white)"
+                      : "rgba(255,255,255,0.2)",
+                  }}
+                >
+                  <div
+                    className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: isCustomer
+                        ? "rgba(255,255,255,0.55)"
+                        : "rgba(255,255,255,0.3)",
+                    }}
+                  >
+                    📎
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-sm font-medium truncate"
+                      style={{
+                        color: isCustomer ? "var(--color-foreground)" : "white",
+                      }}
+                    >
+                      {messageFileLabel}
+                    </p>
+                    <p className="text-xs" style={{ color: bubbleSubtleText }}>
+                      {formatFileSize(message.fileSize)}
+                    </p>
+                  </div>
+                  <div className="text-xs">⬇️</div>
+                </a>
+              )}
+
+            {/* Text content */}
+            {displayTextContent && (
+              <LinkifiedText
+                text={displayTextContent}
+                className="block text-sm whitespace-pre-wrap break-words"
+              />
+            )}
+
+            {/* Reactions Display */}
+            {Object.keys(reactionCounts).length > 0 && (
+              <div
+                className={`absolute -bottom-3 ${isCustomer ? "right-2" : "left-2"} rounded-full shadow-md border flex items-center px-1.5 py-0.5 gap-1`}
+                style={{
+                  background:
+                    "linear-gradient(180deg, color-mix(in srgb, white 90%, var(--color-background) 10%) 0%, color-mix(in srgb, white 78%, var(--color-background) 22%) 100%)",
+                  borderColor: "var(--business-card-border)",
+                }}
+              >
+                {Object.entries(reactionCounts).map(([reaction, count]) => (
+                  <span
+                    key={reaction}
+                    className="text-xs leading-none flex items-center"
+                  >
+                    <span className="text-sm">{reaction}</span>
+                    {count > 1 && (
+                      <span
+                        className="text-[10px] ml-0.5 font-medium"
+                        style={{ color: "var(--color-muted-foreground)" }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Timestamp and status */}
+            <div className="flex items-center justify-end mt-1 gap-2">
+              {isStarred && (
+                <Star
+                  size={10}
+                  className="fill-current"
+                  style={{ color: "var(--business-warning)" }}
+                />
+              )}
+              <span className="text-xs opacity-75">
+                {formatTime(message.timestamp)}
+              </span>
+              {!isCustomer && (
+                <span className="text-xs flex items-center gap-0.5">
+                  {message.status === "sending" && (
+                    <span className="flex items-center gap-1 text-white/70">
+                      <span className="animate-spin inline-block w-3 h-3 border border-white/50 border-t-white rounded-full"></span>
+                    </span>
+                  )}
+                  {message.status === "sent" && (
+                    <span className="text-white/90">✓</span>
+                  )}
+                  {message.status === "delivered" && (
+                    <span className="text-white">✓✓</span>
+                  )}
+                  {message.status === "read" && (
+                    <span style={{ color: "rgba(200, 235, 255, 0.92)" }}>
+                      ✓✓
+                    </span>
+                  )}
+                  {message.status === "error" && (
+                    <span style={{ color: "rgba(255, 206, 206, 0.92)" }}>
+                      ❌
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+
+            {/* AI message badge + correction button */}
+            {!isCustomer && (!message.senderId || message.senderId === 'ai' || message.isAIResponse) && (
+              <div className="mt-2 pt-1.5 flex justify-between items-center text-[10px]" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>🤖 رد تلقائي من الوكيل</span>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setCorrectionText(message.content || '');
+                    }}
+                    className="hover:underline font-medium cursor-pointer text-white"
+                  >
+                    ✏️ تصحيح الرد
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Correction textarea (shown below the bubble) */}
+          {isEditing && (
+            <div className={`mt-2 flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+              <div className="w-full rounded-xl p-3 space-y-2" style={{ background: 'var(--color-muted)', border: '1px solid var(--business-card-border)' }}>
+                <div className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>تصحيح رد الوكيل:</div>
+                <textarea
+                  value={correctionText}
+                  onChange={(e) => setCorrectionText(e.target.value)}
+                  className="w-full min-h-[60px] p-2 text-sm rounded border outline-none resize-none"
+                  style={{ background: 'var(--color-background)', color: 'var(--color-foreground)', borderColor: 'var(--business-card-border)' }}
+                  placeholder="اكتب الرد الصحيح للعميل هنا لتعليم الوكيل وتصحيح الخطأ..."
+                />
+                <div className="flex justify-end gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditing(false); setCorrectionText(''); }}
+                    className="px-3 py-1.5 rounded font-medium"
+                    style={{ background: 'var(--color-secondary)', color: 'var(--color-secondary-foreground)' }}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitCorrection}
+                    disabled={saving || !correctionText.trim()}
+                    className="px-3 py-1.5 rounded font-medium disabled:opacity-50"
+                    style={{ background: 'var(--color-primary)', color: 'white' }}
+                  >
+                    {saving ? 'جاري الحفظ...' : 'حفظ وتصحيح'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function for better performance
+    return (
+      prevProps.message.id === nextProps.message.id &&
+      prevProps.message.content === nextProps.message.content &&
+      prevProps.message.timestamp.getTime() ===
+        nextProps.message.timestamp.getTime() &&
+      prevProps.message.status === nextProps.message.status &&
+      prevProps.message.type === nextProps.message.type &&
+      prevProps.message.fileUrl === nextProps.message.fileUrl &&
+      prevProps.message.attachments === nextProps.message.attachments &&
+      prevProps.message.metadata === nextProps.message.metadata &&
+      prevProps.hasBeenReplied === nextProps.hasBeenReplied &&
+      prevProps.currentUserId === nextProps.currentUserId
+    );
+  },
+);
+
+MessageBubble.displayName = "MessageBubble";
+
+export default MessageBubble;

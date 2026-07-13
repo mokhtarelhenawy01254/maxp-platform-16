@@ -1,0 +1,121 @@
+name: Deploy AI Service
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.SERVER_HOST }}" ]; then
+            echo "Missing secret: SERVER_HOST"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SERVER_SSH_KEY }}" ]; then
+            echo "Missing secret: SERVER_SSH_KEY"
+            exit 1
+          fi
+
+      - name: Prepare SSH Key
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "${{ secrets.SERVER_SSH_KEY }}" | tr -d '\r' > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+          ssh-keyscan -p "$SERVER_PORT" -H "${{ secrets.SERVER_HOST }}" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+
+      - name: Deploy via SSH
+        run: |
+          SSH_OPTS=(
+            -i "$HOME/.ssh/deploy_key"
+            -p "$SERVER_PORT"
+            -o StrictHostKeyChecking=accept-new
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=10
+            -o ConnectTimeout=30
+          )
+          timeout 15m ssh "${SSH_OPTS[@]}" "${{ secrets.SERVER_USER || 'root' }}@${{ secrets.SERVER_HOST }}" bash -se <<'REMOTE'
+            set -euo pipefail
+
+            AI_DIR="/opt/maxp-ai-service"
+            BE_ENV="/opt/maxp-platform/apps/backend/.env"
+
+            # ---- AI Service ----
+            cd "$AI_DIR"
+
+            echo "=== Pull latest code ==="
+            git pull origin main
+
+            echo "=== Copy production env ==="
+            if [ -f .env.production ] && [ ! -f .env ]; then
+              cp .env.production .env
+              echo "Created .env from .env.production"
+            fi
+
+            echo "=== Build Docker image ==="
+            docker compose -f apps/ai-service/docker-compose.prod.yml build
+
+            echo "=== Start services ==="
+            docker compose -f apps/ai-service/docker-compose.prod.yml up -d
+
+            echo "=== Wait for postgres ==="
+            sleep 5
+
+            echo "=== Run migrations ==="
+            docker compose -f apps/ai-service/docker-compose.prod.yml run --rm maxp-ai-service alembic upgrade head
+
+            echo "=== Health check ==="
+            sleep 5
+            HEALTH=$(curl -sS --max-time 10 http://127.0.0.1:8000/health 2>&1 || true)
+            echo "$HEALTH"
+            STATUS=$(echo "$HEALTH" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || echo "fail")
+            if [ "$STATUS" != "ok" ]; then
+              echo "Health check failed"
+              docker logs maxp-ai-service --tail 20 2>&1
+              exit 1
+            fi
+
+            echo "=== Readiness check ==="
+            READY=$(curl -sS --max-time 10 http://127.0.0.1:8000/ready 2>&1 || true)
+            echo "$READY"
+            READY_STATUS=$(echo "$READY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || echo "fail")
+            if [ "$READY_STATUS" != "ready" ]; then
+              echo "Readiness check failed (LLM config may be missing)"
+              docker logs maxp-ai-service --tail 20 2>&1
+              # Don't fail - LLM keys might be set separately
+            fi
+
+            # ---- Activate Backend AI Integration ----
+            echo "=== Configure Backend AI Service ==="
+            if [ -f "$BE_ENV" ]; then
+              # Set AI_SERVICE_MODE if not already set
+              if ! grep -q "AI_SERVICE_MODE" "$BE_ENV" 2>/dev/null; then
+                echo "" >> "$BE_ENV"
+                echo "# AI Service Integration" >> "$BE_ENV"
+                echo "AI_SERVICE_MODE=pilot" >> "$BE_ENV"
+                echo "AI_SERVICE_URL=http://localhost:8000" >> "$BE_ENV"
+                echo "AI_SERVICE_ENABLED_COMPANIES=*" >> "$BE_ENV"
+                echo "Added AI_SERVICE config to backend .env"
+              fi
+              echo "Backend AI config:"
+              grep "AI_SERVICE_" "$BE_ENV" || echo "(not found)"
+            else
+              echo "Backend .env not found at $BE_ENV"
+            fi
+
+            echo "=== Deploy OK ==="
+            echo ""
+            echo "To activate AI service for customers:"
+            echo "  1. Set AI_SERVICE_MODE=pilot (already done if .env existed)"
+            echo "  2. Restart backend: pm2 restart maxp-backend"
+            echo "  3. Test: curl http://localhost:8000/health"
+          REMOTE

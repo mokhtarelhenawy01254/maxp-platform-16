@@ -1,0 +1,279 @@
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from agent_framework import FunctionTool
+from pydantic import BaseModel
+
+from src.tools.gateway import ToolGateway
+from src.tools.registry import order_create_confirmed_tool
+
+
+class _WriteInput(BaseModel):
+    value: str
+    company_id: str | None = None
+
+
+@pytest.mark.asyncio
+async def test_gateway_executes_allowed_mcp_tool(monkeypatch):
+    registry = MagicMock()
+    registry.get_tool.return_value = {
+        "name": "mcp_catalog_search",
+        "server_name": "catalog",
+        "original_name": "search",
+    }
+    registry.call_tool = AsyncMock(
+        return_value={"tool": "mcp_catalog_search", "success": True, "result": {"items": []}}
+    )
+
+    monkeypatch.setattr("src.tools.gateway.get_mcp_registry", lambda: registry)
+
+    result = await ToolGateway().execute(
+        tool_name="mcp_catalog_search",
+        company_id="comp1",
+        agent_role="SUPPORT",
+        allowed_tools=["mcp_catalog_search"],
+        input_data={"query": "shoes"},
+    )
+
+    assert result == {"status": "success", "result": {"items": []}}
+    registry.call_tool.assert_awaited_once_with(
+        "mcp_catalog_search",
+        {"query": "shoes", "company_id": "comp1"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_gateway_blocks_mcp_tool_not_in_allowlist(monkeypatch):
+    registry = MagicMock()
+    registry.get_tool.return_value = {
+        "name": "mcp_catalog_search",
+        "server_name": "catalog",
+        "original_name": "search",
+    }
+    registry.call_tool = AsyncMock()
+
+    monkeypatch.setattr("src.tools.gateway.get_mcp_registry", lambda: registry)
+
+    result = await ToolGateway().execute(
+        tool_name="mcp_catalog_search",
+        company_id="comp1",
+        agent_role="SUPPORT",
+        allowed_tools=["order_lookup"],
+        input_data={"query": "shoes"},
+    )
+
+    assert result["status"] == "forbidden"
+    registry.call_tool.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_gateway_skips_approval_gate_when_sdk_approval_granted(monkeypatch):
+    tool_func = AsyncMock(return_value={"updated": True})
+    tool = FunctionTool(
+        name="sample_write",
+        description="Sample write",
+        func=tool_func,
+        input_model=_WriteInput,
+        approval_mode="always_require",
+    )
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: tool)
+
+    result = await ToolGateway().execute(
+        tool_name="sample_write",
+        company_id="comp1",
+        agent_role="ADMIN",
+        allowed_tools=["sample_write"],
+        input_data={"value": "x"},
+        approval_granted=True,
+    )
+
+    assert result == {"status": "success", "result": {"updated": True}}
+    tool_func.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_gateway_executes_confirmed_order_directly_without_merchant_approval(monkeypatch):
+    tool_func = AsyncMock(return_value={
+        "status": "success",
+        "code": "ORDER_CREATED",
+        "result": {"orderNumber": "ORD-1001"},
+    })
+    monkeypatch.setattr(order_create_confirmed_tool, "func", tool_func)
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: order_create_confirmed_tool)
+
+    result = await ToolGateway().execute(
+        tool_name="order_create_confirmed",
+        company_id="comp1",
+        agent_role="SALES",
+        allowed_tools=["order_create_confirmed"],
+        input_data={
+            "customer_name": "Test Customer",
+            "customer_phone": "01000000000",
+            "product_name": "Sprint X",
+            "product_price": 1499,
+            "quantity": 1,
+            "address": "10 Test Street",
+            "city": "Cairo",
+            "confirmed_by_customer": True,
+        },
+    )
+
+    assert result == {
+        "status": "success",
+        "result": {
+            "status": "success",
+            "code": "ORDER_CREATED",
+            "result": {"orderNumber": "ORD-1001"},
+        },
+    }
+    tool_func.assert_awaited_once()
+
+
+# ── Skill context enforcement tests ──────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_gateway_skill_context_max_tool_count_rejected(monkeypatch):
+    """Skill with max_tool_count reached should be rejected."""
+    tool_func = AsyncMock(return_value={"items": []})
+    tool = FunctionTool(
+        name="product_search",
+        description="Search products",
+        func=tool_func,
+        input_model=_WriteInput,
+    )
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: tool)
+
+    result = await ToolGateway().execute(
+        tool_name="product_search",
+        company_id="comp1",
+        agent_role="SALES",
+        allowed_tools=["product_search"],
+        input_data={"value": "shoes"},
+        skill_context={
+            "max_tool_count": 2,
+            "tool_call_index": 2,
+            "requires_human_approval": False,
+        },
+    )
+
+    assert result["status"] == "forbidden"
+    assert "max tool count" in result["error"]
+    tool_func.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_gateway_skill_context_max_tool_count_allowed(monkeypatch):
+    """Skill with max_tool_count not yet reached should execute normally."""
+    tool_func = AsyncMock(return_value={"items": []})
+    tool = FunctionTool(
+        name="product_search",
+        description="Search products",
+        func=tool_func,
+        input_model=_WriteInput,
+    )
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: tool)
+
+    result = await ToolGateway().execute(
+        tool_name="product_search",
+        company_id="comp1",
+        agent_role="SALES",
+        allowed_tools=["product_search"],
+        input_data={"value": "shoes"},
+        skill_context={
+            "max_tool_count": 2,
+            "tool_call_index": 1,
+            "requires_human_approval": False,
+        },
+    )
+
+    assert result["status"] == "success"
+    tool_func.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_gateway_skill_context_requires_approval(monkeypatch):
+    """Skill with requires_human_approval=True should block even read tools."""
+    tool_func = AsyncMock(return_value={"items": []})
+    tool = FunctionTool(
+        name="product_search",
+        description="Search products",
+        func=tool_func,
+        input_model=_WriteInput,
+        approval_mode="never_require",
+    )
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: tool)
+
+    result = await ToolGateway().execute(
+        tool_name="product_search",
+        company_id="comp1",
+        agent_role="SALES",
+        allowed_tools=["product_search"],
+        input_data={"value": "shoes"},
+        skill_context={
+            "max_tool_count": 0,
+            "tool_call_index": 0,
+            "requires_human_approval": True,
+        },
+    )
+
+    assert result["status"] == "awaiting_approval"
+    tool_func.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_gateway_skill_context_requires_approval_grants_with_flag(monkeypatch):
+    """Skill with requires_human_approval=True passes if approval_granted=True."""
+    tool_func = AsyncMock(return_value={"items": []})
+    tool = FunctionTool(
+        name="product_search",
+        description="Search products",
+        func=tool_func,
+        input_model=_WriteInput,
+        approval_mode="never_require",
+    )
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: tool)
+
+    result = await ToolGateway().execute(
+        tool_name="product_search",
+        company_id="comp1",
+        agent_role="SALES",
+        allowed_tools=["product_search"],
+        input_data={"value": "shoes"},
+        approval_granted=True,
+        skill_context={
+            "max_tool_count": 0,
+            "tool_call_index": 0,
+            "requires_human_approval": True,
+        },
+    )
+
+    assert result["status"] == "success"
+    tool_func.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_gateway_skill_context_none_is_noop(monkeypatch):
+    """No skill_context = no enforcement, backward compatible."""
+    tool_func = AsyncMock(return_value={"items": []})
+    tool = FunctionTool(
+        name="product_search",
+        description="Search products",
+        func=tool_func,
+        input_model=_WriteInput,
+    )
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: tool)
+
+    result = await ToolGateway().execute(
+        tool_name="product_search",
+        company_id="comp1",
+        agent_role="SALES",
+        allowed_tools=["product_search"],
+        input_data={"value": "shoes"},
+        skill_context=None,
+    )
+
+    assert result["status"] == "success"
+    tool_func.assert_awaited_once()

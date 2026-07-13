@@ -1,0 +1,117 @@
+<svg width="1600" height="1200" viewBox="0 0 1600 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="84" x2="1460" y2="1114" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8F4"/>
+      <stop offset="1" stop-color="#F6EEE8"/>
+    </linearGradient>
+    <linearGradient id="leftCard" x1="142" y1="248" x2="738" y2="824" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F8EDE6"/>
+    </linearGradient>
+    <linearGradient id="promoCard" x1="960" y1="162" x2="1290" y2="964" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7F2"/>
+      <stop offset="1" stop-color="#F7ECE5"/>
+    </linearGradient>
+    <linearGradient id="salePanel" x1="1010" y1="370" x2="1256" y2="668" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7D5C7"/>
+      <stop offset="1" stop-color="#EFB497"/>
+    </linearGradient>
+    <filter id="phoneShadow" x="832" y="88" width="602" height="1036" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="28"/>
+      <feGaussianBlur stdDeviation="38"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.23 0 0 0 0 0.15 0 0 0 0 0.18 0 0 0 0.18 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1" result="shape"/>
+    </filter>
+    <filter id="softShadow" x="108" y="594" width="516" height="266" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="22"/>
+      <feGaussianBlur stdDeviation="20"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.22 0 0 0 0 0.13 0 0 0 0 0.15 0 0 0 0.12 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_2" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1200" fill="url(#bg)"/>
+  <circle cx="272" cy="208" r="176" fill="#FAEEE7"/>
+  <circle cx="1326" cy="196" r="236" fill="#F3DED3" fill-opacity="0.8"/>
+  <circle cx="1190" cy="996" r="286" fill="#EFE4DD"/>
+  <circle cx="520" cy="1030" r="224" fill="#F7EBE4"/>
+
+  <rect x="138" y="164" width="538" height="86" rx="43" fill="#FFFFFF" fill-opacity="0.76" stroke="#E8D9D0"/>
+  <rect x="176" y="192" width="130" height="30" rx="15" fill="#201418"/>
+  <rect x="326" y="192" width="160" height="30" rx="15" fill="#F6D5C8"/>
+  <rect x="506" y="192" width="134" height="30" rx="15" fill="#F3E6DE"/>
+
+  <rect x="138" y="288" width="644" height="318" rx="42" fill="url(#leftCard)" stroke="#E8DDD6"/>
+  <rect x="180" y="330" width="166" height="32" rx="16" fill="#FFFFFF" stroke="#E8DBD2"/>
+  <rect x="180" y="388" width="336" height="30" rx="15" fill="#201418"/>
+  <rect x="180" y="434" width="274" height="18" rx="9" fill="#C7B2A7"/>
+  <rect x="180" y="466" width="238" height="18" rx="9" fill="#D9C9BF"/>
+  <rect x="180" y="518" width="138" height="40" rx="20" fill="#201418"/>
+  <rect x="336" y="518" width="156" height="40" rx="20" fill="#FFFFFF" stroke="#E7D8CF"/>
+  <circle cx="670" cy="388" r="88" fill="#FBE7DE"/>
+  <circle cx="670" cy="388" r="62" fill="#FFFFFF" fill-opacity="0.56"/>
+  <circle cx="670" cy="388" r="48" fill="#201418"/>
+  <text x="670" y="404" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="34" font-weight="700">30%</text>
+
+  <g filter="url(#softShadow)">
+    <rect x="144" y="620" width="444" height="184" rx="36" fill="#FFFFFF"/>
+    <rect x="172" y="648" width="112" height="32" rx="16" fill="#201418"/>
+    <rect x="458" y="648" width="102" height="32" rx="16" fill="#F8E6DC"/>
+    <path d="M246 742C258 708 282 682 316 668L372 646C384 641 396 650 396 663C396 673 390 682 380 688L346 706C334 713 326 725 326 738V756H280V748C280 740 275 734 267 731L240 724C232 722 227 714 230 706C234 698 242 694 250 697L271 704C264 715 255 728 246 742Z" fill="#D97A64"/>
+    <rect x="172" y="748" width="124" height="16" rx="8" fill="#201418"/>
+    <rect x="172" y="774" width="86" height="22" rx="11" fill="#F2E4DC"/>
+    <text x="215" y="790" text-anchor="middle" fill="#201418" font-family="Arial, sans-serif" font-size="14" font-weight="700">299</text>
+    <rect x="420" y="724" width="140" height="48" rx="24" fill="#201418"/>
+    <text x="490" y="754" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="18" font-weight="700">48H</text>
+  </g>
+
+  <g filter="url(#phoneShadow)">
+    <rect x="890" y="126" width="458" height="898" rx="56" fill="#1E1217"/>
+    <rect x="916" y="152" width="406" height="846" rx="38" fill="url(#promoCard)"/>
+    <rect x="1060" y="174" width="118" height="14" rx="7" fill="#2A1E23"/>
+
+    <rect x="948" y="214" width="342" height="58" rx="29" fill="#FFFFFF" stroke="#E8DBD2"/>
+    <rect x="978" y="236" width="178" height="14" rx="7" fill="#D8CBC2"/>
+    <circle cx="1240" cy="243" r="16" stroke="#201418" stroke-width="2"/>
+    <line x1="1251" y1="254" x2="1262" y2="265" stroke="#201418" stroke-width="2" stroke-linecap="round"/>
+
+    <rect x="948" y="298" width="88" height="34" rx="17" fill="#201418"/>
+    <rect x="1050" y="298" width="96" height="34" rx="17" fill="#FFFFFF" stroke="#E7D9CF"/>
+    <rect x="1160" y="298" width="130" height="34" rx="17" fill="#FFFFFF" stroke="#E7D9CF"/>
+
+    <rect x="948" y="360" width="342" height="262" rx="34" fill="url(#salePanel)"/>
+    <circle cx="1118" cy="486" r="114" fill="#FDF2EC"/>
+    <path d="M1032 520C1044 476 1070 438 1110 416L1184 382C1198 376 1212 387 1212 401C1212 414 1204 425 1192 432L1152 454C1138 462 1128 476 1128 492V526H1072V512C1072 500 1064 490 1052 486L1024 478C1012 474 1006 462 1010 450C1014 438 1028 432 1040 436L1062 444C1052 468 1042 494 1032 520Z" fill="#C86556"/>
+    <rect x="970" y="384" width="102" height="30" rx="15" fill="#FFFFFF" fill-opacity="0.78"/>
+    <text x="1021" y="404" text-anchor="middle" fill="#201418" font-family="Arial, sans-serif" font-size="15" font-weight="700">SALE</text>
+    <rect x="1180" y="384" width="88" height="88" rx="44" fill="#201418"/>
+    <text x="1224" y="414" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="17" font-weight="700">UP TO</text>
+    <text x="1224" y="452" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="30" font-weight="700">30%</text>
+    <rect x="968" y="548" width="108" height="24" rx="12" fill="#FFFFFF" fill-opacity="0.82"/>
+    <rect x="1090" y="548" width="126" height="24" rx="12" fill="#FFFFFF" fill-opacity="0.82"/>
+
+    <rect x="948" y="646" width="160" height="168" rx="30" fill="#FFFFFF" stroke="#E8DDD6"/>
+    <rect x="1130" y="646" width="160" height="168" rx="30" fill="#FFFFFF" stroke="#E8DDD6"/>
+
+    <circle cx="1028" cy="712" r="52" fill="#F5E6DE"/>
+    <path d="M984 734C995 704 1016 681 1048 669L1098 650C1109 646 1120 654 1120 665C1120 673 1115 681 1107 686L1078 703C1068 710 1062 720 1062 731V746H1020V739C1020 732 1015 726 1008 723L986 716C979 714 975 708 978 701C981 694 988 690 995 693L1012 699C1004 710 995 722 984 734Z" fill="#201418"/>
+    <circle cx="1210" cy="712" r="52" fill="#F2D8CB"/>
+    <path d="M1184 752C1194 725 1212 704 1238 692L1278 676C1287 672 1296 678 1296 687C1296 694 1292 701 1285 704L1264 715C1256 719 1251 727 1251 735V748H1215V744C1215 738 1211 734 1205 732L1187 728C1181 726 1178 721 1180 715C1183 709 1188 706 1194 708L1206 712C1201 720 1193 735 1184 752Z" fill="#D77E67"/>
+
+    <rect x="974" y="830" width="108" height="18" rx="9" fill="#201418"/>
+    <rect x="974" y="858" width="82" height="24" rx="12" fill="#F3E4DC"/>
+    <text x="1015" y="875" text-anchor="middle" fill="#201418" font-family="Arial, sans-serif" font-size="14" font-weight="700">329</text>
+    <rect x="1156" y="830" width="120" height="18" rx="9" fill="#201418"/>
+    <rect x="1156" y="858" width="82" height="24" rx="12" fill="#F3E4DC"/>
+    <text x="1197" y="875" text-anchor="middle" fill="#201418" font-family="Arial, sans-serif" font-size="14" font-weight="700">359</text>
+
+    <rect x="948" y="906" width="342" height="76" rx="38" fill="#201418"/>
+    <text x="1119" y="952" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="24" font-weight="700">SHOP NOW</text>
+  </g>
+</svg>

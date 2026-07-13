@@ -1,0 +1,56 @@
+- generic [ref=e7]:
+  - generic [ref=e385]:
+    - link "M ماكس بي لنظام تشغيل الأعمال" [ref=e386] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e387]: M
+      - generic [ref=e388]: ماكس بي لنظام تشغيل الأعمال
+    - generic [ref=e389]:
+      - generic [ref=e390]: New Member Registration
+      - heading "تسجيل حساب جديد" [level=2] [ref=e391]
+      - paragraph [ref=e392]: أنشئ حسابك وابدأ رحلة التحول الرقمي
+    - generic [ref=e393]:
+      - button "English" [ref=e395]:
+        - img [ref=e396]
+        - text: English
+      - generic [ref=e401]:
+        - generic [ref=e402]:
+          - generic [ref=e403]: الاسم بالكامل
+          - generic [ref=e404]:
+            - textbox "أحمد محمد" [ref=e405]
+            - img
+        - generic [ref=e406]:
+          - generic [ref=e407]: اسم الشركة
+          - generic [ref=e408]:
+            - textbox "مؤسسة الأمل للتجارة" [ref=e409]
+            - img
+        - generic [ref=e410]:
+          - generic [ref=e411]: البريد الإلكتروني
+          - generic [ref=e412]:
+            - textbox "name@company.com" [ref=e413]
+            - img
+        - generic [ref=e414]:
+          - generic [ref=e415]: رقم الهاتف (اختياري)
+          - generic [ref=e416]:
+            - textbox "01xxxxxxxxx" [ref=e417]
+            - img
+        - generic [ref=e418]:
+          - generic [ref=e419]: نوع النشاط التجاري
+          - generic [ref=e420]:
+            - button "اختر نوع نشاطك التجاري" [ref=e421] [cursor=pointer]:
+              - generic [ref=e422]: اختر نوع نشاطك التجاري
+              - img [ref=e423]
+            - img
+        - generic [ref=e425]:
+          - generic [ref=e426]: كلمة المرور
+          - generic [ref=e427]:
+            - textbox "••••••••" [ref=e428]
+            - button [ref=e429] [cursor=pointer]:
+              - img [ref=e430]
+            - img
+        - button "إنشاء حساب" [ref=e433] [cursor=pointer]
+    - contentinfo [ref=e434]:
+      - generic [ref=e435]:
+        - generic [ref=e436]: لديك حساب بالفعل؟
+        - link "تسجيل الدخول" [ref=e437] [cursor=pointer]:
+          - /url: /auth/login
+  - region "Notifications alt+T"

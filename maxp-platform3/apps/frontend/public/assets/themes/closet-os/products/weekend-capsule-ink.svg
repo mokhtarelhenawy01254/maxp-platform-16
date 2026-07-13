@@ -1,0 +1,15 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="1000" fill="#F7F2E8"/>
+<rect x="40" y="40" width="720" height="920" rx="44" fill="#EDE4D5"/>
+<rect x="612" y="76" width="96" height="848" rx="24" fill="#22312D"/>
+<rect x="214" y="190" width="160" height="204" rx="34" fill="#576661"/>
+<rect x="166" y="220" width="56" height="176" rx="24" fill="#576661"/>
+<rect x="374" y="220" width="56" height="176" rx="24" fill="#576661"/>
+<rect x="260" y="166" width="68" height="40" rx="16" fill="#576661"/>
+<rect x="414" y="468" width="94" height="312" rx="28" fill="#576661"/>
+<rect x="516" y="468" width="94" height="312" rx="28" fill="#576661"/>
+<rect x="404" y="432" width="216" height="48" rx="24" fill="#576661"/>
+<rect x="148" y="770" width="366" height="92" rx="28" fill="#22312D"/>
+<text x="178" y="812" fill="#F7F2E8" font-size="40" font-family="Segoe UI, sans-serif" font-weight="700">WEEKEND CAPSULE</text>
+<text x="178" y="846" fill="#D2C7B7" font-size="22" font-family="Segoe UI, sans-serif">INK / READY SET</text>
+</svg>

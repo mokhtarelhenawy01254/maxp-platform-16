@@ -1,0 +1,14 @@
+{
+  "title": "AI Knowledge Questions",
+  "pending": "Pending",
+  "answered": "Answered",
+  "noPending": "No pending questions",
+  "noPendingHint": "When the AI needs your help, questions will appear here",
+  "noAnswered": "No answered questions",
+  "answerPlaceholder": "Write your answer here...",
+  "submitAnswer": "Submit Answer",
+  "answerRequired": "Please write an answer first",
+  "answerSubmitted": "Answer submitted successfully",
+  "answeredBy": "Answered by",
+  "showContext": "Show additional details"
+}

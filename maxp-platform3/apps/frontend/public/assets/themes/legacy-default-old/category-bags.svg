@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" fill="none">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#f6efe6"/>
+    <stop offset="100%" stop-color="#d8baa2"/>
+  </linearGradient>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="26" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.16"/>
+  </filter>
+</defs>
+
+    
+  <rect width="1200" height="1200" rx="32" fill="url(#bg)"/>
+  <circle cx="216" cy="192" r="120" fill="#f0d0ad" opacity="0.58"/>
+  <circle cx="983.9999999999999" cy="264" r="144" fill="#87614c" opacity="0.42"/>
+  <path d="M0 864C288 696 648 1032 1200 840V1200H0Z" fill="#fefbf7" opacity="0.95"/>
+  <rect x="96" y="96" width="1008" height="1008" rx="28" stroke="#84624e" stroke-opacity="0.38"/>
+
+    <circle cx="600" cy="500" r="292" fill="#fefbf7" opacity="0.94"/>
+    
+  <g filter="url(#shadow)">
+    <path d="M 443.36 512.96 C 452.15999999999997 421.44, 527.84 365.12, 600 365.12 C 672.16 365.12, 747.84 421.44, 756.64 512.96 L 756.64 669.6 C 756.64 701.28, 733.76 724.16, 702.08 724.16 H 497.92 C 466.24 724.16, 443.36 701.28, 443.36 669.6 Z" fill="#d4a67f"/>
+    <path d="M 524.3199999999999 504.16 C 527.84 435.52, 564.8 400.32, 600 400.32 C 635.2 400.32, 672.16 435.52, 675.6800000000001 504.16" stroke="#5d4335" stroke-width="15.84" fill="none" stroke-linecap="round"/>
+    <rect x="489.12" y="514.72" width="221.76" height="47.52" rx="15.84" fill="#f4e7d8" opacity="0.18"/>
+    <circle cx="600" cy="539.36" r="26.4" fill="#5d4335" opacity="0.92"/>
+    <path d="M 434.56 527.04 C 383.52 571.04, 378.24 636.16, 404.64 687.2" stroke="#5d4335" stroke-width="12.32" fill="none" opacity="0.55"/>
+  </g>
+
+    
+    <text x="120" y="1032" font-family="'League Spartan', Arial, sans-serif" font-size="42" font-weight="700" fill="#171311" text-anchor="start">BAGS</text>
+    <text x="120" y="1092" font-family="'League Spartan', Arial, sans-serif" font-size="20" font-weight="500" fill="#605047" text-anchor="start">Carry pieces and gifts</text>
+  
+  
+</svg>

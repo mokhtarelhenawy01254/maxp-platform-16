@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="960" viewBox="0 0 1600 960" fill="none">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#faf4ee"/>
+    <stop offset="100%" stop-color="#dfc6b8"/>
+  </linearGradient>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="26" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.16"/>
+  </filter>
+</defs>
+
+    
+  <rect width="1600" height="960" rx="32" fill="url(#bg)"/>
+  <circle cx="288" cy="153.6" r="96" fill="#efdbc3" opacity="0.58"/>
+  <circle cx="1312" cy="211.2" r="115.19999999999999" fill="#b97365" opacity="0.42"/>
+  <path d="M0 691.1999999999999C384 556.8 864 825.6 1600 672V960H0Z" fill="#fffdfb" opacity="0.95"/>
+  <rect x="128" y="76.8" width="1344" height="806.4" rx="28" stroke="#8f7067" stroke-opacity="0.38"/>
+
+    <g opacity="0.92">
+  <g filter="url(#shadow)">
+    <path d="M 903.6 481.79999999999995 C 946.8 400.79999999999995, 1022.4 353.28, 1113.12 329.52 C 1175.76 312.23999999999995, 1253.52 325.2, 1316.16 381.35999999999996 L 1398.24 435.35999999999996 C 1424.16 451.56, 1432.8 480.71999999999997, 1426.32 504.48 C 1415.52 545.52, 1376.64 562.8, 1305.3600000000001 562.8 L 940.3199999999999 562.8 C 894.96 562.8, 864.72 541.2, 858.24 506.64 C 851.76 476.4, 871.2 456.96, 903.6 481.79999999999995Z" fill="#f6f0eb"/>
+    <path d="M 853.92 513.12 C 890.64 543.36, 944.64 554.16, 1026.72 554.16 H 1307.52 C 1393.92 554.16, 1439.28 532.56, 1447.92 500.15999999999997 C 1454.4 474.24, 1443.6 456.96, 1415.52 454.79999999999995 L 961.92 454.79999999999995 C 894.96 454.79999999999995, 862.56 476.4, 853.92 513.12Z" fill="#ffffff"/>
+    <path d="M 1074.24 381.35999999999996 C 1128.24 372.71999999999997, 1199.52 379.2, 1262.16 415.91999999999996" stroke="#835d56" stroke-width="19.44" stroke-linecap="round" opacity="0.9"/>
+    <path d="M 1063.44 424.56 H 1203.84" stroke="#835d56" stroke-width="12.96" stroke-linecap="round" opacity="0.62"/>
+    <path d="M 1074.24 450.47999999999996 H 1212.48" stroke="#835d56" stroke-width="12.96" stroke-linecap="round" opacity="0.52"/>
+    <circle cx="1331.28" cy="500.15999999999997" r="23.76" fill="#b97365" opacity="0.55"/>
+    <path d="M 1281.6 402.96 L 1355.04 435.35999999999996" stroke="#4c3a35" stroke-width="10.8" stroke-linecap="round" opacity="0.55"/>
+  </g>
+</g>
+    <g>
+      <text x="160" y="240" font-family="'League Spartan', Arial, sans-serif" font-size="94" font-weight="700" fill="#171414">SHOES</text>
+      <text x="160" y="308" font-family="'League Spartan', Arial, sans-serif" font-size="32" font-weight="500" fill="#65544d">Court pairs, neutral palettes, and quick gallery switching by size and color.</text>
+      <rect x="160" y="374" width="246" height="64" rx="18" fill="#171414"/>
+      <text x="283" y="417" font-family="'League Spartan', Arial, sans-serif" font-size="22" font-weight="700" fill="#fffdfb">SHOP THE DROP</text>
+    </g>
+  
+</svg>

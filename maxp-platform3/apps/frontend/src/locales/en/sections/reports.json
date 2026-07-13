@@ -1,0 +1,41 @@
+{
+  "title": "Reports",
+  "salesReport": "Sales Report",
+  "customerReport": "Customer Report",
+  "productReport": "Product Report",
+  "generateReport": "Generate Report",
+  "exportReport": "Export Report",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To",
+  "presets": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7Days": "Last 7 days",
+    "last30Days": "Last 30 days",
+    "thisMonth": "This month",
+    "lastMonth": "Last month"
+  },
+  "periods": {
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "custom": "Custom"
+  },
+  "partialErrors": "Some reports failed to load: {{reports}}",
+  "topProducts": "Top Products",
+  "availableReports": "Core Reports",
+  "availableReportsHint": "Choose the report type here and keep the details in the same page instead of bouncing between repeated side menus.",
+  "relatedViews": "Related Views",
+  "relatedViewsHint": "Use these explicit routes for specialized finance views or broader analytics instead of scattering them across multiple menu levels.",
+  "selectedReport": "Selected Report",
+  "selectedReportHint": "The full report details stay here with the latest update, without extra navigation noise.",
+  "openRoute": "Open route",
+  "profitLossTitle": "Profit & Loss",
+  "profitLossDescription": "A focused financial view for revenue, cost, and gross profit in a dedicated screen.",
+  "advancedAnalyticsTitle": "Advanced Analytics",
+  "advancedAnalyticsDescription": "A broader workspace for comparisons, trends, and interactive analysis.",
+  "exportPdfSoon": "Export PDF (Soon)",
+  "exportExcelSoon": "Export Excel (Soon)",
+  "exportSoonHint": "Export will be available soon"
+}

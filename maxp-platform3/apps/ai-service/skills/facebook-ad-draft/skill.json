@@ -1,0 +1,12 @@
+{
+  "id": "facebook-ad-draft",
+  "displayName": "Facebook Ad Draft",
+  "version": "1.0.0",
+  "description": "Create a Facebook ad draft from grounded product and campaign context.",
+  "allowedTools": [
+    "product_search",
+    "facebook_ad_create_draft"
+  ],
+  "requiresHumanApproval": true,
+  "maxToolCount": 2
+}

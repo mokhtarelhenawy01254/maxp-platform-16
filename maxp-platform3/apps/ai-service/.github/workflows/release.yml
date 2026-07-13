@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "## What's Changed" > /tmp/release.md
+          git log --oneline --no-decorate $(git tag --sort=-creatordate | head -1)..HEAD 2>/dev/null \
+            | sed 's/^/- /' >> /tmp/release.md || true
+          echo "" >> /tmp/release.md
+          echo "**Full diff:** [\`${{ github.ref_name }}\`](${{ github.server_url }}/${{ github.repository }}/compare/$(git tag --sort=-creatordate | head -1)...${{ github.ref_name }})" >> /tmp/release.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: /tmp/release.md
+          generate_release_notes: true

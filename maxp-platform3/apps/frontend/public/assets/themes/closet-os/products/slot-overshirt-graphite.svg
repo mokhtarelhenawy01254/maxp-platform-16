@@ -1,0 +1,12 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="1000" fill="#F7F2E8"/>
+<rect x="44" y="44" width="712" height="912" rx="44" fill="#EDE4D5"/>
+<rect x="608" y="80" width="98" height="840" rx="24" fill="#22312D"/>
+<path d="M244 228C244 203.699 263.699 184 288 184H352C376.301 184 396 203.699 396 228V270H428C452.301 270 472 289.699 472 314V650C472 674.301 452.301 694 428 694H212C187.699 694 168 674.301 168 650V314C168 289.699 187.699 270 212 270H244V228Z" fill="#5B6965"/>
+<rect x="264" y="330" width="40" height="186" rx="14" fill="#495551"/>
+<rect x="340" y="330" width="40" height="186" rx="14" fill="#495551"/>
+<rect x="294" y="236" width="46" height="54" rx="18" fill="#5B6965"/>
+<rect x="132" y="768" width="482" height="98" rx="28" fill="#22312D"/>
+<text x="164" y="812" fill="#F7F2E8" font-size="40" font-family="Segoe UI, sans-serif" font-weight="700">SLOT OVERSHIRT</text>
+<text x="164" y="846" fill="#D2C7B7" font-size="22" font-family="Segoe UI, sans-serif">GRAPHITE / LIGHT LAYER</text>
+</svg>

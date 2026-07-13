@@ -1,0 +1,22 @@
+{
+  "title": "تحليلات أداء الدفع عند الاستلام (COD)",
+  "subtitle": "تقليل الرفض والخسارة",
+  "fetchError": "حدث خطأ في جلب البيانات",
+  "retry": "إعادة المحاولة",
+  "last7Days": "آخر 7 أيام",
+  "last30Days": "آخر 30 يوم",
+  "last90Days": "آخر 90 يوم",
+  "lastYear": "آخر سنة",
+  "totalCODOrders": "إجمالي طلبات COD",
+  "successRate": "معدل النجاح",
+  "orders": "طلب",
+  "cancellationRate": "معدل الإلغاء",
+  "lostRevenue": "الإيرادات المفقودة",
+  "performanceSummary": "ملخص الأداء",
+  "pendingOrders": "طلبات معلقة",
+  "returnedOrders": "طلبات مرتجعة",
+  "totalRevenue": "إجمالي الإيرادات",
+  "averageOrderValue": "متوسط قيمة الطلب",
+  "regionalPerformance": "الأداء حسب المنطقة",
+  "successRatePercentage": "معدل النجاح %"
+}

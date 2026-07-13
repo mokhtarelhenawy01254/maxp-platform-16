@@ -1,0 +1,96 @@
+model PlatformSubscription {
+  id              String                @id @default(cuid())
+  companyId       String                @unique
+  plan            SubscriptionsPlanType @default(BASIC)
+  monthlyFee      Decimal               @db.Decimal(10, 2)
+  status          SubscriptionsStatus   @default(ACTIVE)
+  billingDay      Int                   @default(1)
+  nextBillingDate DateTime
+  trialEndDate    DateTime?
+  lastBillingDate DateTime?
+  failedAttempts  Int                   @default(0)
+  company         Company               @relation("PlatformSubscription", fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("platform_subscriptions")
+}
+
+model PlatformSignupCoupon {
+  id                  String                          @id @default(cuid())
+  code                String                          @unique
+  name                String
+  description         String?
+  trialDays           Int                             @default(0)
+  bonusUsers          Int                             @default(0)
+  bonusProducts       Int                             @default(0)
+  bonusOrdersPerMonth Int                             @default(0)
+  bonusCustomers      Int                             @default(0)
+  usageLimit          Int?
+  usageCount          Int                             @default(0)
+  isActive            Boolean                         @default(true)
+  validFrom           DateTime
+  validTo             DateTime
+  createdBy           String?
+  createdAt           DateTime                        @default(now())
+  updatedAt           DateTime                        @updatedAt
+  redemptions         PlatformSignupCouponRedemption[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([validFrom, validTo])
+  @@map("platform_signup_coupons")
+}
+
+model PlatformSignupCouponRedemption {
+  id                     String               @id @default(cuid())
+  couponId               String
+  companyId              String               @unique
+  userId                 String?
+  email                  String?
+  appliedCode            String
+  trialDaysGranted       Int                  @default(0)
+  bonusUsersGranted      Int                  @default(0)
+  bonusProductsGranted   Int                  @default(0)
+  bonusOrdersGranted     Int                  @default(0)
+  bonusCustomersGranted  Int                  @default(0)
+  redeemedAt             DateTime             @default(now())
+  company                Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  coupon                 PlatformSignupCoupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@index([couponId])
+  @@index([redeemedAt])
+  @@map("platform_signup_coupon_redemptions")
+}
+
+model PlatformEnterprisePlan {
+  id               String   @id @default(cuid())
+  companyId        String   @unique
+  customMonthlyFee Decimal  @db.Decimal(10, 2)
+  customLimits     Json
+  dedicatedSupport Boolean  @default(true)
+  apiAccess        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company  @relation("PlatformEnterprisePlan", fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("platform_enterprise_plans")
+}
+
+model BillingHistory {
+  id          String             @id @default(cuid())
+  companyId   String
+  type        BillingHistoryType
+  amount      Decimal            @db.Decimal(10, 2)
+  description String
+  status      String             @default("SUCCESS")
+  referenceId String?
+  createdAt          DateTime            @default(now())
+  company            Company             @relation("CompanyBillingHistory", fields: [companyId], references: [id], onDelete: Cascade)
+  partnerCommission  PartnerCommission?
+
+  @@index([companyId])
+  @@index([type])
+  @@index([status])
+  @@map("billing_history")
+}

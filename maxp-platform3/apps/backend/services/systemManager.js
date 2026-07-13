@@ -1,0 +1,468 @@
+/**
+ * System Manager Service
+ * إدارة أنظمة النظام - تفعيل وتعطيل الأنظمة المختلفة
+ */
+
+const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
+
+function clearModelManagerCaches() {
+  try {
+    const providerRuntimeService = require('./aiRuntimeService');
+    if (providerRuntimeService && providerRuntimeService.getModelManager) {
+      providerRuntimeService.getModelManager().clearAllCaches();
+      return true;
+    }
+  } catch (error) {
+    console.warn('⚠️ [SystemManager] Failed to clear ModelManager cache:', error.message);
+  }
+  return false;
+}
+
+class SystemManager {
+  constructor() {
+    // ✅ FIX: Use lazy-loading for Prisma - don't call getSharedPrismaClient at module load time
+    this._prisma = null;
+    this.systems = new Map();
+    this.systemInstances = new Map();
+
+    //console.log('🔧 [SystemManager] Service initialized');
+    this.initializeSystemDefinitions();
+  }
+
+  // ✅ Lazy getter for Prisma client
+  get prisma() {
+    if (!this._prisma) {
+      this._prisma = getSharedPrismaClient();
+    }
+    return this._prisma;
+  }
+
+  /**
+   * تعريف الأنظمة المتاحة
+   */
+  initializeSystemDefinitions() {
+    const systemDefinitions = [
+      // ✅ New Active Services
+      {
+        systemName: 'broadcastSchedulerService',
+        displayName: 'Broadcast Scheduler',
+        description: 'جدولة وإرسال حملات البث',
+        category: 'general',
+        defaultEnabled: true,
+        config: {
+          resourceUsage: 'medium'
+        }
+      },
+      {
+        systemName: 'billingNotificationService',
+        displayName: 'Billing Notifications',
+        description: 'تنبيهات الفواتير والاشتراكات',
+        category: 'general',
+        defaultEnabled: true,
+        config: {
+          resourceUsage: 'low'
+        }
+      },
+      {
+        systemName: 'turboTrackingScheduler',
+        displayName: 'Turbo Tracking',
+        description: 'تتبع طلبات Turbo للشحن',
+        category: 'monitoring',
+        defaultEnabled: true,
+        config: {
+          resourceUsage: 'medium'
+        }
+      },
+      {
+        systemName: 'wooCommerceAutoSyncScheduler',
+        displayName: 'WooCommerce Sync',
+        description: 'مزامنة تلقائية مع WooCommerce',
+        category: 'general',
+        defaultEnabled: true,
+        config: {
+          resourceUsage: 'medium'
+        }
+      },
+      // ✅ أنظمة إدارة مفاتيح Gemini
+      {
+        systemName: 'centralKeysSystem',
+        displayName: 'Central Keys System',
+        description: 'نظام المفاتيح المركزية - مفاتيح مشتركة لجميع الشركات',
+        category: 'api_keys',
+        defaultEnabled: true,
+        config: {
+          keyType: 'CENTRAL',
+          aiCalls: 'high',
+          resourceUsage: 'high'
+        }
+      },
+      // ✅ نظام المفاتيح - بدون تبديل تلقائي
+      {
+        systemName: 'keySelection',
+        displayName: 'Key Selection',
+        description: 'system.key_selection_desc',
+        category: 'api_keys',
+        defaultEnabled: true,
+        config: {
+          aiCalls: 'none',
+          resourceUsage: 'none'
+        }
+      }
+    ];
+
+    // حفظ تعريفات الأنظمة
+    systemDefinitions.forEach(system => {
+      this.systems.set(system.systemName, system);
+    });
+
+    //console.log(`🔧 [SystemManager] Loaded ${systemDefinitions.length} system definitions`);
+  }
+
+  /**
+   * تهيئة إعدادات الأنظمة في قاعدة البيانات
+   */
+  async initializeSystemSettings() {
+    try {
+      console.log('🔄 [SystemManager] Starting system initialization...');
+
+      // إنشاء الجدول إذا لم يكن موجود (fallback)
+      await this.createSystemSettingsTable();
+
+      // 1. إضافة الأنظمة المفقودة وتحديث الموجودة
+      console.log(`Checking ${this.systems.size} defined systems...`);
+      for (const [systemName, definition] of this.systems) {
+        await this.ensureSystemExists(systemName, definition);
+      }
+
+      // 2. حذف الأنظمة القديمة التي تم إلغاؤها من الكود
+      // نحصل على جميع الأنظمة من قاعدة البيانات
+      const dbSystems = await this.getAllSystems();
+      console.log(`Found ${dbSystems.length} systems in database.`);
+
+      for (const dbSystem of dbSystems) {
+        // إذا كان النظام موجود في قاعدة البيانات ولكن غير موجود في تعريفات الكود
+        if (!this.systems.has(dbSystem.systemName)) {
+          console.log(`🗑️ [SystemManager] Removing obsolete system: ${dbSystem.systemName}`);
+          try {
+            await executeWithRetry(async () => {
+              await this.prisma.systemSettings.delete({
+                where: { systemName: dbSystem.systemName }
+              });
+            });
+            console.log(`✅ [SystemManager] Removed ${dbSystem.systemName}`);
+          } catch (delError) {
+            console.error(`❌ [SystemManager] Failed to remove ${dbSystem.systemName}:`, delError.message);
+          }
+        }
+      }
+
+      console.log('✅ [SystemManager] System initialization completed.');
+    } catch (error) {
+      console.error('❌ [SystemManager] Failed to initialize system settings:', error);
+    }
+  }
+
+  /**
+   * إنشاء جدول system_settings (fallback)
+   * ✅ FIX: Skip CREATE TABLE - table should be created via Prisma migrations
+   * This prevents permission errors when DB user doesn't have CREATE privilege
+   */
+  async createSystemSettingsTable() {
+    // ✅ FIX: Skip CREATE TABLE to avoid permission errors
+    // The table should already exist from Prisma migrations
+    // If it doesn't exist, Prisma ORM calls will fail gracefully
+    return;
+  }
+
+  /**
+   * التأكد من وجود النظام في قاعدة البيانات
+   */
+  async ensureSystemExists(systemName, definition) {
+    try {
+      // SECURITY FIX: Use Prisma Upsert for atomic create/update
+      // Prevents Race Conditions (TOCTOU) and Stale Data
+      await executeWithRetry(async () => {
+        await this.prisma.systemSettings.upsert({
+          where: { systemName },
+          update: {
+            displayName: definition.displayName,
+            description: definition.description,
+            category: definition.category,
+            // Note: We don't update isEnabled to preserve user preference
+            config: JSON.stringify(definition.config), // Ensure config is always up to date structure-wise
+            updatedAt: new Date()
+          },
+          create: {
+            id: `sys_${systemName}`,
+            systemName,
+            displayName: definition.displayName,
+            description: definition.description,
+            category: definition.category,
+            isEnabled: definition.defaultEnabled,
+            config: JSON.stringify(definition.config),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      });
+      //console.log(`✅ [SystemManager] Ensured system: ${systemName}`);
+    } catch (error) {
+      console.error(`❌ [SystemManager] Error ensuring system ${systemName}:`, error);
+    }
+  }
+
+  /**
+   * الحصول على جميع الأنظمة
+   */
+  async getAllSystems() {
+    try {
+      // SECURITY FIX: Use Prisma ORM instead of raw SQL
+      const systems = await executeWithRetry(async () => {
+        return await this.prisma.systemSettings.findMany({
+          orderBy: [
+            { category: 'asc' },
+            { displayName: 'asc' }
+          ]
+        });
+      });
+      return systems || [];
+    } catch (error) {
+      console.error('❌ [SystemManager] Error getting systems:', error);
+      return [];
+    }
+  }
+
+  /**
+   * تفعيل/تعطيل نظام
+   */
+  async toggleSystem(systemName, isEnabled) {
+    try {
+      // SECURITY FIX: Use Prisma ORM instead of raw SQL
+      await executeWithRetry(async () => {
+        await this.prisma.systemSettings.update({
+          where: { systemName },
+          data: {
+            isEnabled,
+            lastStatusChange: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      });
+
+      // تطبيق التغيير على النظام الفعلي
+      await this.applySystemChange(systemName, isEnabled);
+
+      //console.log(`🔧 [SystemManager] ${systemName} ${isEnabled ? 'enabled' : 'disabled'}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ [SystemManager] Error toggling ${systemName}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * تطبيق التغيير على النظام الفعلي
+   */
+  async applySystemChange(systemName, isEnabled) {
+    try {
+      switch (systemName) {
+        // ❌ REMOVED: Pattern System
+        // case 'autoPatternDetection':
+        //   await this.toggleAutoPatternDetection(isEnabled);
+        //   break;
+        case 'centralKeysSystem':
+          await this.toggleCentralKeysSystem(isEnabled);
+          break;
+        // ✅ ADDED: Missing System Handlers
+        case 'broadcastSchedulerService':
+        case 'billingNotificationService':
+        case 'turboTrackingScheduler':
+        case 'wooCommerceAutoSyncScheduler':
+          await this.toggleMonitoringService(systemName, isEnabled);
+          break;
+        case 'securityMonitoring':
+          console.log(`🔒 [SystemManager] Security Monitoring ${isEnabled ? 'enabled' : 'disabled'} (Placeholder)`);
+          break;
+        case 'keyRotationStrategy':
+          // لا يحتاج handler خاص - يتم قراءة الإعداد من config
+          console.log(`🔄 [SystemManager] Key Rotation Strategy updated`);
+          break;
+        default:
+        //console.log(`ℹ️ [SystemManager] No specific handler for ${systemName}`);
+      }
+    } catch (error) {
+      console.error(`❌ [SystemManager] Error applying change to ${systemName}:`, error);
+    }
+  }
+
+  /**
+   * تفعيل/تعطيل Auto Pattern Detection
+   */
+  // ❌ REMOVED: Pattern System
+  // async toggleAutoPatternDetection(isEnabled) {
+  //   try {
+  //     const autoPatternService = require('./autoPatternDetectionService');
+  //     if (isEnabled) {
+  //       autoPatternService.start();
+  //     } else {
+  //       autoPatternService.stop();
+  //     }
+  //   } catch (error) {
+  //     console.error('❌ [SystemManager] Error toggling AutoPatternDetection:', error);
+  //   }
+  // }
+
+  /**
+   * ✅ تفعيل/تعطيل نظام المفاتيح المركزية
+   * عند التعطيل: يتم تعطيل جميع المفاتيح المركزية
+   * عند التفعيل: يتم إعادة تفعيل المفاتيح المركزية
+   */
+  async toggleCentralKeysSystem(isEnabled) {
+    try {
+      console.log(`🔑 [SystemManager] ${isEnabled ? 'تفعيل' : 'تعطيل'} نظام المفاتيح المركزية...`);
+
+      // تحديث حالة جميع المفاتيح المركزية
+      const result = await executeWithRetry(async () => {
+        return await this.prisma.aIKey.updateMany({
+          where: { keyType: 'CENTRAL' },
+          data: {
+            isActive: isEnabled,
+            updatedAt: new Date()
+          }
+        });
+      });
+
+      console.log(`✅ [SystemManager] تم ${isEnabled ? 'تفعيل' : 'تعطيل'} ${result.count} مفتاح مركزي`);
+
+      // إبطال الـ cache في ModelManager
+      if (clearModelManagerCaches()) {
+        console.log('✅ [SystemManager] Cleared ModelManager cache');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('❌ [SystemManager] Error toggling Central Keys System:', error);
+      return false;
+    }
+  }
+
+  /**
+   * ✅ تفعيل/تعطيل خدمات المراقبة العامة
+   */
+  async toggleMonitoringService(systemName, isEnabled) {
+    try {
+      // Dynamic import based on system name
+      const serviceName = `./${systemName}`;
+      const service = require(serviceName);
+
+      if (service) {
+        if (isEnabled && service.start) {
+          service.start();
+        } else if (!isEnabled && service.stop) {
+          service.stop();
+        }
+        console.log(`✅ [SystemManager] ${systemName} has been ${isEnabled ? 'started' : 'stopped'}`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ [SystemManager] Could not toggle ${systemName}: Service not found or invalid interface.`);
+    }
+  }
+
+  /**
+   * ✅ تفعيل/تعطيل نظام مفاتيح الشركات
+   * عند التعطيل: يتم تعطيل جميع مفاتيح الشركات
+   * عند التفعيل: يتم إعادة تفعيل مفاتيح الشركات
+   */
+  /**
+   * ✅ الحصول على حالة أنظمة المفاتيح
+   */
+  async getKeysSystemStatus() {
+    try {
+      const activeCentral = await this.prisma.aIKey.count({ where: { keyType: 'CENTRAL', isActive: true } });
+      const totalCentral = await this.prisma.aIKey.count({ where: { keyType: 'CENTRAL' } });
+
+      return {
+        centralKeys: {
+          active: activeCentral,
+          total: totalCentral,
+          isEnabled: activeCentral > 0
+        }
+      };
+    } catch (error) {
+      console.error('❌ [SystemManager] Error getting keys system status:', error);
+      return null;
+    }
+  }
+
+  /**
+   * ✅ Key rotation strategy removed — system uses first active key only
+   */
+  async getKeyRotationStrategy() {
+    return 'SIMPLE';
+  }
+
+  /**
+   * ✅ Key rotation strategy removed — no-op
+   */
+  async setKeyRotationStrategy(strategy) {
+    console.log(`ℹ️ [SystemManager] Key rotation is disabled (SIMPLE mode). Ignoring strategy: ${strategy}`);
+    return true;
+  }
+
+  /**
+   * فحص حالة نظام
+   */
+  async isSystemEnabled(systemName) {
+    try {
+      // SECURITY FIX: Use Prisma ORM instead of raw SQL
+      const result = await executeWithRetry(async () => {
+        return await this.prisma.systemSettings.findFirst({
+          where: { systemName },
+          select: { isEnabled: true }
+        });
+      });
+      return result ? result.isEnabled : false;
+    } catch (error) {
+      console.error(`❌ [SystemManager] Error checking ${systemName}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * الحصول على إحصائيات الأنظمة
+   */
+  async getSystemStats() {
+    try {
+      const systems = await this.getAllSystems();
+      const stats = {
+        total: systems.length,
+        enabled: systems.filter(s => s.isEnabled).length,
+        disabled: systems.filter(s => !s.isEnabled).length,
+        byCategory: {}
+      };
+
+      // تجميع حسب الفئة
+      systems.forEach(system => {
+        if (!stats.byCategory[system.category]) {
+          stats.byCategory[system.category] = { total: 0, enabled: 0, disabled: 0 };
+        }
+        stats.byCategory[system.category].total++;
+        if (system.isEnabled) {
+          stats.byCategory[system.category].enabled++;
+        } else {
+          stats.byCategory[system.category].disabled++;
+        }
+      });
+
+      return stats;
+    } catch (error) {
+      console.error('❌ [SystemManager] Error getting stats:', error);
+      return null;
+    }
+  }
+}
+
+// إنشاء instance واحد
+const systemManager = new SystemManager();
+
+module.exports = systemManager;

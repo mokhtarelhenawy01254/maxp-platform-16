@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="108" y1="84" x2="702" y2="718" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08151E"/>
+      <stop offset="1" stop-color="#190920"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="250" y1="246" x2="552" y2="550" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#61F3FF"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" rx="48" fill="url(#bg)"/>
+  <rect x="184" y="258" width="432" height="228" rx="38" fill="#0A1B2A" stroke="url(#lens)" stroke-width="14"/>
+  <circle cx="400" cy="372" r="88" fill="#0A1018" stroke="url(#lens)" stroke-width="14"/>
+  <circle cx="400" cy="372" r="38" fill="#61F3FF" opacity=".92"/>
+  <circle cx="528" cy="324" r="16" fill="#A94DFF"/>
+  <path d="M304 518H496" stroke="#DDFBFF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M360 518V562" stroke="#DDFBFF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M440 518V562" stroke="#DDFBFF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M318 562H482" stroke="#61F3FF" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="400" cy="400" r="238" stroke="#61F3FF" stroke-width="14" opacity=".12"/>
+  <text x="400" y="674" fill="#E7F7FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" text-anchor="middle">ECHO CAPTURE CAM</text>
+</svg>

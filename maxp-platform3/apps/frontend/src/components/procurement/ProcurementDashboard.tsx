@@ -1,0 +1,250 @@
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { ShoppingCart, Receipt, CreditCard, Users } from "lucide-react";
+import { apiClient } from "../../services/apiClient";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface DashboardData {
+  summary: {
+    totalSuppliers: number;
+    activeSuppliers: number;
+    totalPurchaseOrders: number;
+    pendingOrders: number;
+    totalInvoices: number;
+    pendingInvoices: number;
+    overdueInvoices: number;
+    totalPayments: number;
+    totalPurchaseAmount: number;
+    totalPaidAmount: number;
+    totalPendingAmount: number;
+  };
+  topSuppliers: Array<{
+    id: string;
+    name: string;
+    currentBalance: number;
+    _count: {
+      purchaseOrders: number;
+      purchaseInvoices: number;
+    };
+  }>;
+  recentOrders: Array<any>;
+  recentInvoices: Array<any>;
+  recentPayments: Array<any>;
+}
+
+const StatCard: React.FC<{
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+}> = ({ title, value, icon, color }) => (
+  <Card>
+    <CardContent>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{title}</p>
+          <h4 className="text-2xl font-bold">{value}</h4>
+        </div>
+        <div
+          className="flex items-center justify-center rounded-full text-white"
+          style={{ backgroundColor: color, width: 56, height: 56 }}
+        >
+          {icon}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const ProcurementDashboard: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get("/procurement/reports/dashboard");
+      setData(response.data);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || !data) {
+    return <div className="p-3">{t("procurement.dashboard.loading")}</div>;
+  }
+
+  return (
+    <div className="p-3">
+      <h1 className="text-2xl font-bold mb-3">{t("procurement.dashboard.title")}</h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-3">
+        <StatCard
+          title={t("procurement.dashboard.totalSuppliers")}
+          value={data.summary.totalSuppliers}
+          icon={<Users />}
+          color="#1976d2"
+        />
+        <StatCard
+          title={t("procurement.dashboard.purchaseOrders")}
+          value={data.summary.totalPurchaseOrders}
+          icon={<ShoppingCart />}
+          color="#2e7d32"
+        />
+        <StatCard
+          title={t("procurement.dashboard.pendingInvoices")}
+          value={data.summary.pendingInvoices}
+          icon={<Receipt />}
+          color="#ed6c02"
+        />
+        <StatCard
+          title={t("procurement.dashboard.totalPayments")}
+          value={data.summary.totalPayments}
+          icon={<CreditCard />}
+          color="#9c27b0"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-3">
+        <Card>
+          <CardContent>
+            <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPurchases")}</h3>
+            {Number(data.summary.totalPurchaseAmount).toFixed(2)} {t("dashboard.egp")}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPaid")}</h3>
+            {Number(data.summary.totalPaidAmount).toFixed(2)} {t("dashboard.egp")}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.pendingAmount")}</h3>
+            {Number(data.summary.totalPendingAmount).toFixed(2)} {t("dashboard.egp")}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardContent>
+            <h3 className="text-base font-semibold mb-2">{t("procurement.dashboard.topSuppliers")}</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("procurement.dashboard.supplier")}</TableHead>
+                  <TableHead className="text-right">{t("procurement.dashboard.orders")}</TableHead>
+                  <TableHead className="text-right">{t("procurement.dashboard.invoices")}</TableHead>
+                  <TableHead className="text-right">{t("procurement.dashboard.balance")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.topSuppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell>{supplier.name}</TableCell>
+                    <TableCell className="text-right">{supplier._count.purchaseOrders}</TableCell>
+                    <TableCell className="text-right">{supplier._count.purchaseInvoices}</TableCell>
+                    <TableCell className="text-right">
+                      {Number(supplier.currentBalance).toFixed(2)} {t("dashboard.egp")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <h3 className="text-base font-semibold mb-2">{t("procurement.dashboard.recentPurchaseOrders")}</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("procurement.dashboard.orderNumber")}</TableHead>
+                  <TableHead>{t("procurement.dashboard.supplier")}</TableHead>
+                  <TableHead className="text-right">{t("procurement.dashboard.amount")}</TableHead>
+                  <TableHead>{t("procurement.dashboard.status")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.recentOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>{order.orderNumber}</TableCell>
+                    <TableCell>{order.supplier.name}</TableCell>
+                    <TableCell className="text-right">
+                      {order.totalAmount.toFixed(2)} {t("dashboard.egp")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{order.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardContent>
+            <h3 className="text-base font-semibold mb-2">{t("procurement.dashboard.recentInvoices")}</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("procurement.dashboard.invoiceNumber")}</TableHead>
+                  <TableHead>{t("procurement.dashboard.supplier")}</TableHead>
+                  <TableHead>{t("procurement.dashboard.date")}</TableHead>
+                  <TableHead className="text-right">{t("procurement.dashboard.totalAmount")}</TableHead>
+                  <TableHead className="text-right">{t("procurement.dashboard.paid")}</TableHead>
+                  <TableHead className="text-right">{t("procurement.dashboard.remaining")}</TableHead>
+                  <TableHead>{t("procurement.dashboard.status")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.recentInvoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell>{invoice.invoiceNumber}</TableCell>
+                    <TableCell>{invoice.supplier.name}</TableCell>
+                    <TableCell>
+                      {new Date(invoice.invoiceDate).toLocaleDateString(i18n.language)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {invoice.totalAmount.toFixed(2)} {t("dashboard.egp")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {invoice.paidAmount.toFixed(2)} {t("dashboard.egp")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {invoice.remainingAmount.toFixed(2)} {t("dashboard.egp")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{invoice.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default ProcurementDashboard;

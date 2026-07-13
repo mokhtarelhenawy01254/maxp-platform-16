@@ -1,0 +1,168 @@
+{
+  "id": "electronics-demo",
+  "name": "TECHZONE",
+  "tokens": {
+    "colors": {
+      "primary": "188 86% 53%",
+      "primaryForeground": "0 0% 0%",
+      "secondary": "222 47% 11%",
+      "secondaryForeground": "0 0% 100%",
+      "accent": "270 70% 60%",
+      "accentForeground": "0 0% 100%",
+      "background": "222 47% 4%",
+      "foreground": "210 40% 98%",
+      "muted": "222 47% 12%",
+      "mutedForeground": "215 20% 65%",
+      "border": "222 47% 18%",
+      "card": "222 47% 8%",
+      "cardForeground": "210 40% 98%",
+      "ring": "188 86% 53%"
+    },
+    "typography": {
+      "headingFont": "Inter, Cairo, sans-serif",
+      "bodyFont": "Inter, Cairo, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.5rem",
+      "buttonRadius": "0.5rem"
+    },
+    "productCard": {
+      "borderRadius": "0.75rem",
+      "boxShadow": "0 0 20px hsl(var(--primary)/0.05)",
+      "hoverShadow": "0 0 40px hsl(var(--primary)/0.15)",
+      "surfaceOpacity": "0.9"
+    }
+  },
+  "header": {
+    "brandName": "TECHZONE",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "الأجهزة", "to": "/shop" },
+      { "label": "العروض", "to": "/shop?sort=discount" }
+    ]
+  },
+  "footer": {
+    "description": "أجهزة وتقنيات عليها ثقة، شحن سريع، وضمان واضح يخلي قرار الشراء أسهل.",
+    "socialLinks": {
+      "instagram": "https://instagram.com/techzone",
+      "twitter": "https://twitter.com/techzone"
+    },
+    "navigation": [
+      {
+        "title": "استكشف",
+        "links": [
+          { "label": "كل العتاد", "to": "/shop" },
+          { "label": "أجهزة لابتوب", "to": "/shop?category=laptops" },
+          { "label": "إكسسوارات الجيمنج", "to": "/shop?category=gaming" }
+        ]
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "title": "أداء تقيل من أول نظرة",
+            "subtitle": "لابتوبات، ساعات ذكية، وإكسسوارات قوية بمواصفات واضحة وعروض تساعدك تحسم بسرعة.",
+            "backgroundImage": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=2070",
+            "buttonText": "ابدأ المقارنة"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "settings": {
+            "message": "استخدم كود TECH24 وخد خصم إضافي ١٠٪ على مختارات اليوم",
+            "badge": "عرض محدود"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "أجهزة مميزة",
+            "limit": 4
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip",
+          "settings": {
+            "title": "ليه TECHZONE؟",
+            "subtitle": "ثقة الشراء في الإلكترونيات تبدأ من الوضوح: أصلية مؤكدة، دعم سريع، وضمان يمكن الرجوع له.",
+            "items": [
+              {
+                "icon": "shield",
+                "title": "٥٠٠٠+ منتج أصلي",
+                "description": "أجهزة وإكسسوارات مختارة من موزعين موثوقين مع توثيق واضح لكل فئة."
+              },
+              {
+                "icon": "grid",
+                "title": "٢٠ ألف+ عميل سعيد",
+                "description": "تجربة شراء سريعة، تصفح منظم، وعروض واضحة للباحثين عن أفضل قيمة."
+              },
+              {
+                "icon": "clipboard",
+                "title": "ضمان حتى سنتين",
+                "description": "تغطية حقيقية على الأجهزة الأساسية مع دعم ما بعد البيع والمتابعة عند الحاجة."
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "settings": {
+            "title": "خليك أول واحد يعرف الجديد",
+            "description": "تنبيهات بالإصدارات الجديدة والعروض الساخنة قبل نفاد الكمية."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "مركز الأجهزة والعروض",
+            "searchPlaceholder": "ابحث عن لابتوب أو سماعة أو ساعة ذكية"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "standard" },
+        {
+          "type": "product-info",
+          "variant": "specs-grid",
+          "settings": {
+            "descriptionTitle": "المواصفات والتفاصيل",
+            "shippingTitle": "الشحن والاستلام",
+            "shippingText": "شحن سريع داخل المدن الرئيسية مع تغليف آمن وخيارات استلام مرنة حسب فئة المنتج.",
+            "guaranteesTitle": "ضمانات TECHZONE",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "أصلي 100%|توريد من موزعين موثوقين.\nضمان واضح|حتى سنتين على الأجهزة الأساسية.\nدعم سريع|متابعة قبل وبعد الطلب."
+          }
+        },
+        { "type": "related-products", "settings": { "title": "أجهزة متوافقة", "limit": 4 } }
+      ]
+    },
+    "cart": {
+      "sections": ["cart-items", "order-summary"]
+    },
+    "checkout": {
+      "sections": ["checkout-form", "payment"]
+    }
+  }
+}

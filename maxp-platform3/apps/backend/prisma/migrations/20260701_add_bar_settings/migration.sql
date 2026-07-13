@@ -1,0 +1,3 @@
+ALTER TABLE store_promotions ADD COLUMN barVisible BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE store_promotions ADD COLUMN barSticky BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE store_promotions ADD COLUMN barPages VARCHAR(255) NOT NULL DEFAULT 'all';

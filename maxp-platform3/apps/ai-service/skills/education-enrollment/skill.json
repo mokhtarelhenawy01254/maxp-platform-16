@@ -1,0 +1,11 @@
+{
+  "id": "education-enrollment",
+  "displayName": "Education Enrollment",
+  "version": "1.0.0",
+  "description": "Enroll new students in education packages: find or create parent, create student, and register in the package.",
+  "allowedTools": [
+    "education_enroll"
+  ],
+  "requiresHumanApproval": true,
+  "maxToolCount": 1
+}

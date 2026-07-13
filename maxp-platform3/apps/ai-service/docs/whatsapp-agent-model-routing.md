@@ -1,0 +1,48 @@
+# WhatsApp Agent Model Routing
+
+## 2026-06-22
+
+WhatsApp auto-replies can run through an agent whose stored `model` is outside
+the default provider priority list. Older agents may also be missing
+`config.provider` or `config.keyId`.
+
+The AI service now falls through to every supported provider when resolving a
+model-only route, so a stored model such as `deepseek-v4-flash` can still select
+the active DeepSeek key instead of falling back to the default Google runtime.
+The agent registry also restores `keyId`/`key_id` from persisted agent config
+when present, preserving explicitly selected keys after service restarts.
+
+The intent classifier uses structured JSON output before the final customer
+reply is generated. DeepSeek's OpenAI-compatible API accepts JSON mode as
+`response_format: {"type": "json_object"}` rather than OpenAI's
+`json_schema` response format. The OpenAI-compatible provider adapter now keeps
+`json_schema` for normal compatible providers and switches only DeepSeek
+structured calls to `json_object`, preventing the classifier from failing over
+to Gemini before the DeepSeek final reply.
+
+## 2026-06-23
+
+Short WhatsApp follow-ups such as "what did you find?" must be classified with
+recent conversation context, not as isolated messages. The intent stage now
+hydrates recent message history before routing, excluding the current user turn
+when it was already persisted. The context assembler also collapses adjacent
+duplicate role/content pairs created by WhatsApp sync echoes before sending
+history to the model.
+
+WhatsApp callers pass the unified inbox conversation id as `thread_id`. That id
+is not always a UUID, while the ai-service chat endpoint stores its own internal
+UUID thread. The original conversation id is now forwarded separately into the
+pipeline as `conversation_id`, and context assembly reads `public.messages` with
+that value before falling back to the internal thread id. This keeps customer
+follow-ups attached to the visible inbox history.
+
+AI Hub channel routing is represented by `ai.agents.channels`. When a merchant
+assigns `WHATSAPP` to an agent, the ai-service update endpoint now removes that
+channel from every other active agent in the same company, making the channel
+assignment exclusive. At runtime, orchestration resolves the channel agent from
+the database first and synchronizes the in-memory agent config before creating
+the channel responder. If the selected DB agent is missing from the in-memory
+registry, orchestration rebuilds and registers that runtime agent from the DB
+row instead of falling through to a stale agent. The registry is only a fallback
+when the database lookup is unavailable, so the Routing tab remains the source of
+truth after edits.
