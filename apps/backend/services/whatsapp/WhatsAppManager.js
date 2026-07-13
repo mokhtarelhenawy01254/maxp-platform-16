@@ -1205,7 +1205,8 @@ async function createSession(sessionId, companyId, options = {}) {
             metadata: options.metadata || null,
             loadBalanceWeight: options.loadBalanceWeight || 1,
             createdAt: new Date(),
-            lastQRTimestamp: null
+            lastQRTimestamp: null,
+            creds: state.creds
         };
         activeSessions.set(sessionId, sessionData);
         trackCompanySession(companyId, sessionId);
@@ -1572,6 +1573,23 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
 
             WA_LOG.ok(sessionId, `DB updated to CONNECTED`);
 
+            // ponytail: detect zombie sessions (connected but not registered)
+            const sd = activeSessions.get(sessionId);
+            if (sd?.creds && !sd.creds.registered) {
+                WA_LOG.error(sessionId, `ZOMBIE SESSION: connected but registered=false. Auth state lost during crash. Forcing relink.`);
+                await clearDatabaseAuthState(sessionId);
+                if (io) {
+                    io.to(`company_${companyId}`).emit('whatsapp:connection', {
+                        sessionId,
+                        status: 'relink_required',
+                        phoneNumber
+                    });
+                }
+                await logEvent(sessionId, companyId, 'relink_required', { reason: 'registered_false', phoneNumber }, 'critical');
+                await endSocketQuietly(sock, 'Unregistered session - forcing relink');
+                return;
+            }
+
             // ✅ Sync Profile Automatically
             syncProfile(sessionId).catch(err => WA_LOG.warn(sessionId, `Profile sync failed: ${err.message}`));
 
@@ -1809,8 +1827,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 }
             }
 
-            // Normalize JID (only for non-group, non-broadcast, non-newsletter, and already valid-looking JIDs)
-            if (remoteJid && !remoteJid.includes('@g.us') && remoteJid !== 'status@broadcast' && !isJidNewsletter?.(remoteJid) && isPhoneJid(remoteJid)) {
+            // Normalize JID (only for non-group, non-broadcast, and already valid-looking JIDs)
+            if (remoteJid && !remoteJid.includes('@g.us') && remoteJid !== 'status@broadcast' && isPhoneJid(remoteJid)) {
                 remoteJid = normalizePhoneJid(remoteJid);
             }
 
@@ -1818,12 +1836,6 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             if (remoteJid === 'status@broadcast') {
                 console.log('📸 Received status update');
                 await handleStatusUpdate(sessionId, companyId, msg, sock);
-                continue;
-            }
-
-            // تخطي رسائل القنوات (WhatsApp Channels / Newsletter)
-            if (isJidNewsletter?.(remoteJid)) {
-                console.log(`📢 Skipping newsletter message from ${remoteJid}`);
                 continue;
             }
 
@@ -2049,7 +2061,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
             // ── AI auto-reply with debounce (Baileys sessions) ────────────────────
-            if (!fromMe && !importHistory && isNewMessage && messageContent.type === 'TEXT' && syncedCustomer?.companyId) {
+            const isNewsletter = isJidNewsletter?.(remoteJid);
+            if (!fromMe && !importHistory && isNewMessage && messageContent.type === 'TEXT' && syncedCustomer?.companyId && !isNewsletter) {
                 setImmediate(async () => {
                     try {
                         const prisma = getSharedPrismaClient();
@@ -2542,7 +2555,7 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
         const createData = {
             jid: remoteJid,
             phoneNumber,
-            pushName: pushName || null, // Use null if undefined (outgoing)
+            pushName: pushName || null,
             profilePicUrl,
             lastMessageAt: lastMessageAt || new Date(),
             unreadCount: (!isOutgoing && !isGroupParticipant && !suppressUnread) ? 1 : 0,
