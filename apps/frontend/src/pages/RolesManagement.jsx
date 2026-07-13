@@ -39,6 +39,30 @@ const DOMAIN_LABELS = {
   AI: "الذكاء الاصطناعي", INVENTORY: "المخزون",
 };
 
+// Sub-group labels for ORDERS domain — prefix → Arabic label
+const ORDERS_SUBGROUP_LABELS = [
+  { prefix: ["orders.view", "orders.create", "orders.edit", "orders.delete", "orders.status.change", "orders.assign", "orders.export", "orders.bulk.create", "orders.invoice.print"], label: "📋 الطلبات الأساسية" },
+  { prefix: ["orders.incomplete."], label: "⚠️ الطلبات الناقصة" },
+  { prefix: ["orders.preparation."], label: "🏭 قائمة التجهيز" },
+  { prefix: ["orders.workspace."], label: "🖥️ مساحة العمل" },
+  { prefix: ["orders.confirmation."], label: "✅ تأكيدات الطلبات" },
+  { prefix: ["orders.quickstatus."], label: "⚡ تغيير الحالة السريع" },
+  { prefix: ["orders.turbo."], label: "🚀 سجلات Turbo" },
+  { prefix: ["orders.bosta."], label: "📦 سجلات Bosta" },
+  { prefix: ["orders.stats."], label: "📊 إحصائيات الطلبات" },
+  { prefix: ["orders.automation."], label: "🤖 أتمتة الطلبات" },
+  { prefix: ["bulkOrders."], label: "📚 الطلبات الجماعية (Bulk)" },
+];
+
+const getOrdersSubgroup = (permKey) => {
+  for (const group of ORDERS_SUBGROUP_LABELS) {
+    for (const p of group.prefix) {
+      if (permKey === p || permKey.startsWith(p)) return group.label;
+    }
+  }
+  return "أخرى";
+};
+
 const ROLE_COLORS = {
   OWNER: { border: "border-amber-400 dark:border-amber-600", bg: "bg-amber-50 dark:bg-amber-950/20", badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300", icon: "text-amber-600", label: "bg-amber-600" },
   COMPANY_ADMIN: { border: "border-blue-400 dark:border-blue-600", bg: "bg-blue-50 dark:bg-blue-950/20", badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300", icon: "text-blue-600", label: "bg-blue-600" },
@@ -403,17 +427,52 @@ const RolesManagement = () => {
                     </div>
                   </button>
                   {expandedDomain === domain && (
-                    <div className="p-2 grid grid-cols-1 gap-0.5 border-t">
-                      {domainPermissions.map(permission => (
-                        <label key={permission.key} className="flex items-center gap-3 p-2.5 rounded hover:bg-muted/50 cursor-pointer transition-colors min-h-12">
-                          <input type="checkbox" checked={formData.permissions.includes(permission.key)}
-                            onChange={() => handlePermissionToggle(permission.key)} disabled={submitting} className="size-5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium">{permission.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{permission.description || permission.key}</p>
+                    <div className="border-t">
+                      {domain === "ORDERS" ? (() => {
+                        // Group ORDERS permissions by sub-section
+                        const subgroups = {};
+                        for (const perm of domainPermissions) {
+                          const label = getOrdersSubgroup(perm.key);
+                          if (!subgroups[label]) subgroups[label] = [];
+                          subgroups[label].push(perm);
+                        }
+                        return Object.entries(subgroups).map(([subLabel, subPerms]) => (
+                          <div key={subLabel}>
+                            <div className="px-3 py-1.5 bg-muted/30 border-b flex items-center justify-between">
+                              <span className="text-xs font-semibold text-muted-foreground">{subLabel}</span>
+                              <span onClick={e => { e.stopPropagation(); handleSelectAll(subPerms); }}
+                                className="text-xs text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors cursor-pointer">
+                                {subPerms.every(p => formData.permissions.includes(p.key)) ? "إلغاء" : "تحديد الكل"}
+                              </span>
+                            </div>
+                            <div className="p-2 grid grid-cols-1 gap-0.5">
+                              {subPerms.map(permission => (
+                                <label key={permission.key} className="flex items-center gap-3 p-2.5 rounded hover:bg-muted/50 cursor-pointer transition-colors min-h-12">
+                                  <input type="checkbox" checked={formData.permissions.includes(permission.key)}
+                                    onChange={() => handlePermissionToggle(permission.key)} disabled={submitting} className="size-5 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium">{permission.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{permission.description || permission.key}</p>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
                           </div>
-                        </label>
-                      ))}
+                        ));
+                      })() : (
+                        <div className="p-2 grid grid-cols-1 gap-0.5">
+                          {domainPermissions.map(permission => (
+                            <label key={permission.key} className="flex items-center gap-3 p-2.5 rounded hover:bg-muted/50 cursor-pointer transition-colors min-h-12">
+                              <input type="checkbox" checked={formData.permissions.includes(permission.key)}
+                                onChange={() => handlePermissionToggle(permission.key)} disabled={submitting} className="size-5 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium">{permission.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{permission.description || permission.key}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
