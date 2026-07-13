@@ -432,7 +432,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
             <TabsContent value="settings" className="space-y-6">
               <WhatsAppSurfaceCard
                 title={t(`${ns}.stepEditor.title`, { ns })}
-                description={`${t(`${ns}.stepEditor.description`, { ns })} — ${stepCount} ${t(`${ns}.stepEditor.stepLabel`, { ns, current: "" }).replace("1", stepCount.toString())}`}
+                description={`${t(`${ns}.stepEditor.description`, { ns })} — ${t(`${ns}.stepEditor.stepLabel`, { ns, current: stepCount })}`}
               >
                 {settings?.steps && settings.steps.length > 0 ? (
                   <div className="space-y-3">
