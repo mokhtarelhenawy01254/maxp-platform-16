@@ -856,6 +856,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             : session,
         ),
       );
+      if (isConnectedStatus(data.status)) {
+        setQrDialogOpen(false);
+        setCurrentQR(null);
+        setCurrentPairingCode(null);
+        setCurrentPairingPhone(null);
+        setQrRefreshed(false);
+      }
     };
 
     socket.on("whatsapp:qr", handleQRCode);
@@ -1013,8 +1020,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       setCurrentQR(updatedSession?.qrCode || null);
       setCurrentPairingCode(updatedSession?.pairingCode || null);
       setCurrentPairingPhone(updatedSession?.phoneNumber || session.phoneNumber);
-      setQrDialogOpen(true);
-      toast.info(t("whatsappSettings.connecting"));
+      if (isConnectedStatus(updatedSession?.liveStatus) || isConnectedStatus(updatedSession?.status)) {
+        setQrDialogOpen(false);
+        toast.success(t("whatsappSettings.dialogs.linkedSuccess"));
+      } else {
+        setQrDialogOpen(true);
+        toast.info(t("whatsappSettings.connecting"));
+      }
       void invalidateSessionsCache();
     } catch (error) {
       showError(error, t("common.error"));
