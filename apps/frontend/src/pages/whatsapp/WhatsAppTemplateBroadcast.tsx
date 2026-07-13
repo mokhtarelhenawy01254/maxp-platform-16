@@ -58,9 +58,11 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [selectedListId, setSelectedListId] = useState("");
   const [recipientsText, setRecipientsText] = useState("");
   const [recipients, setRecipients] = useState<string[]>([]);
-  const [sendNow, setSendNow] = useState(true);
+  const [scheduleAt, setScheduleAt] = useState("");
+  const [templateVars, setTemplateVars] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [sendProgress, setSendProgress] = useState<{ current: number; total: number; status: string } | null>(null);
 
   // Campaigns history
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -69,6 +71,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   // Analytics
   const [analytics, setAnalytics] = useState<any>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null);
 
   const withCompanyConfig = useCallback(
     (config: ApiRequestConfig = {}) => companyId ? { ...config, _companyId: companyId } : config, [companyId],
@@ -145,33 +148,47 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     try {
       setSending(true);
       setResult(null);
+      setSendProgress({ current: 0, total: recipients.length, status: "sending" });
 
       const body = {
         name: campaignName,
         channel: "whatsapp",
-        message: `WhatsApp broadcast: ${selectedTemplate}`,
+        message: `WhatsApp broadcast: ${selectedTemplate}${templateVars.length ? ` | vars: ${templateVars.join(",")}` : ""}`,
         targetAudience: selectedListId || "manual",
         waTemplateName: selectedTemplate,
         waLanguageCode: languageCode,
-        sendNow: true,
+        sendNow: scheduleAt ? "false" : "true",
+        scheduledAt: scheduleAt || undefined,
       };
 
       const campaignRes = await broadcastService.createCampaign(
-        Object.entries(body).reduce((fd, [k, v]) => { fd.append(k, String(v)); return fd; }, new FormData())
+        Object.entries(body).reduce((fd, [k, v]) => { if (v !== undefined) fd.append(k, String(v)); return fd; }, new FormData())
       );
       const campaignId = campaignRes?.data?.id || campaignRes?.id;
 
+      setSendProgress({ current: 0, total: recipients.length, status: "sending" });
+      if (scheduleAt) {
+        setResult({ scheduled: true, scheduledAt: scheduleAt });
+        toast.success("تم جدولة الحملة");
+        setSending(false);
+        setSendProgress(null);
+        return;
+      }
+
       const sendRes = await broadcastService.sendCampaign(campaignId);
       setResult(sendRes);
-      toast.success("تم إرسال الحملة بنجاح");
+      toast.success(sendRes.sentCount > 0 ? `تم إرسال ${sendRes.sentCount} رسالة` : "تم الإرسال");
+      setActiveTab("campaigns");
+      setSelectedCampaign({} as any);
       fetchCampaigns();
     } catch (err: any) {
       toast.error(err?.message || "فشل");
       setResult({ sent: 0, failed: 0, errors: [{ error: err?.message }] });
+      setSendProgress(null);
     } finally {
-      setSending(false);
+      if (!scheduleAt) { setSending(false); setSendProgress(null); }
     }
-  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, withCompanyConfig, fetchCampaigns]);
+  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, withCompanyConfig, fetchCampaigns]);
 
   const openRate = (c: Campaign) =>
     c.sentCount > 0 ? Math.round((c.openedCount / c.sentCount) * 100) : 0;
@@ -264,6 +281,41 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>جدولة الإرسال</Label>
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <Input type="datetime-local" value={scheduleAt}
+                          onChange={e => setScheduleAt(e.target.value)}
+                          className="h-11" />
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setScheduleAt("")}
+                        className={scheduleAt ? "" : "opacity-30"}>
+                        <Clock className="size-4" /> الحذف
+                      </Button>
+                    </div>
+                    <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                      {scheduleAt ? `سيتم الإرسال في ${new Date(scheduleAt).toLocaleString("ar-EG")}` : "اترك فارغاً للإرسال الفوري"}
+                    </p>
+                  </div>
+
+                  {selectedTemplate && (
+                    <div className="space-y-2">
+                      <Label>متغيرات القالب</Label>
+                      <div className="flex gap-2">
+                        <Input value={templateVars[0] || ""}
+                          onChange={e => setTemplateVars([e.target.value, ...templateVars.slice(1)])}
+                          placeholder="اسم العميل ({{1}})" className="h-11" />
+                        <Button variant="outline" size="sm" onClick={() => setTemplateVars([])}>
+                          <X className="size-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                        أدخل قيمة المتغير الأول في القالب ({{"{{1}}"}})
+                      </p>
+                    </div>
+                  )}
                 </div>
               </WhatsAppSurfaceCard>
 
@@ -318,21 +370,40 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                 <CardContent className="space-y-4">
                   {!result ? (
                     <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                      {sending ? "جاري الإرسال..." : "لم يتم الإرسال بعد"}
+                      {sending ? (
+                        <span className="flex flex-col items-center gap-3">
+                          <span className="size-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          <span>جاري الإرسال... {sendProgress ? `${sendProgress.current}/${sendProgress.total}` : ""}</span>
+                        </span>
+                      ) : "لم يتم الإرسال بعد"}
                     </p>
+                  ) : result.scheduled ? (
+                    <div className="flex flex-col items-center gap-4 rounded-2xl border border-amber-200/80 bg-amber-500/10 p-6 text-center">
+                      <Clock className="size-10 text-amber-600" />
+                      <div>
+                        <p className="text-lg font-bold text-amber-800">تمت الجدولة</p>
+                        <p className="text-sm text-amber-700">
+                          {new Date(result.scheduledAt).toLocaleString("ar-EG")}
+                        </p>
+                      </div>
+                      <Button variant="outline" className="rounded-full mt-2"
+                        onClick={() => setActiveTab("campaigns")}>
+                        عرض الحملات
+                      </Button>
+                    </div>
                   ) : (
                     <>
                       <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 p-4">
-                        <CheckCircle className="size-8 text-emerald-600" />
-                        <div>
+                        <CheckCircle className="size-8 text-emerald-600 shrink-0" />
+                        <div className="min-w-0">
                           <p className="text-lg font-bold text-emerald-800">{result.sentCount || result.sent || 0}</p>
-                          <p className="text-sm text-emerald-700">تم الإرسال</p>
+                          <p className="text-sm text-emerald-700">تم الإرسال بنجاح</p>
                         </div>
                       </div>
                       {(result.failedCount || result.failed) > 0 && (
                         <div className="flex items-center gap-3 rounded-2xl border border-red-200/80 bg-red-500/10 p-4">
-                          <XCircle className="size-8 text-red-600" />
-                          <div>
+                          <XCircle className="size-8 text-red-600 shrink-0" />
+                          <div className="min-w-0">
                             <p className="text-lg font-bold text-red-800">{result.failedCount || result.failed || 0}</p>
                             <p className="text-sm text-red-700">فشل</p>
                           </div>
@@ -352,6 +423,10 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                           </div>
                         </div>
                       )}
+                      <Button variant="outline" className="w-full rounded-full mt-2"
+                        onClick={() => setActiveTab("campaigns")}>
+                        <Megaphone className="size-4" /> عرض الحملات
+                      </Button>
                     </>
                   )}
                 </CardContent>
@@ -371,19 +446,29 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
             </div>
           ) : (
             <div className="grid gap-4">
-              {campaigns.map((c) => (
-                <Card key={c.id} className="rounded-2xl cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setSelectedCampaign(selectedCampaign?.id === c.id ? null : c)}>
+              {campaigns.map((c) => {
+                const isExpanded = expandedCampaignId === c.id;
+                const metrics = [
+                  { label: "أُرسل", value: c.sentCount || 0, pct: 100, color: "bg-blue-500" },
+                  { label: "تم التسليم", value: c.deliveredCount || 0, pct: deliveryRate(c), color: "bg-emerald-500" },
+                  { label: "فتح", value: c.openedCount || 0, pct: openRate(c), color: "bg-violet-500" },
+                  { label: "نقر", value: c.clickedCount || 0, pct: clickRate(c), color: "bg-amber-500" },
+                  { label: "رد", value: (c as any).repliedCount || 0, pct: replyRate(c), color: "bg-rose-500" },
+                ];
+                return (
+                <Card key={c.id} className={`rounded-2xl cursor-pointer transition-all hover:shadow-md ${isExpanded ? "ring-2 ring-emerald-500/30" : ""}`}
+                  onClick={() => setExpandedCampaignId(isExpanded ? null : c.id)}>
                   <CardContent className="p-5">
                     <div className="flex items-center justify-between mb-3">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <h3 className="font-semibold text-lg">{c.name}</h3>
-                        <p className="text-sm text-[color:var(--color-muted-foreground)]">
+                        <p className="text-sm text-[color:var(--color-muted-foreground)] truncate">
                           {c.waTemplateName && `قالب: ${c.waTemplateName}`}
-                          {c.sentAt && ` • ${new Date(c.sentAt).toLocaleDateString("ar-EG")}`}
+                          {c.sentAt && ` • ${new Date(c.sentAt).toLocaleString("ar-EG")}`}
                         </p>
                       </div>
-                      <Badge variant={c.status === "sent" ? "default" : c.status === "failed" ? "destructive" : "secondary"}>
+                      <Badge variant={c.status === "sent" ? "default" : c.status === "failed" ? "destructive" : "secondary"}
+                        className="shrink-0 mr-2">
                         {c.status === "sent" ? "تم" : c.status === "failed" ? "فشل" : c.status}
                       </Badge>
                     </div>
@@ -393,9 +478,34 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       <div><p className="text-lg font-bold">{clickRate(c)}%</p><p className="text-xs text-[color:var(--color-muted-foreground)]"><MousePointerClick className="size-3 inline" /> نقر</p></div>
                       <div><p className="text-lg font-bold">{replyRate(c)}%</p><p className="text-xs text-[color:var(--color-muted-foreground)]"><Reply className="size-3 inline" /> رد</p></div>
                     </div>
+
+                    {isExpanded && (
+                      <div className="mt-5 pt-4 border-t space-y-4"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="grid grid-cols-5 gap-3">
+                          {metrics.map(m => (
+                            <div key={m.label} className="text-center">
+                              <div className="h-24 flex items-end justify-center gap-0.5">
+                                <div className="w-full max-w-[32px] rounded-t"
+                                  style={{ height: `${Math.max(m.pct * (m.pct < 10 ? 3 : 1), 4)}%`, background: m.color.replace("bg-", "") }}
+                                  data-color={m.color.replace("bg-", "")}
+                                >
+                                  {m.color === "bg-blue-500" ? "" : (
+                                    <div className={`h-full w-full rounded-t ${m.color} opacity-80`} />
+                                  )}
+                                </div>
+                              </div>
+                              <p className={`text-lg font-bold mt-1 ${m.value === 0 ? "opacity-40" : ""}`}>{m.value}</p>
+                              <p className="text-[11px] text-[color:var(--color-muted-foreground)]">{m.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
             </div>
           )}
         </TabsContent>
