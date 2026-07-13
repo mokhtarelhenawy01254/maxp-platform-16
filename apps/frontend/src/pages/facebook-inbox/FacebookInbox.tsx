@@ -2014,7 +2014,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
               className="absolute inset-0 z-20 bg-black/10 backdrop-blur-[1px]"
               onClick={() => setShowNotes(false)}
             />
-            <div className="absolute inset-y-0 right-0 z-30 w-full sm:max-w-[20rem]">
+            <div className="absolute inset-y-0 right-0 z-30 w-[85%] sm:max-w-[20rem]">
               <NotesPanel
                 className="h-full w-full shadow-2xl"
                 customerId={selectedConversation!.customerId}
@@ -2710,7 +2710,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
               className="absolute inset-0 z-20 bg-black/15 backdrop-blur-[1px]"
               onClick={() => setShowProfilePanel(false)}
             />
-            <div className="absolute inset-y-0 right-0 z-30 w-full sm:max-w-[22rem] xl:max-w-[23rem]">
+            <div className="absolute inset-y-0 right-0 z-30 w-[85%] sm:max-w-[22rem] xl:max-w-[23rem]">
               <button
                 type="button"
                 onClick={() => setShowProfilePanel(false)}

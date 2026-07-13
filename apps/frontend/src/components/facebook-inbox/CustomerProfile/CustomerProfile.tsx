@@ -107,8 +107,8 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
   notificationsEnabled = true,
   onSoundToggle,
   onNotificationsToggle,
-  // 🆕 Copy Conversation Link
-  onCopyConversationLink,
+  // 🆕 Copy Conversation Link (passed but unused)
+  // onCopyConversationLink,
   // 🆕 Quick Order
   onCreateOrder,
   compactHeader = false,
@@ -290,11 +290,23 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       </div>
     </div>
   );
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setIsMobileViewport(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const useCompactActions = compactHeader || isMobileViewport;
   const compactActionClassName =
     "business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-xl p-0 text-xs font-medium transition-colors";
   const expandedActionClassName =
     "business-chip-button flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-medium transition-colors";
-  const actionLabelClassName = compactHeader ? "sr-only" : "truncate";
+  const actionLabelClassName = useCompactActions ? "sr-only" : "truncate";
 
   return (
     <div
@@ -449,7 +461,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
               <button
                 onClick={onCreateOrder}
                 className={
-                  compactHeader
+                  useCompactActions
                     ? compactActionClassName
                     : expandedActionClassName
                 }
@@ -473,7 +485,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                 <div
                   className={[
                     "flex h-8 items-center justify-center rounded-xl",
-                    compactHeader ? "w-8 shrink-0" : "min-w-0 flex-1",
+                    useCompactActions ? "w-8 shrink-0" : "min-w-0 flex-1",
                   ].join(" ")}
                   style={{
                     border: "1px solid var(--business-card-border)",
@@ -489,7 +501,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                 <button
                   onClick={onUnblockClick}
                   disabled={blocking}
-                  className={`${compactHeader ? compactActionClassName : expandedActionClassName} disabled:cursor-not-allowed disabled:opacity-50`}
+                  className={`${useCompactActions ? compactActionClassName : expandedActionClassName} disabled:cursor-not-allowed disabled:opacity-50`}
                   style={{
                     color: "var(--business-success)",
                     background:
@@ -507,7 +519,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                 <button
                   onClick={onBlockClick}
                   className={
-                    compactHeader
+                    useCompactActions
                       ? compactActionClassName
                       : expandedActionClassName
                   }

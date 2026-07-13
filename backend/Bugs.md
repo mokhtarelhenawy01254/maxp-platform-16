@@ -913,3 +913,22 @@
   - `apps/ai-service/src/api/admin/guardrails.py`
   - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
 
+### [FIX] Facebook Inbox Space Waste & Mobile Layout Clutter
+- **Date**: 2026-07-13
+- **Description**: The Facebook Inbox page was suffering from severe space waste on medium screens (squeezing the active conversation window), and the drawer/overlays (notes and customer profile) cluttered small mobile screens by stretching to 100% width, blocking visibility and navigation.
+- **Root Cause**:
+  1. Both the conversation list column (`292px`) and customer profile column (`312px`) used fixed widths across all screen sizes above mobile, leaving only around `~400px` for the chat body on medium viewports (like `1024px`).
+  2. The page margins, column gap, and stage padding combined to waste ~38px of horizontal width.
+  3. Action buttons (Sound, notifications, order, block/unblock) in the CustomerProfile component rendered with full text labels and expanded sizes, causing them to wrap, collision, and clutter narrow mobile drawer displays.
+  4. Notes and profile overlays on mobile screens used `w-full`, fully covering the chat viewport.
+- **Resolution**:
+  1. Modified `apps/frontend/src/styles/index.css` to make column widths responsive (conversation list is `256px` and profile column is `268px` on medium screens, and gap/padding is reduced from `0.6rem` to `0.45rem`/`0.35rem` respectively).
+  2. Modified `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx` to set width of overlays to `w-[85%]` on mobile viewports, allowing the underlying chat thread to remain visible.
+  3. Integrated a responsive viewport resize listener in `apps/frontend/src/components/facebook-inbox/CustomerProfile/CustomerProfile.tsx` to detect mobile screens (< 768px). When active, it forces action buttons into a compact row, hiding textual labels (`sr-only`) and formatting them as icon-only buttons to fit cleanly without wrapping.
+  4. Resolved `onCopyConversationLink` declared-but-not-used compiler warning inside `CustomerProfile.tsx`.
+- **Files Modified**:
+  - `apps/frontend/src/styles/index.css`
+  - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx`
+  - `apps/frontend/src/components/facebook-inbox/CustomerProfile/CustomerProfile.tsx`
+
+

@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-13 / 2026-03-09
+- **Facebook Inbox Space Optimization & Mobile Layout Clutter (FIX)**: Overhauled the layout structure of the Facebook Inbox page to eliminate wasted space on desktop and resolve cluttered displays on mobile viewports:
+  1. Made the left conversation list column and right customer details column widths responsive. The conversation list reduces to `256px` and the profile column to `268px` on medium screens, freeing up over 60px of screen width for the chat thread.
+  2. Reduced main workspace gap and padding (stage margins) to maximize content container space.
+  3. Re-configured notes and profile drawers to occupy `85%` of mobile screens instead of `100%`, keeping the chat viewport visible in the background and making back-navigation more intuitive.
+  4. Implemented viewport resize monitoring inside `CustomerProfile.tsx` to automatically transition action buttons (Sound, notifications, order, block) into a compact row on screens < 768px, hiding their labels (`sr-only`) to avoid wrapping and collision.
+  5. Cleaned up typescript declared-but-unused compiler errors inside the profile component.
 - **WhatsApp Dead Socket & Pre-Send Validation (BUGFIX / CRITICAL)**: Hardened unofficial WhatsApp connection stability and message delivery:
   1. Exported `getSocketReadyState` helper from `WhatsAppManager.js` to enable explicit check of WebSocket state.
   2. Integrated `readyState` verification inside `isSendableBaileysSession()` and `getBaileysSessionReadinessReason()` in `WhatsAppMessageHandler.js` to treat non-open socket connections (CONNECTING, CLOSING, CLOSED) as unsendable.
