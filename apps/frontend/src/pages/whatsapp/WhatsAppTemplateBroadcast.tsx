@@ -312,7 +312,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                         </Button>
                       </div>
                       <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                        أدخل قيمة المتغير الأول في القالب ({{"{{1}}"}})
+                        أدخل قيمة المتغير الأول في القالب ({"{1}"})
                       </p>
                     </div>
                   )}
