@@ -2301,14 +2301,6 @@ async function hideFacebookComment(commentId, pageAccessToken) {
   }
 }
 
-    //console.log(`✅ [COMMENT-HIDE] Successfully hidden comment ${commentId}`);
-    return true;
-  } catch (error) {
-    console.error('❌ [COMMENT-HIDE] Error hiding comment:', error);
-    return false;
-  }
-}
-
 // Enhanced diagnostic function
 async function diagnoseFacebookSending(recipientId, messageContent, pageId = null) {
   const prisma = await getPrisma(); // ✅ Get connected instance
