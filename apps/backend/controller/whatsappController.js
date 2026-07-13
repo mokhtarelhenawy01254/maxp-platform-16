@@ -2487,6 +2487,8 @@ async function updateProfile(req, res) {
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
+const validateGroupJid = (jid) => typeof jid === 'string' && jid.endsWith('@g.us');
+
 /**
  * إنشاء مجموعة
  * POST /api/whatsapp/groups
@@ -2530,6 +2532,9 @@ async function getGroupMetadata(req, res) {
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2560,6 +2565,9 @@ async function updateGroupSubject(req, res) {
 
         if (!sessionId || !jid || !subject) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -2592,6 +2600,12 @@ async function updateGroupDescription(req, res) {
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
+        if (typeof description !== 'string') {
+            return res.status(400).json({ error: 'الوصف مطلوب' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2623,6 +2637,16 @@ async function updateGroupSettings(req, res) {
         if (!sessionId || !jid || !setting) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
+
+        const baileysSetting =
+            setting === 'announce'
+                ? (value ? 'announcement' : 'not_announcement')
+                : setting === 'restrict'
+                    ? (value ? 'locked' : 'unlocked')
+                    : setting;
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2633,7 +2657,7 @@ async function updateGroupSettings(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.updateGroupSettings(targetSessionId, jid, setting, value);
+        await WhatsAppManager.updateGroupSettings(targetSessionId, jid, baileysSetting);
         res.json({ success: true });
     } catch (error) {
         console.error('❌ Error updating group settings:', error);
@@ -2654,6 +2678,9 @@ async function updateGroupParticipants(req, res) {
         if (!sessionId || !jid || !action || !participants) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2664,7 +2691,7 @@ async function updateGroupParticipants(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.updateGroupParticipants(targetSessionId, jid, action, participants);
+        await WhatsAppManager.updateGroupParticipants(targetSessionId, jid, participants, action);
         res.json({ success: true });
     } catch (error) {
         console.error('❌ Error updating group participants:', error);
@@ -2684,6 +2711,9 @@ async function leaveGroup(req, res) {
 
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -2716,6 +2746,9 @@ async function getGroupInviteCode(req, res) {
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2746,6 +2779,9 @@ async function revokeGroupInviteCode(req, res) {
 
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -3274,10 +3310,15 @@ async function groupFetchAllParticipating(req, res) {
 async function groupToggleEphemeral(req, res) {
     try {
         const { companyId } = req.user;
-        const { sessionId, jid, ephemeral } = req.body;
+        const { jid } = req.params;
+        const { sessionId, ephemeral, duration } = req.body;
 
-        if (!sessionId || !jid || typeof ephemeral !== 'boolean') {
+        const ephemeralValue = ephemeral !== undefined ? ephemeral : duration;
+        if (!sessionId || !jid || typeof ephemeralValue !== 'number') {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -3289,7 +3330,7 @@ async function groupToggleEphemeral(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const result = await WhatsAppManager.groupToggleEphemeral(targetSessionId, jid, ephemeral);
+        const result = await WhatsAppManager.groupToggleEphemeral(targetSessionId, jid, ephemeralValue);
         res.json({ success: true, result });
     } catch (error) {
         console.error('❌ Error toggling group ephemeral:', error);
@@ -3298,12 +3339,21 @@ async function groupToggleEphemeral(req, res) {
 }
 
 async function groupUpdatePicture(req, res) {
+    const filePath = req.file?.path;
     try {
         const { companyId } = req.user;
-        const { sessionId, jid, picture } = req.body;
+        const { jid } = req.params;
+        const { sessionId } = req.body;
 
-        if (!sessionId || !jid || !picture) {
+        if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'صورة المجموعة مطلوبة' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -3315,11 +3365,16 @@ async function groupUpdatePicture(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const result = await WhatsAppManager.groupUpdatePicture(targetSessionId, jid, picture);
+        const pictureBuffer = fs.readFileSync(filePath);
+        const result = await WhatsAppManager.groupUpdatePicture(targetSessionId, jid, pictureBuffer);
         res.json({ success: true, result });
     } catch (error) {
         console.error('❌ Error updating group picture:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء تحديث صورة المجموعة' });
+    } finally {
+        if (filePath) {
+            try { fs.unlinkSync(filePath); } catch (e) { /* ignore temp cleanup */ }
+        }
     }
 }
 

@@ -1,4 +1,29 @@
-<<<<<<< HEAD
+# Session Log — 2026-07-12 — GitHub Repo Migration + Deploy Fix
+
+## What Happened
+1. **GitHub quota full** — Old repo `elhenawym124-ops/maxp-platform` at quota. Created new repo `elhenawym124-ops/maxp-platform3`. Changed origin remote, pushed main (~668MB, succeeded at 10min timeout).
+2. **Team updates pulled** — Added remote to old repo `mokhtar1983/maxp-platform-1`, pulled 2 new commits (WhatsApp Cloud OAuth + orders performance). Merged via ff, committed local changes, pushed all. Cleaned remotes.
+3. **Secrets not migrated** — Deploy workflow failed with `SERVER_HOST missing`. Old repo had secrets but new repo didn't.
+4. **SSH key generation** — Generated new ED25519 key. **Bug:** PowerShell `ssh-keygen -N "passphrase"` passes literal quotes as part of passphrase. Re-ran without `-N` (interactive prompt impossible in CI shell) → used `-N \"\"` with escaped quotes.
+5. **Secrets set via CLI** — Used `gh secret set` for SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, SERVER_PORT.
+6. **Server SSH key added** — Used sshpass to SSH to root@153.92.223.119, appended public key to `~/.ssh/authorized_keys`.
+7. **Deploy triggered** — Workflow succeeded ✅ (backend health check on port 3007).
+
+## Key Lessons
+- PowerShell `ssh-keygen -N "value"` includes the literal double-quote characters in the passphrase. Use `-N 'value'` (single quotes) or no `-N` flag.
+- GitHub secrets are NOT copied when you create a new repo (even by same user in same org).
+- Must generate fresh SSH deploy key for new repo and register public key on server.
+- `gh secret set` CLI works well for setting secrets from pipeline/agent.
+
+## Key Files
+- No code files modified — purely infra/git operations.
+
+## New Repo
+- URL: https://github.com/elhenawym124-ops/maxp-platform3
+- Remote: origin
+
+---
+
 # Session Log — 2026-07-12 — Self-Review System (LLM-as-Judge) Full Stack
 
 ## What Happened

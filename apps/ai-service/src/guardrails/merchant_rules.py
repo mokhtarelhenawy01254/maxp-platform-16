@@ -122,7 +122,7 @@ class MerchantRuleGuardrail(BaseGuardrail):
             if matched_by_keyword:
                 logger.debug("guardrails.keyword_match_success", agent_id=agent_id, count=len(matched_by_keyword))
                 return matched_by_keyword[:top_k]
-            return rules_data[:top_k]
+            return []
 
 
         # Calculate similarity scores

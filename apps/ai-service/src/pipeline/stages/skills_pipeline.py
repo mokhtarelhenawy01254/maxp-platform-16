@@ -161,7 +161,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         if executed:
             followup_messages = await _build_followup_messages(ctx, provider_response, executed)
             try:
-                final_response = await _raw_llm_call(ctx, followup_messages)
+                final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
                 if final_response.tool_calls:
                     extra_results = await asyncio.gather(*[_execute_one(tc) for tc in final_response.tool_calls])
                     executed.extend(extra_results)
@@ -366,6 +366,10 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         tool_choice = None
 
     temperature = 1.0 if provider == "OLLAMA" else 0.3
+
+    # Persist assembled messages for downstream stages (self-review judge context)
+    ctx.messages = list(messages)
+
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
@@ -437,16 +441,34 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
     from src.skills.registry import get_skill_registry
     registry = get_skill_registry()
-    tool_dicts = []
+    
+    skills = []
+    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+        for skill_name in ctx.agent.allowed_skills:
+            skill = registry.resolve(skill_name)
+            if skill:
+                skills.append(skill)
+                
+    tool_dicts = [s.to_openai_tool() for s in skills]
+    skill_names = {s.name.lower() for s in skills}
+    
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
     for tool_name in allowed:
         tname = tool_name.lower()
-        tool = registry.resolve(tname)
-        if tool:
-            tool_dicts.append(
-                tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
-                else {"type": "function", "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}}
-            )
+        if tname not in skill_names:
+            tool = registry.resolve(tname)
+            if tool:
+                tool_dicts.append(
+                    tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
+                    else {
+                        "type": "function",
+                        "function": {
+                            "name": tool.name,
+                            "description": getattr(tool, 'description', ''),
+                            "parameters": {"type": "object", "properties": {}}
+                        }
+                    }
+                )
     return tool_dicts
 
 

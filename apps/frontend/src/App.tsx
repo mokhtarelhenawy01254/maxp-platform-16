@@ -808,9 +808,6 @@ const SuperAdminWhatsAppCompanySettings = React.lazy(
 const SuperAdminWhatsAppCompanyNotifications = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppCompanyNotifications"),
 );
-const SuperAdminWhatsAppCompanyAnalytics = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyAnalytics"),
-);
 const SuperAdminWhatsAppLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppLogs"),
 );
@@ -1153,9 +1150,6 @@ const WhatsAppNotifications = React.lazy(
 const WhatsAppCustomerJourney = React.lazy(
   () => import("./pages/whatsapp/WhatsAppCustomerJourney"),
 );
-const WhatsAppAnalytics = React.lazy(
-  () => import("./pages/whatsapp/WhatsAppAnalytics"),
-);
 const WhatsAppMetaTemplates = React.lazy(
   () => import("./pages/whatsapp/WhatsAppMetaTemplates"),
 );
@@ -1167,6 +1161,9 @@ const WhatsAppLeadFollowUp = React.lazy(
 );
 const WhatsAppCloudConnect = React.lazy(() =>
   import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppCloudConnect })),
+);
+const WhatsAppEmployeeAnalytics = React.lazy(() =>
+  import("./pages/whatsapp/WhatsAppEmployeeAnalytics"),
 );
 
 // HR Module
@@ -1807,14 +1804,6 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminWhatsAppCompanyNotifications />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/companies/:companyId/analytics"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppCompanyAnalytics />
                 </Layout>
               }
             />
@@ -5605,14 +5594,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/whatsapp/analytics"
-                  element={
-                    <Layout>
-                      <WhatsAppAnalytics />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/whatsapp/meta-templates"
                   element={
                     <Layout>
@@ -5641,6 +5622,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppCloudConnect />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/employee-analytics"
+                  element={
+                    <Layout>
+                      <WhatsAppEmployeeAnalytics />
                     </Layout>
                   }
                 />

@@ -179,41 +179,35 @@ export default function MainDashboardPage() {
   const now = useMemo(() => new Date(), []);
 
   if (isLoading) {
-    return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
-        <DashboardSkeleton />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (isError) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="p-4 rounded-2xl bg-destructive/10 mb-4">
-            <EyeIcon className="w-8 h-8 text-destructive" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground mb-2">
-            {t("companyDashboard.errors.fetchFailed")}
-          </h2>
-          <p className="text-sm text-muted-foreground max-w-md">
-            {error instanceof Error ? error.message : t("common.error")}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate("/apps")}
-            className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            {t("common.retry")}
-          </button>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="p-4 rounded-2xl bg-destructive/10 mb-4">
+          <EyeIcon className="w-8 h-8 text-destructive" />
         </div>
+        <h2 className="text-lg font-semibold text-foreground mb-2">
+          {t("companyDashboard.errors.fetchFailed")}
+        </h2>
+        <p className="text-sm text-muted-foreground max-w-md">
+          {error instanceof Error ? error.message : t("common.error")}
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate("/apps")}
+          className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          {t("common.retry")}
+        </button>
       </div>
     );
   }
 
   if (isEmpty && dashboard) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             {dashboard.company?.name
@@ -232,7 +226,7 @@ export default function MainDashboardPage() {
 
   return (
     <div
-      className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto"
+      className="space-y-6"
       style={{ viewTransitionName: "main-dashboard" }}
     >
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">

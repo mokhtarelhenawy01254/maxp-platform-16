@@ -47,6 +47,7 @@ export interface AiKeyLog {
   model?: string;
   latency_ms?: number;
   error?: string;
+  response?: string;
   company_id?: string;
   created_at: string;
 }
