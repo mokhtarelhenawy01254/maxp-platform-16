@@ -1,5 +1,19 @@
 # Backend Bugs Log
 
+### [BUG FIX] WhatsApp Dead Socket Recovery & Pre-Send Connection Validation
+- **Date**: 2026-07-13
+- **Root Cause**:
+    1. **Lack of readyState verification**: The `isSendableBaileysSession()` validation checked only the memory session status and function presence but did not verify the WebSocket's `readyState` (which could be `0` (CONNECTING), `2` (CLOSING), or `3` (CLOSED)).
+    2. **Bypassed validation**: Media sending and utility functions (such as `sendImage`, `sendButtons`, etc.) completely bypassed the readiness checks of `getSendableBaileysSession` and directly accessed `WhatsAppManager.getSession()`, missing any connection state checks.
+- **Resolution**:
+    1. **Public readyState utility**: Exported `getSocketReadyState` publicly from `WhatsAppManager.js` to allow external service modules to query connection states.
+    2. **Integrated readyState checking**: Updated `isSendableBaileysSession()` and `getBaileysSessionReadinessReason()` in `WhatsAppMessageHandler.js` to query the socket's `readyState`. Any status other than `1` (OPEN) marks the session as unsendable.
+    3. **Standardized session retrieval**: Refactored all media, list, catalog, template, and button-sending handlers in `WhatsAppMessageHandler.js` to fetch sessions through `getSendableBaileysSession()` rather than directly referencing the cache.
+    4. **Automatic send retry**: Implemented active retry inside `sendText()`. If the first transmission attempt fails due to a dead socket, it catches the error, catches the error, calls `reconnectSession` with `forceRestart: true` to recreate the connection, waits for connectivity, and retries once.
+- **Files Modified**:
+    - `apps/backend/services/whatsapp/WhatsAppManager.js`
+    - `apps/backend/services/whatsapp/WhatsAppMessageHandler.js`
+
 ### [BUG FIX] AI Service Self-Review Judge — Conversation History Context Loss
 - **Date**: 2026-07-13
 - **Root Cause**: The self-review judge model was operating without the context of prior messages in the conversation. While `ContextAssembler.fetch_message_history` correctly retrieved the thread history from the database inside `_llm_call` (`skills_pipeline.py`), the resulting messages array was only used as a local variable. It was never written to `ctx.messages`, leaving `ctx.messages` empty. When the downstream `validate_reply.py` stage extracted conversation context via `_extract_conversation_context(ctx)`, it found an empty list and passed `(لا يوجد تاريخ محادثة)` to the judge.

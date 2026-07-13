@@ -46,6 +46,7 @@ export interface Contact {
   pushName: string | null;
   profilePicUrl: string | null;
   isGroup: boolean;
+  isNewsletter: boolean;
   category: string | null;
   labels?: string[];
   unreadCount: number;

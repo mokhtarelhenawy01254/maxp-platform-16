@@ -15,7 +15,7 @@ import type { Contact } from "../../hooks/useWhatsAppQueries";
  */
 
 type ContactDisplaySource = Pick<Contact, "jid"> &
-  Partial<Pick<Contact, "phoneNumber" | "name" | "pushName" | "customer" | "isGroup">>;
+  Partial<Pick<Contact, "phoneNumber" | "name" | "pushName" | "customer" | "isGroup" | "isNewsletter">>;
 
 /**
  * Check if the value contains a non-real-phone fallback prefix.

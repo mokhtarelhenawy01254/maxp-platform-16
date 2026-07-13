@@ -7317,6 +7317,7 @@
     "window": {
       "selectChat": "Select a chat to start",
       "group": "Group",
+      "channel": "Channel",
       "typing": "typing...",
       "online": "online",
       "lastSeen": "last seen",

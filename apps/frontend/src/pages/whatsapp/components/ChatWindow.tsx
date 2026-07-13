@@ -199,6 +199,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   {t("whatsapp.window.group")}
                 </Badge>
               ) : null}
+              {selectedContact.isNewsletter ? (
+                <Badge
+                  variant="outline"
+                  className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[9px] text-[color:var(--color-muted-foreground)] px-1 py-0"
+                >
+                  {t("whatsapp.window.channel")}
+                </Badge>
+              ) : null}
               {selectedContact.unreadCount > 0 ? (
                 <Badge className="bg-[color:var(--color-primary)] text-white text-[10px] h-4 min-w-4 px-1">
                   {selectedContact.unreadCount}

@@ -4465,6 +4465,7 @@ module.exports = {
     emitSessionStatusesForCompany,
     emitAllSessionStatuses,
     verifySessionHealth,
+    getSocketReadyState,
     startSessionHealthCheck,
     stopSessionHealthCheck,
 

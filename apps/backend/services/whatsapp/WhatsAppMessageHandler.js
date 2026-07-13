@@ -70,12 +70,14 @@ async function ensureMetaContact(sessionId, jid, options = {}) {
 }
 
 function isSendableBaileysSession(session) {
-    return Boolean(
-        session &&
-        session.status === 'connected' &&
-        session.sock &&
-        typeof session.sock.sendMessage === 'function'
-    );
+    if (!session || session.status !== 'connected' || !session.sock || typeof session.sock.sendMessage !== 'function') {
+        return false;
+    }
+    const readyState = WhatsAppManager.getSocketReadyState(session.sock);
+    if (typeof readyState === 'number' && readyState !== 1) {
+        return false;
+    }
+    return true;
 }
 
 function getBaileysSessionReadinessReason(session) {
@@ -83,6 +85,10 @@ function getBaileysSessionReadinessReason(session) {
     if (session.status !== 'connected') return `status_${session.status || 'unknown'}`;
     if (!session.sock) return 'no_socket';
     if (typeof session.sock.sendMessage !== 'function') return 'send_message_unavailable';
+    const readyState = WhatsAppManager.getSocketReadyState(session.sock);
+    if (typeof readyState === 'number' && readyState !== 1) {
+        return `socket_readyState_${readyState}`;
+    }
     return 'unknown';
 }
 
@@ -235,8 +241,30 @@ async function sendText(sessionId, to, text, options = {}) {
             };
         }
 
-        session = await getSendableBaileysSession(sessionId, dbSession);
-        const result = await session.sock.sendMessage(jid, messageOptions);
+        let result;
+        try {
+            session = await getSendableBaileysSession(sessionId, dbSession);
+            result = await session.sock.sendMessage(jid, messageOptions);
+        } catch (sendError) {
+            console.warn(`⚠️ [WA-SEND:${sessionId}] First send attempt failed: ${sendError.message}. Reconnecting and retrying...`);
+            try {
+                const companyId = session?.companyId || dbSession?.companyId;
+                if (companyId) {
+                    await WhatsAppManager.reconnectSession(sessionId, companyId, 0, {
+                        syncFullHistory: session?.syncFullHistory || false,
+                        forceRestart: true
+                    });
+                }
+            } catch (reconnectError) {
+                console.error(`❌ [WA-SEND:${sessionId}] Reconnect during retry failed:`, reconnectError.message);
+            }
+            
+            session = await waitForSendableBaileysSession(sessionId);
+            if (!session) {
+                throw sendError;
+            }
+            result = await session.sock.sendMessage(jid, messageOptions);
+        }
 
         // إيقاف حالة الكتابة
         await sendTypingSafely(sessionId, jid, false);
@@ -287,10 +315,7 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -351,10 +376,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -409,10 +431,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -469,10 +488,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -530,10 +546,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -597,10 +610,7 @@ async function sendContact(sessionId, to, contact, options = {}) {
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -640,16 +650,13 @@ END:VCARD`;
  */
 async function sendReaction(sessionId, to, messageId, emoji) {
     try {
-        const { provider } = await getSessionProvider(sessionId);
+        const { session: dbSession, provider } = await getSessionProvider(sessionId);
         if (provider === 'META_CLOUD') {
             const result = await MetaCloudProvider.sendReaction(sessionId, to, messageId, emoji);
             return result;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -717,10 +724,7 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
         const footer = options.footer || '';
@@ -817,10 +821,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -895,10 +896,7 @@ async function sendProduct(sessionId, to, product, options = {}) {
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1064,10 +1062,8 @@ function getRemoteJidLookupValues(remoteJid) {
  */
 async function deleteMessage(sessionId, remoteJid, messageId, forEveryone = false) {
     try {
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(remoteJid);
 
@@ -1367,10 +1363,8 @@ function delay(ms) {
  */
 async function sendPoll(sessionId, to, pollData, options = {}) {
     try {
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1415,10 +1409,8 @@ async function sendPoll(sessionId, to, pollData, options = {}) {
  */
 async function sendOrder(sessionId, to, orderData, options = {}) {
     try {
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1448,10 +1440,8 @@ async function sendOrder(sessionId, to, orderData, options = {}) {
  */
 async function sendCatalog(sessionId, to, catalogData, options = {}) {
     try {
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1481,10 +1471,8 @@ async function sendCatalog(sessionId, to, catalogData, options = {}) {
  */
 async function getCatalog(sessionId) {
     try {
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const catalog = await session.sock.getCatalog();
         return catalog;
@@ -1499,10 +1487,8 @@ async function getCatalog(sessionId) {
  */
 async function getProducts(sessionId, catalogId) {
     try {
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const products = await session.sock.getProducts(catalogId);
         return products;
@@ -1517,10 +1503,8 @@ async function getProducts(sessionId, catalogId) {
  */
 async function getCart(sessionId, cartId) {
     try {
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const cart = await session.sock.getCart(cartId);
         return cart;
@@ -1562,10 +1546,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const jid = formatJid(to);
 
@@ -1599,16 +1580,13 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
  */
 async function getMessageTemplate(sessionId) {
     try {
-        const { provider } = await getSessionProvider(sessionId);
+        const { session: dbSession, provider } = await getSessionProvider(sessionId);
         if (provider === 'META_CLOUD') {
             const templates = await MetaCloudProvider.listTemplates(sessionId);
             return templates;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
+        const session = await getSendableBaileysSession(sessionId, dbSession);
 
         const templates = await session.sock.getMessageTemplate();
         return templates;

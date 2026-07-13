@@ -948,6 +948,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                   G
                                 </Badge>
                               ) : null}
+                              {contact.isNewsletter ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-1.5 text-[9px] uppercase text-[color:var(--color-muted-foreground)]"
+                                >
+                                  {t("whatsapp.window.channel")}
+                                </Badge>
+                              ) : null}
                             </div>
                           </div>
                           <p

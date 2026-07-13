@@ -1,5 +1,12 @@
 # Team Sync Updates
 
+## 2026-07-13 / 2026-03-09
+- **WhatsApp Dead Socket & Pre-Send Validation (BUGFIX / CRITICAL)**: Hardened unofficial WhatsApp connection stability and message delivery:
+  1. Exported `getSocketReadyState` helper from `WhatsAppManager.js` to enable explicit check of WebSocket state.
+  2. Integrated `readyState` verification inside `isSendableBaileysSession()` and `getBaileysSessionReadinessReason()` in `WhatsAppMessageHandler.js` to treat non-open socket connections (CONNECTING, CLOSING, CLOSED) as unsendable.
+  3. Standardized session retrieval across all media, interactive buttons, list, and catalog sending actions in `WhatsAppMessageHandler.js` to fetch sessions through `getSendableBaileysSession()` rather than raw cache lookup, ensuring connection checks are performed before every type of outbound call.
+  4. Added automatic retry mechanism in `sendText()`: if sending fails due to a dead socket connection, the system force-restarts the WhatsApp session in the background (`forceRestart: true`), waits for reconnect, and retries transmission once.
+
 ## 2026-07-12 / 2026-03-09
 - **AI Service Self-Review Judge — Conversation History Context Fix (BUGFIX / CRITICAL)**: Fixed a bug where the self-review judge was operating without conversation history. Updated `_llm_call` in `skills_pipeline.py` to persist the assembled messages array (containing DB-backed conversation history and customer message) to `ctx.messages`. This ensures downstream stages (like the self-review judge) can access the full context of prior turns.
 - **AI Service Active Polishing & Refinement Layer (FEATURE / COMPLETE)**: Overhauled the self-review judge pipeline in `validate_reply.py` to act as an active editor/polishing layer rather than a strict gatekeeper:
