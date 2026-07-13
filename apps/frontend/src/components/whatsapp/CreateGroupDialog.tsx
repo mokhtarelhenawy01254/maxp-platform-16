@@ -92,7 +92,7 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
 
     setCreating(true);
     try {
-      const response = await api.post("/whatsapp/groups/create", {
+      const response = await api.post("/whatsapp/groups", {
         sessionId,
         subject,
         participants: selectedParticipants,

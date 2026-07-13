@@ -2661,8 +2661,22 @@ async function handleMessageReceiptUpdate(sessionId, companyId, updates) {
  * معالجة تحديث المجموعات
  */
 async function handleGroupsUpdate(sessionId, companyId, updates) {
-    // يمكن إضافة منطق معالجة المجموعات هنا
-    console.log(`📢 Groups update for session ${sessionId}:`, updates);
+    if (!Array.isArray(updates)) updates = [updates];
+    for (const update of updates) {
+        try {
+            if (!update.id) continue;
+            const data = {};
+            if (typeof update.subject === 'string') data.pushName = update.subject;
+            if (Object.keys(data).length > 0) {
+                await getSharedPrismaClient().whatsAppContact.updateMany({
+                    where: { sessionId, jid: update.id },
+                    data
+                });
+            }
+        } catch (err) {
+            console.error(`❌ handleGroupsUpdate: failed for ${update.id}:`, err);
+        }
+    }
 }
 
 /**

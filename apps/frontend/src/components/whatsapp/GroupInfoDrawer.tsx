@@ -228,7 +228,7 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
     action: "remove" | "promote" | "demote",
   ) => {
     try {
-      await api.post(`/whatsapp/groups/${groupJid}/participants`, {
+      await api.put(`/whatsapp/groups/${groupJid}/participants`, {
         sessionId,
         participants: [participantId],
         action,
@@ -242,7 +242,7 @@ const GroupInfoDrawer: React.FC<GroupInfoDrawerProps> = ({
 
   const handleAddParticipants = async () => {
     try {
-      await api.post(`/whatsapp/groups/${groupJid}/participants`, {
+      await api.put(`/whatsapp/groups/${groupJid}/participants`, {
         sessionId,
         participants: selectedContactsToAdd,
         action: "add",
