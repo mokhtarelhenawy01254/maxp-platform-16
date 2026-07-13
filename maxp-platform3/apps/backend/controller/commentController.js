@@ -1610,28 +1610,27 @@ const getPostsByPageId = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
-    let whereClause = { companyId, pageId };
+    // Get actual posts from facebook_posts table (only real posts, no pseudo-posts from comments)
+    let postWhereClause = { companyId, pageId };
     if (search) {
-      whereClause.postId = { contains: search };
+      postWhereClause.message = { contains: search };
     }
 
-    // ✅ Step 1: Get distinct post IDs (single query)
-    const posts = await getSharedPrismaClient().facebookComment.groupBy({
-      by: ['postId'],
-      where: whereClause,
-      _max: { createdTime: true },
-      orderBy: { _max: { createdTime: 'desc' } },
+    const localPosts = await getSharedPrismaClient().facebookPost.findMany({
+      where: postWhereClause,
+      select: { postId: true, message: true, mediaUrl: true, postedAt: true },
+      orderBy: { postedAt: 'desc' },
       take,
       skip
     });
 
-    if (posts.length === 0) {
+    if (localPosts.length === 0) {
       return res.json({ success: true, data: [] });
     }
 
-    const postIds = posts.map(p => p.postId);
+    const postIds = localPosts.map(p => p.postId);
 
-    // ✅ Step 2: Get ALL comments for all posts in ONE bulk query (no N+1 loop)
+    // Get ALL comments for all posts in ONE bulk query (no N+1 loop)
     const allComments = await getSharedPrismaClient().facebookComment.findMany({
       where: { postId: { in: postIds }, companyId },
       select: {
@@ -1647,12 +1646,6 @@ const getPostsByPageId = async (req, res) => {
       orderBy: { createdTime: 'desc' }
     });
 
-    // ✅ Step 3: Get local post metadata in ONE bulk query (no per-post API calls)
-    const localPosts = await getSharedPrismaClient().facebookPost.findMany({
-      where: { postId: { in: postIds } },
-      select: { postId: true, message: true, mediaUrl: true }
-    });
-
     // Build lookup maps for O(1) access
     const localPostMap = new Map(localPosts.map(p => [p.postId, p]));
     const commentsByPost = new Map();
@@ -1664,21 +1657,16 @@ const getPostsByPageId = async (req, res) => {
     }
 
     // Build final response — no extra queries, no HTTP calls per post
-    const postDetails = posts.map(post => {
+    const postDetails = localPosts.map(post => {
       const comments = commentsByPost.get(post.postId) || [];
       const totalComments = comments.length;
       const respondedComments = comments.filter(c => c.respondedAt !== null).length;
 
-      const localPost = localPostMap.get(post.postId);
-      const postMessage = localPost?.message
-        || (comments.length > 0 ? comments[comments.length - 1].message : null);
-      const pictureUrl = localPost?.mediaUrl || null;
-
       return {
         postId: post.postId,
         pageId,
-        message: postMessage,
-        pictureUrl,
+        message: post.message,
+        pictureUrl: post.mediaUrl,
         responseMethod: comments.length > 0 ? (comments[0].response ? 'fixed' : 'manual') : 'manual',
         totalComments,
         respondedComments,

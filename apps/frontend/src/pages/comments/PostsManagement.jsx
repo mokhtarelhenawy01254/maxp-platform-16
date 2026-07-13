@@ -7,7 +7,6 @@ import {
   Settings,
   Layers,
   Rss,
-  Eye,
   MessageCircle,
   Clock,
   ChevronDown,
@@ -292,10 +291,7 @@ const PostsManagement = ({ embedded = false }) => {
                 </div>
               </div>
 
-              <Button onClick={() => toast("هذه الخاصية قيد التطوير حالياً", { icon: "🚧" })} variant="outline" size="sm" className="text-[#6b52a3] font-bold text-[10px] md:text-xs shadow-sm gap-1.5">
-                <Eye className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                تقارير الحملة ▾
-              </Button>
+
             </div>
           </div>
         </div>
@@ -450,9 +446,7 @@ const PostsManagement = ({ embedded = false }) => {
               <span>آخر المنشورات</span>
             </div>
             <div className="flex items-center gap-2 md:gap-4">
-              <button onClick={() => toast("هذه الخاصية قيد التطوير حالياً", { icon: "🚧" })} className="hidden md:inline-flex bg-white hover:bg-gray-50 text-[#e84b5c] text-[10px] md:text-sm font-bold px-3 md:px-5 py-1 md:py-1.5 rounded-full shadow-sm transition-colors whitespace-nowrap">
-                تعيين حملة بالمعرف
-              </button>
+
               <input
                 type="text"
                 placeholder="بحث..."
@@ -494,17 +488,22 @@ const PostsManagement = ({ embedded = false }) => {
                   >
                     <div className="flex items-center gap-3 md:block">
                       <div className="relative w-12 h-12 md:w-[80px] md:h-[80px] flex-shrink-0">
-                        <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-md">
+                        <div className="w-full h-full rounded-xl overflow-hidden bg-gray-100 border-2 border-white shadow-md">
                           {post.pictureUrl ? (
                             <img
                               src={post.pictureUrl}
                               alt=""
                               className="w-full h-full object-cover"
                               loading="lazy"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                                e.target.parentElement.classList.add('post-img-fallback');
+                              }}
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <MessageSquare className="w-4 h-4 md:w-6 md:h-6" />
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#6b52a3] to-[#e84b5c]">
+                              <MessageSquare className="w-4 h-4 md:w-6 md:h-6 text-white opacity-80" />
                             </div>
                           )}
                         </div>
