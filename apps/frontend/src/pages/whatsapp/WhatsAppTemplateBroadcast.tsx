@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, ChartBar, Eye, MousePointerClick, Reply, List,
+  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -194,7 +194,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         <TabsList className="mb-6">
           <TabsTrigger value="create"><Send className="size-4 ml-2" />إنشاء حملة</TabsTrigger>
           <TabsTrigger value="campaigns"><Megaphone className="size-4 ml-2" />الحملات السابقة</TabsTrigger>
-          <TabsTrigger value="analytics"><ChartBar className="size-4 ml-2" />التحليلات</TabsTrigger>
+          <TabsTrigger value="analytics"><BarChart className="size-4 ml-2" />التحليلات</TabsTrigger>
           <TabsTrigger value="lists"><List className="size-4 ml-2" />قوائم العملاء</TabsTrigger>
         </TabsList>
 
@@ -404,7 +404,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         <TabsContent value="analytics" className="space-y-6">
           {campaigns.length === 0 ? (
             <div className="text-center py-12 text-[color:var(--color-muted-foreground)]">
-              <ChartBar className="mx-auto size-12 opacity-40" />
+              <BarChart className="mx-auto size-12 opacity-40" />
               <p className="mt-4">لا توجد بيانات إحصائية بعد</p>
             </div>
           ) : (
