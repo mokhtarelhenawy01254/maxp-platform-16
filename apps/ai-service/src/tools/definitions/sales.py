@@ -32,6 +32,7 @@ class DiscountCreateInput(DiscountCreateDraftInput):
 class WhatsappSendInput(BaseModel):
     phone: str = Field(description="Customer phone number in international format")
     message: str = Field(description="Message text to send")
+    media_url: str | None = Field(default=None, description="Optional image URL to send as a media attachment")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -63,7 +64,7 @@ async def discount_create(input_data: DiscountCreateInput) -> dict[str, Any]:
 
 async def whatsapp_send(input_data: WhatsappSendInput) -> dict[str, Any]:
     return await governance_tools.send_whatsapp(
-        input_data.company_id or "", input_data.phone, input_data.message
+        input_data.company_id or "", input_data.phone, input_data.message, input_data.media_url
     )
 
 

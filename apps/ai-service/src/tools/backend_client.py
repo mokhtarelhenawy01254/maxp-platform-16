@@ -315,15 +315,14 @@ class BackendClient:
     # ── WhatsApp APIs ──
 
     async def send_whatsapp_message(
-        self, company_id: str, phone: str, message: str
+        self, company_id: str, phone: str, message: str, media_url: str | None = None
     ) -> dict[str, Any]:
+        body = {"phone": phone, "message": message, "companyId": company_id}
+        if media_url:
+            body["mediaUrl"] = media_url
         return await self._request(
             "POST", "/api/v1/whatsapp/whatsapp",
-            json_body={
-                "phone": phone,
-                "message": message,
-                "companyId": company_id,
-            },
+            json_body=body,
         )
 
     # ── Facebook/Messenger APIs ──

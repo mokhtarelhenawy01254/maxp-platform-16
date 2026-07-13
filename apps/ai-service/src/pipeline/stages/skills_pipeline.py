@@ -220,9 +220,34 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         "tool": evidence.get("tool", "booking_info"),
                     })
 
+    # Auto-populate response_attachments from product images in tool results
+    for evidence in ctx.tool_evidence:
+        result = evidence.get("result", {})
+        if not isinstance(result, dict):
+            continue
+        for key in ("results", "products"):
+            items = result.get(key) or []
+            if not isinstance(items, list):
+                continue
+            for product in items:
+                if not isinstance(product, dict):
+                    continue
+                for img in (product.get("images") or []):
+                    if not img or not isinstance(img, str):
+                        continue
+                    if not ctx.final_reply or (img not in ctx.final_reply and os.path.basename(img) not in ctx.final_reply):
+                        continue
+                    if img.startswith(("http://", "https://", "data:")):
+                        ctx.response_attachments.append({
+                            "type": "image",
+                            "url": img,
+                            "source": "tool_result",
+                            "tool": evidence.get("tool", "product_search"),
+                        })
+
     if ctx.response_attachments:
         logger.info(
-            "landmark_image_attachments_auto_populated",
+            "response_attachments_auto_populated",
             count=len(ctx.response_attachments),
             urls=[a.get("url", "")[:120] for a in ctx.response_attachments],
         )

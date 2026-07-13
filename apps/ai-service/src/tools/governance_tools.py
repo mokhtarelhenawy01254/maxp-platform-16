@@ -12,12 +12,12 @@ logger = structlog.get_logger(__name__)
 
 
 async def send_whatsapp(
-    company_id: str, phone: str, message: str
+    company_id: str, phone: str, message: str, media_url: str | None = None
 ) -> dict[str, Any]:
     """Send a WhatsApp message to a customer."""
     from src.tools.backend_client import get_backend_client
     client = get_backend_client()
-    return await client.send_whatsapp_message(company_id, phone, message)
+    return await client.send_whatsapp_message(company_id, phone, message, media_url)
 
 
 async def send_facebook_reply(

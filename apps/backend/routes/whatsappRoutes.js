@@ -134,7 +134,7 @@ const requireLocalBridgeSecret = (req, res, next) => {
 
 router.post('/whatsapp', requireLocalBridgeSecret, async (req, res) => {
     try {
-        const { phone, message, orderNumber, customerName, variables, eventType, buttons } = req.body;
+        const { phone, message, mediaUrl, orderNumber, customerName, variables, eventType, buttons } = req.body;
 
         console.log(`🔗 [LOCAL-BRIDGE] Received request:`, {
             phone,
@@ -143,13 +143,14 @@ router.post('/whatsapp', requireLocalBridgeSecret, async (req, res) => {
             eventType,
             hasMessage: !!message,
             hasVariables: !!variables,
-            buttonsCount: buttons?.length || 0
+            buttonsCount: buttons?.length || 0,
+            hasMedia: !!mediaUrl,
         });
 
-        if (!phone || !message) {
+        if (!phone || (!message && !mediaUrl)) {
             return res.status(400).json({
                 success: false,
-                error: 'Phone and message are required'
+                error: 'Phone and message (or mediaUrl) are required'
             });
         }
 
@@ -173,12 +174,15 @@ router.post('/whatsapp', requireLocalBridgeSecret, async (req, res) => {
             });
         }
 
-        // Send the message using WhatsAppMessageHandler (handle buttons if present)
+        // Send the message using WhatsAppMessageHandler
         const { WhatsAppMessageHandler } = require('../services/whatsapp');
         const jid = `${phone.replace(/\D/g, '')}@s.whatsapp.net`;
         let result;
 
-        if (buttons && Array.isArray(buttons) && buttons.length > 0) {
+        if (mediaUrl) {
+            console.log(`🔗 [LOCAL-BRIDGE] Sending image to ${jid}`);
+            result = await WhatsAppMessageHandler.sendImage(session.id, jid, { url: mediaUrl }, message || '', { isAIResponse: true });
+        } else if (buttons && Array.isArray(buttons) && buttons.length > 0) {
             console.log(`🔗 [LOCAL-BRIDGE] Sending buttons message to ${jid}`);
             result = await WhatsAppMessageHandler.sendButtons(session.id, jid, message, buttons);
         } else {
