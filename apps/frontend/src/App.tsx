@@ -858,6 +858,9 @@ const SuperAdminProductEmbeddings = React.lazy(
 const SuperAdminAIConsumption = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIConsumption"),
 );
+const SuperAdminCompanyActivity = React.lazy(
+  () => import("./pages/super-admin/SuperAdminCompanyActivity"),
+);
 const SuperAdminVisualSearchLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminVisualSearchLogs"),
 );
@@ -1864,6 +1867,16 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminFollowUp />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/company-activity"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminCompanyActivity />
+                  </React.Suspense>
                 </Layout>
               }
             />

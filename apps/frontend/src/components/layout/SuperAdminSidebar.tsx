@@ -28,6 +28,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
   { title: t("superAdmin.sidebar.companies"), icon: <Building2 className="size-5" />, items: [
     { text: t("superAdmin.sidebar.companies"), icon: <Building2 className="size-5" />, path: "/super-admin/companies-v2" },
     { text: t("superAdmin.sidebar.companyReports"), icon: <BarChart3 className="size-5" />, path: "/super-admin/companies-reports" },
+    { text: "نشاط الشركات", icon: <Activity className="size-5" />, path: "/super-admin/company-activity" },
     { text: t("superAdmin.sidebar.followUp"), icon: <Bell className="size-5" />, path: "/super-admin/follow-up" },
   ]},
   { title: t("superAdmin.sidebar.whatsappPlatform"), icon: <MessageSquare className="size-5" />, items: [
