@@ -30,7 +30,7 @@ const MetaCloudProvider = require('./providers/MetaCloudProvider');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
-let makeWASocket, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, Browsers;
+let makeWASocket, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, Browsers, isJidNewsletter;
 const initBaileys = async () => {
     const baileys = await import('@whiskeysockets/baileys');
     makeWASocket = baileys.makeWASocket;
@@ -38,6 +38,7 @@ const initBaileys = async () => {
     fetchLatestBaileysVersion = baileys.fetchLatestBaileysVersion;
     downloadMediaMessage = baileys.downloadMediaMessage;
     Browsers = baileys.Browsers;
+    isJidNewsletter = baileys.isJidNewsletter;
 };
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
 const getDatabaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
@@ -1635,7 +1636,7 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
 }
 
 async function upsertHistoryContact(sessionId, jid, options = {}) {
-    if (!jid || jid === 'status@broadcast') return null;
+    if (!jid || jid === 'status@broadcast' || isJidNewsletter?.(jid)) return null;
 
     const { normalizedJid, phoneNumber } = normalizeWhatsAppContactIdentity(jid);
     if (!normalizedJid) return null;
@@ -1808,8 +1809,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 }
             }
 
-            // Normalize JID (only for non-group, non-broadcast, and already valid-looking JIDs)
-            if (remoteJid && !remoteJid.includes('@g.us') && remoteJid !== 'status@broadcast' && isPhoneJid(remoteJid)) {
+            // Normalize JID (only for non-group, non-broadcast, non-newsletter, and already valid-looking JIDs)
+            if (remoteJid && !remoteJid.includes('@g.us') && remoteJid !== 'status@broadcast' && !isJidNewsletter?.(remoteJid) && isPhoneJid(remoteJid)) {
                 remoteJid = normalizePhoneJid(remoteJid);
             }
 
@@ -1817,7 +1818,13 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             if (remoteJid === 'status@broadcast') {
                 console.log('📸 Received status update');
                 await handleStatusUpdate(sessionId, companyId, msg, sock);
-                continue; // Skip normal message processing
+                continue;
+            }
+
+            // تخطي رسائل القنوات (WhatsApp Channels / Newsletter)
+            if (isJidNewsletter?.(remoteJid)) {
+                console.log(`📢 Skipping newsletter message from ${remoteJid}`);
+                continue;
             }
 
             // استخراج محتوى الرسالة

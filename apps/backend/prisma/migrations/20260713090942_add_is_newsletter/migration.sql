@@ -1,0 +1,1 @@
+ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS "isNewsletter" BOOLEAN NOT NULL DEFAULT false;
