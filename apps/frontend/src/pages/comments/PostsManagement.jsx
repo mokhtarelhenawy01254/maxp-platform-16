@@ -1,52 +1,46 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import CommentService from "../../services/commentService";
 import {
   MessageSquare,
-  CheckCircle,
-  Clock,
   Search,
-  RefreshCw,
   Settings,
-  X,
-  Save,
-  TrendingUp,
-  Users,
-  BarChart3,
-  Zap,
-  Filter,
-  Grid3x3,
-  List,
+  Layers,
+  Facebook,
+  Rss,
+  Eye,
+  MessageCircle,
+  Clock
 } from "lucide-react";
 
 const PostsManagement = ({ embedded = false, defaultPlatform = null }) => {
   const { t } = useTranslation();
-  const [posts, setPosts] = useState([]);
+  const navigate = useNavigate();
+
   const [pages, setPages] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [selectedPage, setSelectedPage] = useState(null);
+  
   const [loading, setLoading] = useState(false);
   const [loadingPages, setLoadingPages] = useState(true);
-  const [showPageSettings, setShowPageSettings] = useState(false);
-  const [pageSettings, setPageSettings] = useState({
-    responseMethod: "manual",
-    commentMessages: [""],
-    fixedMessengerMessage: "",
-  });
-  const [savingPageSettings, setSavingPageSettings] = useState(false);
-  const [pageSettingsMessage, setPageSettingsMessage] = useState("");
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 20,
-    search: "",
-    status: "all",
-  });
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalCount: 0,
-  });
-  const navigate = useNavigate();
+  
+  const [pagesSearch, setPagesSearch] = useState("");
+  const [postsSearch, setPostsSearch] = useState("");
+  
+  const [enableDelayReply, setEnableDelayReply] = useState(true);
+
+  useEffect(() => {
+    fetchPages();
+  }, []);
+
+  useEffect(() => {
+    if (selectedPage) {
+      fetchPosts();
+    } else {
+      setPosts([]);
+    }
+  }, [selectedPage]);
 
   const fetchPages = async () => {
     setLoadingPages(true);
@@ -54,7 +48,6 @@ const PostsManagement = ({ embedded = false, defaultPlatform = null }) => {
       const response = await CommentService.getFacebookPages();
       if (response.success && response.data) {
         setPages(response.data);
-        // Auto-select first page if available
         if (response.data.length > 0 && !selectedPage) {
           setSelectedPage(response.data[0].pageId);
         }
@@ -68,12 +61,10 @@ const PostsManagement = ({ embedded = false, defaultPlatform = null }) => {
 
   const fetchPosts = async () => {
     if (!selectedPage) return;
-
     setLoading(true);
     try {
       const response = await CommentService.getPostsByPageId(selectedPage);
       if (response.success) {
-        console.log(response.data);
         setPosts(response.data);
       }
     } catch (error) {
@@ -83,914 +74,251 @@ const PostsManagement = ({ embedded = false, defaultPlatform = null }) => {
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  const filteredPages = useMemo(() => {
+    if (!pagesSearch.trim()) return pages;
+    return pages.filter((p) => 
+      p.pageName.toLowerCase().includes(pagesSearch.toLowerCase()) || 
+      p.pageId.includes(pagesSearch)
+    );
+  }, [pages, pagesSearch]);
+
+  const filteredPosts = useMemo(() => {
+    if (!postsSearch.trim()) return posts;
+    return posts.filter((p) => 
+      (p.message && p.message.toLowerCase().includes(postsSearch.toLowerCase())) || 
+      p.postId.includes(postsSearch)
+    );
+  }, [posts, postsSearch]);
+
+  const selectedPageObj = pages.find((p) => p.pageId === selectedPage);
+
+  // Time ago formatter (e.g. 4 Years Ago)
+  const timeAgo = (date) => {
+    if (!date) return "";
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " Years Ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " Months Ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " Days Ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " Hours Ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " Minutes Ago";
+    return Math.floor(seconds) + " Seconds Ago";
   };
-
-  const handlePageChange = (newPage) => {
-    setFilters((prev) => ({
-      ...prev,
-      page: newPage,
-    }));
-  };
-
-  useEffect(() => {
-    fetchPages();
-  }, []);
-
-  useEffect(() => {
-    if (selectedPage) {
-      fetchPosts();
-      fetchPageSettings();
-    }
-  }, [selectedPage]);
-
-  const fetchPageSettings = async () => {
-    if (!selectedPage) return;
-    try {
-      const response = await CommentService.getPageResponseMethod(selectedPage);
-      if (response.success && response.data) {
-        const responseMethod =
-          response.data.responseMethod === "fixed" ? "fixed" : "manual";
-        setPageSettings({
-          responseMethod,
-          commentMessages: response.data.commentMessages
-            ? JSON.parse(response.data.commentMessages)
-            : [""],
-          fixedMessengerMessage: response.data.fixedMessengerMessage || "",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching page settings:", error);
-    }
-  };
-
-  const savePageSettings = async () => {
-    if (
-      pageSettings.responseMethod === "fixed" &&
-      (!pageSettings.commentMessages ||
-        pageSettings.commentMessages.length === 0 ||
-        !pageSettings.commentMessages[0].trim())
-    ) {
-      setPageSettingsMessage(t("postsManagement.note"));
-      return;
-    }
-
-    setSavingPageSettings(true);
-    setPageSettingsMessage("");
-    try {
-      const response = await CommentService.setPageResponseMethod(
-        selectedPage,
-        pageSettings,
-      );
-      if (response.success) {
-        setPageSettingsMessage(t("pageComments.savedSuccessfully") + " ✅");
-        setTimeout(() => {
-          setShowPageSettings(false);
-          setPageSettingsMessage("");
-        }, 2000);
-      }
-    } catch (error) {
-      setPageSettingsMessage(
-        t("pageComments.saveError") + ": " + error.message,
-      );
-    } finally {
-      setSavingPageSettings(false);
-    }
-  };
-
-  const getResponseMethodLabel = (method) => {
-    switch (method) {
-      case "fixed":
-        return t("unifiedComments.fixedResponse");
-      case "manual":
-        return t("unifiedComments.manualResponse");
-      default:
-        return t("unifiedComments.notSpecified");
-    }
-  };
-
-  const getResponseMethodColor = (method) => {
-    switch (method) {
-      case "fixed":
-        return "bg-green-100 text-green-800";
-      case "manual":
-        return "bg-yellow-100 text-yellow-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Calculate stats
-  const totalPosts = posts.length;
-  const totalComments = posts.reduce(
-    (sum, post) => sum + (post.totalComments || 0),
-    0,
-  );
-  const respondedComments = posts.reduce(
-    (sum, post) => sum + (post.respondedComments || 0),
-    0,
-  );
-  const avgResponseRate =
-    posts.length > 0
-      ? Math.round(
-          posts.reduce((sum, post) => sum + (post.responseRate || 0), 0) /
-            posts.length,
-        )
-      : 0;
 
   return (
-    <div className={embedded ? "h-full w-full bg-slate-50 dark:bg-gray-900 p-2 md:p-4 overflow-auto rounded-2xl" : "min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 md:p-8"}>
-      <div className="w-full h-full flex flex-col">
-        {/* Header with Stats */}
-        <div className="mb-6 animate-fade-in">
-          {/* Title Section */}
-          {!embedded && (
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
-              <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
-                <div className="relative p-4 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-2xl">
-                  <MessageSquare className="w-8 h-8 text-white" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-4xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  {t("postsManagement.pageTitle")}
-                </h1>
-                <p className="text-slate-600 dark:text-gray-300 mt-2 text-lg font-medium">
-                  {t("postsManagement.pageSubtitle")}
-                </p>
-              </div>
-              </div>
-            </div>
-          )}
-
-          {/* Stats Cards */}
-          {selectedPage && posts.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
-              {/* Total Posts */}
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-blue-400/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm font-semibold mb-1">
-                      إجمالي المنشورات
-                    </p>
-                    <h3 className="text-4xl font-black text-white">
-                      {totalPosts}
-                    </h3>
-                  </div>
-                  <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <Grid3x3 className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Total Comments */}
-              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-indigo-400/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-indigo-100 text-sm font-semibold mb-1">
-                      إجمالي التعليقات
-                    </p>
-                    <h3 className="text-4xl font-black text-white">
-                      {totalComments}
-                    </h3>
-                  </div>
-                  <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <MessageSquare className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Responded Comments */}
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-green-400/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm font-semibold mb-1">
-                      تم الرد عليها
-                    </p>
-                    <h3 className="text-4xl font-black text-white">
-                      {respondedComments}
-                    </h3>
-                  </div>
-                  <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <CheckCircle className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Average Response Rate */}
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-purple-400/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm font-semibold mb-1">
-                      معدل الاستجابة
-                    </p>
-                    <h3 className="text-4xl font-black text-white">
-                      {avgResponseRate}%
-                    </h3>
-                  </div>
-                  <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <TrendingUp className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+    <div className={`flex flex-col ${embedded ? 'h-full' : 'h-[calc(100vh-64px)]'} bg-[#f3f4f6]`}>
+      {/* Top Header */}
+      <div className="bg-white m-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between px-6 py-4 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="w-6 h-6 text-[#6b52a3]" />
+          <h1 className="text-xl font-bold text-[#6b52a3]">Facebook comment automation campaign</h1>
         </div>
-
-        {/* Page Selector */}
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-8 border border-white/30 dark:border-gray-700/30">
-          <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-blue-600" />
-            {t("postsManagement.selectPage")}
-          </label>
-          {loadingPages ? (
-            <div className="text-center py-4">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pages.map((page) => (
-                <div
-                  key={page.pageId}
-                  className={`p-5 rounded-2xl border-2 transition-all duration-300 ${
-                    selectedPage === page.pageId
-                      ? "border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 shadow-xl scale-105"
-                      : "border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-blue-300 hover:shadow-lg hover:scale-102"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex-1 text-right">
-                      <div className="font-bold text-slate-800">
-                        {page.pageName}
-                      </div>
-                      <div className="text-sm text-slate-600 mt-2 flex gap-3">
-                        <span>📝 {page.totalPosts} منشور</span>
-                        <span>💬 {page.totalComments} تعليق</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPage(page.pageId);
-                        setShowPageSettings(true);
-                      }}
-                      className="group p-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-xl hover:scale-110 flex-shrink-0"
-                      title={t("postsManagement.pageSettings")}
-                    >
-                      <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => setSelectedPage(page.pageId)}
-                    className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
-                  >
-                    {t("postsManagement.viewPosts")}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="text-xs text-blue-400 font-medium flex gap-2 items-center">
+          <span className="hover:underline cursor-pointer">Comment growth tools</span>
+          <span className="text-gray-400">/</span>
+          <span className="text-[#6b52a3]">Facebook comment automation campaign</span>
         </div>
+      </div>
 
-        {/* Filters */}
-        {selectedPage && (
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-8 border border-white/30 dark:border-gray-700/30">
-            <div className="flex items-center gap-2 mb-5">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg">
-                <Filter className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-                فلاتر البحث
-              </h2>
+      {/* Main 3 Columns */}
+      <div className="flex-1 overflow-hidden flex gap-4 px-4 pb-4">
+        
+        {/* Left Column: Pages */}
+        <div className="w-[300px] bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col flex-shrink-0">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-[#6b52a3]">
+              <Layers className="w-5 h-5" />
+              <span>Pages</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  <Search className="w-4 h-4 text-blue-600" />
-                  {t("postsManagement.search")}
-                </label>
-                <div className="relative">
-                  <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    className="w-full pr-12 pl-4 py-3.5 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 border-2 border-slate-200 dark:border-gray-600 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all text-right font-medium shadow-sm"
-                    placeholder={t("postsManagement.searchPlaceholder")}
-                    value={filters.search}
-                    onChange={(e) =>
-                      handleFilterChange("search", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                  {t("postsManagement.status")}
-                </label>
-                <select
-                  className="w-full px-4 py-3.5 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 border-2 border-slate-200 dark:border-gray-600 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900 dark:text-white transition-all text-right font-semibold shadow-sm"
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
-                >
-                  <option value="all">
-                    📊 {t("postsManagement.allPosts")}
-                  </option>
-                  <option value="responded">
-                    ✅ {t("postsManagement.responded")}
-                  </option>
-                  <option value="pending">
-                    ⏳ {t("postsManagement.pending")}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  <List className="w-4 h-4 text-blue-600" />
-                  {t("postsManagement.itemsCount")}
-                </label>
-                <select
-                  className="w-full px-4 py-3.5 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 border-2 border-slate-200 dark:border-gray-600 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900 dark:text-white transition-all text-right font-semibold shadow-sm"
-                  value={filters.limit}
-                  onChange={(e) =>
-                    handleFilterChange("limit", parseInt(e.target.value))
-                  }
-                >
-                  <option value="10">10 منشورات</option>
-                  <option value="20">20 منشور</option>
-                  <option value="50">50 منشور</option>
-                  <option value="100">100 منشور</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  className="group w-full max-w-xs bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2 font-bold"
-                  onClick={() => fetchPosts()}
-                  disabled={loading}
-                >
-                  <RefreshCw
-                    className={`w-5 h-5 ${loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}`}
-                  />
-                  {t("postsManagement.refresh")}
-                </button>
-              </div>
+            <div className="relative w-32">
+              <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search pages..." 
+                className="w-full text-xs pl-7 pr-2 py-1.5 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                value={pagesSearch}
+                onChange={(e) => setPagesSearch(e.target.value)}
+              />
             </div>
           </div>
-        )}
-
-        {/* Posts Grid - Facebook Style */}
-        {selectedPage && (
-          <div>
-            {loading ? (
-              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-16 text-center border border-white/30 dark:border-gray-700/30">
-                <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
-                  <div className="relative inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
-                </div>
-                <p className="mt-6 text-slate-600 dark:text-gray-300 font-bold text-lg">
-                  {t("postsManagement.loadingPosts")}
-                </p>
-                <p className="mt-2 text-slate-500 dark:text-gray-400 text-sm">
-                  الرجاء الانتظار...
-                </p>
+          
+          <div className="flex-1 overflow-y-auto">
+            {loadingPages ? (
+              <div className="flex justify-center py-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
               </div>
             ) : (
-              <>
-                {posts.length === 0 ? (
-                  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-16 text-center border border-white/30 dark:border-gray-700/30">
-                    <div className="relative inline-block mb-6">
-                      <div className="absolute inset-0 bg-blue-200 rounded-full blur-2xl opacity-20"></div>
-                      <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-8 rounded-3xl border-2 border-dashed border-blue-200 dark:border-blue-700">
-                        <MessageSquare className="w-24 h-24 text-blue-400" />
-                      </div>
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                      {t("postsManagement.noPosts")}
-                    </h3>
-                    <p className="text-slate-500 dark:text-gray-400 text-lg">
-                      لم يتم العثور على أي منشورات
-                    </p>
+              filteredPages.map((page) => (
+                <div 
+                  key={page.pageId}
+                  onClick={() => setSelectedPage(page.pageId)}
+                  className={`flex items-center gap-3 p-4 cursor-pointer transition-colors border-l-4 ${
+                    selectedPage === page.pageId 
+                      ? "bg-[#6b52a3] text-white border-transparent" 
+                      : "hover:bg-gray-50 text-gray-700 border-transparent"
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                    <img src={`https://graph.facebook.com/${page.pageId}/picture?type=small`} alt={page.pageName} onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(page.pageName) + '&background=random'; }} className="w-full h-full object-cover" />
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {posts.map((post, index) => (
-                      <div
-                        key={post.postId}
-                        className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-slate-200 dark:border-gray-700 overflow-hidden hover:scale-105 hover:border-blue-400 animate-fade-in"
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        {/* Post Image */}
-                        {post.pictureUrl && (
-                          <div className="relative h-48 bg-slate-100 overflow-hidden">
-                            <img
-                              src={post.pictureUrl}
-                              alt="Post"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = "none";
-                              }}
-                            />
-                          </div>
-                        )}
-
-                        {/* Post Header */}
-                        <div className="p-4 border-b border-slate-100">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                              <MessageSquare className="w-5 h-5 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div
-                                className="text-sm font-bold text-slate-900 truncate"
-                                title={post.postId}
-                              >
-                                {t("postsManagement.postLabel")} #
-                                {post.postId.substring(post.postId.length - 8)}
-                              </div>
-                              <div className="text-xs text-slate-500">
-                                {post.firstCommentTime || post.lastCommentTime
-                                  ? new Date(
-                                      post.firstCommentTime ||
-                                        post.lastCommentTime,
-                                    ).toLocaleDateString("ar-EG", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })
-                                  : "No date"}
-                              </div>
-                            </div>
-                            <span
-                              className={`px-2 py-1 text-xs font-bold rounded-full ${getResponseMethodColor(post.responseMethod)}`}
-                            >
-                              {post.responseMethod === "fixed"
-                                  ? "📝"
-                                  : "✋"}
-                            </span>
-                          </div>
-
-                          {/* Post Description */}
-                          {post.message && (
-                            <div
-                              className="mt-3 text-xs text-slate-600 line-clamp-3"
-                              title={post.message}
-                            >
-                              {post.message}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Latest Comment Preview */}
-                        {post.latestComment && (
-                          <div className="p-4 bg-slate-50 border-b border-slate-100">
-                            <div className="flex items-start gap-2">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                {(post.latestComment.senderName || "?").charAt(
-                                  0,
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-xs font-semibold text-slate-700">
-                                  {post.latestComment.senderName ||
-                                    t("postsManagement.unknownCustomer")}
-                                </div>
-                                <div
-                                  className="text-xs text-slate-600 mt-1 line-clamp-2"
-                                  title={post.latestComment.message}
-                                >
-                                  {post.latestComment.message ||
-                                    t("postsManagement.image")}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Stats */}
-                        <div className="p-4 space-y-3">
-                          {/* Comments Count */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-slate-600 font-medium">
-                              {t("postsManagement.comments")}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
-                                {post.totalComments}
-                              </span>
-                              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" />
-                                {post.respondedComments}
-                              </span>
-                              <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {post.pendingComments}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Response Rate */}
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs text-slate-600 font-medium">
-                                {t("postsManagement.responseRate")}
-                              </span>
-                              <span className="text-xs font-bold text-slate-700">
-                                {post.responseRate}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-slate-200 rounded-full h-2">
-                              <div
-                                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all"
-                                style={{ width: `${post.responseRate}%` }}
-                              ></div>
-                            </div>
-                          </div>
-
-                          {/* Response Method */}
-                          <div className="pt-2 border-t border-slate-100">
-                            <span
-                              className={`px-3 py-1.5 inline-flex items-center gap-1 text-xs font-bold rounded-full w-full justify-center ${getResponseMethodColor(post.responseMethod)}`}
-                            >
-                              {getResponseMethodLabel(post.responseMethod)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 flex gap-3">
-                          <button
-                            onClick={() =>
-                              navigate(`/posts/${post.postId}/comments`)
-                            }
-                            className="group flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center justify-center gap-2"
-                          >
-                            <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                            {t("postsManagement.viewComments")}
-                          </button>
-                          <button
-                            onClick={() =>
-                              navigate(`/posts/${post.postId}/settings`)
-                            }
-                            className="group flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center justify-center gap-2"
-                          >
-                            <Settings className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                            {t("postsManagement.settings")}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex-1 min-w-0 text-right">
+                    <h3 className="font-bold text-sm truncate">{page.pageName}</h3>
+                    <p className={`text-[10px] mt-1 ${selectedPage === page.pageId ? 'text-indigo-100' : 'text-gray-500'}`}>{page.pageId}</p>
                   </div>
-                )}
-
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                  <div className="mt-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-                    <div className="flex-1 flex justify-between sm:hidden">
-                      <button
-                        onClick={() =>
-                          handlePageChange(pagination.currentPage - 1)
-                        }
-                        disabled={pagination.currentPage === 1}
-                        className="relative inline-flex items-center px-4 py-2 border-2 border-slate-300 text-sm font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        {t("postsManagement.previous")}
-                      </button>
-                      <button
-                        onClick={() =>
-                          handlePageChange(pagination.currentPage + 1)
-                        }
-                        disabled={
-                          pagination.currentPage === pagination.totalPages
-                        }
-                        className="mr-3 relative inline-flex items-center px-4 py-2 border-2 border-slate-300 text-sm font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        {t("postsManagement.next")}
-                      </button>
-                    </div>
-                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm text-slate-700 font-medium">
-                          {t("postsManagement.showing")}{" "}
-                          <span className="font-bold text-blue-600">
-                            {(pagination.currentPage - 1) * filters.limit + 1}
-                          </span>{" "}
-                          {t("postsManagement.to")}{" "}
-                          <span className="font-bold text-blue-600">
-                            {Math.min(
-                              pagination.currentPage * filters.limit,
-                              pagination.totalCount,
-                            )}
-                          </span>{" "}
-                          {t("postsManagement.of")}{" "}
-                          <span className="font-bold text-blue-600">
-                            {pagination.totalCount}
-                          </span>{" "}
-                          {t("postsManagement.result")}
-                        </p>
-                      </div>
-                      <div>
-                        <nav
-                          className="relative z-0 inline-flex rounded-xl shadow-sm gap-1"
-                          aria-label="Pagination"
-                        >
-                          <button
-                            onClick={() =>
-                              handlePageChange(pagination.currentPage - 1)
-                            }
-                            disabled={pagination.currentPage === 1}
-                            className="relative inline-flex items-center px-3 py-2 rounded-lg bg-white border-2 border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                          >
-                            {t("postsManagement.previous")}
-                          </button>
-                          {[...Array(Math.min(pagination.totalPages, 7))].map(
-                            (_, i) => {
-                              let page;
-                              if (pagination.totalPages <= 7) {
-                                page = i + 1;
-                              } else if (pagination.currentPage <= 4) {
-                                page = i + 1;
-                              } else if (
-                                pagination.currentPage >=
-                                pagination.totalPages - 3
-                              ) {
-                                page = pagination.totalPages - 6 + i;
-                              } else {
-                                page = pagination.currentPage - 3 + i;
-                              }
-
-                              return (
-                                <button
-                                  key={page}
-                                  onClick={() => handlePageChange(page)}
-                                  className={`relative inline-flex items-center px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                                    page === pagination.currentPage
-                                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105"
-                                      : "bg-white border-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  {page}
-                                </button>
-                              );
-                            },
-                          )}
-                          <button
-                            onClick={() =>
-                              handlePageChange(pagination.currentPage + 1)
-                            }
-                            disabled={
-                              pagination.currentPage === pagination.totalPages
-                            }
-                            className="relative inline-flex items-center px-3 py-2 rounded-lg bg-white border-2 border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                          >
-                            {t("postsManagement.next")}
-                          </button>
-                        </nav>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
+                </div>
+              ))
             )}
           </div>
-        )}
+        </div>
 
-        {/* Page Settings Modal */}
-        {showPageSettings && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-2xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Settings className="w-6 h-6" />
-                  <div>
-                    <h2 className="text-2xl font-bold">
-                      {t("postsManagement.pageSettings")}
-                    </h2>
-                    <p className="text-sm text-white/80 mt-1">
-                      {pages.find((p) => p.pageId === selectedPage)?.pageName ||
-                        t("postsManagement.selectPage")}
-                    </p>
-                  </div>
+        {/* Middle Column: Page Details */}
+        <div className="w-[350px] bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col flex-shrink-0">
+          {selectedPageObj ? (
+            <>
+              {/* Header */}
+              <div className="p-4 border-b border-gray-100 flex items-center gap-2 text-[#6b52a3]">
+                <div className="bg-[#6b52a3] p-1.5 rounded-md text-white">
+                   <Facebook className="w-5 h-5 fill-current" />
                 </div>
-                <button
-                  onClick={() => setShowPageSettings(false)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <h2 className="font-bold text-lg">{selectedPageObj.pageName}</h2>
               </div>
-
-              {/* Modal Content */}
-              <div className="p-6 space-y-6">
-                <div className="bg-blue-50 border-r-4 border-blue-500 p-4 rounded-lg">
-                  <p className="text-sm text-blue-800 font-medium">
-                    ℹ️ <strong>{t("postsManagement.note")}:</strong>{" "}
-                    {t("postsManagement.noteFallback")}
-                  </p>
-                  <p className="text-xs text-blue-700 mt-2">
-                    • {t("postsManagement.noteFallback")}
-                  </p>
-                </div>
-
-                {/* Response Method Selection */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    {t("postsManagement.responseMethodLabel")}
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <button
-                      onClick={() =>
-                        setPageSettings((prev) => ({
-                          ...prev,
-                          responseMethod: "fixed",
-                        }))
-                      }
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        pageSettings.responseMethod === "fixed"
-                          ? "border-green-500 bg-green-50 shadow-lg"
-                          : "border-slate-200 hover:border-green-300"
-                      }`}
+              
+              <div className="p-6 flex-1 flex flex-col">
+                {/* Toggle */}
+                <div className="flex items-center justify-between mb-8 text-[#6b52a3]">
+                  <span className="font-bold">Enable Delay Reply</span>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setEnableDelayReply(!enableDelayReply)}
+                      className={`w-12 h-6 rounded-full relative transition-colors ${enableDelayReply ? 'bg-[#6b52a3]' : 'bg-gray-300'}`}
                     >
-                      <div className="text-center">
-                        <div className="text-2xl mb-2">📝</div>
-                        <div className="font-bold text-slate-800">
-                          {t("postsManagement.fixed")}
-                        </div>
-                      </div>
+                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${enableDelayReply ? 'right-1' : 'right-7'}`}></span>
                     </button>
-                    <button
-                      onClick={() =>
-                        setPageSettings((prev) => ({
-                          ...prev,
-                          responseMethod: "manual",
-                        }))
-                      }
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        pageSettings.responseMethod === "manual"
-                          ? "border-yellow-500 bg-yellow-50 shadow-lg"
-                          : "border-slate-200 hover:border-yellow-300"
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className="text-2xl mb-2">✋</div>
-                        <div className="font-bold text-slate-800">
-                          {t("postsManagement.manual")}
-                        </div>
-                      </div>
-                    </button>
+                    <span className="font-bold">{enableDelayReply ? 'On' : 'Off'}</span>
                   </div>
                 </div>
-
-                {/* Fixed Response Settings */}
-                {pageSettings.responseMethod === "fixed" && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {t("postsManagement.fixedCommentVariations")}
-                      </label>
-                      {pageSettings.commentMessages.map((msg, index) => (
-                        <div key={index} className="mb-2 flex gap-2">
-                          <textarea
-                            className="flex-1 px-3 py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all"
-                            rows="2"
-                            value={msg}
-                            onChange={(e) => {
-                              const newMessages = [
-                                ...pageSettings.commentMessages,
-                              ];
-                              newMessages[index] = e.target.value;
-                              setPageSettings((prev) => ({
-                                ...prev,
-                                commentMessages: newMessages,
-                              }));
-                            }}
-                            placeholder={`${t("unifiedComments.reply")} ${index + 1}...`}
-                          />
-                          {pageSettings.commentMessages.length > 1 && (
-                            <button
-                              onClick={() => {
-                                const newMessages =
-                                  pageSettings.commentMessages.filter(
-                                    (_, i) => i !== index,
-                                  );
-                                setPageSettings((prev) => ({
-                                  ...prev,
-                                  commentMessages: newMessages,
-                                }));
-                              }}
-                              className="px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition"
-                            >
-                              {t("postsManagement.cancel")}
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          setPageSettings((prev) => ({
-                            ...prev,
-                            commentMessages: [...prev.commentMessages, ""],
-                          }));
-                        }}
-                        className="mt-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition text-sm"
-                      >
-                        {t("postsManagement.addReply")}
-                      </button>
+                
+                {/* Stats Boxes */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start gap-4 p-4 border border-gray-100 rounded-xl bg-[#f8f9fa] relative">
+                    <div className="bg-[#eef2fc] p-3 rounded-lg text-[#6b52a3]">
+                      <MessageCircle className="w-6 h-6" />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {t("postsManagement.fixedMessengerMessage")}
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all"
-                        rows="3"
-                        value={pageSettings.fixedMessengerMessage}
-                        onChange={(e) =>
-                          setPageSettings((prev) => ({
-                            ...prev,
-                            fixedMessengerMessage: e.target.value,
-                          }))
-                        }
-                        placeholder={t("postsManagement.enterMessengerMessage")}
-                      />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-gray-700">Auto reply enabled posts</h4>
+                      <p className="text-xs text-gray-400 mt-1">Response : 0 • Not replied yet</p>
                     </div>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-200 text-gray-600 text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">1</div>
                   </div>
-                )}
-
-                {/* Message */}
-                {pageSettingsMessage && (
-                  <div
-                    className={`p-4 rounded-xl text-center font-medium ${
-                      pageSettingsMessage.includes("خطأ") ||
-                      pageSettingsMessage.includes("Error")
-                        ? "bg-red-100 text-red-700"
-                        : "bg-green-100 text-green-700"
-                    }`}
-                  >
-                    {pageSettingsMessage}
+                  
+                  <div className="flex items-start gap-4 p-4 border border-gray-100 rounded-xl bg-[#eef8fc] relative">
+                    <div className="bg-[#dcf0f9] p-3 rounded-lg text-[#3bb0d9]">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-gray-700">Auto comment enabled posts</h4>
+                      <p className="text-xs text-gray-400 mt-1">Comments : 0 • Not commented yet</p>
+                    </div>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-200 text-gray-600 text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">0</div>
                   </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-slate-200">
-                  <button
-                    onClick={savePageSettings}
-                    disabled={savingPageSettings}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
-                  >
-                    <Save className="w-5 h-5" />
-                    {savingPageSettings
-                      ? t("postsManagement.saving")
-                      : t("postsManagement.saveSettings")}
-                  </button>
-                  <button
-                    onClick={() => setShowPageSettings(false)}
-                    className="px-6 py-3 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all"
-                  >
-                    {t("postsManagement.cancel")}
+                </div>
+                
+                <div className="mt-auto pt-6 flex justify-center">
+                  <button className="px-6 py-2 bg-white border border-gray-200 text-[#6b52a3] font-bold text-sm rounded-lg shadow-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
+                    <Eye className="w-4 h-4" />
+                    See campaign reports ▾
                   </button>
                 </div>
               </div>
-            </div>
+            </>
+          ) : (
+             <div className="flex items-center justify-center h-full text-gray-400 font-medium">
+               Select a page
+             </div>
+          )}
+        </div>
+
+        {/* Right Column: Latest Posts */}
+        <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col min-w-0">
+          <div className="h-[60px] bg-gradient-to-r from-[#6b52a3] via-[#ab5498] to-[#e84b5c] rounded-t-xl flex items-center justify-between px-6 flex-shrink-0">
+             <div className="flex items-center gap-2 text-white font-bold text-lg">
+                <Rss className="w-5 h-5" />
+                <span>Latest posts</span>
+             </div>
+             <div className="flex items-center gap-4">
+               <button className="bg-white hover:bg-gray-50 text-[#e84b5c] text-sm font-bold px-5 py-1.5 rounded-full shadow-sm transition-colors">
+                 Set campaign by ID
+               </button>
+               <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  className="w-56 text-sm px-4 py-1.5 rounded-full bg-white text-gray-700 focus:outline-none shadow-sm"
+                  value={postsSearch}
+                  onChange={(e) => setPostsSearch(e.target.value)}
+               />
+             </div>
           </div>
-        )}
+          
+          <div className="flex-1 overflow-y-auto p-6">
+             {loading ? (
+               <div className="flex justify-center py-10">
+                 <div className="animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+               </div>
+             ) : (
+               <div className="flex flex-col gap-6">
+                   {!selectedPage ? (
+                     <div className="text-center py-10 text-gray-400 font-medium">
+                       اختر صفحة من القائمة لعرض المنشورات
+                     </div>
+                   ) : filteredPosts.length === 0 ? (
+                     <div className="text-center py-10 text-gray-500 font-medium">No posts found</div>
+                   ) : (
+                    filteredPosts.map((post) => (
+                      <div key={post.postId} className="flex gap-4">
+                        <div className="relative w-[80px] h-[80px] flex-shrink-0">
+                           <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-md">
+                             {post.pictureUrl ? (
+                               <img src={post.pictureUrl} alt="Post" className="w-full h-full object-cover" />
+                             ) : (
+                               <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                 <MessageSquare className="w-6 h-6" />
+                               </div>
+                             )}
+                           </div>
+                           <div className="absolute bottom-0 right-0 bg-white rounded-full p-1 shadow-md border border-gray-100">
+                             <Settings className="w-4 h-4 text-blue-500" />
+                           </div>
+                        </div>
+                        <div className="flex-1 pt-1" style={{ direction: 'rtl' }}>
+                           <p className="text-[13px] font-bold text-gray-800 line-clamp-2 leading-relaxed">
+                             {post.message || 'بدون نص'}
+                           </p>
+                           <div className="flex items-center justify-end gap-2 mt-3" style={{ direction: 'ltr' }}>
+                              <div className="text-[11px] font-bold text-[#145d8b] flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5" />
+                                {timeAgo(post.firstCommentTime || post.lastCommentTime)} : 
+                              </div>
+                              <div className="flex items-center gap-1 text-[11px] font-bold bg-[#1877f2] text-white px-2.5 py-1 rounded-md shadow-sm">
+                                <span>POST</span>
+                                <span>{post.postId}</span>
+                              </div>
+                           </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+               </div>
+             )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
 };
-
-// Add custom CSS animations
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-`;
-if (!document.head.querySelector("style[data-posts-management]")) {
-  style.setAttribute("data-posts-management", "true");
-  document.head.appendChild(style);
-}
 
 export default PostsManagement;
