@@ -6,7 +6,8 @@ jest.mock('../../services/whatsapp/WhatsAppManager', () => ({
     getSession: jest.fn(),
     reconnectSession: jest.fn(),
     sendTyping: jest.fn(),
-    updateContact: jest.fn()
+    updateContact: jest.fn(),
+    getSocketReadyState: jest.fn(() => 1)
 }));
 
 jest.mock('../../services/whatsapp/WhatsAppSyncService', () => ({

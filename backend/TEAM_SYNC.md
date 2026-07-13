@@ -1,5 +1,9 @@
 # Team Sync Updates
 
+## 2026-07-14 / 2026-03-09
+- **WhatsApp Baileys Wrapped Messages Support (BUGFIX / CRITICAL)**: Added support for incoming wrapped messages (such as `viewOnceMessage`, `viewOnceMessageV2`, `viewOnceMessageV2Extension`, `ephemeralMessage`, and `documentWithCaptionMessage`) by recursively unwrapping them in `extractMessageContent` in `WhatsAppManager.js` before processing, avoiding message loss.
+- **WhatsApp Message Handler Mocking (BUGFIX)**: Fixed failing tests in `WhatsAppMessageHandler.sendTextSession.test.js` by adding `getSocketReadyState` to the mocked `WhatsAppManager` to resolve `TypeError: WhatsAppManager.getSocketReadyState is not a function`.
+
 ## 2026-07-13 / 2026-03-09
 - **Facebook Inbox Space Optimization & Mobile Layout Clutter (FIX)**: Overhauled the layout structure of the Facebook Inbox page to eliminate wasted space on desktop and resolve cluttered displays on mobile viewports:
   1. Made the left conversation list column and right customer details column widths responsive. The conversation list reduces to `256px` and the profile column to `268px` on medium screens, freeing up over 60px of screen width for the chat thread.

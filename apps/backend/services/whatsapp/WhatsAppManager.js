@@ -2285,7 +2285,26 @@ async function handleStatusUpdate(sessionId, companyId, msg, sock) {
  * استخراج محتوى الرسالة
  */
 async function extractMessageContent(msg, sock, sessionId, options = {}) {
-    const message = msg.message;
+    let message = msg.message;
+    if (!message) return null;
+
+    // Unwrap message wrappers to access the real underlying message content (e.g. viewOnce, ephemeral, etc.)
+    while (message) {
+        if (message.ephemeralMessage) {
+            message = message.ephemeralMessage.message;
+        } else if (message.viewOnceMessage) {
+            message = message.viewOnceMessage.message;
+        } else if (message.viewOnceMessageV2) {
+            message = message.viewOnceMessageV2.message;
+        } else if (message.viewOnceMessageV2Extension) {
+            message = message.viewOnceMessageV2Extension.message;
+        } else if (message.documentWithCaptionMessage) {
+            message = message.documentWithCaptionMessage.message;
+        } else {
+            break;
+        }
+    }
+
     if (!message) return null;
 
     // Lazy load to avoid circular dependency

@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [BUG FIX] WhatsApp Baileys Unsupported Wrapped Messages & Mock Test Errors
+- **Date**: 2026-07-14
+- **Root Cause**:
+    1. **Wrapped Messages Ignored in Extraction**: Baileys wraps ephemeral messages, view-once media, and captioned documents in structures like `ephemeralMessage`, `viewOnceMessage`, `viewOnceMessageV2`, etc. The `extractMessageContent()` function did not recursively unwrap these containers, leading it to return `null` and skip them entirely, resulting in message loss during receiving.
+    2. **Mock Missing `getSocketReadyState` in Tests**: The Jest test suite for message sending had a mock for `WhatsAppManager` that did not include `getSocketReadyState`. This caused tests to fail with `TypeError: WhatsAppManager.getSocketReadyState is not a function`.
+- **Resolution**:
+    1. **Unwrap Message Loops**: Added a nested wrapper unwrap loop at the start of `extractMessageContent` in `WhatsAppManager.js` to process viewOnce, ephemeral, and other wrapped messages recursively.
+    2. **Enhanced Test Mocks**: Added `getSocketReadyState: jest.fn(() => 1)` to the `WhatsAppManager` mock in `WhatsAppMessageHandler.sendTextSession.test.js`.
+- **Files Modified**:
+    - `apps/backend/services/whatsapp/WhatsAppManager.js`
+    - `apps/backend/tests/services/WhatsAppMessageHandler.sendTextSession.test.js`
+
 ### [BUG FIX] WhatsApp Dead Socket Recovery & Pre-Send Connection Validation
 - **Date**: 2026-07-13
 - **Root Cause**:
