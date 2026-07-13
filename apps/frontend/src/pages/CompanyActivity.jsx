@@ -53,7 +53,7 @@ const CompanyActivity = () => {
   const prepareDailyChartData = () => (stats?.dailyStats || []).reverse().map(d => ({ date: format(new Date(d._id), "dd/MM", { locale: isRtl ? ar : enUS }), [t("companyActivity.charts.success")]: d.successCount, [t("companyActivity.charts.failure")]: d.failureCount, [t("companyActivity.charts.total")]: d.count }));
 
   return (
-    <div className="max-w-7xl mx-auto mt-4 mb-4">
+    <div className="max-w-6xl 2xl:max-w-7xl mx-auto mt-4 mb-4">
       <h1 className="text-2xl font-bold mb-3" style={{ textAlign: isRtl ? "right" : "left" }}>📊 {t("companyActivity.title")}</h1>
 
       <div className="flex gap-0 mb-3 border-b" dir={isRtl ? "rtl" : "ltr"}>

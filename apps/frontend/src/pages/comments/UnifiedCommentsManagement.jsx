@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useDebounce } from "../../hooks/useDebounce";
+
+const dateFt = new Intl.DateTimeFormat("ar-EG");
 import { useNavigate, useParams } from "react-router-dom";
 import CommentService from "../../services/commentService";
 import {
@@ -37,6 +40,10 @@ const UnifiedCommentsManagement = () => {
     totalPages: 1,
     totalCount: 0,
   });
+  const [replyCommentId, setReplyCommentId] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [searchInput, setSearchInput] = useState(filters.search);
+  const debouncedSearch = useDebounce(searchInput, 300);
 
   // Fetch posts
   const fetchPosts = async () => {
@@ -235,6 +242,12 @@ const UnifiedCommentsManagement = () => {
     }
   }, [filters, activePostId]);
 
+  useEffect(() => {
+    if (debouncedSearch !== filters.search) {
+      setFilters((prev) => ({ ...prev, search: debouncedSearch }));
+    }
+  }, [debouncedSearch]);
+
   // If we're viewing comments for a specific post
   if (activePostId) {
     return (
@@ -403,7 +416,7 @@ const UnifiedCommentsManagement = () => {
                     <div
                       key={comment.id}
                       className="p-6 hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-indigo-50/30 dark:hover:bg-gray-700/50 transition-all duration-300 border-r-4 border-transparent hover:border-blue-500 animate-fade-in"
-                      style={{ animationDelay: `${index * 0.05}s` }}
+                      style={{ animationDelay: `${Math.min(index, 20) * 0.05}s` }}
                     >
                       <div className="flex justify-between">
                         <div className="flex items-start gap-3">
@@ -427,11 +440,9 @@ const UnifiedCommentsManagement = () => {
                                 {comment.senderId}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-500 mt-1">
-                              {new Date(comment.createdTime).toLocaleString(
-                                "ar-EG",
-                              )}
-                            </p>
+                              <p className="text-sm text-slate-500 mt-1">
+                                {dateFt.format(new Date(comment.createdTime))}
+                              </p>
                           </div>
                         </div>
                         <div>
@@ -466,9 +477,7 @@ const UnifiedCommentsManagement = () => {
                                 </p>
                                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-3 font-semibold">
                                   ✓ تم الرد في:{" "}
-                                  {new Date(comment.respondedAt).toLocaleString(
-                                    "ar-EG",
-                                  )}
+                                  {dateFt.format(new Date(comment.respondedAt))}
                                 </p>
                               </div>
                             </div>
@@ -478,16 +487,19 @@ const UnifiedCommentsManagement = () => {
                         <div className="mt-4 flex flex-wrap gap-3">
                           {!comment.respondedAt && (
                             <button
-                              onClick={() => {
-                                const response = prompt("اكتب ردك هنا:");
-                                if (response !== null) {
-                                  handleUpdateResponse(comment.id, response);
-                                }
-                              }}
+                              onClick={() =>
+                                setReplyCommentId(
+                                  replyCommentId === comment.id
+                                    ? null
+                                    : comment.id,
+                                )
+                              }
                               className="group inline-flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 font-semibold"
                             >
                               <Edit3 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                              رد على التعليق
+                              {replyCommentId === comment.id
+                                ? "إلغاء"
+                                : "رد على التعليق"}
                             </button>
                           )}
                           <button
@@ -498,6 +510,38 @@ const UnifiedCommentsManagement = () => {
                             حذف
                           </button>
                         </div>
+                        {replyCommentId === comment.id && (
+                          <div className="mt-3">
+                            <textarea
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder="اكتب ردك هنا..."
+                              className="w-full px-4 py-3 border-2 border-blue-200 dark:border-blue-700 rounded-xl text-right bg-white dark:bg-gray-700 text-sm"
+                              rows={2}
+                            />
+                            <div className="flex gap-2 mt-2 justify-end">
+                              <button
+                                onClick={() => {
+                                  setReplyCommentId(null);
+                                  setReplyText("");
+                                }}
+                                className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-600 rounded-xl font-semibold"
+                              >
+                                إلغاء
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleUpdateResponse(comment.id, replyText);
+                                  setReplyCommentId(null);
+                                  setReplyText("");
+                                }}
+                                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl font-semibold"
+                              >
+                                إرسال
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -569,8 +613,8 @@ const UnifiedCommentsManagement = () => {
                   type="text"
                   className="w-full pr-12 pl-4 py-3.5 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 border-2 border-slate-200 dark:border-gray-600 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all text-right font-medium shadow-sm"
                   placeholder="ابحث هنا..."
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange("search", e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                 />
               </div>
             </div>
@@ -697,9 +741,9 @@ const UnifiedCommentsManagement = () => {
                               {post.postId.substring(0, 10)}...
                             </div>
                             <div className="text-xs text-slate-500 mt-1">
-                              {new Date(
+                              {dateFt.format(new Date(
                                 post.firstCommentTime,
-                              ).toLocaleDateString("ar-EG")}
+                              ))}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -898,36 +942,3 @@ const UnifiedCommentsManagement = () => {
 };
 
 export default UnifiedCommentsManagement;
-
-// Add custom CSS animations
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes bounce-subtle {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-2px);
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-
-  .animate-bounce-subtle {
-    animation: bounce-subtle 2s ease-in-out infinite;
-  }
-`;
-document.head.appendChild(style);

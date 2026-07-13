@@ -459,7 +459,7 @@ const PartnerDashboard: React.FC = () => {
     : t("platformPartner.dashboard.rankings.maxRank") || "";
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-6 max-w-6xl 2xl:max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {error && (
         <div className="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-700 dark:text-red-200 flex items-center justify-between">
           <span>{error}</span>

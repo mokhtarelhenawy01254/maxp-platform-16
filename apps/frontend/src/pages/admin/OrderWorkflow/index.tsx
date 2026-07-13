@@ -65,7 +65,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
 
     return (
         <div className={`${isEmbedded ? '' : 'p-6 bg-slate-50 min-h-screen dark:bg-slate-900'}`}>
-            <div className={`${isEmbedded ? 'w-full' : 'max-w-7xl mx-auto'}`}>
+            <div className={`${isEmbedded ? 'w-full' : 'max-w-6xl 2xl:max-w-7xl mx-auto'}`}>
                 {/* Header - Hide if embedded */}
                 {!isEmbedded && (
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">

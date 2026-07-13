@@ -212,7 +212,7 @@ const MgAgencyLeadLanding: React.FC = () => {
     >
       <div className="absolute inset-x-0 top-0 -z-10 h-[40rem] bg-[radial-gradient(circle_at_top_right,_rgba(244,114,182,0.18),_transparent_35%),radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_30%),linear-gradient(180deg,_#fffaf5_0%,_#fff_55%,_#fff8ef_100%)]" />
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-20 px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+      <main className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-20 px-4 pb-20 pt-10 sm:px-6 lg:px-8">
         <section className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#f0d4b1] bg-white/80 px-4 py-2 text-sm font-bold text-[#9a5c10] shadow-sm backdrop-blur">

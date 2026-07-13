@@ -414,7 +414,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   }
 
   return (
-    <div className="grid h-[calc(100vh-64px)] min-h-0 gap-0 xl:grid-cols-[1fr,380px]">
+    <div className="grid h-[calc(100dvh-64px)] min-h-0 gap-0 xl:grid-cols-[1fr,380px]">
       <main className="flex min-h-0 flex-col bg-background">
         <header className="wa-glass-header border-b border-border/50 bg-card px-4 py-3 md:px-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">

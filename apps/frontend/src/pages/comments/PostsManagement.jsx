@@ -495,6 +495,8 @@ const PostsManagement = ({ embedded = false }) => {
                               alt=""
                               className="w-full h-full object-cover"
                               loading="lazy"
+                              width={320}
+                              height={320}
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.style.display = 'none';

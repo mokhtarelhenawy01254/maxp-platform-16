@@ -5,8 +5,11 @@ const API_BASE_URL = buildApiUrl("");
 
 interface CampaignData {
   name: string;
+  channel?: string;
   message: string;
   targetAudience: string;
+  waTemplateName?: string;
+  waLanguageCode?: string;
   scheduledAt?: string | undefined;
   scheduledTime?: string;
   tags: string[];
@@ -21,8 +24,11 @@ interface CampaignData {
 interface Campaign {
   id: string;
   name: string;
+  channel: string;
   message: string;
   targetAudience: string;
+  waTemplateName?: string;
+  waLanguageCode?: string;
   scheduledAt?: string;
   sentAt?: string;
   status: "draft" | "scheduled" | "sent" | "cancelled" | string;
@@ -32,6 +38,7 @@ interface Campaign {
   openedCount: number;
   clickedCount: number;
   failedCount: number;
+  repliedCount?: number;
   openRate?: number;
   clickRate?: number;
   priority: string;

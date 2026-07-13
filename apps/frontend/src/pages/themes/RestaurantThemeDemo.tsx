@@ -333,7 +333,7 @@ export default function RestaurantThemeDemo() {
       className="min-h-screen bg-[#FFFDFB] font-sans text-[#1D1D1F] selection:bg-orange-500 selection:text-white"
     >
       <nav className="sticky top-0 z-[100] border-b-4 border-orange-500 bg-white/95 px-6 py-4 shadow-lg backdrop-blur md:px-12">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl items-center justify-between gap-4">
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -395,7 +395,7 @@ export default function RestaurantThemeDemo() {
       {orderSummary && (
         <section className="relative overflow-hidden bg-[#171717] px-6 py-6 text-white md:px-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,107,44,0.35),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(220,38,38,0.25),_transparent_35%)]" />
-          <div className="relative mx-auto flex max-w-7xl flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-1 text-[10px] font-black uppercase tracking-[0.45em] text-orange-200">
                 تم تأكيد الطلب
@@ -437,7 +437,7 @@ export default function RestaurantThemeDemo() {
           <div className="absolute left-[-100px] top-[-100px] h-96 w-96 rounded-full bg-red-600 opacity-40 blur-[120px]" />
           <div className="absolute bottom-[-100px] right-[-100px] h-96 w-96 rounded-full bg-yellow-400 opacity-40 blur-[120px]" />
 
-          <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center gap-16 px-6 md:flex-row md:px-12">
+          <div className="relative z-10 mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col items-center gap-16 px-6 md:flex-row md:px-12">
             <div className="text-center text-white md:w-1/2 md:text-right">
               <div className="inline-block animate-bounce rounded-full bg-white px-4 py-1 text-xs font-black uppercase tracking-widest text-red-600 shadow-md">
                 عرض محدود
@@ -517,7 +517,7 @@ export default function RestaurantThemeDemo() {
         </section>
 
         <section id="deals" className="bg-[#FFF4EC] px-6 py-16 md:px-12">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-6xl 2xl:max-w-7xl">
             <div className="max-w-2xl">
               <div className="inline-flex rounded-full bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.45em] text-red-600 shadow-md">
                 عروض اليوم
@@ -570,7 +570,7 @@ export default function RestaurantThemeDemo() {
         </section>
 
         <section className="sticky top-[78px] z-[90] border-y border-gray-100 bg-white/85 py-6 shadow-sm backdrop-blur-md">
-          <div className="mx-auto max-w-7xl overflow-x-auto px-6 md:px-12">
+          <div className="mx-auto max-w-6xl 2xl:max-w-7xl overflow-x-auto px-6 md:px-12">
             <div className="flex justify-center gap-4">
               {categories.map((category) => (
                 <button
@@ -591,7 +591,7 @@ export default function RestaurantThemeDemo() {
         </section>
 
         <section className="px-6 pt-8 md:px-12">
-          <div className="mx-auto max-w-7xl rounded-[2rem] border border-orange-100 bg-white px-5 py-4 shadow-sm">
+          <div className="mx-auto max-w-6xl 2xl:max-w-7xl rounded-[2rem] border border-orange-100 bg-white px-5 py-4 shadow-sm">
             <p className="text-sm font-semibold text-[#5f5f5f]">
               {products.length > 0
                 ? 'المنيو محدث تلقائيًا بأحدث المنتجات المتاحة الآن.'
@@ -600,7 +600,7 @@ export default function RestaurantThemeDemo() {
           </div>
         </section>
 
-        <section id="menu" className="mx-auto max-w-7xl px-6 py-20 md:px-12">
+        <section id="menu" className="mx-auto max-w-6xl 2xl:max-w-7xl px-6 py-20 md:px-12">
           <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="text-[10px] font-black uppercase tracking-[0.45em] text-orange-500">
@@ -691,7 +691,7 @@ export default function RestaurantThemeDemo() {
 
         <section id="zones" className="relative overflow-hidden bg-[#171717] px-6 py-16 text-white md:px-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,107,44,0.24),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(220,38,38,0.18),_transparent_32%)]" />
-          <div className="relative mx-auto max-w-7xl">
+          <div className="relative mx-auto max-w-6xl 2xl:max-w-7xl">
             <div className="max-w-2xl">
               <div className="text-[10px] font-black uppercase tracking-[0.45em] text-orange-300">
                 مناطق التوصيل

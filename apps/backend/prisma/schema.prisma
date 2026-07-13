@@ -6148,8 +6148,11 @@ model Supplier {
 model BroadcastCampaign {
   id                  String               @id @default(cuid())
   name                String
+  channel             String               @default("facebook") // facebook | whatsapp
   message             String
   targetAudience      String
+  waTemplateName      String?              // WhatsApp template name (when channel=whatsapp)
+  waLanguageCode      String?              @default("en")
   scheduledAt         DateTime?
   sentAt              DateTime?
   tags                String?

@@ -233,7 +233,7 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
   const skillAgentCount = useMemo(() => { const m = new Map<string, number>(); for (const a of agents) { for (const sid of a.allowedSkills || []) m.set(sid, (m.get(sid) || 0) + 1); } return m; }, [agents]);
 
   return (
-    <div dir="rtl" className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6">
+    <div dir="rtl" className="min-h-[calc(100dvh-64px)] bg-background p-4 md:p-6">
       <AdminPageHeader
         title={t("agentSkills.title")}
         subtitle={t("agentSkills.subtitle")}

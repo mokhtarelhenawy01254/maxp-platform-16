@@ -1,3 +1,28 @@
+# Session Log — 2026-07-13 — WhatsApp Broadcast Campaign System
+
+## What Happened
+1. **Audit**: Reviewed WhatsAppTemplateBroadcast.tsx + existing broadcast system (apps/pages/broadcast/). Found full campaign CRUD, analytics, customer lists, scheduling — but Facebook-only.
+2. **Prisma**: Added `channel`, `waTemplateName`, `waLanguageCode` to BroadcastCampaign. BroadcastRecipient already had tracking fields (deliveredAt, openedAt, clickedAt, repliedAt).
+3. **Backend**: Extended `createCampaign`/`sendCampaign`/`getCampaigns` in broadcastController.js. WhatsApp branch sends via WhatsAppMessageHandler.sendTemplateMessage(). Channel filter in getCampaigns.
+4. **Frontend**: Rewrote WhatsAppTemplateBroadcast.tsx — 4 tabs (Create Campaign, Campaigns, Analytics, Customer Lists). Reuses broadcastService with new WhatsApp fields.
+5. **broadcastService.ts**: Added channel/waTemplateName/waLanguageCode/repliedCount to Campaign interface.
+6. **Migration**: Created `migrations/add_whatsapp_broadcast_channel.sql`.
+
+## Key Files Modified
+- `apps/backend/prisma/schema.prisma` — BroadcastCampaign model (channel, waTemplateName, waLanguageCode)
+- `apps/backend/prisma/schema/marketing.prisma` — same model update
+- `apps/backend/controller/broadcastController.js` — createCampaign, sendCampaign (WhatsApp branch), getCampaigns (channel filter)
+- `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx` — full rewrite to campaign dashboard
+- `apps/frontend/src/services/broadcastService.ts` — WhatsApp fields in interfaces
+- `migrations/add_whatsapp_broadcast_channel.sql` — new migration
+
+## Design
+- Reuses BroadcastCampaign (channel field) + BroadcastRecipient tracking — no new tables
+- Analytics from aggregate counts — no separate table
+- Customer lists shared with existing broadcast system
+
+---
+
 # Session Log — 2026-07-12 — GitHub Repo Migration + Deploy Fix
 
 ## What Happened

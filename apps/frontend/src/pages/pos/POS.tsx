@@ -161,7 +161,7 @@ const POS = () => {
 
   return (
     <div
-      className="h-[calc(100vh-64px)] bg-gray-50 flex flex-col md:flex-row overflow-hidden"
+      className="h-[calc(100dvh-64px)] bg-gray-50 flex flex-col md:flex-row overflow-hidden"
       dir="rtl"
     >
       {/* LEFT SIDE: PRODUCTS */}

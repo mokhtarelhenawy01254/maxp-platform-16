@@ -225,7 +225,7 @@ const InstagramInbox: React.FC = () => {
     <div
       style={{
         display: "flex",
-        height: "calc(100vh - 64px)",
+        height: "calc(100dvh - 64px)",
         overflow: "hidden",
         background: "#f8fafc",
         direction: "rtl",

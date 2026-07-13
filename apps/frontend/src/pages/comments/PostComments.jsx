@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import CommentService from "../../services/commentService";
+
+const dtf = new Intl.DateTimeFormat("ar-EG", { dateStyle: "short", timeStyle: "short" });
 import {
   MessageSquare,
   CheckCircle,
@@ -228,10 +230,7 @@ function CommentCard({ comment, selected, onToggleSelect, onDelete, onReplySent 
                 {comment.senderId && <span className="font-mono">{comment.senderId}</span>}
                 {comment.createdTime && (
                   <span className="mr-2">
-                    {new Date(comment.createdTime).toLocaleString("ar-EG", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
+                    {dtf.format(new Date(comment.createdTime))}
                   </span>
                 )}
               </p>
@@ -258,10 +257,7 @@ function CommentCard({ comment, selected, onToggleSelect, onDelete, onReplySent 
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{comment.response}</p>
             {comment.respondedAt && (
               <p className="text-[10px] text-gray-400 mt-2">
-                {new Date(comment.respondedAt).toLocaleString("ar-EG", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                })}
+                {dtf.format(new Date(comment.respondedAt))}
               </p>
             )}
           </div>
@@ -411,16 +407,15 @@ const PostComments = () => {
   };
 
   /* ── Stats ── */
-  const respondedCount = comments.filter((c) => c.respondedAt).length;
+  const respondedCount = useMemo(() => comments.filter((c) => c.respondedAt).length, [comments]);
   const pendingCount = comments.length - respondedCount;
 
   /* ── Filtered view ── */
-  const visibleComments =
-    filters.status === "all"
-      ? comments
-      : filters.status === "responded"
-      ? comments.filter((c) => c.respondedAt)
-      : comments.filter((c) => !c.respondedAt);
+  const visibleComments = useMemo(() => {
+    if (filters.status === "all") return comments;
+    if (filters.status === "responded") return comments.filter((c) => c.respondedAt);
+    return comments.filter((c) => !c.respondedAt);
+  }, [comments, filters.status]);
 
   /* ────────────── RENDER ────────────── */
   return (

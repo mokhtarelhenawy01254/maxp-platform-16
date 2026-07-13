@@ -302,7 +302,7 @@ export default function PayrollSimulator() {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-180px)]" dir="rtl">
+    <div className="flex gap-6 h-[calc(100dvh-180px)]" dir="rtl">
       {/* Search & Select Panel */}
       <Card className="w-80 flex flex-col shrink-0 border-none shadow-xl bg-slate-50/50 dark:bg-slate-950/20">
         <CardHeader className="pb-3">

@@ -428,7 +428,7 @@ const AIChatPage: React.FC<AIChatPageProps> = ({ companyId, fullHeight }) => {
   const agentRole = agentInfo?.role || "CEO";
 
   return (
-    <div className={`flex ${fullHeight ? "h-full" : "h-[calc(100vh-64px)]"} flex-col bg-background`}>
+    <div className={`flex ${fullHeight ? "h-full" : "h-[calc(100dvh-64px)]"} flex-col bg-background`}>
       {/* Header */}
       <div className="flex shrink-0 items-center gap-4 border-b bg-card px-6 py-3">
         <Avatar

@@ -221,7 +221,7 @@ const ProductsTrash: React.FC = () => {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {/* Header */}
             <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <Link
@@ -276,7 +276,7 @@ const ProductsTrash: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 {loading && products.length === 0 ? (
                     <div className="flex items-center justify-center py-20">
                         <ArrowPathIcon className="h-8 w-8 text-gray-400 animate-spin" />

@@ -286,7 +286,7 @@ const MerchantPortalDashboard: React.FC = () => {
 
   return (
     <div className={`min-h-screen p-6 ${isDark ? "bg-slate-950" : "bg-stone-50"}`}>
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl space-y-6">
         {activeSectionId === "merchant-overview" ? (
           <>
             <section className="grid gap-4 md:grid-cols-5">

@@ -162,7 +162,7 @@ const AdLibraryResearch: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-50 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5">
+      <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-5">
         <FacebookAdsModuleNav />
 
         <header className="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 lg:flex-row lg:items-end lg:justify-between">

@@ -225,7 +225,7 @@ export default function AgentGuardrailsTab({
 
 
   return (
-    <div className="w-full flex flex-col gap-6 lg:h-[calc(100vh-280px)] lg:overflow-hidden text-right" dir="rtl">
+    <div className="w-full flex flex-col gap-6 lg:h-[calc(100dvh-280px)] lg:overflow-hidden text-right" dir="rtl">
       
       {/* Rules Management */}
       <div className="w-full flex-1 flex flex-col gap-4 lg:overflow-y-auto pr-1 min-h-0 min-w-0">

@@ -3257,7 +3257,7 @@ export default function AppSettings() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl items-center justify-between gap-6 px-4 py-6 sm:px-6 lg:px-8">
           <div className="space-y-3">
             <button
               onClick={() => navigate(backDestination)}
@@ -3299,7 +3299,7 @@ export default function AppSettings() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {!isUpsellCenter ? (
           <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-900/40 dark:bg-blue-900/10">
             <div className="mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-300">

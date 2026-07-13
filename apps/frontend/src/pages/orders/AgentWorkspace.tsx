@@ -611,7 +611,7 @@ const AgentWorkspace: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-3 pb-20 sm:p-6">
+    <div className="max-w-6xl 2xl:max-w-7xl mx-auto p-3 pb-20 sm:p-6">
 
       <h1 className="sr-only">{t('orders.workspaceTitle')}</h1>
       {/* ─── Compact Control Bar ─────────────────────────────────────────── */}

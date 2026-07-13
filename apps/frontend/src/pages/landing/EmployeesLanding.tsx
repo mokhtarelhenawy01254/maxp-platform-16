@@ -17,7 +17,7 @@ const EmployeesLanding = () => {
     <div className="min-h-screen bg-white text-gray-900 font-sans" dir="rtl">
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white">
@@ -37,7 +37,7 @@ const EmployeesLanding = () => {
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 bg-gradient-to-b from-primary-50 to-white overflow-hidden">
-        <div className="max-w-7xl mx-auto text-center relative">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto text-center relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -132,7 +132,7 @@ const EmployeesLanding = () => {
 
       {/* Features Grid */}
       <section className="py-24 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">
               كل اللي محتاجه في شاشة واحدة
@@ -183,7 +183,7 @@ const EmployeesLanding = () => {
 
       {/* Benefits Section */}
       <section className="py-20 px-4 bg-primary-600 text-white overflow-hidden relative">
-        <div className="max-w-7xl mx-auto relative z-10">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl font-bold mb-8">
@@ -224,7 +224,7 @@ const EmployeesLanding = () => {
 
       {/* Trust Badges */}
       <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-12 grayscale opacity-60">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-12 grayscale opacity-60">
           <div className="flex items-center gap-2 font-bold text-xl uppercase tracking-widest">
             <Shield size={24} /> Secure
           </div>

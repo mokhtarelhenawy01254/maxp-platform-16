@@ -223,7 +223,7 @@ const ManualOrderPage = () => {
 
   return (
     <div
-      className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-y-auto bg-slate-50 p-3 dark:bg-gray-900 sm:p-4 lg:h-[calc(100vh-64px)]"
+      className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-y-auto bg-slate-50 p-3 dark:bg-gray-900 sm:p-4 lg:h-[calc(100dvh-64px)]"
       dir="rtl"
     >
       <header className="mb-3 flex shrink-0 items-start justify-between gap-3">

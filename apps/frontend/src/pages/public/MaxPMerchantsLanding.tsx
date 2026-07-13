@@ -51,7 +51,7 @@ const MaxPMerchantsLanding: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100" dir="rtl">
       <header className="border-b border-white/10 bg-slate-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+        <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
           <Link to="/" className="flex items-center gap-3">
             <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-semibold text-emerald-300">
               Max P
@@ -79,7 +79,7 @@ const MaxPMerchantsLanding: React.FC = () => {
       <main>
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.12),transparent_30%)]" />
-          <div className="relative mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-28">
+          <div className="relative mx-auto grid max-w-6xl 2xl:max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-28">
             <div>
               <span className="inline-flex rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1 text-sm font-medium text-emerald-300">
                 بيع أسرع وإدارة أوضح للتاجر المصري
@@ -144,7 +144,7 @@ const MaxPMerchantsLanding: React.FC = () => {
           </div>
         </section>
 
-        <section id="why-maxp" className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+        <section id="why-maxp" className="mx-auto max-w-6xl 2xl:max-w-7xl px-6 py-16 lg:px-8">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300/80">المشكلة</p>
             <h2 className="mt-3 text-3xl font-black text-white md:text-4xl">
@@ -163,7 +163,7 @@ const MaxPMerchantsLanding: React.FC = () => {
         </section>
 
         <section className="border-y border-white/10 bg-white/[0.03]">
-          <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+          <div className="mx-auto max-w-6xl 2xl:max-w-7xl px-6 py-16 lg:px-8">
             <div className="max-w-3xl">
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300/80">الحل</p>
               <h2 className="mt-3 text-3xl font-black text-white md:text-4xl">
@@ -182,7 +182,7 @@ const MaxPMerchantsLanding: React.FC = () => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+        <section className="mx-auto max-w-6xl 2xl:max-w-7xl px-6 py-16 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300/80">مناسب لمين؟</p>
@@ -204,7 +204,7 @@ const MaxPMerchantsLanding: React.FC = () => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+        <section className="mx-auto max-w-6xl 2xl:max-w-7xl px-6 py-16 lg:px-8">
           <div className="rounded-[32px] border border-emerald-400/20 bg-emerald-400/10 p-8 md:p-10">
             <div className="max-w-3xl">
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-200/90">كيف نبدأ؟</p>
@@ -224,7 +224,7 @@ const MaxPMerchantsLanding: React.FC = () => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 pb-20 lg:px-8">
+        <section className="mx-auto max-w-6xl 2xl:max-w-7xl px-6 pb-20 lg:px-8">
           <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 text-center md:p-12">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300/80">جاهز تبدأ؟</p>
             <h2 className="mt-3 text-3xl font-black text-white md:text-5xl">

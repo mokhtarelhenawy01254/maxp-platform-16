@@ -225,7 +225,7 @@ export default function SkillDetailPage() {
   const agentCount = skillAgentCount.get(s.id) || 0;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)] bg-[#f8fafc]" dir="rtl">
+    <div className="flex flex-col min-h-[calc(100dvh-64px)] bg-[#f8fafc]" dir="rtl">
       {/* Sticky top nav with high-end glass effect */}
       <div className="shrink-0 border-b border-slate-200/80 bg-white/80 px-6 py-4 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -301,7 +301,7 @@ export default function SkillDetailPage() {
 
       {/* Main Grid: Responsive 3 Columns split */}
       <div className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
           {/* Main Content Pane (Left on LTR, Right/Left based on RTL): SKILL.md Reader (Takes 2 Columns) */}
           <div className="lg:col-span-2 space-y-6">

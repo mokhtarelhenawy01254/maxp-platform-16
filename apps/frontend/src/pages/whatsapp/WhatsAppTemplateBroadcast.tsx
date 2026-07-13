@@ -1,80 +1,77 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Send,
-  Megaphone,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  UserPlus,
-  X,
+  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, ChartBar, Eye, MousePointerClick, Reply, List,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
-import {
-  WhatsAppPageShell,
-  WhatsAppSurfaceCard,
-} from "./components/WhatsAppPageShell";
+import { broadcastService } from "../../services/broadcastService";
+import { WhatsAppPageShell, WhatsAppSurfaceCard } from "./components/WhatsAppPageShell";
 
 interface Session {
-  id: string;
-  name?: string;
-  phoneNumber?: string;
-  provider?: string;
-  metaDisplayPhoneNumber?: string;
+  id: string; name?: string; phoneNumber?: string; provider?: string; metaDisplayPhoneNumber?: string;
 }
-
 
 interface MetaTemplate {
-  name: string;
-  status: string;
-  category: string;
-  language: string;
+  name: string; status: string; category: string; language: string;
 }
 
-const WhatsAppTemplateBroadcast: React.FC<{
-  companyId?: string;
-  companyName?: string;
-  superAdminMode?: boolean;
-}> = ({ companyId, companyName, superAdminMode = false }) => {
+interface CustomerList {
+  id: string; name: string; description: string; count: number; isDefault?: boolean;
+}
+
+interface Campaign {
+  id: string; name: string; channel: string; status: string; recipientCount: number;
+  sentCount: number; deliveredCount: number; openedCount: number; clickedCount: number;
+  repliedCount?: number; failedCount: number; targetAudience: string;
+  waTemplateName?: string; waLanguageCode?: string;
+  sentAt?: string; createdAt: string;
+}
+
+const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: string; superAdminMode?: boolean }>
+= ({ companyId, companyName, superAdminMode = false }) => {
   const { t, i18n } = useTranslation();
 
+  const [activeTab, setActiveTab] = useState("create");
+
+  // Session & Template
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [languageCode, setLanguageCode] = useState("en");
+
+  // Campaign creation
+  const [campaignName, setCampaignName] = useState("");
+  const [customerLists, setCustomerLists] = useState<CustomerList[]>([]);
+  const [selectedListId, setSelectedListId] = useState("");
   const [recipientsText, setRecipientsText] = useState("");
   const [recipients, setRecipients] = useState<string[]>([]);
+  const [sendNow, setSendNow] = useState(true);
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<{ sent: number; failed: number; errors: any[] } | null>(null);
+  const [result, setResult] = useState<any>(null);
+
+  // Campaigns history
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+
+  // Analytics
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
   const withCompanyConfig = useCallback(
-    (config: ApiRequestConfig = {}) =>
-      companyId ? { ...config, _companyId: companyId } : config,
-    [companyId],
+    (config: ApiRequestConfig = {}) => companyId ? { ...config, _companyId: companyId } : config, [companyId],
   );
 
   const fetchSessions = useCallback(async () => {
@@ -84,34 +81,42 @@ const WhatsAppTemplateBroadcast: React.FC<{
         (s: any) => s.provider === "META_CLOUD" || s.metaWabaId,
       );
       setSessions(metaSessions);
-      if (metaSessions.length > 0 && !selectedSessionId) {
-        setSelectedSessionId(metaSessions[0].id);
-      }
+      if (metaSessions.length > 0 && !selectedSessionId) setSelectedSessionId(metaSessions[0].id);
     } catch { }
   }, [withCompanyConfig]);
 
   const fetchTemplates = useCallback(async () => {
     if (!selectedSessionId) return;
     try {
-      const res = await apiClient.get(
-        `/whatsapp-templates/templates?sessionId=${selectedSessionId}`,
-        withCompanyConfig(),
-      );
-      const approved = (res.data?.templates || []).filter(
-        (t: MetaTemplate) => t.status === "APPROVED",
-      );
+      const res = await apiClient.get(`/whatsapp-templates/templates?sessionId=${selectedSessionId}`, withCompanyConfig());
+      const approved = (res.data?.templates || []).filter((t: MetaTemplate) => t.status === "APPROVED");
       setTemplates(approved);
     } catch { }
   }, [selectedSessionId, withCompanyConfig]);
 
-  useEffect(() => { fetchSessions(); }, []);
+  const fetchCustomerLists = useCallback(async () => {
+    try {
+      const res = await broadcastService.getCustomerLists();
+      const lists = Array.isArray(res) ? res : res?.data || [];
+      setCustomerLists(lists);
+    } catch { }
+  }, []);
+
+  const fetchCampaigns = useCallback(async () => {
+    try {
+      setLoadingCampaigns(true);
+      const res = await broadcastService.getCampaigns({ channel: "whatsapp" }, { limit: 50 });
+      const list = Array.isArray(res) ? res : res?.campaigns || [];
+      setCampaigns(list.filter((c: Campaign) => c.channel === "whatsapp" || !c.channel));
+    } catch { }
+    finally { setLoadingCampaigns(false); }
+  }, []);
+
+  useEffect(() => { fetchSessions(); fetchCustomerLists(); fetchCampaigns(); }, []);
   useEffect(() => { fetchTemplates(); }, [selectedSessionId]);
 
   const addRecipients = useCallback(() => {
-    const phones = recipientsText
-      .split(/[\n,;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0);
+    const phones = recipientsText.split(/[\n,;]+/).map((p) => p.trim()).filter((p) => p.length > 0);
     const unique = [...new Set([...recipients, ...phones])];
     setRecipients(unique);
     setRecipientsText("");
@@ -121,215 +126,386 @@ const WhatsAppTemplateBroadcast: React.FC<{
     setRecipients((prev) => prev.filter((p) => p !== phone));
   }, []);
 
-  const handleSend = useCallback(async () => {
-    if (!selectedSessionId || !selectedTemplate || recipients.length === 0) {
-      toast.error("اختر الجلسة والقالب وأضف مستلمين على الأقل");
+  const handleSelectList = useCallback(async (listId: string) => {
+    setSelectedListId(listId);
+    if (listId === "manual") return;
+    try {
+      const res = await broadcastService.getCustomersInList(listId);
+      const customers = Array.isArray(res) ? res : res?.data || [];
+      const phones = customers.map((c: any) => c.phone).filter(Boolean);
+      setRecipients((prev) => [...new Set([...prev, ...phones])]);
+    } catch { }
+  }, []);
+
+  const handleCreateCampaign = useCallback(async () => {
+    if (!campaignName || !selectedTemplate || recipients.length === 0) {
+      toast.error("اسم الحملة والقالب ومستلم واحد على الأقل مطلوب");
       return;
     }
     try {
       setSending(true);
       setResult(null);
-      const res = await apiClient.post(
-        "/whatsapp-templates/templates/broadcast",
-        {
-          sessionId: selectedSessionId,
-          templateName: selectedTemplate,
-          languageCode,
-          recipients: recipients.map((to) => ({ to })),
-        },
-        withCompanyConfig(),
+
+      const body = {
+        name: campaignName,
+        channel: "whatsapp",
+        message: `WhatsApp broadcast: ${selectedTemplate}`,
+        targetAudience: selectedListId || "manual",
+        waTemplateName: selectedTemplate,
+        waLanguageCode: languageCode,
+        sendNow: true,
+      };
+
+      const campaignRes = await broadcastService.createCampaign(
+        Object.entries(body).reduce((fd, [k, v]) => { fd.append(k, String(v)); return fd; }, new FormData())
       );
-      setResult(res.data?.results || { sent: 0, failed: 0, errors: [] });
-      toast.success("تم إرسال البث");
+      const campaignId = campaignRes?.data?.id || campaignRes?.id;
+
+      const sendRes = await broadcastService.sendCampaign(campaignId);
+      setResult(sendRes);
+      toast.success("تم إرسال الحملة بنجاح");
+      fetchCampaigns();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "فشل إرسال البث");
+      toast.error(err?.message || "فشل");
+      setResult({ sent: 0, failed: 0, errors: [{ error: err?.message }] });
     } finally {
       setSending(false);
     }
-  }, [selectedSessionId, selectedTemplate, languageCode, recipients, withCompanyConfig]);
+  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, withCompanyConfig, fetchCampaigns]);
 
-  const pageTitle = "بث قالب واتساب";
+  const openRate = (c: Campaign) =>
+    c.sentCount > 0 ? Math.round((c.openedCount / c.sentCount) * 100) : 0;
+  const clickRate = (c: Campaign) =>
+    c.sentCount > 0 ? Math.round((c.clickedCount / c.sentCount) * 100) : 0;
+  const deliveryRate = (c: Campaign) =>
+    c.recipientCount > 0 ? Math.round((c.deliveredCount / c.recipientCount) * 100) : 0;
+  const replyRate = (c: Campaign) =>
+    c.sentCount > 0 ? Math.round(((c as any).repliedCount || 0) / c.sentCount * 100) : 0;
 
   return (
     <WhatsAppPageShell
-      title={pageTitle}
-      description="أرسل قالب رسالة Meta API لمجموعة من المستلمين دفعة واحدة"
+      title="حملات بث قوالب واتساب"
+      description="إنشاء وإدارة حملات إرسال قوالب Meta API مع تتبع الفتح والضغط"
       icon={Megaphone}
       backHref="/whatsapp"
       backLabel={t("common.back")}
     >
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
-          <WhatsAppSurfaceCard title="إعدادات البث" description="اختر الجلسة والقالب">
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label>جلسة واتساب</Label>
-                <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="اختر جلسة">
-                  {(value: string | null) => {
-                    if (!value) return null;
-                    const s = sessions.find((x) => x.id === value);
-                    if (!s) return value;
-                    const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
-                    const phone = s.metaDisplayPhoneNumber || s.phoneNumber;
-                    return s.name && !isCuid ? s.name : phone || s.id;
-                  }}
-                </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sessions.map((s) => {
-                      const isCuid = s.name && s.name.length === 25 && s.name.startsWith("c") && /^[a-z0-9]+$/.test(s.name);
-                      const isInvalidName = !s.name || s.name === s.id || isCuid;
-                      const phone = s.metaDisplayPhoneNumber || s.phoneNumber;
-                      const label = isInvalidName ? phone || s.id : s.name;
-                      return (
-                        <SelectItem key={s.id} value={s.id}>
-                          {label}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="create"><Send className="size-4 ml-2" />إنشاء حملة</TabsTrigger>
+          <TabsTrigger value="campaigns"><Megaphone className="size-4 ml-2" />الحملات السابقة</TabsTrigger>
+          <TabsTrigger value="analytics"><ChartBar className="size-4 ml-2" />التحليلات</TabsTrigger>
+          <TabsTrigger value="lists"><List className="size-4 ml-2" />قوائم العملاء</TabsTrigger>
+        </TabsList>
 
-              <div className="space-y-2">
-                <Label>القالب (المعتمد فقط)</Label>
-                <Select value={selectedTemplate} onValueChange={(name) => {
-                  setSelectedTemplate(name);
-                  const t = templates.find(t => t.name === name);
-                  if (t) setLanguageCode(t.language);
-                }}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="اختر قالباً" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.map((t) => (
-                      <SelectItem key={t.name} value={t.name}>
-                        {t.name} ({t.language})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {templates.length === 0 && selectedSessionId && (
-                  <p className="text-sm text-[color:var(--color-muted-foreground)]">
-                    لا توجد قوالب معتمدة. أنشئ قالباً أولاً.
-                  </p>
+        {/* ===================== CREATE CAMPAIGN TAB ===================== */}
+        <TabsContent value="create" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-5">
+            <div className="space-y-6 lg:col-span-3">
+              <WhatsAppSurfaceCard title="إعدادات الحملة" description="اختر القالب والجمهور">
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label>اسم الحملة</Label>
+                    <Input value={campaignName} onChange={e => setCampaignName(e.target.value)}
+                      placeholder="مثال: عرض الجمعة البيضاء" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>جلسة واتساب</Label>
+                    <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="اختر جلسة" /></SelectTrigger>
+                      <SelectContent>
+                        {sessions.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.metaDisplayPhoneNumber || s.phoneNumber || s.name || s.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>القالب (المعتمد فقط)</Label>
+                    <Select value={selectedTemplate} onValueChange={(name) => {
+                      setSelectedTemplate(name);
+                      const tpl = templates.find(t => t.name === name);
+                      if (tpl) setLanguageCode(tpl.language);
+                    }}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="اختر قالباً" /></SelectTrigger>
+                      <SelectContent>
+                        {templates.map((t) => (
+                          <SelectItem key={t.name} value={t.name}>{t.name} ({t.language})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>لغة القالب</Label>
+                    <Select value={languageCode} onValueChange={setLanguageCode}>
+                      <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[...new Set(templates.map(t => t.language))].map(lang => (
+                          <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>قائمة العملاء</Label>
+                    <Select value={selectedListId} onValueChange={handleSelectList}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="اختر قائمة" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manual">إدخال يدوي</SelectItem>
+                        {customerLists.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>{l.name} ({l.count})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </WhatsAppSurfaceCard>
+
+              <WhatsAppSurfaceCard title="المستلمون" description={`${recipients.length} مستلم`}>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Textarea value={recipientsText} onChange={(e) => setRecipientsText(e.target.value)}
+                      placeholder="أرقام الهواتف مفصولة بسطر جديد أو فاصلة"
+                      className="min-h-[80px]" />
+                  </div>
+                  <Button onClick={addRecipients} variant="outline" className="rounded-full">
+                    <UserPlus className="size-4" /> إضافة المستلمين
+                  </Button>
+                  {recipients.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {recipients.map((phone) => (
+                        <Badge key={phone} variant="secondary" className="gap-1 px-3 py-1.5 text-sm">
+                          {phone}
+                          <button onClick={() => removeRecipient(phone)} className="mr-1 hover:text-red-500">
+                            <X className="size-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </WhatsAppSurfaceCard>
+
+              <Button onClick={handleCreateCampaign}
+                disabled={sending || recipients.length === 0 || !selectedTemplate || !campaignName}
+                className="w-full rounded-full py-6 text-lg">
+                {sending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    جاري الإرسال...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Send className="size-5" />
+                    إنشاء وإرسال الحملة ({recipients.length} مستلم)
+                  </span>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>لغة القالب</Label>
-                <Select value={languageCode} onValueChange={setLanguageCode}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {[...new Set(templates.map(t => t.language))].map(lang => (
-                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </WhatsAppSurfaceCard>
-
-          <WhatsAppSurfaceCard title="المستلمون" description={`${recipients.length} مستلم`}>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Textarea
-                  value={recipientsText}
-                  onChange={(e) => setRecipientsText(e.target.value)}
-                  placeholder="أرقام الهواتف مفصولة بسطر جديد أو فاصلة&#10;مثال:&#10;201234567890&#10;201098765432"
-                  className="min-h-[100px]"
-                />
-              </div>
-              <Button onClick={addRecipients} variant="outline" className="rounded-full">
-                <UserPlus className="size-4" /> إضافة المستلمين
               </Button>
+            </div>
 
-              {recipients.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {recipients.map((phone) => (
-                    <Badge key={phone} variant="secondary" className="gap-1 px-3 py-1.5 text-sm">
-                      {phone}
-                      <button onClick={() => removeRecipient(phone)} className="mr-1 hover:text-red-500">
-                        <X className="size-3" />
-                      </button>
-                    </Badge>
+            <div className="lg:col-span-2">
+              <Card className="rounded-3xl border-[color:var(--shell-control-border)]">
+                <CardHeader>
+                  <CardTitle className="text-lg">نتيجة الإرسال</CardTitle>
+                  <CardDescription>تقرير الحملة بعد التنفيذ</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {!result ? (
+                    <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
+                      {sending ? "جاري الإرسال..." : "لم يتم الإرسال بعد"}
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 p-4">
+                        <CheckCircle className="size-8 text-emerald-600" />
+                        <div>
+                          <p className="text-lg font-bold text-emerald-800">{result.sentCount || result.sent || 0}</p>
+                          <p className="text-sm text-emerald-700">تم الإرسال</p>
+                        </div>
+                      </div>
+                      {(result.failedCount || result.failed) > 0 && (
+                        <div className="flex items-center gap-3 rounded-2xl border border-red-200/80 bg-red-500/10 p-4">
+                          <XCircle className="size-8 text-red-600" />
+                          <div>
+                            <p className="text-lg font-bold text-red-800">{result.failedCount || result.failed || 0}</p>
+                            <p className="text-sm text-red-700">فشل</p>
+                          </div>
+                        </div>
+                      )}
+                      {result.errors?.length > 0 && (
+                        <div className="space-y-2">
+                          <Separator />
+                          <p className="text-sm font-medium text-[color:var(--color-muted-foreground)]">تفاصيل الأخطاء:</p>
+                          <div className="max-h-40 space-y-1 overflow-y-auto">
+                            {result.errors.map((e: any, i: number) => (
+                              <p key={i}
+                                className="rounded-lg bg-[color:var(--color-muted)] px-3 py-1.5 text-xs text-red-600">
+                                {e.recipient?.to || e.recipient?.phone || "?"}: {e.error}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ===================== CAMPAIGNS TAB ===================== */}
+        <TabsContent value="campaigns" className="space-y-6">
+          {loadingCampaigns ? (
+            <div className="flex justify-center py-12"><span className="size-8 animate-spin rounded-full border-2 border-current border-t-transparent" /></div>
+          ) : campaigns.length === 0 ? (
+            <div className="text-center py-12 text-[color:var(--color-muted-foreground)]">
+              <Megaphone className="mx-auto size-12 opacity-40" />
+              <p className="mt-4">لا توجد حملات بعد. أنشئ أول حملة لك.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {campaigns.map((c) => (
+                <Card key={c.id} className="rounded-2xl cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedCampaign(selectedCampaign?.id === c.id ? null : c)}>
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg">{c.name}</h3>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">
+                          {c.waTemplateName && `قالب: ${c.waTemplateName}`}
+                          {c.sentAt && ` • ${new Date(c.sentAt).toLocaleDateString("ar-EG")}`}
+                        </p>
+                      </div>
+                      <Badge variant={c.status === "sent" ? "default" : c.status === "failed" ? "destructive" : "secondary"}>
+                        {c.status === "sent" ? "تم" : c.status === "failed" ? "فشل" : c.status}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 text-center">
+                      <div><p className="text-lg font-bold">{c.sentCount || 0}</p><p className="text-xs text-[color:var(--color-muted-foreground)]">أُرسل</p></div>
+                      <div><p className="text-lg font-bold">{openRate(c)}%</p><p className="text-xs text-[color:var(--color-muted-foreground)]"><Eye className="size-3 inline" /> فتح</p></div>
+                      <div><p className="text-lg font-bold">{clickRate(c)}%</p><p className="text-xs text-[color:var(--color-muted-foreground)]"><MousePointerClick className="size-3 inline" /> نقر</p></div>
+                      <div><p className="text-lg font-bold">{replyRate(c)}%</p><p className="text-xs text-[color:var(--color-muted-foreground)]"><Reply className="size-3 inline" /> رد</p></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ===================== ANALYTICS TAB ===================== */}
+        <TabsContent value="analytics" className="space-y-6">
+          {campaigns.length === 0 ? (
+            <div className="text-center py-12 text-[color:var(--color-muted-foreground)]">
+              <ChartBar className="mx-auto size-12 opacity-40" />
+              <p className="mt-4">لا توجد بيانات إحصائية بعد</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="rounded-2xl">
+                  <CardContent className="p-5 text-center">
+                    <p className="text-2xl font-bold">{campaigns.length}</p>
+                    <p className="text-sm text-[color:var(--color-muted-foreground)]">إجمالي الحملات</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl">
+                  <CardContent className="p-5 text-center">
+                    <p className="text-2xl font-bold">
+                      {campaigns.reduce((s, c) => s + openRate(c), 0) / (campaigns.length || 1)}%
+                    </p>
+                    <p className="text-sm text-[color:var(--color-muted-foreground)]"><Eye className="size-4 inline" /> متوسط الفتح</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl">
+                  <CardContent className="p-5 text-center">
+                    <p className="text-2xl font-bold">
+                      {campaigns.reduce((s, c) => s + clickRate(c), 0) / (campaigns.length || 1)}%
+                    </p>
+                    <p className="text-sm text-[color:var(--color-muted-foreground)]"><MousePointerClick className="size-4 inline" /> متوسط النقر</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl">
+                  <CardContent className="p-5 text-center">
+                    <p className="text-2xl font-bold">
+                      {campaigns.reduce((s, c) => s + replyRate(c), 0) / (campaigns.length || 1)}%
+                    </p>
+                    <p className="text-sm text-[color:var(--color-muted-foreground)]"><Reply className="size-4 inline" /> متوسط الرد</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="rounded-2xl">
+                <CardHeader><CardTitle className="text-lg">تفاصيل الحملات</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-right py-2 px-3">الحملة</th>
+                          <th className="text-right py-2 px-3">مرسل</th>
+                          <th className="text-right py-2 px-3">تم التسليم</th>
+                          <th className="text-right py-2 px-3">فتح</th>
+                          <th className="text-right py-2 px-3">نقر</th>
+                          <th className="text-right py-2 px-3">رد</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {campaigns.map((c) => (
+                          <tr key={c.id} className="border-b hover:bg-[color:var(--color-muted)]/30">
+                            <td className="py-2 px-3 font-medium">{c.name}</td>
+                            <td className="py-2 px-3">{c.sentCount || 0}</td>
+                            <td className="py-2 px-3">{c.deliveredCount || 0} ({deliveryRate(c)}%)</td>
+                            <td className="py-2 px-3">{c.openedCount || 0} ({openRate(c)}%)</td>
+                            <td className="py-2 px-3">{c.clickedCount || 0} ({clickRate(c)}%)</td>
+                            <td className="py-2 px-3">{(c as any).repliedCount || 0} ({replyRate(c)}%)</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        {/* ===================== CUSTOMER LISTS TAB ===================== */}
+        <TabsContent value="lists" className="space-y-6">
+          <Card className="rounded-2xl">
+            <CardHeader><CardTitle className="text-lg">قوائم العملاء</CardTitle>
+              <CardDescription>إدارة قوائم العملاء لاستخدامها في الحملات</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {customerLists.length === 0 ? (
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا توجد قوائم عملاء</p>
+              ) : (
+                <div className="grid gap-3">
+                  {customerLists.map((l) => (
+                    <div key={l.id} className="flex items-center justify-between p-3 rounded-xl border">
+                      <div>
+                        <p className="font-medium">{l.name}</p>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">{l.description || `${l.count} عميل`}</p>
+                      </div>
+                      <Badge variant="secondary">{l.count}</Badge>
+                    </div>
                   ))}
                 </div>
               )}
-            </div>
-          </WhatsAppSurfaceCard>
-
-          <Button
-            onClick={handleSend}
-            disabled={sending || recipients.length === 0 || !selectedTemplate}
-            className="w-full rounded-full py-6 text-lg"
-          >
-            {sending ? (
-              <span className="flex items-center gap-2">
-                <span className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                جاري الإرسال...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Send className="size-5" />
-                إرسال البث ({recipients.length} مستلم)
-              </span>
-            )}
-          </Button>
-        </div>
-
-        <div className="lg:col-span-2">
-          <Card className="rounded-3xl border-[color:var(--shell-control-border)]">
-            <CardHeader>
-              <CardTitle className="text-lg">نتيجة الإرسال</CardTitle>
-              <CardDescription>تقرير الإرسال بعد تنفيذ البث</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!result ? (
-                <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                  {sending ? "جاري الإرسال..." : "لم يتم الإرسال بعد"}
-                </p>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 p-4 dark:border-emerald-500/40 dark:bg-emerald-500/[0.08]">
-                    <CheckCircle className="size-8 text-emerald-600 dark:text-emerald-300" />
-                    <div>
-                      <p className="text-lg font-bold text-emerald-800 dark:text-emerald-200">{result.sent}</p>
-                      <p className="text-sm text-emerald-700 dark:text-emerald-300">تم الإرسال</p>
-                    </div>
-                  </div>
-                  {result.failed > 0 && (
-                    <div className="flex items-center gap-3 rounded-2xl border border-red-200/80 bg-red-500/10 p-4 dark:border-red-500/40 dark:bg-red-500/[0.08]">
-                      <XCircle className="size-8 text-red-600 dark:text-red-300" />
-                      <div>
-                        <p className="text-lg font-bold text-red-800 dark:text-red-200">{result.failed}</p>
-                        <p className="text-sm text-red-700 dark:text-red-300">فشل</p>
-                      </div>
-                    </div>
-                  )}
-                  {result.errors.length > 0 && (
-                    <div className="space-y-2">
-                      <Separator />
-                      <p className="text-sm font-medium text-[color:var(--color-muted-foreground)]">
-                        تفاصيل الأخطاء:
-                      </p>
-                      <div className="max-h-40 space-y-1 overflow-y-auto">
-                        {result.errors.map((e, i) => (
-                          <p key={i} className="rounded-lg bg-[color:var(--color-muted)] px-3 py-1.5 text-xs text-red-600 dark:text-red-400">
-                            {e.recipient?.to || e.recipient?.phone || "?"}: {e.error}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+              <Button variant="outline" className="rounded-full" onClick={() => window.open("/broadcast", "_blank")}>
+                <List className="size-4" /> إدارة القوائم في صفحة البرودكاست
+              </Button>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </WhatsAppPageShell>
   );
 };

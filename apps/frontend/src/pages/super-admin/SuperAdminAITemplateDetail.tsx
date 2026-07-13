@@ -98,7 +98,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 to-blue-50/30">
+    <div className="flex flex-col h-[calc(100dvh-64px)] bg-gradient-to-br from-slate-50 to-blue-50/30">
       {/* Header */}
       <div className="px-4 py-2 border-b bg-white/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2">

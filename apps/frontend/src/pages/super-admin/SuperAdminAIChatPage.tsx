@@ -24,7 +24,7 @@ const SuperAdminAIChatPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 64px)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100dvh - 64px)" }}>
       {/* Company selector bar */}
       <div className="flex shrink-0 items-center gap-3 border-b bg-card px-6 py-3">
         <Building2 className="size-4 text-muted-foreground" />

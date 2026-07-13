@@ -30,23 +30,9 @@ import {
   MessageCircle,
 } from "lucide-react";
 
-const stagger = {
-  animate: { transition: { staggerChildren: 0.06 } },
-};
-
-const fadeUp = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
-};
-
-const scaleIn = {
-  initial: { opacity: 0, scale: 0.95 },
-  animate: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: "easeOut" } },
-};
-
 function SectionCard({ icon: Icon, title, description, gradient, children, className }) {
   return (
-    <motion.div variants={fadeUp} className={cn("relative overflow-hidden rounded-2xl border border-white/20 dark:border-white/[0.06] bg-white/80 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg dark:shadow-2xl transition-all duration-300", className)}>
+    <div className={cn("relative overflow-hidden rounded-2xl border border-white/20 dark:border-white/[0.06] bg-white/80 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg dark:shadow-2xl transition-all duration-300", className)}>
       <div className={cn("absolute inset-x-0 top-0 h-1 bg-gradient-to-r", gradient || "from-blue-500 to-indigo-500")} />
       <div className="p-5 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
@@ -65,18 +51,16 @@ function SectionCard({ icon: Icon, title, description, gradient, children, class
         </div>
         {children}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function MethodCard({ selected, onClick, icon: Icon, title, description, accent }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+    <div
       onClick={onClick}
       className={cn(
-        "relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300",
+        "relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]",
         selected
           ? cn("shadow-lg", accent === "green" ? "border-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/30" : "border-amber-400 bg-amber-50/80 dark:bg-amber-950/30")
           : "border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/30 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
@@ -96,7 +80,7 @@ function MethodCard({ selected, onClick, icon: Icon, title, description, accent 
         <span className={cn("font-semibold text-sm", selected ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>{title}</span>
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pr-11">{description}</p>
-    </motion.div>
+    </div>
   );
 }
 
@@ -183,28 +167,28 @@ const PostSettings = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+        <div className="text-center">
           <div className="relative inline-block mb-6">
             <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-30 animate-pulse" />
             <div className="relative inline-block animate-spin rounded-full h-14 w-14 border-[3px] border-blue-500 border-t-transparent" />
           </div>
           <p className="text-gray-600 dark:text-gray-400 font-semibold">{t("postSettings.loadingPostSettings")}</p>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <motion.div initial="initial" animate="animate" className="min-h-screen p-4 sm:p-6 lg:p-8" dir="rtl">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8" dir="rtl">
       <div className="max-w-6xl mx-auto space-y-6">
-        <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/posts")} className="group">
             <ArrowRight className="w-4 h-4 ml-1.5 group-hover:-translate-x-0.5 transition-transform" />
             {t("postSettings.backToPosts")}
           </Button>
-        </motion.div>
+        </div>
 
-        <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-6 sm:p-8 shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-6 sm:p-8 shadow-2xl">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-purple-300/20 rounded-full blur-2xl" />
@@ -228,9 +212,9 @@ const PostSettings = () => {
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div variants={stagger} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <SectionCard
               icon={MessageSquareText}
@@ -349,7 +333,7 @@ const PostSettings = () => {
               </AnimatePresence>
             </SectionCard>
 
-            <motion.div variants={scaleIn} className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button onClick={savePostSettings} disabled={saving} size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
                 {saving ? (
                   <>
@@ -375,7 +359,7 @@ const PostSettings = () => {
                 <Eye className="w-4 h-4 ml-2" />
                 {t("postSettings.viewPostComments")}
               </Button>
-            </motion.div>
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -423,7 +407,7 @@ const PostSettings = () => {
               </div>
             </SectionCard>
 
-            <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl border border-white/20 dark:border-white/[0.06] bg-gradient-to-br from-purple-600/10 to-blue-600/10 dark:from-purple-900/20 dark:to-blue-900/20 backdrop-blur-xl p-5 shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl border border-white/20 dark:border-white/[0.06] bg-gradient-to-br from-purple-600/10 to-blue-600/10 dark:from-purple-900/20 dark:to-blue-900/20 backdrop-blur-xl p-5 shadow-lg">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg shrink-0">
                   <Clock className="w-4 h-4 text-white" />
@@ -435,11 +419,11 @@ const PostSettings = () => {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

@@ -520,7 +520,7 @@ const MerchantProfileDetails: React.FC = () => {
       dir="rtl"
       className="min-h-screen bg-slate-50 px-3 py-4 text-slate-900 dark:bg-slate-950 dark:text-white sm:px-6 sm:py-6"
     >
-      <div className="mx-auto max-w-7xl space-y-5">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl space-y-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
             onClick={() => navigate("/merchants")}

@@ -85,7 +85,7 @@ const SuperAdminLandingPages: React.FC = () => {
   if (loading) {
     return (
       <div dir={i18n.dir()} className="bg-slate-50 p-6 dark:bg-slate-900">
-        <div className="mx-auto flex h-[60vh] max-w-7xl items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <div className="mx-auto flex h-[60vh] max-w-6xl 2xl:max-w-7xl items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200">
             <ArrowPathIcon className="h-6 w-6 animate-spin" />
             <span className="text-sm font-semibold">جاري تحميل الصفحات...</span>
@@ -97,7 +97,7 @@ const SuperAdminLandingPages: React.FC = () => {
 
   return (
     <div dir={i18n.dir()} className="bg-slate-50 p-6 dark:bg-slate-900">
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl space-y-6">
         <header className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
             Landing Pages Management

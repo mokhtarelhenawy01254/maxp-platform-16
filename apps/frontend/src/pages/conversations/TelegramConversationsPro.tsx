@@ -640,7 +640,7 @@ const TelegramConversationsPro: React.FC = () => {
   // --- Render ---
   return (
     <div
-      className={`flex h-[calc(100vh-64px)] business-bg-messenger-app business-bg-soft overflow-hidden`}
+      className={`flex h-[calc(100dvh-64px)] business-bg-messenger-app business-bg-soft overflow-hidden`}
       dir={dir}
     >
       {/* SIDEBAR: Conversations List - Position based on language */}
