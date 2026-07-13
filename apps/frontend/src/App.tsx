@@ -1162,6 +1162,9 @@ const WhatsAppLeadFollowUp = React.lazy(
 const WhatsAppCloudConnect = React.lazy(() =>
   import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppCloudConnect })),
 );
+const WhatsAppEmployeeAnalytics = React.lazy(() =>
+  import("./pages/whatsapp/WhatsAppEmployeeAnalytics"),
+);
 
 // HR Module
 const HRDashboard = React.lazy(() =>
@@ -5619,6 +5622,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppCloudConnect />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/employee-analytics"
+                  element={
+                    <Layout>
+                      <WhatsAppEmployeeAnalytics />
                     </Layout>
                   }
                 />
