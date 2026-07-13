@@ -6,6 +6,9 @@ const FACEBOOK_PAGE_TOKEN_FIELDS = "id,name,category";
 const DEFAULT_PAGE_TIMEOUT_MS = 5000;
 const DEFAULT_REFRESH_TIMEOUT_MS = 15000;
 
+// Simple mutex to prevent concurrent token refresh for the same company+page
+const refreshLocks = new Map();
+
 function getFacebookGraphError(error) {
   const graphError =
     error?.response?.data?.error || error?.data?.error || error?.error || null;
@@ -225,7 +228,16 @@ async function ensureValidFacebookPageAccessToken({
     };
   }
 
-  const refresh = await refreshFacebookPageAccessToken({ companyId, pageId });
+  const lockKey = `${companyId}:${pageId}`;
+  if (refreshLocks.has(lockKey)) {
+    return refreshLocks.get(lockKey);
+  }
+
+  const refreshPromise = refreshFacebookPageAccessToken({ companyId, pageId }).finally(() => {
+    refreshLocks.delete(lockKey);
+  });
+  refreshLocks.set(lockKey, refreshPromise);
+  const refresh = await refreshPromise;
 
   if (!refresh.success) {
     return {

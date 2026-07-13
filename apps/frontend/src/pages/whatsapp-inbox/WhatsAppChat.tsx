@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { FileIcon, ImageIcon, Music, Paperclip, ShoppingBag, Video } from 'lucide-react';
+import { FileIcon, ImageIcon, Music, Paperclip, PanelRightClose, PanelRightOpen, ShoppingBag, Video } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import LinkifiedText from '../../components/common/LinkifiedText';
@@ -121,6 +121,9 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [correctionText, setCorrectionText] = useState('');
+  const [showSidebar, setShowSidebar] = useState<boolean>(
+    () => localStorage.getItem('whatsAppChatSidebarVisible') !== 'false'
+  );
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const currentRole = useMemo(() => {
@@ -203,6 +206,10 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       socketService.off('whatsapp:message:sent', refresh);
     };
   }, [conversationId, loadConversation]);
+
+  useEffect(() => {
+    localStorage.setItem('whatsAppChatSidebarVisible', String(showSidebar));
+  }, [showSidebar]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -414,7 +421,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   }
 
   return (
-    <div className="grid h-[calc(100dvh-64px)] min-h-0 gap-0 xl:grid-cols-[1fr,380px]">
+    <div className={`grid h-[calc(100dvh-64px)] min-h-0 gap-0 ${showSidebar ? 'xl:grid-cols-[1fr,380px]' : ''}`}>
       <main className="flex min-h-0 flex-col bg-background">
         <header className="wa-glass-header border-b border-border/50 bg-card px-4 py-3 md:px-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -471,6 +478,14 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
               {copy.chat.vipBadge}
             </span>
           ) : null}
+          <button
+            type="button"
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="rounded-md border border-border/50 bg-card p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            title={showSidebar ? (copy.isArabic ? 'إخفاء اللوحة' : 'Close panel') : (copy.isArabic ? 'إظهار اللوحة' : 'Show panel')}
+          >
+            {showSidebar ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+          </button>
         </div>
           </div>
 
@@ -598,8 +613,19 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         </div>
       </main>
 
-      <aside className="wa-slim-scroll min-h-0 overflow-y-auto border-l border-border/50 bg-card p-4 md:p-5">
-        <div className="space-y-4">
+      <aside className={`wa-slim-scroll min-h-0 overflow-y-auto border-l border-border/50 bg-card ${showSidebar ? '' : 'hidden'}`}>
+        <div className="flex items-center justify-between border-b border-border/50 px-4 py-3 md:px-5">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Sidebar</div>
+          <button
+            type="button"
+            onClick={() => setShowSidebar(false)}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            title={copy.isArabic ? 'إخفاء اللوحة' : 'Close panel'}
+          >
+            <PanelRightClose size={18} />
+          </button>
+        </div>
+        <div className="space-y-4 p-4 md:p-5">
           <section className="rounded-xl border border-border/50 bg-muted/50 p-4">
             <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{copy.chat.tags.title}</div>
             <div className="mt-3 flex flex-wrap gap-2">

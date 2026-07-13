@@ -196,6 +196,23 @@ async function saveIncomingMessage(payload) {
     }
   });
 
+  // Track broadcast campaign replies
+  const phone = normalizedJid.split('@')[0];
+  if (phone) {
+    const prisma = getSharedPrismaClient();
+    prisma.broadcastRecipient.updateMany({
+      where: {
+        OR: [
+          { customerPhone: phone },
+          { customerPhone: `+${phone}` }
+        ],
+        repliedAt: null,
+        sentAt: { not: null }
+      },
+      data: { repliedAt: new Date() }
+    }).catch(() => {});
+  }
+
   try {
     const settings = await executeWithRetry(async () => {
       return await getSharedPrismaClient().whatsAppSettings.findUnique({
@@ -444,6 +461,40 @@ async function updateMessageStatus(companyId, messageId, status) {
       updatedAt: new Date()
     }
   });
+
+  // Update BroadcastRecipient tracking fields when status callbacks arrive
+  const updateBroadcastCampaignCount = async (recipientMessageId, field) => {
+    const recipient = await prisma.broadcastRecipient.findFirst({
+      where: { messageId: recipientMessageId },
+      select: { campaignId: true }
+    });
+    if (recipient) {
+      await prisma.broadcastCampaign.update({
+        where: { id: recipient.campaignId },
+        data: { [field]: { increment: 1 } }
+      }).catch(() => {});
+    }
+  };
+
+  if (status === 'DELIVERED') {
+    const { count } = await prisma.broadcastRecipient.updateMany({
+      where: { messageId, deliveredAt: null },
+      data: { deliveredAt: new Date() }
+    });
+    if (count > 0) updateBroadcastCampaignCount(messageId, 'deliveredCount');
+  } else if (status === 'READ') {
+    const { count } = await prisma.broadcastRecipient.updateMany({
+      where: { messageId, openedAt: null },
+      data: { openedAt: new Date() }
+    });
+    if (count > 0) updateBroadcastCampaignCount(messageId, 'openedCount');
+  } else if (status === 'FAILED') {
+    const { count } = await prisma.broadcastRecipient.updateMany({
+      where: { messageId, status: { not: 'failed' } },
+      data: { status: 'failed', failureReason: 'Delivery failed' }
+    });
+    if (count > 0) updateBroadcastCampaignCount(messageId, 'failedCount');
+  }
 
   const io = getIO();
   for (const message of messagesToUpdate) {

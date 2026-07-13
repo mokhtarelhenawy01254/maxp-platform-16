@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
@@ -29,9 +30,15 @@ const {
 // Import environment configuration
 const envConfig = require("../config/environment");
 
-// Facebook OAuth Configuration
-const DEFAULT_FACEBOOK_APP_ID = "762328696481583";
-const DEFAULT_FACEBOOK_APP_SECRET = "9ef40d290082e1d2455ac38646f2b379";
+// Facebook OAuth Configuration — read from env only, never hardcoded
+function getFacebookAppConfig() {
+  const id = process.env.FACEBOOK_APP_ID;
+  const secret = process.env.FACEBOOK_APP_SECRET;
+  if (!id || !secret) {
+    console.error('❌ [FACEBOOK-OAUTH] FACEBOOK_APP_ID and FACEBOOK_APP_SECRET must be set in environment');
+  }
+  return { id, secret };
+}
 const FACEBOOK_GRAPH_API_VERSION = getMetaGraphApiVersion();
 const FACEBOOK_GRAPH_API_BASE_URL = getMetaGraphApiBaseUrl();
 const FACEBOOK_OAUTH_BASE_URL = getMetaOAuthBaseUrl();
@@ -91,10 +98,11 @@ const saveFacebookOAuthConfig = (config) => {
 
 const getFacebookOAuthConfig = () => {
   const stored = getStoredFacebookOAuthConfig() || {};
+  const envApp = getFacebookAppConfig();
 
   return {
-    appId: stored.appId || DEFAULT_FACEBOOK_APP_ID,
-    appSecret: stored.appSecret || DEFAULT_FACEBOOK_APP_SECRET,
+    appId: stored.appId || envApp.id || '',
+    appSecret: stored.appSecret || envApp.secret || '',
     redirectUri: stored.redirectUri || buildFacebookBackendCallbackUrl("page"),
   };
 };
@@ -180,11 +188,11 @@ const getRequestedFrontendOrigin = (req) =>
   normalizeRequestedFrontendOrigin(req.get("referer"));
 
 const buildFacebookOAuthState = ({ companyId, userId, type, returnOrigin, popup }) => {
+  const nonce = Math.random().toString(36).substring(7) + Date.now().toString(36);
   const stateParts = [
     companyId,
     userId,
-    Date.now(),
-    Math.random().toString(36).substring(7),
+    nonce,
   ];
 
   if (type) {
@@ -199,57 +207,72 @@ const buildFacebookOAuthState = ({ companyId, userId, type, returnOrigin, popup 
     stateParts.push("popup");
   }
 
-  return Buffer.from(stateParts.join("|")).toString("base64");
+  const payload = stateParts.join("|");
+  const hmac = crypto.createHmac('sha256', getFacebookOAuthConfig().appSecret).update(payload).digest('hex').substring(0, 16);
+  return Buffer.from(payload + "|hmac=" + hmac).toString("base64");
 };
 
 const decodeFacebookOAuthState = (state, fallbackType) => {
   const normalizedState = decodeURIComponent(state).replace(/ /g, "+");
   const decodedState = Buffer.from(normalizedState, "base64").toString("utf8");
 
-  if (decodedState.includes("|")) {
-    const parts = decodedState.split("|");
-    const [cid, uid, ts, r] = parts;
+  // Strip HMAC suffix if present and verify
+  let hmacValid = false;
+  let strippedState = decodedState;
+  const hmacIdx = decodedState.lastIndexOf('|hmac=');
+  if (hmacIdx !== -1) {
+    const sig = decodedState.substring(hmacIdx + 6);
+    strippedState = decodedState.substring(0, hmacIdx);
+    try {
+      const expected = crypto.createHmac('sha256', getFacebookOAuthConfig().appSecret).update(strippedState).digest('hex').substring(0, 16);
+      hmacValid = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+    } catch { hmacValid = false; }
+  }
+
+  if (strippedState.includes("|")) {
+    const parts = strippedState.split("|");
+    const [cid, uid, nonce, ...rest] = parts;
 
     let type = fallbackType;
     let returnOrigin = null;
     let popup = false;
 
-    for (let i = 4; i < parts.length; i++) {
-      const val = parts[i];
+    for (const val of rest) {
       if (val === "pixel" || val === "page") {
         type = val;
       } else if (val === "popup") {
         popup = true;
-      } else if (val && !returnOrigin) {
+      } else if (val && !returnOrigin && !val.startsWith("hmac=")) {
         returnOrigin = val;
       }
     }
 
+    const stateData = {
+      cid,
+      uid,
+      type,
+      returnOrigin,
+      popup,
+    };
+
+    return { raw: decodedState, stateData, hmacValid };
+  }
+
+  try {
+    const parsedState = JSON.parse(strippedState);
     return {
       raw: decodedState,
       stateData: {
-        cid,
-        uid,
-        ts: parseInt(ts, 10),
-        r,
-        type,
-        returnOrigin,
-        popup,
+        ...parsedState,
+        type: parsedState.type || fallbackType,
+        returnOrigin:
+          parsedState.returnOrigin || parsedState.returnTo || parsedState.origin,
       },
+      hmacValid: false,
     };
+  } catch {
+    return { raw: decodedState, stateData: {}, hmacValid: false };
   }
-
-  const parsedState = JSON.parse(decodedState);
-
-  return {
-    raw: decodedState,
-    stateData: {
-      ...parsedState,
-      type: parsedState.type || fallbackType,
-      returnOrigin:
-        parsedState.returnOrigin || parsedState.returnTo || parsedState.origin,
-    },
-  };
 };
 
 const resolveOAuthCallbackContext = (state, fallbackType) => {
@@ -266,10 +289,14 @@ const resolveOAuthCallbackContext = (state, fallbackType) => {
   }
 
   try {
-    const { raw, stateData } = decodeFacebookOAuthState(state, fallbackType);
+    const { raw, stateData, hmacValid } = decodeFacebookOAuthState(state, fallbackType);
     const requestedOrigin = normalizeRequestedFrontendOrigin(
       stateData.returnOrigin,
     );
+
+    if (hmacValid === false) {
+      console.warn('⚠️ [FACEBOOK-OAUTH] State parameter missing or invalid HMAC signature');
+    }
 
     return {
       stateData,

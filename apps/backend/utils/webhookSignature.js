@@ -65,9 +65,15 @@ function shouldStrictlyEnforceMetaWebhookSignature(env = process.env) {
     return ['strict', 'enforce', 'required', 'true', '1', 'yes'].includes(mode);
   }
 
-  return String(env.FACEBOOK_WEBHOOK_STRICT_SIGNATURE || '')
+  const strictVar = String(env.FACEBOOK_WEBHOOK_STRICT_SIGNATURE || '')
     .trim()
-    .toLowerCase() === 'true';
+    .toLowerCase();
+
+  if (strictVar === 'false' || strictVar === '0' || strictVar === 'no') {
+    return false;
+  }
+
+  return true;
 }
 
 module.exports = {

@@ -212,80 +212,81 @@ const updateFacebookComment = async (req, res) => {
       });
     }
 
-    // Update comment response
-    const updatedComment = await getSharedPrismaClient().facebookComment.update({
-      where: { id: id },
-      data: {
-        response: response,
-        respondedAt: response ? new Date() : null
-      }
-    });
-
-    // NEW: Send the response to Facebook Messenger
-    if (response && response.trim() !== '') {
-      try {
-        // Import required functions
-        const { sendFacebookCommentReply, getPageToken } = require('../utils/allFunctions');
-        const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
-
-        // Get page access token
-        let pageData = null;
-        if (existingComment.pageId) {
-          pageData = await getPageToken(existingComment.pageId);
-        }
-
-        // Send the response to Facebook comment
-        let commentReplySuccess = true;
-        if (pageData && pageData.pageAccessToken) {
-          commentReplySuccess = await sendFacebookCommentReply(
-            existingComment.commentId,
-            response,
-            pageData.pageAccessToken
-          );
-
-          if (!commentReplySuccess) {
-            console.warn(`[MANUAL-REPLY] Failed to send manual response to Facebook for comment ${existingComment.commentId}`);
-          } else {
-            console.log(`[MANUAL-REPLY] Successfully sent manual response to Facebook for comment ${existingComment.commentId}`);
-          }
-        } else {
-          console.warn(`[MANUAL-REPLY] No page access token found for comment ${existingComment.commentId}`);
-          commentReplySuccess = false;
-        }
-
-        // NEW: Also send the response to Facebook Messenger
-        let messengerSuccess = false;
-        if (existingComment.senderId) {
-          const messengerResult = await sendCommentReplyToMessenger(existingComment, response, pageData);
-          messengerSuccess = messengerResult.messengerSuccess;
-        }
-
-        // Return response with detailed success information
-        return res.json({
-          success: true,
-          message: 'Comment updated successfully',
-          data: updatedComment,
-          facebookCommentReplySuccess: commentReplySuccess,
-          facebookMessengerSuccess: messengerSuccess
-        });
-      } catch (replyError) {
-        console.error(`[MANUAL-REPLY] Error sending manual response:`, replyError);
-        return res.json({
-          success: true,
-          message: 'Comment updated successfully, but error occurred while sending to Facebook',
-          data: updatedComment,
-          facebookSendSuccess: false,
-          facebookError: replyError.message
-        });
-      }
+    // Don't update DB yet - send to Facebook first, then persist only on success
+    if (!response || response.trim() === '') {
+      const clearedComment = await getSharedPrismaClient().facebookComment.update({
+        where: { id: id },
+        data: { response: null, respondedAt: null }
+      });
+      return res.json({
+        success: true,
+        message: 'Comment response cleared',
+        data: clearedComment
+      });
     }
 
-    res.json({
-      success: true,
-      message: 'Comment updated successfully',
-      data: updatedComment,
-      facebookSendSuccess: true
-    });
+    try {
+      const { sendFacebookCommentReply, getPageToken } = require('../utils/allFunctions');
+      const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
+
+      let pageData = null;
+      if (existingComment.pageId) {
+        pageData = await getPageToken(existingComment.pageId);
+      }
+
+      let commentReplySuccess = true;
+      if (pageData && pageData.pageAccessToken) {
+        commentReplySuccess = await sendFacebookCommentReply(
+          existingComment.commentId,
+          response,
+          pageData.pageAccessToken
+        );
+
+        if (!commentReplySuccess) {
+          console.warn(`[MANUAL-REPLY] Failed to send response to Facebook for comment ${existingComment.commentId}`);
+          return res.status(502).json({
+            success: false,
+            error: 'Failed to send response to Facebook. Token may be expired.',
+            facebookSendSuccess: false
+          });
+        }
+        console.log(`[MANUAL-REPLY] Successfully sent response to Facebook for comment ${existingComment.commentId}`);
+      } else {
+        console.warn(`[MANUAL-REPLY] No page access token found for comment ${existingComment.commentId}`);
+        return res.status(502).json({
+          success: false,
+          error: 'No Facebook page access token available. Please reconnect your Facebook page.',
+          facebookSendSuccess: false
+        });
+      }
+
+      let messengerSuccess = false;
+      if (existingComment.senderId) {
+        const messengerResult = await sendCommentReplyToMessenger(existingComment, response, pageData);
+        messengerSuccess = messengerResult.messengerSuccess;
+      }
+
+      const updatedComment = await getSharedPrismaClient().facebookComment.update({
+        where: { id: id },
+        data: { response, respondedAt: new Date() }
+      });
+
+      return res.json({
+        success: true,
+        message: 'Comment updated successfully',
+        data: updatedComment,
+        facebookCommentReplySuccess: true,
+        facebookMessengerSuccess: messengerSuccess
+      });
+    } catch (replyError) {
+      console.error(`[MANUAL-REPLY] Error sending manual response:`, replyError);
+      return res.status(502).json({
+        success: false,
+        message: 'Failed to send response to Facebook',
+        facebookSendSuccess: false,
+        facebookError: replyError.message
+      });
+    }
   } catch (error) {
     console.error(' Error updating Facebook comment:', error);
     res.status(500).json({

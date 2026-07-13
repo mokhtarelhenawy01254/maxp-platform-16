@@ -21,6 +21,11 @@
 - Analytics from aggregate counts — no separate table
 - Customer lists shared with existing broadcast system
 
+## Webhook Tracking (post-implementation fix)
+- `WhatsAppInboundService.updateMessageStatus` — now updates `BroadcastRecipient.deliveredAt` on DELIVERED, `openedAt` on READ, `failed` on FAILED. Also bumps parent campaign aggregate counts.
+- `WhatsAppInboundService.saveIncomingMessage` — tracks `repliedAt` when customer replies to a broadcast campaign.
+- `clickedAt` not supported natively by Meta status callbacks — needs custom URL tracking
+
 ---
 
 # Session Log — 2026-07-12 — GitHub Repo Migration + Deploy Fix
