@@ -16,6 +16,17 @@ const {
   generateUniqueCompanySlug,
   ensureCompanySlug,
 } = require("../utils/companySlug");
+// Role name mapping for display (fallback when roleRef relation is not available)
+const ROLE_DISPLAY_NAMES = {
+  OWNER: 'مالك',
+  SUPER_ADMIN: 'مدير النظام',
+  COMPANY_ADMIN: 'مدير الشركة',
+  MANAGER: 'مدير',
+  AGENT: 'وكيل',
+  AFFILIATE: 'مسوق بالعمولة',
+};
+const getRoleDisplayName = (roleKey) => ROLE_DISPLAY_NAMES[roleKey] || roleKey;
+
 const CURRENT_COMPANY_SELECT = {
   id: true,
   name: true,
@@ -1125,9 +1136,6 @@ const getCompanyUsers = async (req, res) => {
               },
             },
           },
-          roleRef: {
-            select: { id: true, key: true, name: true },
-          },
         },
         orderBy: (() => {
           const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
@@ -1230,8 +1238,8 @@ const getCompanyUsers = async (req, res) => {
       phone: uc.user.phone,
       avatar: uc.user.avatar,
       role: uc.role,
-      roleId: uc.roleId,
-      roleName: uc.roleRef?.name || null,
+      roleId: uc.roleId || null,
+      roleName: uc.role ? getRoleDisplayName(uc.role) : null,
       isActive: uc.isActive, // isActive from UserCompany table
       isEmailVerified: uc.user.isEmailVerified,
       lastLoginAt: uc.user.lastLoginAt,
@@ -1946,9 +1954,6 @@ const updateUser = async (req, res) => {
               },
             },
           },
-          roleRef: {
-            select: { id: true, key: true, name: true },
-          },
         },
       });
 
@@ -1960,8 +1965,8 @@ const updateUser = async (req, res) => {
       phone: userCompanyAfterUpdate.user.phone,
       avatar: userCompanyAfterUpdate.user.avatar,
       role: userCompanyAfterUpdate.role,
-      roleId: userCompanyAfterUpdate.roleId,
-      roleName: userCompanyAfterUpdate.roleRef?.name || null,
+      roleId: userCompanyAfterUpdate.roleId || null,
+      roleName: userCompanyAfterUpdate.role ? getRoleDisplayName(userCompanyAfterUpdate.role) : null,
       isActive: userCompanyAfterUpdate.isActive, // From UserCompany
       isEmailVerified: userCompanyAfterUpdate.user.isEmailVerified,
       lastLoginAt: userCompanyAfterUpdate.user.lastLoginAt,

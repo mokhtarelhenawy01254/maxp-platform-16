@@ -54,6 +54,66 @@ const PERMISSIONS = [
   { key: 'orders.automation.view', name: 'عرض أتمتة الطلبات', domain: 'ORDERS' },
   { key: 'orders.automation.manage', name: 'إدارة أتمتة الطلبات', domain: 'ORDERS' },
 
+  // Orders — Invoices section
+  { key: 'orders.invoices.view', name: 'عرض فواتير الطلبات', domain: 'ORDERS' },
+  { key: 'orders.invoices.manage', name: 'إدارة فواتير الطلبات', domain: 'ORDERS' },
+  { key: 'orders.invoices.print', name: 'طباعة فواتير الطلبات', domain: 'ORDERS' },
+
+  // Orders — Manual Order
+  { key: 'orders.manual.create', name: 'إنشاء طلب يدوي', domain: 'ORDERS' },
+
+  // Orders — Status Summary Report
+  { key: 'orders.status-summary.view', name: 'عرض تقرير الحالات', domain: 'ORDERS' },
+
+  // Orders — Returns
+  { key: 'orders.returns.view', name: 'عرض المرتجعات', domain: 'ORDERS' },
+  { key: 'orders.returns.manage', name: 'إدارة المرتجعات', domain: 'ORDERS' },
+  { key: 'orders.returns.approve', name: 'الموافقة على المرتجعات', domain: 'ORDERS' },
+
+  // Orders — Shipping Companies
+  { key: 'orders.shipping.view', name: 'عرض شركات الشحن', domain: 'ORDERS' },
+  { key: 'orders.shipping.manage', name: 'إدارة شركات الشحن', domain: 'ORDERS' },
+
+  // Orders — Turbo Tickets
+  { key: 'orders.tickets.view', name: 'عرض تذاكر Turbo', domain: 'ORDERS' },
+  { key: 'orders.tickets.create', name: 'إنشاء تذكرة Turbo', domain: 'ORDERS' },
+  { key: 'orders.tickets.manage', name: 'إدارة تذاكر Turbo', domain: 'ORDERS' },
+
+  // Orders — Bulk Search
+  { key: 'orders.bulk-search.view', name: 'عرض البحث المجمع', domain: 'ORDERS' },
+
+  // Orders — POS (Point of Sale)
+  { key: 'orders.pos.view', name: 'عرض نقطة البيع', domain: 'ORDERS' },
+  { key: 'orders.pos.manage', name: 'إدارة نقطة البيع', domain: 'ORDERS' },
+
+  // Orders — Order Settings
+  { key: 'orders.settings.view', name: 'عرض إعدادات الطلبات', domain: 'ORDERS' },
+  { key: 'orders.settings.manage', name: 'إدارة إعدادات الطلبات', domain: 'ORDERS' },
+
+  // Orders — Customer Blocks
+  { key: 'orders.customer-blocks.view', name: 'عرض حظر العملاء', domain: 'ORDERS' },
+  { key: 'orders.customer-blocks.manage', name: 'إدارة حظر العملاء', domain: 'ORDERS' },
+
+  // Orders — Turbo Settings
+  { key: 'orders.turbo-settings.view', name: 'عرض إعدادات Turbo', domain: 'ORDERS' },
+  { key: 'orders.turbo-settings.manage', name: 'إدارة إعدادات Turbo', domain: 'ORDERS' },
+
+  // Orders — Return Settings
+  { key: 'orders.return-settings.view', name: 'عرض إعدادات المرتجعات', domain: 'ORDERS' },
+  { key: 'orders.return-settings.manage', name: 'إدارة إعدادات المرتجعات', domain: 'ORDERS' },
+
+  // Orders — Cancellation Reasons
+  { key: 'orders.cancellation-reasons.view', name: 'عرض أسباب الإلغاء', domain: 'ORDERS' },
+  { key: 'orders.cancellation-reasons.manage', name: 'إدارة أسباب الإلغاء', domain: 'ORDERS' },
+
+  // Orders — Platform Integrations
+  { key: 'orders.integrations.view', name: 'عرض التكاملات', domain: 'ORDERS' },
+  { key: 'orders.integrations.manage', name: 'إدارة التكاملات', domain: 'ORDERS' },
+
+  // Orders — Order Workflow
+  { key: 'orders.workflow.view', name: 'عرض مسار الطلبات', domain: 'ORDERS' },
+  { key: 'orders.workflow.manage', name: 'إدارة مسار الطلبات', domain: 'ORDERS' },
+
   // Products
   { key: 'products.view', name: 'عرض المنتجات', domain: 'PRODUCTS' },
   { key: 'products.create', name: 'إنشاء منتج', domain: 'PRODUCTS' },
@@ -205,6 +265,8 @@ const BUILT_IN_ROLES = {
       'dashboard.view', 'dashboard.view.all', 'dashboard.view.team',
       'analytics.view',
       'orders.view', 'orders.create', 'orders.edit', 'orders.status.change', 'orders.assign', 'orders.export',
+      'orders.invoices.view', 'orders.manual.create', 'orders.status-summary.view',
+      'orders.shipping.view', 'orders.workflow.view', 'orders.settings.view',
       'products.view', 'products.create', 'products.edit',
       'customers.view', 'customers.view.all', 'customers.view.team',
       'customers.create', 'customers.edit',
@@ -233,6 +295,7 @@ const BUILT_IN_ROLES = {
     permissions: [
       'dashboard.view',
       'orders.view', 'orders.create', 'orders.status.change',
+      'orders.invoices.view', 'orders.manual.create',
       'products.view',
       'customers.view', 'customers.view.own',
       'customers.create',

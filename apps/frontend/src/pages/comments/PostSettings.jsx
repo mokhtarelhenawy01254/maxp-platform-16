@@ -1,8 +1,104 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import CommentService from "../../services/commentService";
-import { MessageSquare, Settings } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
+import { Textarea } from "../../components/ui/textarea";
+import { Badge } from "../../components/ui/badge";
+import { Separator } from "../../components/ui/separator";
+import { cn } from "../../lib/utils";
+import {
+  ArrowRight,
+  Settings2,
+  MessageSquareText,
+  Smartphone,
+  Sparkles,
+  Save,
+  CheckCircle2,
+  Eye,
+  Plus,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+  Lightbulb,
+  Repeat2,
+  Clock,
+  ArrowLeft,
+  MessageCircle,
+} from "lucide-react";
+
+const stagger = {
+  animate: { transition: { staggerChildren: 0.06 } },
+};
+
+const fadeUp = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+};
+
+const scaleIn = {
+  initial: { opacity: 0, scale: 0.95 },
+  animate: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: "easeOut" } },
+};
+
+function SectionCard({ icon: Icon, title, description, gradient, children, className }) {
+  return (
+    <motion.div variants={fadeUp} className={cn("relative overflow-hidden rounded-2xl border border-white/20 dark:border-white/[0.06] bg-white/80 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg dark:shadow-2xl transition-all duration-300", className)}>
+      <div className={cn("absolute inset-x-0 top-0 h-1 bg-gradient-to-r", gradient || "from-blue-500 to-indigo-500")} />
+      <div className="p-5 sm:p-6">
+        <div className="flex items-center gap-3 mb-4">
+          {Icon && (
+            <div className="relative shrink-0">
+              <div className={cn("absolute inset-0 rounded-lg blur-md opacity-40", gradient ? gradient.replace("from-", "bg-").replace("to-", "").replace(" via-", " ") : "bg-blue-500")} />
+              <div className={cn("relative p-2 rounded-lg bg-gradient-to-br shadow-lg", gradient || "from-blue-500 to-indigo-500")}>
+                <Icon className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          )}
+          <div>
+            <h3 className="font-bold text-base text-gray-900 dark:text-white">{title}</h3>
+            {description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>}
+          </div>
+        </div>
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+function MethodCard({ selected, onClick, icon: Icon, title, description, accent }) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      onClick={onClick}
+      className={cn(
+        "relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300",
+        selected
+          ? cn("shadow-lg", accent === "green" ? "border-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/30" : "border-amber-400 bg-amber-50/80 dark:bg-amber-950/30")
+          : "border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/30 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
+      )}
+    >
+      {selected && (
+        <div className="absolute -top-2 -right-2">
+          <div className={cn("p-1 rounded-full", accent === "green" ? "bg-emerald-500" : "bg-amber-500")}>
+            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+          </div>
+        </div>
+      )}
+      <div className="flex items-center gap-3 mb-2">
+        <div className={cn("p-2 rounded-lg", selected ? (accent === "green" ? "bg-emerald-100 dark:bg-emerald-900/50" : "bg-amber-100 dark:bg-amber-900/50") : "bg-gray-100 dark:bg-gray-800")}>
+          <Icon className={cn("w-5 h-5", selected ? (accent === "green" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400") : "text-gray-500")} />
+        </div>
+        <span className={cn("font-semibold text-sm", selected ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300")}>{title}</span>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pr-11">{description}</p>
+    </motion.div>
+  );
+}
 
 const PostSettings = () => {
   const { t } = useTranslation();
@@ -11,71 +107,50 @@ const PostSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [postSettings, setPostSettings] = useState({
-    responseMethod: "manual", // 'fixed', 'manual'
-    commentMessages: [""], // Variations for comment responses
+    responseMethod: "manual",
+    commentMessages: [""],
     fixedMessengerMessage: "",
   });
-  const [message, setMessage] = useState("");
   const [isFallbackMode, setIsFallbackMode] = useState(false);
 
   const fetchPostSettings = async () => {
     try {
       const response = await CommentService.getPostResponseMethod(postId);
       if (response.success && response.data) {
-        const responseMethod =
-          response.data.responseMethod === "fixed" ? "fixed" : "manual";
+        const responseMethod = response.data.responseMethod === "fixed" ? "fixed" : "manual";
         setPostSettings({
           responseMethod,
-          commentMessages: response.data.commentMessages
-            ? JSON.parse(response.data.commentMessages)
-            : [""],
+          commentMessages: response.data.commentMessages ? JSON.parse(response.data.commentMessages) : [""],
           fixedMessengerMessage: response.data.fixedMessengerMessage || "",
         });
-
-        // Check if we're in fallback mode
         if (response.data.updatedAt && !response.data.id) {
           setIsFallbackMode(true);
         }
       }
     } catch (error) {
-      console.error("Error fetching post settings:", error);
-      setMessage(t("pageComments.saveError"));
+      toast.error(t("pageComments.saveError"));
     } finally {
       setLoading(false);
     }
   };
 
   const savePostSettings = async () => {
-    if (
-      postSettings.responseMethod === "fixed" &&
-      (!postSettings.commentMessages ||
-        postSettings.commentMessages.length === 0 ||
-        !postSettings.commentMessages[0].trim())
-    ) {
-      setMessage(t("postsManagement.note"));
+    if (postSettings.responseMethod === "fixed" && (!postSettings.commentMessages || postSettings.commentMessages.length === 0 || !postSettings.commentMessages[0].trim())) {
+      toast.warning(t("postsManagement.note"));
       return;
     }
 
     setSaving(true);
-    setMessage("");
     try {
-      const response = await CommentService.setPostResponseMethod(
-        postId,
-        postSettings,
-      );
+      const response = await CommentService.setPostResponseMethod(postId, postSettings);
       if (response.success) {
-        setMessage(response.message || t("pageComments.savedSuccessfully"));
-
-        // Check if we're in fallback mode
+        toast.success(response.message || t("pageComments.savedSuccessfully"));
         if (response.message && response.message.includes("fallback")) {
           setIsFallbackMode(true);
         }
-
-        setTimeout(() => setMessage(""), 3000);
       }
     } catch (error) {
-      console.error("Error saving post settings:", error);
-      setMessage(t("pageComments.saveError") + ": " + error.message);
+      toast.error(t("pageComments.saveError") + ": " + error.message);
     } finally {
       setSaving(false);
     }
@@ -83,25 +158,21 @@ const PostSettings = () => {
 
   const applyResponseMethod = async () => {
     if (isFallbackMode) {
-      setMessage(t("postSettings.applyResponseDisabled"));
+      toast.warning(t("postSettings.applyResponseDisabled"));
       return;
     }
 
-    if (
-      window.confirm(
-        "هل أنت متأكد من تطبيق طريقة الرد على جميع التعليقات المعلقة في هذا المنشور؟",
-      )
-    ) {
-      try {
-        const response = await CommentService.applyPostResponseMethod(postId);
-        if (response.success) {
-          setMessage(`تم معالجة ${response.data.processedComments} تعليق`);
-          setTimeout(() => setMessage(""), 3000);
-        }
-      } catch (error) {
-        console.error("Error applying response method:", error);
-        setMessage("حدث خطأ أثناء تطبيق طريقة الرد: " + error.message);
+    if (!window.confirm("هل أنت متأكد من تطبيق طريقة الرد على جميع التعليقات المعلقة في هذا المنشور؟")) {
+      return;
+    }
+
+    try {
+      const response = await CommentService.applyPostResponseMethod(postId);
+      if (response.success) {
+        toast.success(`تمت معالجة ${response.data.processedComments} تعليق`);
       }
+    } catch (error) {
+      toast.error("حدث خطأ أثناء تطبيق طريقة الرد: " + error.message);
     }
   };
 
@@ -111,302 +182,264 @@ const PostSettings = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">
-            {t("postSettings.loadingPostSettings")}
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+          <div className="relative inline-block mb-6">
+            <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-30 animate-pulse" />
+            <div className="relative inline-block animate-spin rounded-full h-14 w-14 border-[3px] border-blue-500 border-t-transparent" />
+          </div>
+          <p className="text-gray-600 dark:text-gray-400 font-semibold">{t("postSettings.loadingPostSettings")}</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <button
-          onClick={() => navigate("/posts")}
-          className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          {t("postSettings.backToPosts")}
-        </button>
-        <h1 className="text-2xl font-bold text-gray-800">
-          {t("postSettings.pageTitle")}
-        </h1>
-        <p className="text-gray-600">
-          {t("postSettings.postIdLabel")}: {postId}
-        </p>
-        {isFallbackMode && (
-          <div className="mt-2 p-2 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
-            {t("postSettings.fallbackWarning")}
-          </div>
-        )}
-      </div>
+    <motion.div initial="initial" animate="animate" className="min-h-screen p-4 sm:p-6 lg:p-8" dir="rtl">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/posts")} className="group">
+            <ArrowRight className="w-4 h-4 ml-1.5 group-hover:-translate-x-0.5 transition-transform" />
+            {t("postSettings.backToPosts")}
+          </Button>
+        </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Settings Form */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              {t("postSettings.autoResponseMethodTitle")}
-            </h2>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  {t("postSettings.chooseResponseMethod")}
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                      postSettings.responseMethod === "fixed"
-                        ? "border-green-500 bg-green-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() =>
-                      setPostSettings((prev) => ({
-                        ...prev,
-                        responseMethod: "fixed",
-                      }))
-                    }
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="w-5 h-5 text-green-600" />
-                      <span className="font-medium">
-                        {t("postSettings.fixed")}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {t("postSettings.fixedDesc")}
-                    </p>
-                  </div>
-
-                  <div
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                      postSettings.responseMethod === "manual"
-                        ? "border-yellow-500 bg-yellow-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() =>
-                      setPostSettings((prev) => ({
-                        ...prev,
-                        responseMethod: "manual",
-                      }))
-                    }
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <svg
-                        className="w-5 h-5 text-yellow-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                      <span className="font-medium">
-                        {t("postSettings.manual")}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {t("postSettings.manualDesc")}
-                    </p>
-                  </div>
-                </div>
+        <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-6 sm:p-8 shadow-2xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-purple-300/20 rounded-full blur-2xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 bg-white/20 backdrop-blur rounded-xl shadow-lg">
+                <Settings2 className="w-5 h-5 text-white" />
               </div>
-
-              {postSettings.responseMethod === "fixed" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("postSettings.fixedCommentVariations")}
-                    </label>
-                    {postSettings.commentMessages.map((msg, index) => (
-                      <div key={index} className="mb-2 flex gap-2">
-                        <textarea
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          rows="2"
-                          value={msg}
-                          onChange={(e) => {
-                            const newMessages = [
-                              ...postSettings.commentMessages,
-                            ];
-                            newMessages[index] = e.target.value;
-                            setPostSettings((prev) => ({
-                              ...prev,
-                              commentMessages: newMessages,
-                            }));
-                          }}
-                          placeholder={`${t("unifiedComments.reply")} ${index + 1}...`}
-                        />
-                        {postSettings.commentMessages.length > 1 && (
-                          <button
-                            onClick={() => {
-                              const newMessages =
-                                postSettings.commentMessages.filter(
-                                  (_, i) => i !== index,
-                                );
-                              setPostSettings((prev) => ({
-                                ...prev,
-                                commentMessages: newMessages,
-                              }));
-                            }}
-                            className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-                          >
-                            {t("pageComments.delete")}
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => {
-                        setPostSettings((prev) => ({
-                          ...prev,
-                          commentMessages: [...prev.commentMessages, ""],
-                        }));
-                      }}
-                      className="mt-2 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition text-sm"
-                    >
-                      {t("postsManagement.addReply")}
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t("postSettings.fixedMessengerMessage")}
-                    </label>
-                    <textarea
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows="3"
-                      value={postSettings.fixedMessengerMessage}
-                      onChange={(e) =>
-                        setPostSettings((prev) => ({
-                          ...prev,
-                          fixedMessengerMessage: e.target.value,
-                        }))
-                      }
-                      placeholder={t("postSettings.fixedMessengerPlaceholder")}
-                    />
-                  </div>
-                </div>
-              )}
+              <h1 className="text-2xl sm:text-3xl font-black text-white drop-shadow-sm">
+                {t("postSettings.pageTitle")}
+              </h1>
             </div>
-
-            <div className="flex flex-wrap gap-3 mt-6">
-              <button
-                onClick={savePostSettings}
-                disabled={saving}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-              >
-                {saving
-                  ? t("postSettings.saving")
-                  : t("postSettings.saveSettings")}
-              </button>
-
-              {postSettings.responseMethod !== "manual" && !isFallbackMode && (
-                <button
-                  onClick={applyResponseMethod}
-                  className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition"
-                >
-                  {t("postSettings.applyResponse")}
-                </button>
-              )}
-
-              {isFallbackMode && postSettings.responseMethod !== "manual" && (
-                <button
-                  disabled
-                  className="bg-gray-400 text-white py-2 px-4 rounded-md cursor-not-allowed"
-                >
-                  {t("postSettings.applyResponseDisabled")}
-                </button>
-              )}
-
-              <button
-                onClick={() => navigate(`/posts/${postId}/comments`)}
-                className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition"
-              >
-                {t("postSettings.viewPostComments")}
-              </button>
-            </div>
-
-            {message && (
-              <div
-                className={`mt-4 p-3 rounded text-center text-sm ${
-                  message.includes("خطأ") || message.includes("Error")
-                    ? "bg-red-100 text-red-700"
-                    : "bg-green-100 text-green-700"
-                }`}
-              >
-                {message}
+            <p className="text-white/80 text-sm flex items-center gap-2">
+              <span className="opacity-60">{t("postSettings.postIdLabel")}:</span>
+              <span className="font-mono bg-white/10 px-2 py-0.5 rounded text-xs">{postId}</span>
+            </p>
+            {isFallbackMode && (
+              <div className="mt-4 inline-flex items-center gap-2 bg-amber-500/20 backdrop-blur border border-amber-400/30 text-amber-200 px-4 py-2 rounded-xl text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {t("postSettings.fallbackWarning")}
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Instructions */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              {t("postSettings.howToUse")}
-            </h2>
-            <div className="space-y-4">
-              <div className="border-r-4 border-green-500 pr-3">
-                <h3 className="font-medium text-gray-800">
-                  {t("postSettings.fixedTitle")}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {t("postSettings.fixedHow")}
-                </p>
+        <motion.div variants={stagger} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <SectionCard
+              icon={MessageSquareText}
+              title={t("postSettings.autoResponseMethodTitle")}
+              description={t("postSettings.chooseResponseMethod")}
+              gradient="from-emerald-500 to-teal-500"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <MethodCard
+                  selected={postSettings.responseMethod === "fixed"}
+                  onClick={() => setPostSettings((prev) => ({ ...prev, responseMethod: "fixed" }))}
+                  icon={Sparkles}
+                  title={t("postSettings.fixed")}
+                  description={t("postSettings.fixedDesc")}
+                  accent="green"
+                />
+                <MethodCard
+                  selected={postSettings.responseMethod === "manual"}
+                  onClick={() => setPostSettings((prev) => ({ ...prev, responseMethod: "manual" }))}
+                  icon={MessageCircle}
+                  title={t("postSettings.manual")}
+                  description={t("postSettings.manualDesc")}
+                  accent="amber"
+                />
               </div>
 
-              <div className="border-r-4 border-yellow-500 pr-3">
-                <h3 className="font-medium text-gray-800">
-                  {t("postSettings.manualTitle")}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {t("postSettings.manualHow")}
-                </p>
-              </div>
+              <AnimatePresence>
+                {postSettings.responseMethod === "fixed" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <Separator className="my-5" />
+                    <div className="space-y-5">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                            <MessageSquareText className="w-4 h-4 text-emerald-500" />
+                            {t("postSettings.fixedCommentVariations")}
+                          </label>
+                          <Badge variant="outline" className="text-xs">
+                            {postSettings.commentMessages.length}
+                          </Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {postSettings.commentMessages.map((msg, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="flex gap-2 items-start group"
+                            >
+                              <div className="relative flex-1">
+                                <div className="absolute right-3 top-3 text-[0.65rem] font-bold text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                                  #{index + 1}
+                                </div>
+                                <Textarea
+                                  className="min-h-[70px] pt-2 pl-9 text-sm"
+                                  value={msg}
+                                  onChange={(e) => {
+                                    const newMessages = [...postSettings.commentMessages];
+                                    newMessages[index] = e.target.value;
+                                    setPostSettings((prev) => ({ ...prev, commentMessages: newMessages }));
+                                  }}
+                                  placeholder={`${t("unifiedComments.reply")} ${index + 1}...`}
+                                />
+                              </div>
+                              {postSettings.commentMessages.length > 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    const newMessages = postSettings.commentMessages.filter((_, i) => i !== index);
+                                    setPostSettings((prev) => ({ ...prev, commentMessages: newMessages }));
+                                  }}
+                                  className="shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </motion.div>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPostSettings((prev) => ({ ...prev, commentMessages: [...prev.commentMessages, ""] }));
+                          }}
+                          className="mt-3"
+                        >
+                          <Plus className="w-4 h-4 ml-1.5" />
+                          {t("postsManagement.addReply")}
+                        </Button>
+                      </div>
 
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="font-medium text-gray-800 mb-2">
-                  {t("postSettings.tipsTitle")}
-                </h3>
-                <ul className="text-sm text-gray-600 space-y-1 list-disc pr-5">
-                  <li>{t("postSettings.tipChangeAnyTime")}</li>
-                  <li>{t("postSettings.tipAffectsPendingOnly")}</li>
-                  <li>{t("postSettings.tipAlreadyRepliedUnaffected")}</li>
-                  {isFallbackMode && (
-                    <li className="text-yellow-600 font-medium">
-                      {t("postSettings.tipFallbackCached")}
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
+                          <Smartphone className="w-4 h-4 text-indigo-500" />
+                          {t("postSettings.fixedMessengerMessage")}
+                        </label>
+                        <Textarea
+                          className="min-h-[80px] text-sm"
+                          value={postSettings.fixedMessengerMessage}
+                          onChange={(e) => setPostSettings((prev) => ({ ...prev, fixedMessengerMessage: e.target.value }))}
+                          placeholder={t("postSettings.fixedMessengerPlaceholder")}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </SectionCard>
+
+            <motion.div variants={scaleIn} className="flex flex-wrap gap-3">
+              <Button onClick={savePostSettings} disabled={saving} size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    {t("postSettings.saving")}
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 ml-2" />
+                    {t("postSettings.saveSettings")}
+                  </>
+                )}
+              </Button>
+
+              {postSettings.responseMethod !== "manual" && !isFallbackMode && (
+                <Button onClick={applyResponseMethod} variant="secondary" size="lg">
+                  <Repeat2 className="w-4 h-4 ml-2" />
+                  {t("postSettings.applyResponse")}
+                </Button>
+              )}
+
+              <Button variant="outline" size="lg" onClick={() => navigate(`/posts/${postId}/comments`)}>
+                <Eye className="w-4 h-4 ml-2" />
+                {t("postSettings.viewPostComments")}
+              </Button>
+            </motion.div>
           </div>
-        </div>
+
+          <div className="space-y-6">
+            <SectionCard
+              icon={Lightbulb}
+              title={t("postSettings.howToUse")}
+              gradient="from-amber-500 to-orange-500"
+            >
+              <div className="space-y-4">
+                <div className="relative pr-4 border-r-2 border-emerald-400 dark:border-emerald-600">
+                  <div className="absolute right-0 top-0 -mr-[5px] w-2 h-2 rounded-full bg-emerald-400 dark:bg-emerald-600" />
+                  <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t("postSettings.fixedTitle")}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{t("postSettings.fixedHow")}</p>
+                </div>
+                <div className="relative pr-4 border-r-2 border-amber-400 dark:border-amber-600">
+                  <div className="absolute right-0 top-0 -mr-[5px] w-2 h-2 rounded-full bg-amber-400 dark:border-amber-600" />
+                  <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t("postSettings.manualTitle")}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{t("postSettings.manualHow")}</p>
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                    {t("postSettings.tipsTitle")}
+                  </h4>
+                  <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-2">
+                    {[
+                      t("postSettings.tipChangeAnyTime"),
+                      t("postSettings.tipAffectsPendingOnly"),
+                      t("postSettings.tipAlreadyRepliedUnaffected"),
+                    ].map((tip, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                    {isFallbackMode && (
+                      <li className="flex items-start gap-2 text-amber-600 dark:text-amber-400 font-medium">
+                        <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                        <span>{t("postSettings.tipFallbackCached")}</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </SectionCard>
+
+            <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl border border-white/20 dark:border-white/[0.06] bg-gradient-to-br from-purple-600/10 to-blue-600/10 dark:from-purple-900/20 dark:to-blue-900/20 backdrop-blur-xl p-5 shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg shrink-0">
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 mb-1">تلميحات سريعة</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    يمكنك تغيير طريقة الرد في أي وقت. تطبيق الطريقة يؤثر فقط على التعليقات المعلقة، بينما التعليقات التي تم الرد عليها مسبقًا لن تتأثر.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
