@@ -737,6 +737,79 @@ const PreparationQueue: React.FC = () => {
     validateTransition,
   ]);
 
+  const handleBulkUpdateAll = useCallback(async () => {
+    if (!bulkStatus || paginatedOrders.length === 0) return;
+
+    const validOrders: PreparationOrder[] = [];
+    const invalidOrders: PreparationOrder[] = [];
+
+    paginatedOrders.forEach((order) => {
+      const validation = validateTransition(order, bulkStatus);
+      if (validation.valid) {
+        validOrders.push(order);
+      } else {
+        invalidOrders.push(order);
+      }
+    });
+
+    if (validOrders.length === 0) {
+      toast.error("كل الطلبات الظاهرة مخالفة لقواعد التجهيز الحالية");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `تحديث ${validOrders.length} طلب إلى مرحلة ${
+        statusLabelMap.get(bulkStatus) || bulkStatus
+      }${invalidOrders.length > 0 ? ` مع استبعاد ${invalidOrders.length} طلب غير مطابق` : ""}؟`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setBulkUpdating(true);
+      const response = await apiClient.post("/orders-new/bulk/status", {
+        orderIds: validOrders.map((order) => order.orderNumber),
+        status: bulkStatus,
+      });
+
+      const results: BulkStatusResult[] = Array.isArray(response.data?.data?.results)
+        ? response.data.data.results
+        : [];
+      const successIds = results
+        .filter((result) => result.success)
+        .map((result) => String(result.id));
+
+      if (successIds.length > 0) {
+        updateLocalStatuses(successIds, bulkStatus);
+      }
+
+      const failedCount = results.filter((result) => !result.success).length;
+      toast.success(
+        failedCount > 0
+          ? `تم تحديث ${successIds.length} طلب وفشل ${failedCount} طلب`
+          : `تم تحديث ${successIds.length} طلب بنجاح`,
+      );
+
+      uiActions.clearBulkControls();
+      void fetchAll();
+    } catch (error: unknown) {
+      console.error("Failed bulk status update all:", error);
+      toast.error(
+        getApiErrorMessage(error) || "تعذر تحديث جميع الطلبات",
+      );
+    } finally {
+      setBulkUpdating(false);
+    }
+  }, [
+    bulkStatus,
+    paginatedOrders,
+    statusLabelMap,
+    updateLocalStatuses,
+    uiActions,
+    fetchAll,
+    validateTransition,
+  ]);
+
   const handleQuickTransfer = useCallback(
     async (orderNumber: string, item: ItemInsight) => {
       if (!selectedWarehouseId) {
@@ -1004,6 +1077,7 @@ const PreparationQueue: React.FC = () => {
         sendingToTurbo={sendingToTurbo}
         onBulkStatusChange={uiActions.setBulkStatus}
         onApply={() => void handleBulkUpdate()}
+        onApplyToAll={() => void handleBulkUpdateAll()}
         onClear={uiActions.clearBulkControls}
         onSelectAll={toggleSelectAllVisible}
         onClearSelection={() => uiActions.clearBulkControls()}

@@ -416,6 +416,8 @@ echo "🚀 Pushing schema to PostgreSQL..."
 # Step 6: Automated Seeding
 echo "🌱 Running automated seeding..."
 "$PRISMA_BIN" db seed --schema=prisma/schema || echo "⚠️ Seeding failed, continuing deployment..."
+echo "🔐 Seeding permissions..."
+npm run seed:permissions || echo "⚠️ Permissions seeding failed, continuing deployment..."
 
 # Step 7: Create/Verify Super Admin
 echo "👑 Creating/verifying super admin user..."

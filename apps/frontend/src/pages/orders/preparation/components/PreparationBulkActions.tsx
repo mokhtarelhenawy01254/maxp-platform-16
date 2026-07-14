@@ -20,6 +20,7 @@ interface PreparationBulkActionsProps {
   sendingToTurbo: boolean;
   onBulkStatusChange: (value: string) => void;
   onApply: () => void;
+  onApplyToAll: () => void;
   onClear: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
@@ -39,6 +40,7 @@ const PreparationBulkActions = ({
   sendingToTurbo,
   onBulkStatusChange,
   onApply,
+  onApplyToAll,
   onClear,
   onSelectAll,
   onClearSelection,
@@ -114,6 +116,26 @@ const PreparationBulkActions = ({
             <CheckCircleIcon className="h-4 w-4" />
           )}
           تطبيق على المحدد
+        </button>
+
+        {/* Apply to all */}
+        <button
+          onClick={onApplyToAll}
+          disabled={
+            !preparationEnabled ||
+            !bulkStatusUpdateEnabled ||
+            !bulkStatus ||
+            totalVisibleOrders === 0 ||
+            bulkUpdating
+          }
+          className="inline-flex items-center gap-1.5 rounded-xl bg-gray-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {bulkUpdating ? (
+            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <CheckCircleIcon className="h-4 w-4" />
+          )}
+          تطبيق على الكل
         </button>
 
         {/* Clear */}
