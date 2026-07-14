@@ -4,6 +4,7 @@ const { getMetaGraphApiVersion } = require('../config/metaApi');
 const { getPageToken } = require('../utils/allFunctions');
 const {
   ensureValidFacebookPageAccessToken,
+  refreshFacebookPageAccessToken,
   buildFacebookPageTokenFailureMessage,
 } = require('../utils/facebookPageTokenUtils');
 
@@ -52,19 +53,24 @@ async function syncPagePosts(pageId, companyId) {
         /pages_read_engagement/i.test(graphError.message || '');
 
       if (isPermissionError && !refreshAttempted) {
-        const refreshResult = await ensureValidFacebookPageAccessToken({
+        const refreshResult = await refreshFacebookPageAccessToken({
           companyId: pageToken.companyId || companyId,
           pageId,
-          pageAccessToken: pageToken.pageAccessToken,
-          allowRefresh: true,
         });
-        if (refreshResult.ok && refreshResult.pageAccessToken !== validToken) {
+        if (refreshResult.success) {
           validToken = refreshResult.pageAccessToken;
           refreshAttempted = true;
           url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
           allPosts = [];
           continue;
         }
+      }
+
+      if (isPermissionError && refreshAttempted) {
+        throw new Error(
+          `تعذرت مزامنة المنشورات: صلاحية صفحة الفيسبوك لا تحتوي على الإذن المطلوب. ` +
+          `يرجى فصل الصفحة وإعادة ربطها لمنح جميع الأذونات المطلوبة.`
+        );
       }
       throw error;
     }

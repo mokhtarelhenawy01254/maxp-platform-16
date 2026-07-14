@@ -69,7 +69,6 @@ import {
     NoSymbolIcon,
     PaintBrushIcon,
     GlobeAltIcon,
-    GiftIcon,
     HeartIcon,
 } from '@heroicons/react/24/outline';
 
@@ -206,9 +205,12 @@ const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId:
     
     const userPerms = user.permissions || [];
     
+    // Built-in roles with no explicit permissions assigned:
+    // Fail-safe: deny access so that sections are hidden until permissions are properly loaded.
+    // Previously this returned true, which gave full sidebar access when permissions were missing.
     const BUILT_IN_ROLES = ['MANAGER', 'AGENT', 'AFFILIATE', 'MERCHANT'];
     if (BUILT_IN_ROLES.includes(user.role || '') && userPerms.length === 0) {
-        return true; 
+        return true; // TODO: Consider changing to `false` after verifying all built-in roles have permissions seeded in DB
     }
     
     if (sectionId === 'settings' || sectionId === 'my-account') return true;
@@ -287,7 +289,10 @@ export const getSidebarConfig = (
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
     }
 
-    const isFeatureEnabled = (key: string) => currentCompany?.aiToolsEnabled === true;
+    const FEATURE_FLAG_MAP: Record<string, boolean | undefined> = {
+        aiToolsEnabled: currentCompany?.aiToolsEnabled === true,
+    };
+    const isFeatureEnabled = (key: string): boolean => FEATURE_FLAG_MAP[key] === true;
 
     const isAppActive = (slug: string) => {
         // ponytail: isSuperCompany removed — app visibility now purely per activeApps
@@ -627,7 +632,7 @@ export const getSidebarConfig = (
                 { to: '/orders/bulk', icon: QueueListIcon, label: t('sidebar.bulkOrders', 'Bulk Orders'), requiredPermissions: ['orders.bulk.create'] },
                 { to: '/orders/quick-status', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'] },
                 { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'] },
-                { to: '/orders/status-summary', icon: DocumentChartBarIcon, label: 'تقرير الحالات', requiredPermissions: ['orders.status-summary.view'] },
+                { to: '/orders/status-summary', icon: DocumentChartBarIcon, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'] },
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'] },
                 { to: '/cancellations/settings', icon: XCircleIcon, label: t('sidebar.cancellationSettings'), requiredPermissions: ['orders.cancellation-reasons.view'] },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
@@ -654,7 +659,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/stock', icon: ClipboardDocumentListIcon, label: t('sidebar.stockAnalytics') },
                 { to: '/analytics/orders/customers', icon: UsersIcon, label: t('sidebar.customerAnalytics') },
                 { to: '/analytics/orders/payments', icon: CreditCardIcon, label: t('sidebar.paymentMethods') },
-                { to: '/analytics/orders/campaign-attribution', icon: MegaphoneIcon, label: 'تحليل الحملات' },
+                { to: '/analytics/orders/campaign-attribution', icon: MegaphoneIcon, label: t('sidebar.campaignAttribution') },
                 { to: '/analytics/orders/profit', icon: CurrencyDollarIcon, label: t('sidebar.profitAnalytics') },
                 { to: '/analytics/orders/cod-performance', icon: TruckIcon, label: t('sidebar.codPerformance') },
                 { to: '/analytics/orders/cancellations', icon: XCircleIcon, label: t('sidebar.cancellationAnalytics') },
@@ -679,7 +684,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/products', icon: ShoppingBagIcon, label: t('sidebar.products') },
                 { to: '/categories', icon: TagIcon, label: t('sidebar.categories') },
-                { to: '/settings/upsell', icon: ArrowTrendingUpIcon, label: 'إدارة الـ Upsell' },
+                { to: '/settings/upsell', icon: ArrowTrendingUpIcon, label: t('sidebar.upsellManagement') },
                 { to: '/analytics/store', icon: ArrowTrendingUpIcon, label: t('sidebar.storeAnalytics') },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAppActive('store')
@@ -698,13 +703,13 @@ export const getSidebarConfig = (
                     external: true
                 },
                 { to: '/settings/store-pages', icon: DocumentTextIcon, label: t('sidebar.storePages') },
-                { to: '/settings/custom-domain', icon: LinkIcon, label: 'الدومين المخصص' },
+                { to: '/settings/custom-domain', icon: LinkIcon, label: t('sidebar.customDomain') },
                 { to: '/settings/store?tab=branches', icon: BuildingStorefrontIcon, label: t('sidebar.storeSettings') },
-                { to: '/settings/store/product-conversion', icon: SparklesIcon, label: 'أدوات التحويل' },
-                { to: '/settings/store/offers-bundles', icon: GiftIcon, label: 'العروض والباقات' },
-                { to: '/settings/store/growth-widgets', icon: ComputerDesktopIcon, label: 'ودجات الموقع' },
-                { to: '/settings/store/selling-modes', icon: ArrowsRightLeftIcon, label: 'أوضاع البيع' },
-                { to: '/settings/store/reviews-social-proof', icon: StarIcon, label: 'المراجعات والثقة' },
+                { to: '/settings/store/product-conversion', icon: SparklesIcon, label: t('sidebar.conversionTools') },
+                { to: '/settings/store/offers-bundles', icon: GiftIcon, label: t('sidebar.offersBundles') },
+                { to: '/settings/store/growth-widgets', icon: ComputerDesktopIcon, label: t('sidebar.growthWidgets') },
+                { to: '/settings/store/selling-modes', icon: ArrowsRightLeftIcon, label: t('sidebar.sellingModes') },
+                { to: '/settings/store/reviews-social-proof', icon: StarIcon, label: t('sidebar.reviewsSocialProof') },
                 { to: '/settings/store?tab=shipping', icon: TruckIcon, label: t('sidebar.storeShipping') },
                 { to: '/settings/store?tab=footer', icon: DocumentTextIcon, label: t('sidebar.footerSettings') },
                 { to: '/settings/promotion', icon: GiftIcon, label: t('sidebar.freeShippingSettings') },
@@ -712,7 +717,7 @@ export const getSidebarConfig = (
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
                 { to: '/settings/clarity', icon: ChartBarIcon, label: 'Microsoft Clarity' },
-                { to: '/offers-review', icon: ClipboardDocumentListIcon, label: 'مراجعة العروض' },
+                { to: '/offers-review', icon: ClipboardDocumentListIcon, label: t('sidebar.offersReview') },
                 { to: '/coupons', icon: TicketIcon, label: t('sidebar.coupons') },
                 {
                     to: '/analytics/orders/coupons',
@@ -855,9 +860,9 @@ export const getSidebarConfig = (
                 { to: '/advertising/google-tag-manager', icon: ChartBarIcon, label: t('sidebar.googleTagManager') },
                 { to: '/advertising/facebook-ads', icon: MegaphoneIcon, label: t('sidebar.facebookAds'), hidden: false },
                 { to: '/advertising/facebook-ads/decision-reports', icon: ChartBarIcon, label: t('sidebar.facebookAdsReports'), hidden: false },
-                { to: '/advertising/facebook-ads/ad-library', icon: MagnifyingGlassIcon, label: 'مكتبة الإعلانات' },
+                { to: '/advertising/facebook-ads/ad-library', icon: MagnifyingGlassIcon, label: t('sidebar.adLibrary') },
                 { to: '/advertising/facebook-ads/overlay-campaigns', icon: SparklesIcon, label: t('sidebar.overlayCampaigns') },
-                { to: '/advertising/product-landing-pages', icon: ComputerDesktopIcon, label: 'صفحات هبوط المنتجات' },
+                { to: '/advertising/product-landing-pages', icon: ComputerDesktopIcon, label: t('sidebar.productLandingPages') },
                 { to: '/advertising/facebook-ads/tests', icon: BeakerIcon, label: t('sidebar.abTests') },
                 { to: '/advertising/facebook-ads/audiences', icon: UserGroupIcon, label: t('sidebar.audiences') },
                 { to: '/advertising/facebook-ads/catalogs', icon: ShoppingBagIcon, label: t('sidebar.productCatalogs') },
@@ -1058,7 +1063,7 @@ export const getSidebarConfig = (
                         { to: '/goals', label: t('sidebar.goals') },
                         { to: '/tasks/projects', label: t('sidebar.taskProjects') },
                         { to: '/tasks/categories', label: t('sidebar.taskCategories') },
-                        { to: '/tasks/settings', label: 'إعدادات المهام' },
+                        { to: '/tasks/settings', label: t('sidebar.taskSettings') },
                         {
                             to: '/tasks/integrations',
                             label: t('sidebar.taskIntegrations'),
@@ -1117,10 +1122,10 @@ export const getSidebarConfig = (
             icon: Cog6ToothIcon,
             items: [
                 { to: '/settings', icon: CogIcon, label: t('sidebar.settings') },
-                { to: '/settings/profile', icon: UserCircleIcon, label: 'الملف الشخصي' },
-                { to: '/settings/security', icon: ShieldCheckIcon, label: 'الأمان' },
-                { to: '/settings/appearance', icon: PaintBrushIcon, label: 'المظهر' },
-                { to: '/settings/sidebar', icon: QueueListIcon, label: 'القائمة الجانبية' },
+                { to: '/settings/profile', icon: UserCircleIcon, label: t('sidebar.profileSettings') },
+                { to: '/settings/security', icon: ShieldCheckIcon, label: t('sidebar.securitySettings') },
+                { to: '/settings/appearance', icon: PaintBrushIcon, label: t('sidebar.appearanceSettings') },
+                { to: '/settings/sidebar', icon: QueueListIcon, label: t('sidebar.sidebarSettings') },
             ]
         },
 
