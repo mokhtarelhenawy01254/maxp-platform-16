@@ -8,6 +8,9 @@ import {
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
   DollarSign, Grid3X3, Star, Heart, Download,
+  Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
+  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
+  Calendar, Truck, FileText, Percent,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -119,6 +122,29 @@ const categoryIcons: Record<string, LucideIcon> = {
   FINANCE: DollarSign,
   MARKETING: Sparkles,
   MEDICAL: Heart,
+};
+
+const appIcons: Record<string, LucideIcon> = {
+  megaphone: Megaphone,
+  "chart-bar": BarChart3,
+  bot: Bot,
+  store: Store,
+  users: Users,
+  sparkles: Sparkles,
+  "shopping-cart": ShoppingCart,
+  camera: Camera,
+  "package-open": PackageOpen,
+  "clipboard-list": ClipboardList,
+  route: Route,
+  "clipboard-check": ClipboardCheck,
+  inbox: Inbox,
+  bell: Bell,
+  calendar: Calendar,
+  heart: Heart,
+  package: Package,
+  truck: Truck,
+  "file-text": FileText,
+  percent: Percent,
 };
 
 const categoryGradients: Record<string, string> = {
@@ -649,7 +675,9 @@ export default function MarketplaceV2() {
       {/* Pricing Dialog */}
       <Dialog open={!!showPricingDialog} onOpenChange={(o) => !o && setShowPricingDialog(null)}>
         {showPricingDialog && (() => {
-          const Icon = categoryIcons[showPricingDialog.category] || Package;
+          const pricingIconKey = showPricingDialog.icon?.trim().toLowerCase();
+          const PricingIcon = pricingIconKey ? appIcons[pricingIconKey] : undefined;
+          const Icon = PricingIcon || categoryIcons[showPricingDialog.category] || Package;
           return (
             <DialogContent className="max-w-md rounded-2xl">
               <DialogHeader>
@@ -754,7 +782,9 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
   onUninstall: (app: MarketplaceApp) => void;
 }) {
   const { t } = useTranslation();
-  const Icon = categoryIcons[app.category] || Package;
+  const appIconKey = app.icon?.trim().toLowerCase();
+  const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
+  const Icon = AppIcon || categoryIcons[app.category] || Package;
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
   const gradient = categoryGradients[app.category] || "from-primary/10 to-primary/5";
 

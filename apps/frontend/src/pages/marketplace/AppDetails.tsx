@@ -21,6 +21,9 @@ import {
   Users,
   X,
   Zap,
+  Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
+  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
+  Truck, FileText, Percent, Heart, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -103,13 +106,30 @@ const DETAIL_CATEGORY_ICONS: Record<string, any> = {
 };
 
 const DETAIL_ICON_ALIASES: Record<string, any> = {
+  megaphone: Megaphone,
   "chart-bar": BarChart3,
   chart: BarChart3,
   analytics: BarChart3,
+  bot: Bot,
   store: Store,
   shop: Store,
   cart: ShoppingBag,
+  "shopping-cart": ShoppingCart,
+  users: Users,
   sparkles: Sparkles,
+  camera: Camera,
+  "package-open": PackageOpen,
+  "clipboard-list": ClipboardList,
+  route: Route,
+  "clipboard-check": ClipboardCheck,
+  inbox: Inbox,
+  bell: Bell,
+  calendar: Calendar,
+  heart: Heart,
+  package: Package,
+  truck: Truck,
+  "file-text": FileText,
+  percent: Percent,
 };
 
 function shouldUseTextIcon(icon?: string) {
