@@ -29,7 +29,12 @@ const {
 
 // Import environment configuration
 const envConfig = require("../config/environment");
-const { getFacebookOAuthConfig } = require("../config/facebookAppConfig");
+const {
+  getFacebookOAuthConfig,
+  getStoredFacebookOAuthConfig,
+  saveFacebookOAuthConfig,
+  buildFacebookBackendCallbackUrl,
+} = require("../config/facebookAppConfig");
 
 // Facebook OAuth Configuration — single source of truth: facebook-oauth-config.json (managed via /super-admin/facebook-oauth)
 function getFacebookAppConfig() {
@@ -46,68 +51,6 @@ const FACEBOOK_GRAPH_API_BASE_URL = getMetaGraphApiBaseUrl();
 const FACEBOOK_OAUTH_BASE_URL = getMetaOAuthBaseUrl();
 const FACEBOOK_PAGE_WEBHOOK_FIELDS =
   "messages,messaging_postbacks,messaging_optins,messaging_referrals,message_deliveries,message_reads,message_echoes,feed";
-const FACEBOOK_OAUTH_CONFIG_PATH = path.resolve(
-  __dirname,
-  "../data/facebook-oauth-config.json",
-);
-
-const buildFacebookBackendCallbackUrl = (type = "page") =>
-  new URL(
-    type === "pixel"
-      ? "/api/v1/facebook-oauth/pixel-callback"
-      : "/api/v1/facebook-oauth/callback",
-    `${envConfig.backendUrl}/`,
-  ).toString();
-
-const getStoredFacebookOAuthConfig = () => {
-  try {
-    if (!fs.existsSync(FACEBOOK_OAUTH_CONFIG_PATH)) {
-      return null;
-    }
-
-    const raw = fs.readFileSync(FACEBOOK_OAUTH_CONFIG_PATH, "utf8");
-    if (!raw.trim()) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch (error) {
-    console.error("❌ Failed to read Facebook OAuth config:", error.message);
-    return null;
-  }
-};
-
-const saveFacebookOAuthConfig = (config) => {
-  const payload = {
-    appId: typeof config?.appId === "string" ? config.appId.trim() : "",
-    appSecret:
-      typeof config?.appSecret === "string" ? config.appSecret.trim() : "",
-    redirectUri:
-      typeof config?.redirectUri === "string" ? config.redirectUri.trim() : "",
-    updatedAt: new Date().toISOString(),
-  };
-
-  fs.mkdirSync(path.dirname(FACEBOOK_OAUTH_CONFIG_PATH), { recursive: true });
-  fs.writeFileSync(
-    FACEBOOK_OAUTH_CONFIG_PATH,
-    JSON.stringify(payload, null, 2),
-    "utf8",
-  );
-
-  return payload;
-};
-
-const getFacebookOAuthConfig = () => {
-  const stored = getStoredFacebookOAuthConfig() || {};
-  const envApp = getFacebookAppConfig();
-
-  return {
-    appId: stored.appId || envApp.id || '',
-    appSecret: stored.appSecret || envApp.secret || '',
-    redirectUri: stored.redirectUri || buildFacebookBackendCallbackUrl("page"),
-  };
-};
 
 // Dynamic Facebook Redirect URI based on environment
 const getFacebookRedirectUri = (type = "page") =>

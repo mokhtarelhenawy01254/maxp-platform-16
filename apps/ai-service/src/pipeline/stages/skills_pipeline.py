@@ -92,6 +92,18 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             skills=[tc.get("function", {}).get("name", "") for tc in provider_response.tool_calls],
         )
 
+        # Identify and set the active skill context from the first executed skill tool call
+        for tc in provider_response.tool_calls:
+            func_name = tc.get("function", {}).get("name", "")
+            skill = registry.get(func_name)
+            if skill:
+                ctx.active_skill_context = {
+                    "skillId": skill.name,
+                    "requiresHumanApproval": False,
+                    "maxToolCount": 2,
+                }
+                break
+
         async def _execute_one(tc: dict) -> dict:
             func_name = tc.get("function", {}).get("name", "")
             arguments_str = tc.get("function", {}).get("arguments", "{}")

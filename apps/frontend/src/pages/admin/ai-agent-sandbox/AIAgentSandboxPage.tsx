@@ -229,6 +229,7 @@ const AIAgentSandboxPage: React.FC = () => {
           activeToolCalls={activeToolCalls}
           onSendMessage={sendMessage}
           isSuper={isSuper}
+          agentSkills={agentSkillDetails}
         />
         {isSuper && (
         <InspectorPanel

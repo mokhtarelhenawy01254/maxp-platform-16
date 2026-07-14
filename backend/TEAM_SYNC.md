@@ -1,7 +1,7 @@
 # Team Sync Updates
 
 ## 2026-07-14 / 2026-03-09
-- **AI Agent Sandbox Skills Display (UI/UX / COMPLETE)**: Added a dedicated skills display bar below the HeaderBar in the Sandbox testing tab (`/admin/ai-hub?tab=sandbox`) to show the display name and description of all skills assigned to the currently selected agent.
+- **AI Agent Sandbox Skills Display & Tracing (UI/UX / COMPLETE)**: Added a dedicated skills display bar below the HeaderBar in the Sandbox testing tab (`/admin/ai-hub?tab=sandbox`) to show the display name and description of all skills assigned to the currently selected agent. Additionally, resolved an active skill trace loss bug in the Python `ai-service` pipeline (`skills_pipeline.py`) by setting `ctx.active_skill_context` upon skill execution, and updated the frontend `ChatArea.tsx` to map raw skill IDs to localized friendly display names (`displayName`) on chat bubble badges.
 - **Facebook OAuth App Config Consolidation (FEATURE / COMPLETE)**: Unified fallback Facebook app configurations by reading `appId` and `appSecret` dynamically from `facebook-oauth-config.json` as the single source of truth, removing hardcoded credentials from `facebookAppConfig.js`, and ensuring Meta webhook verification reads the correct secret.
 - **Facebook Connected Account Profile Display (FEATURE / COMPLETE)**: Enhanced the Facebook OAuth settings page to display the profile details (name and avatar) of the currently authenticated Facebook personal account:
   1. Updated backend `GET /facebook-oauth/status` in `facebookOAuthRoutes.js` to query Meta's `/me` Graph API endpoint dynamically if the company possesses a valid `facebookUserAccessToken`.

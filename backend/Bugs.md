@@ -1,5 +1,14 @@
 # Backend Bugs Log
 
+### [BUG FIX / PIPELINE] AI Agent Sandbox Active Skill Context Trace Loss
+- **Date**: 2026-07-14
+- **Root Cause**: The Sandbox interface contains visual logs, active skill badges, and trace boxes designed to display which modular skill (such as `catalog-search` or `booking_packages`) was used to generate each response. However, `active_skill_context` was defined on `PipelineContext` in the Python `ai-service` but never actually populated during execution inside `skills_pipeline.py`. As a result, the backend always returned `activeSkill: null`, causing the sandbox UI to hide the active skill badge on chat replies and leave the trace logs blank.
+- **Resolution**: Updated `skills_pipeline.py` to identify the first executed skill tool call from `provider_response.tool_calls`, resolve its metadata from the registry, and assign its properties to `ctx.active_skill_context` at the beginning of the tool execution phase. Additionally, enhanced the frontend `ChatArea.tsx` to map the returned raw skill ID to its friendly localized `displayName` using the loaded agent skill profile details.
+- **Files Modified**:
+    - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+    - `apps/frontend/src/pages/admin/ai-agent-sandbox/AIAgentSandboxPage.tsx`
+    - `apps/frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx`
+
 ### [BUG FIX / TS COMPILATION] Facebook OAuth canReconnect Type Narrowing Error
 - **Date**: 2026-07-14
 - **Root Cause**: In `FacebookOAuth.tsx`, a redundant comparison `page.canReconnect === false` was checked inside a block already guarded by `page.canReconnect !== false`. Under strict TypeScript narrowing rules, this comparison was flagged as a type overlap error (TS2367) because `page.canReconnect` could not be `false` within that scope.

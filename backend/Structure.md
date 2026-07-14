@@ -117,3 +117,7 @@
 1. **Agent Skills Visual Strip**:
    - Added a dedicated skills display bar below the HeaderBar in `/admin/ai-hub?tab=sandbox` page (`AIAgentSandboxPage.tsx`).
    - Fetches the rich skill list (including `displayName` and `description`) from the agent profile API on agent switch and displays them as a horizontal row of themed badges with a `Sparkles` icon.
+2. **Active Skill Context Tracing & Display Name Mapping**:
+   - Updated Python `skills_pipeline.py` to assign the matching resolved skill tool's properties to `ctx.active_skill_context` during the tool execution phase.
+   - Updated `ChatArea.tsx` and `AIAgentSandboxPage.tsx` to pass the loaded agent skill profile details and map the active skill ID returned in the metadata to its localized friendly `displayName` on assistant chat bubble badges.
+

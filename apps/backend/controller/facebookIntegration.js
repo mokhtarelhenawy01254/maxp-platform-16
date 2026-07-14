@@ -459,10 +459,9 @@ const facebookDiagnostics = async (req, res) => {
                     messages: companyMessages
                 }
             },
-            const fbStatusConfig = getFacebookOAuthConfig();
             facebook: {
                 config: {
-                    appId: fbStatusConfig.appId || 'configured',
+                    appId: getFacebookOAuthConfig().appId || 'configured',
                     webhookVerifyToken: process.env.FACEBOOK_VERIFY_TOKEN ? 'configured' : 'missing',
                     backendUrl: envConfig.backendUrl,
                     environment: envConfig.environment
