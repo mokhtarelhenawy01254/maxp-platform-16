@@ -747,7 +747,7 @@ const loadCompanyFacebookPages = async (
   };
 };
 
-const disconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
+const disconnectCompanyFacebookPages = async ({ companyId, pageIds, permanent = false }) => {
   const pages = await getSharedPrismaClient().facebookPage.findMany({
     where: {
       id: { in: pageIds },
@@ -789,14 +789,24 @@ const disconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
       }
     }
 
-    await getSharedPrismaClient().facebookPage.update({
-      where: { id: page.id },
-      data: {
-        status: "disconnected",
-        disconnectedAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
+    if (permanent) {
+      // ponytail: delete related posts first (no cascade on FacebookPost)
+      await getSharedPrismaClient().facebookPost.deleteMany({
+        where: { pageId: page.pageId, companyId },
+      });
+      await getSharedPrismaClient().facebookPage.delete({
+        where: { id: page.id },
+      });
+    } else {
+      await getSharedPrismaClient().facebookPage.update({
+        where: { id: page.id },
+        data: {
+          status: "disconnected",
+          disconnectedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    }
 
     disconnectedPages.push({
       id: page.id,
@@ -1625,7 +1635,7 @@ router.get("/status", verifyToken.authenticateToken, async (req, res) => {
  */
 router.delete("/disconnect", verifyToken.authenticateToken, async (req, res) => {
   try {
-    const { pageIds } = req.body;
+    const { pageIds, permanent } = req.body;
     const { companyId } = req.query;
 
     if (!companyId) {
@@ -1654,6 +1664,7 @@ router.delete("/disconnect", verifyToken.authenticateToken, async (req, res) => 
       await disconnectCompanyFacebookPages({
         companyId,
         pageIds,
+        permanent: permanent === true,
       });
 
     res.json({
@@ -1661,7 +1672,9 @@ router.delete("/disconnect", verifyToken.authenticateToken, async (req, res) => 
       disconnectedCount: disconnectedPages.length,
       disconnectedPages,
       missingPageIds,
-      message: `تم قطع الاتصال مع ${disconnectedPages.length} صفحة بنجاح`,
+      message: permanent
+        ? `تم حذف ${disconnectedPages.length} صفحة نهائياً بنجاح`
+        : `تم قطع الاتصال مع ${disconnectedPages.length} صفحة بنجاح`,
     });
   } catch (error) {
     console.error("❌ Error disconnecting pages:", error);

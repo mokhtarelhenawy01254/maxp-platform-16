@@ -452,6 +452,60 @@ const FacebookOAuth: React.FC = () => {
     }
   };
 
+  const handleHardDeletePages = async (pageIds: string[]) => {
+    if (pageIds.length === 0) {
+      return;
+    }
+
+    const confirmMessage =
+      pageIds.length === 1
+        ? "هل أنت متأكد من حذف هذه الصفحة نهائياً؟ لا يمكن التراجع عن هذا الإجراء."
+        : `هل أنت متأكد من حذف ${pageIds.length} صفحات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    if (!user?.companyId) {
+      setError("معرف الشركة غير متوفر");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        `${envConfig.apiUrl}/facebook-oauth/disconnect?companyId=${user.companyId}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            pageIds,
+            permanent: true,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSelectedPageIds((current) =>
+          current.filter((pageId) => !pageIds.includes(pageId)),
+        );
+        setSuccess(data.message || "تم حذف الصفحات بنجاح");
+        await loadOAuthStatus();
+        emitFacebookPageSync(user.companyId);
+      } else {
+        setError(data.message || "فشل في حذف الصفحات");
+      }
+    } catch (error) {
+      console.error("Error hard deleting page:", error);
+      setError("خطأ في حذف الصفحات");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReconnectPages = async (pageIds: string[]) => {
     if (pageIds.length === 0) {
       return;
@@ -838,6 +892,14 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                 <TrashIcon className="h-3.5 w-3.5" />
                 فصل المحدد
               </button>
+              <button
+                onClick={() => handleHardDeletePages(selectedPageIds)}
+                disabled={loading || selectedPageIds.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900 text-white rounded-lg hover:bg-red-950 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+              >
+                <TrashIcon className="h-3.5 w-3.5" />
+                حذف نهائي
+              </button>
             </div>
           </div>
 
@@ -927,6 +989,14 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     )}
+                    <button
+                      onClick={() => handleHardDeletePages([page.id])}
+                      disabled={loading}
+                      className="p-1.5 text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg disabled:opacity-50 transition-colors"
+                      title="حذف نهائي"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}
