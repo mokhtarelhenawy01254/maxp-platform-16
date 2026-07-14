@@ -43,9 +43,10 @@ model Customer {
    hotelReservations              HotelReservation[]
    leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wholesaleCustomerPriceLists    WholesaleCustomerPriceList[]
-   wholesaleCustomer              WholesaleCustomer?
+    wholesaleCustomer              WholesaleCustomer?
     educationStudents               EducationStudent[]
     formSubmissions                 FormSubmission[]
+    hotelReservations               HotelReservation[]
 
     @@unique([facebookId, companyId])
   @@unique([instagramId, companyId])
