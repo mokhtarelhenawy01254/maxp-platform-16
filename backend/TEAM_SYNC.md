@@ -3,6 +3,7 @@
 ## 2026-07-14 / 2026-03-09
 - **WhatsApp Baileys Wrapped Messages Support (BUGFIX / CRITICAL)**: Added support for incoming wrapped messages (such as `viewOnceMessage`, `viewOnceMessageV2`, `viewOnceMessageV2Extension`, `ephemeralMessage`, and `documentWithCaptionMessage`) by recursively unwrapping them in `extractMessageContent` in `WhatsAppManager.js` before processing, avoiding message loss.
 - **WhatsApp Message Handler Mocking (BUGFIX)**: Fixed failing tests in `WhatsAppMessageHandler.sendTextSession.test.js` by adding `getSocketReadyState` to the mocked `WhatsAppManager` to resolve `TypeError: WhatsAppManager.getSocketReadyState is not a function`.
+- **WhatsApp Baileys Zombie Session Detection Hardening (BUGFIX / CRITICAL)**: Resolved a critical issue where active, newly authenticated sessions were incorrectly identified as zombie sessions and wiped immediately after opening. Added a check to verify that both `creds.registered` is false AND `sock.user` is not defined before declaring a session as a zombie.
 
 ## 2026-07-13 / 2026-03-09
 - **Facebook Inbox Space Optimization & Mobile Layout Clutter (FIX)**: Overhauled the layout structure of the Facebook Inbox page to eliminate wasted space on desktop and resolve cluttered displays on mobile viewports:

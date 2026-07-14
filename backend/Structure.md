@@ -82,5 +82,7 @@
 - **Merchant Guardrails Similarity Matching Threshold**: Lowered the default cosine similarity threshold inside `MerchantRuleGuardrail.get_relevant_rules` from 0.75 to 0.65 to ensure reliable semantic matching against customer messages featuring colloquial dialect variations.
 - **Compiled System Prompt Observability & Context Pipeline**: Refactored `_llm_call` in the skills pipeline to re-assign the fully-assembled system prompt (`enriched_prompt`) back to the `PipelineContext.system_prompt` field, ensuring it is propagated correctly to sandbox logs and database session traces.
 - **WhatsApp Baileys Wrapped Messages Unwrapping**: Enhanced the `extractMessageContent()` method in `WhatsAppManager.js` to recursively unwrap container structures (such as `viewOnceMessage`, `viewOnceMessageV2`, `viewOnceMessageV2Extension`, `ephemeralMessage`, and `documentWithCaptionMessage`) before extracting the underlying message type and content. This ensures full coverage for ephemeral and view-once media incoming messages.
+- **WhatsApp Baileys Zombie Session Detection Hardening**: Hardened the zombie check routine in `WhatsAppManager.js` during connection updates by verifying that `sock.user` is also missing before classifying a session with `registered: false` as a zombie, preventing active sessions from being accidentally wiped and disconnected right after successful pairing.
+
 
 

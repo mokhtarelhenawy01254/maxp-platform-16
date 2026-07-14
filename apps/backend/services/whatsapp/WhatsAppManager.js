@@ -1584,8 +1584,8 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             // Only detect zombies during reconnection where auth was previously valid
             if (previousStatus !== 'qr_pending' && previousStatus !== 'QR_PENDING' && previousStatus !== 'pairing_code_pending' && previousStatus !== 'authenticating') {
                 const sd = activeSessions.get(sessionId);
-                if (sd?.creds && !sd.creds.registered) {
-                    WA_LOG.error(sessionId, `ZOMBIE SESSION: connected but registered=false. Auth state lost during crash. Forcing relink.`);
+                if (sd?.creds && !sd.creds.registered && !sock.user) {
+                    WA_LOG.error(sessionId, `ZOMBIE SESSION: connected but registered=false and no sock.user. Auth state lost during crash. Forcing relink.`);
                     await clearDatabaseAuthState(sessionId);
                     if (io) {
                         io.to(`company_${companyId}`).emit('whatsapp:connection', {

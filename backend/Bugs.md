@@ -118,6 +118,13 @@
   - `apps/backend/routes/whatsappRoutes.js` — Added `POST /messages/:whatsappMessageId/correct` route
   - `apps/frontend/src/pages/whatsapp/components/MessageBubble.tsx` — Added correction button + inline editor
 
+### [BUG FIX] WhatsApp Baileys Zombie Session False-Positive Force Relink
+- **Date**: 2026-07-14
+- **Root Cause**: When a WhatsApp connection transitions to `open` (OPEN state), the system performed a strict check for "zombie sessions" (sessions where `registered` is false). However, during the initial pairing sequence or immediately after connection establishment, Baileys' `creds.registered` flag may not be updated to `true` yet, even though the connection is fully authenticated and has a valid `sock.user` mapping. This caused the system to falsely identify active sessions as zombies, wiping their auth credentials and forcing a relink, which disconnected the device immediately after pairing.
+- **Resolution**: Updated the zombie session check in `WhatsAppManager.js` to verify that both `sd.creds.registered` is false AND `sock.user` is not defined (meaning there is no active user mapping). This ensures that successfully authenticated sessions are not wiped.
+- **Files Modified**:
+  - `apps/backend/services/whatsapp/WhatsAppManager.js`
+
 ### [BUG FIX] AI Correction Button Not Visible Across All Inbox Pages
 - **Date**: 2026-07-12
 - **Root Cause**: Three cascading issues prevented the "✏️ تصحيح الرد" button from appearing:
