@@ -316,10 +316,13 @@ const resolveOAuthCallbackContext = (state, fallbackType) => {
   }
 };
 
-// Facebook OAuth Scopes
-// 🆕 Added ads_management and ads_read for Pixel access
-const FACEBOOK_SCOPES =
-  "public_profile,email,pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_read_user_content,pages_manage_engagement,business_management,ads_management,ads_read";
+// Facebook OAuth Scopes - Pages/Messenger (بدون business_management عشان المستخدم يقدر يختار الصفحات)
+const FACEBOOK_PAGE_SCOPES =
+  "public_profile,email,pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_read_user_content,pages_manage_engagement";
+
+// Facebook OAuth Scopes - Pixel/Ads (بـ business_management للوصول للأعمال)
+const FACEBOOK_PIXEL_SCOPES =
+  "business_management,ads_management,ads_read";
 
 router.get(
   "/config",
@@ -785,7 +788,7 @@ router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
       `${FACEBOOK_OAUTH_BASE_URL}/dialog/oauth?` +
       `client_id=${appId}&` +
       `redirect_uri=${encodeURIComponent(getFacebookRedirectUri("page"))}&` +
-      `scope=${FACEBOOK_SCOPES}&` +
+      `scope=${FACEBOOK_PAGE_SCOPES}&` +
       `response_type=code&` +
       `auth_type=rerequest&` +
       `state=${encodeURIComponent(encodedState)}`;
@@ -1823,7 +1826,7 @@ router.get("/pixel-authorize", verifyToken.authenticateToken, async (req, res) =
       `${FACEBOOK_OAUTH_BASE_URL}/dialog/oauth?` +
       `client_id=${appId}&` +
       `redirect_uri=${encodeURIComponent(getFacebookRedirectUri("pixel"))}&` +
-      `scope=${FACEBOOK_SCOPES}&` +
+      `scope=${FACEBOOK_PIXEL_SCOPES}&` +
       `response_type=code&` +
       `auth_type=rerequest&` +
       `state=${encodeURIComponent(encodedState)}`;
