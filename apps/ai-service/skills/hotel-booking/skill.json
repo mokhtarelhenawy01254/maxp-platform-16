@@ -1,8 +1,8 @@
 {
   "id": "hotel-booking",
-  "displayName": "Hotel Booking",
-  "version": "1.0.0",
-  "description": "حجز الغرف وإدارة الحجوزات",
+  "displayName": "حجز الفندق",
+  "version": "2.0.0",
+  "description": "التحقق من توفر الغرف، حجز غرفة أو أكثر، عرض الحجوزات السابقة، وإلغاء الحجوزات. تتطلب عمليات الحجز والإلغاء موافقة بشرية.",
   "allowedTools": [
     "hotel_check_availability",
     "hotel_reserve",
