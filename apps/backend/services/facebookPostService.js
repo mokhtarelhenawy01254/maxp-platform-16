@@ -37,43 +37,58 @@ async function syncPagePosts(pageId, companyId) {
 
   const apiVer = getMetaGraphApiVersion();
   let allPosts = [];
-  let validToken = tokenState.pageAccessToken;
-  let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
-  let refreshAttempted = false;
 
-  while (url) {
-    try {
-      const res = await axios.get(url, { timeout: 15000 });
-      if (res.data.data) allPosts = allPosts.concat(res.data.data);
-      url = res.data.paging?.next || null;
-    } catch (error) {
-      const graphError = error?.response?.data?.error || {};
-      const isPermissionError =
-        (graphError.code === 10 || graphError.code === 100) &&
-        /pages_read_engagement/i.test(graphError.message || '');
+  try {
+    let validToken = tokenState.pageAccessToken;
+    let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
+    let refreshAttempted = false;
 
-      if (isPermissionError && !refreshAttempted) {
-        refreshAttempted = true;
-        const refreshResult = await refreshFacebookPageAccessToken({
-          companyId: pageToken.companyId || companyId,
-          pageId,
-        });
-        if (refreshResult.success) {
-          validToken = refreshResult.pageAccessToken;
-          url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
-          allPosts = [];
-          continue;
+    while (url) {
+      try {
+        const res = await axios.get(url, { timeout: 15000 });
+        if (res.data.data) allPosts = allPosts.concat(res.data.data);
+        url = res.data.paging?.next || null;
+      } catch (error) {
+        const graphError = error?.response?.data?.error || {};
+        const isPermissionError =
+          (graphError.code === 10 || graphError.code === 100) &&
+          /pages_read_engagement/i.test(graphError.message || '');
+
+        if (isPermissionError && !refreshAttempted) {
+          refreshAttempted = true;
+          const refreshResult = await refreshFacebookPageAccessToken({
+            companyId: pageToken.companyId || companyId,
+            pageId,
+          });
+          if (refreshResult.success) {
+            validToken = refreshResult.pageAccessToken;
+            url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
+            allPosts = [];
+            continue;
+          }
         }
-      }
 
-      if (isPermissionError && refreshAttempted) {
-        throw new Error(
-          `تعذرت مزامنة المنشورات: صلاحية صفحة الفيسبوك لا تحتوي على الإذن المطلوب. ` +
-          `يرجى فصل الصفحة وإعادة ربطها لمنح جميع الأذونات المطلوبة.`
-        );
+        if (isPermissionError && refreshAttempted) {
+          throw new Error(
+            `تعذرت مزامنة المنشورات: صلاحية صفحة الفيسبوك لا تحتوي على الإذن المطلوب. ` +
+            `يرجى فصل الصفحة وإعادة ربطها لمنح جميع الأذونات المطلوبة.`
+          );
+        }
+        throw error;
       }
-      throw error;
     }
+  } catch (error) {
+    const graphError = error?.response?.data?.error || {};
+    const isPermissionError =
+      (graphError.code === 10 || graphError.code === 100) &&
+      /pages_read_engagement/i.test(graphError.message || '');
+    if (isPermissionError) {
+      throw new Error(
+        `تعذرت مزامنة المنشورات: صلاحية صفحة الفيسبوك لا تحتوي على الإذن المطلوب. ` +
+        `يرجى فصل الصفحة وإعادة ربطها لمنح جميع الأذونات المطلوبة.`
+      );
+    }
+    throw error;
   }
 
   for (const fbPost of allPosts) {
