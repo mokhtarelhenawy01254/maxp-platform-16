@@ -1,15 +1,8 @@
-<<<<<<< Updated upstream
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDebounce } from "../../hooks/useDebounce";
 import { toast } from "sonner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useTranslation } from "react-i18next";
-=======
-import React, { useState, useEffect, useMemo } from "react";
-import { useDebounce } from "../../hooks/useDebounce";
-
-const dateFt = new Intl.DateTimeFormat("ar-EG");
->>>>>>> Stashed changes
 import { useNavigate, useParams } from "react-router-dom";
 import CommentService from "../../services/commentService";
 import {
