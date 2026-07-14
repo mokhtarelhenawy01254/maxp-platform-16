@@ -818,11 +818,6 @@ exports.sendCampaign = async (req, res) => {
           const result = await WhatsAppMessageHandler.sendTemplateMessage(
             waSessionId, to, campaign.waTemplateName,
             { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-
-          const result = await WhatsAppMessageHandler.sendTemplateMessage(
-            waSessionId, to, campaign.waTemplateName,
-            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-
             { metadata: { isBroadcast: true, campaignId: campaign.id } }
           );
 
