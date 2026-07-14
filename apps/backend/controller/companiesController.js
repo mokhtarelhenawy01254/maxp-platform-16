@@ -1039,18 +1039,19 @@ const deleteCompany = async (req, res) => {
 // ==================== COMPANY USERS MANAGEMENT ====================
 
 const getCompanyUsers = async (req, res) => {
+  const { companyId } = req.params;
+  const {
+    page = 1,
+    limit = 25,
+    search = "",
+    role = "",
+    isActive = "",
+    employeeStatus = "", // ✅ Add Employee Status filter
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = req.query;
+
   try {
-    const { companyId } = req.params;
-    const {
-      page = 1,
-      limit = 25,
-      search = "",
-      role = "",
-      isActive = "",
-      employeeStatus = "", // ✅ Add Employee Status filter
-      sortBy = "createdAt",
-      sortOrder = "desc",
-    } = req.query;
 
     console.log(`👥 [GET-USERS] Fetching users for company: ${companyId}`);
     console.log(

@@ -402,6 +402,10 @@ bash scripts/sync-db-pass.sh || echo "⚠️ Password sync failed, continuing...
 echo "🛠️ Fixing Audit Logs data types..."
 bash scripts/fix-audit-logs.sh || echo "⚠️ Audit logs fix skipped or failed, continuing..."
 
+# Step 2.8: Fix Data Duplicates
+echo "🛠️ Fixing data duplicates..."
+node scripts/fix-duplicates.js || echo "⚠️ Duplicates fix failed, continuing..."
+
 # Step 3: Push schema to PostgreSQL database
 echo "🚀 Pushing schema to PostgreSQL..."
 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
