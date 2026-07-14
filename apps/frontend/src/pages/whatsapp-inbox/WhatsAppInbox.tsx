@@ -273,7 +273,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   const navigateToInbox = useCallback(
     (nextSessionId: string) => {
       if (superAdminMode && companyId) {
-        navigate(`/super-admin/whatsapp/companies/${companyId}/inbox/${nextSessionId}`);
+        navigate(`/super-admin/whatsapp/companies/${companyId}/routing/${nextSessionId}`);
       } else {
         navigate(`/whatsapp/routing/${nextSessionId}`);
       }

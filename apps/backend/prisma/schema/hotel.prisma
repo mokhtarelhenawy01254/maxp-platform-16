@@ -1,0 +1,177 @@
+/// Hotel module - Properties (hotel buildings/branches)
+model HotelProperty {
+  id            String   @id @default(cuid())
+  companyId     String
+  name          String
+  address       String?
+  city          String?
+  phone         String?
+  email         String?
+  description   String?
+  amenities     Json?    /// ["wifi","pool","gym","parking","restaurant","spa"]
+  images        Json?    /// ["url1","url2"]
+  checkInTime   String   @default("14:00")
+  checkOutTime  String   @default("12:00")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  roomTypes     HotelRoomType[]
+  rooms         HotelRoom[]
+  reservations  HotelReservation[]
+
+  @@index([companyId])
+  @@map("hotel_properties")
+}
+
+/// Hotel module - Room types/categories
+model HotelRoomType {
+  id          String   @id @default(cuid())
+  companyId   String
+  propertyId  String
+  name        String   /// e.g. Single, Double, Suite
+  nameAr      String?  /// Arabic name
+  description String?
+  capacity    Int      @default(2)
+  basePrice   Float    /// Default price per night
+  amenities   Json?    /// ["tv","ac","minibar","balcony","sea-view"]
+  images      Json?
+  totalRooms  Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  property    HotelProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  rooms    HotelRoom[]
+  rates    HotelRoomRate[]
+  reservationRooms HotelReservationRoom[]
+
+  @@index([companyId])
+  @@index([propertyId])
+  @@map("hotel_room_types")
+}
+
+/// Hotel module - Individual rooms
+model HotelRoom {
+  id          String   @id @default(cuid())
+  companyId   String
+  propertyId  String
+  roomTypeId  String
+  roomNumber  String
+  floor       Int?
+  status      HotelRoomStatus @default(AVAILABLE)
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  property    HotelProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomType    HotelRoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  reservationRooms HotelReservationRoom[]
+
+  @@unique([propertyId, roomNumber])
+  @@index([companyId])
+  @@index([propertyId])
+  @@index([roomTypeId])
+  @@index([status])
+  @@map("hotel_rooms")
+}
+
+/// Hotel module - Reservations/bookings
+model HotelReservation {
+  id            String                  @id @default(cuid())
+  companyId     String
+  propertyId    String
+  customerId    String?
+  customerName  String
+  customerPhone String?
+  customerEmail String?
+  customerNotes String?
+  checkIn       DateTime                @db.Date
+  checkOut      DateTime                @db.Date
+  adults        Int                     @default(1)
+  children      Int                     @default(0)
+  totalAmount   Float
+  paidAmount    Float                   @default(0)
+  status        HotelReservationStatus  @default(PENDING)
+  source        String?                 /// whatsapp/facebook/dashboard/public
+  createdById   String?
+  createdByType String?                 /// ai_service / user
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  company       Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  property      HotelProperty           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  customer      Customer?               @relation(fields: [customerId], references: [id])
+
+  rooms HotelReservationRoom[]
+  folio HotelFolioItem[]
+
+  @@index([companyId])
+  @@index([propertyId])
+  @@index([customerId])
+  @@index([status])
+  @@index([checkIn, checkOut])
+  @@map("hotel_reservations")
+}
+
+/// Hotel module - Room assignments in a reservation
+model HotelReservationRoom {
+  id             String    @id @default(cuid())
+  reservationId  String
+  roomId         String
+  roomTypeId     String
+  nightlyRate    Float     /// Rate per night at time of booking
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  reservation HotelReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  room        HotelRoom         @relation(fields: [roomId], references: [id])
+  roomType    HotelRoomType     @relation(fields: [roomTypeId], references: [id])
+
+  @@unique([reservationId, roomId])
+  @@index([reservationId])
+  @@index([roomId])
+  @@map("hotel_reservation_rooms")
+}
+
+/// Hotel module - Additional charges during stay (folio)
+model HotelFolioItem {
+  id             String              @id @default(cuid())
+  companyId      String
+  reservationId  String
+  description    String
+  amount         Float
+  itemType       HotelFolioItemType  @default(SERVICE)
+  quantity       Int                 @default(1)
+  chargedAt      DateTime            @default(now())
+  createdAt      DateTime            @default(now())
+  company        Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reservation    HotelReservation    @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([reservationId])
+  @@map("hotel_folio_items")
+}
+
+/// Hotel module - Seasonal/custom pricing for room types
+model HotelRoomRate {
+  id         String   @id @default(cuid())
+  companyId  String
+  roomTypeId String
+  dateFrom   DateTime @db.Date
+  dateTo     DateTime @db.Date
+  price      Float    /// Per night during this period
+  label      String?  /// "High Season", "New Year", "Eid", etc.
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  roomType   HotelRoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([roomTypeId])
+  @@index([dateFrom, dateTo])
+  @@map("hotel_room_rates")
+}
