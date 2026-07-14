@@ -1658,8 +1658,7 @@ const getPostsByPageId = async (req, res) => {
     const companyId = user.companyId;
     const { pageId } = req.params;
 
-    // Pagination to prevent timeouts on pages with many posts
-    const { page = 1, limit = 50, search = '' } = req.query;
+    const { page = 1, limit = 500, search = '' } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
