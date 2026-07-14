@@ -10,7 +10,7 @@
     "predev": "npm run schema:generate",
     "check:syntax": "node scripts/check_syntax.js",
     "check:customer-intent": "node scripts/customer-intent-architecture-guard.js",
-    "prestart": "npm run schema:generate && npm run kill:ports",
+    "prestart": "npm run schema:generate && npx prisma db push --schema=prisma/schema --accept-data-loss && npm run kill:ports",
     "start": "node server.js",
     "dev": "node services/ensureLocalPostgres.js && nodemon server.js",
     "test": "jest --runInBand --testTimeout=30000 --forceExit",
