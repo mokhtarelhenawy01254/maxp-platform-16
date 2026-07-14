@@ -1,0 +1,14 @@
+{
+  "id": "hotel-booking",
+  "displayName": "Hotel Booking",
+  "version": "1.0.0",
+  "description": "حجز الغرف وإدارة الحجوزات",
+  "allowedTools": [
+    "hotel_check_availability",
+    "hotel_reserve",
+    "hotel_my_reservations",
+    "hotel_cancel_reservation"
+  ],
+  "requiresHumanApproval": true,
+  "maxToolCount": 5
+}

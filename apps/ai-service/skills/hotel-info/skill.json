@@ -1,0 +1,11 @@
+{
+  "id": "hotel-info",
+  "displayName": "Hotel Info",
+  "version": "1.0.0",
+  "description": "عرض معلومات الفندق وأنواع الغرف والأسعار",
+  "allowedTools": [
+    "hotel_info"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 1
+}
