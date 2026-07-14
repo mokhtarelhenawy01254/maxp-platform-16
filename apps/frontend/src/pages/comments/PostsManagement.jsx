@@ -42,6 +42,7 @@ const PostsManagement = ({ embedded = false }) => {
 
   useEffect(() => {
     if (selectedPage) {
+      CommentService.syncPagePosts(selectedPage); // fire-and-forget
       fetchPosts();
       fetchPageSettings();
       setShowMobilePages(false);
@@ -59,7 +60,10 @@ const PostsManagement = ({ embedded = false }) => {
       if (response.success && response.data) {
         setPages(response.data);
         if (response.data.length > 0 && !selectedPage) {
-          setSelectedPage(response.data[0].pageId);
+          const firstWithPosts = response.data.find(p => p.totalPosts > 0);
+          if (firstWithPosts) {
+            setSelectedPage(firstWithPosts.pageId);
+          }
         }
       }
     } catch (error) {

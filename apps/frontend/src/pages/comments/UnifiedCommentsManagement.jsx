@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDebounce } from "../../hooks/useDebounce";
+import { toast } from "sonner";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 
 const dateFt = new Intl.DateTimeFormat("ar-EG");
 import { useNavigate, useParams } from "react-router-dom";
@@ -44,6 +46,27 @@ const UnifiedCommentsManagement = () => {
   const [replyText, setReplyText] = useState("");
   const [searchInput, setSearchInput] = useState(filters.search);
   const debouncedSearch = useDebounce(searchInput, 300);
+  const [confirmState, setConfirmState] = useState(null);
+  const executeDelete = useCallback((commentId) => {
+    CommentService.deleteFacebookComment(commentId).then((result) => {
+      if (result.success && activePostId) fetchComments(activePostId);
+    }).catch((error) => {
+      console.error("Error deleting comment:", error);
+      toast.error("فشل حذف التعليق");
+    });
+  }, [activePostId]);
+  const executeBulkDelete = useCallback(() => {
+    CommentService.bulkDeleteFacebookComments(selectedComments).then((result) => {
+      if (result.success) {
+        if (activePostId) fetchComments(activePostId);
+        setSelectedComments([]);
+        toast.success("تم حذف التعليقات بنجاح");
+      }
+    }).catch((error) => {
+      console.error("Error deleting comments:", error);
+      toast.error("حدث خطأ أثناء حذف التعليقات: " + error.message);
+    });
+  }, [selectedComments, activePostId]);
 
   // Fetch posts
   const fetchPosts = async () => {
@@ -56,6 +79,7 @@ const UnifiedCommentsManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
+      toast.error("فشل تحميل المنشورات");
     } finally {
       setLoading(false);
     }
@@ -73,6 +97,7 @@ const UnifiedCommentsManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
+      toast.error("فشل تحميل التعليقات");
     } finally {
       setLoading(false);
     }
@@ -106,7 +131,7 @@ const UnifiedCommentsManagement = () => {
 
   const handleUpdateResponse = async (commentId, response) => {
     if (!response || !response.trim()) {
-      alert("الرجاء إدخال رد قبل الحفظ.");
+      toast.warning("الرجاء إدخال رد قبل الحفظ.");
       return;
     }
 
@@ -116,31 +141,22 @@ const UnifiedCommentsManagement = () => {
         response,
       );
       if (result.success) {
-        // Refresh comments
         if (activePostId) {
           fetchComments(activePostId);
         }
-        alert("تم حفظ الرد وإرساله إلى فيسبوك بنجاح!");
+        toast.success("تم حفظ الرد وإرساله إلى فيسبوك بنجاح!");
       }
     } catch (error) {
-      alert("خطأ في تحديث رد التعليق: " + error.message);
+      toast.error("خطأ في تحديث رد التعليق: " + error.message);
     }
   };
 
-  const handleDeleteComment = async (commentId) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا التعليق؟")) {
-      try {
-        const result = await CommentService.deleteFacebookComment(commentId);
-        if (result.success) {
-          // Refresh comments
-          if (activePostId) {
-            fetchComments(activePostId);
-          }
-        }
-      } catch (error) {
-        console.error("Error deleting comment:", error);
-      }
-    }
+  const handleDeleteComment = (commentId) => {
+    setConfirmState({
+      title: "تأكيد الحذف",
+      content: "هل أنت متأكد من حذف هذا التعليق؟",
+      onConfirm: () => executeDelete(commentId),
+    });
   };
 
   const handleViewComments = (postId) => {
@@ -157,33 +173,18 @@ const UnifiedCommentsManagement = () => {
     window.history.pushState({}, "", "/unified-comments");
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedComments.length === 0) {
-      alert("الرجاء اختيار تعليقات لحذفها");
+      toast.warning("الرجاء اختيار تعليقات لحذفها");
       return;
     }
 
-    if (
-      window.confirm(`هل أنت متأكد من حذف ${selectedComments.length} تعليق؟`)
-    ) {
-      try {
-        const result =
-          await CommentService.bulkDeleteFacebookComments(selectedComments);
-        if (result.success) {
-          // Refresh comments
-          if (activePostId) {
-            fetchComments(activePostId);
-          }
-          // Clear selection
-          setSelectedComments([]);
-          alert("تم حذف التعليقات بنجاح");
-        }
-      } catch (error) {
-        console.error("Error deleting comments:", error);
-        alert("حدث خطأ أثناء حذف التعليقات: " + error.message);
-      }
-    }
+    setConfirmState({
+      title: "تأكيد الحذف الجماعي",
+      content: `هل أنت متأكد من حذف ${selectedComments.length} تعليق؟`,
+      confirmColor: "error",
+      onConfirm: () => executeBulkDelete(),
+    });
   };
 
   // Handle select/deselect comment
@@ -247,6 +248,15 @@ const UnifiedCommentsManagement = () => {
       setFilters((prev) => ({ ...prev, search: debouncedSearch }));
     }
   }, [debouncedSearch]);
+
+  useEffect(() => {
+    const handlePop = () => {
+      const match = window.location.pathname.match(/^\/unified-comments\/(.+)/);
+      setActivePostId(match ? match[1] : null);
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
 
   // If we're viewing comments for a specific post
   if (activePostId) {
@@ -551,6 +561,16 @@ const UnifiedCommentsManagement = () => {
           </div>
         </div>
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open={true}
+          title={confirmState.title}
+          content={confirmState.content}
+          confirmColor={confirmState.confirmColor || "primary"}
+          onConfirm={() => { confirmState.onConfirm(); setConfirmState(null); }}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
     );
   }
 
@@ -937,6 +957,16 @@ const UnifiedCommentsManagement = () => {
           )}
         </div>
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open={true}
+          title={confirmState.title}
+          content={confirmState.content}
+          confirmColor={confirmState.confirmColor || "primary"}
+          onConfirm={() => { confirmState.onConfirm(); setConfirmState(null); }}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
     </div>
   );
 };
