@@ -417,10 +417,230 @@ Each under `apps/backend/agents/<slug>/` with agent.json, SOUL.md, TOOLS.md, AGE
 ### Server
 - Host: srv974554.hstgr.cloud (153.92.223.119)
 - PM2: maxp-ai-service, maxp-backend, maxp-webhook-worker
+- **Route:** `/super-admin/ai-consumption`
+- **Backend:** `GET /api/v1/super-admin/ai/company-consumption` in `superAdminRoutes.js:881`
+- **Frontend:** `SuperAdminAIConsumption.tsx` → KPIs (total cost, requests, active companies, error rate) + model distribution chart + sortable/filterable companies table
+- **Sidebar:** "استهلاك الشركات" under AI Models group in SuperAdminSidebar.tsx
+- **Data source:** Aggregates `AiProviderLog` (groupBy companyId/provider/model/status) + token estimates from `metadata` JSON + `modelCosts.js` for cost calculation
+- **Lesson:** `Company` model has no `nameEn` field in Prisma schema — caused 500 error on first deploy. Fixed by removing `nameEn` from query and frontend type.
+
+---
+
+# Session Log — 2026-07-07 — AppDashboardPage Suspense Fix + reportWebVitals Fix
+
+## reportWebVitals Adblocker Crash Loop
+- **Issue:** Storefronts (like `swan.maxp.online`) stuck in infinite reload loop (`?__maxp_cache_recovery=...`)
+- **Root cause:** Dynamic import of `./utils/reportWebVitals` blocked by adblockers (chunk has "vitals" in name) → Vite preload error handler triggers page reload → blocked again → infinite loop
+- **Fix:** Removed the unused `reportWebVitals` dynamic import from `main.tsx`. The actual logging was commented out, so the import was dead code.
+- **Files:** `apps/frontend/src/main.tsx`, `backend/Bugs.md`, `backend/TEAM_SYNC.md`
+
+## AppDashboardPage Suspense Boundary
+- **Issue:** `Cannot read properties of undefined (reading 'default')` crash navigating to `/apps`
+- **Root cause:** `AppDashboardPage` loaded via `React.lazy()`. Two of three rendering locations in Layout.tsx (sidebar-full at L641, sidebar-right at L718) wrapped it **without** `<React.Suspense>`. The first location (L550) had it correctly. Depending on which layout path was used, the lazy component was rendered outside a Suspense boundary.
+- **Fix:** Wrapped both occurrences with `<React.Suspense fallback={<ContentSkeleton />}>`
+- **Verification:** Built successfully (`✓ built in 55.18s`), Layout chunk hash changed
+- **Add translations:** Added missing `aiImageGenerator` and `profitabilityEngine` translation keys (already added to the new location, removed from old)
+- **Commit:** `89bc7f2` → pushed to `main`
+
+## Key Lessons
+- 3 rendering locations for same lazy component = 3 Suspense boundaries needed
+- Always check ALL layout branches when a lazy component is used conditionally
+- The `vite:preloadError` handler prevents crash but Suspense is the correct fix for lazy components
+
+---
+
+# Session Log — 2026-07-06 — Analytics Status Filtering + Clickable Orders
+
+## Changes
+1. **Backend** (`analyticsController.js`): Added `ORDER_STATUS_VALUES` set to filter out payment statuses (PAID, PARTIALLY_PAID, FAILED) from analytics report queries at 3 endpoints
+2. **Frontend** (`StatusSummaryReport.tsx`): Added `useNavigate`, changed status API call to include `statusType: order`, made order rows clickable navigating to `/orders/details/{orderNumber}`
+
+### Deploy
+- Commit `264363d54` → pushed to `main` → Deploy to Server workflow completed in 5m51s ✓
+
+# Session Log — 2026-07-05 — Part 2
+
+## AI Templates Companies Feature
+
+### Built
+1. **Python endpoint** `GET /admin/agent-templates/{slug}/companies` — lists companies using a template with per-field diff (modified/added/removed) comparing agent values to template defaults
+2. **Express routes** — GET companies, PUT update, DELETE archive company agents
+3. **Frontend "الشركات" tab** — table with company name, agent, status, version, diff count; expandable diff details
+4. **EditCompanyAgentDialog** — modal for editing company-specific overrides (model, soul, rules, tools, skills)
+
+### Files Modified
+- `apps/ai-service/src/api/admin/agents_schemas.py` — 3 new Pydantic schemas
+- `apps/ai-service/src/api/admin/agents.py` — new endpoint + imports
+- `apps/backend/services/aiServiceAdminClient.js` — getTemplateCompanies()
+- `apps/backend/routes/superAdminRoutes.js` — 3 new routes
+- `apps/frontend/src/pages/super-admin/SuperAdminAITemplateDetail.tsx` — CompaniesTab component, editCompanyTarget dialog
+- `apps/frontend/src/pages/super-admin/SuperAdminAITemplatesDialogs.tsx` — EditCompanyAgentDialog
+
+### Verification
+- Python AST parses ✓
+- Express scripts parse ✓
+- Route registration confirmed via FastAPI route list ✓
+- Schema JSON serialization tested ✓
+
+### Code review notes
+- EditCompanyAgentDialog sends `allowed_channels` but Python field is `channels` — fixed by not sending it and relying on `allowed_tools`/`allowed_skills` send only
+- `aiAdminProxyRoute` is at `express mount /api/v1/ai-admin → Python /admin/*`
+
+---
+
+# Session Log — 2026-07-04
+
+## Facebook AI Auto-Reply Fixes — Final Summary
+
+### Issues Fixed
+
+1. **Prisma module path** — `silentEscalationService.js` used wrong path `../prisma/client`, fixed to `./sharedDatabase`
+2. **getIO undefined** — Destructured import loses `this`, fixed to `socketService.getIO()`
+3. **Python NoneType** — `dict.get(key, [])` returns `None` if key exists with null JSONB value. Fixed with `or []` at 4 locations
+4. **Missing category field** — activityLog.create() required `category` and `description`
+5. **field typo** — `details` → `metadata` in activityLog.create()
+6. **Default model** — changed to `deepseek-chat` to avoid Groq 429 rate limits
+7. **reply_to in Graph API v25.0** — Facebook's v25.0 API rejects `reply_to` in message object. Disabled.
+
+### ياسمين Agent Configuration
+
+- Changed channels from `["messenger"]` to include `"facebook"`
+- Added `provider: "DEEPSEEK"` and `keyId` to config
+- Model: `deepseek-v4-flash`
+
+### Root Causes Discovered
+
+1. Auto-reply saved AI response to DB but `sendFacebookMessage()` failed due to `reply_to` in Facebook API v25.0
+2. ياسمين had `"messenger"` in channels but channel resolution looked for `"facebook"`
+3. ياسمين had no `provider`/`keyId` in config, causing `ensure_client()` to fall back to generic routing
+
+### Files Modified
+
+- `apps/backend/services/silentEscalationService.js` — Prisma path, socketService import, category/description, details→metadata
+- `apps/ai-service/src/api/chat.py` — `or []` guards (2 places)
+- `apps/ai-service/src/pipeline/checkpointer.py` — `or []` guards (2 places)
+- `apps/ai-service/src/pipeline/sdk_workflow.py` — `or []` guard
+- `apps/backend/utils/production-facebook-fix.js` — Disabled `reply_to`
+- `apps/ai-service/.env` — `DEFAULT_MODEL=deepseek-chat`
+- Database: `ai.agents` table — channels and config for agent_LSqKxvBVSJL2AO7ItWQKZQ
+
+### Server Access
+- Host: 153.92.223.119 / srv974554.hstgr.cloud
+- Backend: root + Mokhtar1234@#
+- DB: appuser + mokhtar1234
+- PM2: maxp-ai-service, maxp-backend, maxp-webhook-worker
+
+---
+
+# Session Log — 2026-07-05
+
+## 5 Medical Human Agents (Named Personas)
+
+### Agents Created (20 files total)
+Each under `apps/backend/agents/<slug>/` with agent.json, SOUL.md, TOOLS.md, AGENTS.md:
+
+| # | Agent | Slug | Persona |
+|---|-------|------|---------|
+| 1 | شهد — استشارية تجميل | aesthetic-advisor | MEDICAL_CENTER |
+| 2 | أحمد — منسق علاج طبيعي | physio-coordinator | PHYSIOTHERAPY |
+| 3 | مروة — منسقة أسنان | dental-care-specialist | MEDICAL_CENTER |
+| 4 | كريم — مستشار تحاليل | medical-lab-analyst | MEDICAL_CENTER |
+| 5 | يارا — منسقة دعم نفسي | mental-health-counselor | MEDICAL_CENTER |
+
+### Deployment
+- All template files SCP'd to `/var/www/backend2/agents/` on 153.92.223.119
+- Templates seeded via `POST /admin/agent-templates` (all 5 CREATED)
+- Quick profiles written directly to `systemSettings.agentQuickProfiles` via SQL (locks: lockIdentity=false, lockPersona=true, lockRules=true, lockCustomPrompt=true)
+- Physio-coordinator agent already ACTIVE on physio company (cmqpbuw3y3oq1ju40or3mr8it). Filled missing soul/config/rules columns.
+
+### Bugs Fixed
+1. **booking_tools.py packages location** — packages nested in `branchServices[].packages`, not on service directly. Fixed and deployed.
+2. **knowledge_search empty** — Physio company had 0 FAQs/Policies. Created 6 policies, backfilled embeddings. Now 6/6 in ai.knowledge_embeddings.
+3. **booking_packages skill was thin wrapper** — Redesigned to aggregate pricing with `single_price`/`per_session`/`has_multi_session_packages`. SKILL.md made dynamic (no hardcoded prices). Descriptions to English.
+
+### Key Decisions
+- Skill handlers must add value over their dependency tools (per 2026 pattern)
+- Tool/skill descriptions in English (machine-readable), SOUL content in Arabic
+- Multi-session pricing lives in Policies (FAQ/POLICY), not booking system packages (single-session only for physio company)
+- MaxP's 4-file agent contract + progressive disclosure matches 2026 OpenAI Agents SDK standard
+
+---
+
+# Session Log — 2026-07-11 — Visual Search Overhaul (Mock → ai-service Proxy) + Super Admin Monitoring
+
+## What Happened
+
+### Part 1: Super Admin Visual Search Monitoring Page
+1. **Goal**: Add monitoring page for visual search analytics (success/fail rates, latency, results)
+2. **Python**: Added `_log_search_analytic()` to `vector_product_search.py` — writes to `search_analytics` table with company_id, query, results_count, was_successful, latency, metadata (top_score, image_present, embedding_provider)
+3. **Backend**: `GET /super-admin/ai/visual-search-logs` with pagination, filtering (days/company/status), summary stats
+4. **Frontend**: `SuperAdminVisualSearchLogs.tsx` — summary cards, filter row, logs table, detail dialog, pagination
+5. **Routing**: App.tsx lazy import + SuperAdminSidebar.tsx link
+
+### Part 2: Bug Rescue — Silent Logging Failures
+1. **Bug 1 — camelCase mismatch**: `_log_search_analytic()` raw SQL used `company_id`, `results_count` but DB columns are `"companyId"`, `"resultsCount"`. Fixed with quoted column names.
+2. **Bug 2 — duplicate entries**: `vector_product_search()` called twice per request (Stage 0 pipeline + tool call). Fixed with deterministic SHA-256 dedup key + `ON CONFLICT (id) DO NOTHING`.
+3. **Bug 3 — silent exception**: `asyncio.ensure_future()` with `try/except` swallowed all errors. No one checked logs for `search_analytic_log_failed`.
+
+### Part 3: 3% Similarity Root Cause — Missing `ai.product_embeddings`
+1. **Local DB `maxp`**: Table didn't exist, pgvector not installed. Created table with TEXT columns (not vector), backfilled 49/49 products.
+2. **Production DB `maxp`**: Already had table (331 products) with pgvector + image_embeddings. Direct pgvector test = 83-100%.
+3. **Real root cause**: `visualSearchProduct` at `productController.js:3691` uses mock `{generateMultimodalEmbeddingAsync: async () => null}` — always returns null. No real embedding ever generated.
+
+### Part 4: Fix — Python-First Architecture
+1. **ai-service**: Added `POST /admin/search/visual` endpoint wrapping `vector_product_search` (real Gemini embedding + pgvector + RRF fusion)
+2. **Backend**: Rewrote `visualSearchProduct` to convert file to base64 and proxy to ai-service via `aiServiceAdminClient.visualSearch()`. Removed dead `cosineSimilarity`.
+3. **Live test**: Image search → 75.04% exact match, Text search → 63.55% top match (vs 3% before)
+
+### Key Decisions
+- All AI visual search logic moved to Python ai-service (2026 direction)
+- Backend becomes proxy (validate → forward → return)
+- Database unified: all services use `maxp` (production `.env.production` already points there, just the ai-service `.env.production` was stale)
+- New pattern: `backend/controller` AI features call `aiServiceAdminClient.xxx()` instead of implementing locally
+
+### Key Files Changed
+- `apps/ai-service/src/tools/vector_product_search.py` — `_log_search_analytic()`, dedup, direct `generate_embedding_with_provider()`, asyncio.ensure_future logging
+- `apps/ai-service/src/api/admin/search.py` [NEW] — `POST /admin/search/visual` endpoint
+- `apps/ai-service/src/api/admin/__init__.py` — registered search router
+- `apps/backend/controller/productController.js` — rewrote visualSearchProduct as proxy, removed mock, removed cosineSimilarity
+- `apps/backend/services/aiServiceAdminClient.js` — added `visualSearch()` method
+- `apps/backend/routes/superAdminRoutes.js` — GET /super-admin/ai/visual-search-logs
+- `apps/frontend/src/pages/super-admin/SuperAdminVisualSearchLogs.tsx` [NEW]
+- `apps/frontend/src/App.tsx` — lazy import + route
+- `apps/frontend/src/components/layout/SuperAdminSidebar.tsx` — sidebar link
+
+### Server
+- Host: srv974554.hstgr.cloud (153.92.223.119)
+- PM2: maxp-ai-service, maxp-backend, maxp-webhook-worker
 - DB: `maxp` with pgvector, 331 products, 86 Swan image_embeddings
 - Deploy: commit `90864f65` → GitHub Actions → success
 
- # #   2 0 2 6 - 0 7 - 1 3 :   F a c e b o o k   U n i f i e d   C o m m e n t s   -   D e l a y   R e p l y   &   F e t c h   P o s t s   F i x 
- -   * * B u g   1   ( D e l a y   R e p l y ) * * :   F r o n t e n d   t o g g l i n g   ' d e l a y   r e p l y '   s e n t   i n v a l i d   r e s p o n s e M e t h o d   ( u n d e f i n e d )   a n d   u n r e c o g n i z e d   d e l a y R e p l y   f i e l d .   F i x e d   b y   a d d i n g   d e l a y R e p l y   t o   P a g e R e s p o n s e S e t t i n g s   s c h e m a   a n d   u p d a t i n g   c o m m e n t C o n t r o l l e r . j s   t o   d e f a u l t   r e s p o n s e M e t h o d   t o   ' m a n u a l '   a n d   m a p   d e l a y R e p l y . 
- -   * * B u g   2   ( F e t c h   P o s t s ) * * :   g e t P o s t s B y P a g e I d   t h r e w   P r i s m a   5 0 0   e r r o r   d u e   t o   i n v a l i d   g r o u p B y   s y n t a x   m i s s i n g   _ m a x :   {   c r e a t e d T i m e :   t r u e   } .   F i x e d   i n   c o m m e n t C o n t r o l l e r . j s .  
- 
+# # 2 0 2 6 - 0 7 - 1 3 : F a c e b o o k U n i f i e d C o m m e n t s - D e l a y R e p l y & F e t c h P o s t s F i x
+- **Bug 1 (Delay Reply)**: Frontend toggling 'delay reply' sent invalid responseMethod (undefined) and unrecognized delayReply field. Fixed by adding delayReply to PageResponseSettings schema and updating commentController.js to default responseMethod to 'manual' and map delayReply.
+- **Bug 2 (Fetch Posts)**: getPostsByPageId threw Prisma 500 error due to invalid groupBy syntax missing _max: { createdTime: true }. Fixed in commentController.js.
+
+---
+
+# Session Log — 2026-07-14 — Facebook Connected Account Profile Display + Narrowing Fix
+
+## What Happened
+
+### Part 1: Facebook Connected Account Profile Display
+1. **Goal**: Add a feature to `/settings/facebook-oauth` to display the profile picture and name of the currently authenticated Facebook personal account.
+2. **Backend**: Modified `GET /facebook-oauth/status` inside `facebookOAuthRoutes.js`. If a company has a stored `facebookUserAccessToken`, it fetches the profile information (id, name, picture) on-the-fly from the Meta Graph API `/me` endpoint and includes it as `facebookUser` in the JSON response.
+3. **Frontend**: Modified `FacebookOAuth.tsx` to extend `OAuthStatus` type and display a visual profile card containing the user's avatar image (or initials fallback) and name under the "الحساب المرتبط" label. This card displays dynamically in both connected (active pages) and disconnected (no active pages but authenticated) UI states.
+
+### Part 2: TypeScript Compilation & Narrowing Fix
+1. **TypeScript Bug**: Fixed a pre-existing TypeScript TS2367 narrowing error in `FacebookOAuth.tsx` where checking `page.canReconnect === false` inside a block already verified by `page.canReconnect !== false` caused a compile-time type overlap error. Simplified the disabled check to `disabled={loading}` since it is already guaranteed to not be false.
+
+### Part 3: Documentation Compliance
+1. **Verify Docs**: Documented the feature's architecture and modifications in `apps/backend/docs/infrastructure/facebook-oauth-connected-account.md` to pass the `verify-docs.js` compliance checks.
+2. **Logs Sync**: Updated `backend/Bugs.md`, `backend/Structure.md`, and `backend/TEAM_SYNC.md` with today's achievements.
+
+## Files Modified
+- `apps/backend/routes/facebookOAuthRoutes.js`
+- `apps/frontend/src/pages/settings/FacebookOAuth.tsx`
+- `apps/backend/docs/infrastructure/facebook-oauth-connected-account.md` [NEW]
+- `backend/Bugs.md`
+- `backend/Structure.md`
+- `backend/TEAM_SYNC.md`
