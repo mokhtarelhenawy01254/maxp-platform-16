@@ -79,16 +79,19 @@ async function syncPagePosts(pageId, companyId) {
     }
   } catch (error) {
     const graphError = error?.response?.data?.error || {};
+    const hasGraphError = !!error?.response?.data?.error;
+    const graphCode = graphError.code;
+    const graphMsg = graphError.message || '';
     const isPermissionError =
-      (graphError.code === 10 || graphError.code === 100) &&
-      /pages_read_engagement/i.test(graphError.message || '');
+      (graphCode === 10 || graphCode === 100) &&
+      /pages_read_engagement/i.test(graphMsg);
     if (isPermissionError) {
       throw new Error(
         `تعذرت مزامنة المنشورات: صلاحية صفحة الفيسبوك لا تحتوي على الإذن المطلوب. ` +
         `يرجى فصل الصفحة وإعادة ربطها لمنح جميع الأذونات المطلوبة.`
       );
     }
-    throw error;
+    throw new Error(`[DBG] hasGraphError=${hasGraphError} code=${graphCode} msg=${graphMsg.slice(0,120)} original=${error.message}`);
   }
 
   for (const fbPost of allPosts) {
