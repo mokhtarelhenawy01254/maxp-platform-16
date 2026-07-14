@@ -75,7 +75,10 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
     setUserSettings(loadUserSettings());
   }, []);
 
-  // Sync user layout preference from server on mount
+  // Sync user layout preference from server on mount.
+  // The server is the source of truth: if it returns sidebarLayout (even null),
+  // we use that value. Only fall back to localStorage when the server is
+  // unreachable or the property is missing from the response.
   useEffect(() => {
     const syncUserLayout = async () => {
       try {
@@ -84,9 +87,19 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
           { _skipErrorToast: true } as Record<string, unknown>,
         );
         if (res.data?.success && res.data?.data) {
-          const serverLayout = res.data.data.sidebarLayout;
+          const serverData = res.data.data;
+          // Use `in` check so that explicit `null` from the server (meaning
+          // "no override — use company default") is respected instead of being
+          // silently replaced by a stale localStorage value.
+          const resolvedLayout =
+            "sidebarLayout" in serverData
+              ? serverData.sidebarLayout
+              : undefined;
           setUserSettings((prev) => {
-            const next = { ...prev, sidebarLayout: serverLayout ?? prev.sidebarLayout };
+            const next = {
+              ...prev,
+              sidebarLayout: resolvedLayout !== undefined ? resolvedLayout : prev.sidebarLayout,
+            };
             saveUserSettings(next);
             return next;
           });

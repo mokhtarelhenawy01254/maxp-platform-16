@@ -1,5 +1,9 @@
 # System Structure & Architecture
 
+### Sidebar Navigation & Path Matching
+1. Refactored `isSidebarPathActive` in `matchSidebarPath.ts` to support generalized sub-path highlighting. It now returns true for sub-paths (e.g. `/orders/123` highlights `/orders`), while excluding root-level dashboards such as `/`, `/hr`, `/admin/booking`, and `/admin/education` to prevent duplicate active state styling.
+2. Extracted `NavLink` into a standalone, file-scoped component within `ClassicSidebar.tsx` to optimize React rendering performance and avoid reconciliation re-mount loops.
+
 ### API Endpoints
 1. Added Facebook connected user details to the `/facebook-oauth/status` endpoint:
    - `GET /api/v1/facebook-oauth/status` — Now queries the database for the company's `facebookUserAccessToken` and makes a Graph API request to `GET /me` (fields: `id,name,picture`) to fetch the connected Facebook personal account profile info. Returns `facebookUser: { id, name, picture } | null`.

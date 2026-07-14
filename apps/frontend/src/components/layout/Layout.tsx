@@ -290,7 +290,14 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         items: section.items.filter(
           (item) =>
             item.label.toLowerCase().includes(query) ||
-            section.title.toLowerCase().includes(query),
+            item.to.toLowerCase().includes(query) ||
+            section.title.toLowerCase().includes(query) ||
+            (item.children &&
+              item.children.some(
+                (child) =>
+                  child.label.toLowerCase().includes(query) ||
+                  child.to.toLowerCase().includes(query),
+              )),
         ),
       }))
       .filter((section) => section.items.length > 0);

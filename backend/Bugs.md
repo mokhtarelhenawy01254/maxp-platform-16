@@ -1,5 +1,31 @@
 # Backend Bugs Log
 
+### [BUG FIX / UI] Sidebar Layout Preference Reset & Company Override Mismatches
+- **Date**: 2026-07-14
+- **Root Cause**:
+  1. The `syncUserLayout` mount handler in `SidebarSettingsContext.tsx` used the nullish coalescing operator (`serverLayout ?? prev.sidebarLayout`). When the user explicitly reset their custom sidebar layout to null (meaning "use company default"), the server stored `null` successfully. However, on subsequent page reloads, the local context evaluated `null ?? prev.sidebarLayout` to the stale cached localStorage value, causing it to override the server's null layout and persist the cached layout indefinitely.
+  2. When the company admin updated the organization-level layout in `CompanySettings.tsx`, it did not clear the user's local layout override. Since `Layout.tsx` resolves layout as `userLayout || company.sidebarLayout`, the personal override masked the new company setting, making it appear stuck.
+- **Resolution**:
+  1. Updated `syncUserLayout` to check if `sidebarLayout` property is returned by the server (using `"sidebarLayout" in serverData`), and if so, overwriting localStorage and local state even if the value is explicitly `null`.
+  2. In `CompanySettings.tsx`, injected `useSidebarSettings` context and updated the company layout change handler to call `setUserLayout(null)` to clear any active per-user override, forcing immediate adoption of the company's new layout default.
+- **Files Modified**:
+  - `apps/frontend/src/contexts/SidebarSettingsContext.tsx`
+  - `apps/frontend/src/pages/settings/CompanySettings.tsx`
+
+### [BUG FIX / CONFIG] Sidebar Feature Gating & Mobile Navigation Defects
+- **Date**: 2026-07-14
+- **Root Cause**: Two key bugs were identified in the sidebar configuration and mobile rendering:
+  1. The `isFeatureEnabled` function in `sidebar.ts` ignored the passed `key` parameter and evaluated `currentCompany?.aiToolsEnabled === true` unconditionally, which broke custom feature flag validation rules.
+  2. Mobile main navigation items (rendered via `NavLink`) did not trigger `toggleSidebar`, keeping the drawer open after selecting a page.
+  3. Duplicate imports of `GiftIcon` and incorrect section headers caused redundant payload issues.
+- **Resolution**:
+  1. Fixed `isFeatureEnabled` in `sidebar.ts` by mapping the key parameter to a structured dictionary `FEATURE_FLAG_MAP`.
+  2. Extracted `NavLink` to file scope and passed `toggleSidebar` in mobile mode.
+  3. Cleaned up imports and section header comments.
+- **Files Modified**:
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/components/layout/sidebar/ClassicSidebar.tsx`
+
 ### [BUG FIX / PIPELINE] AI Agent Sandbox Active Skill Context Trace Loss
 - **Date**: 2026-07-14
 - **Root Cause**: The Sandbox interface contains visual logs, active skill badges, and trace boxes designed to display which modular skill (such as `catalog-search` or `booking_packages`) was used to generate each response. However, `active_skill_context` was defined on `PipelineContext` in the Python `ai-service` but never actually populated during execution inside `skills_pipeline.py`. As a result, the backend always returned `activeSkill: null`, causing the sandbox UI to hide the active skill badge on chat replies and leave the trace logs blank.

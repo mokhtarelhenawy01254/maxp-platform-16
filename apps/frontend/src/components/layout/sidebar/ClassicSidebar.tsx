@@ -27,6 +27,107 @@ interface ClassicSidebarProps {
   setSearchQuery: (query: string) => void;
 }
 
+interface NavLinkProps {
+  to: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  external?: boolean;
+  badge?: string;
+  isCollapsed: boolean;
+  currentPath: string;
+  user: any;
+  onClick?: () => void;
+}
+
+const NavLink: React.FC<NavLinkProps> = ({
+  to,
+  icon,
+  children,
+  external,
+  badge,
+  isCollapsed,
+  currentPath,
+  user,
+  onClick,
+}) => {
+  const isActive = !external && isSidebarPathActive(currentPath, to);
+  const prefetch = useRoutePrefetch();
+
+  if (external) {
+    const slug = user?.company?.slug;
+    const companyId = user?.companyId || user?.company?.id;
+    const customDomain = user?.company?.customDomain;
+    let shopUrl = to;
+
+    if (slug && slug.trim().length > 0) {
+      shopUrl = buildStoreUrl(
+        slug,
+        to,
+        customDomain || undefined,
+        companyId || undefined,
+      );
+    }
+
+    return (
+      <a
+        href={shopUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+        title={isCollapsed ? (children as string) : undefined}
+        onClick={onClick}
+      >
+        <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors mr-3">
+          {React.isValidElement(icon) &&
+            React.cloneElement(icon as React.ReactElement, {
+              className: "h-5 w-5",
+            })}
+        </span>
+        {!isCollapsed && (
+          <span className="text-sm font-medium truncate flex items-center gap-2">
+            {children}
+            {badge && (
+              <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                {badge}
+              </span>
+            )}
+          </span>
+        )}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to={to}
+      className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+        isActive
+          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+      } `}
+      title={isCollapsed ? (children as string) : undefined}
+      onMouseEnter={() => prefetch(to)}
+      onClick={onClick}
+    >
+      <span
+        className={`${
+          isActive
+            ? "text-white"
+            : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+        } transition-colors ${isCollapsed ? "mr-0" : "mr-3"} `}
+      >
+        {React.isValidElement(icon) &&
+          React.cloneElement(icon as React.ReactElement, {
+            className: "h-5 w-5",
+          })}
+      </span>
+      {!isCollapsed && (
+        <span className="text-sm font-medium truncate">{children}</span>
+      )}
+    </Link>
+  );
+};
+
 const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
   isCollapsed,
   mobileMode = false,
@@ -44,91 +145,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
   const searchInputId = useId();
   const prefetch = useRoutePrefetch();
 
-  // Helper for navigation links
-  const NavLink: React.FC<{
-    to: string;
-    icon: React.ReactNode;
-    children: React.ReactNode;
-    external?: boolean;
-    badge?: string;
-  }> = ({ to, icon, children, external, badge }) => {
-    const isActive = !external && isSidebarPathActive(currentPath, to);
-    const prefetch = useRoutePrefetch();
 
-    if (external) {
-      const slug = user?.company?.slug;
-      const companyId = user?.companyId || user?.company?.id;
-      const customDomain = user?.company?.customDomain;
-      console.log(
-        "🔍 [ClassicSidebar] slug:",
-        slug,
-        "customDomain:",
-        customDomain,
-      );
-      let shopUrl = to;
-
-      if (slug && slug.trim().length > 0) {
-        shopUrl = buildStoreUrl(
-          slug,
-          to,
-          customDomain || undefined,
-          companyId || undefined,
-        );
-        console.log("🔗 [ClassicSidebar] Generated shopUrl:", shopUrl);
-      }
-
-      return (
-        <a
-          href={shopUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
-          title={isCollapsed ? (children as string) : undefined}
-        >
-          <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors mr-3">
-            {React.isValidElement(icon) &&
-              React.cloneElement(icon as React.ReactElement, {
-                className: "h-5 w-5",
-              })}
-          </span>
-          {!isCollapsed && (
-            <span className="text-sm font-medium truncate flex items-center gap-2">
-              {children}
-              {badge && (
-                <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
-                  {badge}
-                </span>
-              )}
-            </span>
-          )}
-        </a>
-      );
-    }
-
-    return (
-      <Link
-        to={to}
-        className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive
-            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
-            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
-          } `}
-        title={isCollapsed ? (children as string) : undefined}
-        onMouseEnter={() => prefetch(to)}
-      >
-        <span
-          className={`${isActive ? "text-white" : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"} transition-colors ${isCollapsed ? "mr-0" : "mr-3"} `}
-        >
-          {React.isValidElement(icon) &&
-            React.cloneElement(icon as React.ReactElement, {
-              className: "h-5 w-5",
-            })}
-        </span>
-        {!isCollapsed && (
-          <span className="text-sm font-medium truncate">{children}</span>
-        )}
-      </Link>
-    );
-  };
 
   // Close mobile on Escape
   useEffect(() => {
@@ -211,6 +228,10 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                                 to={item.to}
                                 icon={item.icon}
                                 external={!!item.external}
+                                isCollapsed={isCollapsed}
+                                currentPath={currentPath}
+                                user={user}
+                                onClick={mobileMode ? toggleSidebar : undefined}
                                 {...(item.badge ? { badge: item.badge } : {})}
                               >
                                 {item.label}
@@ -429,6 +450,9 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                             to={item.to}
                             icon={item.icon}
                             external={!!item.external}
+                            isCollapsed={isCollapsed}
+                            currentPath={currentPath}
+                            user={user}
                             {...(item.badge ? { badge: item.badge } : {})}
                           >
                             {item.label}

@@ -29,6 +29,24 @@ export const isSidebarPathActive = (
     );
   }
 
+  // Base dashboard paths that have distinct sibling sub-paths in the sidebar.
+  // We do not want to highlight these parent paths when viewing their sub-paths.
+  const baseDashboardPaths = [
+    "/",
+    "/hr",
+    "/admin/booking",
+    "/admin/education"
+  ];
+
+  const isBaseDashboard = baseDashboardPaths.includes(target.pathname);
+
+  if (
+    !isBaseDashboard &&
+    current.pathname.startsWith(target.pathname + "/")
+  ) {
+    return true;
+  }
+
   if (current.pathname !== target.pathname) {
     return false;
   }

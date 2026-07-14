@@ -1,6 +1,15 @@
 # Team Sync Updates
 
 ## 2026-07-14 / 2026-03-09
+- **Sidebar Layout Persistence & Company Override Resolution (UI/UX / COMPLETE)**: Fixed the sidebar layout "getting stuck" when changing layouts:
+  1. Resolved a race condition in `SidebarSettingsContext.tsx` where the nullish coalescing operator `serverLayout ?? prev.sidebarLayout` overrode `null` server responses with stale localStorage layouts, preventing users from resetting layout to default.
+  2. Integrated `useSidebarSettings` in `CompanySettings.tsx` to automatically call `setUserLayout(null)` when the company admin changes the organization-level layout template, clearing active per-user overrides and ensuring immediate alignment with the new corporate layout default.
+- **Sidebar Architecture & Path Matching Overhaul (UI/UX / COMPLETE)**: Audited and resolved 18 weaknesses across the sidebar config and components:
+  1. Decoupled `NavLink` from `ClassicSidebar` to prevent performance drops and unnecessary re-mounts on render.
+  2. Implemented general sub-path matching inside `isSidebarPathActive` to highlight parent sidebar links when visiting sub-routes (e.g. `/orders/123` highlights `/orders`), while keeping base dashboards isolated.
+  3. Upgraded sidebar search filter to scan item URLs and nested child links.
+  4. Configured mobile view to auto-close the sidebar when main navigation links are selected.
+  5. Cleaned up duplicated imports, hardcoded Arabic strings, and section numbering comments in `sidebar.ts`.
 - **AI Agent Sandbox Skills Display & Tracing (UI/UX / COMPLETE)**: Added a dedicated skills display bar below the HeaderBar in the Sandbox testing tab (`/admin/ai-hub?tab=sandbox`) to show the display name and description of all skills assigned to the currently selected agent. Additionally, resolved an active skill trace loss bug in the Python `ai-service` pipeline (`skills_pipeline.py`) by setting `ctx.active_skill_context` upon skill execution, and updated the frontend `ChatArea.tsx` to map raw skill IDs to localized friendly display names (`displayName`) on chat bubble badges.
 - **Facebook OAuth App Config Consolidation (FEATURE / COMPLETE)**: Unified fallback Facebook app configurations by reading `appId` and `appSecret` dynamically from `facebook-oauth-config.json` as the single source of truth, removing hardcoded credentials from `facebookAppConfig.js`, and ensuring Meta webhook verification reads the correct secret.
 - **Facebook Connected Account Profile Display (FEATURE / COMPLETE)**: Enhanced the Facebook OAuth settings page to display the profile details (name and avatar) of the currently authenticated Facebook personal account:

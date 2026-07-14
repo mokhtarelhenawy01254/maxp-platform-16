@@ -832,7 +832,7 @@ export const getSidebarConfig = (
             hidden: !isAppActive('partner-program'),
         },
 
-        // 4️⃣.5 المخزون
+        // 4️⃣.7 المخزون
         {
             id: 'inventory',
             title: t('sidebar.inventorySection'),
@@ -940,7 +940,6 @@ export const getSidebarConfig = (
         }] : []),
 
         // 7️⃣ الموارد البشرية (للإدارة)
-        // 7️⃣ الموارد البشرية (للإدارة)
         ...(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'].includes(user?.role || '') ? [{
             id: 'hr',
             title: t('sidebar.hrSection'),
@@ -979,7 +978,7 @@ export const getSidebarConfig = (
             hidden: !isAppActive('hr-basic')
         }] : []),
 
-        // 7️⃣ المواعيد
+        // 7️⃣.5 المواعيد
         {
             id: 'appointments',
             title: t('sidebar.appointments'),
