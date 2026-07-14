@@ -31,8 +31,19 @@ const syncPosts = async (req, res) => {
     const result = await fbPostService.syncPagePosts(pageId, user.companyId);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('[FB-POST] Error syncing posts:', error);
-    res.status(500).json({ success: false, error: error.message });
+    const errMsg = error?.message || '';
+    const raw = error?.response?.data?.error || {};
+    const isPermErr = (raw.code === 10 || raw.code === 100) &&
+      /pages_read_engagement/i.test(raw.message || '') ||
+      /pages_read_engagement/i.test(errMsg);
+    if (isPermErr) {
+      return res.status(400).json({
+        success: false,
+        error: `تعذرت مزامنة المنشورات: صلاحية صفحة الفيسبوك لا تحتوي على الإذن المطلوب. يرجى فصل الصفحة وإعادة ربطها لمنح جميع الأذونات المطلوبة.`
+      });
+    }
+    console.error('[FB-POST] Error syncing posts:', errMsg);
+    res.status(500).json({ success: false, error: errMsg || 'Sync failed' });
   }
 };
 
