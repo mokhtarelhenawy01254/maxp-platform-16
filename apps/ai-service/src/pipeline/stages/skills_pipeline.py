@@ -57,9 +57,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         except Exception as e:
             logger.warning("skills_filter_failed", error=str(e))
     if not skills:
-        logger.warning("no_skills_available")
-        ctx.final_reply = "عذراً، لا توجد أدوات متاحة حالياً."
-        return ctx
+        logger.warning("no_skills_available_using_allowed_tools_fallback")
 
     # 3. Build system prompt with agent instructions (soul/persona from DB agent)
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
