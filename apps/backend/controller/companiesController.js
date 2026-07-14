@@ -1430,11 +1430,25 @@ const createnewUserForCompany = async (req, res) => {
     } = req.body;
     
     const role = req.body.role || "AGENT";
+    let roleId = req.body.roleId || null;
+
+    const VALID_ROLE_ENUMS = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER", "AGENT", "AFFILIATE"];
+
+    if (!roleId && role) {
+      const roleRecord = await getSharedPrismaClient().role.findFirst({
+        where: { key: role, companyId: companyId },
+      });
+      if (roleRecord) {
+        roleId = roleRecord.id;
+      }
+    }
+
+    const ucRole = VALID_ROLE_ENUMS.includes(role) ? role : "AGENT";
 
     console.log(
       `👤 [CREATE-USER] Request to create user for company: ${companyId}`,
     );
-    console.log(`📧 [CREATE-USER] Email: ${email}, Role: ${role}`);
+    console.log(`📧 [CREATE-USER] Email: ${email}, Role: ${role}${roleId ? ` (roleId: ${roleId})` : ""}`);
     console.log(
       `🔐 [CREATE-USER] Requester: ${req.user?.email}, Role: ${req.user?.role}`,
     );
@@ -1504,7 +1518,8 @@ const createnewUserForCompany = async (req, res) => {
         data: {
           userId: existingUser.id,
           companyId: companyId,
-          role: role,
+          role: ucRole,
+          roleId: roleId,
           isActive: isActive,
           isDefault: false,
         },
@@ -1626,7 +1641,8 @@ const createnewUserForCompany = async (req, res) => {
         data: {
           userId: newUser.id,
           companyId: companyId,
-          role: role,
+          role: ucRole,
+          roleId: roleId,
           isActive: isActive,
           isDefault: true,
         },
