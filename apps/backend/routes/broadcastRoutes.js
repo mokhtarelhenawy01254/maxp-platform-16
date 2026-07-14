@@ -168,6 +168,18 @@ router.get(
   broadcastController.getCustomersInList
 );
 
+/**
+ * @route   DELETE /api/v1/broadcast/customer-lists/:listId
+ * @desc    حذف قائمة عملاء
+ * @access  Private (Company Access)
+ */
+router.delete(
+  '/customer-lists/:listId',
+  verifyToken.authenticateToken,
+  verifyToken.requireCompanyAccess,
+  broadcastController.deleteCustomerList
+);
+
 // ==================== SETTINGS ROUTES ====================
 
 /**

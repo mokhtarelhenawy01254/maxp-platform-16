@@ -1842,6 +1842,22 @@ exports.getCustomersInList = async (req, res) => {
   }
 };
 
+exports.deleteCustomerList = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { listId } = req.params;
+    const list = await getSharedPrismaClient().customerList.findFirst({
+      where: { id: listId, companyId }
+    });
+    if (!list) return res.status(404).json({ success: false, message: 'القائمة غير موجودة' });
+    if (list.isDefault) return res.status(400).json({ success: false, message: 'لا يمكن حذف قائمة افتراضية' });
+    await getSharedPrismaClient().customerList.delete({ where: { id: listId } });
+    res.json({ success: true, message: 'تم حذف القائمة' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'فشل في حذف القائمة', error: error.message });
+  }
+};
+
 // ==================== SETTINGS ====================
 
 /**

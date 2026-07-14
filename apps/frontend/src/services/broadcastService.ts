@@ -325,6 +325,10 @@ class BroadcastService {
     return this.makeRequest(`/broadcast/customer-lists/${listId}/customers`);
   }
 
+  async deleteCustomerList(listId: string): Promise<any> {
+    return this.makeRequest(`/broadcast/customer-lists/${listId}`, { method: "DELETE" });
+  }
+
   // Settings methods
   async getSettings(): Promise<BroadcastSettings> {
     return this.makeRequest("/broadcast/settings");

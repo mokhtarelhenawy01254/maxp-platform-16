@@ -72,6 +72,9 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [analytics, setAnalytics] = useState<any>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null);
+  const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  const [listMembers, setListMembers] = useState<Record<string, any[]>>({});
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   const withCompanyConfig = useCallback(
     (config: ApiRequestConfig = {}) => companyId ? { ...config, _companyId: companyId } : config, [companyId],
@@ -590,28 +593,87 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         {/* ===================== CUSTOMER LISTS TAB ===================== */}
         <TabsContent value="lists" className="space-y-6">
           <Card className="rounded-2xl">
-            <CardHeader><CardTitle className="text-lg">قوائم العملاء</CardTitle>
-              <CardDescription>إدارة قوائم العملاء لاستخدامها في الحملات</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {customerLists.length === 0 ? (
-                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا توجد قوائم عملاء</p>
-              ) : (
-                <div className="grid gap-3">
-                  {customerLists.map((l) => (
-                    <div key={l.id} className="flex items-center justify-between p-3 rounded-xl border">
-                      <div>
-                        <p className="font-medium">{l.name}</p>
-                        <p className="text-sm text-[color:var(--color-muted-foreground)]">{l.description || `${l.count} عميل`}</p>
-                      </div>
-                      <Badge variant="secondary">{l.count}</Badge>
-                    </div>
-                  ))}
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">قوائم العملاء</CardTitle>
+                  <CardDescription>إدارة قوائم العملاء لاستخدامها في حملات واتساب</CardDescription>
                 </div>
+                <Button variant="outline" className="rounded-full" onClick={async () => {
+                  const name = prompt("اسم القائمة الجديدة:");
+                  if (!name) return;
+                  try {
+                    await broadcastService.createCustomerList({
+                      name, description: "", criteria: { type: "all" }
+                    } as any);
+                    toast.success("تم إنشاء القائمة");
+                    fetchCustomerLists();
+                  } catch { toast.error("فشل إنشاء القائمة"); }
+                }}>
+                  <UserPlus className="size-4" /> قائمة جديدة
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {customerLists.length === 0 ? (
+                <div className="text-center py-8 text-[color:var(--color-muted-foreground)]">
+                  <List className="mx-auto size-10 opacity-40" />
+                  <p className="mt-2">لا توجد قوائم عملاء. أنشئ قائمة جديدة للبدء.</p>
+                </div>
+              ) : (
+                customerLists.map((l) => {
+                  const isExpanded = expandedListId === l.id;
+                  const members = listMembers[l.id] || [];
+                  return (
+                    <div key={l.id} className="rounded-xl border">
+                      <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-[color:var(--color-muted)]/30"
+                        onClick={async () => {
+                          if (isExpanded) { setExpandedListId(null); return; }
+                          setExpandedListId(l.id);
+                          if (members.length === 0 && l.count > 0) {
+                            setLoadingMembers(true);
+                            try {
+                              const res = await broadcastService.getCustomersInList(l.id);
+                              setListMembers(prev => ({ ...prev, [l.id]: Array.isArray(res) ? res : res?.data || [] }));
+                            } catch { }
+                            finally { setLoadingMembers(false); }
+                          }
+                        }}>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium">{l.name}</p>
+                          <p className="text-sm text-[color:var(--color-muted-foreground)] truncate">{l.description || `${l.count} عميل`}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="secondary">{l.count}</Badge>
+                          {!l.isDefault && (
+                            <button onClick={(e) => { e.stopPropagation();
+                              if (confirm("حذف القائمة؟")) broadcastService.deleteCustomerList(l.id).then(() => { toast.success("تم الحذف"); fetchCustomerLists(); }).catch(() => toast.error("فشل الحذف"));
+                            }} className="p-1.5 rounded-full hover:bg-red-500/10 text-red-500">
+                              <XCircle className="size-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {isExpanded && (
+                        <div className="border-t px-3 py-3 space-y-2 max-h-48 overflow-y-auto">
+                          {loadingMembers ? (
+                            <p className="text-sm text-[color:var(--color-muted-foreground)]">جاري التحميل...</p>
+                          ) : members.length === 0 ? (
+                            <p className="text-sm text-[color:var(--color-muted-foreground)]">لا يوجد عملاء في هذه القائمة</p>
+                          ) : (
+                            members.map((m: any, i: number) => (
+                              <div key={i} className="flex items-center justify-between text-sm py-1">
+                                <span>{m.firstName || m.name || "?"} {m.lastName || ""}</span>
+                                <span className="text-[color:var(--color-muted-foreground)]" dir="ltr">{m.phone || ""}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
-              <Button variant="outline" className="rounded-full" onClick={() => window.open("/broadcast", "_blank")}>
-                <List className="size-4" /> إدارة القوائم في صفحة البرودكاست
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
