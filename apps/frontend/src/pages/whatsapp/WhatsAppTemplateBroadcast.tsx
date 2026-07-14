@@ -304,18 +304,13 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                   </div>
 
                   {selectedTemplate && (
-                    <div className="space-y-2">
-                      <Label>متغيرات القالب</Label>
-                      <div className="flex gap-2">
-                        <Input value={templateVars[0] || ""}
-                          onChange={e => setTemplateVars([e.target.value, ...templateVars.slice(1)])}
-                          placeholder="اسم العميل ({{1}})" className="h-11" />
-                        <Button variant="outline" size="sm" onClick={() => setTemplateVars([])}>
-                          <X className="size-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                        أدخل قيمة المتغير الأول في القالب ({"{1}"})
+                    <div className="space-y-2 rounded-2xl border border-emerald-200/80 bg-emerald-500/5 p-4">
+                      <Label className="text-emerald-800 flex items-center gap-2">
+                        <CheckCircle className="size-4" /> تخصيص الرسالة
+                      </Label>
+                      <p className="text-xs text-emerald-700">
+                        سيتم تعبئة {"{1}"} تلقائياً باسم العميل الأول. {"{2}"} = اسم العائلة.
+                        القوالب بدون متغيرات لن تتأثر.
                       </p>
                     </div>
                   )}

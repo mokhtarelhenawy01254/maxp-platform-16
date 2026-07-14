@@ -801,9 +801,22 @@ exports.sendCampaign = async (req, res) => {
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
           const waSessionId = companyId ? `company:${companyId}` : null;
 
+          // Build template body parameters from customer data
+          const bodyParams = [];
+          if (conv.customer.firstName) {
+            bodyParams.push({ type: 'text', text: conv.customer.firstName });
+          }
+          if (conv.customer.lastName) {
+            bodyParams.push({ type: 'text', text: conv.customer.lastName });
+          }
+
+          const components = bodyParams.length > 0
+            ? [{ type: 'body', parameters: bodyParams }]
+            : [];
+
           const result = await WhatsAppMessageHandler.sendTemplateMessage(
             waSessionId, to, campaign.waTemplateName,
-            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
+            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
             { metadata: { isBroadcast: true, campaignId: campaign.id } }
           );
 
