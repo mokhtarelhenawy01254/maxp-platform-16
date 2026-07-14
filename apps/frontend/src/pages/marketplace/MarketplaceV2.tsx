@@ -44,6 +44,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getMarketplaceFeatureItems } from "./featureCatalog";
+import { FacebookIcon } from "../../components/icons/brands";
 
 interface MarketplaceApp {
   id: string;
@@ -145,6 +146,10 @@ const appIcons: Record<string, LucideIcon> = {
   truck: Truck,
   "file-text": FileText,
   percent: Percent,
+};
+
+const brandIconsBySlug: Record<string, React.ElementType> = {
+  "facebook-ads-pro": FacebookIcon,
 };
 
 const categoryGradients: Record<string, string> = {
@@ -675,6 +680,7 @@ export default function MarketplaceV2() {
       {/* Pricing Dialog */}
       <Dialog open={!!showPricingDialog} onOpenChange={(o) => !o && setShowPricingDialog(null)}>
         {showPricingDialog && (() => {
+          const pricingBrandIcon = showPricingDialog.slug ? brandIconsBySlug[showPricingDialog.slug] : undefined;
           const pricingIconKey = showPricingDialog.icon?.trim().toLowerCase();
           const PricingIcon = pricingIconKey ? appIcons[pricingIconKey] : undefined;
           const Icon = PricingIcon || categoryIcons[showPricingDialog.category] || Package;
@@ -683,7 +689,7 @@ export default function MarketplaceV2() {
               <DialogHeader>
                 <div className="flex items-center gap-4">
                   <div className="flex size-14 items-center justify-center rounded-2xl border bg-primary/10 text-primary shadow-sm">
-                    <Icon size={26} />
+                    {pricingBrandIcon ? <pricingBrandIcon className="size-7" /> : <Icon size={26} />}
                   </div>
                   <div>
                     <DialogTitle className="text-lg">{showPricingDialog.name}</DialogTitle>
@@ -782,6 +788,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
   onUninstall: (app: MarketplaceApp) => void;
 }) {
   const { t } = useTranslation();
+  const brandIcon = app.slug ? brandIconsBySlug[app.slug] : undefined;
   const appIconKey = app.icon?.trim().toLowerCase();
   const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
   const Icon = AppIcon || categoryIcons[app.category] || Package;
@@ -832,12 +839,12 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
               <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent" />
               {app.coverImage ? (
                 <div className="absolute bottom-2.5 right-3 flex size-9 items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm shadow-sm text-primary">
-                  {textIcon || <Icon size={17} />}
+                  {brandIcon ? <brandIcon className="size-[17px]" /> : textIcon || <Icon size={17} />}
                 </div>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex size-[44px] items-center justify-center rounded-2xl bg-background/20 text-primary/70">
-                    {textIcon ? <span className="text-2xl">{textIcon}</span> : <Icon size={24} />}
+                    {brandIcon ? <brandIcon className="size-6" /> : textIcon ? <span className="text-2xl">{textIcon}</span> : <Icon size={24} />}
                   </div>
                 </div>
               )}
@@ -926,7 +933,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
           <div className="p-4 border-b border-border/40">
             <div className="flex items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                {textIcon || <Icon size={20} />}
+                {brandIcon ? <brandIcon className="size-5" /> : textIcon || <Icon size={20} />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

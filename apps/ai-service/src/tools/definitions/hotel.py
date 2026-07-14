@@ -5,7 +5,7 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools import hotel_tools
+from src.tools.backend_client import api_get, api_post
 
 
 class InfoInput(BaseModel):
@@ -39,40 +39,54 @@ class CancelReservationInput(BaseModel):
 
 
 async def hotel_info(input_data: InfoInput) -> dict[str, Any]:
-    """Returns ALL hotel info: properties and their room types."""
-    return await hotel_tools.get_hotel_info(input_data.company_id)
+    data = await api_get(f"/hotel/properties?companyId={input_data.company_id}")
+    if not data.get("success"):
+        return {"error": "حدث خطأ في جلب معلومات الفندق"}
+    return {"hotels": data.get("data", [])}
 
 async def hotel_check_availability(input_data: CheckAvailabilityInput) -> dict[str, Any]:
-    """Checks available room types for given dates."""
-    return await hotel_tools.check_availability(
-        company_id=input_data.company_id,
-        check_in=input_data.check_in,
-        check_out=input_data.check_out,
-        property_id=input_data.property_id or None,
-    )
+    params = f"checkIn={input_data.check_in}&checkOut={input_data.check_out}"
+    if input_data.property_id:
+        params += f"&propertyId={input_data.property_id}"
+    params += f"&companyId={input_data.company_id}"
+    data = await api_get(f"/hotel/availability?{params}")
+    if not data.get("success"):
+        return {"error": "حدث خطأ في التحقق من التوفر"}
+    return {"available_room_types": data.get("data", [])}
 
 async def hotel_reserve(input_data: ReserveInput) -> dict[str, Any]:
-    """Creates a hotel reservation for a guest."""
-    return await hotel_tools.reserve_rooms(
-        company_id=input_data.company_id,
-        customer_name=input_data.customer_name,
-        customer_phone=input_data.customer_phone,
-        check_in=input_data.check_in,
-        check_out=input_data.check_out,
-        property_id=input_data.property_id,
-        rooms=input_data.rooms,
-        adults=input_data.adults,
-        children=input_data.children,
-        customer_notes=input_data.customer_notes,
-    )
+    payload = {
+        "companyId": input_data.company_id,
+        "customerName": input_data.customer_name,
+        "customerPhone": input_data.customer_phone,
+        "checkIn": input_data.check_in,
+        "checkOut": input_data.check_out,
+        "propertyId": input_data.property_id,
+        "rooms": input_data.rooms,
+        "adults": input_data.adults,
+        "children": input_data.children,
+        "customerNotes": input_data.customer_notes,
+        "source": "whatsapp",
+        "createdByType": "ai_service",
+    }
+    data = await api_post("/hotel/reservations", payload)
+    if not data.get("success"):
+        return {"error": data.get("error", "حدث خطأ في إنشاء الحجز")}
+    return {"reservation": data.get("data", {})}
 
 async def hotel_my_reservations(input_data: MyReservationsInput) -> dict[str, Any]:
-    """Returns all reservations for a guest by phone number."""
-    return await hotel_tools.get_my_reservations(input_data.company_id, input_data.phone)
+    data = await api_get(f"/hotel/reservations?companyId={input_data.company_id}")
+    if not data.get("success"):
+        return {"error": "حدث خطأ في جلب الحجوزات"}
+    reservations = data.get("data", [])
+    customer_reservations = [r for r in reservations if r.get("customerPhone") == input_data.phone]
+    return {"reservations": customer_reservations}
 
 async def hotel_cancel_reservation(input_data: CancelReservationInput) -> dict[str, Any]:
-    """Cancels a reservation by ID."""
-    return await hotel_tools.cancel_reservation(input_data.company_id, input_data.reservation_id)
+    data = await api_post(f"/hotel/reservations/{input_data.reservation_id}/status", {"status": "CANCELLED", "companyId": input_data.company_id})
+    if not data.get("success"):
+        return {"error": data.get("error", "حدث خطأ في إلغاء الحجز")}
+    return {"result": "تم إلغاء الحجز بنجاح", "reservation": data.get("data", {})}
 
 
 hotel_info_tool = FunctionTool(
