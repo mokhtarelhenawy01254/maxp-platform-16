@@ -9244,9 +9244,9 @@ model Customer {
   returnRequests                 ReturnRequest[]
   whatsAppContacts               WhatsAppContact[]
   whatsapp_notification_logs     WhatsAppNotificationLog[]
-  customerJourneys               CustomerJourney[]
-
-  @@unique([facebookId, companyId])
+   customerJourneys               CustomerJourney[]
+ 
+   @@unique([facebookId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])
   @@index([companyId])
