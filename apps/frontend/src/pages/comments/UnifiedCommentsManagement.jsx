@@ -1,8 +1,15 @@
+<<<<<<< Updated upstream
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDebounce } from "../../hooks/useDebounce";
 import { toast } from "sonner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useTranslation } from "react-i18next";
+=======
+import React, { useState, useEffect, useMemo } from "react";
+import { useDebounce } from "../../hooks/useDebounce";
+
+const dateFt = new Intl.DateTimeFormat("ar-EG");
+>>>>>>> Stashed changes
 import { useNavigate, useParams } from "react-router-dom";
 import CommentService from "../../services/commentService";
 import {
@@ -47,6 +54,7 @@ const UnifiedCommentsManagement = () => {
   const [replyText, setReplyText] = useState("");
   const [searchInput, setSearchInput] = useState(filters.search);
   const debouncedSearch = useDebounce(searchInput, 300);
+<<<<<<< Updated upstream
   const [confirmState, setConfirmState] = useState(null);
   const executeDelete = useCallback((commentId) => {
     CommentService.deleteFacebookComment(commentId).then((result) => {
@@ -68,6 +76,8 @@ const UnifiedCommentsManagement = () => {
       toast.error("حدث خطأ أثناء حذف التعليقات: " + error.message);
     });
   }, [selectedComments, activePostId]);
+=======
+>>>>>>> Stashed changes
 
   // Fetch posts
   const fetchPosts = async () => {
@@ -250,6 +260,7 @@ const UnifiedCommentsManagement = () => {
     }
   }, [debouncedSearch]);
 
+<<<<<<< Updated upstream
   useEffect(() => {
     const handlePop = () => {
       const match = window.location.pathname.match(/^\/unified-comments\/(.+)/);
@@ -259,6 +270,8 @@ const UnifiedCommentsManagement = () => {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
+=======
+>>>>>>> Stashed changes
   // If we're viewing comments for a specific post
   if (activePostId) {
     return (

@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+<<<<<<< Updated upstream
   Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, Eye, MousePointerClick, Reply, List,
+=======
+  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, ChartBar, Eye, MousePointerClick, Reply, List,
+>>>>>>> Stashed changes
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,11 +62,17 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [selectedListId, setSelectedListId] = useState("");
   const [recipientsText, setRecipientsText] = useState("");
   const [recipients, setRecipients] = useState<string[]>([]);
+<<<<<<< Updated upstream
   const [scheduleAt, setScheduleAt] = useState("");
   const [templateVars, setTemplateVars] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number; status: string } | null>(null);
+=======
+  const [sendNow, setSendNow] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<any>(null);
+>>>>>>> Stashed changes
 
   // Campaigns history
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -71,10 +81,13 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   // Analytics
   const [analytics, setAnalytics] = useState<any>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+<<<<<<< Updated upstream
   const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null);
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [listMembers, setListMembers] = useState<Record<string, any[]>>({});
   const [loadingMembers, setLoadingMembers] = useState(false);
+=======
+>>>>>>> Stashed changes
 
   const withCompanyConfig = useCallback(
     (config: ApiRequestConfig = {}) => companyId ? { ...config, _companyId: companyId } : config, [companyId],
@@ -151,6 +164,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     try {
       setSending(true);
       setResult(null);
+<<<<<<< Updated upstream
       setSendProgress({ current: 0, total: recipients.length, status: "sending" });
 
       const body = {
@@ -193,6 +207,36 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     }
   }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, templateVars, scheduleAt, withCompanyConfig, fetchCampaigns]);
 
+=======
+
+      const body = {
+        name: campaignName,
+        channel: "whatsapp",
+        message: `WhatsApp broadcast: ${selectedTemplate}`,
+        targetAudience: selectedListId || "manual",
+        waTemplateName: selectedTemplate,
+        waLanguageCode: languageCode,
+        sendNow: true,
+      };
+
+      const campaignRes = await broadcastService.createCampaign(
+        Object.entries(body).reduce((fd, [k, v]) => { fd.append(k, String(v)); return fd; }, new FormData())
+      );
+      const campaignId = campaignRes?.data?.id || campaignRes?.id;
+
+      const sendRes = await broadcastService.sendCampaign(campaignId);
+      setResult(sendRes);
+      toast.success("تم إرسال الحملة بنجاح");
+      fetchCampaigns();
+    } catch (err: any) {
+      toast.error(err?.message || "فشل");
+      setResult({ sent: 0, failed: 0, errors: [{ error: err?.message }] });
+    } finally {
+      setSending(false);
+    }
+  }, [campaignName, selectedTemplate, languageCode, recipients, selectedListId, withCompanyConfig, fetchCampaigns]);
+
+>>>>>>> Stashed changes
   const openRate = (c: Campaign) =>
     c.sentCount > 0 ? Math.round((c.openedCount / c.sentCount) * 100) : 0;
   const clickRate = (c: Campaign) =>
@@ -214,7 +258,11 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         <TabsList className="mb-6">
           <TabsTrigger value="create"><Send className="size-4 ml-2" />إنشاء حملة</TabsTrigger>
           <TabsTrigger value="campaigns"><Megaphone className="size-4 ml-2" />الحملات السابقة</TabsTrigger>
+<<<<<<< Updated upstream
           <TabsTrigger value="analytics"><BarChart className="size-4 ml-2" />التحليلات</TabsTrigger>
+=======
+          <TabsTrigger value="analytics"><ChartBar className="size-4 ml-2" />التحليلات</TabsTrigger>
+>>>>>>> Stashed changes
           <TabsTrigger value="lists"><List className="size-4 ml-2" />قوائم العملاء</TabsTrigger>
         </TabsList>
 
@@ -284,6 +332,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       </SelectContent>
                     </Select>
                   </div>
+<<<<<<< Updated upstream
 
                   <div className="space-y-2">
                     <Label>جدولة الإرسال</Label>
@@ -314,6 +363,8 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       </p>
                     </div>
                   )}
+=======
+>>>>>>> Stashed changes
                 </div>
               </WhatsAppSurfaceCard>
 
@@ -368,6 +419,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                 <CardContent className="space-y-4">
                   {!result ? (
                     <p className="py-8 text-center text-sm text-[color:var(--color-muted-foreground)]">
+<<<<<<< Updated upstream
                       {sending ? (
                         <span className="flex flex-col items-center gap-3">
                           <span className="size-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -396,12 +448,28 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                         <div className="min-w-0">
                           <p className="text-lg font-bold text-emerald-800">{result.sentCount || result.sent || 0}</p>
                           <p className="text-sm text-emerald-700">تم الإرسال بنجاح</p>
+=======
+                      {sending ? "جاري الإرسال..." : "لم يتم الإرسال بعد"}
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 p-4">
+                        <CheckCircle className="size-8 text-emerald-600" />
+                        <div>
+                          <p className="text-lg font-bold text-emerald-800">{result.sentCount || result.sent || 0}</p>
+                          <p className="text-sm text-emerald-700">تم الإرسال</p>
+>>>>>>> Stashed changes
                         </div>
                       </div>
                       {(result.failedCount || result.failed) > 0 && (
                         <div className="flex items-center gap-3 rounded-2xl border border-red-200/80 bg-red-500/10 p-4">
+<<<<<<< Updated upstream
                           <XCircle className="size-8 text-red-600 shrink-0" />
                           <div className="min-w-0">
+=======
+                          <XCircle className="size-8 text-red-600" />
+                          <div>
+>>>>>>> Stashed changes
                             <p className="text-lg font-bold text-red-800">{result.failedCount || result.failed || 0}</p>
                             <p className="text-sm text-red-700">فشل</p>
                           </div>
@@ -421,10 +489,13 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                           </div>
                         </div>
                       )}
+<<<<<<< Updated upstream
                       <Button variant="outline" className="w-full rounded-full mt-2"
                         onClick={() => setActiveTab("campaigns")}>
                         <Megaphone className="size-4" /> عرض الحملات
                       </Button>
+=======
+>>>>>>> Stashed changes
                     </>
                   )}
                 </CardContent>
@@ -444,6 +515,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
             </div>
           ) : (
             <div className="grid gap-4">
+<<<<<<< Updated upstream
               {campaigns.map((c) => {
                 const isExpanded = expandedCampaignId === c.id;
                 const metrics = [
@@ -467,6 +539,21 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       </div>
                       <Badge variant={c.status === "sent" ? "default" : c.status === "failed" ? "destructive" : "secondary"}
                         className="shrink-0 mr-2">
+=======
+              {campaigns.map((c) => (
+                <Card key={c.id} className="rounded-2xl cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedCampaign(selectedCampaign?.id === c.id ? null : c)}>
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg">{c.name}</h3>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">
+                          {c.waTemplateName && `قالب: ${c.waTemplateName}`}
+                          {c.sentAt && ` • ${new Date(c.sentAt).toLocaleDateString("ar-EG")}`}
+                        </p>
+                      </div>
+                      <Badge variant={c.status === "sent" ? "default" : c.status === "failed" ? "destructive" : "secondary"}>
+>>>>>>> Stashed changes
                         {c.status === "sent" ? "تم" : c.status === "failed" ? "فشل" : c.status}
                       </Badge>
                     </div>
@@ -476,6 +563,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       <div><p className="text-lg font-bold">{clickRate(c)}%</p><p className="text-xs text-[color:var(--color-muted-foreground)]"><MousePointerClick className="size-3 inline" /> نقر</p></div>
                       <div><p className="text-lg font-bold">{replyRate(c)}%</p><p className="text-xs text-[color:var(--color-muted-foreground)]"><Reply className="size-3 inline" /> رد</p></div>
                     </div>
+<<<<<<< Updated upstream
 
                     {isExpanded && (
                       <div className="mt-5 pt-4 border-t space-y-4"
@@ -504,6 +592,11 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                 </Card>
               );
               })}
+=======
+                  </CardContent>
+                </Card>
+              ))}
+>>>>>>> Stashed changes
             </div>
           )}
         </TabsContent>
@@ -512,7 +605,11 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         <TabsContent value="analytics" className="space-y-6">
           {campaigns.length === 0 ? (
             <div className="text-center py-12 text-[color:var(--color-muted-foreground)]">
+<<<<<<< Updated upstream
               <BarChart className="mx-auto size-12 opacity-40" />
+=======
+              <ChartBar className="mx-auto size-12 opacity-40" />
+>>>>>>> Stashed changes
               <p className="mt-4">لا توجد بيانات إحصائية بعد</p>
             </div>
           ) : (
@@ -588,6 +685,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         {/* ===================== CUSTOMER LISTS TAB ===================== */}
         <TabsContent value="lists" className="space-y-6">
           <Card className="rounded-2xl">
+<<<<<<< Updated upstream
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -669,6 +767,30 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                   );
                 })
               )}
+=======
+            <CardHeader><CardTitle className="text-lg">قوائم العملاء</CardTitle>
+              <CardDescription>إدارة قوائم العملاء لاستخدامها في الحملات</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {customerLists.length === 0 ? (
+                <p className="text-sm text-[color:var(--color-muted-foreground)]">لا توجد قوائم عملاء</p>
+              ) : (
+                <div className="grid gap-3">
+                  {customerLists.map((l) => (
+                    <div key={l.id} className="flex items-center justify-between p-3 rounded-xl border">
+                      <div>
+                        <p className="font-medium">{l.name}</p>
+                        <p className="text-sm text-[color:var(--color-muted-foreground)]">{l.description || `${l.count} عميل`}</p>
+                      </div>
+                      <Badge variant="secondary">{l.count}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button variant="outline" className="rounded-full" onClick={() => window.open("/broadcast", "_blank")}>
+                <List className="size-4" /> إدارة القوائم في صفحة البرودكاست
+              </Button>
+>>>>>>> Stashed changes
             </CardContent>
           </Card>
         </TabsContent>

@@ -6151,7 +6151,11 @@ model BroadcastCampaign {
   channel             String               @default("facebook") // facebook | whatsapp
   message             String
   targetAudience      String
+<<<<<<< Updated upstream
   waTemplateName      String? // WhatsApp template name (when channel=whatsapp)
+=======
+  waTemplateName      String?              // WhatsApp template name (when channel=whatsapp)
+>>>>>>> Stashed changes
   waLanguageCode      String?              @default("en")
   scheduledAt         DateTime?
   sentAt              DateTime?

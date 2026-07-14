@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 
+<<<<<<< Updated upstream
+=======
+const dateFt = new Intl.DateTimeFormat("ar-EG");
+>>>>>>> Stashed changes
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import CommentService from "../../services/commentService";

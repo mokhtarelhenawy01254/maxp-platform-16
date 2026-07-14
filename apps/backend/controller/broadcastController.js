@@ -801,6 +801,7 @@ exports.sendCampaign = async (req, res) => {
           const to = phone.startsWith('+') ? phone.slice(1) : phone;
           const waSessionId = companyId ? `company:${companyId}` : null;
 
+<<<<<<< Updated upstream
           // Build template body parameters from customer data
           const bodyParams = [];
           if (conv.customer.firstName) {
@@ -817,6 +818,11 @@ exports.sendCampaign = async (req, res) => {
           const result = await WhatsAppMessageHandler.sendTemplateMessage(
             waSessionId, to, campaign.waTemplateName,
             { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
+=======
+          const result = await WhatsAppMessageHandler.sendTemplateMessage(
+            waSessionId, to, campaign.waTemplateName,
+            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
+>>>>>>> Stashed changes
             { metadata: { isBroadcast: true, campaignId: campaign.id } }
           );
 
