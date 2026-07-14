@@ -101,7 +101,8 @@ export default function HotelManagementPage() {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
+      <div className="p-6" dir="rtl">
       <h1 className="text-2xl font-bold mb-6">🏨 نظام إدارة الفنادق</h1>
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
 
@@ -308,6 +309,7 @@ export default function HotelManagementPage() {
       {modal?.type === 'reservation' && <ReservationModal properties={properties} roomTypes={roomTypes} rooms={rooms} selectedProperty={selectedProperty} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'folio' && <FolioModal reservations={reservations} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'rate' && <RateModal roomTypes={roomTypes} selectedProperty={selectedProperty} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
+    </div>
     </div>
   );
 }

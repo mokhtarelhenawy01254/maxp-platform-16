@@ -1,5 +1,25 @@
 # Learned Patterns
 
+## 2026-07-14 — Hotel Module: Prisma camelCase in Raw SQL Migrations
+
+- **Problem:** The first migration SQL for hotel tables used `snake_case` columns (`company_id`) because of PostgreSQL naming convention, but Prisma expects `camelCase` (`companyId`) for all fields defined in the schema. The app failed with `column "companyId" does not exist` on queries.
+- **Solution:** Use quoted camelCase column names in raw SQL migrations: `CREATE TABLE "HotelRoom" (id TEXT PRIMARY KEY, "companyId" TEXT NOT NULL REFERENCES "Company"(id) ON DELETE CASCADE, "propertyId" TEXT, ...);`. Every camelCase column must be quoted.
+- **Verification:** Run `npx prisma generate` and then hit a real endpoint that reads/writes the table; if any column name mismatch remains Prisma throws a clear DB error.
+
+## 2026-07-14 — Hotel Module: Auto-Assign Room from Room Type
+
+- **Problem:** Reservation creation originally required the caller to pass an explicit `roomId`. Front-end users and AI agents think in room types, not individual room IDs.
+- **Solution:** In `hotelController.js#createReservation`, if `roomId` is missing for a line item, pick the first `AVAILABLE` room of that `roomTypeId` that does not have an overlapping reservation in the requested date range. If an occupied room later frees up, the same logic still works.
+- **Edge case:** Multi-room bookings — each line item can either specify a `roomId` or rely on auto-assignment independently.
+
+## 2026-07-14 — Hotel Module: Avoid Conditional Hooks in Modal Rendering
+
+- **Problem:** `HotelManagementPage.tsx` had `renderModal()` function defined inside the component that returned JSX using `useState` hooks internally. React raised a Rules of Hooks error whenever the modal changed, causing the page to reset to the first tab instead of opening the modal.
+- **Solution:** Extract every modal to a top-level component file. In the parent, use conditional JSX: `{modal?.type === 'reservation' && <ReservationModal ... />}`. This keeps hooks at component top level and avoids hook-order changes during re-renders.
+- **Pattern:** Any modal that owns its own state should be a separate component, not a nested renderer function.
+
+# Learned Patterns
+
 ## 2026-07-12 — SSH Key Generation in PowerShell (Passphrase Bug)
 - **Problem:** `ssh-keygen -t ed25519 -N "mysecret" -f keyfile` in PowerShell sets the passphrase to literal `"mysecret"` (with quotes) because PowerShell passes the double-quotes as part of the argument value.
 - **Solution:** Use single quotes for the `-N` argument: `-N 'mysecret'`. Or omit `-N` entirely and use stdin pipe. On Windows, `ssh-keygen` from OpenSSH for Windows interprets quoted strings literally.
