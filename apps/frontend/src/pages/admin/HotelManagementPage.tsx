@@ -307,7 +307,7 @@ export default function HotelManagementPage() {
       {modal?.type === 'roomType' && <RoomTypeModal properties={properties} selectedProperty={selectedProperty} data={modal.data} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'room' && <RoomModal properties={properties} roomTypes={roomTypes} selectedProperty={selectedProperty} data={modal.data} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'reservation' && <ReservationModal properties={properties} roomTypes={roomTypes} rooms={rooms} selectedProperty={selectedProperty} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
-      {modal?.type === 'folio' && <FolioModal reservations={reservations} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
+      {modal?.type === 'folio' && <FolioModal reservations={reservations} preselectedId={modal.data?.reservationId} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'rate' && <RateModal roomTypes={roomTypes} selectedProperty={selectedProperty} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
     </div>
     </div>

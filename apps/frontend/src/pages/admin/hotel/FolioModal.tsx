@@ -4,17 +4,19 @@ import { hotelApi, HotelReservation, FOLIO_TYPE_LABELS } from "./shared";
 
 export default function FolioModal({
   reservations,
+  preselectedId,
   onClose,
   onSaved,
   onError
 }: {
   reservations: HotelReservation[];
+  preselectedId?: string;
   onClose: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
 }) {
   const [form, setForm] = useState({
-    reservationId: "",
+    reservationId: preselectedId || "",
     description: "",
     amount: 0,
     itemType: "SERVICE",
