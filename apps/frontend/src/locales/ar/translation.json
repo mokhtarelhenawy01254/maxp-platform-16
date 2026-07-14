@@ -3617,7 +3617,11 @@
     "allLoaded": "تم عرض جميع التطبيقات",
     "emptyHint": "جرّب تغيير الفلاتر أو تصفح فئة أخرى.",
     "clearFilters": "مسح الفلاتر",
-    "browseAll": "تصفح كل الأدوات"
+    "browseAll": "تصفح كل الأدوات",
+    "features": "الميزات",
+    "moreFeatures": "+{{count}} ميزات أخرى",
+    "requires": "يتطلب",
+    "trialDays": "تجربة {{count}} يوم"
   },
   "monthlyPnL": {
     "title": "القوائم المالية الشهرية (P&L)",
@@ -5796,6 +5800,8 @@
     "educationSessions": "الحصص",
     "educationCalendar": "التقويم",
     "educationFunnel": "الإشعارات والفانل",
+    "hotelModule": "نظام الفنادق",
+    "hotelDashboard": "إدارة الفنادق",
     "mainSection": "الرئيسية",
     "manualOrder": "إنشاء طلب يدوي",
     "marketingLinks": "روابط التسويق",

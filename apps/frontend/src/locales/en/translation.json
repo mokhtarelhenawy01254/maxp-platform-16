@@ -3615,7 +3615,11 @@
     "allLoaded": "All apps loaded",
     "emptyHint": "Try changing the filters or browsing another category.",
     "clearFilters": "Clear filters",
-    "browseAll": "Browse all tools"
+    "browseAll": "Browse all tools",
+    "features": "Features",
+    "moreFeatures": "+{{count}} more features",
+    "requires": "Requires",
+    "trialDays": "{{count}}-day trial"
   },
   "monthlyPnL": {
     "title": "Monthly P&L Dashboard",
@@ -5735,6 +5739,8 @@
     "educationSessions": "Sessions",
     "educationCalendar": "Calendar",
     "educationFunnel": "Notifications & Funnel",
+    "hotelModule": "Hotel System",
+    "hotelDashboard": "Hotel Management",
     "mainSection": "Main",
     "manualOrder": "Create Manual Order",
     "marketingLinks": "Marketing Links",
