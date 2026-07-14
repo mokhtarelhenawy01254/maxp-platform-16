@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
@@ -137,9 +136,6 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [queueFilter, setQueueFilter] = useState<QueueFilter>('');
-  const [showModeratorPool, setShowModeratorPool] = useState<boolean>(
-    () => localStorage.getItem('whatsAppInboxModeratorPoolVisible') !== 'false'
-  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -257,10 +253,6 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   }, [loadConversations]);
 
   useEffect(() => {
-    localStorage.setItem('whatsAppInboxModeratorPoolVisible', String(showModeratorPool));
-  }, [showModeratorPool]);
-
-  useEffect(() => {
     const refresh = () => {
       void loadConversations();
     };
@@ -283,7 +275,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
       if (superAdminMode && companyId) {
         navigate(`/super-admin/whatsapp/companies/${companyId}/inbox/${nextSessionId}`);
       } else {
-        navigate(`/whatsapp-inbox/${nextSessionId}`);
+        navigate(`/whatsapp/routing/${nextSessionId}`);
       }
     },
     [companyId, navigate, superAdminMode],
@@ -356,7 +348,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                 type="button"
                 onClick={() => {
                     setActiveSession(item.id);
-                    navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox/${item.id}` : `/whatsapp-inbox/${item.id}`);
+                    navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/routing/${item.id}` : `/whatsapp/routing/${item.id}`);
                   }}
                   className={`mb-1 w-full rounded-lg border px-3 py-3 text-left transition ${
                     active
@@ -441,7 +433,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
           </div>
         </section>
 
-        <div className={`grid min-h-0 flex-1 gap-0 ${showModeratorPool ? 'xl:grid-cols-[1fr,320px]' : ''}`}>
+        <div className="grid min-h-0 flex-1 gap-0 xl:grid-cols-[1fr,320px]">
           <section className="flex min-h-0 flex-col border-r border-border/50 bg-background">
             <div className="wa-glass-search-bar border-b border-border/50 bg-card px-4 py-3 md:px-5">
               {error ? (
@@ -471,16 +463,6 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                     {copy.inbox.refresh}
                   </button>
                 </div>
-                {!showModeratorPool && (
-                  <button
-                    type="button"
-                    onClick={() => setShowModeratorPool(true)}
-                    className="rounded-lg border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
-                    title={copy.isArabic ? 'إظهار اللوحة' : 'Show panel'}
-                  >
-                    <PanelRightOpen size={18} />
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => navigateToDashboard()}
@@ -610,24 +592,14 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
             </div>
           </section>
 
-          <aside className={`min-h-0 flex-col bg-card ${showModeratorPool ? 'xl:flex' : 'hidden'}`}>
-            <div className="flex items-start justify-between border-b border-border/50 px-4 py-4">
-              <div>
-                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {copy.inbox.moderatorPoolEyebrow}
-                </div>
-                <div className="mt-1 text-lg font-bold text-foreground">
-                  {copy.inbox.moderatorPoolTitle}
-                </div>
+          <aside className="hidden min-h-0 flex-col bg-card xl:flex">
+            <div className="border-b border-border/50 px-4 py-4">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {copy.inbox.moderatorPoolEyebrow}
               </div>
-              <button
-                type="button"
-                onClick={() => setShowModeratorPool(false)}
-                className="mt-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                title={copy.isArabic ? 'إخفاء اللوحة' : 'Close panel'}
-              >
-                <PanelRightClose size={18} />
-              </button>
+              <div className="mt-1 text-lg font-bold text-foreground">
+                {copy.inbox.moderatorPoolTitle}
+              </div>
             </div>
             <div className="wa-slim-scroll min-h-0 flex-1 overflow-y-auto p-3">
               {moderatorPool.length === 0 ? (

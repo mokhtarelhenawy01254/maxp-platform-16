@@ -151,7 +151,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     fullWidth ||
     location.pathname.startsWith("/profile") ||
     location.pathname.startsWith("/whatsapp") ||
-    location.pathname.startsWith("/whatsapp-inbox") ||
     location.pathname.startsWith("/whatsapp-chat");
   const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);
   const currentLayout = resolvedUserLayout || "three-tier";

@@ -1827,7 +1827,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/whatsapp/companies/:companyId/inbox"
+              path="/super-admin/whatsapp/companies/:companyId/routing"
               element={
                 <Layout fullWidth>
                   <SuperAdminWhatsAppCompanyInbox />
@@ -1835,7 +1835,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/whatsapp/companies/:companyId/inbox/:sessionId"
+              path="/super-admin/whatsapp/companies/:companyId/routing/:sessionId"
               element={
                 <Layout fullWidth>
                   <SuperAdminWhatsAppCompanyInbox />
@@ -2808,7 +2808,7 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/whatsapp-inbox"
+                  path="/whatsapp/routing"
                   element={
                     <Layout fullWidth>
                       <InboxPage />
@@ -2816,7 +2816,7 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/whatsapp-inbox/:sessionId"
+                  path="/whatsapp/routing/:sessionId"
                   element={
                     <Layout fullWidth>
                       <InboxPage />
@@ -2853,7 +2853,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/settings/inbox"
-                  element={<Navigate to="/whatsapp-inbox" replace />}
+                  element={<Navigate to="/whatsapp/routing" replace />}
                 />
                 <Route
                   path="/coupons"
