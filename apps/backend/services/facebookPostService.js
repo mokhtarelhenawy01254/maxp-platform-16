@@ -34,15 +34,40 @@ async function syncPagePosts(pageId, companyId) {
     throw new Error(errorMsg);
   }
 
-  const validToken = tokenState.pageAccessToken;
   const apiVer = getMetaGraphApiVersion();
   let allPosts = [];
+  let validToken = tokenState.pageAccessToken;
   let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
+  let refreshAttempted = false;
 
   while (url) {
-    const res = await axios.get(url, { timeout: 15000 });
-    if (res.data.data) allPosts = allPosts.concat(res.data.data);
-    url = res.data.paging?.next || null;
+    try {
+      const res = await axios.get(url, { timeout: 15000 });
+      if (res.data.data) allPosts = allPosts.concat(res.data.data);
+      url = res.data.paging?.next || null;
+    } catch (error) {
+      const graphError = error?.response?.data?.error || {};
+      const isPermissionError =
+        (graphError.code === 10 || graphError.code === 100) &&
+        /pages_read_engagement/i.test(graphError.message || '');
+
+      if (isPermissionError && !refreshAttempted) {
+        const refreshResult = await ensureValidFacebookPageAccessToken({
+          companyId: pageToken.companyId || companyId,
+          pageId,
+          pageAccessToken: pageToken.pageAccessToken,
+          allowRefresh: true,
+        });
+        if (refreshResult.ok && refreshResult.pageAccessToken !== validToken) {
+          validToken = refreshResult.pageAccessToken;
+          refreshAttempted = true;
+          url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
+          allPosts = [];
+          continue;
+        }
+      }
+      throw error;
+    }
   }
 
   for (const fbPost of allPosts) {
