@@ -107,7 +107,7 @@ hotel_check_availability_tool = FunctionTool(
 
 hotel_reserve_tool = FunctionTool(
     name="hotel_reserve",
-    description="حجز غرفة أو أكثر لضيف في الفندق. يتطلب: اسم الضيف، الجوال، تاريخ الوصول والمغادرة، الغرف المختارة.",
+    description="حجز غرفة أو أكثر لضيف في الفندق. تنبيه: property_id مطلوب (يؤخذ من hotel_info). rooms يجب أن تكون array من objects وليس string: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 500}]. rooms ليست string ولا array of strings.",
     func=hotel_reserve,
     input_model=ReserveInput,
 )

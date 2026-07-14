@@ -21,11 +21,12 @@
 ### hotel_reserve
 | البند | الوصف |
 |-------|-------|
-| **المدخلات** | customer_name, customer_phone, check_in, check_out, property_id, rooms (قائمة), adults, children |
+| **المدخلات** | customer_name, customer_phone, check_in, check_out, property_id (مأخوذ من hotel_info), rooms (array of objects: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 500}]), adults, children |
 | **المخرجات** | reservation: id, status, totalAmount, room assignments, customer details |
-| **الاستخدام** | بعد موافقة الضيف على نوع الغرفة والسعر والتواريخ |
+| **الاستخدام** | بعد موافقة الضيف على نوع الغرفة والسعر والتواريخ — استخدم property_id من hotel_info و rooms كـ array of objects |
+| **تحذير** | property_id مطلوب (استخدم hotel_info أولاً). rooms يجب أن يكون array of objects وليس string |
 | **خطأ** | error → "حدث خطأ في إنشاء الحجز. تأكد من صحة البيانات وحاول مرة أخرى." |
-| **موافقة بشرية** | مطلوبة (requiresHumanApproval: true) — سيب التأكيد للضيف |
+| **موافقة بشرية** | غير مطلوبة (requiresHumanApproval: false) |
 
 ### hotel_my_reservations
 | البند | الوصف |

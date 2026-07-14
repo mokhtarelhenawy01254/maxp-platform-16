@@ -80,11 +80,240 @@ const sendPopupResponse = (res, data) => {
   const message = { type: "facebook-oauth-callback", ...data };
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(`<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Facebook OAuth</title></head>
-<body><script>
-(window.opener || window.parent).postMessage(${JSON.stringify(message)}, "*");
-window.close();
-<\/script></body></html>`);
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>Facebook Integration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #1877f2;
+      --success: #10b981;
+      --error: #ef4444;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(24, 119, 242, 0.15) 0%, transparent 70%);
+      top: -50px;
+      left: -50px;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+      bottom: -100px;
+      right: -100px;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 90%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .icon-wrapper {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .icon-wrapper::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 255, 255, 0.1);
+      animation: spin 20s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .success-bg {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: var(--success);
+    }
+
+    .error-bg {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--error);
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: #1565c0;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(24, 119, 242, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="status-icon" class="icon-wrapper"></div>
+    <h1 id="status-title">جاري معالجة الطلب...</h1>
+    <p id="status-desc">يرجى الانتظار بينما نقوم بإنهاء الإجراءات.</p>
+    <button id="close-btn" class="btn" style="display: none;">إغلاق النافذة</button>
+  </div>
+
+  <script>
+    const data = ${JSON.stringify(message)};
+    const isSuccess = data.success === true;
+    
+    try {
+      const targetWindow = window.opener || window.parent;
+      if (targetWindow) {
+        targetWindow.postMessage(data, "*");
+      }
+    } catch (e) {
+      console.error("Failed to post message", e);
+    }
+
+    setTimeout(() => {
+      window.close();
+    }, 1500);
+
+    const statusIcon = document.getElementById("status-icon");
+    const statusTitle = document.getElementById("status-title");
+    const statusDesc = document.getElementById("status-desc");
+    const closeBtn = document.getElementById("close-btn");
+
+    if (isSuccess) {
+      statusIcon.className = "icon-wrapper success-bg";
+      statusIcon.innerHTML = \`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>\`;
+      statusTitle.textContent = "تم الربط بنجاح";
+      statusDesc.textContent = "تم ربط حسابك فيسبوك بالمنصة بنجاح. سيتم إغلاق هذه النافذة تلقائياً.";
+      closeBtn.className = "btn btn-primary";
+      closeBtn.style.display = "block";
+    } else {
+      statusIcon.className = "icon-wrapper error-bg";
+      statusIcon.innerHTML = \`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>\`;
+      statusTitle.textContent = "فشل الربط";
+      
+      let errorMsg = data.error || "حدث خطأ غير معروف أثناء الاتصال";
+      if (errorMsg === "state_expired") {
+        errorMsg = "انتهت صلاحية جلسة الربط لمرور أكثر من 10 دقائق. يرجى إعادة المحاولة من الإعدادات.";
+      } else if (errorMsg === "no_company_id") {
+        errorMsg = "معرف الشركة مفقود أو غير صالح.";
+      }
+      
+      statusDesc.textContent = errorMsg;
+      closeBtn.className = "btn btn-secondary";
+      closeBtn.style.display = "block";
+    }
+
+    closeBtn.addEventListener("click", () => {
+      window.close();
+    });
+  </script>
+</body>
+</html>`);
 };
 
 const sendCallbackRedirect = (res, popup, baseUrl, type, params) => {
@@ -192,9 +421,23 @@ const decodeFacebookOAuthState = (state, fallbackType) => {
       }
     }
 
+    let ts = null;
+    if (nonce && nonce.length >= 8) {
+      try {
+        const tsBase36 = nonce.slice(-8);
+        const parsedTs = parseInt(tsBase36, 36);
+        if (!isNaN(parsedTs)) {
+          ts = parsedTs;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     const stateData = {
       cid,
       uid,
+      ts,
       type,
       returnOrigin,
       popup,
@@ -209,6 +452,7 @@ const decodeFacebookOAuthState = (state, fallbackType) => {
       raw: decodedState,
       stateData: {
         ...parsedState,
+        ts: parsedState.ts || parsedState.timestamp || null,
         type: parsedState.type || fallbackType,
         returnOrigin:
           parsedState.returnOrigin || parsedState.returnTo || parsedState.origin,
@@ -759,16 +1003,23 @@ router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
  * ⚠️ NO AUTHENTICATION - Facebook redirects here directly
  */
 router.get("/callback", async (req, res) => {
+  let isPopup = false;
+  let callbackRedirectBaseUrl = getDefaultFacebookFrontendBaseUrl();
+  let callbackRedirectType = "page";
+
   try {
     const { appId, appSecret } = getFacebookOAuthConfig();
     const { code, state, error } = req.query;
     const {
       decodedState: callbackDecodedState,
-      redirectBaseUrl: callbackRedirectBaseUrl,
-      redirectType: callbackRedirectType,
+      redirectBaseUrl: resolvedRedirectBaseUrl,
+      redirectType: resolvedRedirectType,
       stateData: callbackStateData,
     } = resolveOAuthCallbackContext(state);
-    const isPopup = callbackStateData?.popup === true;
+    
+    isPopup = callbackStateData?.popup === true;
+    if (resolvedRedirectBaseUrl) callbackRedirectBaseUrl = resolvedRedirectBaseUrl;
+    if (resolvedRedirectType) callbackRedirectType = resolvedRedirectType;
 
     console.log("📥 Received Facebook OAuth callback");
 
@@ -793,44 +1044,17 @@ router.get("/callback", async (req, res) => {
       });
     }
 
-    let stateData = {};
-    try {
-      console.log("🔍 [DEBUG] Raw state from query:", state);
-
-      // 🛡️ Robust decoding: fix potential space-to-plus conversion issues and URL decode
-      const normalizedState = decodeURIComponent(state).replace(/ /g, "+");
-      console.log("🔍 [DEBUG] Normalized state (Base64):", normalizedState);
-
-      const decodedState = Buffer.from(normalizedState, "base64").toString(
-        "utf8",
-      );
-      console.log("🔍 [DEBUG] Decoded state string:", decodedState);
-
-      // 🔄 Check if it's the new delimited format or legacy JSON
-      if (decodedState.includes("|")) {
-        const [cid, uid, ts, r, type] = decodedState.split("|");
-        stateData = { cid, uid, ts: parseInt(ts), r, type };
-        console.log("✅ [DEBUG] Parsed as pipe-delimited format");
-      } else {
-        stateData = JSON.parse(decodedState);
-        console.log("✅ [DEBUG] Parsed as legacy JSON format");
-      }
-    } catch (stateError) {
-      console.error(
-        "❌ [DEBUG] Invalid state parameter error:",
-        stateError.message,
-      );
-      console.error("❌ [DEBUG] Problematic string was:", state);
+    if (!callbackStateData || !callbackStateData.cid) {
+      console.error("❌ Invalid state parameters in callback");
       return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, callbackRedirectType, {
         error: "invalid_state",
       });
     }
 
-    // 🔄 Support both old and new (shorter) keys
-    const companyId = stateData.cid || stateData.companyId;
-    const userId = stateData.uid || stateData.userId;
-    const timestamp = stateData.ts || stateData.timestamp;
-    const type = stateData.type || callbackRedirectType;
+    const companyId = callbackStateData.cid || callbackStateData.companyId;
+    const userId = callbackStateData.uid || callbackStateData.userId;
+    const timestamp = callbackStateData.ts || callbackStateData.timestamp;
+    const type = callbackStateData.type || callbackRedirectType;
 
     if (!companyId) {
       console.error("❌ No companyId in state");
@@ -839,13 +1063,17 @@ router.get("/callback", async (req, res) => {
       });
     }
 
-    const stateAge = Date.now() - timestamp;
-    const maxStateAge = 10 * 60 * 1000; // 10 minutes
-    if (stateAge > maxStateAge) {
-      console.error("❌ State expired");
-      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
-        error: "state_expired",
-      });
+    if (timestamp) {
+      const stateAge = Date.now() - timestamp;
+      const maxStateAge = 10 * 60 * 1000; // 10 minutes
+      if (stateAge > maxStateAge) {
+        console.error("❌ State expired");
+        return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+          error: "state_expired",
+        });
+      }
+    } else {
+      console.warn("⚠️ [FACEBOOK-OAUTH] No timestamp found in state to validate expiration");
     }
 
     const company = await getSharedPrismaClient().company.findUnique({
@@ -1179,7 +1407,6 @@ router.get("/callback", async (req, res) => {
       }
     });
   } catch (error) {
-    // تحسين طباعة الخطأ
     if (error.response) {
       console.error("❌ Error in OAuth callback:", {
         status: error.response.status,
@@ -1197,7 +1424,6 @@ router.get("/callback", async (req, res) => {
 
     let errorMessage = "unknown_error";
     if (error.response) {
-      // لو فيه رسالة خطأ واضحة من فيسبوك
       errorMessage =
         error.response.data?.error?.message ||
         `Facebook API error: ${error.response.status} ${error.response.statusText}`;
@@ -1207,22 +1433,14 @@ router.get("/callback", async (req, res) => {
       errorMessage = error.message;
     }
 
-    const redirectBaseUrl = getDefaultFacebookFrontendBaseUrl();
-
-    // إضافة تفاصيل أكثر للمستخدم لو فيه status code
     let userError = errorMessage;
     if (error.response && error.response.status) {
       userError = `Facebook API error (${error.response.status}): ${errorMessage}`;
     }
 
-    const redirectUrl = buildFacebookFrontendRedirectUrl(
-      redirectBaseUrl,
-      undefined,
-      {
-        error: userError,
-      },
-    );
-    res.redirect(redirectUrl);
+    return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, callbackRedirectType, {
+      error: userError,
+    });
   }
 });
 
@@ -1831,23 +2049,30 @@ router.get("/pixel-authorize", verifyToken.authenticateToken, async (req, res) =
  * ⚠️ NO AUTHENTICATION - Facebook redirects here directly
  */
 router.get("/pixel-callback", async (req, res) => {
+  let callbackRedirectBaseUrl = getDefaultFacebookFrontendBaseUrl();
+  let callbackRedirectType = "pixel";
+
   try {
     const { appId, appSecret } = getFacebookOAuthConfig();
     const { code, state, error } = req.query;
     const {
       decodedState: callbackDecodedState,
-      redirectBaseUrl: callbackRedirectBaseUrl,
-      redirectType: callbackRedirectType,
+      redirectBaseUrl: resolvedRedirectBaseUrl,
+      redirectType: resolvedRedirectType,
+      stateData: callbackStateData,
     } = resolveOAuthCallbackContext(state, "pixel");
+
+    if (resolvedRedirectBaseUrl) callbackRedirectBaseUrl = resolvedRedirectBaseUrl;
+    if (resolvedRedirectType) callbackRedirectType = resolvedRedirectType;
 
     console.log("📥 [PIXELS] Received Facebook OAuth callback for Pixels");
 
     if (state) {
-      console.log("ðŸ” [PIXELS DEBUG] Raw state from query:", state);
+      console.log("🔍 [PIXELS DEBUG] Raw state from query:", state);
     }
     if (callbackDecodedState) {
       console.log(
-        "ðŸ” [PIXELS DEBUG] Decoded state string:",
+        "🔍 [PIXELS DEBUG] Decoded state string:",
         callbackDecodedState,
       );
     }
@@ -1878,27 +2103,8 @@ router.get("/pixel-callback", async (req, res) => {
       );
     }
 
-    let stateData = {};
-    try {
-      console.log("🔍 [PIXELS DEBUG] Raw state from query:", state);
-
-      const normalizedState = decodeURIComponent(state).replace(/ /g, "+");
-      const decodedState = Buffer.from(normalizedState, "base64").toString(
-        "utf8",
-      );
-      console.log("🔍 [PIXELS DEBUG] Decoded state string:", decodedState);
-
-      if (decodedState.includes("|")) {
-        const [cid, uid, ts, r, type] = decodedState.split("|");
-        stateData = { cid, uid, ts: parseInt(ts), r, type: type || "pixel" };
-      } else {
-        stateData = JSON.parse(decodedState);
-      }
-    } catch (stateError) {
-      console.error(
-        "❌ [PIXELS DEBUG] Invalid state parameter:",
-        stateError.message,
-      );
+    if (!callbackStateData || !callbackStateData.cid) {
+      console.error("❌ [PIXELS] Invalid state parameters in callback");
       return res.redirect(
         buildFacebookFrontendRedirectUrl(
           callbackRedirectBaseUrl,
@@ -1910,10 +2116,10 @@ router.get("/pixel-callback", async (req, res) => {
       );
     }
 
-    const companyId = stateData.cid || stateData.companyId;
-    const userId = stateData.uid || stateData.userId;
-    const timestamp = stateData.ts || stateData.timestamp;
-    const type = stateData.type || callbackRedirectType;
+    const companyId = callbackStateData.cid || callbackStateData.companyId;
+    const userId = callbackStateData.uid || callbackStateData.userId;
+    const timestamp = callbackStateData.ts || callbackStateData.timestamp;
+    const type = callbackStateData.type || callbackRedirectType;
 
     // التحقق من أن هذا callback للـ Pixels وليس Pages
     if (type !== "pixel") {
@@ -1934,15 +2140,19 @@ router.get("/pixel-callback", async (req, res) => {
       );
     }
 
-    const stateAge = Date.now() - timestamp;
-    const maxStateAge = 10 * 60 * 1000; // 10 minutes
-    if (stateAge > maxStateAge) {
-      console.error("❌ [PIXELS] State expired");
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
-          error: "state_expired",
-        }),
-      );
+    if (timestamp) {
+      const stateAge = Date.now() - timestamp;
+      const maxStateAge = 10 * 60 * 1000; // 10 minutes
+      if (stateAge > maxStateAge) {
+        console.error("❌ [PIXELS] State expired");
+        return res.redirect(
+          buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
+            error: "state_expired",
+          }),
+        );
+      }
+    } else {
+      console.warn("⚠️ [PIXELS] No timestamp found in state to validate expiration");
     }
 
     const company = await getSharedPrismaClient().company.findUnique({
