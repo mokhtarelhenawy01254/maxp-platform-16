@@ -35,6 +35,7 @@ const PostsManagement = ({ embedded = false }) => {
 
   const [enableDelayReply, setEnableDelayReply] = useState(true);
   const [showMobilePages, setShowMobilePages] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchPages();
@@ -44,9 +45,10 @@ const PostsManagement = ({ embedded = false }) => {
     if (selectedPage) {
       fetchPosts();
       fetchPageSettings();
+      setSyncing(true);
       CommentService.syncPagePosts(selectedPage).then(() => {
         if (selectedPage) fetchPosts();
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setSyncing(false));
       setShowMobilePages(false);
     } else {
       setPosts([]);
@@ -450,6 +452,7 @@ const PostsManagement = ({ embedded = false }) => {
             <div className="flex items-center gap-1.5 md:gap-2 text-white font-bold text-sm md:text-lg">
               <Rss className="w-4 h-4 md:w-5 md:h-5" />
               <span>آخر المنشورات</span>
+              {syncing && <span className="text-white/70 text-xs mr-2 animate-pulse">جاري التحديث...</span>}
             </div>
             <div className="flex items-center gap-2 md:gap-4">
 
