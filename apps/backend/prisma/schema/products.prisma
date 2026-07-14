@@ -45,10 +45,9 @@ model Customer {
   wholesaleCustomerPriceLists    WholesaleCustomerPriceList[]
     wholesaleCustomer              WholesaleCustomer?
     educationStudents               EducationStudent[]
-    formSubmissions                 FormSubmission[]
-    hotelReservations               HotelReservation[]
-
-    @@unique([facebookId, companyId])
+     formSubmissions                 FormSubmission[]
+ 
+     @@unique([facebookId, companyId])
   @@unique([instagramId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])
