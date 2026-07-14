@@ -2142,6 +2142,17 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 console.warn('⚠️ [BAILEYS-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);
                             }
 
+                            if (first.conversationId) {
+                                const conversation = await prisma.conversation.findUnique({
+                                    where: { id: first.conversationId },
+                                    select: { aiEnabled: true }
+                                });
+                                if (conversation && conversation.aiEnabled === false) {
+                                    console.log(`🟡 [BAILEYS-DEBOUNCE] AI auto-reply disabled for conversation ${first.conversationId}`);
+                                    return;
+                                }
+                            }
+
                             const aiSdkClient = require('../aiSdkClient');
                             const result = await aiSdkClient.sendChatMessage({
                                 companyId: first.companyId,

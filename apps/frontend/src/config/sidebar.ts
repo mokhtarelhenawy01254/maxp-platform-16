@@ -1002,6 +1002,17 @@ export const getSidebarConfig = (
             ]
         },
 
+        // 7️⃣.8️⃣ نظام الفنادق
+        {
+            id: 'hotel',
+            title: t('sidebar.hotelModule'),
+            icon: BuildingOffice2Icon,
+            hidden: !isAppActive('hotel-app'),
+            items: [
+                { to: '/admin/hotel', icon: BuildingOffice2Icon, label: t('sidebar.hotelDashboard') },
+            ]
+        },
+
         // 8️⃣ نماذج التسجيل
         {
             id: 'forms',

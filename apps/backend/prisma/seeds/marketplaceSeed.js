@@ -1108,6 +1108,22 @@ async function seedMarketplace() {
         "isPopular": false,
         "category": "PRODUCTIVITY",
         "trialDays": 14
+      },
+      {
+        "slug": "hotel-app",
+        "name": "نظام إدارة الفنادق",
+        "description": "نظام شامل لإدارة الفنادق: إدارة الغرف وأنواعها، الحجوزات والإقامات، تسجيل الوصول والمغادرة، الخدمات الإضافية (Folio)، الأسعار الموسمية، مع ربط CRM وإشعارات واتساب.",
+        "icon": "🏨",
+        "monthlyPrice": 249,
+        "yearlyPrice": 2490,
+        "pricingModel": "SUBSCRIPTION",
+        "features": "[\"إدارة الفنادق (فروع/عقارات)\",\"أنواع الغرف والسعة\",\"إدارة الغرف الفردية والحالة\",\"حجوزات متعددة الغرف\",\"جدول الأسعار الموسمية\",\"تسجيل الوصول والمغادرة\",\"الخدمات الإضافية (Folio)\",\"التحقق من توفر الغرف\",\"ربط CRM وإشعارات واتساب\"]",
+        "isActive": true,
+        "isPublic": true,
+        "isFeatured": false,
+        "isPopular": false,
+        "category": "PRODUCTIVITY",
+        "trialDays": 14
       }
 
     ];

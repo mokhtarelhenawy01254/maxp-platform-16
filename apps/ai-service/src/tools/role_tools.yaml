@@ -167,6 +167,15 @@ roles:
     - agent_handoff_to
     - knowledge_search
 
+  HOTEL:
+    - hotel_info
+    - hotel_check_availability
+    - hotel_reserve
+    - hotel_my_reservations
+    - hotel_cancel_reservation
+    - agent_handoff_to
+    - knowledge_search
+
   MEDICAL_CENTER_MANAGER:
     - booking_info
     - booking_slots

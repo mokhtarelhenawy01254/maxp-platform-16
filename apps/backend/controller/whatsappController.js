@@ -866,7 +866,23 @@ async function getConversations(req, res) {
                         select: { name: true, phoneNumber: true }
                     },
                     customer: {
-                        select: { firstName: true, lastName: true, status: true }
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            status: true,
+                            conversations: {
+                                where: {
+                                    channel: 'WHATSAPP',
+                                    status: { in: ['ACTIVE', 'PENDING'] }
+                                },
+                                select: {
+                                    id: true,
+                                    aiEnabled: true
+                                },
+                                take: 1
+                            }
+                        }
                     }
                 }
             }),

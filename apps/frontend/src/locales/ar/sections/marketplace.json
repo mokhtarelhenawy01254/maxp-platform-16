@@ -99,5 +99,9 @@
     "allLoaded": "تم عرض جميع التطبيقات",
     "emptyHint": "جرّب تغيير الفلاتر أو تصفح فئة أخرى.",
     "clearFilters": "مسح الفلاتر",
-    "browseAll": "تصفح كل الأدوات"
+    "browseAll": "تصفح كل الأدوات",
+    "features": "الميزات",
+    "moreFeatures": "+{{count}} ميزات أخرى",
+    "requires": "يتطلب",
+    "trialDays": "تجربة {{count}} يوم"
   }

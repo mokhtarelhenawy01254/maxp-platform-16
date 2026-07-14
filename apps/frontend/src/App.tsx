@@ -907,6 +907,9 @@ const BrandIdentitySettings = React.lazy(
 const EducationFunnelPage = React.lazy(
   () => import("./pages/admin/EducationFunnelPage"),
 );
+const HotelManagementPage = React.lazy(
+  () => import("./pages/admin/HotelManagementPage"),
+);
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
 );
@@ -6628,6 +6631,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <EducationManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/hotel/*"
+                  element={
+                    <Layout fullWidth>
+                      <HotelManagementPage />
                     </Layout>
                   }
                 />

@@ -443,6 +443,11 @@ class TelegramBotService {
                             } catch(e) { /* continue if parsing fails */ }
                         }
 
+                        if (conversation && conversation.aiEnabled === false) {
+                            console.log('🤖 [TG-AI-AUTOREPLY] AI auto-reply disabled for conversation');
+                            return;
+                        }
+
                         const result = await aiSdkClient.sendChatMessage({
                             companyId,
                             customerId: customer.id,

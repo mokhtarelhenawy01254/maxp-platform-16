@@ -14,6 +14,7 @@ import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCr
 type ConversationDetail = {
   id: string;
   status: string;
+  aiEnabled?: boolean;
   queueKey?: string | null;
   customer: {
     id: string;
@@ -454,6 +455,31 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 title="المهام"
               >
                 <span className="text-xs font-bold px-1">Task</span>
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const newStatus = conversation.aiEnabled === false;
+                    // Send to backend
+                    await apiClient.put(`/conversations/${conversation.id}`, {
+                      aiEnabled: newStatus,
+                      companyId: companyId
+                    });
+                    loadConversation();
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                  conversation.aiEnabled !== false
+                    ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
+                    : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'
+                }`}
+                title={conversation.aiEnabled !== false ? "الرد الذكي مفعل" : "الرد الذكي معطل"}
+              >
+                <span>🤖</span>
+                <span>{conversation.aiEnabled !== false ? "إيقاف الرد الآلي" : "تشغيل الرد الآلي"}</span>
               </button>
           <select
             value={conversation.status}

@@ -60,9 +60,11 @@ export interface Contact {
     phoneNumber: string | null;
   };
   customer: {
+    id: string;
     firstName: string;
     lastName: string;
     status: string;
+    conversations?: Array<{ id: string; aiEnabled: boolean }>;
   } | null;
   lastMessage?: {
     content: string | null;

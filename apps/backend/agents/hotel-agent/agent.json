@@ -1,0 +1,55 @@
+{
+  "slug": "hotel-agent",
+  "name": "وكيل الفندق",
+  "role": "HOTEL",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "gemini-2.5-flash"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "friendly",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "hotel_info",
+    "hotel_search_rooms",
+    "hotel_check_availability",
+    "hotel_reserve",
+    "hotel_cancel_reservation",
+    "hotel_my_reservations",
+    "agent_handoff_to",
+    "knowledge_search"
+  ],
+  "allowedSkills": [
+    "hotel-info",
+    "hotel-booking",
+    "handoff-to-human"
+  ],
+  "channels": ["dashboard", "whatsapp", "messenger"],
+  "humanApproval": {
+    "mode": "ON_WRITE",
+    "requiredTools": ["hotel_reserve", "hotel_cancel_reservation"],
+    "approvalCode": false,
+    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
+  },
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 10
+  },
+  "config": {
+    "toolChoice": "required"
+  }
+}

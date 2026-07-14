@@ -2068,6 +2068,18 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
               console.log(`🤖 [AI-AUTOREPLY] Processing ${entries.length} debounced message(s) as one request`);
 
+              if (first.conversationId) {
+                const prisma = getSharedPrismaClient();
+                const conversation = await prisma.conversation.findUnique({
+                  where: { id: first.conversationId },
+                  select: { aiEnabled: true }
+                });
+                if (conversation && conversation.aiEnabled === false) {
+                  console.log(`🤖 [AI-AUTOREPLY] AI auto-reply disabled for conversation ${first.conversationId}`);
+                  return;
+                }
+              }
+
               // 3. Process through Python AI service
               const aiSdkClient = require('../services/aiSdkClient');
               const result = await aiSdkClient.sendChatMessage({
@@ -2669,6 +2681,11 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
                 detail: 'high'
               })).filter(a => a.url)
             : undefined;
+
+          if (conversation && conversation.aiEnabled === false) {
+            console.log('🤖 [IG-AI-AUTOREPLY] AI auto-reply disabled for conversation');
+            return;
+          }
 
           const result = await aiSdkClient.sendChatMessage({
             companyId: customer.companyId,

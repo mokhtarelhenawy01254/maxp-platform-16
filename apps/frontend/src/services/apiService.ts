@@ -57,6 +57,7 @@ export interface Conversation {
   lastRepliedBy?: string;
   pageName?: string; // اسم صفحة الفيسبوك
   pageId?: string; // معرف صفحة الفيسبوك
+  aiEnabled?: boolean;
 }
 
 export interface SavedReply {
@@ -112,6 +113,20 @@ export const apiService = {
       return Array.isArray(conversations) ? conversations : [];
     } catch (error) {
       console.error("Error fetching conversations:", error);
+      throw error;
+    }
+  },
+
+  // تحديث المحادثة
+  async updateConversation(
+    conversationId: string,
+    data: { aiEnabled?: boolean; status?: string },
+  ): Promise<any> {
+    try {
+      const response = await apiClient.put(`/conversations/${conversationId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating conversation:", error);
       throw error;
     }
   },

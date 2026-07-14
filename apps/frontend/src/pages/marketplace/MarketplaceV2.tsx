@@ -7,7 +7,7 @@ import {
   Search, Package, Loader2, Crown,
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Star, Heart,
+  DollarSign, Grid3X3, Star, Heart, Download,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -378,57 +378,19 @@ export default function MarketplaceV2() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95">
-      <div className="mx-auto max-w-[1400px] px-4 pb-16 pt-4 sm:px-6 lg:px-8">
-
-        {/* Header */}
-        <div className="relative mb-5 overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-card via-card to-primary/[0.02] p-4 sm:p-5 shadow-sm">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(120,120,255,0.06),transparent_50%)]" />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 flex-wrap">
-                <span className="font-bold text-foreground/80">{t('marketplace.appCount', { count: apps.length })}</span>
-                <span className="text-border">•</span>
-                <span>{t('marketplace.installedCount', { count: installedCount })}</span>
-                {activeSpecialty && (
-                  <>
-                    <span className="text-border">•</span>
-                    <Badge variant="outline" className="gap-1 border px-2 py-0.5 font-bold text-xs">
-                      <Layers3 size={11} />
-                      {activeSpecialty.nameAr}
-                    </Badge>
-                  </>
-                )}
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                {t('marketplace.pageTitle')}
-              </h1>
-              <p className="mt-1 max-w-xl text-xs text-muted-foreground leading-relaxed">
-                {t('marketplace.pageSubtitle')}
-              </p>
-            </div>
-
-            {/* Activate All CTA */}
-            <Button
-              size="sm"
-              onClick={() => setConfirmBulkInstall(true)}
-              disabled={isInstallingAll || !collectionFiltered.some(a => !a.isInstalled)}
-              className="h-9 gap-1.5 rounded-xl px-4 text-xs font-bold shrink-0 shadow-sm"
-            >
-              {isInstallingAll ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
-              {t('marketplace.activateAll')}
-            </Button>
-          </div>
-
+      {/* Sticky filter bar — backdrop-blur, stays on scroll */}
+      <div className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           {/* Search + Sort Toolbar */}
-          <div className="relative mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+              <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
               <Input
                 ref={searchRef}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={t('marketplace.searchPlaceholder')}
-                className="h-10 w-full rounded-xl border-border/60 bg-background/80 pl-3 pr-9 text-xs backdrop-blur-sm"
+                className="h-11 w-full rounded-xl border-border/60 bg-background/80 pl-3 pr-10 text-sm backdrop-blur-sm"
               />
               {searchQuery && (
                 <button
@@ -436,16 +398,16 @@ export default function MarketplaceV2() {
                   className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                   aria-label={t('marketplace.clearSearch')}
                 >
-                  <X size={12} />
+                  <X size={14} />
                 </button>
               )}
             </div>
-            <div className="flex h-10 items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-3 text-xs backdrop-blur-sm shrink-0">
+            <div className="flex h-11 items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-3 text-sm backdrop-blur-sm shrink-0">
               <span className="text-xs text-muted-foreground shrink-0">{t('marketplace.sortLabel')}</span>
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
-                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+                className="bg-transparent text-sm font-bold text-foreground focus:outline-none cursor-pointer"
               >
                 <option value="featured">{t('marketplace.sortFeatured')}</option>
                 <option value="popular">{t('marketplace.sortPopular')}</option>
@@ -453,10 +415,20 @@ export default function MarketplaceV2() {
                 <option value="price_low">{t('marketplace.sortPriceLow')}</option>
               </select>
             </div>
+            {/* Activate All CTA */}
+            <Button
+              size="sm"
+              onClick={() => setConfirmBulkInstall(true)}
+              disabled={isInstallingAll || !collectionFiltered.some(a => !a.isInstalled)}
+              className="h-11 gap-1.5 rounded-xl px-4 text-sm font-bold shrink-0 shadow-sm"
+            >
+              {isInstallingAll ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+              {t('marketplace.activateAll')}
+            </Button>
           </div>
 
           {/* Filter Pills — collections + categories merged */}
-          <div className="relative mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+          <div className="relative flex gap-2 overflow-x-auto pb-3 scrollbar-none" style={{ scrollbarWidth: "none" }}>
             {collections.map(c => (
               <button
                 key={c.id}
@@ -520,6 +492,43 @@ export default function MarketplaceV2() {
             </Link>
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-[1400px] px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+        {/* Header Hero */}
+        <div className="relative mb-6 overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card via-card to-primary/[0.04] p-6 sm:p-8 shadow-sm">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(120,120,255,0.08),transparent_50%),radial-gradient(ellipse_at_80%_100%,rgba(255,120,200,0.05),transparent_50%)]" />
+          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2 flex-wrap">
+                <span className="flex items-center gap-1.5 font-bold text-foreground/80">
+                  <Package size={14} className="text-primary" />
+                  {t('marketplace.appCount', { count: apps.length })}
+                </span>
+                <span className="text-border">•</span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-success" />
+                  {t('marketplace.installedCount', { count: installedCount })}
+                </span>
+                {activeSpecialty && (
+                  <>
+                    <span className="text-border">•</span>
+                    <Badge variant="outline" className="gap-1 border px-2 py-0.5 font-bold text-xs">
+                      <Layers3 size={12} />
+                      {activeSpecialty.nameAr}
+                    </Badge>
+                  </>
+                )}
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                {t('marketplace.pageTitle')}
+              </h1>
+              <p className="mt-2 max-w-xl text-sm text-muted-foreground leading-relaxed">
+                {t('marketplace.pageSubtitle')}
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Loading State */}
         {loading ? (
@@ -569,13 +578,13 @@ export default function MarketplaceV2() {
           </div>
         ) : (
           <>
-            {/* Featured Section — only when no category filter and we have >=2 featured */}
+            {/* Featured Section — bento layout: hero card (2x2) + standard cards */}
             {featuredApps.length >= 2 && (
-              <div className="mb-6">
-                <div className="mb-3 flex items-center justify-between">
+              <div className="mb-8">
+                <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles size={14} className="text-primary" />
-                    <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                    <Sparkles size={16} className="text-primary" />
+                    <h2 className="text-base font-bold text-foreground">
                       {t('marketplace.featured')}
                     </h2>
                     <Badge variant="outline" className="text-xs px-1.5 py-0 font-bold border-primary/30 text-primary">
@@ -583,11 +592,14 @@ export default function MarketplaceV2() {
                     </Badge>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {featuredApps.slice(0, 4).map((app, i) => (
                     <div
                       key={app.id}
-                      className="flex h-full motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 duration-500"
+                      className={cn(
+                        "flex h-full motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 duration-500",
+                        i === 0 && "sm:col-span-2 sm:row-span-2"
+                      )}
                       style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}
                     >
                       <AppCardV2
@@ -596,6 +608,7 @@ export default function MarketplaceV2() {
                         uninstallingApp={uninstallingApp}
                         onQuickInstall={handleQuickInstall}
                         onUninstall={(a) => setConfirmUninstallApp(a)}
+                        featured={i === 0}
                       />
                     </div>
                   ))}
@@ -604,12 +617,12 @@ export default function MarketplaceV2() {
             )}
 
             {/* All Apps Grid */}
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-bold text-foreground">
                 {selectedCategory
                   ? categories.find(c => c.category === selectedCategory)?.name
                   : t(collections.find(c => c.id === collection)?.labelKey || "marketplace.allTools")}
-                <span className="mr-1.5 text-xs font-normal text-muted-foreground/60">
+                <span className="mr-1.5 text-sm font-normal text-muted-foreground/60">
                   ({displayedApps.filter(a => !a.isFeatured || !!selectedCategory).length})
                 </span>
               </h2>
@@ -738,13 +751,14 @@ export default function MarketplaceV2() {
   );
 }
 
-/* ─── Standard App Card ─── */
-function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall }: {
+/* ─── App Card ─── */
+function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall, featured = false }: {
   app: MarketplaceApp;
   installingApp: string | null;
   uninstallingApp: string | null;
   onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
   onUninstall: (app: MarketplaceApp) => void;
+  featured?: boolean;
 }) {
   const { t } = useTranslation();
   const Icon = categoryIcons[app.category] || Package;
@@ -766,7 +780,6 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
     hoverTimer.current = setTimeout(() => setPreviewOpen(false), 150);
   }, []);
 
-  // ponytail: hover-only preview breaks a11y — focus covers keyboard, touch falls back to details page
   const getPrice = (a: MarketplaceApp) => {
     if (a.pricingModel === "FREE") return t('marketplace.freePrice');
     if (a.pricingModel === "PAY_PER_USE") return a.unitPrice ? `${a.unitPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perUnit')}` : t('marketplace.payPerUse');
@@ -776,24 +789,23 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
 
   return (
     <Popover open={previewOpen} onOpenChange={setPreviewOpen}>
-      <div onMouseEnter={showPreview} onMouseLeave={hidePreview} onFocus={showPreview} onBlur={hidePreview}>
+      <div onMouseEnter={showPreview} onMouseLeave={hidePreview} onFocus={showPreview} onBlur={hidePreview} className="h-full">
         <PopoverTrigger asChild>
           <Link
             to={`/marketplace/${app.slug}`}
             aria-haspopup="dialog"
             aria-expanded={previewOpen}
-            className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className={cn(
+              "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              featured && "sm:rounded-3xl",
+            )}
           >
-            <div
-              className={cn("relative aspect-[2.8/1] overflow-hidden bg-gradient-to-br", !app.coverImage && gradient)}
-            >
+            {/* Category accent bar */}
+            <div className={cn("h-1 w-full bg-gradient-to-r", gradient)} />
+
+            <div className={cn("relative overflow-hidden bg-gradient-to-br", !app.coverImage && gradient, featured ? "aspect-[3/1]" : "aspect-[2.8/1]")}>
               {app.coverImage && (
-                <img
-                  src={app.coverImage}
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-0 size-full object-cover"
-                />
+                <img src={app.coverImage} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
               )}
               {app.isInstalled && (
                 <div className="absolute left-2.5 top-2.5 z-10">
@@ -802,23 +814,31 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent" />
               {app.coverImage ? (
-                <div className="absolute bottom-2.5 right-3 flex size-9 items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm shadow-sm text-primary">
-                  {textIcon || <Icon size={17} />}
+                <div className={cn("absolute bottom-2.5 right-3 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm shadow-sm text-primary", featured ? "size-12" : "size-9")}>
+                  {textIcon || <Icon size={featured ? 22 : 17} />}
                 </div>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex size-[44px] items-center justify-center rounded-2xl bg-background/20 text-primary/70">
-                    {textIcon ? <span className="text-2xl">{textIcon}</span> : <Icon size={24} />}
+                  <div className={cn("flex items-center justify-center rounded-2xl bg-background/20 text-primary/70", featured ? "size-16" : "size-[44px]")}>
+                    {textIcon ? <span className={featured ? "text-3xl" : "text-2xl"}>{textIcon}</span> : <Icon size={featured ? 32 : 24} />}
                   </div>
+                </div>
+              )}
+              {featured && (
+                <div className="absolute right-2.5 top-2.5 z-10">
+                  <Badge className="gap-1 bg-primary/90 text-primary-foreground border-none px-2 py-0.5 text-xs font-bold">
+                    <Sparkles size={10} />
+                    {t('marketplace.featured')}
+                  </Badge>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col p-3 pb-2.5">
+            <div className={cn("flex flex-col", featured ? "p-5" : "p-3 pb-2.5")}>
               <div className="min-w-0 flex-1">
                 <h3
                   dir="auto"
-                  className="text-xs font-bold text-foreground leading-tight truncate group-hover:text-primary transition-colors"
+                  className={cn("font-bold text-foreground leading-tight truncate group-hover:text-primary transition-colors", featured ? "text-base" : "text-xs")}
                   style={{ unicodeBidi: 'plaintext' }}
                   title={app.name}
                 >
@@ -826,7 +846,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
                 </h3>
                 <p
                   dir="auto"
-                  className="mt-0.5 text-xs text-muted-foreground line-clamp-1 leading-relaxed"
+                  className={cn("mt-0.5 text-muted-foreground leading-relaxed", featured ? "text-sm line-clamp-2" : "text-xs line-clamp-1")}
                   style={{ unicodeBidi: 'plaintext' }}
                   title={app.description}
                 >
@@ -834,8 +854,25 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
                 </p>
               </div>
 
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-primary">
+              {(app.installCount > 0 || app.rating) && (
+                <div className={cn("flex items-center gap-3", featured ? "mt-3" : "mt-2")}>
+                  {app.installCount > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground font-bold">
+                      <Download size={11} />
+                      {app.installCount > 999 ? `${(app.installCount / 1000).toFixed(1)}K` : app.installCount}
+                    </span>
+                  )}
+                  {app.rating && (
+                    <span className="flex items-center gap-0.5 text-xs text-amber-500 font-bold">
+                      <Star size={11} className="fill-current" />
+                      {app.rating.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className={cn("flex items-center justify-between gap-2", featured ? "mt-4" : "mt-2")}>
+                <span className={cn("font-bold text-primary", featured ? "text-base" : "text-xs")}>
                   {getPrice(app)}
                 </span>
 
@@ -912,7 +949,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
 
           {features.length > 0 && (
             <div className="px-4 py-3 border-b border-border/40">
-              <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">الميزات</h5>
+              <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t('marketplace.features')}</h5>
               <div className="space-y-1.5">
                 {features.slice(0, 6).map(f => (
                   <div key={f.key} className="flex items-start gap-2 text-xs">
@@ -921,7 +958,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
                   </div>
                 ))}
                 {features.length > 6 && (
-                  <p className="text-xs text-muted-foreground pt-1">+{features.length - 6} ميزات أخرى</p>
+                  <p className="text-xs text-muted-foreground pt-1">{t('marketplace.moreFeatures', { count: features.length - 6 })}</p>
                 )}
               </div>
             </div>
@@ -930,7 +967,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
           {requiredApps.length > 0 && (
             <div className="px-4 py-2.5 border-b border-border/40">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">يتطلب:</span>
+                <span className="text-xs text-muted-foreground">{t('marketplace.requires')}:</span>
                 {requiredApps.map(slug => (
                   <Badge key={slug} variant="outline" className="text-xs px-1.5 py-0.5">
                     {slug}
@@ -944,13 +981,13 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
             <div>
               <span className="text-sm font-bold text-primary">{getPrice(app)}</span>
               {app.trialDays > 0 && (
-                <span className="mr-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">تجربة {app.trialDays} يوم</span>
+                <span className="mr-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">{t('marketplace.trialDays', { count: app.trialDays })}</span>
               )}
             </div>
             {app.isInstalled ? (
               <Badge variant="secondary" className="text-xs gap-1">
                 <CheckCircle2 size={10} />
-                مفعل
+                {t('marketplace.installed')}
               </Badge>
             ) : (
               <Button

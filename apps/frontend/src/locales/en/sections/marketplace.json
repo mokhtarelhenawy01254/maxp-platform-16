@@ -99,5 +99,9 @@
     "allLoaded": "All apps loaded",
     "emptyHint": "Try changing the filters or browsing another category.",
     "clearFilters": "Clear filters",
-    "browseAll": "Browse all tools"
+    "browseAll": "Browse all tools",
+    "features": "Features",
+    "moreFeatures": "+{{count}} more features",
+    "requires": "Requires",
+    "trialDays": "{{count}}-day trial"
   }

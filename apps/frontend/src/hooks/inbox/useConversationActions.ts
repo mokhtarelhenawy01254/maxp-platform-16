@@ -297,6 +297,26 @@ export const useConversationActions = () => {
     [],
   );
 
+  // Toggle AI agent auto-reply for conversation
+  const toggleAi = useCallback(
+    async (conversationId: string, aiEnabled: boolean, companyId: string) => {
+      setUpdating(true);
+      try {
+        await apiClient.put(`/conversations/${conversationId}`, {
+          aiEnabled,
+          companyId,
+        });
+        return true;
+      } catch (error: unknown) {
+        console.error("❌ Error toggling AI status:", error);
+        throw new Error(getActionErrorMessage(error, "فشل في تحديث حالة الرد الآلي"));
+      } finally {
+        setUpdating(false);
+      }
+    },
+    [],
+  );
+
   return {
     updateStatus,
     assignConversation,
@@ -308,6 +328,7 @@ export const useConversationActions = () => {
     forwardMessage,
     toggleMessageStar,
     toggleMessageReaction,
+    toggleAi,
 
     snoozeConversation,
     updating,
