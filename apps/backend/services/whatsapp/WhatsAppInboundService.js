@@ -433,6 +433,24 @@ async function saveIncomingMessage(payload) {
           // Lead replied after receiving a follow-up → mark as replied
           const LeadFollowUpService = require('./LeadFollowUpService');
           await LeadFollowUpService.markReplied(contact.id);
+          // Auto-promote category on reply
+          if (contact.leadCategoryId) {
+            try {
+              const cat = await prisma.leadCategory.findUnique({
+                where: { id: contact.leadCategoryId },
+                select: { autoPromoteCategoryId: true }
+              });
+              if (cat?.autoPromoteCategoryId) {
+                await prisma.whatsAppContact.update({
+                  where: { id: contact.id },
+                  data: { leadCategoryId: cat.autoPromoteCategoryId }
+                });
+                console.log(`[LEAD-FOLLOWUP] Auto-promoted contact ${contact.id} to category ${cat.autoPromoteCategoryId}`);
+              }
+            } catch (e) {
+              console.error('[LEAD-FOLLOWUP] Auto-promotion failed:', e.message);
+            }
+          }
         }
       } catch (e) {
         console.error('[LEAD-FOLLOWUP] Error enrolling lead:', e.message);

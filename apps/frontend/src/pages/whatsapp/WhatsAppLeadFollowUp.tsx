@@ -241,7 +241,15 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [leadCategories, setLeadCategories] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("settings");
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const res = await apiClient.get("/whatsapp/lead-categories", withCompanyConfig());
+      setLeadCategories(res.data.data || []);
+    } catch { /* handled */ }
+  }, [withCompanyConfig]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -253,12 +261,13 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
       const s = settingsRes.data.data;
       setSettings({ ...s, steps: Array.isArray(s.steps) && s.steps.length > 0 ? s.steps : null });
       setStats(statsRes.data.data || null);
+      await loadCategories();
     } catch {
       // toast handled by apiClient
     } finally {
       setLoading(false);
     }
-  }, [withCompanyConfig]);
+  }, [withCompanyConfig, loadCategories]);
 
   const loadEnrollments = useCallback(async (status?: string) => {
     try {
@@ -274,6 +283,20 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
   useEffect(() => {
     if (activeTab === "monitoring") loadEnrollments(enrollmentFilter);
   }, [activeTab, enrollmentFilter, loadEnrollments]);
+
+  const handleCategoryToggle = async (catId: string, autoFollowUp: boolean) => {
+    try {
+      await apiClient.put(`/whatsapp/lead-categories/${catId}`, { autoFollowUp }, withCompanyConfig());
+      setLeadCategories((prev) => prev.map((c) => c.id === catId ? { ...c, autoFollowUp } : c));
+    } catch { /* handled */ }
+  };
+
+  const handleCategoryPromote = async (catId: string, autoPromoteCategoryId: string | null) => {
+    try {
+      await apiClient.put(`/whatsapp/lead-categories/${catId}`, { autoPromoteCategoryId }, withCompanyConfig());
+      setLeadCategories((prev) => prev.map((c) => c.id === catId ? { ...c, autoPromoteCategoryId } : c));
+    } catch { /* handled */ }
+  };
 
   const handleSave = async () => {
     if (!settings) return;
@@ -511,6 +534,39 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                   </div>
                 )}
               </WhatsAppSurfaceCard>
+
+              {leadCategories.length > 0 && (
+                <WhatsAppSurfaceCard title="قواعد التصنيفات" description="التحكم في سلوك كل تصنيف مع المتابعة التلقائية والترقية">
+                  <div className="space-y-3">
+                    {leadCategories.map((cat) => (
+                      <div key={cat.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-card)_60%,transparent)] p-3">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: cat.color || '#6366f1' }} />
+                        <span className="min-w-0 flex-1 text-sm font-medium">{cat.name}</span>
+                        <label className="flex items-center gap-1.5 text-xs text-[color:var(--color-muted-foreground)]">
+                          <Switch checked={cat.autoFollowUp !== false}
+                            onCheckedChange={(v) => handleCategoryToggle(cat.id, v)} />
+                          متابعة
+                        </label>
+                        <div className="flex items-center gap-1.5 text-xs text-[color:var(--color-muted-foreground)]">
+                          <span>ترقية إلى</span>
+                          <Select value={cat.autoPromoteCategoryId || ''}
+                            onValueChange={(v) => handleCategoryPromote(cat.id, v || null)}>
+                            <SelectTrigger className="h-7 min-w-[8rem] rounded-full text-xs">
+                              <SelectValue placeholder="بدون" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">بدون ترقية</SelectItem>
+                              {leadCategories.filter((c) => c.id !== cat.id).map((c) => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WhatsAppSurfaceCard>
+              )}
 
               <WhatsAppSurfaceCard title={t(`${ns}.hints.title`)}>
                 <ul className="space-y-3 text-sm text-[color:var(--color-muted-foreground)]">

@@ -47,7 +47,7 @@ class LeadCategoryController {
             const companyId = this._getCompanyId(req, res);
             if (!companyId) return;
 
-            const { name, color, sortOrder } = req.body;
+            const { name, color, sortOrder, autoFollowUp, autoPromoteCategoryId } = req.body;
             if (!name || !name.trim()) {
                 return res.status(400).json({ success: false, message: 'Category name is required' });
             }
@@ -58,6 +58,8 @@ class LeadCategoryController {
                     name: name.trim(),
                     color: color || '#6366f1',
                     sortOrder: sortOrder ?? 0,
+                    autoFollowUp: autoFollowUp !== false,
+                    autoPromoteCategoryId: autoPromoteCategoryId || null,
                 },
             });
 
@@ -77,7 +79,7 @@ class LeadCategoryController {
             if (!companyId) return;
 
             const { id } = req.params;
-            const { name, color, sortOrder } = req.body;
+            const { name, color, sortOrder, autoFollowUp, autoPromoteCategoryId } = req.body;
 
             const existing = await this.prisma.leadCategory.findFirst({
                 where: { id, companyId },
@@ -92,6 +94,8 @@ class LeadCategoryController {
                     ...(name !== undefined && { name: name.trim() }),
                     ...(color !== undefined && { color }),
                     ...(sortOrder !== undefined && { sortOrder }),
+                    ...(autoFollowUp !== undefined && { autoFollowUp }),
+                    ...(autoPromoteCategoryId !== undefined && { autoPromoteCategoryId: autoPromoteCategoryId || null }),
                 },
             });
 

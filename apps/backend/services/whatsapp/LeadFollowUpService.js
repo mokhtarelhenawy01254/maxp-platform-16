@@ -55,6 +55,22 @@ class LeadFollowUpService {
                 return;
             }
 
+            // Check lead category autoFollowUp flag
+            const contact = await this.prisma.whatsAppContact.findUnique({
+                where: { id: whatsappContactId },
+                select: { leadCategoryId: true }
+            });
+            if (contact?.leadCategoryId) {
+                const category = await this.prisma.leadCategory.findUnique({
+                    where: { id: contact.leadCategoryId },
+                    select: { autoFollowUp: true }
+                });
+                if (category && !category.autoFollowUp) {
+                    console.log(`[LEAD-FOLLOWUP] Contact ${whatsappContactId} category has autoFollowUp disabled, skipping`);
+                    return;
+                }
+            }
+
             const existing = await this.prisma.leadFollowUpEnrollment.findFirst({
                 where: { companyId, whatsappContactId, status: 'ACTIVE' }
             });

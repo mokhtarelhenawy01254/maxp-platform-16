@@ -12125,16 +12125,20 @@ model TelegramForwardRule {
 
 // --- From: whatsapp_automation.prisma ---
 model LeadCategory {
-  id        String   @id @default(cuid())
-  companyId String
-  name      String
-  color     String?  @default("#6366f1")
-  isDefault Boolean  @default(false)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  contacts  WhatsAppContact[]
+  id                    String        @id @default(cuid())
+  companyId             String
+  name                  String
+  color                 String?       @default("#6366f1")
+  isDefault             Boolean       @default(false)
+  sortOrder             Int           @default(0)
+  autoFollowUp          Boolean       @default(true)
+  autoPromoteCategoryId String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  company               Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contacts              WhatsAppContact[]
+  autoPromoteCategory   LeadCategory?  @relation("CategoryPromotion", fields: [autoPromoteCategoryId], references: [id])
+  promotedFrom          LeadCategory[] @relation("CategoryPromotion")
 
   @@unique([companyId, name])
   @@index([companyId])
