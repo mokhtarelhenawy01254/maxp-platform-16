@@ -253,7 +253,17 @@ const getUnifiedConversations = async (req, res) => {
                                     firstName: true, 
                                     lastName: true, 
                                     status: true,
-                                    // 📦 Fetch last order info for WhatsApp contacts
+                                    conversations: {
+                                        where: {
+                                            channel: 'WHATSAPP',
+                                            status: { in: ['ACTIVE', 'PENDING'] }
+                                        },
+                                        select: {
+                                            id: true,
+                                            aiEnabled: true
+                                        },
+                                        take: 1
+                                    },
                                     orders: {
                                         orderBy: { createdAt: 'desc' },
                                         take: 1,
@@ -308,6 +318,7 @@ const getUnifiedConversations = async (req, res) => {
                 isPinned: conv.isPinned || false,
                 isMuted: false,
                 tags: conv.tags ? conv.tags.split(',').map(t => t.trim()) : [],
+                aiEnabled: conv.aiEnabled !== false,
                 // 📦 Last order info for quick display in conversation list
                 lastOrderNumber: conv.customer?.orders?.[0]?.orderNumber || null,
                 lastOrderStatus: conv.customer?.orders?.[0]?.status || null,
@@ -341,6 +352,7 @@ const getUnifiedConversations = async (req, res) => {
             isPinned: contact.isPinned,
             isMuted: contact.isMuted,
             tags: [],
+            aiEnabled: contact.customer?.conversations?.[0]?.aiEnabled !== false,
             // 📦 Last order info for quick display in WhatsApp conversation list
             lastOrderNumber: contact.customer?.orders?.[0]?.orderNumber || null,
             lastOrderStatus: contact.customer?.orders?.[0]?.status || null,
@@ -1267,7 +1279,7 @@ const updateUnifiedConversation = async (req, res) => {
         }
 
         const { id } = req.params;
-        const { status, assignedTo, isPinned } = req.body;
+        const { status, assignedTo, isPinned, aiEnabled } = req.body;
         const prisma = getSharedPrismaClient();
 
         // Handle WhatsApp conversations
@@ -1290,7 +1302,14 @@ const updateUnifiedConversation = async (req, res) => {
                 });
             }
 
-            return res.json({ success: true, data: { id, status: status || 'active' } });
+            if (aiEnabled !== undefined && contact.customerId) {
+                await prisma.conversation.updateMany({
+                    where: { customerId: contact.customerId, channel: 'WHATSAPP', companyId },
+                    data: { aiEnabled: Boolean(aiEnabled) }
+                });
+            }
+
+            return res.json({ success: true, data: { id, status: status || 'active', aiEnabled } });
         }
 
         // Handle Conversation model (Facebook/Instagram/Telegram)
@@ -1306,6 +1325,7 @@ const updateUnifiedConversation = async (req, res) => {
         if (status) updateData.status = status.toUpperCase();
         if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
         if (isPinned !== undefined) updateData.isPinned = isPinned;
+        if (aiEnabled !== undefined) updateData.aiEnabled = Boolean(aiEnabled);
         updateData.updatedAt = new Date();
 
         const updated = await prisma.conversation.update({

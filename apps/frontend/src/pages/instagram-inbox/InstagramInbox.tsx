@@ -391,6 +391,37 @@ const InstagramInbox: React.FC = () => {
                 onToggleNotes={() => setShowNotes((p) => !p)}
                 showNotes={showNotes}
               />
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button
+                  onClick={async () => {
+                    if (!selectedConversation || !companyId) return;
+                    const newStatus = selectedConversation.aiEnabled === false;
+                    try {
+                      await apiClient.put(`/conversations/${selectedConversation.id}`, {
+                        aiEnabled: newStatus,
+                        companyId,
+                      });
+                      updateSelectedConversation({
+                        ...selectedConversation,
+                        aiEnabled: newStatus,
+                      });
+                      loadConversationsIG(1, false, activeTab);
+                    } catch (err) {
+                      console.error("فشل في تحديث حالة الرد الآلي:", err);
+                    }
+                  }}
+                  title={selectedConversation.aiEnabled !== false ? "إيقاف الرد الآلي" : "تشغيل الرد الآلي"}
+                  style={{
+                    background: selectedConversation.aiEnabled !== false ? "rgba(59,130,246,0.1)" : "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: selectedConversation.aiEnabled !== false ? "#3b82f6" : "#6b7280",
+                    padding: 4,
+                    borderRadius: 6,
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>🤖</span>
+                </button>
               <button
                 onClick={handleProfilePanelToggle}
                 title={showProfilePanel ? "إخفاء الملف الشخصي" : "إظهار الملف الشخصي"}
@@ -408,6 +439,7 @@ const InstagramInbox: React.FC = () => {
                   <PanelRightOpen size={20} />
                 )}
               </button>
+              </div>
             </div>
 
             {/* Messages */}

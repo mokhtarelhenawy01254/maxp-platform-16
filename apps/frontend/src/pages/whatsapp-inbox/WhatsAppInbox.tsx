@@ -328,7 +328,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   return (
     <div
       dir={copy.isArabic ? 'rtl' : 'ltr'}
-      className="flex h-[calc(100vh-64px)] overflow-y-auto bg-background"
+      className="flex h-[calc(100dvh-64px)] overflow-y-auto bg-background"
     >
       <aside className="hidden w-72 flex-col border-r border-border/50 bg-card lg:flex">
         <div className="border-b border-border/50 px-4 py-4">

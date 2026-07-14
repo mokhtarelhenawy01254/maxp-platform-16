@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-14 / 2026-03-09
+- **AI Agent Pause Toggle System (FEATURE / COMPLETE)**: Implemented conversation-level toggling to pause/resume AI replies across all channels (WhatsApp, Facebook, Instagram, Telegram):
+  1. Updated `conversationCrudController.js` and `unifiedInboxController.js` to support updating `aiEnabled` on specific conversation rows.
+  2. Added `aiEnabled !== false` validation checks before triggering agent auto-replies in `WhatsAppInboundService.js`, `WhatsAppManager.js`, `TelegramBotService.js`, and `allFunctions.js`.
+  3. Integrated client toggle support in `useConversationActions.ts` hook.
+  4. Added premium visual toggle buttons (🤖 icon) in `WhatsAppChat.tsx`, `ChatWindow.tsx`, `TelegramConversationsPro.tsx`, `MessengerChat-final.tsx`, `FacebookInbox.tsx`, `InstagramInbox.tsx`, and `UnifiedInbox.tsx`.
 - **WhatsApp Baileys Wrapped Messages Support (BUGFIX / CRITICAL)**: Added support for incoming wrapped messages (such as `viewOnceMessage`, `viewOnceMessageV2`, `viewOnceMessageV2Extension`, `ephemeralMessage`, and `documentWithCaptionMessage`) by recursively unwrapping them in `extractMessageContent` in `WhatsAppManager.js` before processing, avoiding message loss.
 - **WhatsApp Message Handler Mocking (BUGFIX)**: Fixed failing tests in `WhatsAppMessageHandler.sendTextSession.test.js` by adding `getSocketReadyState` to the mocked `WhatsAppManager` to resolve `TypeError: WhatsAppManager.getSocketReadyState is not a function`.
 - **WhatsApp Baileys Zombie Session Detection Hardening (BUGFIX / CRITICAL)**: Resolved a critical issue where active, newly authenticated sessions were incorrectly identified as zombie sessions and wiped immediately after opening. Added a check to verify that both `creds.registered` is false AND `sock.user` is not defined before declaring a session as a zombie.

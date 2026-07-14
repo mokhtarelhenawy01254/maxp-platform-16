@@ -19,6 +19,7 @@ const PROXYABLE_REMOTE_IMAGE_PATTERNS = [
   /^https:\/\/lh3\.googleusercontent\.com\/aida-public\//i,
   /^https:\/\/(?:www\.)?mokhtarelhenawy\.online\//i,
   /^https?:\/\/[^/]+\/wp-content\/uploads\//i,
+  /^https:\/\/pps\.whatsapp\.net\//i,
 ] as const;
 
 interface OptimizedUploadImageOptions {

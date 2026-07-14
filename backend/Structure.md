@@ -84,5 +84,26 @@
 - **WhatsApp Baileys Wrapped Messages Unwrapping**: Enhanced the `extractMessageContent()` method in `WhatsAppManager.js` to recursively unwrap container structures (such as `viewOnceMessage`, `viewOnceMessageV2`, `viewOnceMessageV2Extension`, `ephemeralMessage`, and `documentWithCaptionMessage`) before extracting the underlying message type and content. This ensures full coverage for ephemeral and view-once media incoming messages.
 - **WhatsApp Baileys Zombie Session Detection Hardening**: Hardened the zombie check routine in `WhatsAppManager.js` during connection updates by verifying that `sock.user` is also missing before classifying a session with `registered: false` as a zombie, preventing active sessions from being accidentally wiped and disconnected right after successful pairing.
 
+### AI Agent Pause Toggle System
+1. **API Support (`PUT /conversations/:id`)**:
+   - `conversationCrudController.js` and `unifiedInboxController.js` (PUT `/api/v1/unified-inbox/conversations/:id`) now accept and process the `aiEnabled` boolean parameter in requests body, updating the corresponding database field on the `Conversation` model (and matching customer conversations for WhatsApp contacts).
+2. **Channel Auto-Reply Interceptors**:
+   - Integrated check for `conversation.aiEnabled !== false` into:
+     - `WhatsAppInboundService.js` (Meta Cloud WhatsApp webhook)
+     - `WhatsAppManager.js` (Baileys WhatsApp socket handler)
+     - `TelegramBotService.js` (Telegram update webhook)
+     - `allFunctions.js` (Facebook Messenger and Instagram webhook routing)
+3. **Frontend Integration**:
+   - Implemented `toggleAi` method in `useConversationActions.ts` hook.
+   - Updated `whatsappController.getConversations` and `unifiedInboxController.getUnifiedConversations` to return the `conversations` list containing `aiEnabled` states.
+   - Added interactive `🤖` toggle buttons to pause/resume AI replies in:
+     - `whatsapp-inbox/WhatsAppChat.tsx`
+     - `whatsapp/WhatsAppChat.tsx`
+     - `TelegramConversationsPro.tsx`
+     - `MessengerChat-final.tsx`
+     - `FacebookInbox.tsx`
+     - `InstagramInbox.tsx`
+     - `UnifiedInbox.tsx`
+
 
 

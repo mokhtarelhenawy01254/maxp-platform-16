@@ -69,6 +69,7 @@ interface UnifiedConversation {
   lastOrderNumber?: string | null;
   lastOrderStatus?: string | null;
   totalOrders?: number;
+  aiEnabled?: boolean;
 }
 
 interface UnifiedMessage {
@@ -356,6 +357,30 @@ const UnifiedInbox: React.FC = () => {
       setConversations(prev => prev.map(c =>
         c.id === convId ? { ...c, isPinned: currentlyPinned } : c
       ));
+    }
+  }, [selectedConversation]);
+
+  const handleToggleAi = useCallback(async () => {
+    if (!selectedConversation) return;
+    const newStatus = selectedConversation.aiEnabled === false;
+    
+    // Optimistic update
+    setConversations(prev => prev.map(c =>
+      c.id === selectedConversation.id ? { ...c, aiEnabled: newStatus } : c
+    ));
+    setSelectedConversation(prev => prev ? { ...prev, aiEnabled: newStatus } : null);
+
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
+        aiEnabled: newStatus
+      });
+    } catch (err) {
+      console.error("Error toggling AI status:", err);
+      // Revert on error
+      setConversations(prev => prev.map(c =>
+        c.id === selectedConversation.id ? { ...c, aiEnabled: !newStatus } : c
+      ));
+      setSelectedConversation(prev => prev ? { ...prev, aiEnabled: !newStatus } : null);
     }
   }, [selectedConversation]);
 
@@ -1545,6 +1570,17 @@ const UnifiedInbox: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={handleToggleAi}
+                      className="business-chip-button"
+                      style={{
+                        background: selectedConversation.aiEnabled !== false ? "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))" : "none",
+                        color: selectedConversation.aiEnabled !== false ? "var(--color-primary)" : "var(--color-muted-foreground)",
+                      }}
+                      title={selectedConversation.aiEnabled !== false ? "إيقاف الرد الآلي" : "تشغيل الرد الآلي"}
+                    >
+                      <span className="text-base font-bold">🤖</span>
+                    </button>
                     <button
                       onClick={() => setShowQuickOrder(true)}
                       className="business-chip-button"

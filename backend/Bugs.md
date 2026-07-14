@@ -950,4 +950,39 @@
   - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx`
   - `apps/frontend/src/components/facebook-inbox/CustomerProfile/CustomerProfile.tsx`
 
+### [FEATURE/FIX] Pause AI Agent Replies on a Per-Conversation Basis
+- **Date**: 2026-07-14 / 2026-03-09
+- **Description**: Enabled toggling the AI Agent automatic replies on/off for specific customer threads across all channels (WhatsApp, Facebook Messenger, Instagram, Telegram).
+- **Root Cause/Gap**: Previously, merchants could only enable/disable the AI Agent globally or per-session, but had no way to temporarily pause the AI replies for a single conversation when a human agent wanted to intervene manually.
+- **Resolution**:
+  1. Updated the `updateConversation` controller in `conversationCrudController.js` to accept and update the `aiEnabled` boolean field.
+  2. Integrated checking of `conversation.aiEnabled !== false` into all webhook processors:
+     - `WhatsAppInboundService.js` (Meta Cloud WhatsApp)
+     - `WhatsAppManager.js` (Baileys WhatsApp)
+     - `TelegramBotService.js` (Telegram)
+     - `allFunctions.js` (Facebook Messenger & Instagram)
+  3. Added the `toggleAi` function in `useConversationActions` hook on the frontend to update `aiEnabled` on the conversation.
+  4. Added a premium AI Toggle Button (🤖 icon) across all chat pages:
+     - `WhatsAppChat.tsx` (whatsapp-inbox and whatsapp layouts)
+     - `TelegramConversationsPro.tsx`
+     - `MessengerChat-final.tsx`
+     - `FacebookInbox.tsx`
+     - `InstagramInbox.tsx`
+     - `UnifiedInbox.tsx`
+- **Files Modified**:
+  - `apps/backend/controller/conversation/conversationCrudController.js`
+  - `apps/backend/services/whatsapp/WhatsAppInboundService.js`
+  - `apps/backend/services/whatsapp/WhatsAppManager.js`
+  - `apps/backend/services/TelegramBotService.js`
+  - `apps/backend/utils/allFunctions.js`
+  - `apps/frontend/src/hooks/inbox/useConversationActions.ts`
+  - `apps/frontend/src/pages/whatsapp-inbox/WhatsAppChat.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/ChatWindow.tsx`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx`
+  - `apps/frontend/src/pages/conversations/TelegramConversationsPro.tsx`
+  - `apps/frontend/src/pages/conversations/MessengerChat-final.tsx`
+  - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx`
+  - `apps/frontend/src/pages/instagram-inbox/InstagramInbox.tsx`
+  - `apps/frontend/src/pages/unified-inbox/UnifiedInbox.tsx`
+
 

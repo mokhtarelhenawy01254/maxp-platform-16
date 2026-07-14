@@ -19,6 +19,7 @@ const DIRECT_ALLOWED_URL_PATTERNS = [
   /^https:\/\/files\.easy-orders\.net\//i,
   /^https:\/\/images\.unsplash\.com\//i,
   /^https:\/\/lh3\.googleusercontent\.com\/aida-public\//i,
+  /^https:\/\/pps\.whatsapp\.net\//i,
 ];
 const MIN_TRANSFORM_WIDTH = 64;
 const MAX_TRANSFORM_WIDTH = 1600;
