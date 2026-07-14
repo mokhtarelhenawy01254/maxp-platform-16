@@ -47,7 +47,6 @@ const UnifiedCommentsManagement = () => {
   const [replyText, setReplyText] = useState("");
   const [searchInput, setSearchInput] = useState(filters.search);
   const debouncedSearch = useDebounce(searchInput, 300);
-<<<<<<< Updated upstream
   const [confirmState, setConfirmState] = useState(null);
   const executeDelete = useCallback((commentId) => {
     CommentService.deleteFacebookComment(commentId).then((result) => {
@@ -69,8 +68,6 @@ const UnifiedCommentsManagement = () => {
       toast.error("حدث خطأ أثناء حذف التعليقات: " + error.message);
     });
   }, [selectedComments, activePostId]);
-=======
->>>>>>> Stashed changes
 
   // Fetch posts
   const fetchPosts = async () => {
@@ -253,7 +250,6 @@ const UnifiedCommentsManagement = () => {
     }
   }, [debouncedSearch]);
 
-<<<<<<< Updated upstream
   useEffect(() => {
     const handlePop = () => {
       const match = window.location.pathname.match(/^\/unified-comments\/(.+)/);
@@ -263,8 +259,6 @@ const UnifiedCommentsManagement = () => {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
-=======
->>>>>>> Stashed changes
   // If we're viewing comments for a specific post
   if (activePostId) {
     return (
