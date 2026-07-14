@@ -401,8 +401,13 @@ const checkAvailability = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
-    const { propertyId, checkIn, checkOut } = req.query;
-    if (!propertyId || !checkIn || !checkOut) return res.status(400).json({ success: false, error: 'تاريخ الوصول والمغادرة مطلوب' });
+    let { propertyId, checkIn, checkOut } = req.query;
+    if (!checkIn || !checkOut) return res.status(400).json({ success: false, error: 'تاريخ الوصول والمغادرة مطلوب' });
+    if (!propertyId) {
+      const first = await getSharedPrismaClient().hotelProperty.findFirst({ where: { companyId, isActive: true }, select: { id: true } });
+      if (!first) return res.status(400).json({ success: false, error: 'لا يوجد فندق نشط للشركة' });
+      propertyId = first.id;
+    }
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
