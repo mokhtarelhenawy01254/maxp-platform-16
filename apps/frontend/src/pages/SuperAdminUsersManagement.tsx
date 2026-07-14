@@ -85,6 +85,7 @@ import {
 import { cn } from "../lib/utils";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
+import { getImageUrl } from "../utils/imageUrl";
 
 type AvailabilityValue = "available" | "busy" | "away" | "offline";
 
@@ -947,7 +948,7 @@ const SuperAdminUsersManagement: React.FC = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <Avatar className="size-12 border border-white/20">
-                        <AvatarImage src={userItem.avatar || undefined} alt={userItem.email} />
+                        <AvatarImage src={getImageUrl(userItem.avatar) || undefined} alt={userItem.email} />
                         <AvatarFallback>{getInitials(userItem.firstName, userItem.lastName)}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
@@ -1032,7 +1033,7 @@ const SuperAdminUsersManagement: React.FC = () => {
                       <TableCell>
                         <div className="flex min-w-0 items-center gap-3">
                           <Avatar className="size-10 border border-white/20">
-                            <AvatarImage src={userItem.avatar || undefined} alt={userItem.email} />
+                            <AvatarImage src={getImageUrl(userItem.avatar) || undefined} alt={userItem.email} />
                             <AvatarFallback>
                               {getInitials(userItem.firstName, userItem.lastName)}
                             </AvatarFallback>
@@ -1343,7 +1344,7 @@ const SuperAdminUsersManagement: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3 rounded-[2rem] border border-border/70 bg-muted/40 p-4">
                 <Avatar className="size-14 border border-white/20">
-                  <AvatarImage src={detailsUser.avatar || undefined} alt={detailsUser.email} />
+                  <AvatarImage src={getImageUrl(detailsUser.avatar) || undefined} alt={detailsUser.email} />
                   <AvatarFallback>
                     {getInitials(detailsUser.firstName, detailsUser.lastName)}
                   </AvatarFallback>
