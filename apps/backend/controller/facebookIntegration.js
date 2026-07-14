@@ -3,6 +3,7 @@ const { getSharedPrismaClient, initializeSharedDatabase, executeWithRetry } = re
 const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 const crypto = require('crypto');
+const { getFacebookOAuthConfig } = require('../config/facebookAppConfig');
 const {
     buildFacebookPageTokenFailureMessage,
     validateFacebookPageAccessToken
@@ -137,8 +138,9 @@ const getFacebookAppConfig = async (req, res) => {
         ////console.log('🌍 [FACEBOOK-CONFIG] Environment:', envConfig.environment);
         ////console.log('🔗 [FACEBOOK-CONFIG] Backend URL:', envConfig.backendUrl);
 
+        const fbConfig = getFacebookOAuthConfig();
         const config = {
-            appId: process.env.FACEBOOK_APP_ID || 'your-facebook-app-id',
+            appId: fbConfig.appId || 'your-facebook-app-id',
             webhookUrl: `${envConfig.backendUrl}/api/v1/webhook`,
             verifyToken: process.env.FACEBOOK_VERIFY_TOKEN || 'simple_chat_verify_token_2025',
             requiredPermissions: [
@@ -457,9 +459,10 @@ const facebookDiagnostics = async (req, res) => {
                     messages: companyMessages
                 }
             },
+            const fbStatusConfig = getFacebookOAuthConfig();
             facebook: {
                 config: {
-                    appId: process.env.FACEBOOK_APP_ID || 'configured',
+                    appId: fbStatusConfig.appId || 'configured',
                     webhookVerifyToken: process.env.FACEBOOK_VERIFY_TOKEN ? 'configured' : 'missing',
                     backendUrl: envConfig.backendUrl,
                     environment: envConfig.environment

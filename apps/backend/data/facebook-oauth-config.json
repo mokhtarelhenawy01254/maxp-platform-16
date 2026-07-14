@@ -1,6 +1,7 @@
 {
-  "_comment": "Facebook OAuth Configuration for WhatsApp Cloud Embedded Sign-Up",
+  "_comment": "Facebook OAuth Configuration — SINGLE SOURCE OF TRUTH (managed via /super-admin/facebook-oauth)",
   "appId": "762328696481583",
+  "appSecret": "9ef40d290082e1d2455ac38646f2b379",
   "permissions": [
     "business_management",
     "whatsapp_business_messaging",
@@ -16,5 +17,6 @@
     "cancel": "/whatsapp/cloud-connect?status=cancel",
     "error": "/whatsapp/cloud-connect?status=error"
   },
-  "configured": false
+  "configured": true,
+  "updatedAt": "2026-07-14T00:00:00.000Z"
 }

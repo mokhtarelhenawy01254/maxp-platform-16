@@ -8,6 +8,7 @@ const {
   shouldStrictlyEnforceMetaWebhookSignature,
   verifyMetaWebhookSignature
 } = require('../utils/webhookSignature');
+const { getFacebookAppSecret } = require('../config/facebookAppConfig');
 const whatsappMetaWebhookController = require('./whatsappMetaWebhookController');
 
 // ⚠️ CRITICAL: Always use safeQuery() instead of direct prisma calls
@@ -128,7 +129,7 @@ const postWebhook = async (req, res) => {
 
   const signatureCheck = verifyMetaWebhookSignature(
     req,
-    String(process.env.FACEBOOK_APP_SECRET || '').trim()
+    String(getFacebookAppSecret() || '').trim()
   );
 
     if (!signatureCheck.ok) {

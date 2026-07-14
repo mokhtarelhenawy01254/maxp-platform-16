@@ -107,5 +107,13 @@
      - `InstagramInbox.tsx`
      - `UnifiedInbox.tsx`
 
+### Facebook OAuth Configuration & Webhook Verification
+1. **Single Source of Truth Configuration (`facebook-oauth-config.json`)**:
+   - Removed hardcoded fallback Facebook app secrets from `facebookAppConfig.js`.
+   - Unified config loading to read `appId` and `appSecret` dynamically from `facebook-oauth-config.json` (managed via `/super-admin/facebook-oauth`) with environment variable overrides.
+   - Updated `webhookController.js` to verify Meta webhook signatures using the app secret resolved from this unified module fallback.
 
-
+### AI Agent Sandbox
+1. **Agent Skills Visual Strip**:
+   - Added a dedicated skills display bar below the HeaderBar in `/admin/ai-hub?tab=sandbox` page (`AIAgentSandboxPage.tsx`).
+   - Fetches the rich skill list (including `displayName` and `description`) from the agent profile API on agent switch and displays them as a horizontal row of themed badges with a `Sparkles` icon.

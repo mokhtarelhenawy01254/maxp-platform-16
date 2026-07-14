@@ -5,7 +5,7 @@ const envConfig = require("./environment");
 
 const DEFAULT_FACEBOOK_APP_ID = "762328696481583";
 const DEFAULT_FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
-const FALLBACK_FACEBOOK_APP_SECRET = "9ef40d290082e1d2455ac38646f2b379";
+// NOTE: Hardcoded fallback removed — single source of truth is facebook-oauth-config.json (managed via /super-admin/facebook-oauth)
 const FACEBOOK_OAUTH_CONFIG_PATH = path.resolve(
   __dirname,
   "../data/facebook-oauth-config.json",
@@ -95,7 +95,6 @@ const getFacebookOAuthConfig = (env = process.env) => {
       stored.appSecret,
       env.FACEBOOK_APP_SECRET,
       DEFAULT_FACEBOOK_APP_SECRET,
-      FALLBACK_FACEBOOK_APP_SECRET,
     ),
     redirectUri:
       normalizeCredential(stored.redirectUri) ||

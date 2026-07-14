@@ -29,13 +29,15 @@ const {
 
 // Import environment configuration
 const envConfig = require("../config/environment");
+const { getFacebookOAuthConfig } = require("../config/facebookAppConfig");
 
-// Facebook OAuth Configuration — read from env only, never hardcoded
+// Facebook OAuth Configuration — single source of truth: facebook-oauth-config.json (managed via /super-admin/facebook-oauth)
 function getFacebookAppConfig() {
-  const id = process.env.FACEBOOK_APP_ID;
-  const secret = process.env.FACEBOOK_APP_SECRET;
+  const config = getFacebookOAuthConfig();
+  const id = config.appId;
+  const secret = config.appSecret;
   if (!id || !secret) {
-    console.error('❌ [FACEBOOK-OAUTH] FACEBOOK_APP_ID and FACEBOOK_APP_SECRET must be set in environment');
+    console.error('❌ [FACEBOOK-OAUTH] FACEBOOK_APP_ID and FACEBOOK_APP_SECRET must be configured via /super-admin/facebook-oauth');
   }
   return { id, secret };
 }
