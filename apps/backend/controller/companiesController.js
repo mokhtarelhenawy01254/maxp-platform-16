@@ -2457,14 +2457,14 @@ const getCompanyRoles = async (req, res) => {
       MANAGER: {
         name: "مدير",
         description: "صلاحيات إدارية محدودة",
-        permissions: ["إدارة المنتجات", "إدارة العملاء", "إدارة الطلبات", "مشاهدة التقارير"],
+        permissions: ["إدارة المنتجات", "إدارة العملاء", "إدارة الطلبات", "التجهيز", "مشاهدة التقارير"],
         isBuiltIn: true,
         isActive: true,
       },
       AGENT: {
         name: "موظف",
         description: "صلاحيات أساسية للعمل اليومي",
-        permissions: ["إدارة العملاء", "إدارة الطلبات", "مشاهدة المنتجات"],
+        permissions: ["إدارة العملاء", "إدارة الطلبات", "التجهيز", "مشاهدة المنتجات"],
         isBuiltIn: true,
         isActive: true,
       },

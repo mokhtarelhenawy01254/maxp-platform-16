@@ -106,6 +106,7 @@ const PreparationQueue: React.FC = () => {
   const [shortageSavingOrderId, setShortageSavingOrderId] = useState<
     string | null
   >(null);
+  const [sendingToTurbo, setSendingToTurbo] = useState(false);
 
   const {
     activeStage,
@@ -788,6 +789,42 @@ const PreparationQueue: React.FC = () => {
     [fetchInventory, inventorySummaryByProduct, selectedWarehouseId],
   );
 
+  const handleSendToTurbo = useCallback(async () => {
+    if (selectedOrders.length === 0) {
+      toast.error("حدد طلبًا واحدًا على الأقل للإرسال إلى تربو");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `إرسال ${selectedOrders.length} طلب إلى تربو؟`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setSendingToTurbo(true);
+      const response = await apiClient.post("/turbo/bulk/create-shipments", {
+        orderIds: selectedOrders,
+      });
+
+      if (response.data?.success) {
+        const data = response.data.data;
+        toast.success(
+          `تم إرسال ${data.success || 0} طلب إلى تربو بنجاح` +
+            (data.failed > 0 ? `، فشل ${data.failed} طلب` : ""),
+        );
+        uiActions.clearBulkControls();
+        void fetchAll();
+      } else {
+        toast.error(response.data?.error || "فشل الإرسال إلى تربو");
+      }
+    } catch (error: unknown) {
+      console.error("Failed to send to Turbo:", error);
+      toast.error(getApiErrorMessage(error) || "تعذر الإرسال إلى تربو");
+    } finally {
+      setSendingToTurbo(false);
+    }
+  }, [fetchAll, selectedOrders, uiActions]);
+
   const handleMarkAsShortageHold = useCallback(
     async (orderNumber: string) => {
       const order = orders.find((item) => item.orderNumber === orderNumber);
@@ -962,9 +999,15 @@ const PreparationQueue: React.FC = () => {
         bulkUpdating={bulkUpdating}
         preparationEnabled={preparationSettings.enabled}
         bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
+        allVisibleSelected={allVisibleSelected}
+        totalVisibleOrders={paginatedOrders.length}
+        sendingToTurbo={sendingToTurbo}
         onBulkStatusChange={uiActions.setBulkStatus}
         onApply={() => void handleBulkUpdate()}
         onClear={uiActions.clearBulkControls}
+        onSelectAll={toggleSelectAllVisible}
+        onClearSelection={() => uiActions.clearBulkControls()}
+        onSendToTurbo={() => void handleSendToTurbo()}
       />
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">

@@ -19,6 +19,8 @@ const PERMISSIONS = [
   { key: 'orders.assign', name: 'تعيين طلب لمستخدم', domain: 'ORDERS' },
   { key: 'orders.export', name: 'تصدير الطلبات', domain: 'ORDERS' },
   { key: 'orders.bulk.create', name: 'إنشاء طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.preparation.view', name: 'عرض قائمة التجهيز', domain: 'ORDERS' },
+  { key: 'orders.preparation.manage', name: 'إدارة قائمة التجهيز', domain: 'ORDERS' },
 
   // Products
   { key: 'products.view', name: 'عرض المنتجات', domain: 'PRODUCTS' },
@@ -171,6 +173,7 @@ const BUILT_IN_ROLES = {
       'dashboard.view', 'dashboard.view.all', 'dashboard.view.team',
       'analytics.view',
       'orders.view', 'orders.create', 'orders.edit', 'orders.status.change', 'orders.assign', 'orders.export',
+      'orders.preparation.view', 'orders.preparation.manage',
       'products.view', 'products.create', 'products.edit',
       'customers.view', 'customers.view.all', 'customers.view.team',
       'customers.create', 'customers.edit',
@@ -199,6 +202,7 @@ const BUILT_IN_ROLES = {
     permissions: [
       'dashboard.view',
       'orders.view', 'orders.create', 'orders.status.change',
+      'orders.preparation.view',
       'products.view',
       'customers.view', 'customers.view.own',
       'customers.create',

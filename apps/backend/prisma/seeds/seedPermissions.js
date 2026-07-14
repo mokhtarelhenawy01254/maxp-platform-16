@@ -272,6 +272,7 @@ const BUILT_IN_ROLES = {
       'dashboard.view', 'dashboard.view.all', 'dashboard.view.team',
       'analytics.view',
       'orders.view', 'orders.create', 'orders.edit', 'orders.status.change', 'orders.assign', 'orders.export',
+      'orders.preparation.view', 'orders.preparation.manage',
       'orders.invoices.view', 'orders.manual.create', 'orders.status-summary.view',
       'orders.shipping.view', 'orders.workflow.view', 'orders.settings.view',
       'products.view', 'products.create', 'products.edit',
@@ -302,6 +303,7 @@ const BUILT_IN_ROLES = {
     permissions: [
       'dashboard.view',
       'orders.view', 'orders.create', 'orders.status.change',
+      'orders.preparation.view',
       'orders.invoices.view', 'orders.manual.create',
       'products.view',
       'customers.view', 'customers.view.own',
