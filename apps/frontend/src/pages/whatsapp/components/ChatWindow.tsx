@@ -11,6 +11,8 @@ import {
   MapPin,
   Mic,
   Paperclip,
+  PanelRightClose,
+  PanelRightOpen,
   RefreshCw,
   Send,
   ShoppingCart,
@@ -58,6 +60,8 @@ interface ChatWindowProps {
   onSendMessage: () => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onVoiceNoteSend: (blob: Blob) => void;
+  showRightPanel?: boolean;
+  onToggleRightPanel?: () => void;
   onOpenContactInfo: () => void;
   onMessageContextMenu: (event: React.MouseEvent, message: Message) => void;
   getContactName: (contact: Contact) => string;
@@ -78,6 +82,7 @@ interface ChatWindowProps {
   highlightedMessageId?: string | null;
   messagesError?: boolean;
   onRetryMessages?: () => void;
+  onToggleAi?: (contact: Contact, aiEnabled: boolean) => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -102,6 +107,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onSendMessage,
   onFileUpload,
   onVoiceNoteSend,
+  showRightPanel,
+  onToggleRightPanel,
   onOpenContactInfo,
   onMessageContextMenu,
   getContactName,
@@ -122,6 +129,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   highlightedMessageId,
   messagesError,
   onRetryMessages,
+  onToggleAi,
 }) => {
   const { t, i18n } = useTranslation();
   const [showRichTools, setShowRichTools] = useState(false);
@@ -220,6 +228,39 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </div>
 
+        {(() => {
+          if (!selectedContact || !onToggleAi) return null;
+          const hasActiveConversation = selectedContact.customer?.conversations && selectedContact.customer.conversations.length > 0;
+          const aiEnabled = hasActiveConversation ? selectedContact.customer?.conversations?.[0]?.aiEnabled !== false : true;
+          return (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={cn(
+                "size-8 shrink-0 rounded-full",
+                aiEnabled
+                  ? "text-[color:var(--color-primary)] hover:bg-[color:var(--color-primary)]/10"
+                  : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+              )}
+              onClick={() => onToggleAi(selectedContact, !aiEnabled)}
+              title={aiEnabled ? "إيقاف الرد الآلي" : "تشغيل الرد الآلي"}
+            >
+              <span className="text-base">🤖</span>
+            </Button>
+          );
+        })()}
+
+        {onToggleRightPanel ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="size-8 shrink-0 rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
+            onClick={onToggleRightPanel}
+          >
+            {showRightPanel ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}
+            <span className="sr-only">{showRightPanel ? t("common.close") : t("common.open")}</span>
+          </Button>
+        ) : null}
         <Button
           variant="ghost"
           size="icon-sm"
