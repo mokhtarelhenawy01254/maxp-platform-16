@@ -30,6 +30,7 @@ router.get('/reservations', verifyToken.authenticateToken, ctrl.getReservations)
 router.get('/reservations/:id', verifyToken.authenticateToken, ctrl.getReservation);
 router.post('/reservations', verifyToken.authenticateToken, ctrl.createReservation);
 router.patch('/reservations/:id/status', verifyToken.authenticateToken, ctrl.updateReservationStatus);
+router.put('/reservations/:id', verifyToken.authenticateToken, ctrl.updateReservation);
 router.delete('/reservations/:id', verifyToken.authenticateToken, ctrl.deleteReservation);
 
 // Folio

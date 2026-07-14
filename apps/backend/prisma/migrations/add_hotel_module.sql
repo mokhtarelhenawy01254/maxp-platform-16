@@ -139,3 +139,30 @@ CREATE TABLE IF NOT EXISTS "hotel_room_rates" (
 CREATE INDEX IF NOT EXISTS idx_hotel_room_rates_company ON hotel_room_rates("companyId");
 CREATE INDEX IF NOT EXISTS idx_hotel_room_rates_type ON hotel_room_rates("roomTypeId");
 CREATE INDEX IF NOT EXISTS idx_hotel_room_rates_dates ON hotel_room_rates("dateFrom", "dateTo");
+
+-- v2: HotelPricingModel enum + new columns (per-person pricing, room view/wing, extra bed, deposit)
+DO $$ BEGIN
+  CREATE TYPE "HotelPricingModel" AS ENUM ('PER_ROOM', 'PER_PERSON');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+ALTER TABLE hotel_room_types
+  ADD COLUMN IF NOT EXISTS "pricingModel" "HotelPricingModel" NOT NULL DEFAULT 'PER_ROOM',
+  ADD COLUMN IF NOT EXISTS "pricePerExtraAdult" DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+ALTER TABLE hotel_rooms
+  ADD COLUMN IF NOT EXISTS "view" TEXT,
+  ADD COLUMN IF NOT EXISTS "wing" TEXT,
+  ADD COLUMN IF NOT EXISTS "hasExtraBed" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "extraBedCapacity" INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "extraBedPrice" DOUBLE PRECISION NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "basePriceOverride" DOUBLE PRECISION;
+
+ALTER TABLE hotel_reservations
+  ADD COLUMN IF NOT EXISTS "adults" INTEGER NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS "children" INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "depositRequired" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "depositAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "depositPaid" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT;

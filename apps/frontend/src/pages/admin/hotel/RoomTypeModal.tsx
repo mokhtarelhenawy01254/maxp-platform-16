@@ -24,6 +24,8 @@ export default function RoomTypeModal({
     description: data?.description || "",
     capacity: data?.capacity ?? 2,
     basePrice: data?.basePrice ?? 0,
+    pricingModel: data?.pricingModel || "PER_ROOM",
+    pricePerExtraAdult: data?.pricePerExtraAdult ?? 0,
     totalRooms: data?.totalRooms ?? 1,
     amenities: data?.amenities || []
   });
@@ -50,6 +52,17 @@ export default function RoomTypeModal({
         <div className="grid grid-cols-3 gap-2">
           <div><label className="text-sm text-gray-500">السعة</label><input type="number" className={INPUT_CLS} value={form.capacity} onChange={e => setForm({ ...form, capacity: +e.target.value })} /></div>
           <div className="col-span-2"><label className="text-sm text-gray-500">السعر الأساسي</label><input type="number" className={INPUT_CLS} value={form.basePrice} onChange={e => setForm({ ...form, basePrice: +e.target.value })} /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="text-sm text-gray-500">نظام التسعير</label>
+            <select className={INPUT_CLS} value={form.pricingModel} onChange={e => setForm({ ...form, pricingModel: e.target.value })}>
+              <option value="PER_ROOM">للغرفة</option>
+              <option value="PER_PERSON">للفرد</option>
+            </select>
+          </div>
+          {form.pricingModel === "PER_PERSON" && (
+            <div><label className="text-sm text-gray-500">سعر الفرد الإضافي</label><input type="number" className={INPUT_CLS} value={form.pricePerExtraAdult} onChange={e => setForm({ ...form, pricePerExtraAdult: +e.target.value })} /></div>
+          )}
         </div>
         <input type="number" className={INPUT_CLS} placeholder="عدد الغرف" value={form.totalRooms} onChange={e => setForm({ ...form, totalRooms: +e.target.value })} />
       </div>

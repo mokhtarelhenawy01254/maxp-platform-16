@@ -36,6 +36,10 @@ export default function ReservationModal({
     checkOut: tomorrow,
     adults: 1,
     children: 0,
+    depositRequired: false,
+    depositAmount: 0,
+    depositPaid: false,
+    paymentMethod: "",
     rooms: [{ roomTypeId: "", roomId: "", nightlyRate: 0 }] as RoomLine[]
   });
   const [avail, setAvail] = useState<any[]>([]);
@@ -62,12 +66,12 @@ export default function ReservationModal({
 
   const addRoomLine = () => setForm({ ...form, rooms: [...form.rooms, { roomTypeId: "", roomId: "", nightlyRate: 0 }] });
 
-  const save = async () => {
+    const save = async () => {
     try {
-      const payload = {
-        ...form,
-        rooms: form.rooms.map(r => ({ roomTypeId: r.roomTypeId, roomId: r.roomId || undefined, nightlyRate: r.nightlyRate }))
-      };
+      const rooms = form.rooms
+        .filter(r => r.roomTypeId)
+        .map(r => ({ roomTypeId: r.roomTypeId, roomId: r.roomId || undefined, nightlyRate: r.nightlyRate }));
+      const payload = { ...form, rooms };
       await hotelApi.reservations.create(payload);
       onSaved();
     } catch (e: any) {
@@ -125,7 +129,7 @@ export default function ReservationModal({
                 }}
               >
                 <span>{a.roomType.nameAr || a.roomType.name} ({a.availableRooms} متاحة)</span>
-                <span className="font-bold">{a.effectivePrice} ج.م/ليلة</span>
+                <span className="font-bold">{a.effectivePrice} ج.م/{a.roomType.pricingModel === "PER_PERSON" ? "للفرد/ليلة" : "ليلة"}</span>
               </button>
             ))}
           </div>
@@ -147,6 +151,28 @@ export default function ReservationModal({
             </div>
           ))}
           <button className={`${BTN_GHOST} text-blue-600 text-sm`} onClick={addRoomLine}>+ إضافة غرفة</button>
+        </div>
+
+        <div className="border-t pt-3">
+          <p className="text-sm font-medium mb-2">الدفع المقدم:</p>
+          <div className="flex items-center gap-2 mb-2">
+            <input type="checkbox" id="depositRequired" checked={form.depositRequired} onChange={e => setForm({ ...form, depositRequired: e.target.checked })} />
+            <label htmlFor="depositRequired" className="text-sm text-gray-500">مطلوب دفعة مقدمة</label>
+          </div>
+          {form.depositRequired && (
+            <div className="grid grid-cols-3 gap-2 pr-6">
+              <div><label className="text-sm text-gray-500">المبلغ</label><input type="number" className={INPUT_CLS} value={form.depositAmount} onChange={e => setForm({ ...form, depositAmount: +e.target.value })} /></div>
+              <div className="flex items-center gap-2 mt-5">
+                <input type="checkbox" id="depositPaid" checked={form.depositPaid} onChange={e => setForm({ ...form, depositPaid: e.target.checked })} />
+                <label htmlFor="depositPaid" className="text-sm text-gray-500">تم الدفع</label>
+              </div>
+              <div><label className="text-sm text-gray-500">طريقة الدفع</label>
+                <select className={INPUT_CLS} value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })}>
+                  <option value="">اختر</option><option value="vodafone_cash">فودافون كاش</option><option value="instapay">انستا باي</option><option value="cib_topup">CIB توب أب</option><option value="card">بطاقة</option><option value="other">أخرى</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex justify-end gap-2 mt-6">

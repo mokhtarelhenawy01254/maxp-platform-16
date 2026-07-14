@@ -21,6 +21,7 @@ class ReserveInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
     customer_name: str = Field(..., description="اسم الضيف")
     customer_phone: str = Field(..., description="رقم جوال الضيف")
+    customer_email: str = Field(default="", description="البريد الإلكتروني للضيف")
     check_in: str = Field(..., description="تاريخ الوصول (مثال: 2026-07-15)")
     check_out: str = Field(..., description="تاريخ المغادرة (مثال: 2026-07-17)")
     property_id: str = Field(..., description="معرف الفندق")
@@ -28,6 +29,10 @@ class ReserveInput(BaseModel):
     adults: int = Field(default=1, description="عدد البالغين")
     children: int = Field(default=0, description="عدد الأطفال")
     customer_notes: str = Field(default="", description="ملاحظات إضافية")
+    deposit_required: bool = Field(default=False, description="يتطلب عربون؟")
+    deposit_amount: float | None = Field(default=None, description="مبلغ العربون المطلوب")
+    deposit_paid: bool = Field(default=False, description="هل تم دفع العربون؟")
+    payment_method: str = Field(default="", description="طريقة الدفع: cash/card/transfer")
 
 class MyReservationsInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
@@ -61,6 +66,7 @@ async def hotel_reserve(input_data: ReserveInput) -> dict[str, Any]:
         "companyId": input_data.company_id,
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
+        "customerEmail": input_data.customer_email,
         "checkIn": input_data.check_in,
         "checkOut": input_data.check_out,
         "propertyId": input_data.property_id,
@@ -68,6 +74,10 @@ async def hotel_reserve(input_data: ReserveInput) -> dict[str, Any]:
         "adults": input_data.adults,
         "children": input_data.children,
         "customerNotes": input_data.customer_notes,
+        "depositRequired": input_data.deposit_required,
+        "depositAmount": input_data.deposit_amount,
+        "depositPaid": input_data.deposit_paid,
+        "paymentMethod": input_data.payment_method,
         "source": "whatsapp",
         "createdByType": "ai_service",
     }
@@ -93,21 +103,21 @@ async def hotel_cancel_reservation(input_data: CancelReservationInput) -> dict[s
 
 hotel_info_tool = FunctionTool(
     name="hotel_info",
-    description="معلومات الفندق: عرض أنواع الغرف المتاحة مع الأسعار الأساسية والسعة والخدمات.",
+    description="معلومات الفندق: عرض أنواع الغرف المتاحة مع الأسعار الأساسية (لكل غرفة PER_ROOM أو لكل شخص PER_PERSON)، السعة، والخدمات.",
     func=hotel_info,
     input_model=InfoInput,
 )
 
 hotel_check_availability_tool = FunctionTool(
     name="hotel_check_availability",
-    description="التحقق من توفر الغرف في تواريخ محددة: عرض الغرف المتاحة حسب النوع والسعر الفعلي (بما في ذلك الأسعار الموسمية).",
+    description="التحقق من توفر الغرف في تواريخ محددة: عرض الغرف المتاحة حسب النوع والسعر الفعلي (بما في ذلك الأسعار الموسمية). يعرض pricingModel (PER_ROOM = السعر للغرفة, PER_PERSON = السعر للشخص) و pricePerExtraAdult لسعر الشخص الإضافي.",
     func=hotel_check_availability,
     input_model=CheckAvailabilityInput,
 )
 
 hotel_reserve_tool = FunctionTool(
     name="hotel_reserve",
-    description="حجز غرفة أو أكثر لضيف في الفندق. تنبيه: property_id مطلوب (يؤخذ من hotel_info). rooms يجب أن تكون array من objects وليس string: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 500}]. rooms ليست string ولا array of strings.",
+    description="حجز غرفة أو أكثر لضيف في الفندق. يرسل customer_name, customer_phone, check_in, check_out, property_id, rooms (array of objects), adults, children. يدعم deposit_required (عربون), deposit_amount, deposit_paid, payment_method. تنبيه: property_id مطلوب (يؤخذ من hotel_info). rooms يجب أن تكون array من objects وليس string: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 500}].",
     func=hotel_reserve,
     input_model=ReserveInput,
 )

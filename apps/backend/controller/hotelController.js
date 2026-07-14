@@ -87,10 +87,10 @@ const createRoomType = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
-    const { propertyId, name, nameAr, description, capacity, basePrice, amenities, images, totalRooms } = req.body;
+    const { propertyId, name, nameAr, description, capacity, basePrice, pricingModel, pricePerExtraAdult, amenities, images, totalRooms } = req.body;
     if (!propertyId || !name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم النوع والفندق مطلوب' });
     const data = await getSharedPrismaClient().hotelRoomType.create({
-      data: { companyId, propertyId, name: name.trim(), nameAr, description, capacity: capacity || 2, basePrice, amenities, images, totalRooms: totalRooms || 1 }
+      data: { companyId, propertyId, name: name.trim(), nameAr, description, capacity: capacity || 2, basePrice, pricingModel, pricePerExtraAdult: pricePerExtraAdult || 0, amenities, images, totalRooms: totalRooms || 1 }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -155,10 +155,10 @@ const createRoom = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
-    const { propertyId, roomTypeId, roomNumber, floor, notes } = req.body;
+    const { propertyId, roomTypeId, roomNumber, floor, notes, view, wing, hasExtraBed, extraBedCapacity, extraBedPrice, basePriceOverride } = req.body;
     if (!propertyId || !roomTypeId || !roomNumber) return res.status(400).json({ success: false, error: 'بيانات الغرفة ناقصة' });
     const data = await getSharedPrismaClient().hotelRoom.create({
-      data: { companyId, propertyId, roomTypeId, roomNumber: roomNumber.trim(), floor: floor || null, notes }
+      data: { companyId, propertyId, roomTypeId, roomNumber: roomNumber.trim(), floor: floor || null, view, wing, hasExtraBed, extraBedCapacity, extraBedPrice, basePriceOverride, notes }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -261,7 +261,7 @@ const createReservation = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
-    const { propertyId, customerId, customerName, customerPhone, customerEmail, customerNotes, checkIn, checkOut, adults, children, rooms: roomData, source } = req.body;
+    const { propertyId, customerId, customerName, customerPhone, customerEmail, customerNotes, checkIn, checkOut, adults, children, rooms: roomData, source, depositRequired, depositAmount, depositPaid, paymentMethod } = req.body;
     if (!propertyId || !customerName || !checkIn || !checkOut || !roomData?.length) {
       return res.status(400).json({ success: false, error: 'بيانات الحجز ناقصة' });
     }
@@ -278,8 +278,22 @@ const createReservation = async (req, res) => {
       for (const r of roomData) {
         const roomType = await tx.hotelRoomType.findFirst({ where: { id: r.roomTypeId, companyId } });
         if (!roomType) throw new Error(`نوع الغرفة ${r.roomTypeId} غير موجود`);
-        const rate = r.nightlyRate || roomType.basePrice;
-        totalAmount += rate * nights;
+
+        let rate = r.nightlyRate;
+        if (!rate && r.roomId) {
+          const room = await tx.hotelRoom.findFirst({ where: { id: r.roomId, companyId } });
+          rate = room?.basePriceOverride || roomType.basePrice;
+        }
+        if (!rate) rate = roomType.basePrice;
+
+        if (roomType.pricingModel === 'PER_PERSON') {
+          totalAmount += rate * nights * (adults || 1);
+          if (roomType.pricePerExtraAdult && (adults || 1) > 1) {
+            totalAmount += roomType.pricePerExtraAdult * nights * ((adults || 1) - 1);
+          }
+        } else {
+          totalAmount += rate * nights;
+        }
 
         let roomId = r.roomId;
         if (!roomId) {
@@ -320,7 +334,7 @@ const createReservation = async (req, res) => {
         data: {
           companyId, propertyId, customerId: customerId || null, customerName: customerName.trim(),
           customerPhone, customerEmail, customerNotes, checkIn: checkInDate, checkOut: checkOutDate,
-          adults: adults || 1, children: children || 0, totalAmount, paidAmount: 0, source: source || 'dashboard',
+          adults: adults || 1, children: children || 0, totalAmount, paidAmount: 0, source: source || 'dashboard', depositRequired, depositAmount, depositPaid, paymentMethod,
           createdById: req.user?.id, createdByType: 'user',
           rooms: { create: reservationRooms }
         },
@@ -373,6 +387,21 @@ const updateReservationStatus = async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating reservation status:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الحجز' });
+  }
+};
+
+const updateReservation = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { id } = req.params;
+    const existing = await getSharedPrismaClient().hotelReservation.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+    const data = await getSharedPrismaClient().hotelReservation.update({ where: { id }, data: req.body, include: { rooms: { include: { room: true, roomType: true } }, folio: true, property: true } });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error updating reservation:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الحجز' });
   }
 };
@@ -446,10 +475,10 @@ const checkAvailability = async (req, res) => {
       const availableRooms = rt.rooms.filter(r => !occupiedRoomIds.includes(r.id));
       const seasonalRate = rt.rates?.[0];
       return {
-        roomType: { id: rt.id, name: rt.name, nameAr: rt.nameAr, capacity: rt.capacity, basePrice: rt.basePrice, amenities: rt.amenities, images: rt.images },
+        roomType: { id: rt.id, name: rt.name, nameAr: rt.nameAr, capacity: rt.capacity, basePrice: rt.basePrice, pricingModel: rt.pricingModel, pricePerExtraAdult: rt.pricePerExtraAdult, amenities: rt.amenities, images: rt.images },
         totalRooms: rt.rooms.length,
         availableRooms: availableRooms.length,
-        rooms: availableRooms.map(r => ({ id: r.id, roomNumber: r.roomNumber, floor: r.floor, status: r.status })),
+        rooms: availableRooms.map(r => ({ id: r.id, roomNumber: r.roomNumber, floor: r.floor, status: r.status, view: r.view, wing: r.wing, hasExtraBed: r.hasExtraBed, extraBedCapacity: r.extraBedCapacity, extraBedPrice: r.extraBedPrice, basePriceOverride: r.basePriceOverride })),
         effectivePrice: seasonalRate?.price || rt.basePrice
       };
     }).filter(rt => rt.availableRooms > 0);
@@ -580,7 +609,7 @@ module.exports = {
   getProperties, createProperty, updateProperty, deleteProperty,
   getRoomTypes, createRoomType, updateRoomType, deleteRoomType,
   getRooms, createRoom, updateRoom, deleteRoom, updateRoomStatus,
-  getReservations, getReservation, createReservation, updateReservationStatus, deleteReservation,
+  getReservations, getReservation, createReservation, updateReservation, updateReservationStatus, deleteReservation,
   checkAvailability,
   getFolioItems, addFolioItem, removeFolioItem,
   getRoomRates, createRoomRate, deleteRoomRate

@@ -27,22 +27,24 @@ model HotelProperty {
 
 /// Hotel module - Room types/categories
 model HotelRoomType {
-  id          String   @id @default(cuid())
-  companyId   String
-  propertyId  String
-  name        String   /// e.g. Single, Double, Suite
-  nameAr      String?  /// Arabic name
-  description String?
-  capacity    Int      @default(2)
-  basePrice   Float    /// Default price per night
-  amenities   Json?    /// ["tv","ac","minibar","balcony","sea-view"]
-  images      Json?
-  totalRooms  Int      @default(1)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  property    HotelProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id                 String              @id @default(cuid())
+  companyId          String
+  propertyId         String
+  name               String              /// e.g. Single, Double, Suite
+  nameAr             String?             /// Arabic name
+  description        String?
+  capacity           Int                 @default(2)
+  basePrice          Float               /// Default price per night
+  pricingModel       HotelPricingModel   @default(PER_ROOM)
+  pricePerExtraAdult Float               @default(0) /// PER_PERSON: extra per additional adult beyond 1
+  amenities          Json?               /// ["tv","ac","minibar","balcony","sea-view"]
+  images             Json?
+  totalRooms         Int                 @default(1)
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  property           HotelProperty       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   rooms    HotelRoom[]
   rates    HotelRoomRate[]
@@ -55,20 +57,26 @@ model HotelRoomType {
 
 /// Hotel module - Individual rooms
 model HotelRoom {
-  id          String   @id @default(cuid())
-  companyId   String
-  propertyId  String
-  roomTypeId  String
-  roomNumber  String
-  floor       Int?
-  status      HotelRoomStatus @default(AVAILABLE)
-  notes       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  property    HotelProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  roomType    HotelRoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  companyId        String
+  propertyId       String
+  roomTypeId       String
+  roomNumber       String
+  floor            Int?
+  status           HotelRoomStatus @default(AVAILABLE)
+  view             String?  /// no view, yard, mountain, street, sea
+  wing             String?  /// left, right, main
+  hasExtraBed      Boolean  @default(false)
+  extraBedCapacity Int      @default(0)
+  extraBedPrice    Float    @default(0)
+  basePriceOverride Float?  /// per-room price override (overrides RoomType.basePrice)
+  notes            String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  property         HotelProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomType         HotelRoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
 
   reservationRooms HotelReservationRoom[]
 
@@ -92,13 +100,17 @@ model HotelReservation {
   customerNotes String?
   checkIn       DateTime                @db.Date
   checkOut      DateTime                @db.Date
-  adults        Int                     @default(1)
-  children      Int                     @default(0)
-  totalAmount   Float
-  paidAmount    Float                   @default(0)
-  status        HotelReservationStatus  @default(PENDING)
-  source        String?                 /// whatsapp/facebook/dashboard/public
-  createdById   String?
+  adults          Int                     @default(1)
+  children        Int                     @default(0)
+  totalAmount     Float
+  paidAmount      Float                   @default(0)
+  depositRequired Boolean                 @default(false)
+  depositAmount   Float                   @default(0)
+  depositPaid     Boolean                 @default(false)
+  paymentMethod   String?                 /// vodafone_cash/cib_topup/instapay/card/other
+  status          HotelReservationStatus  @default(PENDING)
+  source          String?                 /// whatsapp/facebook/dashboard/public
+  createdById     String?
   createdByType String?                 /// ai_service / user
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt

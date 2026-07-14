@@ -82,13 +82,16 @@ export type HotelProperty = {
 
 export type HotelRoomType = {
   id: string; propertyId: string; name: string; nameAr?: string; description?: string;
-  capacity: number; basePrice: number; amenities?: string[]; images?: string[];
+  capacity: number; basePrice: number; pricingModel?: string; pricePerExtraAdult?: number;
+  amenities?: string[]; images?: string[];
   totalRooms: number; isActive: boolean; _count?: { rooms: number };
 };
 
 export type HotelRoom = {
   id: string; propertyId: string; roomTypeId: string; roomNumber: string;
   floor?: number; status: string; notes?: string; isActive: boolean;
+  view?: string; wing?: string; hasExtraBed?: boolean;
+  extraBedCapacity?: number; extraBedPrice?: number; basePriceOverride?: number;
   roomType?: HotelRoomType; property?: HotelProperty;
 };
 
@@ -97,6 +100,7 @@ export type HotelReservation = {
   customerPhone?: string; customerEmail?: string; customerNotes?: string;
   checkIn: string; checkOut: string; adults: number; children: number;
   totalAmount: number; paidAmount: number; status: string; source?: string;
+  depositRequired?: boolean; depositAmount?: number; depositPaid?: boolean; paymentMethod?: string;
   rooms: HotelReservationRoom[]; folio: HotelFolioItem[]; property?: HotelProperty;
   createdAt: string;
 };

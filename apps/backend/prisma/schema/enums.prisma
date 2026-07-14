@@ -2003,6 +2003,13 @@ enum HotelFolioItemType {
   @@map("hotel_folio_item_type")
 }
 
+enum HotelPricingModel {
+  PER_ROOM
+  PER_PERSON
+
+  @@map("hotel_pricing_model")
+}
+
 enum ServiceOrderStatus {
   NEW
   IN_PROGRESS
