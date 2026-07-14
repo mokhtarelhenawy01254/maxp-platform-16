@@ -42,9 +42,11 @@ const PostsManagement = ({ embedded = false }) => {
 
   useEffect(() => {
     if (selectedPage) {
-      CommentService.syncPagePosts(selectedPage); // fire-and-forget
       fetchPosts();
       fetchPageSettings();
+      CommentService.syncPagePosts(selectedPage).then(() => {
+        if (selectedPage) fetchPosts();
+      }).catch(() => {});
       setShowMobilePages(false);
     } else {
       setPosts([]);
