@@ -53,13 +53,13 @@ async function syncPagePosts(pageId, companyId) {
         /pages_read_engagement/i.test(graphError.message || '');
 
       if (isPermissionError && !refreshAttempted) {
+        refreshAttempted = true;
         const refreshResult = await refreshFacebookPageAccessToken({
           companyId: pageToken.companyId || companyId,
           pageId,
         });
         if (refreshResult.success) {
           validToken = refreshResult.pageAccessToken;
-          refreshAttempted = true;
           url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
           allPosts = [];
           continue;
