@@ -1966,6 +1966,7 @@ model Company {
   branches                        Branche[]
   broadcastCampaigns              BroadcastCampaign[]
   broadcastSettings               BroadcastSettings?
+  leadCategories                  LeadCategory[]
   categories                      Category[]
   checkoutFormSettings            CheckoutFormSettings?
   commissions                     Commission[]
@@ -6153,6 +6154,7 @@ model BroadcastCampaign {
   targetAudience      String
   waTemplateName      String? // WhatsApp template name (when channel=whatsapp)
   waLanguageCode      String?              @default("en")
+  leadCategoryId      String?
   scheduledAt         DateTime?
   sentAt              DateTime?
   tags                String?
@@ -7774,6 +7776,7 @@ model WhatsAppContact {
   isBlocked           Boolean         @default(false)
   customerId          String?
   category            String?         @default("LEAD")
+  leadCategoryId      String?
   tags                String?
   notes               String?
   lastMessageAt       DateTime?
@@ -7787,10 +7790,12 @@ model WhatsAppContact {
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
   customer            Customer?       @relation(fields: [customerId], references: [id])
+  leadCategory        LeadCategory?   @relation(fields: [leadCategoryId], references: [id])
   whatsAppSession     WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, jid])
   @@index([category])
+  @@index([leadCategoryId])
   @@index([customerId])
   @@index([lastMessageAt])
   @@index([phoneNumber])
@@ -12119,6 +12124,23 @@ model TelegramForwardRule {
 }
 
 // --- From: whatsapp_automation.prisma ---
+model LeadCategory {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  color     String?  @default("#6366f1")
+  isDefault Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contacts  WhatsAppContact[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("lead_categories")
+}
+
 model WhatsAppFollowUpFlow {
   id        String                 @id @default(cuid())
   companyId String

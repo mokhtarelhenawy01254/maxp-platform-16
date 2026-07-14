@@ -48,6 +48,8 @@ export interface Contact {
   isGroup: boolean;
   isNewsletter: boolean;
   category: string | null;
+  leadCategoryId?: string | null;
+  leadCategory?: { id: string; name: string; color: string | null } | null;
   labels?: string[];
   unreadCount: number;
   lastMessageAt: string | null;

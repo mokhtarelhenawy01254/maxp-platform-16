@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { User, Phone, Mail, Clock, ShoppingBag, Activity, Tags, X, ExternalLink, MapPin } from 'lucide-react';
+import { User, Phone, Mail, Clock, ShoppingBag, Activity, Tags, X, ExternalLink, MapPin, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomerProfile } from '../../../hooks/inbox/useCustomerProfile';
 import { getInboxCustomerAvatarUrl, buildProxyImageUrl } from '../../../utils/imageUrl';
 import { Contact } from '../../../hooks/useWhatsAppQueries';
+import { apiClient } from '../../../services/apiClient';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 
@@ -40,6 +42,8 @@ const ORDER_STATUS_THEME: Record<string, { label: string; color: string }> = {
 const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, onOpenOrder, onOpenTasks, onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [avatarError, setAvatarError] = useState(false);
+  const [leadCategories, setLeadCategories] = useState<any[]>([]);
+  const [updatingCategory, setUpdatingCategory] = useState(false);
   const { customer, orders, activities, loading, loadCustomerData, calculateLTV } = useCustomerProfile();
 
   const customerId = contact?.customer?.id;
@@ -50,6 +54,27 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
     }
     setAvatarError(false);
   }, [customerId, loadCustomerData]);
+
+  useEffect(() => {
+    apiClient.get("/whatsapp/lead-categories").then(r => {
+      setLeadCategories(r.data?.data || []);
+    }).catch(() => {});
+  }, []);
+
+  const handleCategoryChange = async (categoryId: string) => {
+    if (!contact) return;
+    setUpdatingCategory(true);
+    try {
+      await apiClient.put("/whatsapp/contacts/" + contact.id, { leadCategoryId: categoryId || null });
+      contact.leadCategoryId = categoryId || null;
+      contact.leadCategory = leadCategories.find(c => c.id === categoryId) || null;
+      setUpdatingCategory(false);
+    } catch { setUpdatingCategory(false); }
+  };
+
+  const selectedCategory = contact?.leadCategoryId
+    ? leadCategories.find(c => c.id === contact.leadCategoryId)
+    : null;
 
   if (!contact) return null;
 
@@ -178,6 +203,31 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
                     <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5 text-xs" onClick={onOpenLabels}>
                       <Tags className="size-3.5" /> إدارة التصنيفات
                     </Button>
+                  </div>
+
+                  <div style={sectionStyle}>
+                    <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">تصنيف العميل</h4>
+                    <div className="flex items-center gap-2">
+                      {selectedCategory && (
+                        <span className="inline-block size-3 shrink-0 rounded-full" style={{ background: selectedCategory.color || '#6366f1' }} />
+                      )}
+                      <Select value={contact.leadCategoryId || ""} onValueChange={handleCategoryChange} disabled={updatingCategory}>
+                        <SelectTrigger className="h-9 w-full text-xs">
+                          <SelectValue placeholder="اختر التصنيف" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">بدون تصنيف</SelectItem>
+                          {leadCategories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              <span className="flex items-center gap-2">
+                                <span className="inline-block size-2.5 rounded-full" style={{ background: cat.color || '#6366f1' }} />
+                                {cat.name} ({cat.contactCount})
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div style={sectionStyle}>

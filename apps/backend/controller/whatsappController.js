@@ -1309,7 +1309,7 @@ async function updateContact(req, res) {
     try {
         const { companyId } = req.user;
         const { id } = req.params;
-        const { name, category, tags, notes, customerId, isArchived, isPinned, isMuted } = req.body;
+        const { name, category, leadCategoryId, tags, notes, customerId, isArchived, isPinned, isMuted } = req.body;
 
         // التحقق من الملكية
         const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
@@ -1328,6 +1328,7 @@ async function updateContact(req, res) {
             data: {
                 name,
                 category,
+                leadCategoryId: leadCategoryId || null,
                 tags: tags ? JSON.stringify(tags) : undefined,
                 notes,
                 customerId,

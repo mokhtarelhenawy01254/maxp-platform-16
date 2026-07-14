@@ -1,3 +1,20 @@
+model LeadCategory {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  color     String?  @default("#6366f1")
+  isDefault Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contacts  WhatsAppContact[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("lead_categories")
+}
+
 model WhatsAppFollowUpFlow {
   id          String                 @id @default(cuid())
   companyId   String

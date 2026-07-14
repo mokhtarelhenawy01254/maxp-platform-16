@@ -56,6 +56,7 @@ exports.createCampaign = async (req, res) => {
       targetAudience,
       waTemplateName,
       waLanguageCode,
+      leadCategoryId,
       scheduledAt,
       tags,
       priority,
@@ -163,6 +164,7 @@ exports.createCampaign = async (req, res) => {
         targetAudience,
         waTemplateName: waTemplateName || null,
         waLanguageCode: waLanguageCode || 'en',
+        leadCategoryId: leadCategoryId || null,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
         tags: tagsString,
         priority: priority || 'medium',
@@ -722,6 +724,18 @@ exports.sendCampaign = async (req, res) => {
     }
 
     console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة`);
+
+    // Filter by lead category if set on campaign
+    if (campaign.channel === 'whatsapp' && campaign.leadCategoryId) {
+      console.log(`🏷️ [SEND CAMPAIGN] تصفية حسب تصنيف العملاء: ${campaign.leadCategoryId}`);
+      const validContacts = await getSharedPrismaClient().whatsAppContact.findMany({
+        where: { leadCategoryId: campaign.leadCategoryId, companyId },
+        select: { customerId: true }
+      });
+      const validCustomerIds = new Set(validContacts.map(c => c.customerId).filter(Boolean));
+      conversations = conversations.filter(c => validCustomerIds.has(c.customer?.id));
+      console.log(`📊 [SEND CAMPAIGN] بعد تصفية التصنيف: ${conversations.length} محادثة`);
+    }
 
     console.log('📝 [SEND CAMPAIGN] إنشاء سجلات المستلمين');
     // Generate ID helper function

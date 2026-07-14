@@ -372,6 +372,7 @@ const billingCronService = require("./services/billingCronService");
 const whatsappNotificationRoutes = require("./routes/whatsappNotificationRoutes");
 const whatsappMetaTemplateRoutes = require("./routes/whatsappMetaTemplateRoutes");
 const leadFollowUpRoutes = require("./routes/leadFollowUpRoutes");
+const leadCategoryRoutes = require("./routes/leadCategoryRoutes");
 const WhatsAppNotificationService = require("./services/whatsapp/WhatsAppNotificationService");
 const errorRoutes = require("./routes/errorRoutes");
 
@@ -688,6 +689,7 @@ app.use("/api/v1/userbot", userbotRoutes);
 app.use("/api/v1/whatsapp-notifications", whatsappNotificationRoutes);
 app.use("/api/v1/whatsapp-templates", whatsappMetaTemplateRoutes);
 app.use("/api/v1/whatsapp/lead-followup", leadFollowUpRoutes);
+app.use("/api/v1/whatsapp/lead-categories", leadCategoryRoutes);
 
 // ─── WhatsApp Inbox CRM (Number-Based Permissions) ──────────────
 app.use("/api/v1/whatsapp-inbox", whatsappInboxRoutes);
