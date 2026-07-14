@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-14 / 2026-03-09
+- **Facebook Connected Account Profile Display (FEATURE / COMPLETE)**: Enhanced the Facebook OAuth settings page to display the profile details (name and avatar) of the currently authenticated Facebook personal account:
+  1. Updated backend `GET /facebook-oauth/status` in `facebookOAuthRoutes.js` to query Meta's `/me` Graph API endpoint dynamically if the company possesses a valid `facebookUserAccessToken`.
+  2. Enhanced frontend `FacebookOAuth.tsx` to render a profile card showing the Facebook user's profile picture and name in both the connected and disconnected UI states.
+  3. Resolved a pre-existing TypeScript compiler type narrowing mismatch (TS2367) on `canReconnect` by simplifying the disabled condition inside the outer check.
 - **AI Agent Pause Toggle System (FEATURE / COMPLETE)**: Implemented conversation-level toggling to pause/resume AI replies across all channels (WhatsApp, Facebook, Instagram, Telegram):
   1. Updated `conversationCrudController.js` and `unifiedInboxController.js` to support updating `aiEnabled` on specific conversation rows.
   2. Added `aiEnabled !== false` validation checks before triggering agent auto-replies in `WhatsAppInboundService.js`, `WhatsAppManager.js`, `TelegramBotService.js`, and `allFunctions.js`.

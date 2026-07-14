@@ -1,7 +1,9 @@
 # System Structure & Architecture
 
 ### API Endpoints
-1. Added FastAPI REST admin API endpoints for agent guardrails (mounted under the FastAPI `/admin` router prefix):
+1. Added Facebook connected user details to the `/facebook-oauth/status` endpoint:
+   - `GET /api/v1/facebook-oauth/status` — Now queries the database for the company's `facebookUserAccessToken` and makes a Graph API request to `GET /me` (fields: `id,name,picture`) to fetch the connected Facebook personal account profile info. Returns `facebookUser: { id, name, picture } | null`.
+2. Added FastAPI REST admin API endpoints for agent guardrails (mounted under the FastAPI `/admin` router prefix):
    - `GET /agents/{agent_id}/guardrails` (List active rules)
    - `POST /agents/{agent_id}/guardrails` (Create and translate raw feedback text to structured Excuse/Rebuttal/Action JSON via LLM + generate embeddings)
    - `PUT /agents/{agent_id}/guardrails/{rule_id}` (Edit rule details/state)

@@ -1391,6 +1391,39 @@ router.get("/status", verifyToken.authenticateToken, async (req, res) => {
         validateTokens: shouldValidateTokens,
       });
 
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { facebookUserAccessToken: true },
+    });
+
+    let facebookUser = null;
+    if (company?.facebookUserAccessToken) {
+      try {
+        const fbUserResponse = await axios.get(
+          `${FACEBOOK_GRAPH_API_BASE_URL}/me`,
+          {
+            params: {
+              access_token: company.facebookUserAccessToken,
+              fields: "id,name,picture",
+            },
+            timeout: 5000,
+          }
+        );
+        if (fbUserResponse.data && fbUserResponse.data.name) {
+          facebookUser = {
+            id: fbUserResponse.data.id,
+            name: fbUserResponse.data.name,
+            picture: fbUserResponse.data.picture?.data?.url || null,
+          };
+        }
+      } catch (fbUserError) {
+        console.warn(
+          "⚠️ [FACEBOOK-OAUTH] Could not fetch Facebook user profile for status:",
+          fbUserError.response?.data || fbUserError.message
+        );
+      }
+    }
+
     res.json({
       success: true,
       connected: connectedPages.length > 0,
@@ -1402,6 +1435,7 @@ router.get("/status", verifyToken.authenticateToken, async (req, res) => {
       needsAttention:
         unhealthyPages.length > 0 || disconnectedPages.length > 0,
       unhealthyPagesCount: unhealthyPages.length,
+      facebookUser,
       message:
         pages.length === 0
           ? "No Facebook pages connected"

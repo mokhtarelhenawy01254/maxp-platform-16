@@ -1,5 +1,12 @@
 # Backend Bugs Log
 
+### [BUG FIX / TS COMPILATION] Facebook OAuth canReconnect Type Narrowing Error
+- **Date**: 2026-07-14
+- **Root Cause**: In `FacebookOAuth.tsx`, a redundant comparison `page.canReconnect === false` was checked inside a block already guarded by `page.canReconnect !== false`. Under strict TypeScript narrowing rules, this comparison was flagged as a type overlap error (TS2367) because `page.canReconnect` could not be `false` within that scope.
+- **Resolution**: Simplified the check to `disabled={loading}` since `page.canReconnect` is already verified not to be false.
+- **Files Modified**:
+    - `apps/frontend/src/pages/settings/FacebookOAuth.tsx`
+
 ### [BUG FIX] WhatsApp Baileys Unsupported Wrapped Messages & Mock Test Errors
 - **Date**: 2026-07-14
 - **Root Cause**:
