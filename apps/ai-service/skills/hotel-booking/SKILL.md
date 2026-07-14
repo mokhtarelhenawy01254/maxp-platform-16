@@ -12,10 +12,11 @@
 ### hotel_check_availability
 | البند | الوصف |
 |-------|-------|
-| **المدخلات** | check_in (تاريخ الوصول), check_out (تاريخ المغادرة), property_id (اختياري) |
+| **المدخلات** | check_in (تاريخ الوصول), check_out (تاريخ المغادرة), property_id (اختياري). إذا كانت التواريخ فارغة، الأداة تطلبها. |
 | **المخرجات** | أنواع الغرف المتاحة: roomTypeId, name, capacity, available, effectivePrice, basePrice, amenities |
 | **الاستخدام** | قبل كل حجز — تأكد من التوفر في التواريخ المطلوبة |
 | **خطأ** | empty data → "لا توجد غرف متاحة في هذه التواريخ" |
+| **needs_dates** | إذا كانت needs_dates=true في الاستجابة، اسأل الضيف عن تاريخ الوصول والمغادرة |
 
 ### hotel_reserve
 | البند | الوصف |

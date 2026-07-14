@@ -13,8 +13,8 @@ class InfoInput(BaseModel):
 
 class CheckAvailabilityInput(BaseModel):
     company_id: str = Field(default="", description="Tenant ID (auto-injected)")
-    check_in: str = Field(..., description="تاريخ الوصول (مثال: 2026-07-15)")
-    check_out: str = Field(..., description="تاريخ المغادرة (مثال: 2026-07-17)")
+    check_in: str = Field(default="", description="تاريخ الوصول (مثال: 2026-07-15)")
+    check_out: str = Field(default="", description="تاريخ المغادرة (مثال: 2026-07-17)")
     property_id: str = Field(default="", description="معرف الفندق (اختياري)")
 
 class ReserveInput(BaseModel):
@@ -45,6 +45,8 @@ async def hotel_info(input_data: InfoInput) -> dict[str, Any]:
     return {"hotels": data.get("data", [])}
 
 async def hotel_check_availability(input_data: CheckAvailabilityInput) -> dict[str, Any]:
+    if not input_data.check_in or not input_data.check_out:
+        return {"message": "من فضلك أدخل تاريخ الوصول وتاريخ المغادرة للتحقق من توفر الغرف.", "needs_dates": True}
     params = f"checkIn={input_data.check_in}&checkOut={input_data.check_out}"
     if input_data.property_id:
         params += f"&propertyId={input_data.property_id}"
