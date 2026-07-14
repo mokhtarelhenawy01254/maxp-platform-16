@@ -232,7 +232,7 @@ class CommentService {
   // 🔄 Sync posts for a Facebook page (fire-and-forget)
   static async syncPagePosts(pageId) {
     try {
-      const response = await apiClient.post(`/facebook-posts/sync`, { pageId });
+      const response = await apiClient.post(`/facebook/posts/sync`, { pageId });
       return response.data;
     } catch (error) {
       return { success: false, error: error.response?.data?.error || "Sync failed" };

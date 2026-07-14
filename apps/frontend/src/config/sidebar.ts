@@ -114,6 +114,7 @@ const mergeSectionOverrides = (
     dbSection: SidebarSectionSettings | undefined,
     userDb: SidebarSectionSettings | undefined,
     userRole: string | undefined | null,
+    userPerms?: string[],
 ): SidebarSection => {
     // Layer 1: Company-level settings
     // Layer 2: User-level settings (override company settings)
@@ -142,13 +143,22 @@ const mergeSectionOverrides = (
         .map((item) => {
             const itemId = getItemId(item);
             const dbItem = effectiveItems?.[itemId];
-            if (!dbItem) return item;
+
+            // Check item-level requiredPermissions (from code, not DB)
+            const itemPermissionAccess = !item.requiredPermissions || item.requiredPermissions.length === 0 ||
+                (userPerms && item.requiredPermissions.some(p => userPerms.includes(p)));
+
+            if (!dbItem) {
+                // No DB override, just apply permission-based hiding
+                const isHidden = !itemPermissionAccess || item.hidden === true;
+                return { ...item, hidden: isHidden, itemId };
+            }
 
             const itemVisible = dbItem.visible !== false;
             const itemEnabled = dbItem.enabled !== false;
             const itemRoleAccess = hasRoleAccess(userRole, dbItem.requiredRoles);
 
-            const isHidden = !itemVisible || !itemEnabled || !itemRoleAccess || item.hidden === true;
+            const isHidden = !itemVisible || !itemEnabled || !itemRoleAccess || !itemPermissionAccess || item.hidden === true;
 
             return { ...item, hidden: isHidden, itemId, requiredRoles: dbItem.requiredRoles };
         })
@@ -170,7 +180,16 @@ const DOMAIN_PERMISSIONS: Record<string, string[]> = {
     'instagram': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'instagram.view'],
     'whatsapp': ['whatsapp.view', 'inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view'],
     'telegram': ['telegram.view', 'inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view'],
-    'orders': ['orders.view'],
+    'orders': [
+        'orders.view', 'orders.create', 'orders.edit', 'orders.delete', 'orders.status.change', 'orders.assign', 'orders.export',
+        'orders.incomplete.view', 'orders.preparation.view', 'orders.workspace.view', 'orders.confirmation.view',
+        'orders.quickstatus.view', 'orders.turbo.view', 'orders.bosta.view', 'orders.stats.view',
+        'orders.automation.view', 'orders.invoices.view', 'orders.manual.create', 'orders.status-summary.view',
+        'orders.returns.view', 'orders.shipping.view', 'orders.tickets.view', 'orders.bulk-search.view',
+        'orders.pos.view', 'orders.settings.view', 'orders.customer-blocks.view', 'orders.turbo-settings.view',
+        'orders.return-settings.view', 'orders.cancellation-reasons.view', 'orders.integrations.view',
+        'orders.workflow.view', 'orders.product-reviews.view', 'orders.whatsapp-notifications.view',
+    ],
     'customers': ['customers.view'],
     'marketplace': ['settings.view'],
     'company': ['settings.view', 'users.view', 'roles.view'],
@@ -222,7 +241,7 @@ const applySidebarOverrides = (
         .map((section) => {
             const dbSection = dbSections?.[section.id];
             const userSection = userSections?.[section.id];
-            return mergeSectionOverrides(section, dbSection, userSection, userRole);
+            return mergeSectionOverrides(section, dbSection, userSection, userRole, user?.permissions);
         })
         .sort((a, b) => {
             const aDb = dbSections?.[a.id];
@@ -588,32 +607,32 @@ export const getSidebarConfig = (
             title: t('sidebar.ordersSection'),
             icon: ArchiveBoxIcon,
             items: [
-                { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders') },
-                { to: '/orders/workspace', icon: UserCircleIcon, label: t('sidebar.agentWorkspace') },
-                { to: '/orders/preparation', icon: BeakerIcon, label: t('sidebar.orderPreparation') },
-                { to: '/orders/automation', icon: BoltIcon, label: t('sidebar.orderAutomation', 'أتمتة الحالات') },
-                { to: '/orders/incomplete', icon: ExclamationTriangleIcon, label: t('sidebar.incompleteOrders') },
-                { to: '/pos', icon: CreditCardIcon, label: t('sidebar.pos') },
-                { to: '/orders/invoices', icon: DocumentTextIcon, label: t('sidebar.orderInvoices') },
-                { to: '/orders/manual', icon: PencilSquareIcon, label: t('sidebar.manualOrder') },
-                { to: '/bulk-search', icon: QueueListIcon, label: t('sidebar.bulkSearch') },
-                { to: '/products/reviews', icon: StarIcon, label: t('sidebar.productReviews') },
-                { to: '/settings/orders', icon: CogIcon, label: t('sidebar.ordersSettings') },
-                { to: '/settings/customer-blocks', icon: ShieldExclamationIcon, label: t('sidebar.customerBlockSettings') },
-                { to: '/settings/turbo', icon: RocketLaunchIcon, label: t('sidebar.turboSettings') },
-                { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords') },
-                { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets') },
-                { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies') },
-                { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews') },
-                { to: '/orders/bulk', icon: QueueListIcon, label: t('sidebar.bulkOrders', 'Bulk Orders') },
-                { to: '/orders/quick-status', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.quickStatusChange') },
-                { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
-                { to: '/orders/status-summary', icon: DocumentChartBarIcon, label: 'تقرير الحالات' },
-                { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings') },
-                { to: '/cancellations/settings', icon: XCircleIcon, label: t('sidebar.cancellationSettings') },
-                { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations') },
-                { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow') },
-                { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
+                { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders'), requiredPermissions: ['orders.view'] },
+                { to: '/orders/workspace', icon: UserCircleIcon, label: t('sidebar.agentWorkspace'), requiredPermissions: ['orders.workspace.view'] },
+                { to: '/orders/preparation', icon: BeakerIcon, label: t('sidebar.orderPreparation'), requiredPermissions: ['orders.preparation.view'] },
+                { to: '/orders/automation', icon: BoltIcon, label: t('sidebar.orderAutomation', 'أتمتة الحالات'), requiredPermissions: ['orders.automation.view'] },
+                { to: '/orders/incomplete', icon: ExclamationTriangleIcon, label: t('sidebar.incompleteOrders'), requiredPermissions: ['orders.incomplete.view'] },
+                { to: '/pos', icon: CreditCardIcon, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'] },
+                { to: '/orders/invoices', icon: DocumentTextIcon, label: t('sidebar.orderInvoices'), requiredPermissions: ['orders.invoices.view'] },
+                { to: '/orders/manual', icon: PencilSquareIcon, label: t('sidebar.manualOrder'), requiredPermissions: ['orders.manual.create'] },
+                { to: '/bulk-search', icon: QueueListIcon, label: t('sidebar.bulkSearch'), requiredPermissions: ['orders.bulk-search.view'] },
+                { to: '/products/reviews', icon: StarIcon, label: t('sidebar.productReviews'), requiredPermissions: ['orders.product-reviews.view'] },
+                { to: '/settings/orders', icon: CogIcon, label: t('sidebar.ordersSettings'), requiredPermissions: ['orders.settings.view'] },
+                { to: '/settings/customer-blocks', icon: ShieldExclamationIcon, label: t('sidebar.customerBlockSettings'), requiredPermissions: ['orders.customer-blocks.view'] },
+                { to: '/settings/turbo', icon: RocketLaunchIcon, label: t('sidebar.turboSettings'), requiredPermissions: ['orders.turbo-settings.view'] },
+                { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords'), requiredPermissions: ['orders.turbo.view'] },
+                { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets'), requiredPermissions: ['orders.tickets.view'] },
+                { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'] },
+                { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'] },
+                { to: '/orders/bulk', icon: QueueListIcon, label: t('sidebar.bulkOrders', 'Bulk Orders'), requiredPermissions: ['orders.bulk.create'] },
+                { to: '/orders/quick-status', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'] },
+                { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'] },
+                { to: '/orders/status-summary', icon: DocumentChartBarIcon, label: 'تقرير الحالات', requiredPermissions: ['orders.status-summary.view'] },
+                { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'] },
+                { to: '/cancellations/settings', icon: XCircleIcon, label: t('sidebar.cancellationSettings'), requiredPermissions: ['orders.cancellation-reasons.view'] },
+                { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
+                { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
+                { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAppActive('store')

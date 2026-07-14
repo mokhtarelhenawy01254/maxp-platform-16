@@ -1129,16 +1129,15 @@ const getCompanyUsers = async (req, res) => {
             select: { id: true, key: true, name: true },
           },
         },
-        orderBy:
-          sortBy === "createdAt"
-            ? { createdAt: sortOrder }
-            : sortBy === "role"
-              ? { role: sortOrder }
-              : sortBy === "name"
-                ? { user: { firstName: sortOrder } }
-                : sortBy === "firstName" || sortBy === "lastName" || sortBy === "email" || sortBy === "isActive"
-                  ? { user: { [sortBy]: sortOrder } }
-                  : { createdAt: sortOrder },
+        orderBy: (() => {
+          const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
+          const validSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'isActive'];
+          if (sortBy === 'createdAt') return { createdAt: safeSortOrder };
+          if (sortBy === 'role') return { role: safeSortOrder };
+          if (sortBy === 'name') return { user: { firstName: safeSortOrder } };
+          if (validSortFields.includes(sortBy)) return { user: { [sortBy]: safeSortOrder } };
+          return { createdAt: safeSortOrder };
+        })(),
       }),
       getSharedPrismaClient().userCompany.count({
         where: {
@@ -1160,16 +1159,21 @@ const getCompanyUsers = async (req, res) => {
           (uc) => !uc.user.employeeNumber,
         );
         // Recalculate total count for NO_EMPLOYEE case
-        const countQuery = {
-          ...userCompanyWhere,
-          user: {
-            ...userSearchWhere,
-            employeeNumber: null,
-          },
-        };
-        actualTotalCount = await getSharedPrismaClient().userCompany.count({
-          where: countQuery,
-        });
+        try {
+          const countQuery = {
+            ...userCompanyWhere,
+            user: {
+              ...userSearchWhere,
+              employeeNumber: null,
+            },
+          };
+          actualTotalCount = await getSharedPrismaClient().userCompany.count({
+            where: countQuery,
+          });
+        } catch (countError) {
+          console.warn("⚠️ [GET-USERS] Error counting NO_EMPLOYEE, using filtered count:", countError.message);
+          actualTotalCount = filteredUserCompanies.length;
+        }
       } else {
         // Filter for users with Employee data and specific contractType
         // Note: status is not in User model, so we filter by contractType or isActive
@@ -1269,11 +1273,16 @@ const getCompanyUsers = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Error fetching company users:", error);
+    console.error("❌ [GET-USERS] Error:", error.message);
+    console.error("❌ [GET-USERS] Stack:", error.stack);
+    console.error("❌ [GET-USERS] CompanyId:", companyId);
+    console.error("❌ [GET-USERS] Query:", JSON.stringify({ page, limit, search, role, isActive, employeeStatus, sortBy, sortOrder }));
+    if (error.code) console.error("❌ [GET-USERS] Prisma Code:", error.code);
+    if (error.meta) console.error("❌ [GET-USERS] Prisma Meta:", JSON.stringify(error.meta));
     res.status(500).json({
       success: false,
       message: "فشل في جلب المستخدمين",
-      error: error.message,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 };

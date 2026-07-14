@@ -27,6 +27,14 @@ interface ProductItem {
   sku: string;
 }
 
+const SafeImage: React.FC<{ src: string | null; alt?: string; style?: React.CSSProperties }> = ({ src, alt = "", style }) => {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return <div style={{ ...style, background: "var(--business-card-border)" }} />;
+  }
+  return <img src={src} alt={alt} style={style} loading="lazy" onError={() => setFailed(true)} />;
+};
+
 const headingStyle: React.CSSProperties = {
   color: "var(--color-foreground)",
 };
@@ -305,11 +313,10 @@ export default function FacebookPostManager() {
                 <tr key={post.id}>
                   <td style={tdStyle}>
                     {post.mediaUrl ? (
-                      <img
+                      <SafeImage
                         src={post.mediaUrl}
                         alt=""
                         style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "4px" }}
-                        loading="lazy"
                       />
                     ) : (
                       <div style={{ width: "60px", height: "60px", background: "var(--business-card-border)", borderRadius: "4px" }} />
@@ -335,7 +342,7 @@ export default function FacebookPostManager() {
                     {post.product ? (
                       <span style={chipStyle}>
                         {post.product.mainImage && (
-                          <img src={post.product.mainImage} alt="" style={{ width: "20px", height: "20px", borderRadius: "4px", objectFit: "cover" }} />
+                          <SafeImage src={post.product.mainImage} alt="" style={{ width: "20px", height: "20px", borderRadius: "4px", objectFit: "cover" }} />
                         )}
                         <button style={removeBtnStyle} onClick={() => handleSetProduct(post.id, null)} title="إزالة المنتج">×</button>
                         {post.product.name}
@@ -410,7 +417,7 @@ export default function FacebookPostManager() {
                               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                             >
                               {p.mainImage && (
-                                <img src={p.mainImage} alt="" style={{ width: "28px", height: "28px", borderRadius: "4px", objectFit: "cover" }} />
+                                <SafeImage src={p.mainImage} alt="" style={{ width: "28px", height: "28px", borderRadius: "4px", objectFit: "cover" }} />
                               )}
                               <div>
                                 <div style={{ fontWeight: 500, color: "var(--color-foreground)" }}>{p.name}</div>
