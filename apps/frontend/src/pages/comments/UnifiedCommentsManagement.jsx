@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDebounce } from "../../hooks/useDebounce";
 import { toast } from "sonner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-
-const dateFt = new Intl.DateTimeFormat("ar-EG");
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import CommentService from "../../services/commentService";
 import {
@@ -25,6 +24,8 @@ import {
 const UnifiedCommentsManagement = () => {
   const { postId: urlPostId } = useParams();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const dateFt = useMemo(() => new Intl.DateTimeFormat(i18n.language), [i18n.language]);
   const [posts, setPosts] = useState([]);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -471,7 +472,7 @@ const UnifiedCommentsManagement = () => {
                         </div>
                       </div>
 
-                      <div className="mt-4 ml-13">
+                      <div className="mt-4 mr-3">
                         <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-600">
                           <p className="text-slate-800 dark:text-gray-100 leading-relaxed">
                             {comment.message}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 
-const dateFt = new Intl.DateTimeFormat("ar-EG");
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import CommentService from "../../services/commentService";
@@ -22,8 +21,9 @@ import {
 } from "lucide-react";
 
 const UnifiedCommentsSplit = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const dateFt = useMemo(() => new Intl.DateTimeFormat(i18n.language), [i18n.language]);
 
   // State
   const [pages, setPages] = useState([]);
@@ -346,7 +346,7 @@ const UnifiedCommentsSplit = () => {
                     <div className="p-2 bg-gray-50 dark:bg-gray-900/50 border-t md:border-t-0 md:border-r border-gray-100 dark:border-gray-700 flex md:flex-col justify-center gap-2 md:w-32 flex-shrink-0">
                       <button
                         onClick={() =>
-                          navigate(`/posts/${post.postId}/comments`)
+                          navigate(`/unified-comments/${post.postId}`)
                         }
                         className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 px-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-1"
                       >

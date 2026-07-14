@@ -17,7 +17,7 @@ async function fixDuplicates() {
       DELETE FROM "company_follow_ups"
       WHERE id NOT IN (
         SELECT id FROM (
-          SELECT id, ROW_NUMBER() OVER(PARTITION BY "company_id" ORDER BY "updatedAt" DESC) as rn
+          SELECT id, ROW_NUMBER() OVER(PARTITION BY "company_id" ORDER BY "updated_at" DESC NULLS LAST, "created_at" DESC) as rn
           FROM "company_follow_ups"
         ) t WHERE t.rn = 1
       );
@@ -29,7 +29,7 @@ async function fixDuplicates() {
       DELETE FROM "customers"
       WHERE id NOT IN (
         SELECT id FROM (
-          SELECT id, ROW_NUMBER() OVER(PARTITION BY "instagramId", "companyId" ORDER BY "updatedAt" DESC) as rn
+          SELECT id, ROW_NUMBER() OVER(PARTITION BY "instagramId", "companyId" ORDER BY "updatedAt" DESC NULLS LAST, "createdAt" DESC) as rn
           FROM "customers"
           WHERE "instagramId" IS NOT NULL
         ) t WHERE t.rn = 1
@@ -42,7 +42,7 @@ async function fixDuplicates() {
       DELETE FROM "facebook_pages"
       WHERE id NOT IN (
         SELECT id FROM (
-          SELECT id, ROW_NUMBER() OVER(PARTITION BY "instagramAccountId" ORDER BY "updatedAt" DESC) as rn
+          SELECT id, ROW_NUMBER() OVER(PARTITION BY "instagramAccountId" ORDER BY "updatedAt" DESC NULLS LAST, "createdAt" DESC) as rn
           FROM "facebook_pages"
           WHERE "instagramAccountId" IS NOT NULL
         ) t WHERE t.rn = 1

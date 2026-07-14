@@ -114,6 +114,13 @@ const PERMISSIONS = [
   { key: 'orders.workflow.view', name: 'عرض مسار الطلبات', domain: 'ORDERS' },
   { key: 'orders.workflow.manage', name: 'إدارة مسار الطلبات', domain: 'ORDERS' },
 
+  // Orders — Product Reviews
+  { key: 'orders.product-reviews.view', name: 'عرض تقييمات المنتجات', domain: 'ORDERS' },
+
+  // Orders — WhatsApp Order Notifications
+  { key: 'orders.whatsapp-notifications.view', name: 'عرض إشعارات واتساب للطلبات', domain: 'ORDERS' },
+  { key: 'orders.whatsapp-notifications.manage', name: 'إدارة إشعارات واتساب للطلبات', domain: 'ORDERS' },
+
   // Products
   { key: 'products.view', name: 'عرض المنتجات', domain: 'PRODUCTS' },
   { key: 'products.create', name: 'إنشاء منتج', domain: 'PRODUCTS' },

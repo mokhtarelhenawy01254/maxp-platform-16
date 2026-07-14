@@ -13,8 +13,7 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+
 
 const PostsManagement = ({ embedded = false }) => {
   const navigate = useNavigate();
@@ -508,8 +507,7 @@ const PostsManagement = ({ embedded = false }) => {
                               height={320}
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.style.display = 'none';
-                                e.target.parentElement.classList.add('post-img-fallback');
+                                e.target.src = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320"><rect width="320" height="320" fill="url(#g)"/><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%236b52a3"/><stop offset="100%" style="stop-color:%23e84b5c"/></linearGradient></defs><text x="160" y="160" text-anchor="middle" dominant-baseline="central" font-family="Arial" font-size="64" fill="white" opacity="0.6">📷</text></svg>');
                               }}
                             />
                           ) : (
