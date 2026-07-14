@@ -1,14 +1,34 @@
 {
   "id": "hotel-booking",
   "displayName": "حجز الفندق",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "التحقق من توفر الغرف، حجز غرفة أو أكثر، عرض الحجوزات السابقة، وإلغاء الحجوزات. تتطلب عمليات الحجز والإلغاء موافقة بشرية.",
+  "triggerPhrases": [
+    "عايز أحجز",
+    "حجزت قبل كده",
+    "ألغي الحجز",
+    "هل في غرف متاحة",
+    "بدي أحجز",
+    "I want to book",
+    "cancel my booking",
+    "check availability",
+    "available rooms",
+    "book a room",
+    "my reservations",
+    "حجوزاتي",
+    "أريد حجز غرفة",
+    "عايز أوقات متاحة"
+  ],
   "allowedTools": [
     "hotel_check_availability",
     "hotel_reserve",
     "hotel_my_reservations",
     "hotel_cancel_reservation"
   ],
-  "requiresHumanApproval": true,
-  "maxToolCount": 5
+  "requiresHumanApproval": false,
+  "maxToolCount": 5,
+  "successCriteria": {
+    "primary": "booking_created_successfully",
+    "secondary": "customer_informed_of_booking_details"
+  }
 }

@@ -39,7 +39,7 @@ class CancelReservationInput(BaseModel):
 
 
 async def hotel_info(input_data: InfoInput) -> dict[str, Any]:
-    data = await api_get(f"/hotel/properties?companyId={input_data.company_id}")
+    data = await api_get(f"/api/v1/hotel/properties?companyId={input_data.company_id}")
     if not data.get("success"):
         return {"error": "حدث خطأ في جلب معلومات الفندق"}
     return {"hotels": data.get("data", [])}
@@ -49,7 +49,7 @@ async def hotel_check_availability(input_data: CheckAvailabilityInput) -> dict[s
     if input_data.property_id:
         params += f"&propertyId={input_data.property_id}"
     params += f"&companyId={input_data.company_id}"
-    data = await api_get(f"/hotel/availability?{params}")
+    data = await api_get(f"/api/v1/hotel/availability?{params}")
     if not data.get("success"):
         return {"error": "حدث خطأ في التحقق من التوفر"}
     return {"available_room_types": data.get("data", [])}
@@ -69,13 +69,13 @@ async def hotel_reserve(input_data: ReserveInput) -> dict[str, Any]:
         "source": "whatsapp",
         "createdByType": "ai_service",
     }
-    data = await api_post("/hotel/reservations", payload)
+    data = await api_post("/api/v1/hotel/reservations", payload)
     if not data.get("success"):
         return {"error": data.get("error", "حدث خطأ في إنشاء الحجز")}
     return {"reservation": data.get("data", {})}
 
 async def hotel_my_reservations(input_data: MyReservationsInput) -> dict[str, Any]:
-    data = await api_get(f"/hotel/reservations?companyId={input_data.company_id}")
+    data = await api_get(f"/api/v1/hotel/reservations?companyId={input_data.company_id}")
     if not data.get("success"):
         return {"error": "حدث خطأ في جلب الحجوزات"}
     reservations = data.get("data", [])
@@ -83,7 +83,7 @@ async def hotel_my_reservations(input_data: MyReservationsInput) -> dict[str, An
     return {"reservations": customer_reservations}
 
 async def hotel_cancel_reservation(input_data: CancelReservationInput) -> dict[str, Any]:
-    data = await api_post(f"/hotel/reservations/{input_data.reservation_id}/status", {"status": "CANCELLED", "companyId": input_data.company_id})
+    data = await api_post(f"/api/v1/hotel/reservations/{input_data.reservation_id}/status", {"status": "CANCELLED", "companyId": input_data.company_id})
     if not data.get("success"):
         return {"error": data.get("error", "حدث خطأ في إلغاء الحجز")}
     return {"result": "تم إلغاء الحجز بنجاح", "reservation": data.get("data", {})}

@@ -1,11 +1,28 @@
 {
   "id": "hotel-info",
   "displayName": "معلومات الفندق",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "الاستعلام عن معلومات الفندق: أنواع الغرف المتاحة، الأسعار الأساسية، سعة الغرف، أوقات تسجيل الوصول والمغادرة، ووسائل الراحة.",
+  "triggerPhrases": [
+    "عايز أعرف معلومات عن الفندق",
+    "عندكم ايه من غرف",
+    "أنواع الغرف",
+    "الأسعار",
+    "المرافق",
+    "check-in time",
+    "what rooms do you have",
+    "hotel information",
+    "room types",
+    "prices",
+    "what facilities"
+  ],
   "allowedTools": [
     "hotel_info"
   ],
   "requiresHumanApproval": false,
-  "maxToolCount": 1
+  "maxToolCount": 1,
+  "successCriteria": {
+    "primary": "customer_shown_hotel_info",
+    "secondary": "customer_proceeds_to_booking"
+  }
 }
