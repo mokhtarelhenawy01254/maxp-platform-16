@@ -2,6 +2,8 @@ import { useState } from "react";
 import Modal, { INPUT_CLS, BTN_PRIMARY, BTN_GHOST } from "./Modal";
 import { hotelApi, HotelProperty, HotelRoomType, HotelRoom } from "./shared";
 
+const fmtDate = (d: Date) => d.toISOString().split("T")[0];
+
 type RoomLine = { roomTypeId: string; roomId?: string; nightlyRate: number };
 
 export default function ReservationModal({
@@ -21,14 +23,17 @@ export default function ReservationModal({
   onSaved: () => void;
   onError: (msg: string) => void;
 }) {
+  const today = fmtDate(new Date());
+  const tomorrow = fmtDate(new Date(Date.now() + 86400000));
+
   const [form, setForm] = useState({
     propertyId: selectedProperty || "",
     customerName: "",
     customerPhone: "",
     customerEmail: "",
     customerNotes: "",
-    checkIn: "",
-    checkOut: "",
+    checkIn: today,
+    checkOut: tomorrow,
     adults: 1,
     children: 0,
     rooms: [{ roomTypeId: "", roomId: "", nightlyRate: 0 }] as RoomLine[]
@@ -94,12 +99,34 @@ export default function ReservationModal({
         <button className={`${BTN_GHOST} w-full`} onClick={checkAvail}>التحقق من التوفر</button>
         {avail.length > 0 && (
           <div className="border rounded-lg p-3 space-y-2">
-            <p className="text-sm font-medium text-green-600">الغرف المتاحة:</p>
+            <p className="text-sm font-medium text-green-600">الغرف المتاحة (اضغط لإضافة):</p>
             {avail.map((a: any) => (
-              <div key={a.roomType.id} className="flex justify-between items-center text-sm border-b pb-1">
+              <button
+                key={a.roomType.id}
+                type="button"
+                className="w-full flex justify-between items-center text-sm border-b pb-1 text-right hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded transition"
+                onClick={() => {
+                  const existing = form.rooms.find(r => r.roomTypeId === a.roomType.id);
+                  if (existing) {
+                    setForm({
+                      ...form,
+                      rooms: form.rooms.map(r => r.roomTypeId === a.roomType.id ? { ...r, nightlyRate: a.effectivePrice } : r)
+                    });
+                  } else {
+                    const emptyIdx = form.rooms.findIndex(r => !r.roomTypeId);
+                    if (emptyIdx >= 0) {
+                      const next = [...form.rooms];
+                      next[emptyIdx] = { ...next[emptyIdx], roomTypeId: a.roomType.id, roomId: undefined, nightlyRate: a.effectivePrice };
+                      setForm({ ...form, rooms: next });
+                    } else {
+                      setForm({ ...form, rooms: [...form.rooms, { roomTypeId: a.roomType.id, roomId: undefined, nightlyRate: a.effectivePrice }] });
+                    }
+                  }
+                }}
+              >
                 <span>{a.roomType.nameAr || a.roomType.name} ({a.availableRooms} متاحة)</span>
                 <span className="font-bold">{a.effectivePrice} ج.م/ليلة</span>
-              </div>
+              </button>
             ))}
           </div>
         )}

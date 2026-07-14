@@ -32,3 +32,4 @@
 ## QA Notes
 - 2026-07-14: Backend API smoke-tested end-to-end (13/13 passed).
 - 2026-07-14: Browser smoke test confirmed page renders, tabs switch, and all modals open after fixing a Rules-of-Hooks issue by extracting modals to top-level components.
+- 2026-07-15: Reservation modal UX improved — dates default to today/tomorrow, availability results are clickable and auto-fill the selected room type + effective nightly rate.
