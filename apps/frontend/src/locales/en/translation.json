@@ -3573,6 +3573,8 @@
     "activatingNow": "Activating...",
     "allActivated": "All tools are already activated!",
     "confirmBulkActivate": "Are you sure you want to activate {{count}} tools at once?",
+    "bulkActivateTitle": "Activate {{count}} tools at once",
+    "bulkActivateConfirm": "{{count}} tools will be activated together. This may take a while and cannot be undone.",
     "activatingProgress": "Activating {{name}}… {{progress}}%",
     "activatedSuccess": "Activated {{count}} tools successfully!",
     "activatedWithErrors": "Activated {{count}} tools, {{fail}} failed",
@@ -3610,7 +3612,10 @@
     "clearSearch": "Clear search",
     "loadMore": "Load more ({{remaining}})",
     "viewAll": "View All",
-    "allLoaded": "All apps loaded"
+    "allLoaded": "All apps loaded",
+    "emptyHint": "Try changing the filters or browsing another category.",
+    "clearFilters": "Clear filters",
+    "browseAll": "Browse all tools"
   },
   "monthlyPnL": {
     "title": "Monthly P&L Dashboard",

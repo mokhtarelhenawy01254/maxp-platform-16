@@ -3575,6 +3575,8 @@
     "activatingNow": "جاري التفعيل...",
     "allActivated": "جميع الأدوات مثبتة بالفعل!",
     "confirmBulkActivate": "هل أنت متأكد من تفعيل {{count}} أداة دفعة واحدة؟",
+    "bulkActivateTitle": "تفعيل {{count}} أداة دفعة واحدة",
+    "bulkActivateConfirm": "سيتم تفعيل {{count}} أداة معًا. قد يستغرق هذا بعض الوقت، ولا يمكن التراجع.",
     "activatingProgress": "جاري تفعيل {{name}}… {{progress}}%",
     "activatedSuccess": "تم تفعيل {{count}} أداة بنجاح!",
     "activatedWithErrors": "تم تفعيل {{count}} أداة، وفشل {{fail}}",
@@ -3612,7 +3614,10 @@
     "clearSearch": "مسح البحث",
     "loadMore": "عرض المزيد ({{remaining}})",
     "viewAll": "عرض الكل",
-    "allLoaded": "تم عرض جميع التطبيقات"
+    "allLoaded": "تم عرض جميع التطبيقات",
+    "emptyHint": "جرّب تغيير الفلاتر أو تصفح فئة أخرى.",
+    "clearFilters": "مسح الفلاتر",
+    "browseAll": "تصفح كل الأدوات"
   },
   "monthlyPnL": {
     "title": "القوائم المالية الشهرية (P&L)",

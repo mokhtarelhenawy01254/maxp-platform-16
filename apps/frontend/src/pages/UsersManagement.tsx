@@ -748,6 +748,9 @@ const UsersManagement: React.FC = () => {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userForm.email.trim())) {
       nextErrors.email = String(t("users.form.emailInvalid"));
     }
+    if (!userForm.role.trim()) {
+      nextErrors.role = String(t("users.form.roleRequired"));
+    }
     if (editorMode !== "edit" && !userForm.password.trim()) {
       nextErrors.password = String(t("users.form.passwordRequired"));
     } else if (userForm.password && userForm.password.length < 6) {

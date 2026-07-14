@@ -1426,9 +1426,10 @@ const createnewUserForCompany = async (req, res) => {
       email,
       password,
       phone,
-      role = "AGENT",
       isActive = true,
     } = req.body;
+    
+    const role = req.body.role || "AGENT";
 
     console.log(
       `👤 [CREATE-USER] Request to create user for company: ${companyId}`,
@@ -1835,23 +1836,8 @@ const updateUser = async (req, res) => {
 
           if (VALID_ROLE_ENUMS.includes(role)) {
             ucData.role = role;
-          }
-
-          const roleRecord = await getSharedPrismaClient().role.findFirst({
-            where: {
-              key: role,
-              OR: [
-                { companyId: '__system__', isBuiltIn: true },
-                { companyId },
-              ],
-            },
-            select: { id: true },
-          });
-
-          if (roleRecord) {
-            ucData.roleId = roleRecord.id;
           } else {
-            return res.status(400).json({
+             return res.status(400).json({
               success: false,
               message: `الدور "${role}" غير موجود في النظام`,
             });
