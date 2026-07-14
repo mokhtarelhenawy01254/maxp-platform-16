@@ -2,15 +2,42 @@ const { getSharedPrismaClient } = require('./sharedDatabase');
 const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 const { getPageToken } = require('../utils/allFunctions');
+const {
+  ensureValidFacebookPageAccessToken,
+  buildFacebookPageTokenFailureMessage,
+} = require('../utils/facebookPageTokenUtils');
 
-async function syncPagePosts(pageId) {
+async function syncPagePosts(pageId, companyId) {
   const prisma = getSharedPrismaClient();
   const page = await prisma.facebookPage.findFirst({ where: { pageId } });
   if (!page) throw new Error('Page not found');
 
+  if (page.status !== 'connected') {
+    throw new Error(`Page "${page.pageName}" is disconnected. Please reconnect it.`);
+  }
+
+  const pageToken = await getPageToken(pageId);
+  if (!pageToken) {
+    throw new Error(`Unable to retrieve token for page "${page.pageName}". Please reconnect.`);
+  }
+
+  const tokenState = await ensureValidFacebookPageAccessToken({
+    companyId: pageToken.companyId || companyId,
+    pageId,
+    pageAccessToken: pageToken.pageAccessToken,
+    allowRefresh: true,
+  });
+
+  if (!tokenState.ok) {
+    const errorMsg = buildFacebookPageTokenFailureMessage(tokenState, pageId);
+    console.error(`[FB-POST] Token validation failed for ${pageId}: ${errorMsg}`);
+    throw new Error(errorMsg);
+  }
+
+  const validToken = tokenState.pageAccessToken;
   const apiVer = getMetaGraphApiVersion();
   let allPosts = [];
-  let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${page.pageAccessToken}`;
+  let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
 
   while (url) {
     const res = await axios.get(url, { timeout: 15000 });
@@ -41,7 +68,7 @@ async function syncPagePosts(pageId) {
     });
   }
 
-  return { synced: allPosts.length, pageName: page.pageName };
+  return { synced: allPosts.length, pageName: pageToken.pageName };
 }
 
 async function setProduct(postId, productId) {

@@ -28,7 +28,7 @@ const syncPosts = async (req, res) => {
     const { pageId } = req.body;
     if (!pageId) return res.status(400).json({ success: false, error: 'pageId is required' });
 
-    const result = await fbPostService.syncPagePosts(pageId);
+    const result = await fbPostService.syncPagePosts(pageId, user.companyId);
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('[FB-POST] Error syncing posts:', error);
