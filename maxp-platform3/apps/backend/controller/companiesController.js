@@ -1844,10 +1844,7 @@ const updateUser = async (req, res) => {
           } else if (VALID_ROLE_ENUMS.includes(role)) {
             console.warn(`⚠️ [UPDATE-USER] Built-in role "${role}" not in Role table, skipping roleId`);
           } else {
-            return res.status(400).json({
-              success: false,
-              message: `الدور "${role}" غير موجود في النظام`,
-            });
+            console.warn(`⚠️ [UPDATE-USER] Custom role "${role}" not in Role table, skipping roleId and role enum`);
           }
         }
 
