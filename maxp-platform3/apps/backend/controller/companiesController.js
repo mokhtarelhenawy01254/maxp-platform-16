@@ -1841,6 +1841,8 @@ const updateUser = async (req, res) => {
 
           if (roleRecord) {
             ucData.roleId = roleRecord.id;
+          } else if (VALID_ROLE_ENUMS.includes(role)) {
+            console.warn(`⚠️ [UPDATE-USER] Built-in role "${role}" not in Role table, skipping roleId`);
           } else {
             return res.status(400).json({
               success: false,
