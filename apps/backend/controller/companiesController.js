@@ -1852,11 +1852,26 @@ const updateUser = async (req, res) => {
 
           if (VALID_ROLE_ENUMS.includes(role)) {
             ucData.role = role;
-          } else {
-             return res.status(400).json({
-              success: false,
-              message: `الدور "${role}" غير موجود في النظام`,
+          }
+
+          const roleRecord = await getSharedPrismaClient().role.findFirst({
+            where: {
+              key: role,
+              OR: [
+                { companyId: '__system__', isBuiltIn: true },
+                { companyId },
+              ],
+            },
+            select: { id: true },
+          });
+
+          if (roleRecord) {
+            ucData.roleId = roleRecord.id;
+          } else if (!VALID_ROLE_ENUMS.includes(role)) {
+            const newRole = await getSharedPrismaClient().role.create({
+              data: { key: role, name: role, companyId, isBuiltIn: false, isActive: true, priority: 0 },
             });
+            ucData.roleId = newRole.id;
           }
         }
 
