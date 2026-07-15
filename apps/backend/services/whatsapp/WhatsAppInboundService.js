@@ -62,7 +62,6 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
     totalMessages: 1,
     unreadCount: isOutgoing ? 0 : 1,
     isGroup: normalizedJid?.endsWith('@g.us') || false,
-    isNewsletter: normalizedJid?.endsWith('@newsletter') || false,
     whatsAppSession: {
       connect: { id: sessionId }
     },
