@@ -12,7 +12,7 @@ import {
 import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
-import { RoleProtectedRoute } from "./components/protection/CompanyProtectedRoute";
+import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
 const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
@@ -2589,17 +2589,21 @@ const AppContent = () => {
                 <Route
                   path="/customers"
                   element={
-                    <Layout>
-                      <CustomerList />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerList />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/new"
                   element={
-                    <Layout>
-                      <CustomerCreate />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerCreate />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
@@ -2613,41 +2617,51 @@ const AppContent = () => {
                 <Route
                   path="/customers/whatsapp-notify"
                   element={
-                    <Layout>
-                      <CustomerWhatsAppNotify />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/birthday-whatsapp-notify"
                   element={
-                    <Layout>
-                      <CustomerBirthdayWhatsAppNotify />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerBirthdayWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/occasions-notify"
                   element={
-                    <Layout>
-                      <CustomerOccasionsWhatsAppNotify />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerOccasionsWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/:id"
                   element={
-                    <Layout>
-                      <CustomerDetails />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerDetails />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/:id/edit"
                   element={
-                    <Layout>
-                      <CustomerEdit />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerEdit />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
@@ -3529,65 +3543,81 @@ const AppContent = () => {
                 <Route
                   path="/products"
                   element={
-                    <Layout>
-                      <Products />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <Products />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/trash"
                   element={
-                    <Layout>
-                      <ProductsTrash />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ProductsTrash />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/new"
                   element={
-                    <Layout>
-                      <ProductNewFinal />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.create', 'products.view']}>
+                      <Layout>
+                        <ProductNewFinal />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/reviews"
                   element={
-                    <Layout>
-                      <ProductReviewsSimple />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['orders.product-reviews.view', 'products.view']}>
+                      <Layout>
+                        <ProductReviewsSimple />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/import-easy-orders"
                   element={
-                    <Layout>
-                      <EasyOrdersImport />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <EasyOrdersImport />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/import-woocommerce"
                   element={
-                    <Layout>
-                      <WooCommerceImport />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <WooCommerceImport />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/:id"
                   element={
-                    <Layout>
-                      <ProductStoreRedirect />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ProductStoreRedirect />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/:id/edit"
                   element={
-                    <Layout>
-                      <ProductNewFinal />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.edit', 'products.view']}>
+                      <Layout>
+                        <ProductNewFinal />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 {/* Platform Integrations */}

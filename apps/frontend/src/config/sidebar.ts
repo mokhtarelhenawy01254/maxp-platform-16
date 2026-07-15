@@ -236,7 +236,15 @@ const applySidebarOverrides = (
     const permissionFilteredSections = sections.filter(section => hasPermissionAccessForSection(user, section.id));
 
     if ((!dbSections || Object.keys(dbSections).length === 0) && (!userSections || Object.keys(userSections).length === 0)) {
-        return permissionFilteredSections;
+        return permissionFilteredSections.map(section => ({
+            ...section,
+            items: section.items.map(item => {
+                const userPerms = user?.permissions || [];
+                const itemPermissionAccess = !item.requiredPermissions || item.requiredPermissions.length === 0 ||
+                    userPerms.some(p => item.requiredPermissions!.includes(p));
+                return { ...item, hidden: !itemPermissionAccess || item.hidden === true };
+            })
+        }));
     }
 
     return permissionFilteredSections

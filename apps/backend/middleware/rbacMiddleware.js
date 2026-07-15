@@ -33,11 +33,20 @@ const PERMISSIONS = {
   'notes.view.all': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'tags.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
 
+  // Products
+  'products.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'products.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'products.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'products.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
   // Customers
   'customers.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'customers.view.all': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'customers.view.team': ['TEAM_LEADER'],
   'customers.view.own': ['MODERATOR'],
+  'customers.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'customers.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'customers.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
 
   // Settings
   'settings.read': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
