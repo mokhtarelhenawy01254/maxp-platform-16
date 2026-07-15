@@ -1844,7 +1844,11 @@ const updateUser = async (req, res) => {
           } else if (VALID_ROLE_ENUMS.includes(role)) {
             console.warn(`⚠️ [UPDATE-USER] Built-in role "${role}" not in Role table, skipping roleId`);
           } else {
-            console.warn(`⚠️ [UPDATE-USER] Custom role "${role}" not in Role table, skipping roleId and role enum`);
+            const newRole = await getSharedPrismaClient().role.create({
+              data: { key: role, name: role, companyId, isBuiltIn: false, isActive: true, priority: 0 },
+            });
+            ucData.roleId = newRole.id;
+            console.log(`✅ [UPDATE-USER] Auto-created Role record for "${role}"`);
           }
         }
 
