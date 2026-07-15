@@ -1856,13 +1856,17 @@ const updateUser = async (req, res) => {
           if (roleRecord) {
             ucData.roleId = roleRecord.id;
           } else if (VALID_ROLE_ENUMS.includes(role)) {
-            console.warn(`⚠️ [UPDATE-USER] Built-in role "${role}" not in Role table, skipping roleId`);
+            const newRole = await getSharedPrismaClient().role.create({
+              data: { key: role, name: getRoleDisplayName(role), companyId: '__system__', isBuiltIn: true, isActive: true, priority: 0 },
+            });
+            ucData.roleId = newRole.id;
+            console.log(`✅ [UPDATE-USER] Auto-created built-in Role record for "${role}" → ${newRole.id}`);
           } else {
             const newRole = await getSharedPrismaClient().role.create({
               data: { key: role, name: role, companyId, isBuiltIn: false, isActive: true, priority: 0 },
             });
             ucData.roleId = newRole.id;
-            console.log(`✅ [UPDATE-USER] Auto-created Role record for "${role}"`);
+            console.log(`✅ [UPDATE-USER] Auto-created custom Role record for "${role}"`);
           }
         }
 
