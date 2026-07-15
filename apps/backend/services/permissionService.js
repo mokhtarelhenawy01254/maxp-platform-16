@@ -233,27 +233,47 @@ const getUserPermissions = async (userId, companyId) => {
   }
 
   // ponytail: auto-fix missing roleId — lazy resolution
-  if (userCompany.role) {
+  if (userCompany.roleId || userCompany.role) {
     try {
-      const builtInRole = await prisma.role.findFirst({
-        where: {
-          key: userCompany.role,
-          isBuiltIn: true,
-          OR: [
-            { companyId: '__system__' },
-            { companyId: null },
-          ],
-        },
-        include: {
-          permissions: { include: { permission: true } },
-        },
-      });
-      if (builtInRole) {
+      let resolvedRole;
+
+      // Priority 1: try finding by roleId (handles custom + built-in roles)
+      if (userCompany.roleId) {
+        resolvedRole = await prisma.role.findUnique({
+          where: { id: userCompany.roleId },
+          include: { permissions: { include: { permission: true } } },
+        });
+      }
+
+      // Priority 2: try built-in role by legacy role enum
+      if (!resolvedRole && userCompany.role) {
+        resolvedRole = await prisma.role.findFirst({
+          where: {
+            key: userCompany.role,
+            isBuiltIn: true,
+            OR: [
+              { companyId: '__system__' },
+              { companyId: null },
+            ],
+          },
+          include: { permissions: { include: { permission: true } } },
+        });
+      }
+
+      // Priority 3: try custom role by key + companyId
+      if (!resolvedRole && userCompany.role) {
+        resolvedRole = await prisma.role.findFirst({
+          where: { key: userCompany.role, companyId, isBuiltIn: false },
+          include: { permissions: { include: { permission: true } } },
+        });
+      }
+
+      if (resolvedRole) {
         await prisma.userCompany.update({
           where: { userId_companyId: { userId, companyId } },
-          data: { roleId: builtInRole.id },
+          data: { roleId: resolvedRole.id },
         });
-        return builtInRole.permissions.map(rp => rp.permission.key);
+        return resolvedRole.permissions.map(rp => rp.permission.key);
       }
     } catch (e) {
       console.warn('[PERMISSIONS] Auto-fix roleId failed:', e.message);
