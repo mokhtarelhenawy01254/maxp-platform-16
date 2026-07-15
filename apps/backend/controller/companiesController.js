@@ -1138,6 +1138,7 @@ const getCompanyUsers = async (req, res) => {
             },
           },
         },
+        roleRef: { select: { name: true } },
         orderBy: (() => {
           const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
           const validSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'isActive'];
@@ -1240,7 +1241,7 @@ const getCompanyUsers = async (req, res) => {
       avatar: uc.user.avatar,
       role: uc.role,
       roleId: uc.roleId || null,
-      roleName: uc.role ? getRoleDisplayName(uc.role) : null,
+      roleName: uc.roleRef?.name || (uc.role ? getRoleDisplayName(uc.role) : null),
       isActive: uc.isActive, // isActive from UserCompany table
       isEmailVerified: uc.user.isEmailVerified,
       lastLoginAt: uc.user.lastLoginAt,
@@ -1362,6 +1363,7 @@ const getSingleUser = async (req, res) => {
             },
           },
         },
+        roleRef: { select: { name: true } },
       },
     });
 
@@ -1383,6 +1385,8 @@ const getSingleUser = async (req, res) => {
       phone: userCompany.user.phone,
       avatar: userCompany.user.avatar,
       role: userCompany.role,
+      roleId: userCompany.roleId || null,
+      roleName: userCompany.roleRef?.name || (userCompany.role ? getRoleDisplayName(userCompany.role) : null),
       isActive: userCompany.isActive,
       isEmailVerified: userCompany.user.isEmailVerified,
       lastLoginAt: userCompany.user.lastLoginAt,
@@ -1972,6 +1976,7 @@ const updateUser = async (req, res) => {
               },
             },
           },
+          roleRef: { select: { name: true } },
         },
       });
 
@@ -1984,7 +1989,7 @@ const updateUser = async (req, res) => {
       avatar: userCompanyAfterUpdate.user.avatar,
       role: userCompanyAfterUpdate.role,
       roleId: userCompanyAfterUpdate.roleId || null,
-      roleName: userCompanyAfterUpdate.role ? getRoleDisplayName(userCompanyAfterUpdate.role) : null,
+      roleName: userCompanyAfterUpdate.roleRef?.name || (userCompanyAfterUpdate.role ? getRoleDisplayName(userCompanyAfterUpdate.role) : null),
       isActive: userCompanyAfterUpdate.isActive, // From UserCompany
       isEmailVerified: userCompanyAfterUpdate.user.isEmailVerified,
       lastLoginAt: userCompanyAfterUpdate.user.lastLoginAt,
