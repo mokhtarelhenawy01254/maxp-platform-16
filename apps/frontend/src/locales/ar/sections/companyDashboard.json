@@ -44,7 +44,8 @@
   "stats": {
     "title": "إحصائيات سريعة",
     "products": "المنتجات",
-    "orders": "الطلبات"
+    "orders": "الطلبات",
+    "activeApps": "التطبيقات النشطة"
   },
   "activity": {
     "title": "النشاط الأخير (7 أيام)",
@@ -68,7 +69,8 @@
     "growth": "النمو",
     "operations": "العمليات",
     "inventoryAlerts": "تنبيهات المخزون",
-    "insights": "رؤى ذكية"
+    "insights": "رؤى ذكية",
+    "alerts": "التنبيهات"
   },
   "insights": {
     "revenueTrend": "الإيرادات {{delta}} مقارنة بالفترة السابقة ({{current}}).",
@@ -264,5 +266,68 @@
     "pdf": "تصدير PDF",
     "metric": "المؤشر",
     "value": "القيمة"
+  },
+  "inventory": {
+    "outOfStockCount": "{{count}} منتج نفذ من المخزون",
+    "lowStockCount": "{{count}} منتج أوشك على النفاد"
+  },
+  "alerts": {
+    "openOrders": "{{count}} طلب معلق"
+  },
+  "widgets": {
+    "sectionTitle": "التطبيقات النشطة",
+    "active": "نشط",
+    "moreModules": "المزيد من التطبيقات",
+    "viewAll": "عرض الكل",
+    "noData": "لا توجد بيانات متاحة",
+    "status": {
+      "active": "نشط",
+      "warning": "تحتاج متابعة",
+      "error": "خطأ",
+      "inactive": "غير نشط"
+    },
+    "ecommerce": {
+      "title": "المتجر",
+      "orders": "الطلبات",
+      "revenue": "الإيرادات",
+      "customers": "العملاء"
+    },
+    "whatsapp": {
+      "title": "واتساب",
+      "conversations": "المحادثات",
+      "new": "الجديدة",
+      "connected": "متصل"
+    },
+    "ai": { "title": "الذكاء الاصطناعي" },
+    "crm": {
+      "title": "العملاء",
+      "customers": "العملاء",
+      "new": "الجدد"
+    },
+    "hr": { "title": "الموارد البشرية" },
+    "marketing": { "title": "التسويق والإعلانات" },
+    "analytics": {
+      "title": "التحليلات",
+      "visits": "الزيارات",
+      "conversion": "نسبة التحويل"
+    },
+    "products": {
+      "title": "المنتجات",
+      "total": "الإجمالي",
+      "lowStock": "ناقص"
+    },
+    "medical": { "title": "النظام الطبي" },
+    "education": { "title": "النظام التعليمي" },
+    "hotel": { "title": "نظام الفنادق" },
+    "booking": { "title": "الحجوزات" },
+    "procurement": { "title": "المشتريات" },
+    "wholesale": { "title": "الجملة" },
+    "affiliate": { "title": "الأفلييت" },
+    "partners": { "title": "الشركاء" },
+    "competitors": { "title": "المنافسين" },
+    "tasks": { "title": "المهام" },
+    "notifications": { "title": "الإشعارات" },
+    "forms": { "title": "نماذج التسجيل" },
+    "telegram": { "title": "تيليجرام" }
   }
 }

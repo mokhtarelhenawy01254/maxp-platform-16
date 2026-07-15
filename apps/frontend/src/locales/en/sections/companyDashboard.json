@@ -44,7 +44,8 @@
   "stats": {
     "title": "Quick Stats",
     "products": "Products",
-    "orders": "Orders"
+    "orders": "Orders",
+    "activeApps": "Active Apps"
   },
   "activity": {
     "title": "Recent Activity (7 days)",
@@ -68,7 +69,8 @@
     "growth": "Growth",
     "operations": "Operations",
     "inventoryAlerts": "Inventory Alerts",
-    "insights": "Smart Insights"
+    "insights": "Smart Insights",
+    "alerts": "Alerts"
   },
   "insights": {
     "revenueTrend": "Revenue is {{delta}} vs the previous period ({{current}}).",
@@ -264,5 +266,68 @@
     "pdf": "Export PDF",
     "metric": "Metric",
     "value": "Value"
+  },
+  "inventory": {
+    "outOfStockCount": "{{count}} out of stock",
+    "lowStockCount": "{{count}} low on stock"
+  },
+  "alerts": {
+    "openOrders": "{{count}} open orders"
+  },
+  "widgets": {
+    "sectionTitle": "Active Apps",
+    "active": "active",
+    "moreModules": "More Apps",
+    "viewAll": "View All",
+    "noData": "No data available",
+    "status": {
+      "active": "Active",
+      "warning": "Needs Attention",
+      "error": "Error",
+      "inactive": "Inactive"
+    },
+    "ecommerce": {
+      "title": "Store",
+      "orders": "Orders",
+      "revenue": "Revenue",
+      "customers": "Customers"
+    },
+    "whatsapp": {
+      "title": "WhatsApp",
+      "conversations": "Conversations",
+      "new": "New",
+      "connected": "Connected"
+    },
+    "ai": { "title": "AI Assistant" },
+    "crm": {
+      "title": "Customers",
+      "customers": "Customers",
+      "new": "New"
+    },
+    "hr": { "title": "HR Management" },
+    "marketing": { "title": "Marketing & Ads" },
+    "analytics": {
+      "title": "Analytics",
+      "visits": "Visits",
+      "conversion": "Conversion"
+    },
+    "products": {
+      "title": "Products",
+      "total": "Total",
+      "lowStock": "Low Stock"
+    },
+    "medical": { "title": "Medical System" },
+    "education": { "title": "Education System" },
+    "hotel": { "title": "Hotel Management" },
+    "booking": { "title": "Appointments" },
+    "procurement": { "title": "Procurement" },
+    "wholesale": { "title": "Wholesale" },
+    "affiliate": { "title": "Affiliates" },
+    "partners": { "title": "Partners" },
+    "competitors": { "title": "Competitors" },
+    "tasks": { "title": "Tasks" },
+    "notifications": { "title": "Notifications" },
+    "forms": { "title": "Forms" },
+    "telegram": { "title": "Telegram" }
   }
 }
