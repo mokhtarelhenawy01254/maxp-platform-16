@@ -307,6 +307,23 @@ const authenticateToken = async (req, res, next) => {
         }
       } else {
         effectiveRole = membership.roleRef?.key || membership.role || effectiveRole;
+
+        // If roleRef didn't populate but roleId is set, resolve from Role table directly
+        if (!membership.roleRef?.key && membership.roleId) {
+          try {
+            const resolvedRole = await executeWithRetry(() =>
+              prisma.role.findUnique({
+                where: { id: membership.roleId },
+                select: { key: true }
+              })
+            );
+            if (resolvedRole?.key) {
+              effectiveRole = resolvedRole.key;
+            }
+          } catch (e) {
+            console.warn('[VERIFY-TOKEN] Failed to resolve role by roleId:', e.message?.substring(0, 100));
+          }
+        }
       }
     }
 

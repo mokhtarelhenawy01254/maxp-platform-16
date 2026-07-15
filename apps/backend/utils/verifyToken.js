@@ -33,22 +33,44 @@ const loadUserPermissions = async (userId, companyId) => {
       return userCompany.roleRef.permissions.map(rp => rp.permission.key);
     }
     // ponytail: auto-fix missing roleId — lazy resolution
-    if (userCompany?.role) {
-      const builtInRole = await prisma.role.findFirst({
-        where: {
-          key: userCompany.role,
-          isBuiltIn: true,
-          OR: [
-            { companyId: '__system__' },
-            { companyId: null },
-          ],
-        },
-        select: { id: true },
-      });
-      if (builtInRole) {
+    if (userCompany?.roleId || userCompany?.role) {
+      let resolvedRole = null;
+
+      // Priority 1: try by roleId (handles custom + built-in)
+      if (userCompany.roleId) {
+        resolvedRole = await prisma.role.findUnique({
+          where: { id: userCompany.roleId },
+          include: { permissions: { include: { permission: true } } },
+        });
+      }
+
+      // Priority 2: try built-in role by legacy enum
+      if (!resolvedRole && userCompany.role) {
+        resolvedRole = await prisma.role.findFirst({
+          where: {
+            key: userCompany.role,
+            isBuiltIn: true,
+            OR: [
+              { companyId: '__system__' },
+              { companyId: null },
+            ],
+          },
+          include: { permissions: { include: { permission: true } } },
+        });
+      }
+
+      // Priority 3: try custom role by key + companyId
+      if (!resolvedRole && userCompany.role) {
+        resolvedRole = await prisma.role.findFirst({
+          where: { key: userCompany.role, companyId, isBuiltIn: false },
+          include: { permissions: { include: { permission: true } } },
+        });
+      }
+
+      if (resolvedRole) {
         await prisma.userCompany.update({
           where: { userId_companyId: { userId, companyId } },
-          data: { roleId: builtInRole.id },
+          data: { roleId: resolvedRole.id },
         });
         // Re-fetch with roleRef now populated
         const refixed = await prisma.userCompany.findUnique({
@@ -280,6 +302,23 @@ const authenticateToken = async (req, res, next) => {
         }
       } else {
         effectiveRole = membership.roleRef?.key || membership.role || effectiveRole;
+
+        // If roleRef didn't populate but roleId is set, resolve from Role table directly
+        if (!membership.roleRef?.key && membership.roleId) {
+          try {
+            const resolvedRole = await executeWithRetry(() =>
+              prisma.role.findUnique({
+                where: { id: membership.roleId },
+                select: { key: true }
+              })
+            );
+            if (resolvedRole?.key) {
+              effectiveRole = resolvedRole.key;
+            }
+          } catch (e) {
+            console.warn('[VERIFY-TOKEN] Failed to resolve role by roleId:', e.message?.substring(0, 100));
+          }
+        }
       }
     }
 
