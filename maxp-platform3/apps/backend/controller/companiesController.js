@@ -17,13 +17,14 @@ const {
   ensureCompanySlug,
 } = require("../utils/companySlug");
 // Role name mapping for display (fallback when roleRef relation is not available)
+// ponytail: keep in sync with BUILT_IN_ROLES in seedPermissions.js
 const ROLE_DISPLAY_NAMES = {
-  OWNER: 'مالك',
+  OWNER: 'مالك الشركة',
   SUPER_ADMIN: 'مدير النظام',
   COMPANY_ADMIN: 'مدير الشركة',
   MANAGER: 'مدير',
-  AGENT: 'وكيل',
-  AFFILIATE: 'مسوق بالعمولة',
+  AGENT: 'موظف',
+  AFFILIATE: 'مسوق',
 };
 const getRoleDisplayName = (roleKey) => ROLE_DISPLAY_NAMES[roleKey] || roleKey;
 
@@ -1431,14 +1432,29 @@ const createnewUserForCompany = async (req, res) => {
       email,
       password,
       phone,
-      role = "AGENT",
       isActive = true,
     } = req.body;
+
+    const role = req.body.role || "AGENT";
+    let roleId = req.body.roleId || null;
+
+    const VALID_ROLE_ENUMS = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER", "AGENT", "AFFILIATE"];
+
+    if (!roleId && role) {
+      const roleRecord = await getSharedPrismaClient().role.findFirst({
+        where: { key: role, companyId: companyId },
+      });
+      if (roleRecord) {
+        roleId = roleRecord.id;
+      }
+    }
+
+    const ucRole = VALID_ROLE_ENUMS.includes(role) ? role : "AGENT";
 
     console.log(
       `👤 [CREATE-USER] Request to create user for company: ${companyId}`,
     );
-    console.log(`📧 [CREATE-USER] Email: ${email}, Role: ${role}`);
+    console.log(`📧 [CREATE-USER] Email: ${email}, Role: ${role}${roleId ? ` (roleId: ${roleId})` : ""}`);
     console.log(
       `🔐 [CREATE-USER] Requester: ${req.user?.email}, Role: ${req.user?.role}`,
     );
@@ -1508,7 +1524,8 @@ const createnewUserForCompany = async (req, res) => {
         data: {
           userId: existingUser.id,
           companyId: companyId,
-          role: role,
+          role: ucRole,
+          roleId: roleId,
           isActive: isActive,
           isDefault: false,
         },
@@ -1630,7 +1647,8 @@ const createnewUserForCompany = async (req, res) => {
         data: {
           userId: newUser.id,
           companyId: companyId,
-          role: role,
+          role: ucRole,
+          roleId: roleId,
           isActive: isActive,
           isDefault: true,
         },
@@ -1860,8 +1878,18 @@ const updateUser = async (req, res) => {
             const newRole = await getSharedPrismaClient().role.create({
               data: { key: role, name: getRoleDisplayName(role), companyId: '__system__', isBuiltIn: true, isActive: true, priority: 0 },
             });
+            // Sync all active permissions so the role isn't empty (edge case: missing seed)
+            const allPerms = await getSharedPrismaClient().permission.findMany({
+              where: { isActive: true },
+              select: { id: true },
+            });
+            if (allPerms.length > 0) {
+              await getSharedPrismaClient().rolePermission.createMany({
+                data: allPerms.map(p => ({ roleId: newRole.id, permissionId: p.id })),
+              });
+            }
             ucData.roleId = newRole.id;
-            console.log(`✅ [UPDATE-USER] Auto-created built-in Role record for "${role}" → ${newRole.id}`);
+            console.log(`✅ [UPDATE-USER] Auto-created built-in Role record for "${role}" → ${newRole.id} with ${allPerms.length} permissions`);
           } else {
             const newRole = await getSharedPrismaClient().role.create({
               data: { key: role, name: role, companyId, isBuiltIn: false, isActive: true, priority: 0 },
@@ -2790,7 +2818,7 @@ const sendUserInvitation = async (req, res) => {
                   userId: existingUser.id,
                   companyId: uc.companyId, // User's current company, not the inviting company
                   title: `🎉 دعوة للانضمام إلى ${invitation.company.name}`,
-                  message: `${invitation.inviter.firstName} ${invitation.inviter.lastName} يدعوك للانضمام إلى ${invitation.company.name} كـ ${role === "AGENT" ? "موظف" : role === "MANAGER" ? "مدير" : role === "AFFILIATE" ? "مسوق" : "مسؤول"}`,
+                    message: `${invitation.inviter.firstName} ${invitation.inviter.lastName} يدعوك للانضمام إلى ${invitation.company.name} كـ ${getRoleDisplayName(role)}`,
                   type: "invitation",
                   isRead: false,
                   data: JSON.stringify({
@@ -2873,7 +2901,7 @@ const sendUserInvitation = async (req, res) => {
                             <div style="background-color: #f8f9fa; border-right: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 5px;">
                                 <p style="margin: 0; color: #555;">
                                     <strong style="color: #333;">دورك في النظام:</strong> 
-                                    <span style="color: #667eea; font-weight: bold;">${role === "AGENT" ? "موظف" : role === "MANAGER" ? "مدير" : role === "AFFILIATE" ? "مسوق (Affiliate)" : "مسؤول"}</span>
+                                    <span style="color: #667eea; font-weight: bold;">${getRoleDisplayName(role)}</span>
                                 </p>
                             </div>
                             
@@ -3165,7 +3193,7 @@ const resendInvitation = async (req, res) => {
                             <div style="background-color: #f8f9fa; border-right: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 5px;">
                                 <p style="margin: 0; color: #555;">
                                     <strong style="color: #333;">دورك في النظام:</strong> 
-                                    <span style="color: #667eea; font-weight: bold;">${invitation.role === "AGENT" ? "موظف" : invitation.role === "MANAGER" ? "مدير" : "مسؤول"}</span>
+                                    <span style="color: #667eea; font-weight: bold;">${getRoleDisplayName(invitation.role)}</span>
                                 </p>
                             </div>
                             

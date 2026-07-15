@@ -229,7 +229,10 @@ const getUserPermissions = async (userId, companyId) => {
   if (!userCompany) return [];
 
   if (userCompany.roleRef) {
-    return userCompany.roleRef.permissions.map(rp => rp.permission.key);
+    const perms = userCompany.roleRef.permissions.map(rp => rp.permission.key);
+    if (perms.length > 0) return perms;
+    // ponytail: roleRef exists but is empty (auto-created without permissions).
+    // Fall through to lazy fix below so we attempt to resolve from role enum.
   }
 
   // ponytail: auto-fix missing roleId — lazy resolution
