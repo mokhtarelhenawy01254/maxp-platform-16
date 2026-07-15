@@ -1137,17 +1137,17 @@ const getCompanyUsers = async (req, res) => {
               },
             },
           },
-        },
         roleRef: { select: { name: true } },
-        orderBy: (() => {
-          const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
-          const validSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'isActive'];
-          if (sortBy === 'createdAt') return { createdAt: safeSortOrder };
-          if (sortBy === 'role') return { role: safeSortOrder };
-          if (sortBy === 'name') return { user: { firstName: safeSortOrder } };
-          if (validSortFields.includes(sortBy)) return { user: { [sortBy]: safeSortOrder } };
-          return { createdAt: safeSortOrder };
-        })(),
+      },
+      orderBy: (() => {
+        const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
+        const validSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'isActive'];
+        if (sortBy === 'createdAt') return { createdAt: safeSortOrder };
+        if (sortBy === 'role') return { role: safeSortOrder };
+        if (sortBy === 'name') return { user: { firstName: safeSortOrder } };
+        if (validSortFields.includes(sortBy)) return { user: { [sortBy]: safeSortOrder } };
+        return { createdAt: safeSortOrder };
+      })(),
       }),
       getSharedPrismaClient().userCompany.count({
         where: {
