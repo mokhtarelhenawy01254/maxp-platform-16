@@ -89,6 +89,7 @@ describe('permissionService', () => {
         where: {
           OR: [
             { companyId: '__system__', isBuiltIn: true },
+            { companyId: null, isBuiltIn: true },
             { companyId: 'company-1' },
           ],
           isActive: true,
@@ -185,7 +186,7 @@ describe('permissionService', () => {
 
       await expect(
         permissionService.updateCustomRole('company-1', 'fake-id', { name: 'X', permissionKeys: [] }, 'actor-1')
-      ).rejects.toThrow('Custom role not found');
+      ).rejects.toThrow('Role not found');
     });
   });
 

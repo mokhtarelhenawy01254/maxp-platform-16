@@ -182,7 +182,7 @@ describe('rbacMiddleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('returns 403 when user lacks the required permission', async () => {
+    it('falls back to hardcoded PERMISSIONS when DB lacks the specific permission', async () => {
       mockPermissionService.getUserPermissions.mockResolvedValue(['products.view', 'inbox.send']);
 
       const req = { user: { id: 'user-1', role: 'AGENT', companyId: 'company-1', effectiveCompanyId: 'company-1' } };
@@ -191,6 +191,20 @@ describe('rbacMiddleware', () => {
 
       await requireDbPermission('orders.create')(req, res, next);
 
+      // AGENT→MODERATOR, and MODERATOR has orders.create in hardcoded PERMISSIONS
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('returns 403 when DB + hardcoded both lack the permission', async () => {
+      mockPermissionService.getUserPermissions.mockResolvedValue(['products.view', 'inbox.send']);
+
+      const req = { user: { id: 'user-1', role: 'AGENT', companyId: 'company-1', effectiveCompanyId: 'company-1' } };
+      const res = createResponse();
+      const next = jest.fn();
+
+      await requireDbPermission('settings.manage')(req, res, next);
+
+      // AGENT→MODERATOR, MODERATOR does NOT have settings.manage
       expect(res.status).toHaveBeenCalledWith(403);
       expect(next).not.toHaveBeenCalled();
     });

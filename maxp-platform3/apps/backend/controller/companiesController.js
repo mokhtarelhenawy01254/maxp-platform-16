@@ -1847,6 +1847,7 @@ const updateUser = async (req, res) => {
               key: role,
               OR: [
                 { companyId: '__system__', isBuiltIn: true },
+                { companyId: null, isBuiltIn: true },
                 { companyId },
               ],
             },

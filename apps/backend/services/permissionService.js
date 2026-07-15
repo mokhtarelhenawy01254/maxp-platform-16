@@ -35,6 +35,7 @@ const getCompanyRoles = async (companyId) => {
     where: {
       OR: [
         { companyId: '__system__', isBuiltIn: true },
+        { companyId: null, isBuiltIn: true },
         { companyId },
       ],
       isActive: true,
@@ -54,6 +55,7 @@ const getCompanyRoleByKey = async (companyId, key) => {
       key,
       OR: [
         { companyId: '__system__', isBuiltIn: true },
+        { companyId: null, isBuiltIn: true },
         { companyId },
       ],
     },
@@ -109,9 +111,16 @@ const createCustomRole = async (companyId, { key, name, description, permissionK
 
 const updateCustomRole = async (companyId, roleId, { name, description, permissionKeys, isActive }, actorId) => {
   const role = await getSharedPrismaClient().role.findFirst({
-    where: { id: roleId, companyId, isBuiltIn: false },
+    where: {
+      id: roleId,
+      OR: [
+        { companyId },
+        { companyId: '__system__', isBuiltIn: true },
+        { companyId: null, isBuiltIn: true },
+      ],
+    },
   });
-  if (!role) throw new Error('Custom role not found');
+  if (!role) throw new Error('Role not found');
 
   const permissions = await getSharedPrismaClient().permission.findMany({
     where: { key: { in: permissionKeys }, isActive: true },
@@ -227,7 +236,14 @@ const getUserPermissions = async (userId, companyId) => {
   if (userCompany.role) {
     try {
       const builtInRole = await prisma.role.findFirst({
-        where: { key: userCompany.role, companyId: '__system__', isBuiltIn: true },
+        where: {
+          key: userCompany.role,
+          isBuiltIn: true,
+          OR: [
+            { companyId: '__system__' },
+            { companyId: null },
+          ],
+        },
         include: {
           permissions: { include: { permission: true } },
         },

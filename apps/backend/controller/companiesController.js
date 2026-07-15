@@ -1440,7 +1440,14 @@ const createnewUserForCompany = async (req, res) => {
 
     if (!roleId && role) {
       const roleRecord = await getSharedPrismaClient().role.findFirst({
-        where: { key: role, companyId: companyId },
+        where: {
+          key: role,
+          OR: [
+            { companyId: '__system__', isBuiltIn: true },
+            { companyId: null, isBuiltIn: true },
+            { companyId },
+          ],
+        },
       });
       if (roleRecord) {
         roleId = roleRecord.id;
@@ -1863,6 +1870,7 @@ const updateUser = async (req, res) => {
               key: role,
               OR: [
                 { companyId: '__system__', isBuiltIn: true },
+                { companyId: null, isBuiltIn: true },
                 { companyId },
               ],
             },

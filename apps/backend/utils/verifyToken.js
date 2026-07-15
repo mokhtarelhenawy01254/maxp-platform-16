@@ -35,7 +35,14 @@ const loadUserPermissions = async (userId, companyId) => {
     // ponytail: auto-fix missing roleId — lazy resolution
     if (userCompany?.role) {
       const builtInRole = await prisma.role.findFirst({
-        where: { key: userCompany.role, companyId: '__system__', isBuiltIn: true },
+        where: {
+          key: userCompany.role,
+          isBuiltIn: true,
+          OR: [
+            { companyId: '__system__' },
+            { companyId: null },
+          ],
+        },
         select: { id: true },
       });
       if (builtInRole) {
