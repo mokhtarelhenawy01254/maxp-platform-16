@@ -695,8 +695,19 @@ const UsersManagement: React.FC = () => {
     setInviteDialogOpen(true);
   };
 
-  const openEditUser = (targetUser: UserRecord) => {
+  const openEditUser = async (targetUser: UserRecord) => {
     setEditingUser(targetUser);
+    try {
+      const freshPayload = await requestApi<UserRecord>(
+        `companies/${user?.companyId}/users/${targetUser.id}`
+      );
+      if (freshPayload.success && freshPayload.data) {
+        targetUser = freshPayload.data;
+        setEditingUser(targetUser);
+      }
+    } catch {
+      // Fall back to the passed-in user data if fetch fails
+    }
     const resolvedRole = targetUser.roleId
       ? (Object.entries(roles).find(([, r]) => r.id === targetUser.roleId)?.[0] || targetUser.role)
       : targetUser.role;
