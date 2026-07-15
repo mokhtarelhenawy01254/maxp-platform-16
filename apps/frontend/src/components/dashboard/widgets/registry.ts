@@ -99,7 +99,16 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#8B5CF6",
     priority: 3,
     href: "/admin/ai-hub",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.interactionsToday && !appData?.sessions) return null;
+      return {
+        status: "active",
+        metrics: [
+          { label: "widgets.ai.interactions", value: fmt(appData.interactionsToday as number) },
+          { label: "widgets.ai.sessions", value: fmt(appData.sessions as number) },
+        ],
+      };
+    },
   },
 
   // 👥 CRM / Customers
@@ -132,7 +141,17 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#EC4899",
     priority: 5,
     href: "/hr",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.activeEmployees && !appData?.presentToday) return null;
+      return {
+        status: "active",
+        metrics: [
+          { label: "widgets.hr.employees", value: fmt(appData.activeEmployees as number) },
+          { label: "widgets.hr.present", value: fmt(appData.presentToday as number) },
+          { label: "widgets.hr.onLeave", value: fmt(appData.onLeave as number) },
+        ],
+      };
+    },
   },
 
   // 📈 Marketing
@@ -144,7 +163,16 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#F59E0B",
     priority: 6,
     href: "/advertising/facebook-ads",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.campaigns && !appData?.activeCampaigns) return null;
+      return {
+        status: (appData.activeCampaigns as number) > 0 ? "active" : "inactive",
+        metrics: [
+          { label: "widgets.marketing.campaigns", value: fmt(appData.campaigns as number) },
+          { label: "widgets.marketing.active", value: fmt(appData.activeCampaigns as number) },
+        ],
+      };
+    },
   },
 
   // 📊 Analytics
@@ -198,7 +226,15 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#EF4444",
     priority: 9,
     href: "/admin/booking/dashboard",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.appointmentsToday) return null;
+      return {
+        status: (appData.appointmentsToday as number) > 0 ? "active" : "inactive",
+        metrics: [
+          { label: "widgets.medical.appointments", value: fmt(appData.appointmentsToday as number) },
+        ],
+      };
+    },
   },
 
   // 📚 Education
@@ -210,7 +246,16 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#8B5CF6",
     priority: 10,
     href: "/admin/education/dashboard",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.activeStudents && !appData?.sessionsToday) return null;
+      return {
+        status: "active",
+        metrics: [
+          { label: "widgets.education.students", value: fmt(appData.activeStudents as number) },
+          { label: "widgets.education.sessions", value: fmt(appData.sessionsToday as number) },
+        ],
+      };
+    },
   },
 
   // 🏨 Hotel
@@ -222,7 +267,17 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#F59E0B",
     priority: 11,
     href: "/admin/hotel",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.checkedIn && !appData?.occupiedRooms) return null;
+      return {
+        status: (appData.occupiedRooms as number) > 0 ? "active" : "inactive",
+        metrics: [
+          { label: "widgets.hotel.checkedIn", value: fmt(appData.checkedIn as number) },
+          { label: "widgets.hotel.occupied", value: fmt(appData.occupiedRooms as number) },
+          { label: "widgets.hotel.available", value: fmt(appData.availableRooms as number) },
+        ],
+      };
+    },
   },
 
   // 📅 Booking
@@ -234,7 +289,15 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#06B6D4",
     priority: 12,
     href: "/admin/booking/dashboard",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.appointmentsToday) return null;
+      return {
+        status: (appData.appointmentsToday as number) > 0 ? "active" : "inactive",
+        metrics: [
+          { label: "widgets.booking.appointments", value: fmt(appData.appointmentsToday as number) },
+        ],
+      };
+    },
   },
 
   // 📦 Procurement
@@ -246,7 +309,16 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#10B981",
     priority: 13,
     href: "/procurement/dashboard",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.pendingOrders && !appData?.activeSuppliers) return null;
+      return {
+        status: (appData.pendingOrders as number) > 0 ? "warning" : "active",
+        metrics: [
+          { label: "widgets.procurement.pending", value: fmt(appData.pendingOrders as number) },
+          { label: "widgets.procurement.suppliers", value: fmt(appData.activeSuppliers as number) },
+        ],
+      };
+    },
   },
 
   // 🔄 Wholesale
@@ -258,7 +330,15 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#8B5CF6",
     priority: 14,
     href: "/wholesale/dashboard",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.activeCustomers) return null;
+      return {
+        status: "active",
+        metrics: [
+          { label: "widgets.wholesale.customers", value: fmt(appData.activeCustomers as number) },
+        ],
+      };
+    },
   },
 
   // 🤝 Affiliate
@@ -270,7 +350,16 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#EC4899",
     priority: 15,
     href: "/affiliates/management",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.activeAffiliates) return null;
+      return {
+        status: (appData.activeAffiliates as number) > 0 ? "active" : "inactive",
+        metrics: [
+          { label: "widgets.affiliate.active", value: fmt(appData.activeAffiliates as number) },
+          { label: "widgets.affiliate.pending", value: fmt(appData.pendingCommissions as number) },
+        ],
+      };
+    },
   },
 
   // 🤝 Partners
@@ -294,7 +383,15 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#6B7280",
     priority: 17,
     href: "/competitors",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.tracked) return null;
+      return {
+        status: (appData.tracked as number) > 0 ? "active" : "inactive",
+        metrics: [
+          { label: "widgets.competitors.tracked", value: fmt(appData.tracked as number) },
+        ],
+      };
+    },
   },
 
   // ✅ Tasks
@@ -306,7 +403,16 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#10B981",
     priority: 18,
     href: "/tasks",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.openTasks && !appData?.completedThisWeek) return null;
+      return {
+        status: (appData.openTasks as number) > 0 ? "warning" : "active",
+        metrics: [
+          { label: "widgets.tasks.open", value: fmt(appData.openTasks as number) },
+          { label: "widgets.tasks.completed", value: fmt(appData.completedThisWeek as number) },
+        ],
+      };
+    },
   },
 
   // 🔔 Notifications
@@ -342,7 +448,15 @@ export const widgetRegistry: WidgetDefinition[] = [
     color: "#229ED9",
     priority: 21,
     href: "/telegram/pro",
-    fetchData: () => null,
+    fetchData: (_d, appData): WidgetData | null => {
+      if (!appData?.groups) return null;
+      return {
+        status: (appData.groups as number) > 0 ? "active" : "inactive",
+        metrics: [
+          { label: "widgets.telegram.groups", value: fmt(appData.groups as number) },
+        ],
+      };
+    },
   },
 ];
 

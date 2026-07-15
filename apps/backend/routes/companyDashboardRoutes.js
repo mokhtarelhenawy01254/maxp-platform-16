@@ -8,6 +8,8 @@ const { cacheMiddleware } = require('../middleware/performanceOptimization');
 router.get('/', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, cacheMiddleware(60000), companyDashboardController.companyDashboardOverview)
 router.get('/dashboard', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, cacheMiddleware(60000), companyDashboardController.companyDashboardOverview) // Alias for compatibility
 
+router.get('/widget-data', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, cacheMiddleware(30000), companyDashboardController.getWidgetData)
+
 router.get('/settings', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companyDashboardController.companySettings)
 
 router.put('/settings', verifyToken.authenticateToken, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companyDashboardController.updateCompanySettings)

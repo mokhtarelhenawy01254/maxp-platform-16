@@ -5,6 +5,7 @@ import { EyeIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { useDashboardLiveSync } from "../../hooks/useDashboardLiveSync";
+import { useWidgetData } from "../../hooks/useWidgetData";
 import { QuickActions } from "../../components/dashboard/QuickActions";
 import {
   AppWidgetGrid,
@@ -95,6 +96,7 @@ export default function MainDashboardPage() {
 
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardData(dateParams);
   const live = useDashboardLiveSync(!isLoading && !isError);
+  const { data: widgetAppData } = useWidgetData(!isLoading && !isError);
 
   const dashboard = data?.data;
   const isEmpty = !isLoading && !isError && isNewCompany(dashboard);
@@ -102,8 +104,8 @@ export default function MainDashboardPage() {
   const activeWidgets = useMemo(() => getWidgetsForApps(activeApps), [activeApps]);
 
   const getWidgetData = useCallback(
-    (widget: WidgetDefinition) => widget.fetchData(dashboard),
-    [dashboard],
+    (widget: WidgetDefinition) => widget.fetchData(dashboard, widgetAppData?.[widget.id]),
+    [dashboard, widgetAppData],
   );
 
   const _t = t as (key: string) => string;

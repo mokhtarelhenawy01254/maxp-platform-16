@@ -298,14 +298,27 @@
       "new": "New",
       "connected": "Connected"
     },
-    "ai": { "title": "AI Assistant" },
+    "ai": {
+      "title": "AI Assistant",
+      "interactions": "Interactions",
+      "sessions": "Sessions"
+    },
     "crm": {
       "title": "Customers",
       "customers": "Customers",
       "new": "New"
     },
-    "hr": { "title": "HR Management" },
-    "marketing": { "title": "Marketing & Ads" },
+    "hr": {
+      "title": "HR Management",
+      "employees": "Employees",
+      "present": "Present Today",
+      "onLeave": "On Leave"
+    },
+    "marketing": {
+      "title": "Marketing & Ads",
+      "campaigns": "Campaigns",
+      "active": "Active"
+    },
     "analytics": {
       "title": "Analytics",
       "visits": "Visits",
@@ -316,18 +329,54 @@
       "total": "Total",
       "lowStock": "Low Stock"
     },
-    "medical": { "title": "Medical System" },
-    "education": { "title": "Education System" },
-    "hotel": { "title": "Hotel Management" },
-    "booking": { "title": "Appointments" },
-    "procurement": { "title": "Procurement" },
-    "wholesale": { "title": "Wholesale" },
-    "affiliate": { "title": "Affiliates" },
+    "medical": {
+      "title": "Medical System",
+      "appointments": "Appointments"
+    },
+    "education": {
+      "title": "Education System",
+      "students": "Students",
+      "sessions": "Sessions"
+    },
+    "hotel": {
+      "title": "Hotel Management",
+      "checkedIn": "Checked In",
+      "occupied": "Occupied",
+      "available": "Available"
+    },
+    "booking": {
+      "title": "Appointments",
+      "appointments": "Appointments"
+    },
+    "procurement": {
+      "title": "Procurement",
+      "pending": "Pending Orders",
+      "suppliers": "Suppliers"
+    },
+    "wholesale": {
+      "title": "Wholesale",
+      "customers": "Customers"
+    },
+    "affiliate": {
+      "title": "Affiliates",
+      "active": "Active",
+      "pending": "Pending"
+    },
     "partners": { "title": "Partners" },
-    "competitors": { "title": "Competitors" },
-    "tasks": { "title": "Tasks" },
+    "competitors": {
+      "title": "Competitors",
+      "tracked": "Tracked"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "open": "Open",
+      "completed": "Completed"
+    },
     "notifications": { "title": "Notifications" },
     "forms": { "title": "Forms" },
-    "telegram": { "title": "Telegram" }
+    "telegram": {
+      "title": "Telegram",
+      "groups": "Groups"
+    }
   }
 }

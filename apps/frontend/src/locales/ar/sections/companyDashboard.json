@@ -298,14 +298,27 @@
       "new": "الجديدة",
       "connected": "متصل"
     },
-    "ai": { "title": "الذكاء الاصطناعي" },
+    "ai": {
+      "title": "الذكاء الاصطناعي",
+      "interactions": "التفاعلات",
+      "sessions": "الجلسات"
+    },
     "crm": {
       "title": "العملاء",
       "customers": "العملاء",
       "new": "الجدد"
     },
-    "hr": { "title": "الموارد البشرية" },
-    "marketing": { "title": "التسويق والإعلانات" },
+    "hr": {
+      "title": "الموارد البشرية",
+      "employees": "الموظفين",
+      "present": "الحاضرون اليوم",
+      "onLeave": "في إجازة"
+    },
+    "marketing": {
+      "title": "التسويق والإعلانات",
+      "campaigns": "الحملات",
+      "active": "النشطة"
+    },
     "analytics": {
       "title": "التحليلات",
       "visits": "الزيارات",
@@ -316,18 +329,54 @@
       "total": "الإجمالي",
       "lowStock": "ناقص"
     },
-    "medical": { "title": "النظام الطبي" },
-    "education": { "title": "النظام التعليمي" },
-    "hotel": { "title": "نظام الفنادق" },
-    "booking": { "title": "الحجوزات" },
-    "procurement": { "title": "المشتريات" },
-    "wholesale": { "title": "الجملة" },
-    "affiliate": { "title": "الأفلييت" },
+    "medical": {
+      "title": "النظام الطبي",
+      "appointments": "المواعيد"
+    },
+    "education": {
+      "title": "النظام التعليمي",
+      "students": "الطلاب",
+      "sessions": "الجلسات"
+    },
+    "hotel": {
+      "title": "نظام الفنادق",
+      "checkedIn": "مسجل الدخول",
+      "occupied": "مشغول",
+      "available": "متاح"
+    },
+    "booking": {
+      "title": "الحجوزات",
+      "appointments": "المواعيد"
+    },
+    "procurement": {
+      "title": "المشتريات",
+      "pending": "طلبات معلقة",
+      "suppliers": "الموردين"
+    },
+    "wholesale": {
+      "title": "الجملة",
+      "customers": "العملاء"
+    },
+    "affiliate": {
+      "title": "الأفلييت",
+      "active": "النشطاء",
+      "pending": "المعلقة"
+    },
     "partners": { "title": "الشركاء" },
-    "competitors": { "title": "المنافسين" },
-    "tasks": { "title": "المهام" },
+    "competitors": {
+      "title": "المنافسين",
+      "tracked": "المراقَبون"
+    },
+    "tasks": {
+      "title": "المهام",
+      "open": "المفتوحة",
+      "completed": "المكتملة"
+    },
     "notifications": { "title": "الإشعارات" },
     "forms": { "title": "نماذج التسجيل" },
-    "telegram": { "title": "تيليجرام" }
+    "telegram": {
+      "title": "تيليجرام",
+      "groups": "المجموعات"
+    }
   }
 }
