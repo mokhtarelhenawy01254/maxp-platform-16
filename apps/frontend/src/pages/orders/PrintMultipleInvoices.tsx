@@ -33,6 +33,7 @@ interface Invoice {
       orderNumber: string;
       orderItems: Array<{
         productName: string;
+        productSku?: string;
         productColor?: string;
         productSize?: string;
         productDetails?: string;
@@ -40,6 +41,7 @@ interface Invoice {
         price: number;
         total: number;
         metadata?: unknown;
+        product?: { sku?: string | null };
       }>;
     };
   }
@@ -142,7 +144,9 @@ const PrintMultipleInvoices: React.FC = () => {
         );
 
         const itemRows = group.items.map(({ item, slotIndex }, itemIndex) => {
+          const code = item.productSku || item.product?.sku;
           const extraDetails = [
+            code ? `كود: ${code}` : "",
             item.productColor ? `اللون: ${item.productColor}` : "",
             item.productSize ? `المقاس: ${item.productSize}` : "",
             item.productDetails ? item.productDetails : "",
@@ -175,7 +179,9 @@ const PrintMultipleInvoices: React.FC = () => {
         return [summaryRow, ...itemRows];
       }),
       ...groupedItems.singles.map((item, idx) => {
+        const code = item.productSku || item.product?.sku;
         const extraDetails = [
+          code ? `كود: ${code}` : "",
           item.productColor ? `اللون: ${item.productColor}` : "",
           item.productSize ? `المقاس: ${item.productSize}` : "",
           item.productDetails ? item.productDetails : "",
