@@ -1,5 +1,12 @@
 # Team Sync Updates
 
+## 2026-07-16 / 2026-03-09
+- **Customer vs. Lead Separation & Code Cleanup (FEATURE / COMPLETE)**:
+  1. Clarified the architectural separation: both concepts share the single `Customer` database table, distinguished solely by the `status` enum field (defaulting to `LEAD` when created automatically via `WhatsAppSyncService` from new numbers, and auto-promoted to `ACTIVE` upon order creation inside `enhancedOrderService`).
+  2. Documented the system boundaries in `Structure.md` for team onboarding and future agent iterations.
+  3. Cleaned up dead client service code from `customerService.ts`, removing `getCustomerSegments` and `getCustomerStats` methods and types that were never registered or implemented in backend Express routing (stats are already inline within `getCustomerDetails` payload).
+  4. Logged the bugs and routes mismatch in `Bugs.md`.
+
 ## 2026-07-14 / 2026-03-09
 - **Sidebar Layout Persistence & Company Override Resolution (UI/UX / COMPLETE)**: Fixed the sidebar layout "getting stuck" when changing layouts:
   1. Resolved a race condition in `SidebarSettingsContext.tsx` where the nullish coalescing operator `serverLayout ?? prev.sidebarLayout` overrode `null` server responses with stale localStorage layouts, preventing users from resetting layout to default.

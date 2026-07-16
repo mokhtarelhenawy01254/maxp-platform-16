@@ -1,5 +1,14 @@
 # Backend Bugs Log
 
+### [BUG FIX / API] Dead Customer Service Client Functions (Segments & Stats)
+- **Date**: 2026-07-16
+- **Root Cause**: The frontend `customerService.ts` defined two functions: `getCustomerSegments` and `getCustomerStats` that were not actually registered in the backend Express router (`customerRoutes.js`).
+  - Requesting `/customers/segments` matched the `/:customerId` route, executing `getCustomerDetails` with a parameter value of `"segments"`, resulting in a `404` error ("العميل غير موجود").
+  - `stats` were already returned inline within the payload of `getCustomerDetails` rather than via a separate route.
+- **Resolution**: Removed the dead `getCustomerSegments` and `getCustomerStats` methods and their associated types from `customerService.ts`. Since their functionality was either dead or already bundled in other requests, this cleans up code and removes confusing non-implemented endpoints.
+- **Files Modified**:
+  - `apps/frontend/src/services/customerService.ts`
+
 ### [BUG FIX / UI] Sidebar Layout Preference Reset & Company Override Mismatches
 - **Date**: 2026-07-14
 - **Root Cause**:

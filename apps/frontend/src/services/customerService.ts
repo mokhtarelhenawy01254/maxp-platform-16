@@ -49,19 +49,6 @@ interface CustomerStats {
   daysSinceLastContact?: number;
 }
 
-interface CustomerSegments {
-  total: number;
-  active: number;
-  leads: number;
-  vip: number;
-  recent: number;
-  segments: Array<{
-    name: string;
-    count: number;
-    percentage: number;
-  }>;
-}
-
 interface CreateCustomerData {
   firstName: string;
   lastName: string;
@@ -162,13 +149,6 @@ class CustomerService {
     return response.data.data;
   }
 
-  /**
-   * Get customer statistics
-   */
-  async getCustomerStats(id: string): Promise<CustomerStats> {
-    const response = await apiClient.get(`/customers/${id}/stats`);
-    return response.data.data;
-  }
 
   /**
    * Get customer interactions
@@ -215,13 +195,6 @@ class CustomerService {
     return response.data.data;
   }
 
-  /**
-   * Get customer segments
-   */
-  async getCustomerSegments(): Promise<CustomerSegments> {
-    const response = await apiClient.get("/customers/segments");
-    return response.data.data;
-  }
 
   /**
    * Export customers
@@ -297,7 +270,6 @@ export type {
   Customer,
   CustomerNote,
   CustomerStats,
-  CustomerSegments,
   CreateCustomerData,
   UpdateCustomerData,
   CustomerFilters,

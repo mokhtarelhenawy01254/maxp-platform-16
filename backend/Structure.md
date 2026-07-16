@@ -133,3 +133,15 @@
 2. **Button Sizing & RTL Alignments**:
    - Standardized button elements inside `AppWidgetCard.tsx` and `AppWidgetMini.tsx` to use full-width stretching (`w-full`) and logical text-start alignments (`text-start`), ensuring clean RTL layout compliance.
    - Integrated micro-interactions such as scaling icons on group-hover (`group-hover:scale-110`) and slight translations (`hover:-translate-y-1.5`) for a premium user experience.
+
+### Customer vs. Lead Architecture
+1. **Unified Storage Model**: Both Customers (`/customers`) and Leads (`/leads`) share a single PostgreSQL database table/model (`Customer`, mapped to `"customers"` in Prisma). They are distinguished using the `status` enum field (`CustomersStatus` in `enums.prisma`).
+2. **Transition & Auto-Promotion**:
+   - Incoming WhatsApp conversations from unsaved contacts automatically create a `Customer` with `status: 'LEAD'` via `WhatsAppSyncService.js`.
+   - Once a lead submits a successful order, `enhancedOrderService.js` automatically upgrades their status from `LEAD` to `ACTIVE`.
+3. **Frontend Routing Division**:
+   - `/customers` is rendered by `CustomerList.tsx` showing all customer profiles (leads, active, inactive, blocked) with status filter toggles.
+   - `/leads` is rendered by `LeadsList.tsx` displaying profiles pre-filtered to `status: 'LEAD'`, serving as a focused pipeline for prospects.
+4. **WhatsApp Automation Integrations**:
+   - `LeadCategory` classifies leads (e.g. VIP, Warm Lead) and associates them with automatic follow-up and engagement sequences via `LeadFollowUpEnrollment` and `CustomerJourney` models defined in `whatsapp_automation.prisma`.
+
