@@ -2902,16 +2902,20 @@
     "noActivities": "No activity history",
     "deleteConfirmTitle": "Confirm Deletion",
     "import": {
-      "title": "Import Customers from CSV",
-      "clickOrDrag": "Click here or drag a CSV file to upload",
-      "requiredColumns": "Required columns: Name, Phone, Email",
+      "title": "Import Customers",
+      "clickOrDrag": "Click here or drag a file to upload",
+      "requiredColumns": "Supported formats: Excel (.xlsx, .xls) or CSV (.csv)",
       "foundCount": "Found {{count}} customer(s)",
       "success": "Successfully imported {{count}} customer(s)",
       "importing": "Importing...",
       "importButton": "Import {{count}} customer(s)",
-      "noValidData": "No valid data found in the file",
-      "readError": "Error reading the file",
-      "downloadTemplate": "Download CSV Template"
+      "noValidData": "No valid data found",
+      "readError": "Error reading the file or parsing data",
+      "downloadTemplate": "Download CSV Template",
+      "tabFile": "Import from File (Excel / CSV)",
+      "tabPaste": "Paste Direct Data",
+      "pastePlaceholder": "Copy rows and columns from Excel and paste them here...\nName,Phone,Email,Status\nJohn Doe,01012345678,john@example.com,LEAD",
+      "parseButton": "Preview and Parse Data"
     }
   },
   "dashboard": {

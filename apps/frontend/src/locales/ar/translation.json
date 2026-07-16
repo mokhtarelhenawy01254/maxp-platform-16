@@ -2904,16 +2904,20 @@
     "noActivities": "لا توجد سجل للأنشطة",
     "deleteConfirmTitle": "تأكيد الحذف النهائي",
     "import": {
-      "title": "استيراد عملاء من ملف CSV",
-      "clickOrDrag": "اضغط هنا أو اسحب ملف CSV لرفعه",
-      "requiredColumns": "الأعمدة المطلوبة: الاسم، الهاتف، البريد الإلكتروني",
+      "title": "استيراد عملاء",
+      "clickOrDrag": "اضغط هنا أو اسحب الملف لرفعه",
+      "requiredColumns": "الملفات المدعومة: Excel (.xlsx, .xls) أو CSV (.csv)",
       "foundCount": "تم العثور على {{count}} عميل",
       "success": "تم استيراد {{count}} عميل بنجاح",
       "importing": "جاري الاستيراد...",
       "importButton": "استيراد {{count}} عميل",
-      "noValidData": "لم يتم العثور على بيانات صالحة في الملف",
-      "readError": "حدث خطأ أثناء قراءة الملف",
-      "downloadTemplate": "تحميل نموذج CSV"
+      "noValidData": "لم يتم العثور على بيانات صالحة",
+      "readError": "حدث خطأ أثناء قراءة الملف أو تحليل البيانات",
+      "downloadTemplate": "تحميل نموذج CSV",
+      "tabFile": "استيراد من ملف (Excel / CSV)",
+      "tabPaste": "لصق مباشر للبيانات",
+      "pastePlaceholder": "انسخ الصفوف والأعمدة من ملف Excel أو اكتبها هنا بالفاصلة...\nالاسم,الهاتف,البريد الإلكتروني,الحالة\nمحمد أحمد,01012345678,mohamed@example.com,LEAD",
+      "parseButton": "معاينة وتحليل البيانات"
     }
   },
   "dashboard": {
