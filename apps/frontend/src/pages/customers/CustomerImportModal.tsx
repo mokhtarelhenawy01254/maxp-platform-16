@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import {
   XMarkIcon,
   ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
   DocumentArrowUpIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -148,6 +149,19 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
     onClose();
   };
 
+  const downloadTemplate = () => {
+    const headers = "\u0627\u0644\u0627\u0633\u0645,\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a,\u0627\u0644\u0647\u0627\u062a\u0641,\u0627\u0644\u0639\u0646\u0648\u0627\u0646,\u0627\u0644\u0645\u062f\u064a\u0646\u0629,\u0627\u0644\u0628\u0644\u062f,\u0627\u0644\u062d\u0627\u0644\u0629\n";
+    const example = "\u0645\u062d\u0645\u062f \u0623\u062d\u0645\u062f,mohamed@example.com,01012345678,\u0634\u0627\u0631\u0639 \u0627\u0644\u062a\u062d\u0631\u064a\u0631,\u0627\u0644\u0642\u0627\u0647\u0631\u0629,\u0645\u0635\u0631,LEAD\n";
+    const blob = new Blob(["\uFEFF" + headers + example], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "maxp_customers_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
   if (!isOpen) return null;
 
   return (
@@ -191,6 +205,17 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
                 {t("customers.import.requiredColumns")}
               </p>
             </div>
+          )}
+
+          {/* Download Template */}
+          {!result && (
+            <button
+              onClick={downloadTemplate}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              {t("customers.import.downloadTemplate")}
+            </button>
           )}
 
           {/* Preview */}

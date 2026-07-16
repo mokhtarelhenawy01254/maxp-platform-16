@@ -2900,7 +2900,19 @@
     "notesPlaceholder": "Type your note here...",
     "noNotes": "No prior notes",
     "noActivities": "No activity history",
-    "deleteConfirmTitle": "Confirm Deletion"
+    "deleteConfirmTitle": "Confirm Deletion",
+    "import": {
+      "title": "Import Customers from CSV",
+      "clickOrDrag": "Click here or drag a CSV file to upload",
+      "requiredColumns": "Required columns: Name, Phone, Email",
+      "foundCount": "Found {{count}} customer(s)",
+      "success": "Successfully imported {{count}} customer(s)",
+      "importing": "Importing...",
+      "importButton": "Import {{count}} customer(s)",
+      "noValidData": "No valid data found in the file",
+      "readError": "Error reading the file",
+      "downloadTemplate": "Download CSV Template"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

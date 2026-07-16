@@ -61,5 +61,17 @@
   "notesPlaceholder": "اكتب الملاحظة هنا...",
   "noNotes": "لا توجد ملاحظات سابقة",
   "noActivities": "لا توجد سجل للأنشطة",
-  "deleteConfirmTitle": "تأكيد الحذف النهائي"
+  "deleteConfirmTitle": "تأكيد الحذف النهائي",
+  "import": {
+    "title": "استيراد عملاء من ملف CSV",
+    "clickOrDrag": "اضغط هنا أو اسحب ملف CSV لرفعه",
+    "requiredColumns": "الأعمدة المطلوبة: الاسم، الهاتف، البريد الإلكتروني",
+    "foundCount": "تم العثور على {{count}} عميل",
+    "success": "تم استيراد {{count}} عميل بنجاح",
+    "importing": "جاري الاستيراد...",
+    "importButton": "استيراد {{count}} عميل",
+    "noValidData": "لم يتم العثور على بيانات صالحة في الملف",
+    "readError": "حدث خطأ أثناء قراءة الملف",
+    "downloadTemplate": "تحميل نموذج CSV"
+  }
 }
