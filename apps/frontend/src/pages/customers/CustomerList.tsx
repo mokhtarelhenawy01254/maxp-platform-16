@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   PlusIcon,
@@ -8,7 +8,6 @@ import {
   ArrowUpTrayIcon,
   EyeIcon,
   PencilIcon,
-  TrashIcon,
   UsersIcon,
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
@@ -25,7 +24,6 @@ import { useAuth } from "../../hooks/useAuthSimple";
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
   const { formatDate } = useDateFormat();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
     user?.role || "",
@@ -54,8 +52,6 @@ const CustomerList: React.FC = () => {
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const statusOptions = customerService.getStatusOptions();
 
@@ -85,38 +81,6 @@ const CustomerList: React.FC = () => {
     setSelectedIds(newSet);
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    if (!confirm(t("customers.bulkDeleteConfirm", { count: selectedIds.size }))) return;
-
-    setIsBulkDeleting(true);
-    try {
-      await Promise.all(
-        Array.from(selectedIds).map((id) => customerService.deleteCustomer(id)),
-      );
-      setSelectedIds(new Set());
-      loadCustomers();
-    } catch (err: any) {
-      setError(err.message || t("customers.deleteError"));
-    } finally {
-      setIsBulkDeleting(false);
-    }
-  };
-
-  // Single delete handler
-  const handleDeleteCustomer = async (customer: Customer) => {
-    setError("");
-    if (!confirm(t("customers.deleteCustomerConfirm"))) return;
-    setDeletingId(customer.id);
-    try {
-      await customerService.deleteCustomer(customer.id);
-      loadCustomers();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || t("customers.deleteError"));
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   const loadCustomers = async () => {
     try {
