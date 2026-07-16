@@ -23,5 +23,6 @@ export type WidgetDefinition = {
   color: string;
   priority: number;
   href: string;
+  colSpan?: number;
   fetchData: (dashboard: DashboardData | undefined, appData?: Record<string, unknown>) => WidgetData | null;
 };

@@ -49,6 +49,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: ShoppingCartIcon,
     color: "var(--color-primary)",
     priority: 1,
+    colSpan: 2,
     href: "/orders",
     fetchData: (d): WidgetData | null => {
       if (!d) return null;
@@ -74,6 +75,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: ChatBubbleLeftRightIcon,
     color: "#25D366",
     priority: 2,
+    colSpan: 2,
     href: "/whatsapp",
     fetchData: (d): WidgetData | null => {
       if (!d) return null;
@@ -98,6 +100,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: SparklesIcon,
     color: "#8B5CF6",
     priority: 3,
+    colSpan: 2,
     href: "/admin/ai-hub",
     fetchData: (_d, appData): WidgetData | null => {
       if (!appData?.interactionsToday && !appData?.sessions) return null;
@@ -162,6 +165,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: CurrencyDollarIcon,
     color: "#F59E0B",
     priority: 6,
+    colSpan: 2,
     href: "/advertising/facebook-ads",
     fetchData: (_d, appData): WidgetData | null => {
       if (!appData?.campaigns && !appData?.activeCampaigns) return null;

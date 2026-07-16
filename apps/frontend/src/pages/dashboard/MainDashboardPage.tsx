@@ -249,6 +249,15 @@ export default function MainDashboardPage() {
         </div>
       )}
 
+      <QuickActions
+        activeApps={activeApps}
+        badges={{
+          orders: dashboard?.orderHealth?.openOrders ?? 0,
+          inbox: dashboard?.recentActivity?.newConversations ?? 0,
+          products: (dashboard?.inventory?.lowStockCount ?? 0) + (dashboard?.inventory?.outOfStockCount ?? 0),
+        }}
+      />
+
       <AppWidgetGrid
         widgets={activeWidgets}
         getData={getWidgetData}
@@ -258,15 +267,6 @@ export default function MainDashboardPage() {
         {dashboard && <DashboardActivityFeed dashboard={dashboard} liveActivities={live.activities} />}
         <DashboardAlertsHub dashboard={dashboard} />
       </div>
-
-      <QuickActions
-        activeApps={activeApps}
-        badges={{
-          orders: dashboard?.orderHealth?.openOrders ?? 0,
-          inbox: dashboard?.recentActivity?.newConversations ?? 0,
-          products: (dashboard?.inventory?.lowStockCount ?? 0) + (dashboard?.inventory?.outOfStockCount ?? 0),
-        }}
-      />
     </div>
   );
 }

@@ -1668,7 +1668,8 @@
     "stats": {
       "title": "Quick Stats",
       "products": "Products",
-      "orders": "Orders"
+      "orders": "Orders",
+      "activeApps": "Active Apps"
     },
     "activity": {
       "title": "Recent Activity (7 days)",
@@ -1692,7 +1693,8 @@
       "growth": "Growth",
       "operations": "Operations",
       "inventoryAlerts": "Inventory Alerts",
-      "insights": "Smart Insights"
+      "insights": "Smart Insights",
+      "alerts": "Alerts"
     },
     "insights": {
       "revenueTrend": "Revenue is {{delta}} vs the previous period ({{current}}).",
@@ -1707,8 +1709,8 @@
       "newCustomersGrowth": "New customers up {{delta}} ({{count}} this period)."
     },
     "inventory": {
-      "lowStock": "Low Stock",
-      "outOfStock": "Out of Stock"
+      "outOfStockCount": "{{count}} out of stock",
+      "lowStockCount": "{{count}} low on stock"
     },
     "metrics": {
       "totalOrders": "Total Orders",
@@ -1887,6 +1889,120 @@
       "pdf": "Export PDF",
       "metric": "Metric",
       "value": "Value"
+    },
+    "alerts": {
+      "openOrders": "{{count}} open orders"
+    },
+    "widgets": {
+      "sectionTitle": "Active Apps",
+      "active": "active",
+      "moreModules": "More Apps",
+      "viewAll": "View All",
+      "noData": "No data available",
+      "status": {
+        "active": "Active",
+        "warning": "Needs Attention",
+        "error": "Error",
+        "inactive": "Inactive"
+      },
+      "ecommerce": {
+        "title": "Store",
+        "orders": "Orders",
+        "revenue": "Revenue",
+        "customers": "Customers"
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "conversations": "Conversations",
+        "new": "New",
+        "connected": "Connected"
+      },
+      "ai": {
+        "title": "AI Assistant",
+        "interactions": "Interactions",
+        "sessions": "Sessions"
+      },
+      "crm": {
+        "title": "Customers",
+        "customers": "Customers",
+        "new": "New"
+      },
+      "hr": {
+        "title": "HR Management",
+        "employees": "Employees",
+        "present": "Present Today",
+        "onLeave": "On Leave"
+      },
+      "marketing": {
+        "title": "Marketing & Ads",
+        "campaigns": "Campaigns",
+        "active": "Active"
+      },
+      "analytics": {
+        "title": "Analytics",
+        "visits": "Visits",
+        "conversion": "Conversion"
+      },
+      "products": {
+        "title": "Products",
+        "total": "Total",
+        "lowStock": "Low Stock"
+      },
+      "medical": {
+        "title": "Medical System",
+        "appointments": "Appointments"
+      },
+      "education": {
+        "title": "Education System",
+        "students": "Students",
+        "sessions": "Sessions"
+      },
+      "hotel": {
+        "title": "Hotel Management",
+        "checkedIn": "Checked In",
+        "occupied": "Occupied",
+        "available": "Available"
+      },
+      "booking": {
+        "title": "Appointments",
+        "appointments": "Appointments"
+      },
+      "procurement": {
+        "title": "Procurement",
+        "pending": "Pending Orders",
+        "suppliers": "Suppliers"
+      },
+      "wholesale": {
+        "title": "Wholesale",
+        "customers": "Customers"
+      },
+      "affiliate": {
+        "title": "Affiliates",
+        "active": "Active",
+        "pending": "Pending"
+      },
+      "partners": {
+        "title": "Partners"
+      },
+      "competitors": {
+        "title": "Competitors",
+        "tracked": "Tracked"
+      },
+      "tasks": {
+        "title": "Tasks",
+        "open": "Open",
+        "completed": "Completed"
+      },
+      "notifications": {
+        "title": "Notifications"
+      },
+      "forms": {
+        "title": "Forms"
+      },
+      "telegram": {
+        "title": "Telegram",
+        "groups": "Groups"
+      }
     }
   },
   "companyLinks": {
@@ -6051,24 +6167,7 @@
     "storefrontSection": "Store Management",
     "storeShipping": "Shipping & Delivery",
     "storeThemeDesign": "Theme & Design",
-    "turboRecords": "Turbo Records",
-    "orderStatusSummary": "Order Status Summary",
-    "campaignAttribution": "Campaign Attribution",
-    "upsellManagement": "Upsell Management",
-    "customDomain": "Custom Domain",
-    "conversionTools": "Conversion Tools",
-    "offersBundles": "Offers & Bundles",
-    "growthWidgets": "Growth Widgets",
-    "sellingModes": "Selling Modes",
-    "reviewsSocialProof": "Reviews & Social Proof",
-    "offersReview": "Offers Review",
-    "adLibrary": "Ad Library",
-    "productLandingPages": "Product Landing Pages",
-    "taskSettings": "Task Settings",
-    "profileSettings": "Profile Settings",
-    "securitySettings": "Security Settings",
-    "appearanceSettings": "Appearance Settings",
-    "sidebarSettings": "Sidebar Settings"
+    "turboRecords": "Turbo Records"
   },
   "stockAnalytics": {
     "title": "Stock Analytics",

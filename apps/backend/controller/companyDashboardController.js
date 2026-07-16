@@ -159,7 +159,8 @@ const companyDashboardOverview = async (req, res) => {
             prevTrackedOrdersCount,
             prevOrderItems,
             prevStoreVisits,
-            prevNewCustomersCount
+            prevNewCustomersCount,
+            revenueHistory
         ] = await Promise.all([
             withDashboardFallback('newUsersCount', () => getSharedPrismaClient().user.count({
                 where: {
@@ -287,6 +288,26 @@ const companyDashboardOverview = async (req, res) => {
                     createdAt: { gte: prevStart, lte: prevEnd }
                 }
             }), 0),
+            withDashboardFallback('revenueHistory', () => getSharedPrismaClient().order.findMany({
+                where: {
+                    ...trackedOrdersWhereClause,
+                    createdAt: { gte: start, lte: end }
+                },
+                select: {
+                    createdAt: true,
+                    total: true
+                },
+                orderBy: { createdAt: 'asc' }
+            }).then(orders => {
+                const byDate = {};
+                orders.forEach(o => {
+                    const date = o.createdAt.toISOString().slice(0, 10);
+                    if (!byDate[date]) byDate[date] = { date, revenue: 0, orders: 0 };
+                    byDate[date].revenue += parseFloat(o.total || 0);
+                    byDate[date].orders += 1;
+                });
+                return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+            }), []),
         ]);
 
         const safeTrackedOrdersCount = trackedOrdersCount ?? totalOrdersCount;
@@ -431,7 +452,8 @@ const companyDashboardOverview = async (req, res) => {
                 piecesPerOrder
             },
             topProducts,
-            previousPeriod
+            previousPeriod,
+            revenueHistory
         };
 
         res.json({

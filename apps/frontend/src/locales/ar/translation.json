@@ -1670,7 +1670,8 @@
     "stats": {
       "title": "إحصائيات سريعة",
       "products": "المنتجات",
-      "orders": "الطلبات"
+      "orders": "الطلبات",
+      "activeApps": "التطبيقات النشطة"
     },
     "activity": {
       "title": "النشاط الأخير (7 أيام)",
@@ -1694,7 +1695,8 @@
       "growth": "النمو",
       "operations": "العمليات",
       "inventoryAlerts": "تنبيهات المخزون",
-      "insights": "رؤى ذكية"
+      "insights": "رؤى ذكية",
+      "alerts": "التنبيهات"
     },
     "insights": {
       "revenueTrend": "الإيرادات {{delta}} مقارنة بالفترة السابقة ({{current}}).",
@@ -1709,8 +1711,8 @@
       "newCustomersGrowth": "العملاء الجدد ارتفعوا {{delta}} ({{count}} هذه الفترة)."
     },
     "inventory": {
-      "lowStock": "مخزون منخفض",
-      "outOfStock": "منتجات نافذة"
+      "outOfStockCount": "{{count}} منتج نفذ من المخزون",
+      "lowStockCount": "{{count}} منتج أوشك على النفاد"
     },
     "metrics": {
       "totalOrders": "إجمالي الطلبات",
@@ -1889,6 +1891,120 @@
       "pdf": "تصدير PDF",
       "metric": "المؤشر",
       "value": "القيمة"
+    },
+    "alerts": {
+      "openOrders": "{{count}} طلب معلق"
+    },
+    "widgets": {
+      "sectionTitle": "التطبيقات النشطة",
+      "active": "نشط",
+      "moreModules": "المزيد من التطبيقات",
+      "viewAll": "عرض الكل",
+      "noData": "لا توجد بيانات متاحة",
+      "status": {
+        "active": "نشط",
+        "warning": "تحتاج متابعة",
+        "error": "خطأ",
+        "inactive": "غير نشط"
+      },
+      "ecommerce": {
+        "title": "المتجر",
+        "orders": "الطلبات",
+        "revenue": "الإيرادات",
+        "customers": "العملاء"
+      },
+      "whatsapp": {
+        "title": "واتساب",
+        "conversations": "المحادثات",
+        "new": "الجديدة",
+        "connected": "متصل"
+      },
+      "ai": {
+        "title": "الذكاء الاصطناعي",
+        "interactions": "التفاعلات",
+        "sessions": "الجلسات"
+      },
+      "crm": {
+        "title": "العملاء",
+        "customers": "العملاء",
+        "new": "الجدد"
+      },
+      "hr": {
+        "title": "الموارد البشرية",
+        "employees": "الموظفين",
+        "present": "الحاضرون اليوم",
+        "onLeave": "في إجازة"
+      },
+      "marketing": {
+        "title": "التسويق والإعلانات",
+        "campaigns": "الحملات",
+        "active": "النشطة"
+      },
+      "analytics": {
+        "title": "التحليلات",
+        "visits": "الزيارات",
+        "conversion": "نسبة التحويل"
+      },
+      "products": {
+        "title": "المنتجات",
+        "total": "الإجمالي",
+        "lowStock": "ناقص"
+      },
+      "medical": {
+        "title": "النظام الطبي",
+        "appointments": "المواعيد"
+      },
+      "education": {
+        "title": "النظام التعليمي",
+        "students": "الطلاب",
+        "sessions": "الجلسات"
+      },
+      "hotel": {
+        "title": "نظام الفنادق",
+        "checkedIn": "مسجل الدخول",
+        "occupied": "مشغول",
+        "available": "متاح"
+      },
+      "booking": {
+        "title": "الحجوزات",
+        "appointments": "المواعيد"
+      },
+      "procurement": {
+        "title": "المشتريات",
+        "pending": "طلبات معلقة",
+        "suppliers": "الموردين"
+      },
+      "wholesale": {
+        "title": "الجملة",
+        "customers": "العملاء"
+      },
+      "affiliate": {
+        "title": "الأفلييت",
+        "active": "النشطاء",
+        "pending": "المعلقة"
+      },
+      "partners": {
+        "title": "الشركاء"
+      },
+      "competitors": {
+        "title": "المنافسين",
+        "tracked": "المراقَبون"
+      },
+      "tasks": {
+        "title": "المهام",
+        "open": "المفتوحة",
+        "completed": "المكتملة"
+      },
+      "notifications": {
+        "title": "الإشعارات"
+      },
+      "forms": {
+        "title": "نماذج التسجيل"
+      },
+      "telegram": {
+        "title": "تيليجرام",
+        "groups": "المجموعات"
+      }
     }
   },
   "companyLinks": {
@@ -6121,24 +6237,7 @@
     "wholesaleCustomers": "عملاء الجملة",
     "priceLists": "قوائم الأسعار",
     "customerStatements": "كشوف الحساب",
-    "debtTracking": "المديونية",
-    "orderStatusSummary": "تقرير الحالات",
-    "campaignAttribution": "تحليل الحملات",
-    "upsellManagement": "إدارة الـ Upsell",
-    "customDomain": "الدومين المخصص",
-    "conversionTools": "أدوات التحويل",
-    "offersBundles": "العروض والباقات",
-    "growthWidgets": "ودجات الموقع",
-    "sellingModes": "أوضاع البيع",
-    "reviewsSocialProof": "المراجعات والثقة",
-    "offersReview": "مراجعة العروض",
-    "adLibrary": "مكتبة الإعلانات",
-    "productLandingPages": "صفحات هبوط المنتجات",
-    "taskSettings": "إعدادات المهام",
-    "profileSettings": "الملف الشخصي",
-    "securitySettings": "الأمان",
-    "appearanceSettings": "المظهر",
-    "sidebarSettings": "القائمة الجانبية"
+    "debtTracking": "المديونية"
   },
   "stockAnalytics": {
     "title": "تحليلات المخزون",

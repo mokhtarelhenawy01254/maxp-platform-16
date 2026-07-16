@@ -41,9 +41,11 @@ export function AppWidgetGrid({ widgets, getData }: Props) {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {large.map(({ widget, data }) => (
-          <AppWidgetCard key={widget.id} widget={widget} data={data} />
+          <div key={widget.id} className={widget.colSpan === 2 ? "lg:col-span-2" : ""}>
+            <AppWidgetCard widget={widget} data={data} />
+          </div>
         ))}
       </div>
 

@@ -33,12 +33,25 @@ export function AppWidgetMini({ widget, data }: Props) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <span className="text-xs font-semibold text-foreground block truncate">
-          {t(widget.titleKey)}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {data?.status && (
+            <span
+              className={cn(
+                "w-1.5 h-1.5 rounded-full shrink-0",
+                data.status === "active" && "bg-emerald-500",
+                data.status === "warning" && "bg-amber-500",
+                data.status === "error" && "bg-rose-500",
+                data.status === "inactive" && "bg-gray-400",
+              )}
+            />
+          )}
+          <span className="text-xs font-semibold text-foreground block truncate">
+            {t(widget.titleKey)}
+          </span>
+        </div>
         {data?.metrics?.[0] && (
-          <span className="text-[11px] text-muted-foreground">
-            {data.metrics[0].value}
+          <span className="text-[11px] text-muted-foreground block mt-0.5">
+            {t(data.metrics[0].label)}: {data.metrics[0].value}
           </span>
         )}
       </div>
