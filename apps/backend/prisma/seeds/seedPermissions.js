@@ -385,6 +385,10 @@ async function seed() {
   console.log('🎉 Seed complete!');
 }
 
-seed()
-  .catch(e => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+module.exports = { PERMISSIONS, BUILT_IN_ROLES };
+
+if (require.main === module) {
+  seed()
+    .catch(e => { console.error(e); process.exit(1); })
+    .finally(() => prisma.$disconnect());
+}
