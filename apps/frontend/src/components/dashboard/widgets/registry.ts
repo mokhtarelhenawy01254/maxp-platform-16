@@ -45,7 +45,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "store",
     id: "ecommerce",
-    titleKey: "widgets.ecommerce.title",
+    titleKey: "companyDashboard.widgets.ecommerce.title",
     icon: ShoppingCartIcon,
     color: "var(--color-primary)",
     priority: 1,
@@ -58,9 +58,9 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: "active",
         metrics: [
-          { label: "widgets.ecommerce.orders", value: fmt(orders), trend: pctDelta(d.orderHealth?.trackedOrders, d.previousPeriod?.trackedOrders) },
-          { label: "widgets.ecommerce.revenue", value: fmt(revenue) },
-          { label: "widgets.ecommerce.customers", value: fmt(customers), trend: pctDelta(d.recentActivity?.newCustomers, d.previousPeriod?.newCustomers) },
+          { label: "companyDashboard.widgets.ecommerce.orders", value: fmt(orders), trend: pctDelta(d.orderHealth?.trackedOrders, d.previousPeriod?.trackedOrders) },
+          { label: "companyDashboard.widgets.ecommerce.revenue", value: fmt(revenue) },
+          { label: "companyDashboard.widgets.ecommerce.customers", value: fmt(customers), trend: pctDelta(d.recentActivity?.newCustomers, d.previousPeriod?.newCustomers) },
         ],
       };
     },
@@ -70,7 +70,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "whatsapp-business",
     id: "whatsapp",
-    titleKey: "widgets.whatsapp.title",
+    titleKey: "companyDashboard.widgets.whatsapp.title",
     icon: ChatBubbleLeftRightIcon,
     color: "#25D366",
     priority: 2,
@@ -81,10 +81,10 @@ export const widgetRegistry: WidgetDefinition[] = [
       const newConv = d.recentActivity?.newConversations ?? 0;
       return {
         status: "active",
-        statusLabel: "widgets.whatsapp.connected",
+        statusLabel: "companyDashboard.widgets.whatsapp.connected",
         metrics: [
-          { label: "widgets.whatsapp.conversations", value: fmt(conversations) },
-          { label: "widgets.whatsapp.new", value: fmt(newConv) },
+          { label: "companyDashboard.widgets.whatsapp.conversations", value: fmt(conversations) },
+          { label: "companyDashboard.widgets.whatsapp.new", value: fmt(newConv) },
         ],
       };
     },
@@ -94,7 +94,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "ai-chat-basic",
     id: "ai",
-    titleKey: "widgets.ai.title",
+    titleKey: "companyDashboard.widgets.ai.title",
     icon: SparklesIcon,
     color: "#8B5CF6",
     priority: 3,
@@ -104,8 +104,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: "active",
         metrics: [
-          { label: "widgets.ai.interactions", value: fmt(appData.interactionsToday as number) },
-          { label: "widgets.ai.sessions", value: fmt(appData.sessions as number) },
+          { label: "companyDashboard.widgets.ai.interactions", value: fmt(appData.interactionsToday as number) },
+          { label: "companyDashboard.widgets.ai.sessions", value: fmt(appData.sessions as number) },
         ],
       };
     },
@@ -115,7 +115,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "crm-basic",
     id: "crm",
-    titleKey: "widgets.crm.title",
+    titleKey: "companyDashboard.widgets.crm.title",
     icon: UserGroupIcon,
     color: "var(--color-primary)",
     priority: 4,
@@ -125,8 +125,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: "active",
         metrics: [
-          { label: "widgets.crm.customers", value: fmt(d.counts?.customers) },
-          { label: "widgets.crm.new", value: fmt(d.recentActivity?.newCustomers) },
+          { label: "companyDashboard.widgets.crm.customers", value: fmt(d.counts?.customers) },
+          { label: "companyDashboard.widgets.crm.new", value: fmt(d.recentActivity?.newCustomers) },
         ],
       };
     },
@@ -136,7 +136,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "hr-basic",
     id: "hr",
-    titleKey: "widgets.hr.title",
+    titleKey: "companyDashboard.widgets.hr.title",
     icon: BuildingOffice2Icon,
     color: "#EC4899",
     priority: 5,
@@ -146,9 +146,9 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: "active",
         metrics: [
-          { label: "widgets.hr.employees", value: fmt(appData.activeEmployees as number) },
-          { label: "widgets.hr.present", value: fmt(appData.presentToday as number) },
-          { label: "widgets.hr.onLeave", value: fmt(appData.onLeave as number) },
+          { label: "companyDashboard.widgets.hr.employees", value: fmt(appData.activeEmployees as number) },
+          { label: "companyDashboard.widgets.hr.present", value: fmt(appData.presentToday as number) },
+          { label: "companyDashboard.widgets.hr.onLeave", value: fmt(appData.onLeave as number) },
         ],
       };
     },
@@ -158,7 +158,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "facebook-ads-pro",
     id: "marketing",
-    titleKey: "widgets.marketing.title",
+    titleKey: "companyDashboard.widgets.marketing.title",
     icon: CurrencyDollarIcon,
     color: "#F59E0B",
     priority: 6,
@@ -168,8 +168,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.activeCampaigns as number) > 0 ? "active" : "inactive",
         metrics: [
-          { label: "widgets.marketing.campaigns", value: fmt(appData.campaigns as number) },
-          { label: "widgets.marketing.active", value: fmt(appData.activeCampaigns as number) },
+          { label: "companyDashboard.widgets.marketing.campaigns", value: fmt(appData.campaigns as number) },
+          { label: "companyDashboard.widgets.marketing.active", value: fmt(appData.activeCampaigns as number) },
         ],
       };
     },
@@ -179,7 +179,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "analytics-basic",
     id: "analytics",
-    titleKey: "widgets.analytics.title",
+    titleKey: "companyDashboard.widgets.analytics.title",
     icon: ChartBarIcon,
     color: "#06B6D4",
     priority: 7,
@@ -189,8 +189,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: "active",
         metrics: [
-          { label: "widgets.analytics.visits", value: fmt(d.metrics?.visits), trend: pctDelta(d.metrics?.visits, d.previousPeriod?.visits) },
-          { label: "widgets.analytics.conversion", value: d.metrics?.conversionRate != null ? `${d.metrics.conversionRate}%` : "—" },
+          { label: "companyDashboard.widgets.analytics.visits", value: fmt(d.metrics?.visits), trend: pctDelta(d.metrics?.visits, d.previousPeriod?.visits) },
+          { label: "companyDashboard.widgets.analytics.conversion", value: d.metrics?.conversionRate != null ? `${d.metrics.conversionRate}%` : "—" },
         ],
       };
     },
@@ -200,7 +200,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "store",
     id: "products",
-    titleKey: "widgets.products.title",
+    titleKey: "companyDashboard.widgets.products.title",
     icon: CubeIcon,
     color: "#10B981",
     priority: 8,
@@ -210,8 +210,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: d.inventory && (d.inventory.outOfStockCount > 0 || d.inventory.lowStockCount > 0) ? "warning" : "active",
         metrics: [
-          { label: "widgets.products.total", value: fmt(d.counts?.products) },
-          { label: "widgets.products.lowStock", value: fmt(d.inventory?.lowStockCount) },
+          { label: "companyDashboard.widgets.products.total", value: fmt(d.counts?.products) },
+          { label: "companyDashboard.widgets.products.lowStock", value: fmt(d.inventory?.lowStockCount) },
         ],
       };
     },
@@ -221,7 +221,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "medical-system",
     id: "medical",
-    titleKey: "widgets.medical.title",
+    titleKey: "companyDashboard.widgets.medical.title",
     icon: HeartIcon,
     color: "#EF4444",
     priority: 9,
@@ -231,7 +231,7 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.appointmentsToday as number) > 0 ? "active" : "inactive",
         metrics: [
-          { label: "widgets.medical.appointments", value: fmt(appData.appointmentsToday as number) },
+          { label: "companyDashboard.widgets.medical.appointments", value: fmt(appData.appointmentsToday as number) },
         ],
       };
     },
@@ -241,7 +241,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "education-app",
     id: "education",
-    titleKey: "widgets.education.title",
+    titleKey: "companyDashboard.widgets.education.title",
     icon: AcademicCapIcon,
     color: "#8B5CF6",
     priority: 10,
@@ -251,8 +251,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: "active",
         metrics: [
-          { label: "widgets.education.students", value: fmt(appData.activeStudents as number) },
-          { label: "widgets.education.sessions", value: fmt(appData.sessionsToday as number) },
+          { label: "companyDashboard.widgets.education.students", value: fmt(appData.activeStudents as number) },
+          { label: "companyDashboard.widgets.education.sessions", value: fmt(appData.sessionsToday as number) },
         ],
       };
     },
@@ -262,7 +262,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "hotel-app",
     id: "hotel",
-    titleKey: "widgets.hotel.title",
+    titleKey: "companyDashboard.widgets.hotel.title",
     icon: BuildingStorefrontIcon,
     color: "#F59E0B",
     priority: 11,
@@ -272,9 +272,9 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.occupiedRooms as number) > 0 ? "active" : "inactive",
         metrics: [
-          { label: "widgets.hotel.checkedIn", value: fmt(appData.checkedIn as number) },
-          { label: "widgets.hotel.occupied", value: fmt(appData.occupiedRooms as number) },
-          { label: "widgets.hotel.available", value: fmt(appData.availableRooms as number) },
+          { label: "companyDashboard.widgets.hotel.checkedIn", value: fmt(appData.checkedIn as number) },
+          { label: "companyDashboard.widgets.hotel.occupied", value: fmt(appData.occupiedRooms as number) },
+          { label: "companyDashboard.widgets.hotel.available", value: fmt(appData.availableRooms as number) },
         ],
       };
     },
@@ -284,7 +284,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "booking-app",
     id: "booking",
-    titleKey: "widgets.booking.title",
+    titleKey: "companyDashboard.widgets.booking.title",
     icon: CalendarDaysIcon,
     color: "#06B6D4",
     priority: 12,
@@ -294,7 +294,7 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.appointmentsToday as number) > 0 ? "active" : "inactive",
         metrics: [
-          { label: "widgets.booking.appointments", value: fmt(appData.appointmentsToday as number) },
+          { label: "companyDashboard.widgets.booking.appointments", value: fmt(appData.appointmentsToday as number) },
         ],
       };
     },
@@ -304,7 +304,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "procurement-pro",
     id: "procurement",
-    titleKey: "widgets.procurement.title",
+    titleKey: "companyDashboard.widgets.procurement.title",
     icon: TruckIcon,
     color: "#10B981",
     priority: 13,
@@ -314,8 +314,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.pendingOrders as number) > 0 ? "warning" : "active",
         metrics: [
-          { label: "widgets.procurement.pending", value: fmt(appData.pendingOrders as number) },
-          { label: "widgets.procurement.suppliers", value: fmt(appData.activeSuppliers as number) },
+          { label: "companyDashboard.widgets.procurement.pending", value: fmt(appData.pendingOrders as number) },
+          { label: "companyDashboard.widgets.procurement.suppliers", value: fmt(appData.activeSuppliers as number) },
         ],
       };
     },
@@ -325,7 +325,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "wholesale-pro",
     id: "wholesale",
-    titleKey: "widgets.wholesale.title",
+    titleKey: "companyDashboard.widgets.wholesale.title",
     icon: ScaleIcon,
     color: "#8B5CF6",
     priority: 14,
@@ -335,7 +335,7 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: "active",
         metrics: [
-          { label: "widgets.wholesale.customers", value: fmt(appData.activeCustomers as number) },
+          { label: "companyDashboard.widgets.wholesale.customers", value: fmt(appData.activeCustomers as number) },
         ],
       };
     },
@@ -345,7 +345,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "affiliate-program",
     id: "affiliate",
-    titleKey: "widgets.affiliate.title",
+    titleKey: "companyDashboard.widgets.affiliate.title",
     icon: UserPlusIcon,
     color: "#EC4899",
     priority: 15,
@@ -355,8 +355,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.activeAffiliates as number) > 0 ? "active" : "inactive",
         metrics: [
-          { label: "widgets.affiliate.active", value: fmt(appData.activeAffiliates as number) },
-          { label: "widgets.affiliate.pending", value: fmt(appData.pendingCommissions as number) },
+          { label: "companyDashboard.widgets.affiliate.active", value: fmt(appData.activeAffiliates as number) },
+          { label: "companyDashboard.widgets.affiliate.pending", value: fmt(appData.pendingCommissions as number) },
         ],
       };
     },
@@ -366,7 +366,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "partner-program",
     id: "partners",
-    titleKey: "widgets.partners.title",
+    titleKey: "companyDashboard.widgets.partners.title",
     icon: HandRaisedIcon,
     color: "#F59E0B",
     priority: 16,
@@ -378,7 +378,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "competitor-analysis",
     id: "competitors",
-    titleKey: "widgets.competitors.title",
+    titleKey: "companyDashboard.widgets.competitors.title",
     icon: EyeIcon,
     color: "#6B7280",
     priority: 17,
@@ -388,7 +388,7 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.tracked as number) > 0 ? "active" : "inactive",
         metrics: [
-          { label: "widgets.competitors.tracked", value: fmt(appData.tracked as number) },
+          { label: "companyDashboard.widgets.competitors.tracked", value: fmt(appData.tracked as number) },
         ],
       };
     },
@@ -398,7 +398,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "business-tools",
     id: "tasks",
-    titleKey: "widgets.tasks.title",
+    titleKey: "companyDashboard.widgets.tasks.title",
     icon: CheckCircleIcon,
     color: "#10B981",
     priority: 18,
@@ -408,8 +408,8 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.openTasks as number) > 0 ? "warning" : "active",
         metrics: [
-          { label: "widgets.tasks.open", value: fmt(appData.openTasks as number) },
-          { label: "widgets.tasks.completed", value: fmt(appData.completedThisWeek as number) },
+          { label: "companyDashboard.widgets.tasks.open", value: fmt(appData.openTasks as number) },
+          { label: "companyDashboard.widgets.tasks.completed", value: fmt(appData.completedThisWeek as number) },
         ],
       };
     },
@@ -419,7 +419,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "notification-automation",
     id: "notifications",
-    titleKey: "widgets.notifications.title",
+    titleKey: "companyDashboard.widgets.notifications.title",
     icon: BellIcon,
     color: "#8B5CF6",
     priority: 19,
@@ -431,7 +431,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "forms-app",
     id: "forms",
-    titleKey: "widgets.forms.title",
+    titleKey: "companyDashboard.widgets.forms.title",
     icon: DocumentTextIcon,
     color: "#6B7280",
     priority: 20,
@@ -443,7 +443,7 @@ export const widgetRegistry: WidgetDefinition[] = [
   {
     appSlug: "telegram-business",
     id: "telegram",
-    titleKey: "widgets.telegram.title",
+    titleKey: "companyDashboard.widgets.telegram.title",
     icon: NewspaperIcon,
     color: "#229ED9",
     priority: 21,
@@ -453,7 +453,7 @@ export const widgetRegistry: WidgetDefinition[] = [
       return {
         status: (appData.groups as number) > 0 ? "active" : "inactive",
         metrics: [
-          { label: "widgets.telegram.groups", value: fmt(appData.groups as number) },
+          { label: "companyDashboard.widgets.telegram.groups", value: fmt(appData.groups as number) },
         ],
       };
     },

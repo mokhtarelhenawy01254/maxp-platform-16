@@ -34,10 +34,10 @@ export function AppWidgetGrid({ widgets, getData }: Props) {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-sm font-semibold text-foreground">
-          {t("widgets.sectionTitle")}
+          {t("companyDashboard.widgets.sectionTitle")}
         </h2>
         <span className="text-[11px] text-muted-foreground">
-          {widgets.length} {t("widgets.active")}
+          {widgets.length} {t("companyDashboard.widgets.active")}
         </span>
       </div>
 
@@ -50,7 +50,7 @@ export function AppWidgetGrid({ widgets, getData }: Props) {
       {mini.length > 0 && (
         <>
           <h3 className="text-xs font-medium text-muted-foreground">
-            {t("widgets.moreModules")}
+            {t("companyDashboard.widgets.moreModules")}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             {mini.map(({ widget, data }) => (

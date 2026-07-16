@@ -84,13 +84,13 @@ export function AppWidgetCard({ widget, data }: Props) {
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
-          <span className="text-xs text-muted-foreground">{t("widgets.noData")}</span>
+          <span className="text-xs text-muted-foreground">{t("companyDashboard.widgets.noData")}</span>
         </div>
       )}
 
       <div className="mt-3 pt-3 border-t border-border/20">
         <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-          {t("widgets.viewAll")} →
+          {t("companyDashboard.widgets.viewAll")} →
         </span>
       </div>
     </button>
