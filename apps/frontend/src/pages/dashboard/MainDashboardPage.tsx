@@ -232,6 +232,7 @@ export default function MainDashboardPage() {
       <AppWidgetGrid
         widgets={activeWidgets}
         getData={getWidgetData}
+        companyId={user?.companyId}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
