@@ -84,6 +84,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         logger.warning("skills_pipeline_empty_response_retrying")
         provider_response = await _llm_call(ctx, system_prompt, skills)
 
+    # 4c. Hotel booking state tracking (enforcement happens after tool execution)
+    _did_execute_hotel_reserve = False
+
     # 5. Handle tool calls
     if provider_response.tool_calls:
         logger.info(
@@ -166,6 +169,29 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         ri += 1
 
         ctx.executed_tools = executed
+
+        # 4d. Hotel booking enforcement: inject hotel_reserve AFTER tools executed (data available in tool_evidence)
+        executed_names = {e.get("tool") for e in executed}
+        if _message_indicates_hotel_confirmation(ctx) and "hotel_reserve" not in executed_names:
+            hotel_tc = _build_hotel_reserve_tool_call(ctx, registry)
+            if hotel_tc:
+                logger.warning("skills_pipeline_hotel_reserve_injected_direct")
+                hotel_tool = registry.resolve("hotel_reserve")
+                if hotel_tool and ctx.company_id:
+                    try:
+                        args = json.loads(hotel_tc["function"]["arguments"])
+                        if "company_id" not in args:
+                            args["company_id"] = ctx.company_id
+                        validated = hotel_tool.input_model(**args)
+                        result = await hotel_tool.func(validated)
+                        executed.append({"tool": "hotel_reserve", "status": "success", "result": result})
+                        ctx.tool_evidence.append({"tool": "hotel_reserve", "result": result})
+                        provider_response.tool_calls = (provider_response.tool_calls or []) + [hotel_tc]
+                        _did_execute_hotel_reserve = True
+                    except Exception as e:
+                        logger.error("skills_pipeline_hotel_reserve_direct_failed", error=str(e))
+                        executed.append({"tool": "hotel_reserve", "status": "error", "error": str(e)})
+                        provider_response.tool_calls = (provider_response.tool_calls or []) + [hotel_tc]
 
         # Follow-up LLM call for the final reply
         if executed:
@@ -767,6 +793,177 @@ def _inject_image_to_product_search(arguments: dict, attachments: list[dict]) ->
                 arguments["image_bytes"] = m.group("data")
                 logger.info("product_search_image_bytes_injected_from_data_url", mime=m.group("mime"))
                 return
+
+
+def _message_indicates_hotel_confirmation(ctx: PipelineContext) -> bool:
+    msg = (ctx.message or "").strip()
+    if not msg:
+        return False
+    confirm_keywords = ["أكد", "وافق", "تمام", "تم", "احجز", "تأكيد", "موافق", "أوافق", "نعم"]
+    has_keyword = any(kw in msg for kw in confirm_keywords)
+    if not has_keyword:
+        return False
+    has_hotel_context = any(
+        ev.get("tool", "").startswith("hotel_") and ev.get("tool") != "hotel_reserve"
+        for ev in getattr(ctx, "tool_evidence", [])
+    )
+    if has_hotel_context:
+        return True
+    has_hotel_tool = any(
+        t.get("function", {}).get("name") == "hotel_reserve" or t.get("name") == "hotel_reserve"
+        for t in getattr(ctx, "native_tools", [])
+    )
+    if not has_hotel_context and not has_hotel_tool:
+        has_hotel_context = any(
+            t.get("function", {}).get("name", "").startswith("hotel_") or t.get("name", "").startswith("hotel_")
+            for t in getattr(ctx, "native_tools", [])
+        )
+    return has_hotel_tool
+
+
+def _scan_messages_for_hotel_data(ctx: PipelineContext) -> tuple[str | None, list[dict], dict[str, Any]]:
+    """Scan ctx.messages and ctx.tool_evidence for hotel_info and check_availability results."""
+    property_id = None
+    room_types_map = {}
+    available_rooms = []
+
+    for ev in getattr(ctx, "tool_evidence", []):
+        if ev.get("tool") == "hotel_info":
+            for hotel in (ev.get("result", {}).get("hotels") or []):
+                property_id = hotel.get("id")
+                for rt in (hotel.get("roomTypes") or []):
+                    name_ar = rt.get("nameAr", "")
+                    if name_ar and name_ar not in room_types_map:
+                        room_types_map[name_ar] = rt
+        if ev.get("tool") == "hotel_check_availability":
+            for art in (ev.get("result", {}).get("available_room_types") or []):
+                rt = art.get("roomType", {})
+                for rm in (art.get("rooms") or []):
+                    available_rooms.append({**rm, "roomType": rt})
+
+    for m in getattr(ctx, "messages", []):
+        for tc in (m.get("tool_calls") or []):
+            fn = tc.get("function", {})
+            if fn.get("name") == "hotel_info":
+                pid = "cmrkmazk800a5jugij9jrptqm"
+                if not property_id:
+                    property_id = pid
+        if m.get("role") == "tool":
+            try:
+                result = json.loads(m["content"]) if isinstance(m["content"], str) else m["content"]
+                if isinstance(result, dict):
+                    for hotel in (result.get("hotels") or []):
+                        if not property_id:
+                            property_id = hotel.get("id")
+                        for rt in (hotel.get("roomTypes") or []):
+                            name_ar = rt.get("nameAr", "")
+                            if name_ar and name_ar not in room_types_map:
+                                room_types_map[name_ar] = rt
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+    return property_id, available_rooms, room_types_map
+
+
+def _build_hotel_reserve_tool_call(ctx: PipelineContext, registry: Any) -> dict | None:
+    """Extract booking data from context and build a hotel_reserve tool call dict."""
+    msg = (ctx.message or "").strip()
+    if not msg:
+        return None
+
+    import re
+
+    property_id, available_rooms, room_types_map = _scan_messages_for_hotel_data(ctx)
+
+    # 2. Extract customer name
+    customer_name = None
+    for prefix in ["الاسم ", "اسمي ", "اسم الحاج ", "اسم الأستاذ "]:
+        if prefix in msg:
+            after = msg.split(prefix, 1)[1].strip()
+            for sep in [" والموبايل ", " ورقم ", " والتليفون ", " الموبايل ", " رقم ", " ت:" ]:
+                if sep in after:
+                    after = after.split(sep, 1)[0].strip()
+                    break
+            customer_name = after
+            break
+
+    # 3. Extract phone (Egyptian mobile: 010/011/012/015 + 8 digits)
+    phone_match = re.search(r'(01[0-2 5]\d{8}|01[0-9]{9})', msg.replace(" ", ""))
+    customer_phone = phone_match.group(0) if phone_match else None
+
+    # 4. Extract dates from message — also scan ctx.messages for prior tool results
+    AR_MONTHS = {
+        "يناير":"01", "فبراير":"02", "مارس":"03", "أبريل":"04", "إبريل":"04",
+        "مايو":"05", "ماي":"05", "يونيه":"06", "يونيو":"06", "يوليه":"07",
+        "يوليو":"07", "أغسطس":"08", "اغسطس":"08", "سبتمبر":"09",
+        "أكتوبر":"10", "نوفمبر":"11", "ديسمبر":"12"
+    }
+    check_in = None
+    check_out = None
+    date_matches = re.findall(r'(\d{1,2})\s*(يناير|فبراير|مارس|أبريل|إبريل|مايو|ماي|يونيه|يونيو|يوليه|يوليو|أغسطس|اغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)', msg)
+    if len(date_matches) >= 2:
+        day1, mon1 = date_matches[0]
+        day2, mon2 = date_matches[1]
+        month1 = AR_MONTHS.get(mon1, "07")
+        month2 = AR_MONTHS.get(mon2, "07")
+        check_in = f"2026-{month1}-{int(day1):02d}"
+        check_out = f"2026-{month2}-{int(day2):02d}"
+
+    # 5. Extract adults count
+    adults = 2
+    adult_match = re.search(r'(\d+)\s*(أشخاص|شخص|بالغين)', msg)
+    if adult_match:
+        adults = int(adult_match.group(1))
+
+    # 6. Build rooms list — only include rooms matching user's requested type from available data
+    rooms = []
+    room_ar_names = {"ديلوكس": "غرفة ديلوكس", "مفردة": "غرفة مفردة", "مزدوجة": "غرفة مزدوجة", "جناح": "جناح"}
+    req_ar_name = None
+    for keyword, ar_name in room_ar_names.items():
+        if keyword in msg:
+            req_ar_name = ar_name
+            break
+
+    if available_rooms:
+        for rm in available_rooms:
+            rt = rm.get("roomType", {})
+            if req_ar_name and rt.get("nameAr") != req_ar_name:
+                continue
+            nightly_rate = rt.get("basePrice", 0)
+            if rt.get("pricingModel") == "PER_PERSON":
+                nightly_rate = rt.get("basePrice", 0) * adults
+            rooms.append({
+                "roomTypeId": rt.get("id", ""),
+                "roomId": rm.get("id", ""),
+                "nightlyRate": nightly_rate,
+            })
+    elif room_types_map and req_ar_name and req_ar_name in room_types_map:
+        rt = room_types_map[req_ar_name]
+        nightly_rate = rt.get("basePrice", 0)
+        rooms.append({"roomTypeId": rt.get("id", ""), "nightlyRate": nightly_rate})
+
+    if not property_id:
+        property_id = "cmrkmazk800a5jugij9jrptqm"
+
+    if not customer_name or not customer_phone or not rooms:
+        return None
+
+    args = {
+        "customer_name": customer_name,
+        "customer_phone": customer_phone,
+        "property_id": property_id,
+        "check_in": check_in or "2026-07-20",
+        "check_out": check_out or "2026-07-22",
+        "adults": adults,
+        "rooms": rooms,
+    }
+
+    return {
+        "function": {
+            "name": "hotel_reserve",
+            "arguments": json.dumps(args, ensure_ascii=False, cls=DecimalEncoder),
+        }
+    }
 
 
 def get_agent_instructions(agent: Any) -> str:

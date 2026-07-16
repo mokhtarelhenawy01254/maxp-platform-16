@@ -332,7 +332,7 @@ const createReservation = async (req, res) => {
 
       const reservation = await tx.hotelReservation.create({
         data: {
-          companyId, propertyId, customerId: customerId || null, customerName: customerName.trim(),
+          company: { connect: { id: companyId } }, property: { connect: { id: propertyId } }, customerId: customerId || null, customerName: customerName.trim(),
           customerPhone, customerEmail, customerNotes, checkIn: checkInDate, checkOut: checkOutDate,
           adults: adults || 1, children: children || 0, totalAmount, paidAmount: 0, source: source || 'dashboard', depositRequired, depositAmount, depositPaid, paymentMethod,
           createdById: req.user?.id, createdByType: 'user',
