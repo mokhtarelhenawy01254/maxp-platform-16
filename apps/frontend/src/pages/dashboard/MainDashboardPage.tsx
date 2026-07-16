@@ -172,9 +172,9 @@ export default function MainDashboardPage() {
 
   return (
     <div className="space-y-6" style={{ viewTransitionName: "main-dashboard" }}>
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
             {dashboard?.company?.name
               ? t("companyDashboard.welcome", { name: dashboard.company.name })
               : t("companyDashboard.title")}

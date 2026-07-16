@@ -40,8 +40,8 @@ export function DashboardActivityFeed({ dashboard, liveActivities, liveCount = 0
   if (!recent && liveActivities.length === 0 && liveCount === 0) return null;
 
   return (
-    <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border/50 shadow-sm">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h3 className="text-sm font-semibold text-foreground">
           {t("companyDashboard.activity.title")}
         </h3>

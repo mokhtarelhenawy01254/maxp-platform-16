@@ -60,8 +60,8 @@ export function QuickActions({ activeApps = [], badges = {} }: QuickActionsProps
   if (visiblePrimary.length === 0 && visibleSecondary.length === 0) return null;
 
   return (
-    <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
-      <h3 className="text-sm font-semibold text-foreground mb-4">{t("quickActions.title")}</h3>
+    <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border/50 shadow-sm">
+      <h3 className="text-sm font-semibold text-foreground mb-3 sm:mb-4">{t("quickActions.title")}</h3>
       <div className="space-y-3">
         {visiblePrimary.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

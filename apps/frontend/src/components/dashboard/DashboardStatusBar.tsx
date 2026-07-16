@@ -18,7 +18,7 @@ export function DashboardStatusBar({ dashboard, isRtl, activeApps }: Props) {
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border/50 shadow-sm overflow-x-auto text-xs"
+      className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-xl bg-card border border-border/50 shadow-sm text-xs"
       dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="flex items-center gap-2 shrink-0">

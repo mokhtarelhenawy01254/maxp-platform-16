@@ -58,8 +58,8 @@ export function DashboardAlertsHub({ dashboard }: Props) {
   if (alerts.length === 0) return null;
 
   return (
-    <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm">
-      <h3 className="text-sm font-semibold text-foreground mb-4">
+    <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border/50 shadow-sm">
+      <h3 className="text-sm font-semibold text-foreground mb-3 sm:mb-4">
         {t("companyDashboard.sections.alerts")}
       </h3>
       <div className="flex flex-wrap gap-2">

@@ -83,7 +83,7 @@ export function AppWidgetGrid({ widgets, getData, companyId }: Props) {
         </button>
 
         {open && (
-          <div className="absolute top-full left-0 mt-1 z-50 w-64 bg-popover border border-border rounded-xl shadow-lg p-3 space-y-1">
+          <div className="absolute top-full left-0 right-0 sm:left-0 sm:right-auto mt-1 z-50 w-full sm:w-64 max-w-[calc(100vw-2rem)] bg-popover border border-border rounded-xl shadow-lg p-3 space-y-1 overflow-y-auto max-h-80">
             <p className="text-xs font-semibold text-muted-foreground mb-2">
               {t("companyDashboard.widgets.customize")}
             </p>
@@ -109,9 +109,9 @@ export function AppWidgetGrid({ widgets, getData, companyId }: Props) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {visible.large.map(({ widget, data }) => (
-          <div key={widget.id} className={widget.colSpan === 2 ? "lg:col-span-2" : ""}>
+          <div key={widget.id} className={widget.colSpan === 2 ? "xl:col-span-2" : ""}>
             <AppWidgetCard widget={widget} data={data} />
           </div>
         ))}
@@ -122,7 +122,7 @@ export function AppWidgetGrid({ widgets, getData, companyId }: Props) {
           <h3 className="text-xs font-medium text-muted-foreground">
             {t("companyDashboard.widgets.moreModules")}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
             {visible.mini.map(({ widget, data }) => (
               <AppWidgetMini key={widget.id} widget={widget} data={data} />
             ))}

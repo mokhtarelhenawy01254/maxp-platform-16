@@ -30,11 +30,11 @@ export default function DateRangeToolbar({
   toLabel,
 }: DateRangeToolbarProps) {
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-lg bg-card text-card-foreground p-4 shadow-sm">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-wrap items-end gap-3 sm:gap-4 rounded-lg bg-card text-card-foreground p-3 sm:p-4 shadow-sm">
+      <div className="flex flex-col gap-1 w-full sm:w-auto">
         <Label className="text-xs text-muted-foreground">{rangeLabel}</Label>
         <Select value={selectedFilterId} onValueChange={onSelectFilter}>
-          <SelectTrigger className="w-44 text-sm">
+          <SelectTrigger className="w-full sm:w-44 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -49,7 +49,7 @@ export default function DateRangeToolbar({
 
       {showCustomRangeInputs && (
         <>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
             <Label className="text-xs text-muted-foreground">
               {fromLabel}
             </Label>
@@ -57,16 +57,16 @@ export default function DateRangeToolbar({
               type="date"
               value={start}
               onChange={(e) => onStartChange(e.target.value)}
-              className="h-9 w-40 text-sm"
+              className="h-9 w-full sm:w-40 text-sm"
             />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
             <Label className="text-xs text-muted-foreground">{toLabel}</Label>
             <Input
               type="date"
               value={end}
               onChange={(e) => onEndChange(e.target.value)}
-              className="h-9 w-40 text-sm"
+              className="h-9 w-full sm:w-40 text-sm"
             />
           </div>
         </>
