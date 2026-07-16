@@ -112,30 +112,4 @@ export type FetchDashboardOptions = {
   signal?: AbortSignal;
 };
 
-export type DashboardMetricRailItem = {
-  title: string;
-  value: React.ReactNode;
-  subtitle: string;
-  tone: import("../../components/business/BusinessMetrics").BusinessMetricTone;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  onClick?: () => void;
-};
 
-export type DashboardStatusStripTone = "primary" | "success" | "warning";
-
-export type DashboardStatusStripProps = {
-  badge: string;
-  countLabel?: string;
-  description: string;
-  details?: React.ReactNode;
-  progressPct?: number;
-  actions?: React.ReactNode;
-  title: string;
-  tone: DashboardStatusStripTone;
-};
-
-export type DashboardMetricRailProps = {
-  description: string;
-  items: DashboardMetricRailItem[];
-  title: string;
-};
