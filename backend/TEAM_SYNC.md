@@ -6,6 +6,7 @@
   2. Documented the system boundaries in `Structure.md` for team onboarding and future agent iterations.
   3. Cleaned up dead client service code from `customerService.ts`, removing `getCustomerSegments` and `getCustomerStats` methods and types that were never registered or implemented in backend Express routing (stats are already inline within `getCustomerDetails` payload).
   4. Logged the bugs and routes mismatch in `Bugs.md`.
+  5. Fixed a default filtering bug in `CustomerList.tsx` where the general Customers page incorrectly defaulted to `hasOrders: false`, displaying only prospects without orders (mirroring the Leads page). It now defaults to `undefined` showing all customers with or without orders by default.
 
 ## 2026-07-14 / 2026-03-09
 - **Sidebar Layout Persistence & Company Override Resolution (UI/UX / COMPLETE)**: Fixed the sidebar layout "getting stuck" when changing layouts:

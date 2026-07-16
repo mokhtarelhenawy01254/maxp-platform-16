@@ -1,5 +1,12 @@
 # Backend Bugs Log
 
+### [BUG FIX / UI] Customer List hasOrders Default Filter Bug
+- **Date**: 2026-07-16
+- **Root Cause**: In `CustomerList.tsx`, the default state of the query filter `hasOrders` was set to `false`. In the backend controller `customerController.js`, `hasOrders = false` is mapped to find customers with **no orders** (`where.orders = { none: {} }`), whereas omitting `hasOrders` (or setting it to `undefined`) yields no orders filter. This caused the general Customers list page (`/customers`) to default to displaying only prospects without orders, mirroring the Leads page.
+- **Resolution**: Removed `hasOrders: false` from the initial state of the `filters` object in `CustomerList.tsx` and modified the `handleToggleWithOrders` method to set it to `true` when checked and `undefined` (omitting it) when unchecked, allowing `/customers` to correctly load all customers by default.
+- **Files Modified**:
+  - `apps/frontend/src/pages/customers/CustomerList.tsx`
+
 ### [BUG FIX / API] Dead Customer Service Client Functions (Segments & Stats)
 - **Date**: 2026-07-16
 - **Root Cause**: The frontend `customerService.ts` defined two functions: `getCustomerSegments` and `getCustomerStats` that were not actually registered in the backend Express router (`customerRoutes.js`).

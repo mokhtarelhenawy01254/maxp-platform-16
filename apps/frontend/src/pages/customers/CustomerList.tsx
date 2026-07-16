@@ -41,7 +41,6 @@ const CustomerList: React.FC = () => {
     limit: 10,
     sortBy: "updatedAt",
     sortOrder: "desc",
-    hasOrders: false,
   });
 
   const [pagination, setPagination] = useState({
@@ -64,7 +63,7 @@ const CustomerList: React.FC = () => {
   const handleToggleWithOrders = () => {
     const newVal = !showOnlyWithOrders;
     setShowOnlyWithOrders(newVal);
-    setFilters((prev) => ({ ...prev, page: 1, hasOrders: newVal }));
+    setFilters((prev) => ({ ...prev, page: 1, hasOrders: newVal ? true : undefined }));
   };
 
   // Selection handlers
