@@ -52,7 +52,7 @@ export function AppWidgetCard({ widget, data }: Props) {
                 data.status === "inactive" && "bg-gray-400",
               )}
             />
-            {t(data.statusLabel || `widgets.status.${data.status}`)}
+            {t(data.statusLabel || `companyDashboard.widgets.status.${data.status}`)}
           </span>
         )}
       </div>
