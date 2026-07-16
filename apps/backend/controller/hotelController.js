@@ -322,7 +322,7 @@ const createReservation = async (req, res) => {
         if (!room) throw new Error(`الغرفة غير موجودة`);
         if (room.status === 'OCCUPIED' || room.status === 'MAINTENANCE') throw new Error(`الغرفة ${room.roomNumber} غير متاحة`);
 
-        reservationRooms.push({ roomId, roomTypeId: r.roomTypeId, nightlyRate: rate });
+        reservationRooms.push({ room: { connect: { id: roomId } }, roomType: { connect: { id: r.roomTypeId } }, nightlyRate: rate });
       }
 
       if (customerId) {
@@ -332,7 +332,7 @@ const createReservation = async (req, res) => {
 
       const reservation = await tx.hotelReservation.create({
         data: {
-          company: { connect: { id: companyId } }, property: { connect: { id: propertyId } }, customerId: customerId || null, customerName: customerName.trim(),
+          company: { connect: { id: companyId } }, property: { connect: { id: propertyId } }, customer: customerId ? { connect: { id: customerId } } : undefined, customerName: customerName.trim(),
           customerPhone, customerEmail, customerNotes, checkIn: checkInDate, checkOut: checkOutDate,
           adults: adults || 1, children: children || 0, totalAmount, paidAmount: 0, source: source || 'dashboard', depositRequired, depositAmount, depositPaid, paymentMethod,
           createdById: req.user?.id, createdByType: 'user',
