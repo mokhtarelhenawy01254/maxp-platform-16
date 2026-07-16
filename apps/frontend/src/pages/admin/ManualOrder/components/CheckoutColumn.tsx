@@ -13,6 +13,7 @@ import {
   PrinterIcon,
   CalendarIcon,
 } from "@heroicons/react/24/outline";
+import { SearchableSelect } from "../../../../components/ui/SearchableSelect";
 import { customerService } from "../../../../services/customerService";
 import { apiClient } from "../../../../services/apiClient";
 import {
@@ -720,10 +721,13 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
               المحافظة <span className="text-red-500 dark:text-red-400">*</span>
             </label>
-            <select
+            <SearchableSelect
+              options={availableGovernorates.map((gov) => ({
+                value: gov,
+                label: gov,
+              }))}
               value={governorate}
-              onChange={(e) => {
-                const nextGovernorate = e.target.value;
+              onChange={(nextGovernorate) => {
                 setGovernorate(nextGovernorate);
                 if (
                   normalizeLocationLabel(nextGovernorate) !==
@@ -732,15 +736,13 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                   setArea("");
                 }
               }}
-              className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">اختر المحافظة...</option>
-              {availableGovernorates.map((gov) => (
-                <option key={gov} value={gov}>
-                  {gov}
-                </option>
-              ))}
-            </select>
+              placeholder="اختر المحافظة..."
+              searchPlaceholder="ابحث عن محافظة..."
+              emptyText="لا توجد محافظة تطابق البحث"
+              disabled={false}
+              loading={loadingGovernments}
+              loadingText="جاري تحميل المحافظات..."
+            />
             {loadingGovernments && (
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                 جاري تحميل قائمة المحافظات الدقيقة...
@@ -753,21 +755,20 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
               المنطقة / الزون داخل المحافظة
             </label>
             {availableAreas.length > 0 ? (
-              <select
+              <SearchableSelect
+                options={availableAreas.map((areaOption) => ({
+                  value: areaOption.name,
+                  label: areaOption.name,
+                }))}
                 value={area}
-                onChange={(e) => setArea(e.target.value)}
-                className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                disabled={loadingAreas}
-              >
-                <option value="">
-                  {loadingAreas ? "جاري تحميل المناطق..." : "اختر المنطقة..."}
-                </option>
-                {availableAreas.map((areaOption) => (
-                  <option key={areaOption.id} value={areaOption.name}>
-                    {areaOption.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setArea}
+                placeholder={loadingAreas ? "جاري تحميل المناطق..." : "اختر المنطقة..."}
+                searchPlaceholder="ابحث عن منطقة..."
+                emptyText="لا توجد منطقة تطابق البحث"
+                disabled={false}
+                loading={loadingAreas}
+                loadingText="جاري تحميل المناطق..."
+              />
             ) : (
               <input
                 type="text"

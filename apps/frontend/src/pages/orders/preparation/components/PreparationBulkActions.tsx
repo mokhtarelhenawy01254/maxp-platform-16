@@ -1,6 +1,7 @@
 import {
   ArrowPathIcon,
   CheckCircleIcon,
+  PrinterIcon,
   TruckIcon,
   Squares2X2Icon,
   XCircleIcon,
@@ -18,6 +19,7 @@ interface PreparationBulkActionsProps {
   allVisibleSelected: boolean;
   totalVisibleOrders: number;
   sendingToTurbo: boolean;
+  printingInvoices?: boolean;
   compact?: boolean;
   onBulkStatusChange: (value: string) => void;
   onApply: () => void;
@@ -26,6 +28,7 @@ interface PreparationBulkActionsProps {
   onSelectAll: () => void;
   onClearSelection: () => void;
   onSendToTurbo: () => void;
+  onPrintInvoices?: () => void;
 }
 
 const PreparationBulkActions = ({
@@ -39,6 +42,7 @@ const PreparationBulkActions = ({
   allVisibleSelected,
   totalVisibleOrders,
   sendingToTurbo,
+  printingInvoices = false,
   compact = false,
   onBulkStatusChange,
   onApply,
@@ -47,6 +51,7 @@ const PreparationBulkActions = ({
   onSelectAll,
   onClearSelection,
   onSendToTurbo,
+  onPrintInvoices,
 }: PreparationBulkActionsProps) => {
   return (
     <><div className="flex flex-wrap items-center gap-2">
@@ -153,6 +158,22 @@ const PreparationBulkActions = ({
         >
           مسح التحديد
         </button>
+
+        {/* Print Invoices */}
+        {onPrintInvoices ? (
+          <button
+            onClick={onPrintInvoices}
+            disabled={selectedOrdersCount === 0 || printingInvoices}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {printingInvoices ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <PrinterIcon className="h-4 w-4" />
+            )}
+            طباعة الفواتير
+          </button>
+        ) : null}
 
         {/* Send to Turbo */}
         <span className="mx-1 hidden h-5 w-px bg-gray-200 sm:block" />
