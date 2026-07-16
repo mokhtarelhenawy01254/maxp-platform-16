@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { groupOrderDocumentQuantityOffers } from "../../utils/orderDocumentQuantityOffers";
+import tokenManager from "../../utils/tokenManager";
 
 interface Invoice {
   id: string;
@@ -44,6 +45,7 @@ interface Invoice {
         product?: { sku?: string | null };
       }>;
     };
+    slipHtml?: string | null;
   }
 
 const PrintMultipleInvoices: React.FC = () => {
@@ -68,7 +70,22 @@ const PrintMultipleInvoices: React.FC = () => {
         try {
           const response = await apiClient.get(`/order-invoices/${id}`);
           if (response.data.success) {
-            fetchedInvoices.push(response.data.data);
+            const invoice: Invoice = response.data.data;
+
+            // Fetch preparation slip HTML
+            try {
+              const slipResponse = await fetch(
+                `/api/v1/policy/generate/${encodeURIComponent(invoice.order.orderNumber)}`,
+                { headers: tokenManager.createAuthHeaders() },
+              );
+              if (slipResponse.ok) {
+                invoice.slipHtml = await slipResponse.text();
+              }
+            } catch (slipErr) {
+              console.warn(`No slip for ${invoice.order.orderNumber}:`, slipErr);
+            }
+
+            fetchedInvoices.push(invoice);
           }
         } catch (err) {
           console.error(`Error fetching invoice ${id}:`, err);
@@ -237,38 +254,50 @@ const PrintMultipleInvoices: React.FC = () => {
             margin: 0;
             padding: 0;
           }
-          
+
           .invoice-page {
             page-break-after: always;
             page-break-inside: avoid;
             padding: 15mm !important;
           }
-          
+
+          .slip-page {
+            page-break-after: always;
+            page-break-inside: avoid;
+          }
+
           .invoice-page:last-child {
             page-break-after: auto;
           }
-          
+
           .no-print {
             display: none !important;
           }
-          
+
           @page {
             margin: 1cm;
             size: A4;
           }
         }
-        
+
         @media screen {
           .print-container {
             background: #f3f4f6;
             padding: 20px;
           }
-          
+
           .invoice-page {
             background: white;
             max-width: 210mm;
             margin: 0 auto 20px;
             padding: 20mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          }
+
+          .slip-page {
+            background: white;
+            max-width: 210mm;
+            margin: 0 auto 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
           }
         }
@@ -298,112 +327,125 @@ const PrintMultipleInvoices: React.FC = () => {
       </div>
 
       {invoices.map((invoice) => (
-        <div key={invoice.id} className="invoice-page" dir="rtl">
-          {/* Header - بسيط جداً */}
-          <div className="text-right mb-4 text-xs text-gray-500">
-            <p>منصة إدارة التواصل والمبيعات الإلكترونية</p>
-          </div>
-
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-right">
-              <p className="text-sm mb-1">
-                <span className="font-bold">فاتورة: </span>
-                {invoice.invoiceNumber}
-              </p>
-              <p className="text-sm mb-1">
-                <span className="font-bold">طلب: </span>
-                {invoice.order.orderNumber}
-              </p>
-              <p className="text-sm">
-                {new Date(invoice.issueDate).toLocaleDateString("ar-EG", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                })}
-              </p>
+        <React.Fragment key={invoice.id}>
+          {/* صفحة الفاتورة */}
+          <div className="invoice-page" dir="rtl">
+            <div className="text-right mb-4 text-xs text-gray-500">
+              <p>منصة إدارة التواصل والمبيعات الإلكترونية</p>
             </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold mb-1">{invoice.companyName}</h1>
-              <p className="text-sm">{invoice.customerPhone || ""}</p>
+
+            <div className="flex justify-between items-start mb-6">
+              <div className="text-right">
+                <p className="text-sm mb-1">
+                  <span className="font-bold">فاتورة: </span>
+                  {invoice.invoiceNumber}
+                </p>
+                <p className="text-sm mb-1">
+                  <span className="font-bold">طلب: </span>
+                  {invoice.order.orderNumber}
+                </p>
+                <p className="text-sm">
+                  {new Date(invoice.issueDate).toLocaleDateString("ar-EG", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                  })}
+                </p>
+              </div>
+              <div className="text-left">
+                <h1 className="text-2xl font-bold mb-1">{invoice.companyName}</h1>
+                <p className="text-sm">{invoice.customerPhone || ""}</p>
+              </div>
             </div>
-          </div>
 
-          {/* معلومات العميل */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold mb-2 border-b pb-1">
-              معلومات العميل
-            </h3>
-            <p className="text-sm mb-1">{invoice.customerName}</p>
-            <p className="text-sm mb-1">هاتف: {invoice.customerPhone}</p>
-            <p className="text-sm mb-1">
-              العنوان: {invoice.customerAddress || ""}
-            </p>
-            <p className="text-sm">المدينة: {invoice.city || ""}</p>
-          </div>
+            <div className="mb-6">
+              <h3 className="text-sm font-bold mb-2 border-b pb-1">
+                معلومات العميل
+              </h3>
+              <p className="text-sm mb-1">{invoice.customerName}</p>
+              <p className="text-sm mb-1">هاتف: {invoice.customerPhone}</p>
+              <p className="text-sm mb-1">
+                العنوان: {invoice.customerAddress || ""}
+              </p>
+              <p className="text-sm">المدينة: {invoice.city || ""}</p>
+            </div>
 
-          {/* جدول المنتجات - بسيط */}
-          <table className="w-full mb-6 text-sm">
-            <thead>
-              <tr className="border-b-2 border-gray-800">
-                <th className="text-right py-2 font-bold">المنتج</th>
-                <th className="text-center py-2 font-bold">الكمية</th>
-                <th className="text-right py-2 font-bold">السعر</th>
-                <th className="text-right py-2 font-bold">الإجمالي</th>
-              </tr>
-            </thead>
-            <tbody>
-              {renderInvoiceRows(invoice)}
-            </tbody>
-          </table>
+            <table className="w-full mb-6 text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-800">
+                  <th className="text-right py-2 font-bold">المنتج</th>
+                  <th className="text-center py-2 font-bold">الكمية</th>
+                  <th className="text-right py-2 font-bold">السعر</th>
+                  <th className="text-right py-2 font-bold">الإجمالي</th>
+                </tr>
+              </thead>
+              <tbody>
+                {renderInvoiceRows(invoice)}
+              </tbody>
+            </table>
 
-          {/* المجاميع - بسيطة */}
-          <div className="text-right mb-6 text-sm space-y-1">
-            <p>
-              المجموع الفرعي:{" "}
-              <span className="font-bold">
-                {formatCurrency(invoice.subtotal, invoice.currency)}
-              </span>
-            </p>
-            {invoice.shipping > 0 && (
+            <div className="text-right mb-6 text-sm space-y-1">
               <p>
-                الشحن:{" "}
+                المجموع الفرعي:{" "}
                 <span className="font-bold">
-                  {formatCurrency(invoice.shipping, invoice.currency)}
+                  {formatCurrency(invoice.subtotal, invoice.currency)}
                 </span>
               </p>
-            )}
-            <p className="text-base pt-2 border-t border-gray-800">
-              <span className="font-bold">الإجمالي: </span>
-              <span className="font-bold text-lg">
-                {formatCurrency(invoice.totalAmount, invoice.currency)}
-              </span>
-            </p>
-          </div>
-
-          {/* حالة الدفع */}
-          <div className="mb-6 text-sm space-y-1">
-            <p className="text-right">
-              حالة الدفع:{" "}
-              <span className="font-bold">
-                {getPaymentStatusText(invoice.paymentStatus)}
-              </span>
-            </p>
-            {invoice.paymentMethod && (
-              <p className="text-right">
-                طريقة الدفع:{" "}
-                <span className="font-bold">{invoice.paymentMethod}</span>
+              {invoice.shipping > 0 && (
+                <p>
+                  الشحن:{" "}
+                  <span className="font-bold">
+                    {formatCurrency(invoice.shipping, invoice.currency)}
+                  </span>
+                </p>
+              )}
+              <p className="text-base pt-2 border-t border-gray-800">
+                <span className="font-bold">الإجمالي: </span>
+                <span className="font-bold text-lg">
+                  {formatCurrency(invoice.totalAmount, invoice.currency)}
+                </span>
               </p>
+            </div>
+
+            <div className="mb-6 text-sm space-y-1">
+              <p className="text-right">
+                حالة الدفع:{" "}
+                <span className="font-bold">
+                  {getPaymentStatusText(invoice.paymentStatus)}
+                </span>
+              </p>
+              {invoice.paymentMethod && (
+                <p className="text-right">
+                  طريقة الدفع:{" "}
+                  <span className="font-bold">{invoice.paymentMethod}</span>
+                </p>
+              )}
+            </div>
+
+            {invoice.notes && (
+              <div className="mb-4 text-sm">
+                <p className="font-bold mb-1">ملاحظات:</p>
+                <p className="text-gray-700">{invoice.notes}</p>
+              </div>
             )}
           </div>
 
-          {/* ملاحظات */}
-          {invoice.notes && (
-            <div className="mb-4 text-sm">
-              <p className="font-bold mb-1">ملاحظات:</p>
-              <p className="text-gray-700">{invoice.notes}</p>
-            </div>
-          )}
-        </div>
+          {/* بوليصة التجهيز - نسخة أولى */}
+          {invoice.slipHtml ? (
+            <div
+              className="slip-page"
+              dangerouslySetInnerHTML={{ __html: invoice.slipHtml }}
+            />
+          ) : null}
+
+          {/* بوليصة التجهيز - نسخة ثانية */}
+          {invoice.slipHtml ? (
+            <div
+              className="slip-page"
+              dangerouslySetInnerHTML={{ __html: invoice.slipHtml }}
+            />
+          ) : null}
+        </React.Fragment>
       ))}
     </div>
   );
