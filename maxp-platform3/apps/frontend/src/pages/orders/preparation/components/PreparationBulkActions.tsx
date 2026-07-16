@@ -1,6 +1,7 @@
 import {
   ArrowPathIcon,
   CheckCircleIcon,
+  PrinterIcon,
 } from "@heroicons/react/24/outline";
 import type { PreparationStatusOption } from "../types";
 
@@ -15,6 +16,8 @@ interface PreparationBulkActionsProps {
   onBulkStatusChange: (value: string) => void;
   onApply: () => void;
   onClear: () => void;
+  printingInvoices?: boolean;
+  onPrintInvoices?: () => void;
 }
 
 const PreparationBulkActions = ({
@@ -28,6 +31,8 @@ const PreparationBulkActions = ({
   onBulkStatusChange,
   onApply,
   onClear,
+  printingInvoices = false,
+  onPrintInvoices,
 }: PreparationBulkActionsProps) => {
   return (
     <section className="rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
@@ -77,6 +82,22 @@ const PreparationBulkActions = ({
           )}
           تطبيق على المحدد
         </button>
+
+        {/* Print Invoices */}
+        {onPrintInvoices ? (
+          <button
+            onClick={onPrintInvoices}
+            disabled={selectedOrdersCount === 0 || printingInvoices}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {printingInvoices ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <PrinterIcon className="h-4 w-4" />
+            )}
+            طباعة الفواتير
+          </button>
+        ) : null}
 
         {/* Clear */}
         <button
