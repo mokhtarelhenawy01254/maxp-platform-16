@@ -169,6 +169,11 @@ const statuses = [
   "SHIPPED",
   "DELIVERED",
   "COMPLETED",
+  "PENDING_PREPARATION",
+  "PREPARING",
+  "QUALITY_CHECK",
+  "PACKAGED",
+  "READY_TO_SHIP",
 ] as const;
 
 const labelForStatus = (status: string) =>
@@ -180,6 +185,11 @@ const labelForStatus = (status: string) =>
       SHIPPED: "تم الشحن",
       DELIVERED: "تم التوصيل",
       COMPLETED: "مكتمل",
+      PENDING_PREPARATION: "في انتظار التجهيز",
+      PREPARING: "قيد التجهيز",
+      QUALITY_CHECK: "فحص الجودة",
+      PACKAGED: "تم التغليف",
+      READY_TO_SHIP: "جاهز للشحن",
     } as Record<string, string>
   )[status] || status;
 

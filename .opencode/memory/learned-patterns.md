@@ -123,6 +123,17 @@ When adding a new tool/skill that returns structured data and is called in the s
 ### Key Files
 - `apps/ai-service/src/pipeline/stages/skills_pipeline.py` — `_format_tool_results()` function
 
+## 2026-07-16 — Auto-Invoice Generation on Status Change
+- **Problem:** `OrderInvoiceSettings.autoGenerate` and `autoGenerateOnStatus` existed in DB schema and settings UI but no backend code checked them — invoices never auto-generated.
+- **Solution:** Added checks in two trigger points:
+  1. `orderService.js:updateOrderStatus` → background async block (after WhatsApp notifications). Triggers when main order status matches `autoGenerateOnStatus`.
+  2. `routes/orders.js` preparation status handler → background IIFE after order update. Triggers when preparation status (PACKAGED, READY_TO_SHIP, etc.) OR mapped status matches `autoGenerateOnStatus`.
+- **`autoGenerateOnStatus` format:** Comma-separated status codes (e.g., `PACKAGED,READY_TO_SHIP`). Supports `*` wildcard for all status changes.
+- **Files changed (both `apps/` and `maxp-platform3/`):**
+  - `services/orderService.js` — added auto-invoice block
+  - `routes/orders.js` — added auto-invoice block in preparation handler
+  - `frontend/src/pages/settings/OrderInvoiceSettings.tsx` — added preparation statuses to dropdown
+
 ## 2026-07-16 — Company Dashboard: Responsive CSS Grid & RTL Sizing
 - **Problem:** Widget cards in a responsive CSS Grid can leave empty gaps and fail to stretch, particularly under RTL layout flow. Buttons inside grid items do not automatically fill their columns if they are not explicitly styled with width utilities.
 - **Solution:** 

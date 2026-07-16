@@ -1,3 +1,22 @@
+# Session Log — 2026-07-16 — Bulk Invoice Printing + SearchableSelect Component
+
+## What Happened
+1. **SearchableSelect component**: New reusable `SearchableSelect.tsx` — searchable dropdown with RTL Arabic UI, keyboard navigation, click-outside close, clear button.
+2. **CheckoutColumn.tsx**: Replaced native `<select>` for governorate/area with SearchableSelect (both `apps/frontend` and `maxp-platform3/apps/frontend` copies).
+3. **PreparationQueue.tsx**: Added `handlePrintInvoices` — calls `POST /order-invoices/bulk-generate`, navigates to `/orders/invoices/print-multiple?ids=...` with invoice IDs.
+4. **PreparationBulkActions.tsx**: Added "طباعة الفواتير" emerald button in bulk actions bar, with loading spinner and disabled state.
+5. **Commit `df55d8ac0`**: Rebased on remote `c10665eba`, pushed to `origin/main` ✅
+
+## Files Modified
+- `apps/frontend/src/components/ui/SearchableSelect.tsx` [NEW]
+- `apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx` [MODIFIED]
+- `apps/frontend/src/pages/orders/PreparationQueue.tsx` [MODIFIED]
+- `apps/frontend/src/pages/orders/preparation/components/PreparationBulkActions.tsx` [MODIFIED]
+- `maxp-platform3/apps/frontend/src/components/ui/SearchableSelect.tsx` [NEW]
+- `maxp-platform3/apps/frontend/src/pages/admin/ManualOrder/components/CheckoutColumn.tsx` [MODIFIED]
+
+---
+
 # Session Log — 2026-07-13 — WhatsApp Broadcast Campaign System
 
 ## What Happened

@@ -1171,6 +1171,27 @@ class OrderService {
             console.error('⚠️ [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
           }
 
+          // 🧾 Auto Invoice Generation
+          try {
+            const prisma = this.getPrisma();
+            const invoiceSettings = await prisma.orderInvoiceSettings.findUnique({
+              where: { companyId: order.companyId }
+            });
+
+            if (invoiceSettings && invoiceSettings.autoGenerate && invoiceSettings.autoGenerateOnStatus) {
+              const targetStatuses = invoiceSettings.autoGenerateOnStatus.split(',').map(s => s.trim().toUpperCase());
+              const normalizedStatus = status.toUpperCase();
+
+              if (targetStatuses.includes(normalizedStatus) || targetStatuses.includes('*')) {
+                const { generateInvoiceForOrder } = require('./orderInvoiceService');
+                await generateInvoiceForOrder(order.id, userId);
+                console.log(`✅ [INVOICE-AUTO] Auto-generated invoice for order ${order.orderNumber} on status ${normalizedStatus}`);
+              }
+            }
+          } catch (invoiceError) {
+            console.error('⚠️ [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
+          }
+
         } catch (backgroundError) {
           console.error('⚠️ [ORDER-STATUS-BG-ERROR]:', backgroundError.message);
         }
