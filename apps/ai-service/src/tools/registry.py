@@ -113,6 +113,8 @@ WRITE_TOOL_NAMES: set[str] = {
     "message_broadcast",
     "agent_spawn",
     "shipping_update",
+    "hotel_reserve",
+    "hotel_cancel_reservation",
 }
 
 DIRECT_WRITE_TOOL_NAMES: set[str] = {
