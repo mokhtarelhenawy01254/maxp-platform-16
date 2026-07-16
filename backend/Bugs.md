@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [BUG FIX / UI] Customer Import Modal — Missing Translation Keys
+- **Date**: 2026-07-16
+- **Root Cause**: `CustomerImportModal.tsx` used `t("customers.import.title")`, `t("customers.import.clickOrDrag")`, and 8+ other i18n keys under the `customers.import.*` namespace, but none were defined in either `ar/sections/customers.json` or `en/sections/customers.json`. This caused the UI to display raw translation key strings instead of proper Arabic/English text.
+- **Resolution**: Added the complete `import` block with all 14 keys to both locale section files, then ran `merge-translations.js` to compile them into the main `translation.json` files.
+- **Files Modified**:
+  - `apps/frontend/src/locales/ar/sections/customers.json`
+  - `apps/frontend/src/locales/en/sections/customers.json`
+
 ### [BUG FIX / UI] Customer List hasOrders Default Filter Bug
 - **Date**: 2026-07-16
 - **Root Cause**: In `CustomerList.tsx`, the default state of the query filter `hasOrders` was set to `false`. In the backend controller `customerController.js`, `hasOrders = false` is mapped to find customers with **no orders** (`where.orders = { none: {} }`), whereas omitting `hasOrders` (or setting it to `undefined`) yields no orders filter. This caused the general Customers list page (`/customers`) to default to displaying only prospects without orders, mirroring the Leads page.

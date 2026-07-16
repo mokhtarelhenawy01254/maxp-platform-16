@@ -1,12 +1,33 @@
 # Team Sync Updates
 
 ## 2026-07-16 / 2026-03-09
+- **Customer Import Modal — Excel/CSV/Paste Support & Translation Fix (FEATURE / COMPLETE)**:
+  1. **Excel Import**: Integrated `xlsx` (SheetJS) library into `CustomerImportModal.tsx` to support `.xlsx` and `.xls` file uploads alongside existing `.csv` support. The parser reads the first worksheet and maps headers automatically (Arabic/English).
+  2. **Direct Paste Tab**: Added a second tab "لصق مباشر للبيانات" allowing users to copy-paste rows directly from Excel or any text editor. Auto-detects delimiter (Tab for Excel copy, Comma for CSV text).
+  3. **CSV Template Download**: Added a "تحميل نموذج CSV" button that generates and downloads a UTF-8 BOM-encoded CSV template with Arabic headers and a sample data row.
+  4. **Translation Keys Fix**: Populated all missing `customers.import.*` i18n keys (title, clickOrDrag, requiredColumns, foundCount, success, importing, importButton, noValidData, readError, downloadTemplate, tabFile, tabPaste, pastePlaceholder, parseButton) in both `ar` and `en` locale section files.
+  5. **TypeScript Safety**: Fixed multiple TS compiler errors (TS2532, TS2538, TS2769, TS2345) related to nullable checks, type casting, and i18next `DefaultTFuncReturn` compatibility.
 - **Customer vs. Lead Separation & Code Cleanup (FEATURE / COMPLETE)**:
   1. Clarified the architectural separation: both concepts share the single `Customer` database table, distinguished solely by the `status` enum field (defaulting to `LEAD` when created automatically via `WhatsAppSyncService` from new numbers, and auto-promoted to `ACTIVE` upon order creation inside `enhancedOrderService`).
   2. Documented the system boundaries in `Structure.md` for team onboarding and future agent iterations.
   3. Cleaned up dead client service code from `customerService.ts`, removing `getCustomerSegments` and `getCustomerStats` methods and types that were never registered or implemented in backend Express routing (stats are already inline within `getCustomerDetails` payload).
   4. Logged the bugs and routes mismatch in `Bugs.md`.
   5. Fixed a default filtering bug in `CustomerList.tsx` where the general Customers page incorrectly defaulted to `hasOrders: false`, displaying only prospects without orders (mirroring the Leads page). It now defaults to `undefined` showing all customers with or without orders by default.
+
+### [BUG FIX / UI] Customer Import Modal — Missing Translation Keys
+- **Date**: 2026-07-16
+- **Root Cause**: `CustomerImportModal.tsx` used `t("customers.import.title")`, `t("customers.import.clickOrDrag")`, and 8+ other i18n keys under the `customers.import.*` namespace, but none were defined in either `ar/sections/customers.json` or `en/sections/customers.json`. This caused the UI to display raw translation key strings (e.g., `customers.import.title`) instead of proper Arabic/English text.
+- **Resolution**: Added the complete `import` block with all 14 keys to both locale section files, then ran `merge-translations.js` to compile them into the main `translation.json` files.
+- **Files Modified**:
+  - `apps/frontend/src/locales/ar/sections/customers.json`
+  - `apps/frontend/src/locales/en/sections/customers.json`
+  - `apps/frontend/src/locales/ar/translation.json`
+  - `apps/frontend/src/locales/en/translation.json`
+
+### [BUG FIX / UI] Customer List hasOrders Default Filter Bug
+- **Date**: 2026-07-16
+- **Root Cause**: The general Customers page incorrectly defaulted to `hasOrders: false`, displaying only prospects without orders (mirroring the Leads page).
+- **Resolution**: It now defaults to `undefined` showing all customers with or without orders by default.
 
 ## 2026-07-14 / 2026-03-09
 - **Sidebar Layout Persistence & Company Override Resolution (UI/UX / COMPLETE)**: Fixed the sidebar layout "getting stuck" when changing layouts:
