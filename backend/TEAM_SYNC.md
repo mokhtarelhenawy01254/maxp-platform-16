@@ -7,6 +7,7 @@
   3. **CSV Template Download**: Added a "تحميل نموذج CSV" button that generates and downloads a UTF-8 BOM-encoded CSV template with Arabic headers and a sample data row.
   4. **Translation Keys Fix**: Populated all missing `customers.import.*` i18n keys (title, clickOrDrag, requiredColumns, foundCount, success, importing, importButton, noValidData, readError, downloadTemplate, tabFile, tabPaste, pastePlaceholder, parseButton) in both `ar` and `en` locale section files.
   5. **TypeScript Safety**: Fixed multiple TS compiler errors (TS2532, TS2538, TS2769, TS2345) related to nullable checks, type casting, and i18next `DefaultTFuncReturn` compatibility.
+  6. **UI Overlay Bug**: Resolved a CSS stacking issue where a sibling `fixed inset-0 bg-black/50` overlay rendered on top of the modal content card, making it invisible. Restructured the modal DOM to apply overlay styles directly to the parent flex container and added event propagation controls to make the modal card fully visible.
 - **Customer vs. Lead Separation & Code Cleanup (FEATURE / COMPLETE)**:
   1. Clarified the architectural separation: both concepts share the single `Customer` database table, distinguished solely by the `status` enum field (defaulting to `LEAD` when created automatically via `WhatsAppSyncService` from new numbers, and auto-promoted to `ACTIVE` upon order creation inside `enhancedOrderService`).
   2. Documented the system boundaries in `Structure.md` for team onboarding and future agent iterations.
