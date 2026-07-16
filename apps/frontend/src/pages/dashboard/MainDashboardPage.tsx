@@ -16,6 +16,7 @@ import { DashboardStatusBar } from "../../components/dashboard/DashboardStatusBa
 import { DashboardActivityFeed } from "../../components/dashboard/DashboardActivityFeed";
 import { DashboardAlertsHub } from "../../components/dashboard/DashboardAlertsHub";
 import { DashboardSkeleton, OnboardingChecklist, DashboardExportMenu } from ".";
+import { SetupProgressBanner } from "./SetupProgressBanner";
 import DateRangeToolbar from "./DateRangeToolbar";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
@@ -217,37 +218,7 @@ export default function MainDashboardPage() {
         <DashboardStatusBar dashboard={dashboard} isRtl={isRtl} activeApps={activeApps} />
       )}
 
-      {live.isConnected && (
-        <div className="flex items-center gap-3 flex-wrap">
-          <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-            style={{
-              background: live.liveCount > 0 ? "color-mix(in srgb, var(--color-success) 14%, transparent)" : "color-mix(in srgb, var(--color-border) 20%, transparent)",
-              color: live.liveCount > 0 ? "var(--color-success)" : "var(--color-muted-foreground)",
-            }}
-            title={_t("companyDashboard.live.connected")}
-          >
-            <span className="relative flex h-2 w-2">
-              {live.liveCount > 0 && (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "var(--color-success)" }} />
-              )}
-              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: live.liveCount > 0 ? "var(--color-success)" : "var(--color-muted-foreground)" }} />
-            </span>
-            {t("companyDashboard.live.label")}{live.liveCount > 0 ? ` · ${live.liveCount}` : ""}
-          </span>
-          {live.activities.slice(0, 3).map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => a.href && navigate(a.href)}
-              className="text-xs px-2 py-1 rounded-full transition-colors hover:underline"
-              style={{ background: "color-mix(in srgb, var(--color-border) 22%, transparent)", color: "var(--color-foreground)" }}
-            >
-              {a.text}
-            </button>
-          ))}
-        </div>
-      )}
+      {dashboard && !isEmpty && <SetupProgressBanner dashboard={dashboard} />}
 
       <QuickActions
         activeApps={activeApps}
@@ -263,9 +234,17 @@ export default function MainDashboardPage() {
         getData={getWidgetData}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {dashboard && <DashboardActivityFeed dashboard={dashboard} liveActivities={live.activities} />}
-        <DashboardAlertsHub dashboard={dashboard} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {dashboard && (
+          <DashboardActivityFeed
+            dashboard={dashboard}
+            liveActivities={live.activities}
+            liveCount={live.liveCount}
+          />
+        )}
+        <div className="lg:col-span-2">
+          <DashboardAlertsHub dashboard={dashboard} />
+        </div>
       </div>
     </div>
   );

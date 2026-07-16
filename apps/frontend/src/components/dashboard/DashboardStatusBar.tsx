@@ -14,35 +14,38 @@ export function DashboardStatusBar({ dashboard, isRtl, activeApps }: Props) {
   const company = dashboard?.company;
   if (!company) return null;
 
+  const users = dashboard?.usage?.users;
+
   return (
     <div
-      className="flex items-center gap-4 px-5 py-3 rounded-2xl bg-card border border-border/50 shadow-sm overflow-x-auto"
+      className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border/50 shadow-sm overflow-x-auto text-xs"
       dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="flex items-center gap-2 shrink-0">
-        <div className="p-1.5 rounded-lg bg-primary/10">
-          <ChartBarIcon className="w-4 h-4 text-primary" />
-        </div>
-        <div>
-          <span className="text-sm font-semibold text-foreground">{company.name}</span>
-          {company.plan && (
-            <span className="text-[11px] text-muted-foreground block">{company.plan}</span>
-          )}
-        </div>
+        <ChartBarIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+        <span className="font-semibold text-foreground whitespace-nowrap">{company.name}</span>
       </div>
 
-      <div className="h-6 w-px bg-border/50" />
+      {company.plan && (
+        <span className="text-[11px] text-muted-foreground shrink-0 px-2 py-0.5 rounded-full bg-border/30">
+          {company.plan}
+        </span>
+      )}
 
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span>{t("companyDashboard.stats.activeApps")}: <strong className="text-foreground">{activeApps.length}</strong></span>
-        {dashboard?.usage?.users && (
-          <span>
-            <span className={cn(dashboard.usage.users.percentage != null && dashboard.usage.users.percentage >= 90 ? "text-rose-500" : "")}>
-              👥 {dashboard.usage.users.current ?? 0}/{dashboard.usage.users.limit ?? "∞"}
-            </span>
+      <span className="h-3 w-px bg-border/50 shrink-0" />
+
+      <span className="text-muted-foreground whitespace-nowrap shrink-0">
+        <span className="text-foreground font-medium">{activeApps.length}</span> {t("companyDashboard.stats.activeApps")}
+      </span>
+
+      {users && (
+        <>
+          <span className="h-3 w-px bg-border/50 shrink-0" />
+          <span className={cn("whitespace-nowrap shrink-0", users.percentage >= 90 ? "text-rose-500 font-medium" : "text-muted-foreground")}>
+            {users.current ?? 0}/{users.limit ?? "∞"}
           </span>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
