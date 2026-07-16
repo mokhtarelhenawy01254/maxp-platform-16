@@ -288,6 +288,33 @@ const CustomerList: React.FC = () => {
           )}
         </div>
 
+        {/* Status Tabs */}
+        <div className="flex gap-1 bg-white dark:bg-gray-800 p-1.5 rounded-lg shadow dark:shadow-md overflow-x-auto">
+          <button
+            onClick={() => handleStatusFilter("all")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+              !filters.status
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            الكل
+          </button>
+          {statusOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleStatusFilter(opt.value)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                filters.status === opt.value
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow dark:shadow-md">
           <div className="flex flex-col sm:flex-row gap-4">
