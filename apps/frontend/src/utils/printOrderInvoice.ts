@@ -1,6 +1,7 @@
 import { formatCurrency } from "./currency";
 import { OrderDetailsType, OrderItem } from "../pages/orders/types";
 import { groupOrderDocumentQuantityOffers } from "./orderDocumentQuantityOffers";
+import JsBarcode from "jsbarcode";
 
 
 
@@ -173,6 +174,24 @@ const getPaymentStatusLabel = (status?: string) => {
   };
 
   return labels[String(status || "").toUpperCase()] || normalizeText(status);
+};
+
+const generateBarcodeSvg = (value: string, height = 50, width = 2): string => {
+  try {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    JsBarcode(svg, value, {
+      format: "CODE128",
+      width,
+      height,
+      displayValue: false,
+      background: "#ffffff",
+      lineColor: "#000000",
+      margin: 0,
+    });
+    return svg.outerHTML;
+  } catch {
+    return "";
+  }
 };
 
 export const printOrderInvoice = async ({
@@ -415,6 +434,32 @@ export const printOrderInvoice = async ({
             font-size: 13px;
             color: #4b5563;
           }
+          .barcode-section {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #d1d5db;
+            flex-wrap: wrap;
+          }
+          .barcode-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            text-align: center;
+          }
+          .barcode-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #374151;
+          }
+          .barcode-value {
+            font-size: 11px;
+            color: #6b7280;
+            font-family: "Courier New", monospace;
+          }
           @media print {
             body {
               background: #ffffff;
@@ -550,6 +595,15 @@ export const printOrderInvoice = async ({
               <strong>${escapeHtml(formatCurrency(total, currency))}</strong>
             </div>
           </div>
+
+          ${
+            order.orderNumber || order.turboTrackingNumber
+              ? `<div class="barcode-section">
+                  ${order.orderNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.orderNumber)}<div class="barcode-label">رقم الطلب</div><div class="barcode-value">${escapeHtml(order.orderNumber)}</div></div>` : ""}
+                  ${order.turboTrackingNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.turboTrackingNumber)}<div class="barcode-label">كود الشحن</div><div class="barcode-value">${escapeHtml(order.turboTrackingNumber)}</div></div>` : ""}
+                </div>`
+              : ""
+          }
 
           <div class="footer">
             <p>تم توليد هذه الفاتورة مباشرة من صفحة تفاصيل الطلب.</p>

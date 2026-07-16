@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { groupOrderDocumentQuantityOffers } from "../../utils/orderDocumentQuantityOffers";
+import InvoiceBarcode from "../../components/orders/InvoiceBarcode";
 
 interface Invoice {
   id: string;
@@ -31,6 +32,7 @@ interface Invoice {
   terms: string | null;
     order: {
       orderNumber: string;
+      turboTrackingNumber?: string | null;
       orderItems: Array<{
         productName: string;
         productSku?: string;
@@ -356,6 +358,24 @@ const PrintMultipleInvoices: React.FC = () => {
               </span>
             </p>
           </div>
+
+          {/* الباركود */}
+          {(invoice.order.orderNumber || invoice.order.turboTrackingNumber) && (
+            <div className="flex justify-center gap-8 mt-4 pt-3" style={{ borderTop: "1px solid #e2e8f0" }}>
+              {invoice.order.orderNumber && (
+                <InvoiceBarcode
+                  value={invoice.order.orderNumber}
+                  label="رقم الطلب"
+                />
+              )}
+              {invoice.order.turboTrackingNumber && (
+                <InvoiceBarcode
+                  value={invoice.order.turboTrackingNumber}
+                  label="كود الشحن"
+                />
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>

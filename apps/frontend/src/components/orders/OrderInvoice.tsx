@@ -24,6 +24,7 @@ import {
   Mail,
   Printer,
 } from "lucide-react";
+import InvoiceBarcode from "./InvoiceBarcode";
 
 interface OrderInvoiceProps {
   orderId?: string;
@@ -543,6 +544,26 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
                   {invoice.terms}
                 </p>
               </div>
+            )}
+          </div>
+        )}
+
+        {(invoice.order?.orderNumber || invoice.order?.turboTrackingNumber) && (
+          <div
+            className="mt-4 pt-3 flex justify-center gap-8 flex-wrap"
+            style={{ borderTop: "1px solid #e2e8f0" }}
+          >
+            {invoice.order?.orderNumber && (
+              <InvoiceBarcode
+                value={invoice.order.orderNumber}
+                label="رقم الطلب"
+              />
+            )}
+            {invoice.order?.turboTrackingNumber && (
+              <InvoiceBarcode
+                value={invoice.order.turboTrackingNumber}
+                label="كود الشحن"
+              />
             )}
           </div>
         )}

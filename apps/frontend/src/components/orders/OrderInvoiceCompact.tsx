@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
+import InvoiceBarcode from "./InvoiceBarcode";
 
 interface Invoice {
   id: string;
@@ -295,6 +296,24 @@ const OrderInvoiceCompact: React.FC = () => {
           <div className="mb-4 text-sm">
             <p className="font-bold mb-1">ملاحظات:</p>
             <p className="text-gray-700">{invoice.notes}</p>
+          </div>
+        )}
+
+        {/* الباركود */}
+        {(invoice.order.orderNumber || invoice.order.turboTrackingNumber) && (
+          <div className="flex justify-center gap-8 mt-4 pt-3" style={{ borderTop: "1px solid #e2e8f0" }}>
+            {invoice.order.orderNumber && (
+              <InvoiceBarcode
+                value={invoice.order.orderNumber}
+                label="رقم الطلب"
+              />
+            )}
+            {invoice.order.turboTrackingNumber && (
+              <InvoiceBarcode
+                value={invoice.order.turboTrackingNumber}
+                label="كود الشحن"
+              />
+            )}
           </div>
         )}
       </div>
