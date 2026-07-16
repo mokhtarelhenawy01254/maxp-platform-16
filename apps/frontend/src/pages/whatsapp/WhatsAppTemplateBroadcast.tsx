@@ -261,7 +261,11 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       <SelectContent>
                         {sessions.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.metaDisplayPhoneNumber || s.phoneNumber || s.name || s.id}
+                            {s.metaDisplayPhoneNumber
+                              ? `${s.name} (${s.metaDisplayPhoneNumber})`
+                              : s.phoneNumber
+                                ? `${s.name} (${s.phoneNumber})`
+                                : s.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
