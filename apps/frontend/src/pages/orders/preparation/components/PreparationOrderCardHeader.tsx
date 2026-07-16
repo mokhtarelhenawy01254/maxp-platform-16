@@ -148,6 +148,21 @@ const PreparationOrderCardHeader = ({
 
           <div className="h-8 w-px bg-gray-100" />
 
+          <div className="text-center">
+            <p className="text-[10px] text-gray-400">كود الشحن</p>
+            <p className="max-w-[100px] truncate text-xs font-medium text-gray-700" dir="ltr">
+              {order.turboTrackingNumber ||
+                (order.shipments?.length
+                  ? order.shipments
+                      .map((s) => s.trackingNumber)
+                      .filter(Boolean)
+                      .join(", ")
+                  : null) || "—"}
+            </p>
+          </div>
+
+          <div className="h-8 w-px bg-gray-100" />
+
           <div
             className={`rounded-lg px-2 py-1 text-center text-[11px] font-semibold ${
               order.isReady

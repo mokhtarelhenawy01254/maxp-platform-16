@@ -401,7 +401,17 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
     paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
     shippingAddress: hasLimitedMerchantView ? null : shippingAddress,
     items,
-    trackingNumber: order.trackingNumber,
+    turboTrackingNumber: order.turboTrackingNumber || null,
+    turboShipmentId: order.turboShipmentId || null,
+    turboShipmentStatus: order.turboShipmentStatus || null,
+    shipments: Array.isArray(order.shipments)
+      ? order.shipments.map(s => ({
+          trackingNumber: s.trackingNumber || null,
+          externalShipmentId: s.externalShipmentId || null,
+          status: s.status,
+          carrierType: s.carrierType,
+        }))
+      : [],
     notes: order.notes,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -495,7 +505,10 @@ const mapGuestOrderToSimple = (order) => {
         metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {}
       }))
       : [],
-    trackingNumber: null,
+    turboTrackingNumber: order.turboTrackingNumber || null,
+    turboShipmentId: order.turboShipmentId || null,
+    turboShipmentStatus: order.turboShipmentStatus || null,
+    shipments: [],
     notes: order.notes || '',
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -952,7 +965,7 @@ const fetchPreparationBatchOrders = async (candidateRows, { merchantId } = {}) =
 
   const [regularOrders, guestOrders] = await Promise.all([
     regularIds.length > 0
-      ? getSharedPrismaClient().order.findMany({
+        ? getSharedPrismaClient().order.findMany({
         where: { id: { in: regularIds } },
         include: {
           customer: {
@@ -961,6 +974,15 @@ const fetchPreparationBatchOrders = async (candidateRows, { merchantId } = {}) =
           orderItems: {
             include: {
               product: { select: { id: true, name: true, images: true } }
+            }
+          },
+          shipments: {
+            select: {
+              id: true,
+              trackingNumber: true,
+              externalShipmentId: true,
+              status: true,
+              carrierType: true,
             }
           },
           merchantOrders: merchantId
