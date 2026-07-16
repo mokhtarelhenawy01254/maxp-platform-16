@@ -23,20 +23,20 @@ interface QuickAction {
 }
 
 const primaryActions: QuickAction[] = [
-  { key: "orders", labelKey: "quickActions.orders", icon: ShoppingCartIcon, path: "/orders", appSlug: "ecommerce-basic" },
-  { key: "products", labelKey: "quickActions.products", icon: CubeIcon, path: "/products", appSlug: "ecommerce-basic" },
-  { key: "customers", labelKey: "quickActions.customers", icon: UserGroupIcon, path: "/customers", appSlug: "crm-basic" },
-  { key: "whatsapp", labelKey: "quickActions.whatsapp", icon: ChatBubbleLeftRightIcon, path: "/whatsapp", appSlug: "whatsapp-business" },
-  { key: "inbox", labelKey: "quickActions.inbox", icon: ChatBubbleLeftRightIcon, path: "/unified-inbox", appSlug: "unified-inbox" },
-  { key: "ai-agent", labelKey: "quickActions.aiAgent", icon: SparklesIcon, path: "/admin/ai-hub", appSlug: "ai-chat-basic" },
-  { key: "connections", labelKey: "quickActions.connections", icon: LinkIcon, path: "/unified-inbox/connections", appSlug: "unified-inbox" },
+  { key: "orders", labelKey: "companyDashboard.quickActions.orders", icon: ShoppingCartIcon, path: "/orders", appSlug: "ecommerce-basic" },
+  { key: "products", labelKey: "companyDashboard.quickActions.products", icon: CubeIcon, path: "/products", appSlug: "ecommerce-basic" },
+  { key: "customers", labelKey: "companyDashboard.quickActions.customers", icon: UserGroupIcon, path: "/customers", appSlug: "crm-basic" },
+  { key: "whatsapp", labelKey: "companyDashboard.quickActions.whatsapp", icon: ChatBubbleLeftRightIcon, path: "/whatsapp", appSlug: "whatsapp-business" },
+  { key: "inbox", labelKey: "companyDashboard.quickActions.inbox", icon: ChatBubbleLeftRightIcon, path: "/unified-inbox", appSlug: "unified-inbox" },
+  { key: "ai-agent", labelKey: "companyDashboard.quickActions.aiAgent", icon: SparklesIcon, path: "/admin/ai-hub", appSlug: "ai-chat-basic" },
+  { key: "connections", labelKey: "companyDashboard.quickActions.connections", icon: LinkIcon, path: "/unified-inbox/connections", appSlug: "unified-inbox" },
 ];
 
 const secondaryActions: QuickAction[] = [
-  { key: "analytics", labelKey: "quickActions.analytics", icon: ChartBarIcon, path: "/analytics/orders", appSlug: "ecommerce-basic" },
-  { key: "marketing", labelKey: "quickActions.marketing", icon: CurrencyDollarIcon, path: "/marketing", appSlug: "facebook-ads-pro" },
-  { key: "storefront", labelKey: "quickActions.storefront", icon: RocketLaunchIcon, path: "/settings/store", appSlug: "ecommerce-basic" },
-  { key: "settings", labelKey: "quickActions.settings", icon: Cog6ToothIcon, path: "/settings" },
+  { key: "analytics", labelKey: "companyDashboard.quickActions.analytics", icon: ChartBarIcon, path: "/analytics/orders", appSlug: "ecommerce-basic" },
+  { key: "marketing", labelKey: "companyDashboard.quickActions.marketing", icon: CurrencyDollarIcon, path: "/marketing", appSlug: "facebook-ads-pro" },
+  { key: "storefront", labelKey: "companyDashboard.quickActions.storefront", icon: RocketLaunchIcon, path: "/settings/store", appSlug: "ecommerce-basic" },
+  { key: "settings", labelKey: "companyDashboard.quickActions.settings", icon: Cog6ToothIcon, path: "/settings" },
 ];
 
 interface QuickActionsProps {
@@ -61,7 +61,7 @@ export function QuickActions({ activeApps = [], badges = {} }: QuickActionsProps
 
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border/50 shadow-sm">
-      <h3 className="text-sm font-semibold text-foreground mb-3 sm:mb-4">{t("quickActions.title")}</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-3 sm:mb-4">{t("companyDashboard.quickActions.title")}</h3>
       <div className="space-y-3">
         {visiblePrimary.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
