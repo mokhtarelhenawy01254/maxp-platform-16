@@ -2,6 +2,8 @@ import { formatCurrency } from "./currency";
 import { OrderDetailsType, OrderItem } from "../pages/orders/types";
 import { groupOrderDocumentQuantityOffers } from "./orderDocumentQuantityOffers";
 
+
+
 interface PrintOrderInvoiceOptions {
   order: OrderDetailsType;
   companyName?: string;
@@ -104,6 +106,7 @@ const getItemTotal = (item: OrderItem) => {
 
 const buildItemDetailsText = (item: OrderItem) =>
   [
+    item.productSku ? `SQ: ${item.productSku}` : "",
     item.productColor ? `اللون: ${item.productColor}` : "",
     item.productSize ? `المقاس: ${item.productSize}` : "",
     item.productDetails ? item.productDetails : "",
@@ -485,6 +488,11 @@ export const printOrderInvoice = async ({
             </div>
             <div class="card">
               <h3>بيانات الطلب</h3>
+              ${
+                order.createdByName
+                  ? `<p><strong>الكوتشي:</strong> ${escapeHtml(order.createdByName)}</p>`
+                  : ""
+              }
               ${
                 settings.showPaymentMethod && order.paymentMethod
                   ? `<p><strong>طريقة الدفع:</strong> ${escapeHtml(order.paymentMethod)}</p>`

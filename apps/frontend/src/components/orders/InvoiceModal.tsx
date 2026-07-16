@@ -166,6 +166,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
                   {invoice.customerPhone}
                 </div>
               )}
+              {invoice.order?.createdByName && (
+                <div>
+                  <span className="font-semibold">الكوتشي:</span>{" "}
+                  {invoice.order.createdByName}
+                </div>
+              )}
               {invoice.customerAddress && (
                 <div className="col-span-2">
                   <span className="font-semibold">العنوان:</span>{" "}
@@ -201,19 +207,23 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
                       <div className="font-medium text-slate-900 dark:text-slate-100 print:text-black">
                         {item.productName}
                       </div>
-                      {(item.productColor || item.productSize) && (
-                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 print:text-slate-600">
-                          {item.productColor && (
-                            <span>اللون: {item.productColor}</span>
-                          )}
-                          {item.productColor && item.productSize && (
-                            <span> | </span>
-                          )}
-                          {item.productSize && (
-                            <span>المقاس: {item.productSize}</span>
-                          )}
-                        </div>
-                      )}
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 print:text-slate-600">
+                        {item.productSku && (
+                          <span>SQ: {item.productSku}</span>
+                        )}
+                        {item.productSku && (item.productColor || item.productSize) && (
+                          <span> | </span>
+                        )}
+                        {item.productColor && (
+                          <span>اللون: {item.productColor}</span>
+                        )}
+                        {item.productColor && item.productSize && (
+                          <span> | </span>
+                        )}
+                        {item.productSize && (
+                          <span>المقاس: {item.productSize}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="text-center py-3">{item.quantity}</td>
                     <td className="text-right py-3">

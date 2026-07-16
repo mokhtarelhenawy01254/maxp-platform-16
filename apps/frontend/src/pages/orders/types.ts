@@ -6,6 +6,7 @@ export interface OrderItem {
   productSize?: string;
   productDetails?: string;
   productImage?: string;
+  productSku?: string | null;
   price: number;
   quantity: number;
   total: number;

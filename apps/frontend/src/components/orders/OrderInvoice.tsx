@@ -52,6 +52,7 @@ interface InvoiceOrderItem {
   variantName?: string | null;
   productColor?: string | null;
   productSize?: string | null;
+  productSku?: string | null;
 }
 
 interface InvoiceData {
@@ -88,6 +89,7 @@ interface InvoiceData {
     turboTrackingNumber?: string | null;
     turboShipmentId?: string | null;
     orderItems?: InvoiceOrderItem[];
+    createdByName?: string | null;
   };
 }
 
@@ -417,6 +419,11 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             <p className="text-sm">
               <strong>{t("orders.invoice.orderNumber")}</strong> {invoice.order?.orderNumber || "-"}
             </p>
+            {invoice.order?.createdByName && (
+              <p className="text-sm">
+                <strong>الكوتشي:</strong> {invoice.order.createdByName}
+              </p>
+            )}
             {invoice.order?.turboTrackingNumber && (
               <p className="text-sm">
                 <strong>رقم تتبع تربو:</strong> {invoice.order.turboTrackingNumber}
@@ -451,6 +458,11 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
                       <p className="text-sm font-medium">{item.productName}</p>
+                      {item.productSku && (
+                        <p className="text-xs" style={{ color: secondaryColor }}>
+                          SQ: {item.productSku}
+                        </p>
+                      )}
                       {(item.variantName || item.productColor || item.productSize) && (
                         <p className="text-xs" style={{ color: secondaryColor }}>
                           {[item.variantName, item.productColor, item.productSize]

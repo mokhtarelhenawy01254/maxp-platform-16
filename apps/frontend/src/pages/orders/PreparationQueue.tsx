@@ -44,7 +44,6 @@ import { usePreparationQueueUiState } from "./preparation/usePreparationQueueUiS
 import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
-import PreparationStats from "./preparation/components/PreparationStats";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 
 type BulkStatusResult = {
@@ -98,7 +97,6 @@ const PreparationQueue: React.FC = () => {
     Record<string, ShortageHoldDetails>
   >({});
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
-  const [showStats, setShowStats] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
@@ -354,14 +352,8 @@ const PreparationQueue: React.FC = () => {
   const totalPages = Math.max(1, pagination.pages);
   const paginatedOrders = preparationOrders;
   const visibleOrdersCount = summary.visibleTotal;
-  const searchedOrdersCount = summary.filteredTotal;
-  const readyCount = summary.readyCount;
-  const shortageCount = summary.shortageCount;
-  const shortageHoldCount = summary.shortageHoldCount;
-  const overdueShortageFollowUpCount = summary.overdueShortageFollowUpCount;
   const allOverdueShortageFollowUpCount =
     summary.allOverdueShortageFollowUpCount;
-  const readyToShipCount = summary.readyToShipCount;
 
   useEffect(() => {
     uiActions.clampPage(totalPages);
@@ -968,33 +960,6 @@ const PreparationQueue: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <button
-          type="button"
-          onClick={() => setShowStats((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-        >
-          <span>الإحصائيات</span>
-          <ChevronDownIcon
-            className={`h-4 w-4 text-gray-400 transition-transform ${
-              showStats ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        {showStats && (
-          <div className="border-t border-gray-100 px-4 pb-4 pt-3">
-            <PreparationStats
-              searchedOrdersCount={searchedOrdersCount}
-              readyCount={readyCount}
-              shortageCount={shortageCount}
-              readyToShipCount={readyToShipCount}
-              shortageHoldCount={shortageHoldCount}
-              overdueShortageFollowUpCount={overdueShortageFollowUpCount}
-            />
-          </div>
-        )}
-      </div>
-
       {isMerchantUser ? (
         <MerchantOperationsSummary
           formatPrice={formatPrice}
@@ -1062,27 +1027,30 @@ const PreparationQueue: React.FC = () => {
             />
           </div>
         )}
-      </div>
 
-      <PreparationBulkActions
-        selectedOrdersCount={selectedOrders.length}
-        bulkStatus={bulkStatus}
-        statusOptions={statusOptions}
-        statusLabelMap={statusLabelMap}
-        bulkUpdating={bulkUpdating}
-        preparationEnabled={preparationSettings.enabled}
-        bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
-        allVisibleSelected={allVisibleSelected}
-        totalVisibleOrders={paginatedOrders.length}
-        sendingToTurbo={sendingToTurbo}
-        onBulkStatusChange={uiActions.setBulkStatus}
-        onApply={() => void handleBulkUpdate()}
-        onApplyToAll={() => void handleBulkUpdateAll()}
-        onClear={uiActions.clearBulkControls}
-        onSelectAll={toggleSelectAllVisible}
-        onClearSelection={() => uiActions.clearBulkControls()}
-        onSendToTurbo={() => void handleSendToTurbo()}
-      />
+        <div className="border-t border-gray-100 px-4 py-3">
+          <PreparationBulkActions
+            compact
+            selectedOrdersCount={selectedOrders.length}
+            bulkStatus={bulkStatus}
+            statusOptions={statusOptions}
+            statusLabelMap={statusLabelMap}
+            bulkUpdating={bulkUpdating}
+            preparationEnabled={preparationSettings.enabled}
+            bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
+            allVisibleSelected={allVisibleSelected}
+            totalVisibleOrders={paginatedOrders.length}
+            sendingToTurbo={sendingToTurbo}
+            onBulkStatusChange={uiActions.setBulkStatus}
+            onApply={() => void handleBulkUpdate()}
+            onApplyToAll={() => void handleBulkUpdateAll()}
+            onClear={uiActions.clearBulkControls}
+            onSelectAll={toggleSelectAllVisible}
+            onClearSelection={() => uiActions.clearBulkControls()}
+            onSendToTurbo={() => void handleSendToTurbo()}
+          />
+        </div>
+      </div>
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
