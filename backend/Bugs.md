@@ -1028,3 +1028,22 @@
   - `apps/frontend/src/pages/unified-inbox/UnifiedInbox.tsx`
 
 
+### [FIX] Company Dashboard Layout Gaps and Card Stretching Failures
+- **Date**: 2026-07-16 / 2026-03-09
+- **Description**: Resolved issues where dashboard widget cards did not stretch to fill the grid columns, causing large empty spaces and misalignments in RTL layouts.
+- **Root Cause**:
+  1. Card components (`AppWidgetCard.tsx` and `AppWidgetMini.tsx`) used `<button>` elements that lacked `w-full` class names, preventing them from stretching within their parent grid cells.
+  2. The parent grid container in `AppWidgetGrid.tsx` did not use `grid-flow-row-dense` or proper responsive column spanning wrappers for double-width widgets (`colSpan: 2`), resulting in large layout gaps on large viewport sizes.
+  3. Hardcoded text alignments (`text-right` instead of `text-start`) caused styling inconsistencies under different localization contexts.
+  4. TypeScript errors were present due to uncasted translations and unchecked array index references on metric variables.
+- **Resolution**:
+  1. Updated `AppWidgetGrid.tsx` to utilize `grid-flow-row-dense` and dynamically apply `sm:col-span-2 xl:col-span-2` wrapper classes around cards with `colSpan === 2`.
+  2. Applied `w-full` and `text-start` to `AppWidgetCard.tsx` and `AppWidgetMini.tsx` buttons to ensure correct alignment and stretching.
+  3. Added group hover animations (`hover:-translate-y-1.5`, `group-hover:scale-110`) for the cards and their icons to enhance premium UI aesthetics.
+  4. Fixed type check errors by safe-extracting array elements and casting translation returns to standard string types.
+- **Files Modified**:
+  - `apps/frontend/src/components/dashboard/widgets/AppWidgetGrid.tsx`
+  - `apps/frontend/src/components/dashboard/widgets/AppWidgetCard.tsx`
+  - `apps/frontend/src/components/dashboard/widgets/AppWidgetMini.tsx`
+
+

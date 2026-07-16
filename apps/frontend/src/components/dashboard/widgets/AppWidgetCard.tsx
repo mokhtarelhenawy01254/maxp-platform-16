@@ -18,10 +18,10 @@ export function AppWidgetCard({ widget, data }: Props) {
       type="button"
       onClick={() => navigate(widget.href)}
       className={cn(
-        "relative flex flex-col p-5 rounded-2xl text-right h-full",
+        "relative flex flex-col p-5 rounded-2xl text-start h-full w-full",
         "bg-card text-card-foreground",
         "border border-border/50 shadow-sm",
-        "transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md",
+        "transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "group",
       )}
@@ -51,10 +51,10 @@ export function AppWidgetCard({ widget, data }: Props) {
 
       <div className="flex items-center gap-3 mb-4">
         <div
-          className="p-2.5 rounded-xl shrink-0"
+          className="p-2.5 rounded-xl shrink-0 transition-all duration-300 group-hover:scale-105"
           style={{ background: `color-mix(in srgb, ${widget.color} 14%, transparent)` }}
         >
-          <Icon className="w-5 h-5" style={{ color: widget.color }} />
+          <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" style={{ color: widget.color }} />
         </div>
         <h3 className="text-sm font-semibold text-foreground">
           {t(widget.titleKey)}

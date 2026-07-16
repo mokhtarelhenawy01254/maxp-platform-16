@@ -78,7 +78,7 @@ export function AppWidgetGrid({ widgets, getData, companyId }: Props) {
           type="button"
           onClick={() => setOpen((p) => !p)}
           className="mr-auto p-1 rounded-md hover:bg-muted transition-colors"
-          title={t("companyDashboard.widgets.customize")}
+          title={t("companyDashboard.widgets.customize") as string}
         >
           <AdjustmentsHorizontalIcon className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -110,9 +110,9 @@ export function AppWidgetGrid({ widgets, getData, companyId }: Props) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 grid-flow-row-dense gap-3 sm:gap-4">
         {visible.large.map(({ widget, data }) => (
-          <div key={widget.id} className={widget.colSpan === 2 ? "xl:col-span-2" : ""}>
+          <div key={widget.id} className={widget.colSpan === 2 ? "sm:col-span-2 xl:col-span-2" : ""}>
             <AppWidgetCard widget={widget} data={data} />
           </div>
         ))}

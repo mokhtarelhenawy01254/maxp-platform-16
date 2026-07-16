@@ -210,6 +210,14 @@
   1. Added a strict instruction in `apps/backend/agents/sales-rep-v2-agent/SOUL.md` under the "Voice & Tone" section to prohibit repeating the greeting once the conversation is already in progress and the user has been initially greeted.
 
 
+## 2026-07-16 / 2026-03-09
+- **Company Dashboard Layout & Styling Redesign (FIX/UI/UX)**: Resolved layout gaps, alignment issues, and card stretching failures in the company dashboard page, especially under RTL configurations:
+  1. Updated `AppWidgetGrid.tsx` to utilize `grid-flow-row-dense` and properly handle responsive `colSpan` sizes (using `sm:col-span-2 xl:col-span-2` wrapper divs) to prevent empty grid cells.
+  2. Redesigned `AppWidgetCard.tsx` to set button widths to `w-full` for full stretch capability, corrected text alignment to `text-start` for standard RTL/LTR support, and added group-hover translations (`hover:-translate-y-1.5`) and transition animations for a premium visual feel.
+  3. Redesigned `AppWidgetMini.tsx` to set width to `w-full`, corrected text alignment to `text-start`, and improved hover animations.
+  4. Fixed TypeScript compilation errors (`TS2322` and `TS2532`) inside `AppWidgetGrid.tsx` and `AppWidgetMini.tsx` by casting translation values to strings and safe-extracting the first metrics item with non-null checks.
+
+
 ## 2026-07-03 / 2026-03-09
 - **Company Role Resolution & Sidebar Fix (FIX)**: Fixed a critical bug where company accounts (OWNER, COMPANY_ADMIN) would lose sidebar access after page refresh, showing only 1–2 items instead of the full menu:
   1. Updated `/auth/login`, `/auth/me`, `/auth/companies`, and `/auth/switch-company` in `authController.js` to include the `roleRef` relation in `userCompanies` queries.

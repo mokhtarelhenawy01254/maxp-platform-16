@@ -122,3 +122,13 @@ When adding a new tool/skill that returns structured data and is called in the s
 
 ### Key Files
 - `apps/ai-service/src/pipeline/stages/skills_pipeline.py` — `_format_tool_results()` function
+
+## 2026-07-16 — Company Dashboard: Responsive CSS Grid & RTL Sizing
+- **Problem:** Widget cards in a responsive CSS Grid can leave empty gaps and fail to stretch, particularly under RTL layout flow. Buttons inside grid items do not automatically fill their columns if they are not explicitly styled with width utilities.
+- **Solution:** 
+  1. Add `grid-flow-row-dense` to the grid container to pack cells tightly and resolve large gaps.
+  2. Wrap grid items in responsive column span containers (`sm:col-span-2 xl:col-span-2` instead of just desktop-only layout spans).
+  3. Standardize inner elements (like card buttons) to stretch fully (`w-full`) and align text logically to start (`text-start`) instead of using hardcoded left/right alignments.
+  4. Cast i18n translation function returns `t(...)` using `as string` when assigning to native HTML attributes like `title` that expect plain strings, preventing TypeScript `TS2322` errors.
+  5. Avoid accessing array elements directly (e.g. `data.metrics[0].label`) without checking both the array and the item presence first, preventing `TS2532: Object is possibly 'undefined'` compilation errors.
+

@@ -14,24 +14,26 @@ export function AppWidgetMini({ widget, data }: Props) {
   const Icon = widget.icon;
 
   if (!data || !data.metrics || data.metrics.length === 0) return null;
+  const firstMetric = data.metrics[0];
+  if (!firstMetric) return null;
 
   return (
     <button
       type="button"
       onClick={() => navigate(widget.href)}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-xl text-right",
+        "flex items-center gap-3 p-3 rounded-xl text-start w-full",
         "bg-card border border-border/50 shadow-sm",
-        "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+        "transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-primary/20",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "group",
       )}
     >
       <div
-        className="p-2 rounded-lg shrink-0"
+        className="p-2 rounded-lg shrink-0 transition-all duration-300 group-hover:scale-105"
         style={{ background: `color-mix(in srgb, ${widget.color} 14%, transparent)` }}
       >
-        <Icon className="w-4 h-4" style={{ color: widget.color }} />
+        <Icon className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" style={{ color: widget.color }} />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -52,7 +54,7 @@ export function AppWidgetMini({ widget, data }: Props) {
           </span>
         </div>
         <span className="text-[11px] text-muted-foreground block mt-0.5">
-          {t(data.metrics[0].label)}: {data.metrics[0].value}
+          {t(firstMetric.label)}: {firstMetric.value}
         </span>
       </div>
     </button>
