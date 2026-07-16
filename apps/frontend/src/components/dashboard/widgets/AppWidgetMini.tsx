@@ -13,6 +13,8 @@ export function AppWidgetMini({ widget, data }: Props) {
   const navigate = useNavigate();
   const Icon = widget.icon;
 
+  if (!data || !data.metrics || data.metrics.length === 0) return null;
+
   return (
     <button
       type="button"
@@ -26,7 +28,7 @@ export function AppWidgetMini({ widget, data }: Props) {
       )}
     >
       <div
-        className="p-2 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-110"
+        className="p-2 rounded-lg shrink-0"
         style={{ background: `color-mix(in srgb, ${widget.color} 14%, transparent)` }}
       >
         <Icon className="w-4 h-4" style={{ color: widget.color }} />
@@ -34,7 +36,7 @@ export function AppWidgetMini({ widget, data }: Props) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          {data?.status && (
+          {data.status && (
             <span
               className={cn(
                 "w-1.5 h-1.5 rounded-full shrink-0",
@@ -49,11 +51,9 @@ export function AppWidgetMini({ widget, data }: Props) {
             {t(widget.titleKey)}
           </span>
         </div>
-        {data?.metrics?.[0] && (
-          <span className="text-[11px] text-muted-foreground block mt-0.5">
-            {t(data.metrics[0].label)}: {data.metrics[0].value}
-          </span>
-        )}
+        <span className="text-[11px] text-muted-foreground block mt-0.5">
+          {t(data.metrics[0].label)}: {data.metrics[0].value}
+        </span>
       </div>
     </button>
   );

@@ -52,7 +52,8 @@ export function AppWidgetGrid({ widgets, getData, companyId }: Props) {
   const visible = useMemo(() => {
     const withData = widgets
       .filter((w) => !hidden.has(w.id))
-      .map((w) => ({ widget: w, data: getData(w) }));
+      .map((w) => ({ widget: w, data: getData(w) }))
+      .filter(({ data }) => data?.metrics && data.metrics.length > 0);
     const sorted = withData.sort((a, b) => {
       const aScore = a.data?.metrics?.length ?? 0;
       const bScore = b.data?.metrics?.length ?? 0;
@@ -71,7 +72,7 @@ export function AppWidgetGrid({ widgets, getData, companyId }: Props) {
           {t("companyDashboard.widgets.sectionTitle")}
         </h2>
         <span className="text-[11px] text-muted-foreground">
-          {visible.large.length + visible.mini.length} / {widgets.length} {t("companyDashboard.widgets.active")}
+          {visible.large.length + visible.mini.length} {t("companyDashboard.widgets.active")}
         </span>
         <button
           type="button"
