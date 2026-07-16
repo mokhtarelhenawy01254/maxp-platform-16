@@ -166,27 +166,6 @@ const OrderStatusManager: React.FC = () => {
     }
   };
 
-  const syncWooCommerce = async () => {
-    try {
-      setSyncing(true);
-      const response = await fetch("/api/v1/order-status/sync-woocommerce", {
-        method: "POST",
-        headers: getAuthHeaders(),
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success(data.message);
-        fetchStatuses();
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error("خطأ في المزامنة مع WooCommerce");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   const initializeDefaults = async () => {
     try {
       setSyncing(true);
@@ -383,18 +362,6 @@ const OrderStatusManager: React.FC = () => {
               <RefreshCw className="w-4 h-4" />
             )}
             تهيئة الحالات
-          </button>
-          <button
-            onClick={syncWooCommerce}
-            disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-          >
-            {syncing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            مزامنة WooCommerce
           </button>
           <button
             onClick={() => setShowAddModal(true)}
