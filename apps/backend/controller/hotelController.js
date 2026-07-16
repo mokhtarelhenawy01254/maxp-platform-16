@@ -334,7 +334,7 @@ const createReservation = async (req, res) => {
         data: {
           company: { connect: { id: companyId } }, property: { connect: { id: propertyId } }, customer: customerId ? { connect: { id: customerId } } : undefined, customerName: customerName.trim(),
           customerPhone, customerEmail, customerNotes, checkIn: checkInDate, checkOut: checkOutDate,
-          adults: adults || 1, children: children || 0, totalAmount, paidAmount: 0, source: source || 'dashboard', depositRequired, depositAmount, depositPaid, paymentMethod,
+          adults: adults || 1, children: children || 0, totalAmount, paidAmount: 0, source: source || 'dashboard', depositRequired: !!depositRequired, depositAmount: depositAmount || 0, depositPaid: !!depositPaid, paymentMethod: paymentMethod || null,
           createdById: req.user?.id, createdByType: 'user',
           rooms: { create: reservationRooms }
         },
