@@ -1,15 +1,5 @@
 # Latest Updates
 
-## 2026-07-14: Hotel Module — Per-Person Pricing, Room Attributes, Deposit, Prod QA
-- **Schema (hotel.prisma + enums.prisma)**: HotelPricingModel enum (PER_ROOM/PER_PERSON), RoomType.pricingModel/pricePerExtraAdult, Room.view/wing/hasExtraBed/extraBedCapacity/extraBedPrice/basePriceOverride, Reservation.depositRequired/depositAmount/depositPaid/paymentMethod
-- **Controller (hotelController.js)**: createReservation handles PER_PERSON pricing (rate×nights×adults + extraAdult×nights×(adults-1)). Rate priority: nightlyRate > room.basePriceOverride > roomType.basePrice. updateReservation (PUT /reservations/:id) for deposit status
-- **Routes (hotelRoutes.js)**: Added PUT /reservations/:id
-- **Frontend Modals**: RoomTypeModal (pricingModel select), RoomModal (view/wing/extraBed/basePriceOverride), ReservationModal (deposit fields, per-person display)
-- **Agent Tools (definitions/hotel.py)**: Updated ReserveInput with customer_email, deposit_required/amount/paid/payment_method. Tool descriptions mention PER_ROOM/PER_PERSON pricingModel
-- **Production Browser QA**: Logged into maxp.online as admin@hotelsalam.com, navigated /admin/hotel. Full flow tested: check-in (CONFIRMED→CHECKED_IN→"تم الوصول"), check-out (CHECKED_IN→CHECKED_OUT→"تم المغادرة"), room 101 returned to AVAILABLE, folio modal opens with 7 service types. Reservation creation modal opens but React date picker state not updatable via browser automation
-- **Deployment**: Commit f23261db pushed. Deploy #29367421624 cancelled (newer Facebook deploy preempted). Code included in next deploy (descendant commit)
-- **Bug fixes this session**: requiresHumanApproval=false (2b8e905c), check_in/out optional (c532b761), property_id optional (7aa55e71), hotel_reserve tool docs (284d4eaf)
-
 ## 2026-07-13: Responsive Design Overhaul — 1366×768 Laptop Optimization
 
 ### Phase 1: Auto-collapse Sidebar at 1366px
