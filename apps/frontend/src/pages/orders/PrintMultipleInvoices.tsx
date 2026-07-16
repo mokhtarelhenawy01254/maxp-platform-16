@@ -146,7 +146,6 @@ const PrintMultipleInvoices: React.FC = () => {
         const itemRows = group.items.map(({ item, slotIndex }, itemIndex) => {
           const code = item.productSku || item.product?.sku;
           const extraDetails = [
-            code ? `كود: ${code}` : "",
             item.productColor ? `اللون: ${item.productColor}` : "",
             item.productSize ? `المقاس: ${item.productSize}` : "",
             item.productDetails ? item.productDetails : "",
@@ -160,7 +159,7 @@ const PrintMultipleInvoices: React.FC = () => {
               className="border-b border-gray-300"
             >
               <td className="text-right py-2 pr-6">
-                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}`}</div>
+                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}${code ? ` (${code})` : ""}`}</div>
                 {extraDetails ? (
                   <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
                 ) : null}
@@ -181,7 +180,6 @@ const PrintMultipleInvoices: React.FC = () => {
       ...groupedItems.singles.map((item, idx) => {
         const code = item.productSku || item.product?.sku;
         const extraDetails = [
-          code ? `كود: ${code}` : "",
           item.productColor ? `اللون: ${item.productColor}` : "",
           item.productSize ? `المقاس: ${item.productSize}` : "",
           item.productDetails ? item.productDetails : "",
@@ -192,7 +190,7 @@ const PrintMultipleInvoices: React.FC = () => {
         return (
           <tr key={`${invoice.id}-single-${idx}`} className="border-b border-gray-300">
             <td className="text-right py-2">
-              <div>{item.productName}</div>
+              <div>{`${item.productName}${code ? ` (${code})` : ""}`}</div>
               {extraDetails ? (
                 <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
               ) : null}
