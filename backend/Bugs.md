@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [BUG FIX / UI] WhatsApp Session Selection CUID Display Bug
+- **Date**: 2026-07-17
+- **Root Cause**: Newly created Baileys sessions that have not scanned their QR code or been explicitly named default to having their `name` column set to the session's CUID (e.g. `cmr0zgrz902fkjuhdx0ni7jnk`) with no phone number. In `/whatsapp/template-broadcast` and `WhatsAppSettings.tsx`, the select dropdown was rendering the name directly without checking for CUIDs, which leaked the raw database identifier to the user.
+- **Resolution**: Updated the session mapping in both selection dropdowns to verify if the session name is a CUID. If it is a CUID, it displays a friendly name `"جلسة واتساب"` and appends the phone number if available (e.g. `جلسة واتساب (010xxxxxxx)`).
+- **Files Modified**:
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppSettings.tsx`
+
 ### [FEATURE / BUG FIX] Customer Tags Integration & Filtering Gaps
 - **Date**: 2026-07-17
 - **Root Cause**: The customer tags field was saved to the DB but there was no way to filter the Customer List by tags, create smart lists matching tags, send broadcast campaigns targeting specific tags directly, or add/remove tags for the customer directly from the moderator chat sidebar.

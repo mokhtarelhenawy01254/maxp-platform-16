@@ -1,6 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-17 / 2026-03-09
+- **WhatsApp Session Dropdown CUID Display Name Fix (BUGFIX / COMPLETE)**:
+  1. **Template Broadcast Session Select**: Updated `WhatsAppTemplateBroadcast.tsx` to identify if a session name is a CUID (25-character alphanumeric format) and fallback to displaying the friendly name `"جلسة واتساب"` and appending the phone number if available, preventing raw CUID leakage.
+  2. **WhatsApp Settings Session Select**: Updated `WhatsAppSettings.tsx` default session selection list to also format CUID names in a user-friendly manner with phone numbers.
 - **Customer Tags Activation & Campaign Integration (FEATURE / COMPLETE)**:
   1. **Backend Filtering**: Added support for filtering customer lists by tag via `GET /customers?tag=tag_name` and query validation in `getAllCustomer`.
   2. **Distinct Tags API**: Implemented `GET /customers/tags/distinct` to extract all unique tags from company customers with counts for UI dropdown aggregation.

@@ -289,15 +289,16 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                     <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="اختر جلسة" /></SelectTrigger>
                       <SelectContent>
-                        {sessions.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.metaDisplayPhoneNumber
-                              ? `${s.name} (${s.metaDisplayPhoneNumber})`
-                              : s.phoneNumber
-                                ? `${s.name} (${s.phoneNumber})`
-                                : s.name}
-                          </SelectItem>
-                        ))}
+                        {sessions.map((s) => {
+                          const isCuid = s.name && s.name.length === 25 && /^[a-z0-9]+$/.test(s.name);
+                          const nameToUse = isCuid ? "جلسة واتساب" : s.name;
+                          const phone = s.metaDisplayPhoneNumber || s.phoneNumber;
+                          return (
+                            <SelectItem key={s.id} value={s.id}>
+                              {phone ? `${nameToUse} (${phone})` : nameToUse}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
