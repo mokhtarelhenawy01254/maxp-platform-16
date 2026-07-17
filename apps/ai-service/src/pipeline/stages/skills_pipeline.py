@@ -117,18 +117,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     agent=str(ctx.agent.name or ctx.agent.id),
                     total=len(registry.get_all()),
                     filtered=len(skills),
-                    allowed_names=list(allowed_names),
-                    skill_names=[s.name for s in skills],
                 )
         except Exception as e:
             logger.warning("skills_filter_failed", error=str(e))
     if not skills:
-        logger.warning(
-            "no_skills_available_using_allowed_tools_fallback",
-            has_agent=bool(ctx.agent),
-            allowed_skills=getattr(ctx.agent, "allowed_skills", None),
-            allowed_tools=getattr(ctx.agent, "allowed_tools", None),
-        )
+        logger.warning("no_skills_available_using_allowed_tools_fallback")
 
     # 3. Build system prompt with agent instructions (soul/persona from DB agent)
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
@@ -187,14 +180,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         if parse_errors:
             logger.warning("skills_pipeline_json_parse_retry", errors=[r.get("error") for r in parse_errors])
             retry_messages = await _build_followup_messages(ctx, provider_response, executed)
-            tool_dicts = [s.to_openai_tool() for s in skills]
-            skill_names = {s.name.lower() for s in skills}
-            for tool_name in (getattr(ctx.agent, "allowed_tools", None) or []):
-                tn = tool_name.lower()
-                if tn not in skill_names:
-                    tool = registry.resolve(tn)
-                    if tool:
-                        tool_dicts.append(tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec') else {"type": "function", "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}})
+            tool_dicts = _build_skill_tool_dicts(skills, ctx)
             retry_response = await _raw_llm_call(ctx, retry_messages, tools=tool_dicts)
             if retry_response.tool_calls:
                 retry_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in retry_response.tool_calls])
@@ -454,20 +440,7 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             except Exception as e:
                 logger.warning("vision_description_failed", error=str(e))
 
-    tool_dicts = [s.to_openai_tool() for s in skills]
-
-    skill_names = {s.name.lower() for s in skills}
-    allowed = getattr(ctx.agent, "allowed_tools", None) or []
-    sk_registry = get_skill_registry()
-    for tool_name in allowed:
-        tname = tool_name.lower()
-        if tname not in skill_names:
-            tool = sk_registry.resolve(tname)
-            if tool:
-                tool_dicts.append(tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec') else {
-                    "type": "function",
-                    "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}
-                })
+    tool_dicts = _build_skill_tool_dicts(skills, ctx)
 
     tool_choice = None
     if ctx.agent and hasattr(ctx.agent, "config"):
@@ -483,6 +456,9 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
     # Persist assembled messages for downstream stages (self-review judge context)
     ctx.messages = list(messages)
+
+    import logging as _skl
+    _skl.warning("_llm_call TOOLS count=%d names=%s", len(tool_dicts), [t.get("function",{}).get("name","?") for t in tool_dicts])
 
     return await client.generate(
         messages=messages,
@@ -509,7 +485,13 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         )
 
     # Build tool definitions so DeepSeek can understand tool_call history
-    tool_dicts = _build_tool_dicts(ctx) if tools is None else tools
+    if tools is None:
+        from src.skills.registry import get_skill_registry
+        _registry = get_skill_registry()
+        _skills = _registry.get_all()
+        tool_dicts = _build_skill_tool_dicts(_skills, ctx)
+    else:
+        tool_dicts = tools
 
     # If message has images but current model doesn't support vision, switch to Gemini
     has_images = any(
@@ -552,35 +534,21 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
     )
 
 
-def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
-    from src.skills.registry import get_skill_registry
-    registry = get_skill_registry()
-    
-    skills = []
-    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
-        for skill_name in ctx.agent.allowed_skills:
-            skill = registry.resolve(skill_name)
-            if skill:
-                skills.append(skill)
-                
+def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:
     tool_dicts = [s.to_openai_tool() for s in skills]
     skill_names = {s.name.lower() for s in skills}
-    
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
+    registry = get_skill_registry()
     for tool_name in allowed:
         tname = tool_name.lower()
         if tname not in skill_names:
             tool = registry.resolve(tname)
             if tool:
                 tool_dicts.append(
-                    tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
+                    tool.to_json_schema_spec() if hasattr(tool, "to_json_schema_spec")
                     else {
                         "type": "function",
-                        "function": {
-                            "name": tool.name,
-                            "description": getattr(tool, 'description', ''),
-                            "parameters": {"type": "object", "properties": {}}
-                        }
+                        "function": {"name": tool.name, "description": getattr(tool, "description", ""), "parameters": {"type": "object", "properties": {}}}
                     }
                 )
     return tool_dicts

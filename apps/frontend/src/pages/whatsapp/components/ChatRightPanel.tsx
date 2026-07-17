@@ -296,6 +296,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
                   </div>
 
                   <div style={sectionStyle}>

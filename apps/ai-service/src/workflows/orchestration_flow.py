@@ -6,13 +6,11 @@ from contextlib import suppress
 from typing import Any
 
 import structlog
-from agent_framework.a2a import A2AAgent
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.base import BaseAgent, BaseAgentConfig
 from src.agents.ceo import create_ceo_agent, create_channel_agent
 from src.agents.loader import get_template
-from src.config import get_settings
 from src.db.models.agent import Agent as AgentModel
 from src.db.repo.agent_repo import AgentRepository
 from src.observability.llm_fallback import LLMFallbackProvider
@@ -22,7 +20,6 @@ from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.pipeline.stages.validate_reply import validate_reply
 from src.pipeline.stages.visual_match import match_product_by_image
-from src.services.a2a_bridge import AGENT_CARD_META
 from src.services.agent_feedback import AgentFeedbackTracker
 from src.services.agent_manager_service import get_agent_manager_service
 from src.services.agent_registry import _resolve_agent_model, get_agent_registry
@@ -30,7 +27,6 @@ from src.memory.working_memory import working_memory_service
 from src.services.memory_router import get_ceo_lessons
 from src.services.run_state_manager import RunStateManager
 from src.tools.registry import get_tool_names_for_role
-from src.workflows.magentic_orchestration import MagenticOrchestrator
 from src.workflows.postgres_checkpoint import PostgresCheckpointStorage
 
 logger = structlog.get_logger(__name__)
@@ -203,7 +199,6 @@ async def run_orchestration(
     conversation_id: str | None = None,
     attachments: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    settings = get_settings()
     effective_channel = channel or ("merchant" if is_merchant else "chat")
 
     # Load registry early so we can pick the agent's configured provider
@@ -268,74 +263,18 @@ async def run_orchestration(
     if not client:
         raise RuntimeError("No LLM provider available for orchestration")
 
-    # Try Magentic orchestration only for merchant/internal requests until the
-    # Magentic path is wrapped with MaxP's customer intent, approval, and audit
-    # gates.
-    if settings.enable_magentic_orchestration and is_merchant:
-        try:
-            orchestrator = MagenticOrchestrator(llm_client=client)
-            result = await orchestrator.run(
-                message=message,
-                company_id=company_id,
-                thread_id=thread_id,
-                is_merchant=is_merchant,
-            )
-            return {
-                "reply": str(result),
-                "thread_id": thread_id,
-                "tool_results": [],
-            }
-        except Exception as exc:
-            logger.warning("magentic orchestration failed, falling back to pipeline", error=str(exc))
-
-    # Fall back to standard pipeline orchestration
-
     previous_state = None
     if state_manager:
         previous_state = await state_manager.get_latest_state(thread_id)
 
-    sub_agent_tools = []
-    for _agent_id, agent, tool_names in registry.list_agents(company_id):
-        role = getattr(agent, "role", "UNKNOWN").lower()
-        meta = AGENT_CARD_META.get(agent.role.upper(), {})
-        tool_name = f"{role}_specialist"
-        tool_description = (
-            meta.get("description")
-            or f"Specialist agent for {role} tasks. "
-            f"Tools: {', '.join(tool_names)}. "
-            f"Send the customer message to this agent to handle {role}-related requests."
-        )
-        try:
-            a2a_agent = A2AAgent(
-                name=meta.get("name", agent.name or role),
-                description=tool_description,
-                url=f"http://localhost:8000/a2a/agents/{_agent_id}",
-            )
-            a2a_tool = a2a_agent.as_tool(
-                name=tool_name,
-                description=tool_description,
-                arg_name="task",
-                arg_description=tool_description,
-            )
-            sub_agent_tools.append(a2a_tool)
-        except Exception as exc:
-            logger.warning("could not create A2A agent tool", role=role, error=str(exc))
-            # Fallback: use in-process agent tool
-            try:
-                sub_agent_tools.append(agent.as_tool(name=tool_name, description=tool_description))
-            except Exception as exc2:
-                logger.warning("could not convert agent to tool", role=role, error=str(exc2))
-
     if _channel_agent:
         ceo_agent = await create_channel_agent(
             channel_agent=_channel_agent,
-            specialized_agents_tools=sub_agent_tools,
             company_id=company_id,
             client=client,
         )
     else:
         ceo_agent = await create_ceo_agent(
-            specialized_agents_tools=sub_agent_tools,
             is_merchant=is_merchant,
             company_id=company_id,
             client=client,

@@ -9,7 +9,7 @@
   3. Added tag filter UI to `CustomerList.tsx`.
   4. Integrated tag criteria type (`criteria.type = 'tag'`) to `createCustomerList` and `getCustomersInList` on the backend and added tag criteria configuration inside `CreateListModal.tsx`.
   5. Added direct Tag selection to the WhatsApp template broadcast form.
-  6. Implemented interactive Customer Tags editor section in `ChatRightPanel.tsx` on the moderator chat sidebar to easily add, auto-complete, and delete customer tags.
+  6. Implemented interactive Customer Tags editor section in `ChatRightPanel.tsx` on the moderator chat sidebar to easily add, auto-complete, and delete customer tags (fixed a JSX tag imbalance compilation error by adding the missing closing `</div>` tag for the tab content block).
 - **Files Modified**:
   - `apps/backend/controller/customerController.js`
   - `apps/backend/routes/customerRoutes.js`
