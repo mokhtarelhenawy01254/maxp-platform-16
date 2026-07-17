@@ -12,7 +12,14 @@
 - **Solution:** In `hotelController.js#createReservation`, if `roomId` is missing for a line item, pick the first `AVAILABLE` room of that `roomTypeId` that does not have an overlapping reservation in the requested date range. If an occupied room later frees up, the same logic still works.
 - **Edge case:** Multi-room bookings — each line item can either specify a `roomId` or rely on auto-assignment independently.
 
-## 2026-07-14 — Hotel Module: Avoid Conditional Hooks in Modal Rendering
+## 2026-07-17 — Agent Tool Resolution: Bypass `ceo.py` Wrapping
+
+- **Problem:** Production `orchestration_flow.py` wrapped `BaseAgent` in `create_channel_agent()` (ceo.py → agent_framework.Agent), which lost `allowed_tools` and `allowed_skills` attributes. `process_with_skills` couldn't filter tools → agent used ALL registered skills instead of hotel tools.
+- **Solution:** Remove `ceo.py` entirely. Use `BaseAgent` directly as `ctx.agent` in `PipelineContext`. `ctx.agent` is a `BaseAgent` (or from `BaseAgent.from_template()`), which carries `allowed_tools` and `allowed_skills` as native attributes. `_build_skill_tool_dicts` reads `allowed_tools` directly from `ctx.agent`.
+- **Prerequisite:** The agent's DB record must include the channel in `channels` array (e.g., `["dashboard", "whatsapp", "messenger", "chat"]`), otherwise `_resolve_channel_agent` returns None and falls back to `manager-ceo` template.
+- **Verification:** POST /chat with `channel: "chat"` returns hotel_info tool call instead of product_search.
+
+## 2026-07-17 — Hotel Module: Avoid Conditional Hooks in Modal Rendering
 
 - **Problem:** `HotelManagementPage.tsx` had `renderModal()` function defined inside the component that returned JSX using `useState` hooks internally. React raised a Rules of Hooks error whenever the modal changed, causing the page to reset to the first tab instead of opening the modal.
 - **Solution:** Extract every modal to a top-level component file. In the parent, use conditional JSX: `{modal?.type === 'reservation' && <ReservationModal ... />}`. This keeps hooks at component top level and avoids hook-order changes during re-renders.
