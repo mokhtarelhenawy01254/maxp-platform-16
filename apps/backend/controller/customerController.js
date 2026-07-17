@@ -1901,6 +1901,94 @@ const getDistinctTags = async (req, res) => {
   }
 };
 
+/**
+ * إعادة تسمية وسم عبر جميع العملاء
+ * PUT /api/v1/customers/tags/rename
+ */
+const renameTag = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+
+    const { oldName, newName } = req.body;
+    if (!oldName || !oldName.trim()) return res.status(400).json({ success: false, message: 'اسم الوسم القديم مطلوب' });
+    if (!newName || !newName.trim()) return res.status(400).json({ success: false, message: 'اسم الوسم الجديد مطلوب' });
+
+    const trimmedOld = oldName.trim();
+    const trimmedNew = newName.trim();
+    if (trimmedOld === trimmedNew) return res.status(400).json({ success: false, message: 'الوسم الجديد مطابق للقديم' });
+
+    const customers = await getSharedPrismaClient().customer.findMany({
+      where: { companyId, tags: { not: null } },
+      select: { id: true, tags: true }
+    });
+
+    let updatedCount = 0;
+    for (const c of customers) {
+      let tags;
+      try { tags = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags; } catch { continue; }
+      if (!Array.isArray(tags)) continue;
+
+      const idx = tags.indexOf(trimmedOld);
+      if (idx === -1) continue;
+
+      tags[idx] = trimmedNew;
+      await getSharedPrismaClient().customer.update({
+        where: { id: c.id },
+        data: { tags: JSON.stringify([...new Set(tags)]) }
+      });
+      updatedCount++;
+    }
+
+    res.json({ success: true, data: { renamed: trimmedOld, to: trimmedNew, customersAffected: updatedCount } });
+  } catch (error) {
+    console.error('❌ Error renaming tag:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * حذف وسم من جميع العملاء
+ * DELETE /api/v1/customers/tags/:tagName
+ */
+const deleteTag = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+
+    const { tagName } = req.params;
+    if (!tagName || !tagName.trim()) return res.status(400).json({ success: false, message: 'اسم الوسم مطلوب' });
+
+    const decodedTag = decodeURIComponent(tagName).trim();
+
+    const customers = await getSharedPrismaClient().customer.findMany({
+      where: { companyId, tags: { not: null } },
+      select: { id: true, tags: true }
+    });
+
+    let updatedCount = 0;
+    for (const c of customers) {
+      let tags;
+      try { tags = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags; } catch { continue; }
+      if (!Array.isArray(tags)) continue;
+
+      const filtered = tags.filter(t => t !== decodedTag);
+      if (filtered.length === tags.length) continue;
+
+      await getSharedPrismaClient().customer.update({
+        where: { id: c.id },
+        data: { tags: JSON.stringify(filtered) }
+      });
+      updatedCount++;
+    }
+
+    res.json({ success: true, data: { deleted: decodedTag, customersAffected: updatedCount } });
+  } catch (error) {
+    console.error('❌ Error deleting tag:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAllCustomer,
   createCustomer,
@@ -1922,5 +2010,7 @@ module.exports = {
   deleteCustomer,
   updateCustomerTags,
   updateCustomer,
-  getDistinctTags
+  getDistinctTags,
+  renameTag,
+  deleteTag,
 };

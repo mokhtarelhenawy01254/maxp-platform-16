@@ -1339,6 +1339,9 @@ const LoyaltyAnalytics = React.lazy(
 const CustomerPointsCenter = React.lazy(
   () => import("./pages/customers/CustomerPointsCenter"),
 );
+const CustomerSegments = React.lazy(
+  () => import("./pages/customers/CustomerSegments"),
+);
 const RecruitmentDashboard = React.lazy(
   () => import("./pages/hr/recruitment/RecruitmentDashboard"),
 );
@@ -1390,6 +1393,7 @@ if (typeof window !== "undefined") {
   const p = (window as unknown as Record<string, Record<string, () => Promise<unknown>>>).__MAXP_ROUTE_PREFETCH__ = {};
 
   p["/customers"] = () => import("./pages/customers/CustomerList");
+  p["/customers/segments"] = () => import("./pages/customers/CustomerSegments");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
@@ -6021,6 +6025,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CustomerPointsCenter />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/segments"
+                  element={
+                    <Layout>
+                      <CustomerSegments />
                     </Layout>
                   }
                 />

@@ -60,6 +60,10 @@ router.get('/block-status', verifyToken.authenticateToken, requireDbPermission('
 // 🏷️ جلب الوسوم الفريدة (لازم يكون قبل /:customerId)
 router.get('/tags/distinct', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getDistinctTags);
 
+// 🏷️ إدارة الوسوم (إعادة تسمية / حذف عبر جميع العملاء)
+router.put('/tags/rename', verifyToken.authenticateToken, requireDbPermission('customers.update'), customerController.renameTag);
+router.delete('/tags/:tagName', verifyToken.authenticateToken, requireDbPermission('customers.update'), customerController.deleteTag);
+
 // تفاصيل العميل
 router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerDetails);
 
