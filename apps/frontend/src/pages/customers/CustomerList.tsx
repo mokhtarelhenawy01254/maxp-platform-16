@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-// cache-buster-2026-07-17-v1
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {

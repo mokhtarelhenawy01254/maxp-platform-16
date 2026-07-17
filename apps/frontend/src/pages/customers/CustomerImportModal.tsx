@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-// cache-buster-modal-2026-07-17-v1
+import { createPortal } from "react-dom";
 import {
   XMarkIcon,
   ArrowUpTrayIcon,
@@ -265,9 +265,9 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
       onClick={handleClose}
     >
       <div 
@@ -483,7 +483,8 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
