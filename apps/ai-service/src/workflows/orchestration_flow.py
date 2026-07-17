@@ -9,7 +9,6 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.base import BaseAgent, BaseAgentConfig
-from src.agents.ceo import create_ceo_agent, create_channel_agent
 from src.agents.loader import get_template
 from src.db.models.agent import Agent as AgentModel
 from src.db.repo.agent_repo import AgentRepository
@@ -21,7 +20,6 @@ from src.pipeline.stages.skills_pipeline import process_with_skills
 from src.pipeline.stages.validate_reply import validate_reply
 from src.pipeline.stages.visual_match import match_product_by_image
 from src.services.agent_feedback import AgentFeedbackTracker
-from src.services.agent_manager_service import get_agent_manager_service
 from src.services.agent_registry import _resolve_agent_model, get_agent_registry
 from src.memory.working_memory import working_memory_service
 from src.services.memory_router import get_ceo_lessons
@@ -202,7 +200,6 @@ async def run_orchestration(
     effective_channel = channel or ("merchant" if is_merchant else "chat")
 
     # Load registry early so we can pick the agent's configured provider
-    manager = get_agent_manager_service()
     registry = get_agent_registry()
     state_manager = RunStateManager(session) if session else None
     checkpointer = PipelineCheckpointer(session) if session else None
@@ -267,18 +264,8 @@ async def run_orchestration(
     if state_manager:
         previous_state = await state_manager.get_latest_state(thread_id)
 
-    if _channel_agent:
-        ceo_agent = await create_channel_agent(
-            channel_agent=_channel_agent,
-            company_id=company_id,
-            client=client,
-        )
-    else:
-        ceo_agent = await create_ceo_agent(
-            is_merchant=is_merchant,
-            company_id=company_id,
-            client=client,
-        )
+    if not _channel_agent:
+        _channel_agent = await BaseAgent.from_template("manager-ceo", company_id)
 
     if previous_state:
         state_id, _state_data = previous_state
@@ -323,7 +310,7 @@ async def run_orchestration(
             thread_id=thread_id,
             company_id=company_id,
             customer_id=customer_id,
-            agent=ceo_agent,
+            agent=_channel_agent,
             session=session,
             channel=effective_channel,
             conversation_id=conversation_id,

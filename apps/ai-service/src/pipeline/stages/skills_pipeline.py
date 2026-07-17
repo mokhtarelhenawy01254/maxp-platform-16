@@ -457,9 +457,6 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     # Persist assembled messages for downstream stages (self-review judge context)
     ctx.messages = list(messages)
 
-    import logging as _skl
-    _skl.warning("_llm_call TOOLS count=%d names=%s", len(tool_dicts), [t.get("function",{}).get("name","?") for t in tool_dicts])
-
     return await client.generate(
         messages=messages,
         tools=tool_dicts,

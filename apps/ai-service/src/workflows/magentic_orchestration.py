@@ -6,7 +6,7 @@ import structlog
 from agent_framework import Agent
 from agent_framework.orchestrations import MagenticBuilder
 
-from src.agents import ceo as ceo_factory
+from src.agents.base import BaseAgent
 from src.services.agent_registry import get_agent_registry
 
 logger = structlog.get_logger(__name__)
@@ -28,10 +28,14 @@ class MagenticOrchestrator:
         is_merchant: bool = False,
         company_id: str = "",
     ) -> Agent:
-        return await ceo_factory.create_ceo_agent(
-            is_merchant=is_merchant,
-            company_id=company_id,
+        base = await BaseAgent.from_template("manager-ceo", company_id)
+        tools = base._resolve_tools()
+        return Agent(
             client=self._client,
+            name=base.name,
+            instructions=base.instructions,
+            tools=tools,
+            default_options={"model": base.model},
         )
 
     async def build_orchestration(
