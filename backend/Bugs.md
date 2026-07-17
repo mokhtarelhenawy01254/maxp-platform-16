@@ -1,5 +1,12 @@
 # Backend Bugs Log
 
+### [BUG FIX / SEEDING] Dev Seeding Script Password Hashing & Role Mismatch
+- **Date**: 2026-07-17
+- **Root Cause**: The development database seeding script `seed-agentic-dev.js` inserted the test user `dev@maxp.test` with a plain-text password `dev123456` and a `null` role. The authentication login handler checks passwords using bcrypt matching (`bcrypt.compare`), and sandbox routes require roles of `OWNER`, `COMPANY_ADMIN`, or `SUPER_ADMIN`. This caused login to fail and restricted sandbox access for local verification.
+- **Resolution**: Updated `seed-agentic-dev.js` to hash the test user's password using bcrypt and set the user's role to `OWNER`.
+- **Files Modified**:
+  - `scripts/seed-agentic-dev.js` (MODIFIED)
+
 ### [BUG FIX / PIPELINE] Legacy Heuristics and Forced Tool Injection
 - **Date**: 2026-07-17
 - **Root Cause**: The hotel agent was using a legacy 2024-era pattern in a custom hook `HotelEnforcementHook` (`hotel_hook.py`) consisting of brittle regex-based customer name/phone/dates/room extractions and manual injection of `hotel_reserve` tool-calls when confirmation keywords were matched. This was brittle, lacked semantic intent understanding, bypassed the LLM's natural conversational flow, and contradicted the 2026 SOTA agentic AI paradigm (where intent and parameter extraction are natively model-driven and handled via Pydantic model validation).

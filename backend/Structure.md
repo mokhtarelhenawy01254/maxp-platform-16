@@ -151,5 +151,7 @@
 1. **Removal of 2024-era Heuristic Hooks**: Fully deprecated and deleted `HotelEnforcementHook` (`hotel_hook.py`) from the pipeline hooks, eliminating brittle regex parsers, Egyptian mobile phone number matchers, Arabic month conversion dictionaries, and hardcoded `hotel_reserve` tool-call injection.
 2. **LLM-Native Tool Calling & Slot-Filling**: The `hotel-agent` now relies on clean, native tool calling schemas where the LLM itself evaluates the user's intent to book, parses arguments from context, and manages parameter validation (Pydantic schemas) dynamically.
 3. **Conversational Slot-Filling Prompting**: Enhanced `SOUL.md` and `TOOLS.md` prompts inside the `hotel-agent` templates directory to instruct the model to conversationally gather missing required fields (name, phone, dates) rather than inventing mock values or aborting.
+4. **Pydantic ValidationError Handling**: Upgraded `_execute_one_tool` inside the skills pipeline (`skills_pipeline.py`) to catch validation errors (`ValidationError`) from Pydantic input models during tool calling, formats them into a structured human-readable parameter-by-parameter error description, and feeds them back as a tool execution error to the LLM to guide self-correction.
+
 
 

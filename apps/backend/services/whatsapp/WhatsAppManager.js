@@ -3897,7 +3897,11 @@ async function getBroadcastLists(sessionId) {
  */
 async function labelChat(sessionId, jid, labelId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true };
+        throw new Error('Session not found');
+    }
 
     try {
         await session.sock.labelChat(jid, labelId);
@@ -3934,7 +3938,11 @@ async function getLabels(sessionId) {
  */
 async function createLabel(sessionId, name, color) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true, id: `meta_${Date.now()}`, name, color };
+        throw new Error('Session not found');
+    }
 
     try {
         const label = await session.sock.createLabel(name, color);
@@ -3951,7 +3959,11 @@ async function createLabel(sessionId, name, color) {
  */
 async function deleteLabel(sessionId, labelId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true };
+        throw new Error('Session not found');
+    }
 
     try {
         await session.sock.deleteLabel(labelId);

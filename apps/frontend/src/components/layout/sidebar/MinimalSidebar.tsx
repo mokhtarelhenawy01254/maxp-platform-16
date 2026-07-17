@@ -12,6 +12,7 @@ import { buildStoreUrl } from "../../../utils/storeUrl";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
+import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 
 interface MinimalSidebarProps {
@@ -346,21 +347,20 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
     <div className="flex flex-col w-20 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 py-4 shadow-xl z-30">
       {/* Company Logo */}
       <Link to="/company-dashboard" className="flex items-center justify-center mb-6 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
-        {user?.company?.logo ? (
-          <img
-            src={`${envConfig.backendUrl}${user.company.logo}`}
-            alt={user?.company?.name}
-            className="h-12 w-12 rounded-xl object-cover shadow-lg border-2 border-gray-200 dark:border-gray-600"
-            title={user?.company?.name}
-          />
-        ) : (
+        <CompanyLogo
+          src={user?.company?.logo}
+          alt={user?.company?.name}
+          className="h-12 w-12 rounded-xl object-cover shadow-lg border-2 border-gray-200 dark:border-gray-600"
+          title={user?.company?.name}
+          companyName={user?.company?.name}
+        >
           <div
             className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
             title={user?.company?.name}
           >
             {user?.company?.name?.charAt(0) || "M"}
           </div>
-        )}
+        </CompanyLogo>
       </Link>
 
       {/* Search Icon */}

@@ -193,9 +193,6 @@ class ToolGateway:
         try:
             model_data = {k.replace("-", "_"): v for k, v in input_data.items()}
             model_data["company_id"] = company_id
-            if requested_tool_name == "order_create_confirmed":
-                from src.tools.message_context import fill_order_fields
-                fill_order_fields(model_data)
             tool_input = tool.input_model(**model_data)
 
             import inspect

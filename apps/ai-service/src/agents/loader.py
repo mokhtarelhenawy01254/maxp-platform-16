@@ -99,6 +99,7 @@ def _discover_templates(agents_root: Path | None = None) -> list[dict[str, Any]]
             "output_schema": manifest.get("outputSchema"),
             "is_active": manifest.get("isActive", True),
             "config": manifest.get("config", {}),
+            "tool_choice": (manifest.get("config") or {}).get("toolChoice"),
         })
     return templates
 
@@ -135,6 +136,7 @@ async def seed_templates(session: AsyncSession) -> list[AgentTemplate]:
             template.mcp_servers = data.get("mcp_servers") or []
             template.budget = data.get("budget") or {}
             template.config = data.get("config") or {}
+            template.tool_choice = data.get("tool_choice")
             template.instructions_agents = data.get("instructions_agents")
             template.instructions_soul = data.get("instructions_soul")
             template.instructions_tools = data.get("instructions_tools")

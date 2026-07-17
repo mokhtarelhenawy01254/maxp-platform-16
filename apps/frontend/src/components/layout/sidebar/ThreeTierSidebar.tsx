@@ -13,6 +13,7 @@ import { useTheme } from "../../../hooks/useTheme";
 import { envConfig } from "../../../config/environment";
 import { buildStoreUrl } from "../../../utils/storeUrl";
 import { isSidebarPathActive } from "./matchSidebarPath";
+import { CompanyLogo } from "@/components/ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 
 interface ThreeTierSidebarProps {
@@ -296,14 +297,13 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
         <div className="business-sidebar-rail">
           <div className="business-sidebar-brand-block">
             <Link to="/company-dashboard" className="block" onMouseEnter={() => prefetch("/company-dashboard")}>
-              {user?.company?.logo ? (
-                <img
-                  src={`${envConfig.backendUrl}${user.company.logo}`}
-                  alt={user?.company?.name || "Logo"}
-                  className="business-sidebar-logo"
-                  title={user?.company?.name || t("sidebar.platformName")}
-                />
-              ) : (
+              <CompanyLogo
+                src={user?.company?.logo}
+                alt={user?.company?.name || "Logo"}
+                className="business-sidebar-logo"
+                title={user?.company?.name || t("sidebar.platformName")}
+                companyName={user?.company?.name}
+              >
                 <div 
                   className="business-brand-glyph" 
                   title={user?.company?.name || t("sidebar.platformName")}
@@ -315,7 +315,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                     user?.company?.name?.charAt(0) || "M"
                   )}
                 </div>
-              )}
+              </CompanyLogo>
             </Link>
           </div>
 
@@ -359,17 +359,16 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
         <div className="business-sidebar-panel-header">
           <div className="business-sidebar-company">
             <Link to="/company-dashboard" className="flex items-center gap-3 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
-              {user?.company?.logo ? (
-                <img
-                  src={`${envConfig.backendUrl}${user.company.logo}`}
-                  alt={user?.company?.name}
-                  className="business-sidebar-company-logo"
-                />
-              ) : (
+              <CompanyLogo
+                src={user?.company?.logo}
+                alt={user?.company?.name}
+                className="business-sidebar-company-logo"
+                companyName={user?.company?.name}
+              >
                 <div className="business-brand-glyph business-brand-glyph--small">
                   {user?.company?.name?.charAt(0) || "M"}
                 </div>
-              )}
+              </CompanyLogo>
 
               <div className="business-sidebar-company-copy">
                 <h2 className="text-foreground">

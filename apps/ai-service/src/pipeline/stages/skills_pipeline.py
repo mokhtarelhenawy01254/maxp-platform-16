@@ -359,16 +359,9 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
     tool_dicts = _build_skill_tool_dicts(skills, ctx)
 
-    tool_choice = None
-    if ctx.agent and hasattr(ctx.agent, "config"):
-        agent_tc = getattr(ctx.agent.config, "tool_choice", None) or getattr(ctx.agent.config, "config", {}).get("toolChoice")
-        if agent_tc:
-            tool_choice = agent_tc
+    tool_choice = ctx.agent.config.tool_choice if ctx.agent and hasattr(ctx.agent, "config") else None
 
     provider = (getattr(client, "provider", None) or "").upper()
-    if tool_choice == "required" and provider == "DEEPSEEK":
-        tool_choice = None
-
     temperature = 1.0 if provider == "OLLAMA" else 0.3
 
     # Persist assembled messages for downstream stages (self-review judge context)
@@ -432,11 +425,8 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
             except Exception as e:
                 logger.warning("followup_vision_fallback_unavailable", error=str(e))
 
-    if tool_choice is None:
-        if ctx.agent and hasattr(ctx.agent, "config"):
-            agent_tc = getattr(ctx.agent.config, "tool_choice", None) or getattr(ctx.agent.config, "config", {}).get("toolChoice")
-            if agent_tc:
-                tool_choice = agent_tc
+    if tool_choice is None and ctx.agent and hasattr(ctx.agent, "config"):
+        tool_choice = ctx.agent.config.tool_choice
 
     provider = (getattr(client, "provider", None) or "").upper()
     temperature = 1.0 if provider == "OLLAMA" else 0.3

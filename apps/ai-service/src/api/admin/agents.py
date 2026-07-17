@@ -230,26 +230,17 @@ def _first_present(data: dict[str, Any], *keys: str, default: Any = None) -> Any
 
 def _instructions_from_persona(persona: dict[str, Any]) -> dict[str, str]:
     return {
-        "soul": str(_first_present(persona, "soulInstructions", "soul_instructions", default="") or ""),
-        "agents": str(_first_present(persona, "agentInstructions", "agent_instructions", default="") or ""),
-        "tools": str(_first_present(persona, "toolsInstructions", "tools_instructions", default="") or ""),
-        "persona": str(_first_present(persona, "personaInstructions", "persona_instructions", default="") or ""),
+        "soul": str(persona.get("soulInstructions", "") or ""),
+        "agents": str(persona.get("agentInstructions", "") or ""),
+        "tools": str(persona.get("toolsInstructions", "") or ""),
+        "persona": str(persona.get("personaInstructions", "") or ""),
     }
 
 
 def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
-    # Merge soul/rules from dedicated columns into persona.soulInstructions
-    # so _instructions_from_persona() picks them up for the system prompt.
-    soul_col = getattr(agent, 'soul', None) or ''
-    rules_col = getattr(agent, 'rules', None) or ''
-    if rules_col:
-        soul_text = f"{soul_col}\n\n## القواعد والسياسات\n{rules_col}" if soul_col else f"## القواعد والسياسات\n{rules_col}"
-    else:
-        soul_text = soul_col
-
-    base_persona = dict(agent.persona or {})
-    if soul_text:
-        base_persona['soulInstructions'] = soul_text
+    # ponytail: persona JSONB is the single source of truth for runtime instructions.
+    # The legacy soul/rules columns are snapshots from spawn time — persona already
+    # contains the merged values, so we skip the old merge logic.
     config = dict(getattr(agent, "config", None) or {})
 
     return {
@@ -264,7 +255,7 @@ def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
         "provider": _first_present(config, "provider", "providerType"),
         "keyId": _first_present(config, "keyId", "key_id"),
         "config": config,
-        "persona": base_persona,
+        "persona": dict(agent.persona or {}),
         "policies": {
             "guardrails": agent.guardrails or {},
             "budget": agent.budget or {},
@@ -455,9 +446,15 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
 async def list_agent_templates(
     session: SessionDep,
     include_inactive: bool = Query(False, alias="all"),
+    tool_choice: str | None = Query(None, description="Filter by tool_choice (auto, required, none)"),
+    role: str | None = Query(None, description="Filter by role (e.g. HOTEL, SALES)"),
 ) -> list[AgentTemplateList]:
-    """List agent templates. Default: active only. Use ?all=true to include inactive."""
+    """List agent templates. Filters: ?all=true, ?tool_choice=required, ?role=HOTEL."""
     templates = await list_templates(session, active_only=not include_inactive)
+    if tool_choice:
+        templates = [t for t in templates if t.tool_choice == tool_choice]
+    if role:
+        templates = [t for t in templates if t.role == role.upper()]
 
     count_result = await session.execute(
         select(

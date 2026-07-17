@@ -12,6 +12,7 @@ import { buildStoreUrl } from "../../../utils/storeUrl";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
+import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 
 interface ClassicSidebarProps {
@@ -322,19 +323,18 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <Link to="/company-dashboard" className="flex items-center flex-1 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
-              {user?.company?.logo ? (
-                <img
-                  src={`${envConfig.backendUrl}${user.company.logo}`}
-                  alt={user?.company?.name}
-                  className="h-12 w-12 rounded-xl object-cover mr-3 shadow-lg border-2 border-gray-200 dark:border-gray-600"
-                />
-              ) : (
+              <CompanyLogo
+                src={user?.company?.logo}
+                alt={user?.company?.name}
+                className="h-12 w-12 rounded-xl object-cover mr-3 shadow-lg border-2 border-gray-200 dark:border-gray-600"
+                companyName={user?.company?.name}
+              >
                 <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl mr-3 shadow-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">
                     {user?.company?.name?.charAt(0) || "M"}
                   </span>
                 </div>
-              )}
+              </CompanyLogo>
               <div>
                 <h1 className="text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
                   {user?.company?.name || t("sidebar.platformName")}
@@ -359,14 +359,12 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
         </div>
         {isCollapsed && (
           <Link to="/company-dashboard" className="mt-4 flex justify-center" onMouseEnter={() => prefetch("/company-dashboard")}>
-            {user?.company?.logo ? (
-              <img
-                src={`${envConfig.backendUrl}${user.company.logo}`}
-                alt={user?.company?.name}
-                className="h-10 w-10 rounded-xl object-cover shadow-lg border-2 border-gray-200 dark:border-gray-600"
-                title={user?.company?.name}
-              />
-            ) : (
+            <CompanyLogo
+              src={user?.company?.logo}
+              alt={user?.company?.name}
+              className="h-10 w-10 rounded-xl object-cover shadow-lg border-2 border-gray-200 dark:border-gray-600"
+              companyName={user?.company?.name}
+            >
               <div
                 className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg flex items-center justify-center"
                 title={user?.company?.name}
@@ -375,7 +373,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                   {user?.company?.name?.charAt(0) || "M"}
                 </span>
               </div>
-            )}
+            </CompanyLogo>
           </Link>
         )}
       </div>
