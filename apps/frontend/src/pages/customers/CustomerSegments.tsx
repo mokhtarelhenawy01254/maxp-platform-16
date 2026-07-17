@@ -65,7 +65,7 @@ const CustomerSegments: React.FC = () => {
     setCatLoading(true);
     setCatError("");
     try {
-      const res = await apiClient.get("/lead-categories");
+      const res = await apiClient.get("/whatsapp/lead-categories");
       setCategories(res.data?.data || []);
     } catch (err: any) {
       setCatError(err.response?.data?.message || "فشل تحميل التصنيفات");
@@ -114,13 +114,13 @@ const CustomerSegments: React.FC = () => {
     setCatSaving(true);
     try {
       if (editingCat) {
-        await apiClient.put(`/lead-categories/${editingCat.id}`, {
+        await apiClient.put(`/whatsapp/lead-categories/${editingCat.id}`, {
           name: catName.trim(),
           color: catColor,
           autoFollowUp: catAutoFollowUp,
         });
       } else {
-        await apiClient.post("/lead-categories", {
+        await apiClient.post("/whatsapp/lead-categories", {
           name: catName.trim(),
           color: catColor,
           autoFollowUp: catAutoFollowUp,
@@ -138,7 +138,7 @@ const CustomerSegments: React.FC = () => {
   const handleDeleteCategory = async (id: string) => {
     if (!confirm("هل أنت متأكد من حذف هذا التصنيف؟")) return;
     try {
-      await apiClient.delete(`/lead-categories/${id}`);
+      await apiClient.delete(`/whatsapp/lead-categories/${id}`);
       await loadCategories();
     } catch (err: any) {
       alert(err.response?.data?.message || "فشل حذف التصنيف");
