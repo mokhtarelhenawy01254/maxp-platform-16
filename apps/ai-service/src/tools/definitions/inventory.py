@@ -164,11 +164,18 @@ async def inventory_adjust(input_data: InventoryAdjustInput) -> dict[str, Any]:
     })
 
 
+def _format_inventory_check(result: dict) -> str:
+    if not result.get("found"):
+        return f"المنتج '{result.get('queriedName', '')}' غير متوفر حالياً."
+    return ""
+
+
 inventory_check_tool = FunctionTool(
     name="inventory_check",
     description="Check product inventory and validate requested size or color against active variants.",
     func=inventory_check,
     input_model=InventoryCheckInput,
+    format_result=_format_inventory_check,
 )
 
 inventory_adjust_tool = FunctionTool(

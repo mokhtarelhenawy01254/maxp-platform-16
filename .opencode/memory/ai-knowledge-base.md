@@ -80,3 +80,56 @@ AI agent in 2026 = LLM-driven system with: tool-use (MCP/A2A), memory (checkpoin
 - `/super-admin/whatsapp/companies/:companyId/inbox` → `/super-admin/whatsapp/companies/:companyId/routing`
 - Old chat at `/whatsapp/chat` and `/whatsapp`
 - API endpoints (`/api/v1/whatsapp-inbox`) unchanged
+
+## Intent Detection & NLU (2026 Research — July 2026)
+
+### Industry Standard: LLM-Native Tool Calling
+Keyword matching / regex-based intent detection = **anti-pattern** in 2026. Every major framework (OpenAI, Anthropic, Google, LangChain) converges on **LLM function calling as the intent detection layer**:
+- **OpenAI**: `tools` + `strict: true` + `tool_search` for large surfaces. "Don't make the model fill arguments you already know" — use structured tool calls, not parsing.
+- **Anthropic**: Tool use with `input_schema`, `strict: true` for guaranteed schema conformance.
+- **LangChain/LangGraph**: `create_agent(tools=[...])`. Classification/routing = define tools per route, model chooses. Or LangGraph state graph with conditional edges for complex routing.
+- **Google Gemini**: `FunctionDeclaration` + `tool_config` mode forcing.
+
+### Why Keyword Matching is Dead (2026)
+1. **Brittle**: Keyword lists miss paraphrases, typos, mixed languages. Every missed variant = customer service failure.
+2. **No semantic understanding**: "أكد لي أن السعر صحيح" vs "أكد الحجز" — same keyword, different intent.
+3. **LLMs outperform regex**: Even cheapest models (Claude Haiku, GPT-5-mini, Gemini Flash) classify intents >95% accuracy across dozens of categories, multilingual. Marginal token cost ≈ 0 since you're already calling the LLM.
+4. **Maintenance nightmare**: Keyword lists grow unboundedly. LLM tool description handles unlimited variants from day one.
+5. **Dialect fragmentation**: Egyptian, Levantine, Gulf, MSA — one tool description covers all.
+
+### NLU-First Approach
+- **One unified model handles NLU + generation**: No separate intent classifier, NER pipeline, or keyword list.
+- **System prompt + tool descriptions = the NLU model**: You don't train an intent classifier. You write good tool descriptions.
+- **Tool calling IS the intent detection**: When the model returns `tool_use(name="confirm_booking")`, that IS the classified intent. The arguments = extracted entities.
+- **Fallback is by design**: If no tool matches, model asks for clarification instead of crashing.
+- **Observability beats maintenance**: Trace routing decisions with LangSmith. Improve tool descriptions, not keyword lists.
+
+### Concrete Pattern
+```python
+intent_tools = [
+    {"name": "confirm_hotel_booking", "description": "User wants to confirm/verify booking...", ...},
+    {"name": "new_booking", "description": "User wants a new reservation...", ...},
+]
+response = client.responses.create(model="gpt-5.6", tools=intent_tools, input=[...])
+for item in response.output:
+    if item.type == "function_call":
+        intent = item.name  # classified intent
+        args = json.loads(item.arguments)  # extracted entities
+```
+
+### MaxP Refactoring: Hotel Enforcement (Completed 2026-07-17)
+All hotel enforcement logic moved from `skills_pipeline.py` (inline) to `src/agents/hooks/hotel_hook.py` (hook system).
+
+**Done:**
+- `skills_pipeline.py`: Removed `_format_tool_results` tool-specific Arabic formatting → generic JSON dump
+- `skills_pipeline.py`: Removed `_message_indicates_hotel_confirmation` keyword matching (`confirm_keywords` array)
+- `skills_pipeline.py`: Removed `_inject_image_to_product_search` dead code
+- `skills_pipeline.py`: Added `HOTEL_RESERVE_INSTRUCTION` in system prompt (LLM-native directive)
+- `hotel_hook.py`: Created `HotelEnforcementHook` with LLM structured-output extraction (no regex/keywords)
+- `base.py`: Registered hook in `_load_hooks_for_template("hotel-agent")`
+
+**Key design decisions:**
+- Intent detection: context-based (has hotel data in conversation) + LLM-classified (via tool descriptions + system prompt). No keyword lists.
+- Data extraction: LLM structured output replaces `AR_MONTHS`, `room_ar_names`, name/phone/date regex patterns
+- Pipeline stays generic — tool-specific logic in hooks, tool-specific extraction in tools themselves
+- Follow-up fix needed: Remove `_extract_booking_data` LLM call when hotel_reserve tool description is reliable enough that the main LLM calls it naturally

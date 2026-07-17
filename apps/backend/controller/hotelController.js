@@ -276,8 +276,18 @@ const createReservation = async (req, res) => {
       const reservationRooms = [];
 
       for (const r of roomData) {
-        const roomType = await tx.hotelRoomType.findFirst({ where: { id: r.roomTypeId, companyId } });
-        if (!roomType) throw new Error(`نوع الغرفة ${r.roomTypeId} غير موجود`);
+        let roomType = await tx.hotelRoomType.findFirst({ where: { id: r.roomTypeId, companyId } });
+        if (!roomType && r.roomTypeName) {
+          roomType = await tx.hotelRoomType.findFirst({
+            where: { companyId, nameAr: r.roomTypeName }
+          });
+          if (!roomType) {
+            roomType = await tx.hotelRoomType.findFirst({
+              where: { companyId, name: r.roomTypeName }
+            });
+          }
+        }
+        if (!roomType) throw new Error(`نوع الغرفة ${r.roomTypeId || r.roomTypeName} غير موجود`);
 
         let rate = r.nightlyRate;
         if (!rate && r.roomId) {
@@ -297,10 +307,11 @@ const createReservation = async (req, res) => {
 
         let roomId = r.roomId;
         if (!roomId) {
+          const occupiedRoomTypeId = roomType?.id || r.roomTypeId;
           const occupiedIds = (
             await tx.hotelReservationRoom.findMany({
               where: {
-                roomTypeId: r.roomTypeId,
+                roomTypeId: occupiedRoomTypeId,
                 reservation: {
                   companyId,
                   status: { notIn: ['CANCELLED', 'CHECKED_OUT'] },
@@ -311,8 +322,9 @@ const createReservation = async (req, res) => {
               select: { roomId: true }
             })
           ).map(x => x.roomId);
+          const availRoomTypeId = roomType?.id || r.roomTypeId;
           const availableRoom = await tx.hotelRoom.findFirst({
-            where: { roomTypeId: r.roomTypeId, propertyId, companyId, id: { notIn: occupiedIds }, status: { notIn: ['OCCUPIED', 'MAINTENANCE'] }, isActive: true }
+            where: { roomTypeId: availRoomTypeId, propertyId, companyId, id: { notIn: occupiedIds }, status: { notIn: ['OCCUPIED', 'MAINTENANCE'] }, isActive: true }
           });
           if (!availableRoom) throw new Error(`لا توجد غرف متاحة من نوع ${roomType.name}`);
           roomId = availableRoom.id;
@@ -322,7 +334,7 @@ const createReservation = async (req, res) => {
         if (!room) throw new Error(`الغرفة غير موجودة`);
         if (room.status === 'OCCUPIED' || room.status === 'MAINTENANCE') throw new Error(`الغرفة ${room.roomNumber} غير متاحة`);
 
-        reservationRooms.push({ room: { connect: { id: roomId } }, roomType: { connect: { id: r.roomTypeId } }, nightlyRate: rate });
+        reservationRooms.push({ room: { connect: { id: roomId } }, roomType: { connect: { id: roomType.id } }, nightlyRate: rate });
       }
 
       if (customerId) {

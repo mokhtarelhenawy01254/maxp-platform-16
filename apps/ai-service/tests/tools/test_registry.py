@@ -136,7 +136,7 @@ async def test_facebook_reply_sends_message(monkeypatch):
     async def mock_send_facebook(*args, **kwargs):
         return {"success": True, "result": {"message_id": "msg_123"}}
     import src.tools.definitions.facebook as _fb_mod
-    monkeypatch.setattr(_fb_mod.governance_tools, "send_facebook_reply", mock_send_facebook)
+    monkeypatch.setattr(_fb_mod, "send_facebook_reply", mock_send_facebook)
     result = await facebook_reply(FacebookReplyInput(
         recipient_id="123456", message="Hello!", page_id="pg_789", company_id="comp1",
     ))
@@ -153,10 +153,18 @@ async def test_message_broadcast_returns_awaiting_approval():
 
 @pytest.mark.asyncio
 async def test_order_create_confirmed_executes_backend_after_sdk_approval(monkeypatch):
-    async def mock_create_order(*args, **kwargs):
+    async def mock_create_order(self, company_id, order_data):
         return {"orderNumber": "ORD-1001", "status": "PENDING"}
-    import src.tools.order_tools
-    monkeypatch.setattr(src.tools.order_tools, "create_order", mock_create_order)
+
+    class _MockSession:
+        call_count = 0
+        async def __aenter__(self): return self
+        async def __aexit__(self, exc_type, exc, tb): return False
+        async def execute(self, sql, params=None): return type("Rows", (), {"first": lambda: None, "__iter__": lambda s: iter([])})()
+    monkeypatch.setattr("src.db.session.async_session", lambda: _MockSession())
+
+    from src.tools.repositories.order_repository import OrderRepository
+    monkeypatch.setattr(OrderRepository, "create_order", mock_create_order)
     result = await order_create_confirmed(OrderCreateConfirmedInput(
         customer_name="Test Customer", customer_phone="01000000000", product_name="Sprint X",
         product_price=1499, quantity=1, address="10 Test Street", city="Cairo",
@@ -167,10 +175,17 @@ async def test_order_create_confirmed_executes_backend_after_sdk_approval(monkey
 
 @pytest.mark.asyncio
 async def test_order_cancel_executes_backend_after_sdk_approval(monkeypatch):
-    async def mock_cancel_order(*args, **kwargs):
+    async def mock_cancel_order(self, company_id, order_number):
         return {"success": True, "orderNumber": "ORD-1", "newStatus": "CANCELLED"}
-    import src.tools.order_tools
-    monkeypatch.setattr(src.tools.order_tools, "cancel_order", mock_cancel_order)
+
+    class _MockSession:
+        async def __aenter__(self): return self
+        async def __aexit__(self, exc_type, exc, tb): return False
+        async def execute(self, sql, params=None): return type("Rows", (), {"first": lambda: None, "__iter__": lambda s: iter([])})()
+    monkeypatch.setattr("src.db.session.async_session", lambda: _MockSession())
+
+    from src.tools.repositories.order_repository import OrderRepository
+    monkeypatch.setattr(OrderRepository, "cancel_order", mock_cancel_order)
     result = await order_cancel(OrderCancelInput(
         order_number="ORD-1", reason="Customer request", company_id="comp1",
     ))
@@ -179,12 +194,17 @@ async def test_order_cancel_executes_backend_after_sdk_approval(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_competitor_generate_report_executes_backend_after_sdk_approval(monkeypatch):
-    async def mock_generate_report(company_id, competitor_id, report_type):
-        return {"reportId": "rep_1", "companyId": company_id, "competitorId": competitor_id, "type": report_type}
-    import src.tools.competitor_tools
-    import src.tools.definitions.competitor as _comp_def
-    monkeypatch.setattr(_comp_def.competitor_tools, "generate_report", mock_generate_report)
-    monkeypatch.setattr(src.tools.competitor_tools, "generate_report", mock_generate_report)
+    async def mock_generate_report(self, competitor_id, report_type):
+        return {"reportId": "rep_1", "competitorId": competitor_id, "type": report_type}
+
+    class _MockSession:
+        async def __aenter__(self): return self
+        async def __aexit__(self, exc_type, exc, tb): return False
+        async def execute(self, sql, params=None): return type("Rows", (), {"first": lambda: None, "__iter__": lambda s: iter([])})()
+    monkeypatch.setattr("src.db.session.async_session", lambda: _MockSession())
+
+    from src.tools.repositories.competitor_repository import CompetitorRepository
+    monkeypatch.setattr(CompetitorRepository, "generate_report", mock_generate_report)
     result = await competitor_generate_report(CompetitorGenerateReportInput(
         competitor_id="cmp_1", report_type="weekly", company_id="comp1",
     ))

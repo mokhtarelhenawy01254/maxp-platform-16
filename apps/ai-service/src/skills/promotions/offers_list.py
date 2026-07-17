@@ -8,9 +8,8 @@ class OffersListActiveInput(BaseModel):
 
 
 async def get_offers_list_active(params: OffersListActiveInput) -> dict:
-    from src.tools.promotion_tools import offers_list_active as _active
-    result = await _active(company_id=params.company_id)
-    return result
+    from src.tools.definitions.promotions import offers_list_active, OffersListActiveInput as _OI
+    return await offers_list_active(_OI(company_id=params.company_id))
 
 
 offers_list_active_skill = Skill(

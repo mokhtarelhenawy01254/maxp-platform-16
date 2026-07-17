@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import uuid
 from decimal import Decimal
 from typing import Any
 
 import structlog
+from pydantic import ValidationError
 
 from src.guardrails.input import INPUT_GUARDRAILS
 from src.llm.client import LLMClient, ProviderResponse
@@ -43,42 +43,19 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
         validated = tool.input_model(**arguments)
         result = await tool.func(validated)
         return {"tool": func_name, "status": "success", "result": result}
+    except ValidationError as e:
+        error_details = []
+        for err in e.errors():
+            loc = ".".join(str(x) for x in err.get("loc", []))
+            msg = err.get("msg", "")
+            error_details.append(f"- Parameter '{loc}': {msg}")
+        error_msg = "Validation failed for tool arguments:\n" + "\n".join(error_details)
+        logger.warning("tool_validation_failed", name=func_name, error=error_msg)
+        return {"tool": func_name, "status": "error", "error": error_msg}
     except Exception as e:
         logger.error("tool_execution_failed", name=func_name, error=str(e))
         return {"tool": func_name, "status": "error", "error": str(e)}
 
-
-async def _execute_hotel_reserve_enforcement(ctx: PipelineContext, registry: Any, executed: list[dict]) -> dict | None:
-    """Build and execute hotel_reserve from conversation context.
-
-    Scans ctx.tool_evidence and ctx.messages for hotel_info/check_availability
-    results, extracts customer data from ctx.message, executes the tool
-    directly, and appends the result to ``executed``.
-
-    Returns the synthetic tool_call dict (for follow-up message building)
-    or None if data is insufficient.
-    """
-    hotel_tc = _build_hotel_reserve_tool_call(ctx, registry)
-    if not hotel_tc:
-        return None
-    hotel_tool = registry.resolve("hotel_reserve")
-    if not hotel_tool or not ctx.company_id:
-        return None
-    hotel_tc["id"] = f"call_enforced_{uuid.uuid4().hex[:8]}"
-    hotel_tc["type"] = "function"
-    try:
-        args = json.loads(hotel_tc["function"]["arguments"])
-        if "company_id" not in args:
-            args["company_id"] = ctx.company_id
-        validated = hotel_tool.input_model(**args)
-        result = await hotel_tool.func(validated)
-        executed.append({"tool": "hotel_reserve", "status": "success", "result": result})
-        ctx.tool_evidence.append({"tool": "hotel_reserve", "result": result})
-        return hotel_tc
-    except Exception as e:
-        logger.error("skills_pipeline_hotel_reserve_direct_failed", error=str(e))
-        executed.append({"tool": "hotel_reserve", "status": "error", "error": str(e)})
-        return hotel_tc
 
 
 async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
@@ -97,9 +74,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 "violations": result.violations,
             }
             ctx.final_reply = "عذراً، لا يمكنني معالجة هذا الطلب."
-            logger.warning(
-                "input_guardrail_blocked", guardrail=guardrail.name, reason=result.reason
-            )
+            logger.warning("input_guardrail_blocked", guardrail=guardrail.name, reason=result.reason)
             return ctx
 
     # 2. Get skills (filtered by agent's allowed_skills if present)
@@ -125,10 +100,15 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
     # 3. Build system prompt with agent instructions (soul/persona from DB agent)
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
-    base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
+    base_prompt = ctx.system_prompt or agent_instructions or _generic_system_prompt()
     ctx.system_prompt = base_prompt
 
     system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
+
+    # Agent hooks: before_llm (domain-specific instructions, guardrails)
+    if ctx.agent and hasattr(ctx.agent, "hooks"):
+        for hook in ctx.agent.hooks:
+            system_prompt = await hook.before_llm(ctx, system_prompt, skills)
 
     # 4. Single LLM call with skills as tools
     try:
@@ -196,23 +176,16 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
         ctx.executed_tools = executed
 
-    # 6. Hotel booking enforcement (runs for both tool_calls and no-tool-calls paths)
-    _has_hotel_reserve = any(
-        e.get("tool") == "hotel_reserve" and e.get("status") in ("success", "error")
-        for e in executed
-    )
-    if not _has_hotel_reserve and _message_indicates_hotel_confirmation(ctx):
-        hotel_injected = await _execute_hotel_reserve_enforcement(ctx, registry, executed)
-        if hotel_injected:
-            if provider_response.tool_calls is None:
-                provider_response.tool_calls = []
-            provider_response.tool_calls.append(hotel_injected)
-            logger.warning(
-                "skills_pipeline_hotel_reserve_enforced",
-                tool_calls_path=bool(provider_response.tool_calls),
-            )
-        else:
-            logger.warning("skills_pipeline_hotel_enforcement_skipped_no_data")
+    # 6. Agent hooks: after_tools (enforcement, validation, etc.)
+    #     ponytail: agent-specific logic extracted to hooks, add when new domain needs enforcement
+    if ctx.agent and hasattr(ctx.agent, "hooks"):
+        for hook in ctx.agent.hooks:
+            synthetic_tool_calls = await hook.after_tools(ctx, executed)
+            if synthetic_tool_calls:
+                if provider_response.tool_calls is None:
+                    provider_response.tool_calls = []
+                for tc in synthetic_tool_calls:
+                    provider_response.tool_calls.append(tc)
 
     # Follow-up LLM call (only when tools were called or enforcement injected)
     if executed:
@@ -265,67 +238,10 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         ctx.final_reply = ""
         ctx.llm_response = ""
 
-    # Auto-populate response_attachments from landmarkImage in tool evidence
-    import os
-    _maxp_api_url = os.getenv("MAXP_API_URL", "").rstrip("/")
-    for evidence in ctx.tool_evidence:
-        result = evidence.get("result", {})
-        if isinstance(result, dict):
-            for branch in (result.get("branches") or []):
-                img = (branch.get("landmarkImage") or "")
-                if not img:
-                    continue
-                # Only auto-populate if the image URL/path or its filename is present in the final reply text,
-                # meaning the LLM explicitly intended to display/refer to the image.
-                img_filename = os.path.basename(img)
-                if not ctx.final_reply or (img not in ctx.final_reply and img_filename not in ctx.final_reply):
-                    continue
-                if img.startswith("data:") or img.startswith("http"):
-                    ctx.response_attachments.append({
-                        "type": "image",
-                        "url": img,
-                        "source": "tool_result",
-                        "tool": evidence.get("tool", "booking_info"),
-                    })
-                elif img.startswith("/") and _maxp_api_url:
-                    ctx.response_attachments.append({
-                        "type": "image",
-                        "url": f"{_maxp_api_url}{img}",
-                        "source": "tool_result",
-                        "tool": evidence.get("tool", "booking_info"),
-                    })
-
-    # Auto-populate response_attachments from product images in tool results
-    for evidence in ctx.tool_evidence:
-        result = evidence.get("result", {})
-        if not isinstance(result, dict):
-            continue
-        for key in ("results", "products"):
-            items = result.get(key) or []
-            if not isinstance(items, list):
-                continue
-            for product in items:
-                if not isinstance(product, dict):
-                    continue
-                for img in (product.get("images") or []):
-                    if not img or not isinstance(img, str):
-                        continue
-                    if not ctx.final_reply or (img not in ctx.final_reply and os.path.basename(img) not in ctx.final_reply):
-                        continue
-                    if img.startswith(("http://", "https://", "data:")):
-                        ctx.response_attachments.append({
-                            "type": "image",
-                            "url": img,
-                            "source": "tool_result",
-                            "tool": evidence.get("tool", "product_search"),
-                        })
-
-    if ctx.response_attachments:
-        logger.info(
-            "response_attachments_auto_populated",
-            count=len(ctx.response_attachments),
-            urls=[a.get("url", "")[:120] for a in ctx.response_attachments],
-        )
+    # Agent hooks: before_reply (attachments, post-processing)
+    if ctx.agent and hasattr(ctx.agent, "hooks"):
+        for hook in ctx.agent.hooks:
+            await hook.before_reply(ctx, executed)
 
     ctx.llm_result = provider_response
     return ctx
@@ -336,6 +252,7 @@ class DecimalEncoder(json.JSONEncoder):
         if isinstance(obj, Decimal):
             return float(obj)
         return super().default(obj)
+
 
 
 def _unwrap_llm_client(client):
@@ -552,128 +469,30 @@ def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:
 
 
 def _format_tool_results(executed: list[dict]) -> str:
-    parts = []
+    from src.skills.registry import get_skill_registry
+
+    registry = get_skill_registry()
+    lines = []
     for item in executed:
         name = item.get("tool", "")
         status = item.get("status", "unknown")
         result = item.get("result", {})
-        if status == "success" and isinstance(result, dict):
-            handled = False
-            code = result.get("code", "")
-            if code == "MISSING_COMPANY":
-                continue
-
-            products = result.get("products") or result.get("items") or result.get("results") or []
-            if not products and isinstance(result, dict) and result.get("productName"):
-                products = [result]
-
-            categories = result.get("categories") or []
-
-            if isinstance(products, list) and len(products) > 0:
-                names = [p.get("productName") or p.get("name") or "" for p in products[:5]]
-                parts.append(f"{', '.join(filter(None, names))}{'...' if len(products) > 5 else ''}")
-                handled = True
-            elif isinstance(categories, list) and len(categories) > 0:
-                names = [c.get("category") or "" for c in categories[:5]]
-                parts.append(f"{', '.join(filter(None, names))}{'...' if len(categories) > 5 else ''}")
-                handled = True
-            elif name == "inventory_check" and not result.get("found"):
-                parts.append(f"المنتج '{result.get('queriedName', '')}' غير متوفر حالياً.")
-                handled = True
-            elif name == "offers_list_active":
-                handled = True
-                active_parts = []
-                if result.get("totalActiveCoupons", 0) > 0:
-                    active_parts.append(f"كوبونات خصم ({result.get('totalActiveCoupons')})")
-                if result.get("hasStorePromotion"):
-                    active_parts.append("خصم تلقائي بالمتجر")
-                if result.get("hasFreeShipping"):
-                    active_parts.append("شحن مجاني")
-                if active_parts:
-                    parts.append(f"العروض المتاحة: {', '.join(active_parts)}")
-            elif name == "coupon_validate":
-                handled = True
-                if result.get("valid"):
-                    parts.append(f"الكوبون {result.get('code')} صالح (خصم بقيمة {result.get('discountAmount')})")
-                else:
-                    parts.append(f"الكوبون غير صالح: {result.get('error', '')}")
-            elif name == "product_search" and not result.get("found"):
-                parts.append(f"لم أعثر على منتجات مطابقة.")
-                handled = True
-            elif name == "order_lookup":
-                handled = True
-                if result.get("found") or result.get("order"):
-                    order = result.get("order") or result
-                    parts.append(f"الطلب #{order.get('id') or order.get('number')} حالته: {order.get('status')}")
-            elif name == "customer_info":
-                handled = True
-                if result.get("found") or result.get("customer"):
-                    cust = result.get("customer") or result
-                    parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
-            elif name == "booking_info":
-                handled = True
-                branch_count = result.get('total_branches', 0) or len(result.get('branches') or [])
-                svc_count = len(result.get('services') or [])
-                doc_count = len(result.get('doctors') or [])
-                parts.append(f"المركز لديه {branch_count} فرع{' و' if svc_count or doc_count else ''}{f' {svc_count} خدمة' if svc_count else ''}{f' و {doc_count} دكتور' if doc_count else ''}.")
-            elif name == "booking_reserve_skill":
-                handled = True
-                err = result.get("error", "")
-                if err:
-                    parts.append(f"تعذر الحجز: {err}")
-                elif result.get("needs_gender"):
-                    parts.append(result.get("message", ""))
-                else:
-                    appt = result.get("appointment") or result
-                    parts.append(
-                        f"تم حجز موعد لـ {result.get('patient', '')} "
-                        f"{'في ' + result.get('branch', '') if result.get('branch') else ''} "
-                        f"{'يوم ' + result.get('day_arabic', '') if result.get('day_arabic') else result.get('date', '')} "
-                        f"{'الساعة ' + result.get('time', '') if result.get('time') else ''} "
-                        f"{'خدمة ' + result.get('service', '') if result.get('service') else ''}"
-                    )
-            elif name == "booking_slots":
-                handled = True
-                available = result.get("available") or []
-                booked = result.get("booked") or []
-                note = result.get("note", "")
-                day = result.get("day", "")
-                date = result.get("date", "")
-                line = f"مواعيد {'يوم ' + day if day else ''} {date}: " if date else "مواعيد متاحة: "
-                if available:
-                    line += ', '.join(available)
-                else:
-                    line += "لا توجد مواعيد متاحة"
-                if note:
-                    line += f" ({note})"
-                parts.append(line)
-            elif name == "booking_status":
-                handled = True
-                if result.get("error"):
-                    parts.append(f"خطأ: {result.get('error')}")
-                elif result.get("cancelled") or result.get("success"):
-                    parts.append("تم إلغاء الحجز بنجاح.")
-                elif result.get("appointment"):
-                    appt = result["appointment"]
-                    parts.append(f"حالة الحجز: {appt.get('status', 'مؤكد')} في {appt.get('branchName', '')} يوم {appt.get('date', '')}")
-                else:
-                    parts.append(f"حالة الحجز: {result.get('status', 'غير معروف')}")
-
-            if not handled:
-                id_val = result.get("id") or result.get("number") or result.get("orderId")
-                if id_val:
-                    parts.append(f"تم تنفيذ {name}: # {id_val}")
-                elif result.get("found") is False:
-                    parts.append(f"لم يتم العثور على نتائج لـ {name}.")
-                elif result.get("count") is not None:
-                    parts.append(f"نتائج {name}: {result.get('count')}")
-                elif result.get("status"):
-                    parts.append(f"{name}: {result.get('status')}")
-                else:
-                    parts.append(f"تم تنفيذ {name} بنجاح.")
+        if status == "success":
+            formatted = None
+            tool = registry.resolve(name)
+            if tool and hasattr(tool, "format_result"):
+                try:
+                    formatted = tool.format_result(result)
+                except Exception:
+                    formatted = None
+            if formatted:
+                lines.append(f"[{name}]: {formatted}")
+            else:
+                content = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder) if isinstance(result, dict) else str(result)
+                lines.append(f"[{name}]: {content[:500]}")
         elif status == "error":
-            continue
-    return "\n".join(parts) if parts else ""
+            lines.append(f"[{name}]: ERROR - {item.get('error', '')[:300]}")
+    return "\n".join(lines)
 
 
 async def _build_followup_messages(
@@ -681,8 +500,9 @@ async def _build_followup_messages(
 ) -> list[dict]:
     """Build messages for the follow-up LLM call after tool execution."""
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
-    base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
-    system_prompt = f"{base_prompt}\n\nاكتب رداً طبيعياً ومباشراً للعميل بالعامية المصرية. استخدم نتائج الأدوات أعلاه للرد. إذا كانت النتائج لا تحتوي على المعلومات المطلوبة بالكامل، رد بما هو متاح واسأل باستكمال الباقي."
+    base_prompt = ctx.system_prompt or agent_instructions or _generic_system_prompt()
+    followup_directive = _get_followup_directive(ctx.agent)
+    system_prompt = f"{base_prompt}\n\n{followup_directive}"
 
     # Inject SKILL.md instructions (same as primary _llm_call)
     if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
@@ -753,6 +573,9 @@ async def _build_followup_messages(
 
 def _strip_tool_messages(messages: list[dict], executed: list[dict]) -> list[dict]:
     """Remove tool_calls from assistant msgs and convert tool role msgs to system for APIs without tool support."""
+    from src.skills.registry import get_skill_registry
+
+    registry = get_skill_registry()
     result = [m for m in messages if m["role"] != "tool"]
     for m in result:
         m.pop("tool_calls", None)
@@ -761,229 +584,21 @@ def _strip_tool_messages(messages: list[dict], executed: list[dict]) -> list[dic
         tool_name = item.get("tool", "")
         status = item.get("status", "")
         result_data = item.get("result", {})
-        if tool_name == "booking_info" and isinstance(result_data, dict):
-            branches = len(result_data.get("branches", []))
-            services = len(result_data.get("services", []))
-            doctors = len(result_data.get("doctors", []))
-            tool_summaries.append(f"[{tool_name}: {branches} فرع, {services} خدمة, {doctors} دكتور]")
+        formatted = None
+        tool = registry.resolve(tool_name)
+        if tool and hasattr(tool, "format_result") and isinstance(result_data, dict):
+            try:
+                formatted = tool.format_result(result_data)
+            except Exception:
+                formatted = None
+        if formatted:
+            tool_summaries.append(f"[{tool_name}: {formatted}]")
         else:
             tool_summaries.append(f"[{tool_name}: {'نجاح' if status == 'success' else 'فشل'}]")
     if tool_summaries:
         summary = "نتائج الأدوات:\n" + "\n".join(tool_summaries)
         result.append({"role": "system", "content": summary})
     return result
-
-
-def _inject_image_to_product_search(arguments: dict, attachments: list[dict]) -> None:
-    """Inject image_bytes/mime_type into product_search args from context attachments.
-
-    Called when the LLM calls product_search without image context even though the
-    user message included an image attachment. This ensures embedding (vector) search
-    runs instead of falling back to text-only search.
-    """
-    import re as _re
-    _DATA_URL_RE = _re.compile(r"^data:(?P<mime>[^;,]+);base64,(?P<data>.+)$", _re.IGNORECASE | _re.DOTALL)
-    for att in attachments:
-        if not isinstance(att, dict):
-            continue
-        # Check direct base64 payload keys first
-        b64 = (
-            att.get("image_bytes") or att.get("imageBytes")
-            or att.get("base64_data") or att.get("base64Data")
-            or ""
-        ).strip()
-        if b64:
-            mime = (
-                att.get("mime_type") or att.get("mimeType")
-                or att.get("content_type") or att.get("contentType")
-                or "image/jpeg"
-            ).strip() or "image/jpeg"
-            arguments["image_bytes"] = b64
-            arguments["mime_type"] = mime
-            logger.info("product_search_image_bytes_injected", mime=mime, bytes_len=len(b64))
-            return
-        # Check already-converted OpenAI image_url format with data URI
-        if att.get("type") == "image_url" and isinstance(att.get("image_url"), dict):
-            url = att["image_url"].get("url", "")
-            m = _DATA_URL_RE.match(url)
-            if m:
-                arguments["mime_type"] = m.group("mime")
-                arguments["image_bytes"] = m.group("data")
-                logger.info("product_search_image_bytes_injected_from_data_url", mime=m.group("mime"))
-                return
-
-
-def _message_indicates_hotel_confirmation(ctx: PipelineContext) -> bool:
-    msg = (ctx.message or "").strip()
-    if not msg:
-        return False
-    confirm_keywords = ["أكد", "وافق", "تمام", "تم", "احجز", "تأكيد", "موافق", "أوافق", "نعم"]
-    has_keyword = any(kw in msg for kw in confirm_keywords)
-    if not has_keyword:
-        return False
-    if any(
-        ev.get("tool", "").startswith("hotel_") and ev.get("tool") != "hotel_reserve"
-        for ev in getattr(ctx, "tool_evidence", [])
-    ):
-        return True
-    for m in getattr(ctx, "messages", []):
-        for tc in (m.get("tool_calls") or []):
-            fn = tc.get("function", {}).get("name", "")
-            if fn.startswith("hotel_") and fn != "hotel_reserve":
-                return True
-        if m.get("role") == "tool":
-            try:
-                result = json.loads(m["content"]) if isinstance(m["content"], str) else m["content"]
-            except (json.JSONDecodeError, TypeError, ValueError):
-                continue
-            if isinstance(result, dict) and ("hotels" in result or "available_room_types" in result):
-                return True
-    return False
-
-
-def _scan_messages_for_hotel_data(ctx: PipelineContext) -> tuple[str | None, list[dict], dict[str, Any]]:
-    """Scan ctx.messages and ctx.tool_evidence for hotel_info and check_availability results."""
-    property_id = None
-    room_types_map = {}
-    available_rooms = []
-
-    for ev in getattr(ctx, "tool_evidence", []):
-        if ev.get("tool") == "hotel_info":
-            for hotel in (ev.get("result", {}).get("hotels") or []):
-                property_id = hotel.get("id")
-                for rt in (hotel.get("roomTypes") or []):
-                    name_ar = rt.get("nameAr", "")
-                    if name_ar and name_ar not in room_types_map:
-                        room_types_map[name_ar] = rt
-        if ev.get("tool") == "hotel_check_availability":
-            for art in (ev.get("result", {}).get("available_room_types") or []):
-                rt = art.get("roomType", {})
-                for rm in (art.get("rooms") or []):
-                    available_rooms.append({**rm, "roomType": rt})
-
-    for m in getattr(ctx, "messages", []):
-        if m.get("role") == "tool":
-            try:
-                result = json.loads(m["content"]) if isinstance(m["content"], str) else m["content"]
-                if isinstance(result, dict):
-                    for hotel in (result.get("hotels") or []):
-                        if not property_id:
-                            property_id = hotel.get("id")
-                        for rt in (hotel.get("roomTypes") or []):
-                            name_ar = rt.get("nameAr", "")
-                            if name_ar and name_ar not in room_types_map:
-                                room_types_map[name_ar] = rt
-            except (json.JSONDecodeError, TypeError):
-                pass
-
-    return property_id, available_rooms, room_types_map
-
-
-def _build_hotel_reserve_tool_call(ctx: PipelineContext, registry: Any) -> dict | None:
-    """Extract booking data from context and build a hotel_reserve tool call dict."""
-    msg = (ctx.message or "").strip()
-    if not msg:
-        return None
-
-    import re
-    from datetime import date as _date
-
-    property_id, available_rooms, room_types_map = _scan_messages_for_hotel_data(ctx)
-
-    # 2. Extract customer name
-    customer_name = None
-    for prefix in ["الاسم ", "اسمي ", "اسم الحاج ", "اسم الأستاذ "]:
-        if prefix in msg:
-            after = msg.split(prefix, 1)[1].strip()
-            for sep in [" والموبايل ", " ورقم ", " والتليفون ", " الموبايل ", " رقم ", " ت:" ]:
-                if sep in after:
-                    after = after.split(sep, 1)[0].strip()
-                    break
-            customer_name = after
-            break
-
-    # 3. Extract phone (Egyptian mobile: 010/011/012/015 + 8 digits)
-    phone_match = re.search(r'(01[0-2 5]\d{8}|01[0-9]{9})', msg.replace(" ", ""))
-    customer_phone = phone_match.group(0) if phone_match else None
-
-    # 4. Extract dates from message — also scan ctx.messages for prior tool results
-    AR_MONTHS = {
-        "يناير":"01", "فبراير":"02", "مارس":"03", "أبريل":"04", "إبريل":"04",
-        "مايو":"05", "ماي":"05", "يونيه":"06", "يونيو":"06", "يوليه":"07",
-        "يوليو":"07", "أغسطس":"08", "اغسطس":"08", "سبتمبر":"09",
-        "أكتوبر":"10", "نوفمبر":"11", "ديسمبر":"12"
-    }
-    check_in = None
-    check_out = None
-    _year = str(_date.today().year)
-    date_matches = re.findall(r'(\d{1,2})\s*(يناير|فبراير|مارس|أبريل|إبريل|مايو|ماي|يونيه|يونيو|يوليه|يوليو|أغسطس|اغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)', msg)
-    if len(date_matches) >= 2:
-        day1, mon1 = date_matches[0]
-        day2, mon2 = date_matches[1]
-        month1 = AR_MONTHS.get(mon1, "07")
-        month2 = AR_MONTHS.get(mon2, "07")
-        check_in = f"{_year}-{month1}-{int(day1):02d}"
-        check_out = f"{_year}-{month2}-{int(day2):02d}"
-
-    # 5. Extract adults count
-    adults = 2
-    adult_match = re.search(r'(\d+)\s*(أشخاص|شخص|بالغين)', msg)
-    if adult_match:
-        adults = int(adult_match.group(1))
-
-    # 6. Build rooms list — only include rooms matching user's requested type from available data
-    rooms = []
-    room_ar_names = {
-        "ديلوكس": "غرفة ديلوكس", "مفردة": "غرفة مفردة", "مزدوجة": "غرفة مزدوجة",
-        "جناح": "جناح", "سويت": "جناح", "suite": "جناح",
-        "standard": "غرفة قياسية", "قياسية": "غرفة قياسية",
-        "توأم": "غرفة توأم", "twin": "غرفة توأم",
-        "triple": "غرفة ثلاثية", "ثلاثية": "غرفة ثلاثية",
-        "family": "غرفة عائلية", "عائلية": "غرفة عائلية",
-    }
-    req_ar_name = None
-    for keyword, ar_name in room_ar_names.items():
-        if keyword in msg:
-            req_ar_name = ar_name
-            break
-
-    if available_rooms:
-        for rm in available_rooms:
-            rt = rm.get("roomType", {})
-            if req_ar_name and rt.get("nameAr") != req_ar_name:
-                continue
-            nightly_rate = rt.get("basePrice", 0)
-            if rt.get("pricingModel") == "PER_PERSON":
-                nightly_rate = rt.get("basePrice", 0) * adults
-            rooms.append({
-                "roomTypeId": rt.get("id", ""),
-                "roomId": rm.get("id", ""),
-                "nightlyRate": nightly_rate,
-            })
-    elif room_types_map and req_ar_name and req_ar_name in room_types_map:
-        rt = room_types_map[req_ar_name]
-        nightly_rate = rt.get("basePrice", 0)
-        rooms.append({"roomTypeId": rt.get("id", ""), "nightlyRate": nightly_rate})
-
-    if not customer_name or not customer_phone or not property_id or not rooms:
-        return None
-
-    args = {
-        "customer_name": customer_name,
-        "customer_phone": customer_phone,
-        "property_id": property_id,
-        "check_in": check_in or f"{_year}-07-20",
-        "check_out": check_out or f"{_year}-07-22",
-        "adults": adults,
-        "rooms": rooms,
-    }
-
-    return {
-        "function": {
-            "name": "hotel_reserve",
-            "arguments": json.dumps(args, ensure_ascii=False, cls=DecimalEncoder),
-        }
-    }
 
 
 def get_agent_instructions(agent: Any) -> str:
@@ -1012,15 +627,21 @@ def _technical_formatting_constraints() -> str:
 4. إذا قررت استدعاء أداة، يجب ألا تحتوي رسالتك النصية على أي ردود أو نصوص توضيحية — دع الرد النصي فارغاً تماماً واستخدم حقل tool_calls فقط."""
 
 
-def _default_system_prompt() -> str:
-    return """أنت مساعد خدمة عملاء ذكي للمتجر.
+def _generic_system_prompt() -> str:
+    return """You are a helpful AI assistant for a business platform.
 
-تعليمات عامة:
-1. استخدم الأدوات المتاحة عندما يحتاج المستخدم إلى معلومات أو إجراءات محددة.
-2. إذا طلب المستخدم شيئاً خارج نطاق الأدوات المتاحة، أجب بقدرتك العامة.
-3. استخدم اللغة العربية (اللهجة المصرية) في الردود.
-4. إذا احتجت معلومات إضافية من المستخدم، اسأله بطريقة مهذبة.
-5. لا تخترع معلومات غير موجودة في نتائج الأدوات.
-6. تدفق الطلب: المستخدم يطلب شراء → استخدم product_search لتأكيد المنتج → ثم create_confirmed_order فوراً لإنشاء الطلب المباشر. اجمع بيانات العميل (الاسم، الهاتف، العنوان) أثناء المحادثة، وابتدأ الطلب بمجرد توفر البيانات الأساسية. لا تنتظر توفر المقاس/اللون في النظام — أنشئ الطلب والتاجر هيتأكد من التفاصيل.
-7. لا تستخدم ask_merchant أبداً للاستفسار عن توفر المقاس أو اللون أو المنتج. أنشئ الطلب مباشرة بـ create_confirmed_order.
-8. اللون والمقاس خياريان (optional) في create_confirmed_order. إذا أكد المستخدم الطلب ولم يذكر لوناً محدداً، أنشئ الطلب فوراً بدون لون. لا تسأل عن اللون أكثر من مرة واحدة."""
+Guidelines:
+1. Use available tools when the user asks for specific information or actions.
+2. If the user asks something outside the available tools, answer from general knowledge.
+3. Be polite, concise, and professional.
+4. Do not invent information not present in tool results.
+5. Follow the language and tone set in your agent instructions."""
+
+
+def _get_followup_directive(agent: Any) -> str:
+    """Return the follow-up directive.
+    
+    Agent language/tone is already in the base_prompt via instructions.
+    This just adds the tool-result instruction.
+    """
+    return "Write a natural reply based on the tool results above. If the results don't contain all the needed information, share what's available and ask for the rest."

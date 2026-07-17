@@ -5,7 +5,7 @@ from typing import Any, Literal
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools import governance_tools
+from src.tools.definitions.governance import send_facebook_reply
 
 
 class FacebookReplyInput(BaseModel):
@@ -20,7 +20,7 @@ class FacebookReplyInput(BaseModel):
 
 async def facebook_reply(input_data: FacebookReplyInput) -> dict[str, Any]:
     media_url = input_data.media_url or input_data.image_url
-    return await governance_tools.send_facebook_reply(
+    return await send_facebook_reply(
         input_data.company_id or "",
         input_data.recipient_id,
         input_data.message or "",

@@ -1,5 +1,19 @@
 # Backend Bugs Log
 
+### [BUG FIX / PIPELINE] Legacy Heuristics and Forced Tool Injection
+- **Date**: 2026-07-17
+- **Root Cause**: The hotel agent was using a legacy 2024-era pattern in a custom hook `HotelEnforcementHook` (`hotel_hook.py`) consisting of brittle regex-based customer name/phone/dates/room extractions and manual injection of `hotel_reserve` tool-calls when confirmation keywords were matched. This was brittle, lacked semantic intent understanding, bypassed the LLM's natural conversational flow, and contradicted the 2026 SOTA agentic AI paradigm (where intent and parameter extraction are natively model-driven and handled via Pydantic model validation).
+- **Resolution**:
+  1. Removed `HotelEnforcementHook` registration from `base.py` and deleted `hotel_hook.py` entirely.
+  2. Overhauled `SOUL.md` and `TOOLS.md` prompts inside the `hotel-agent` template directory to explicitly instruct the agent to conversationally gather missing required fields (name, phone, dates) instead of inventing mock values or relying on heuristic scripts (Conversational Slot-Filling).
+  3. Cleaned up and updated unit tests in `test_skills_pipeline.py` to match the simplified machine-readable tool results formatter.
+- **Files Modified**:
+  - `apps/ai-service/src/agents/base.py` (MODIFIED)
+  - `apps/backend/agents/hotel-agent/SOUL.md` (MODIFIED)
+  - `apps/backend/agents/hotel-agent/TOOLS.md` (MODIFIED)
+  - `apps/ai-service/tests/pipeline/test_skills_pipeline.py` (MODIFIED)
+  - `apps/ai-service/src/agents/hooks/hotel_hook.py` (DELETED)
+
 ### [BUG FIX / UI] WhatsApp Session Selection CUID Display Bug
 - **Date**: 2026-07-17
 - **Root Cause**: Newly created Baileys sessions that have not scanned their QR code or been explicitly named default to having their `name` column set to the session's CUID (e.g. `cmr0zgrz902fkjuhdx0ni7jnk`) with no phone number. In `/whatsapp/template-broadcast` and `WhatsAppSettings.tsx`, the select dropdown was rendering the name directly without checking for CUIDs, which leaked the raw database identifier to the user.

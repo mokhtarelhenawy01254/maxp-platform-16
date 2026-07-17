@@ -78,6 +78,7 @@ from src.agents._internals import (
     _StreamEmitter,
     _TemplateAdapter,
 )
+from src.pipeline.hooks import AgentHook
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
 
@@ -129,6 +130,8 @@ class BaseAgentConfig:
 
     config: dict[str, Any] = field(default_factory=dict)
 
+    hooks: list[AgentHook] = field(default_factory=list)
+
 
 # ---------------------------------------------------------------------------
 # BaseAgent
@@ -175,6 +178,7 @@ class BaseAgent:
         self._instructions = config.instructions or {}
         self.output_schema = config.output_schema
 
+        self.hooks: list[AgentHook] = list(config.hooks or [])
         self.handoffs: list[dict[str, Any]] = list(config.handoffs or [])
         self.input_guardrails: list[BaseGuardrail] = list(config.input_guardrails or [])
         self.output_guardrails: list[BaseGuardrail] = list(config.output_guardrails or [])
@@ -266,6 +270,9 @@ class BaseAgent:
             handoffs=overrides.get("handoffs") or profile.handoffs,
             config=overrides.get("config") or {},
         )
+        # Load agent-specific hooks based on template slug
+        config.hooks = _load_hooks_for_template(template_slug)
+
         return cls(config)
 
     # ------------------------------------------------------------------
@@ -1386,3 +1393,20 @@ def _sdk_response_text(response: Any) -> str:
     if value is not None and not _is_mock_value(value):
         return str(value)
     return ""
+
+def _load_hooks_for_template(template_slug: str | None) -> list:
+    """Load pipeline hooks."""
+    from src.pipeline.hooks import AgentHook, AttachmentHook
+
+    hooks: list[AgentHook] = []
+
+    # Default hooks (run for every agent)
+    hooks.append(AttachmentHook())
+
+    # Template-specific hooks
+    if template_slug == "hotel-agent":
+        from src.agents.hooks.hotel_hook import HotelEnforcementHook
+
+        hooks.append(HotelEnforcementHook())
+
+    return hooks

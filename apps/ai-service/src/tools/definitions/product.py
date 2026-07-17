@@ -300,11 +300,31 @@ async def category_list(input_data: CategoryListInput) -> dict[str, Any]:
     )
 
 
+def _format_product_search(result: dict) -> str:
+    products = result.get("results") or result.get("products") or result.get("items") or []
+    if not isinstance(products, list) or not products:
+        if not result.get("found", True):
+            return "لم أعثر على منتجات مطابقة."
+        return ""
+    names = []
+    for p in products[:5]:
+        name = p.get("productName") or p.get("name") or ""
+        price = p.get("price")
+        if isinstance(price, dict):
+            price = price.get("amount", "")
+        names.append(f"{name}{f' ({price})' if price else ''}")
+    result_str = ", ".join(filter(None, names))
+    if len(products) > 5:
+        result_str += "..."
+    return result_str
+
+
 product_search_tool = FunctionTool(
     name="product_search",
     description="Search for products by name, SKU, or keyword. Use this FIRST when customer asks about products, wants to see what's available, or asks for recommendations — never guess or invent products from memory. Set list_all=true to browse the full catalog. Returns products with prices, stock, variants, available sizes, available colors, and category info. Use inventory.check for detailed per-variant availability.",
     func=product_search,
     input_model=ProductSearchInput,
+    format_result=_format_product_search,
 )
 
 product_create_tool = FunctionTool(

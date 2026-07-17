@@ -25,7 +25,7 @@ class ReserveInput(BaseModel):
     check_in: str = Field(..., description="تاريخ الوصول (مثال: 2026-07-15)")
     check_out: str = Field(..., description="تاريخ المغادرة (مثال: 2026-07-17)")
     property_id: str = Field(..., description="معرف الفندق")
-    rooms: list[dict] = Field(..., description="قائمة الغرف المختارة: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 0}]")
+    rooms: list[dict] = Field(..., description="قائمة الغرف المختارة: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 0}]. يمكنك استخدام roomTypeName بدلاً من roomTypeId (مثال: 'غرفة مفردة' أو 'Single Room'). roomId اختياري (يحجز أول غرفة متاحة).")
     adults: int = Field(default=1, description="عدد البالغين")
     children: int = Field(default=0, description="عدد الأطفال")
     customer_notes: str = Field(default="", description="ملاحظات إضافية")
@@ -83,7 +83,7 @@ async def hotel_reserve(input_data: ReserveInput) -> dict[str, Any]:
     }
     data = await api_post("/api/v1/hotel/reservations", payload)
     if not data.get("success"):
-        return {"error": data.get("error", "حدث خطأ في إنشاء الحجز")}
+        return {"error": data.get("error", "حدث خطأ في إنشاء الحجز"), "hotel_reserve_failed": True}
     return {"reservation": data.get("data", {})}
 
 async def hotel_my_reservations(input_data: MyReservationsInput) -> dict[str, Any]:
@@ -117,7 +117,7 @@ hotel_check_availability_tool = FunctionTool(
 
 hotel_reserve_tool = FunctionTool(
     name="hotel_reserve",
-    description="حجز غرفة أو أكثر لضيف في الفندق. يرسل customer_name, customer_phone, check_in, check_out, property_id, rooms (array of objects), adults, children. يدعم deposit_required (عربون), deposit_amount, deposit_paid, payment_method. تنبيه: property_id مطلوب (يؤخذ من hotel_info). rooms يجب أن تكون array من objects وليس string: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 500}].",
+    description="متى تستخدم: فور تأكيد العميل للحجز بأي صياغة بأي لغة. لا تسأل مرتين — استخدمها مباشرة. تقوم بحجز غرفة أو أكثر لضيف في الفندق. تستخدم customer_name, customer_phone, check_in, check_out, property_id, rooms (array of objects), adults, children. البيانات يتم جمعها من المحادثة — لو العميل مدفعش حاجة أسأله مرة واحدة بس. تنبيه: property_id من hotel_info. rooms: array of objects: [{'roomTypeId': '...', 'roomId': '...', 'nightlyRate': 500}]، ويمكن استخدام roomTypeName بدلاً من roomTypeId.",
     func=hotel_reserve,
     input_model=ReserveInput,
 )

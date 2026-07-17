@@ -85,30 +85,31 @@ def test_format_handles_unregistered_tool():
 
 
 def test_format_catch_all_empty_result():
-    """Catch-all should produce 'تم تنفيذ X بنجاح' even when result is empty dict."""
+    """Catch-all should produce '[unknown_tool]: {}' even when result is empty dict."""
     from src.pipeline.stages.skills_pipeline import _format_tool_results
     result = _format_tool_results([
         {"tool": "unknown_tool", "status": "success", "result": {}},
     ])
-    assert "تم تنفيذ unknown_tool بنجاح" in result
+    assert "[unknown_tool]: {}" in result
 
 
 def test_format_not_found_tool():
-    """Tools with found=False should get 'لم يتم العثور على نتائج' from catch-all."""
+    """Tools with found=False should get JSON representation."""
     from src.pipeline.stages.skills_pipeline import _format_tool_results
     result = _format_tool_results([
         {"tool": "sales_revenue", "status": "success", "result": {"found": False}},
     ])
-    assert "لم يتم العثور" in result and "sales_revenue" in result
+    assert "sales_revenue" in result
+    assert "false" in result
 
 
 def test_format_handled_not_found_tool_skips_catchall():
-    """order_lookup with found=False is handled (no output) — catch-all shouldn't fire."""
+    """All tools are formatted in standard format in the simplified version."""
     from src.pipeline.stages.skills_pipeline import _format_tool_results
     result = _format_tool_results([
         {"tool": "order_lookup", "status": "success", "result": {"found": False}},
     ])
-    assert result == ""
+    assert "order_lookup" in result
 
 
 def test_format_no_tools_returns_empty():
@@ -118,12 +119,13 @@ def test_format_no_tools_returns_empty():
 
 
 def test_format_error_tools_skipped():
-    """Error status tools should not produce output."""
+    """Error status tools should produce ERROR output in the simplified version."""
     from src.pipeline.stages.skills_pipeline import _format_tool_results
     result = _format_tool_results([
         {"tool": "product_search", "status": "error", "result": {}, "error": "API down"},
     ])
-    assert result == ""
+    assert "ERROR" in result
+    assert "API down" in result
 
 
 # ─── Integration: follow-up returns empty text ───────────────────
@@ -289,3 +291,33 @@ async def test_landmark_image_auto_populate_conditional_positive(ctx: PipelineCo
 
     assert len(result.response_attachments) == 1
     assert "test_landmark_123.jpg" in result.response_attachments[0]["url"]
+
+
+@pytest.mark.asyncio
+async def test_execute_one_tool_validation_error(ctx: PipelineContext) -> None:
+    from src.pipeline.stages.skills_pipeline import _execute_one_tool
+    from pydantic import BaseModel, Field
+
+    class DummyInput(BaseModel):
+        required_field: str = Field(..., description="A required parameter")
+
+    mock_tool = MagicMock()
+    mock_tool.input_model = DummyInput
+    mock_tool.func = AsyncMock()
+
+    mock_registry = MagicMock()
+    mock_registry.resolve.return_value = mock_tool
+
+    tc = {
+        "function": {
+            "name": "dummy_tool",
+            "arguments": "{}"  # Missing required_field
+        }
+    }
+
+    res = await _execute_one_tool(ctx, mock_registry, tc)
+    assert res["status"] == "error"
+    assert "Validation failed" in res["error"]
+    assert "required_field" in res["error"]
+    assert "Field required" in res["error"]
+

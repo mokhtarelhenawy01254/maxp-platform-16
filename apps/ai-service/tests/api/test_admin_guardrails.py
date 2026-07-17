@@ -96,7 +96,7 @@ def test_list_guardrails_returns_rules(MockRepo, client, valid_headers):
     ])
     MockRepo.return_value = mock_repo_instance
 
-    response = client.get("/admin/admin/agents/agent_1/guardrails", headers=valid_headers)
+    response = client.get("/admin/agents/agent_1/guardrails", headers=valid_headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
@@ -111,7 +111,7 @@ def test_list_guardrails_empty(MockRepo, client, valid_headers):
     mock_repo_instance.list_rules = AsyncMock(return_value=[])
     MockRepo.return_value = mock_repo_instance
 
-    response = client.get("/admin/admin/agents/agent_1/guardrails", headers=valid_headers)
+    response = client.get("/admin/agents/agent_1/guardrails", headers=valid_headers)
     assert response.status_code == 200
     assert response.json() == []
 
@@ -146,7 +146,7 @@ def test_create_guardrail_success(MockRepo, MockTranslator, mock_redis, client, 
     mock_redis.delete = AsyncMock()
 
     response = client.post(
-        "/admin/admin/agents/agent_1/guardrails",
+        "/admin/agents/agent_1/guardrails",
         headers=valid_headers,
         json={
             "feedbackText": "ممنوع ندي خصم يوم الجمعة",
@@ -185,7 +185,7 @@ def test_update_guardrail_toggle_active(MockRepo, mock_redis, client, valid_head
     mock_redis.delete = AsyncMock()
 
     response = client.put(
-        "/admin/admin/agents/agent_1/guardrails/gr_test123",
+        "/admin/agents/agent_1/guardrails/gr_test123",
         headers=valid_headers,
         json={"isActive": False},
     )
@@ -201,7 +201,7 @@ def test_update_guardrail_not_found(MockRepo, client, valid_headers):
     MockRepo.return_value = mock_repo_instance
 
     response = client.put(
-        "/admin/admin/agents/agent_1/guardrails/nonexistent",
+        "/admin/agents/agent_1/guardrails/nonexistent",
         headers=valid_headers,
         json={"excuse": "Updated"},
     )
@@ -225,7 +225,7 @@ def test_delete_guardrail_success(MockRepo, mock_redis, client, valid_headers):
     mock_redis.delete = AsyncMock()
 
     response = client.delete(
-        "/admin/admin/agents/agent_1/guardrails/gr_test123",
+        "/admin/agents/agent_1/guardrails/gr_test123",
         headers=valid_headers,
     )
     assert response.status_code == 204
@@ -241,7 +241,7 @@ def test_delete_guardrail_not_found(MockRepo, client, valid_headers):
     MockRepo.return_value = mock_repo_instance
 
     response = client.delete(
-        "/admin/admin/agents/agent_1/guardrails/nonexistent",
+        "/admin/agents/agent_1/guardrails/nonexistent",
         headers=valid_headers,
     )
     assert response.status_code == 404
@@ -271,7 +271,7 @@ def test_conflict_check_no_conflict(MockTranslator, MockRepo, client, valid_head
     MockRepo.return_value = mock_repo_instance
 
     response = client.post(
-        "/admin/admin/agents/agent_1/guardrails/conflict-check",
+        "/admin/agents/agent_1/guardrails/conflict-check",
         headers=valid_headers,
         json={"feedbackText": "قاعدة جديدة", "companyId": "comp_1"},
     )
@@ -307,7 +307,7 @@ def test_conflict_check_detected(MockTranslator, MockRepo, client, valid_headers
     MockRepo.return_value = mock_repo_instance
 
     response = client.post(
-        "/admin/admin/agents/agent_1/guardrails/conflict-check",
+        "/admin/agents/agent_1/guardrails/conflict-check",
         headers=valid_headers,
         json={"feedbackText": "ممنوع خصم يوم الجمعة", "companyId": "comp_1"},
     )
@@ -331,7 +331,7 @@ def test_conflict_check_no_embedding_returns_safe(MockTranslator, MockRepo, clie
     MockTranslator.return_value = mock_translator_instance
 
     response = client.post(
-        "/admin/admin/agents/agent_1/guardrails/conflict-check",
+        "/admin/agents/agent_1/guardrails/conflict-check",
         headers=valid_headers,
         json={"feedbackText": "test feedback", "companyId": "comp_1"},
     )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.tools.sales_tools import company_snapshot, sales_revenue
+from src.tools.definitions.sales import company_snapshot, sales_revenue, CompanySnapshotInput, SalesRevenueInput
 
 
 class _Rows:
@@ -23,7 +23,7 @@ def _make_row(mapping: dict):
 
 @pytest.mark.asyncio
 async def test_sales_revenue_no_company(monkeypatch):
-    result = await sales_revenue(company_id="")
+    result = await sales_revenue(SalesRevenueInput(company_id=""))
     assert result["totalOrders"] == 0
     assert result["revenue"] == "0"
 
@@ -59,7 +59,7 @@ async def test_sales_revenue_with_data(monkeypatch):
 
     monkeypatch.setattr("src.db.session.async_session", lambda: _Session())
 
-    result = await sales_revenue(company_id="comp1", period="month")
+    result = await sales_revenue(SalesRevenueInput(company_id="comp1", period="month"))
     assert result["totalOrders"] == 10
     assert result["ordersCount"] == 7
     assert float(result["revenue"]) == 5000.0
@@ -68,7 +68,7 @@ async def test_sales_revenue_with_data(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_company_snapshot_no_company(monkeypatch):
-    result = await company_snapshot(company_id="")
+    result = await company_snapshot(CompanySnapshotInput(company_id=""))
     assert result["todayOrders"] == 0
     assert result["lowStockCount"] == 0
 
@@ -99,7 +99,7 @@ async def test_company_snapshot_with_data(monkeypatch):
 
     monkeypatch.setattr("src.db.session.async_session", lambda: _Session())
 
-    result = await company_snapshot(company_id="comp1")
+    result = await company_snapshot(CompanySnapshotInput(company_id="comp1"))
     assert result["todayOrders"] == 5
     assert result["pendingOrders"] == 3
     assert result["lowStockCount"] == 4

@@ -5,8 +5,9 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools import order_tools
+import src.db.session as _db_mod
 from src.tools.definitions._helpers import _executed_result, _write_result
+from src.tools.repositories.order_repository import OrderRepository
 
 
 class OrderLookupInput(BaseModel):
@@ -70,10 +71,40 @@ class OrderRefundInput(BaseModel):
 
 
 async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
-    result = await order_tools.order_lookup(
-        input_data.company_id or "", input_data.order_number
-    )
-    return {"order": result}
+    company_id = input_data.company_id or ""
+    order_number = input_data.order_number
+    if not company_id or not order_number:
+        return {"order": {"found": False, "code": "MISSING_PARAMS", "orderNumber": order_number}}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        order = await repo.get_order(company_id, order_number)
+
+    if not order:
+        return {"order": {"found": False, "code": "ORDER_NOT_FOUND", "orderNumber": order_number}}
+
+    items = await repo.get_order_items(order["id"])
+    customer_name = order.get("customerName") or ""
+    customer_phone = order.get("customerPhone") or ""
+
+    return {"order": {
+        "found": True,
+        "orderNumber": str(order.get("orderNumber", order_number)),
+        "status": order.get("status"),
+        "paymentStatus": order.get("paymentStatus"),
+        "total": str(order.get("total", 0)),
+        "customer": customer_name,
+        "phone": customer_phone,
+        "items": [
+            {"name": i.get("name", ""), "qty": i.get("qty", 1), "price": str(i.get("price", 0))}
+            for i in items
+        ],
+        "createdAt": str(order.get("createdAt") or ""),
+        "confirmedAt": str(order.get("confirmedAt") or ""),
+        "deliveredAt": str(order.get("deliveredAt") or ""),
+        "updatedAt": str(order.get("updatedAt") or ""),
+    }}
 
 
 async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any]:
@@ -93,6 +124,7 @@ async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any
 
 
 async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
     order_payload = {
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
@@ -109,29 +141,49 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
         "notes": input_data.notes,
     }
     order_payload = {key: value for key, value in order_payload.items() if value is not None}
-    result = await order_tools.create_order(input_data.company_id or "", order_payload)
+
+    if not company_id:
+        return {"success": False, "error": "Missing company_id"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        result = await repo.create_order(company_id, order_payload)
     return _executed_result("ORDER_CREATED", result)
 
 
 async def order_summary(input_data: OrderSummaryInput) -> dict[str, Any]:
-    return await order_tools.order_summary(
-        input_data.company_id or "", period=input_data.period
-    )
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"period": input_data.period, "totalOrders": 0, "paidRevenue": "0", "paidOrdersCount": 0, "avgOrderValue": "0", "byStatus": {}}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        return await repo.get_order_summary(company_id, input_data.period)
 
 
 async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
-    orders = await order_tools.recent_orders(
-        input_data.company_id or "", limit=input_data.limit
-    )
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"orders": []}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        orders = await repo.get_recent_orders(company_id, input_data.limit)
     return {"orders": orders}
 
 
 async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
-    result = await order_tools.cancel_order(
-        input_data.company_id or "",
-        input_data.order_number,
-        input_data.reason,
-    )
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.order_number:
+        return {"status": "error", "result": {"success": False, "error": "Missing company_id or order_number"}}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        result = await repo.cancel_order(company_id, input_data.order_number)
     return _executed_result("ORDER_CANCELLED", result)
 
 
@@ -143,11 +195,19 @@ async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
     }, input_data.company_id or "")
 
 
+def _format_order_lookup(result: dict) -> str:
+    if result.get("found") or result.get("order"):
+        order = result.get("order") or result
+        return f"الطلب #{order.get('id') or order.get('number')} حالته: {order.get('status')}"
+    return ""
+
+
 order_lookup_tool = FunctionTool(
     name="order_lookup",
     description="Look up an order by its order number. Use when customer asks about order status, delivery status, or wants to check their existing order. Returns order status, items, and delivery info.",
     func=order_lookup,
     input_model=OrderLookupInput,
+    format_result=_format_order_lookup,
 )
 
 order_create_draft_tool = FunctionTool(

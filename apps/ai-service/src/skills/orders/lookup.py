@@ -7,9 +7,9 @@ class OrderLookupInput(BaseModel):
     company_id: str = Field(default="", description="")
 
 async def lookup_order(params: OrderLookupInput) -> dict:
-    from src.tools.order_tools import order_lookup as _lookup
-    result = await _lookup(company_id=params.company_id, order_number=params.order_number)
-    return result
+    from src.tools.definitions.order import order_lookup, OrderLookupInput as _OLI
+    result = await order_lookup(_OLI(order_number=params.order_number, company_id=params.company_id))
+    return result.get("order", result)
 
 order_lookup = Skill(
     name="order_lookup",

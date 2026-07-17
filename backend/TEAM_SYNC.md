@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-17 / 2026-03-09
+- **Agent Refactoring to SOTA 2026 paradigms & Removal of Legacy Heuristics (REFACTOR / COMPLETE)**:
+  1. **Hook & File Deletion**: Completely removed `HotelEnforcementHook` registration in `base.py` and deleted the hook file `hotel_hook.py` from `apps/ai-service/src/agents/hooks/`. This eliminates 150+ lines of brittle regex-based parsing, hardcoded Arabic month translations, and manual `hotel_reserve` tool-call injection.
+  2. **LLM-Native Tool Calling & Slot-Filling**: Shifted the `hotel-agent` behavior to be natively model-driven. The agent now relies on the database-backed conversation history to extract parameters (name, phone, dates, room) and invoke the `hotel_reserve` tool.
+  3. **Conversational Prompts Overhaul**: Updated `SOUL.md` and `TOOLS.md` instructions inside the `hotel-agent` template directory to instruct the agent to ask the customer politely for missing required fields (Conversational Slot-Filling) instead of utilizing scripts to guess values.
+  4. **Unit Tests Cleared**: Updated all obsolete unit tests in `test_skills_pipeline.py` to match the simplified machine-readable JSON formatting output of `_format_tool_results`.
 - **WhatsApp Session Dropdown CUID Display Name Fix (BUGFIX / COMPLETE)**:
   1. **Template Broadcast Session Select**: Updated `WhatsAppTemplateBroadcast.tsx` to identify if a session name is a CUID (25-character alphanumeric format) and fallback to displaying the friendly name `"جلسة واتساب"` and appending the phone number if available, preventing raw CUID leakage.
   2. **WhatsApp Settings Session Select**: Updated `WhatsAppSettings.tsx` default session selection list to also format CUID names in a user-friendly manner with phone numbers.

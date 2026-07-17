@@ -146,7 +146,7 @@ async def test_execute_one_no_fallback_to_all_tools(ctx: PipelineContext) -> Non
 @pytest.mark.asyncio
 async def test_build_tool_dicts_uses_skill_registry(ctx: PipelineContext) -> None:
     """_build_tool_dicts must resolve tools via SkillRegistry, not ALL_TOOLS."""
-    from src.pipeline.stages.skills_pipeline import _build_tool_dicts
+    from src.pipeline.stages.skills_pipeline import _build_skill_tool_dicts
     ctx.agent = MagicMock()
     ctx.agent.allowed_tools = ["product_search", "order_lookup"]
 
@@ -163,7 +163,7 @@ async def test_build_tool_dicts_uses_skill_registry(ctx: PipelineContext) -> Non
             return mapping.get(name)
         mock_registry.return_value.resolve = resolve_side_effect
 
-        tool_dicts = _build_tool_dicts(ctx)
+        tool_dicts = _build_skill_tool_dicts([], ctx)
 
     assert len(tool_dicts) == 2
     names = [d["function"]["name"] for d in tool_dicts]
