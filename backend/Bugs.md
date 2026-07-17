@@ -1,11 +1,30 @@
 # Backend Bugs Log
 
+### [FEATURE / BUG FIX] Customer Tags Integration & Filtering Gaps
+- **Date**: 2026-07-17
+- **Root Cause**: The customer tags field was saved to the DB but there was no way to filter the Customer List by tags, create smart lists matching tags, or send broadcast campaigns targeting specific tags directly.
+- **Resolution**:
+  1. Updated `getAllCustomer` in the backend and `getCustomers` in the frontend to support a `tag` query parameter.
+  2. Implemented `GET /api/v1/customers/tags/distinct` to aggregate and return unique tags with customer counts.
+  3. Added tag filter UI to `CustomerList.tsx`.
+  4. Integrated tag criteria type (`criteria.type = 'tag'`) to `createCustomerList` and `getCustomersInList` on the backend and added tag criteria configuration inside `CreateListModal.tsx`.
+  5. Added direct Tag selection to the WhatsApp template broadcast form.
+- **Files Modified**:
+  - `apps/backend/controller/customerController.js`
+  - `apps/backend/routes/customerRoutes.js`
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/frontend/src/services/customerService.ts`
+  - `apps/frontend/src/pages/customers/CustomerList.tsx`
+  - `apps/frontend/src/components/broadcast/CreateListModal.tsx`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+
 ### [BUG FIX / UI] Customer Import Modal Placement and Layering (Layout Containment)
 - **Date**: 2026-07-17
 - **Root Cause**: The `CustomerImportModal` component was rendered inline within the `CustomerList` component tree inside the main `<main className="... overflow-y-auto">` layout container. This caused visual clipping/placement defects and z-index issues because parent elements had specific overflow constraints and stacking contexts.
 - **Resolution**: Wrapped the modal rendering with `React.createPortal` to render the modal directly into `document.body`, escaping layout containment. Increased the overlay z-index to `z-[9999]` to guarantee it appears on top of all sidebar/header elements.
 - **Files Modified**:
   - `apps/frontend/src/pages/customers/CustomerImportModal.tsx`
+
 
 ### [BUG FIX / PIPELINE] Legacy Frontend Path Conflict
 - **Date**: 2026-07-17

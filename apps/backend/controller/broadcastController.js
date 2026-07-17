@@ -1516,6 +1516,9 @@ exports.createCustomerList = async (req, res) => {
       const dateThreshold = new Date();
       dateThreshold.setDate(dateThreshold.getDate() - days);
       whereCondition.updatedAt = { lt: dateThreshold };
+    } else if (criteria.type === 'tag' && criteria.tag) {
+      // 🏷️ فلتر بالوسم — يبحث في حقل tags الخاص بالعميل المرتبط بالمحادثة
+      whereCondition.customer = { tags: { contains: `"${criteria.tag}"` } };
     } else if (criteria.type === 'all') {
       whereCondition.status = 'ACTIVE';
     }
@@ -1817,6 +1820,9 @@ exports.getCustomersInList = async (req, res) => {
           }
         }
       };
+    } else if (list.criteria.type === 'tag' && list.criteria.tag) {
+      // 🏷️ فلتر بالوسم
+      whereCondition.customer = { tags: { contains: `"${list.criteria.tag}"` } };
     } else if (list.criteria.type === 'all') {
       whereCondition.status = 'ACTIVE';
     }

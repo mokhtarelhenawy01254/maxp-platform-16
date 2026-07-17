@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, ChartBar, Eye, MousePointerClick, Reply, List,
+  Send, Megaphone, CheckCircle, XCircle, UserPlus, X, Clock, BarChart, ChartBar, Eye, MousePointerClick, Reply, List, Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
 import { broadcastService } from "../../services/broadcastService";
+import { customerService } from "../../services/customerService";
 import { WhatsAppPageShell, WhatsAppSurfaceCard } from "./components/WhatsAppPageShell";
 
 interface Session {
@@ -60,6 +61,8 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [selectedLeadCategoryId, setSelectedLeadCategoryId] = useState("");
   const [recipientsText, setRecipientsText] = useState("");
   const [recipients, setRecipients] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
+  const [selectedTag, setSelectedTag] = useState("");
 
   const [scheduleAt, setScheduleAt] = useState("");
   const [templateVars, setTemplateVars] = useState<string[]>([]);
@@ -123,6 +126,13 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     } catch { }
   }, [withCompanyConfig]);
 
+  const fetchDistinctTags = useCallback(async () => {
+    try {
+      const res = await customerService.getDistinctTags();
+      setAvailableTags(res);
+    } catch { }
+  }, []);
+
   const fetchCampaigns = useCallback(async () => {
     try {
       setLoadingCampaigns(true);
@@ -133,7 +143,13 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
     finally { setLoadingCampaigns(false); }
   }, []);
 
-  useEffect(() => { fetchSessions(); fetchCustomerLists(); fetchCampaigns(); fetchLeadCategories(); }, []);
+  useEffect(() => { 
+    fetchSessions(); 
+    fetchCustomerLists(); 
+    fetchCampaigns(); 
+    fetchLeadCategories(); 
+    fetchDistinctTags(); 
+  }, []);
   useEffect(() => { fetchTemplates(); }, [selectedSessionId]);
 
   const addRecipients = useCallback(() => {
@@ -156,6 +172,20 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       const phones = customers.map((c: any) => c.phone).filter(Boolean);
       setRecipients((prev) => [...new Set([...prev, ...phones])]);
     } catch { }
+  }, []);
+
+  const handleSelectTag = useCallback(async (tagName: string) => {
+    setSelectedTag(tagName);
+    if (!tagName || tagName === "none") return;
+    try {
+      const res = await customerService.getCustomers({ tag: tagName, limit: 1000 });
+      const customers = res.data || [];
+      const phones = customers.map((c: any) => c.phone).filter(Boolean);
+      setRecipients((prev) => [...new Set([...prev, ...phones])]);
+      toast.success(`تم تحميل ${phones.length} عميل يحمل الوسم: ${tagName}`);
+    } catch (err: any) {
+      toast.error("فشل في تحميل العملاء حسب الوسم");
+    }
   }, []);
 
   const handleCreateCampaign = useCallback(async () => {
@@ -312,6 +342,25 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {availableTags.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>تصفية بالوسم (Tag)</Label>
+                      <Select value={selectedTag} onValueChange={handleSelectTag}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="اختر وسماً لتحميل الأرقام" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">-- بدون تصفية بالوسم --</SelectItem>
+                          {availableTags.map((tag) => (
+                            <SelectItem key={tag.name} value={tag.name}>
+                              🏷️ {tag.name} ({tag.count})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label>تصنيف العملاء</Label>

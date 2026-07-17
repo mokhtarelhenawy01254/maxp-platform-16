@@ -10,6 +10,7 @@ import {
   PencilIcon,
   UsersIcon,
   ShoppingBagIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import {
   customerService,
@@ -53,6 +54,8 @@ const CustomerList: React.FC = () => {
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
+  const [selectedTag, setSelectedTag] = useState("");
 
   const statusOptions = customerService.getStatusOptions();
 
@@ -99,6 +102,16 @@ const CustomerList: React.FC = () => {
   useEffect(() => {
     loadCustomers();
   }, [filters]);
+
+  // 🏷️ Fetch available tags on mount
+  useEffect(() => {
+    customerService.getDistinctTags().then(setAvailableTags).catch(() => {});
+  }, []);
+
+  const handleTagFilter = (tagName: string) => {
+    setSelectedTag(tagName);
+    setFilters((prev) => ({ ...prev, tag: tagName || undefined, page: 1 }));
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -315,6 +328,22 @@ const CustomerList: React.FC = () => {
                 ? t("customers.withOrdersOnly")
                 : t("customers.showAllCustomers")}
             </button>
+
+            {/* 🏷️ Tag Filter */}
+            {availableTags.length > 0 && (
+              <select
+                value={selectedTag}
+                onChange={(e) => handleTagFilter(e.target.value)}
+                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">{t("customers.allTags")}</option>
+                {availableTags.map((tag) => (
+                  <option key={tag.name} value={tag.name}>
+                    🏷️ {tag.name} ({tag.count})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 

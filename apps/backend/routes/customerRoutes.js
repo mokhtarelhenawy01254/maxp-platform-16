@@ -57,6 +57,9 @@ router.post('/unblock', verifyToken.authenticateToken, requireDbPermission('cust
 router.get('/blocked/:pageId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getBlockedCustomersOnPage);
 router.get('/block-status', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.checkCustomerBlockStatus);
 
+// 🏷️ جلب الوسوم الفريدة (لازم يكون قبل /:customerId)
+router.get('/tags/distinct', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getDistinctTags);
+
 // تفاصيل العميل
 router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerDetails);
 

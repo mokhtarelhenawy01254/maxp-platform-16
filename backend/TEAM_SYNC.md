@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-17 / 2026-03-09
+- **Customer Tags Activation & Campaign Integration (FEATURE / COMPLETE)**:
+  1. **Backend Filtering**: Added support for filtering customer lists by tag via `GET /customers?tag=tag_name` and query validation in `getAllCustomer`.
+  2. **Distinct Tags API**: Implemented `GET /customers/tags/distinct` to extract all unique tags from company customers with counts for UI dropdown aggregation.
+  3. **Customer Lists Tag Criteria**: Expanded database criteria queries (`createCustomerList` and `getCustomersInList`) to support dynamic tag lists (`criteria.type === 'tag'`) using relational filters.
+  4. **Frontend Tags Filter**: Integrated tag select filters inside `CustomerList.tsx` and custom lists creator `CreateListModal.tsx`.
+  5. **WhatsApp Template Broadcast Tags**: Added tag-based recipient filtering dropdown to the template broadcast campaign page, enabling quick targeting.
 - **Customer Import Modal Portal Rendering & Z-Index (BUGFIX / COMPLETE)**:
   1. **Portal Rendering**: Wrapped `CustomerImportModal` inside `React.createPortal` rendering to the `document.body` level. This completely resolves the layout isolation constraints and ensures the modal escapes parent `overflow` or `transform` containment blocks from the layout.
   2. **Z-Index Layering**: Elevated overlay z-index to `z-[9999]` to guarantee overlay sits correctly above all other elements like the HeaderBar and Sidebar navigation layout columns.

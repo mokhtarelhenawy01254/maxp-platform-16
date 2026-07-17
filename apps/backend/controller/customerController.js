@@ -88,6 +88,12 @@ const getAllCustomer = async (req, res) => {
       where.status = statusFilter;
     }
 
+    // 🏷️ فلتر الوسوم (Tags)
+    const tagFilter = req.query.tag;
+    if (tagFilter) {
+      where.tags = { contains: `"${tagFilter}"` };
+    }
+
     // تنفيذ الاستعلام مع الترقيم
     const [customers, total] = await Promise.all([
       getSharedPrismaClient().customer.findMany({
@@ -1845,6 +1851,56 @@ const exportCustomers = async (req, res) => {
   }
 };
 
+/**
+ * جلب جميع الوسوم الفريدة المستخدمة في عملاء الشركة
+ * GET /api/v1/customers/tags/distinct
+ */
+const getDistinctTags = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+
+    // جلب جميع العملاء اللي عندهم وسوم
+    const customersWithTags = await getSharedPrismaClient().customer.findMany({
+      where: {
+        companyId,
+        tags: { not: null }
+      },
+      select: { tags: true }
+    });
+
+    // تجميع الوسوم الفريدة مع العدد
+    const tagCountMap = {};
+    for (const c of customersWithTags) {
+      try {
+        const parsed = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags;
+        if (Array.isArray(parsed)) {
+          for (const tag of parsed) {
+            if (tag && typeof tag === 'string' && tag.trim()) {
+              const normalizedTag = tag.trim();
+              tagCountMap[normalizedTag] = (tagCountMap[normalizedTag] || 0) + 1;
+            }
+          }
+        }
+      } catch {
+        // تجاهل القيم غير الصالحة
+      }
+    }
+
+    // تحويل إلى مصفوفة مرتبة حسب العدد
+    const tags = Object.entries(tagCountMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json({ success: true, data: tags });
+  } catch (error) {
+    console.error('❌ Error fetching distinct tags:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب الوسوم', error: error.message });
+  }
+};
+
 module.exports = {
   getAllCustomer,
   createCustomer,
@@ -1865,5 +1921,6 @@ module.exports = {
   importCustomersFromCSV,
   deleteCustomer,
   updateCustomerTags,
-  updateCustomer
+  updateCustomer,
+  getDistinctTags
 };

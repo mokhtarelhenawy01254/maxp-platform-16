@@ -76,6 +76,7 @@ interface CustomerFilters {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   hasOrders?: boolean;
+  tag?: string;
 }
 
 class CustomerService {
@@ -103,6 +104,14 @@ class CustomerService {
 
     const response = await apiClient.get(`/customers?${params.toString()}`);
     return response.data;
+  }
+
+  /**
+   * Get all distinct tags used by company customers
+   */
+  async getDistinctTags(): Promise<{ name: string; count: number }[]> {
+    const response = await apiClient.get("/customers/tags/distinct");
+    return response.data?.data || [];
   }
 
   /**
