@@ -2,64 +2,95 @@
   "title": "متابعة العملاء المحتملين",
   "subtitle": "متابعة تلقائية للعملاء المحتملين الذين يراسلونك على واتساب",
   "tabs": {
-    "settings": "الإعدادات",
-    "monitoring": "الاشتراكات النشطة"
+    "flows": "تدفقات المتابعة",
+    "monitoring": "الاشتراكات"
   },
   "stats": {
     "activeEnrollments": "العملاء النشطون",
     "totalSent": "إجمالي الرسائل المرسلة",
     "replyRate": "نسبة الرد",
     "replyRateHint": "{{replied}} رد من {{total}} رسالة",
-    "completionRate": "نسبة الإكمال"
+    "completionRate": "نسبة الإكمال",
+    "totalEnrollments": "إجمالي المسجلين"
   },
-  "stepEditor": {
-    "title": "خطوات المتابعة",
-    "description": "تسلسل الرسائل التلقائية التي سترسل للعميل المحتمل",
-    "stepLabel": "الخطوة {{current}}",
-    "hours": "ساعة",
-    "addStep": "إضافة خطوة",
-    "noSteps": "لم يتم إعداد أي خطوات متابعة بعد",
-    "content": "محتوى الرسالة",
-    "variables": "المتغيرات المتاحة"
+  "flows": {
+    "addNew": "إنشاء تدفق جديد",
+    "edit": "تعديل التدفق",
+    "empty": "لا توجد تدفقات متابعة بعد",
+    "emptyDesc": "أنشئ تدفقك الأول للمتابعة التلقائية مع العملاء المحتملين الجدد.",
+    "name": "اسم التدفق",
+    "steps": "الخطوات",
+    "status": "الحالة",
+    "enabled": "مفعل",
+    "disabled": "معطل",
+    "categories": "التصنيفات",
+    "noCategory": "بدون تصنيف",
+    "activeLeads": "{{count}} نشط",
+    "deleteConfirm": "حذف هذا التدفق؟ سيتم إيقافه لجميع العملاء المسجلين."
   },
   "steps": {
-    "content": "محتوى الرسالة",
-    "variables": "المتغيرات المتاحة"
+    "title": "الخطوات",
+    "add": "إضافة خطوة",
+    "edit": "تعديل الخطوة",
+    "deleteConfirm": "حذف هذه الخطوة؟",
+    "delay": "التأخير",
+    "hour": "ساعة",
+    "hours": "ساعات",
+    "day": "يوم",
+    "days": "أيام",
+    "unit": "الوحدة",
+    "content": "الرسالة",
+    "variables": "استخدم {firstName}, {lastName}, {customerName}",
+    "preview": "معاينة",
+    "noSteps": "لا توجد خطوات بعد — أضف خطوتك الأولى"
   },
   "businessHours": {
     "title": "ساعات العمل",
-    "description": "حدد الأوقات التي يُسمح فيها بإرسال رسائل المتابعة",
-    "startHour": "بداية ساعات العمل",
-    "endHour": "نهاية ساعات العمل",
+    "description": "تقييد إرسال رسائل المتابعة بساعات محددة",
+    "startHour": "البداية",
+    "endHour": "النهاية",
     "timezone": "المنطقة الزمنية",
     "anyTime": "في أي وقت"
+  },
+  "categories": {
+    "title": "ربط التصنيفات",
+    "description": "ربط التدفقات بتصنيفات العملاء ليتم تسجيلهم تلقائيًا في التدفق المناسب",
+    "noCategories": "لا توجد تصنيفات بعد",
+    "autoFollowUp": "متابعة تلقائية",
+    "linkedFlow": "التدفق المرتبط",
+    "none": "بدون"
+  },
+  "monitoring": {
+    "customer": "العميل",
+    "flow": "التدفق",
+    "currentStep": "الخطوة",
+    "nextMessage": "الرسالة القادمة",
+    "status": "الحالة",
+    "lastSent": "آخر إرسال",
+    "notStarted": "قيد الانتظار",
+    "completed": "مكتمل",
+    "active": "نشط",
+    "cancelled": "ملغي",
+    "failed": "فشل",
+    "inactive": "غير نشط",
+    "details": "التفاصيل",
+    "step": "الخطوة {{current}} من {{total}}",
+    "empty": "لا يوجد مسجلين بعد",
+    "allStatuses": "جميع الحالات",
+    "allFlows": "جميع التدفقات",
+    "cancel": "إلغاء"
+  },
+  "actions": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "creating": "جارٍ الإنشاء...",
+    "saving": "جارٍ الحفظ..."
   },
   "hints": {
     "title": "نصائح ذكية",
     "tip1": "أرسل المتابعة الأولى خلال 24 ساعة بينما المحادثة لا تزال حديثة.",
     "tip2": "اسأل عن احتياجاتهم أو اعرض المساعدة لبدء محادثة.",
     "tip3": "استخدم {firstName} لتخصيص الرسالة."
-  },
-  "enrollments": {
-    "cancel": "إلغاء",
-    "allStatuses": "جميع الحالات",
-    "empty": "لا يوجد عملاء مسجلين في المتابعة"
-  },
-  "monitoring": {
-    "customer": "العميل",
-    "status": "الحالة",
-    "currentStep": "الخطوة الحالية",
-    "nextMessage": "الرسالة القادمة",
-    "lastSent": "آخر إرسال",
-    "active": "نشط",
-    "completed": "مكتمل",
-    "cancelled": "ملغي"
-  },
-  "actions": {
-    "save": "حفظ"
-  },
-  "status": {
-    "active": "مفعل",
-    "paused": "متوقف"
   }
 }
