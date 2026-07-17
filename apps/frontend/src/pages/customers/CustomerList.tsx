@@ -24,6 +24,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
+  const [__cb] = useState("v2");
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
   const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(

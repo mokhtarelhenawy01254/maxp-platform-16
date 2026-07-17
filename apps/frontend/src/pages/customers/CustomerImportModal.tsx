@@ -35,6 +35,7 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
   onSuccess,
 }) => {
   const { t } = useTranslation();
+  const [__cb] = useState("v2");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [activeTab, setActiveTab] = useState<"file" | "paste">("file");
