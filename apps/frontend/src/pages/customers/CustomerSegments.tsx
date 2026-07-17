@@ -6,6 +6,7 @@ import {
   TrashIcon,
   TagIcon,
   FolderIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -18,7 +19,16 @@ interface LeadCategory {
   sortOrder: number;
   autoFollowUp: boolean;
   autoPromoteCategoryId: string | null;
+  triggerFlowId: string | null;
+  triggerFlow: { id: string; name: string; isEnabled: boolean } | null;
   contactCount: number;
+  activeJourneyCount: number;
+}
+
+interface Flow {
+  id: string;
+  name: string;
+  isEnabled: boolean;
 }
 
 interface TagItem {
@@ -50,7 +60,11 @@ const CustomerSegments: React.FC = () => {
   const [catName, setCatName] = useState("");
   const [catColor, setCatColor] = useState("#6366f1");
   const [catAutoFollowUp, setCatAutoFollowUp] = useState(true);
+  const [catTriggerFlowId, setCatTriggerFlowId] = useState("");
   const [catSaving, setCatSaving] = useState(false);
+
+  // ── Available flows for trigger ────────────────
+  const [flows, setFlows] = useState<Flow[]>([]);
 
   // ── Tags state ─────────────────────────────────
   const [tags, setTags] = useState<TagItem[]>([]);
@@ -76,6 +90,13 @@ const CustomerSegments: React.FC = () => {
 
   useEffect(() => { loadCategories(); }, [loadCategories]);
 
+  // ── Load available flows ──────────────────────
+  useEffect(() => {
+    apiClient.get("/whatsapp/automation/flows").then(r => {
+      setFlows(r.data?.data || []);
+    }).catch(() => {});
+  }, []);
+
   // ── Load tags ──────────────────────────────────
   const loadTags = useCallback(async () => {
     setTagsLoading(true);
@@ -99,6 +120,7 @@ const CustomerSegments: React.FC = () => {
     setCatName("");
     setCatColor("#6366f1");
     setCatAutoFollowUp(true);
+    setCatTriggerFlowId("");
   };
 
   const openEditCat = (cat: LeadCategory) => {
@@ -106,6 +128,7 @@ const CustomerSegments: React.FC = () => {
     setCatName(cat.name);
     setCatColor(cat.color);
     setCatAutoFollowUp(cat.autoFollowUp);
+    setCatTriggerFlowId(cat.triggerFlowId || "");
     setShowCatForm(true);
   };
 
@@ -118,12 +141,14 @@ const CustomerSegments: React.FC = () => {
           name: catName.trim(),
           color: catColor,
           autoFollowUp: catAutoFollowUp,
+          triggerFlowId: catTriggerFlowId || null,
         });
       } else {
         await apiClient.post("/whatsapp/lead-categories", {
           name: catName.trim(),
           color: catColor,
           autoFollowUp: catAutoFollowUp,
+          triggerFlowId: catTriggerFlowId || null,
         });
       }
       resetCatForm();
@@ -256,16 +281,33 @@ const CustomerSegments: React.FC = () => {
                     ))}
                   </div>
                 </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">متابعة تلقائية</label>
+                  <label className="flex items-center gap-2 cursor-pointer mt-1">
                     <input
                       type="checkbox"
                       checked={catAutoFollowUp}
                       onChange={(e) => setCatAutoFollowUp(e.target.checked)}
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">متابعة تلقائية</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">تفعيل</span>
                   </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رحلة رسائل تلقائية</label>
+                  <select
+                    value={catTriggerFlowId}
+                    onChange={(e) => setCatTriggerFlowId(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">بدون رحلة</option>
+                    {flows.filter(f => f.isEnabled).map(f => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                  <p className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
+                    عند اختيار تصنيف للعميل، بتتسجل تلقائيًا في الرحلة دي
+                  </p>
                 </div>
                 <div className="flex items-end gap-2 justify-end">
                   <button
@@ -307,6 +349,7 @@ const CustomerSegments: React.FC = () => {
                     <tr>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">التصنيف</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">جهات الاتصال</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">في الرحلة</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">متابعة تلقائية</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الترتيب</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">إجراءات</th>
@@ -322,6 +365,19 @@ const CustomerSegments: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400" dir="ltr">{cat.contactCount}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {cat.triggerFlow ? (
+                            <div className="flex items-center gap-1">
+                              <SparklesIcon className="h-3.5 w-3.5 text-amber-500" />
+                              <span className="text-xs text-gray-700 dark:text-gray-300">{cat.triggerFlow.name}</span>
+                              {cat.activeJourneyCount > 0 && (
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400">({cat.activeJourneyCount})</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {cat.autoFollowUp
                             ? <span className="text-green-600 dark:text-green-400 text-sm">مفعلة</span>

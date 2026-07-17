@@ -63,6 +63,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     nextSendAt?: string;
   } | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(false);
+  const [reEnrolling, setReEnrolling] = useState(false);
 
   const { customer, orders, activities, loading, loadCustomerData, calculateLTV } = useCustomerProfile();
 
@@ -133,6 +134,30 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
       setAvailableTags(merged);
     }).catch(() => {});
   }, []);
+
+  const handleReEnroll = async () => {
+    if (!customerId || !contact?.leadCategoryId) return;
+    setReEnrolling(true);
+    try {
+      await apiClient.post("/whatsapp/automation/journeys/re-enroll", {
+        customerId,
+        contactId: contact.id,
+        categoryId: contact.leadCategoryId,
+      });
+      // Refresh journey status
+      const r = await apiClient.get("/whatsapp/automation/journeys", { params: { customerId, status: 'ACTIVE' } });
+      const data = r.data?.data || [];
+      if (data.length > 0) {
+        const j = data[0];
+        setActiveJourney({
+          id: j.id, status: j.status, currentStep: j.currentStep || 0,
+          totalSteps: j.flow?.steps?.length || 0, flowName: j.flow?.name || '',
+          lastSentAt: j.lastSentAt, nextSendAt: j.nextSendAt,
+        });
+      }
+    } catch { /* handled */ }
+    finally { setReEnrolling(false); }
+  };
 
   const handleCategoryChange = async (categoryId: string) => {
     if (!contact) return;
@@ -386,7 +411,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                     </div>
                   </div>
 
-                  {activeJourney && (
+                  {activeJourney ? (
                     <div style={sectionStyle}>
                       <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">رحلة المتابعة</h4>
                       <div className="flex items-center gap-2 mb-1.5">
@@ -415,8 +440,23 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                           </div>
                         )}
                       </div>
+                      <Button variant="outline" size="sm" className="mt-2 w-full gap-1 text-xs"
+                        onClick={handleReEnroll} disabled={reEnrolling}>
+                        {reEnrolling ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+                        إعادة تسجيل
+                      </Button>
                     </div>
-                  )}
+                  ) : (contact?.leadCategoryId && selectedCategory?.triggerFlowId && (
+                    <div style={sectionStyle}>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">رحلة المتابعة</h4>
+                      <p className="text-xs text-muted-foreground mb-2">العميل مش مسجل في الرحلة</p>
+                      <Button variant="outline" size="sm" className="w-full gap-1 text-xs"
+                        onClick={handleReEnroll} disabled={reEnrolling}>
+                        {reEnrolling ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+                        تسجيل في الرحلة
+                      </Button>
+                    </div>
+                  ))}
                   {journeyLoading && (
                     <div style={sectionStyle} className="flex items-center justify-center py-3">
                       <Loader2 className="size-4 animate-spin text-muted-foreground" />

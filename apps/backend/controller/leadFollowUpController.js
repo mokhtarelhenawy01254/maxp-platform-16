@@ -187,6 +187,55 @@ class LeadFollowUpController {
         }
     }
 
+    async getCategoryStats(req, res) {
+        try {
+            const companyId = this._getCompanyId(req, res);
+            if (!companyId) return;
+
+            const categories = await this.prisma.leadCategory.findMany({
+                where: { companyId },
+                orderBy: { sortOrder: 'asc' }
+            });
+
+            const stats = await Promise.all(categories.map(async (cat) => {
+                const contactIds = await this.prisma.whatsAppContact.findMany({
+                    where: { leadCategoryId: cat.id, whatsAppSession: { companyId } },
+                    select: { id: true }
+                });
+                const contactIdList = contactIds.map(c => c.id);
+
+                const [totalContacts, enrolled, completed, replied] = await Promise.all([
+                    Promise.resolve(contactIdList.length),
+                    contactIdList.length > 0 ? this.prisma.leadFollowUpEnrollment.count({
+                        where: { companyId, whatsappContactId: { in: contactIdList }, status: 'ACTIVE' }
+                    }) : 0,
+                    contactIdList.length > 0 ? this.prisma.leadFollowUpEnrollment.count({
+                        where: { companyId, whatsappContactId: { in: contactIdList }, status: 'COMPLETED' }
+                    }) : 0,
+                    contactIdList.length > 0 ? this.prisma.leadFollowUpEnrollment.count({
+                        where: { companyId, whatsappContactId: { in: contactIdList }, repliedAt: { not: null } }
+                    }) : 0,
+                ]);
+
+                return {
+                    id: cat.id,
+                    name: cat.name,
+                    color: cat.color,
+                    totalContacts,
+                    enrolled,
+                    completed,
+                    replied,
+                    replyRate: enrolled + completed > 0 ? Math.round((replied / (enrolled + completed)) * 100) : 0,
+                };
+            }));
+
+            res.json({ success: true, data: stats });
+        } catch (error) {
+            console.error('[LEAD-FOLLOWUP-CTRL] getCategoryStats error:', error.message);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
     async getStats(req, res) {
         try {
             const companyId = this._getCompanyId(req, res);

@@ -11,6 +11,93 @@ class WhatsAppJourneyService {
     }
 
     /**
+     * تسجيل عميل في رحلة من تصنيف (category trigger)
+     * بتتسمى لما يتغير تصنيف العميل لتصنيف عنده triggerFlowId
+     */
+    async enrollFromCategory(companyId, customerId, whatsappContactId, categoryId) {
+        try {
+            const category = await this.prisma.leadCategory.findUnique({
+                where: { id: categoryId },
+                select: { triggerFlowId: true, companyId: true }
+            });
+
+            if (!category || !category.triggerFlowId || category.companyId !== companyId) {
+                return;
+            }
+
+            const flow = await this.prisma.whatsAppFollowUpFlow.findUnique({
+                where: { id: category.triggerFlowId, isEnabled: true },
+                include: {
+                    steps: { orderBy: { stepOrder: 'asc' } }
+                }
+            });
+
+            if (!flow || flow.steps.length === 0) {
+                console.log(`[JOURNEY-CATEGORY] Flow ${category.triggerFlowId} not found or disabled`);
+                return;
+            }
+
+            // Check no active journey for this contact & flow
+            const existing = await this.prisma.customerJourney.findFirst({
+                where: { companyId, customerId, flowId: flow.id, status: 'ACTIVE' }
+            });
+
+            if (existing) {
+                console.log(`[JOURNEY-CATEGORY] Customer already in active journey for flow ${flow.name}`);
+                return;
+            }
+
+            // Calculate first step send time (support hours or days)
+            const firstStep = flow.steps[0];
+            const nextSendAt = new Date();
+            if (firstStep.delayUnit === 'HOURS' && firstStep.delayHours != null) {
+                nextSendAt.setHours(nextSendAt.getHours() + firstStep.delayHours);
+            } else {
+                nextSendAt.setDate(nextSendAt.getDate() + firstStep.delayDays);
+            }
+
+            await this.prisma.customerJourney.create({
+                data: {
+                    companyId,
+                    customerId,
+                    flowId: flow.id,
+                    currentStep: 0,
+                    status: 'ACTIVE',
+                    nextSendAt,
+                    logs: `Started from category trigger at ${new Date().toISOString()}`
+                }
+            });
+
+            console.log(`[JOURNEY-CATEGORY] Enrolled customer ${customerId} in flow "${flow.name}" from category`);
+        } catch (error) {
+            console.error('[JOURNEY-CATEGORY-ERROR] Enrollment failed:', error);
+        }
+    }
+
+    /**
+     * إلغاء أي رحلة نشطة للعميل وإعادة تسجيله في رحلة التصنيف
+     */
+    async reEnrollFromCategory(companyId, customerId, whatsappContactId, categoryId) {
+        try {
+            // Cancel any active journeys for this customer
+            const active = await this.prisma.customerJourney.findMany({
+                where: { companyId, customerId, status: 'ACTIVE' }
+            });
+            for (const j of active) {
+                await this.prisma.customerJourney.update({
+                    where: { id: j.id },
+                    data: { status: 'CANCELLED', logs: (j.logs || '') + `\nCancelled for re-enrollment at ${new Date().toISOString()}` }
+                });
+            }
+
+            // Enroll fresh
+            await this.enrollFromCategory(companyId, customerId, whatsappContactId, categoryId);
+        } catch (error) {
+            console.error('[JOURNEY-REENROLL-ERROR]', error);
+        }
+    }
+
+    /**
      * تسجيل العميل في رحلة متابعة
      * يتم استدعاؤها عند تغيير حالة الطلب إلى "تم التسليم"
      */
@@ -109,6 +196,18 @@ class WhatsAppJourneyService {
     /**
      * إرسال الخطوة التالية في الرحلة
      */
+    async _resolvePhoneForJourney(journey) {
+        if (journey.customer?.phone) return journey.customer.phone;
+        // Category-triggered journeys: lookup WhatsApp contact
+        try {
+            const contact = await this.prisma.whatsAppContact.findFirst({
+                where: { customerId: journey.customerId, companyId: journey.companyId },
+                select: { phoneNumber: true }
+            });
+            return contact?.phoneNumber || '';
+        } catch { return ''; }
+    }
+
     async sendNextStep(journey) {
         const stepIndex = journey.currentStep;
         const step = journey.flow.steps[stepIndex];
@@ -121,15 +220,26 @@ class WhatsAppJourneyService {
             return;
         }
 
+        const isCategoryTrigger = !journey.orderId;
+        const phone = await this._resolvePhoneForJourney(journey);
+        if (!phone) {
+            console.warn(`[JOURNEY] No phone for journey ${journey.id}, cancelling`);
+            await this.prisma.customerJourney.update({
+                where: { id: journey.id },
+                data: { status: 'CANCELLED', logs: (journey.logs || '') + '\nCancelled: no phone' }
+            });
+            return;
+        }
+
         try {
             // إرسال الرسالة باستخدام contentOverride
             const result = await WhatsAppNotificationService.sendNotification({
                 companyId: journey.companyId,
-                recipientPhone: journey.customer.phone,
+                recipientPhone: phone,
                 recipientName: `${journey.customer.firstName || ''} ${journey.customer.lastName || ''}`.trim(),
                 recipientType: 'CUSTOMER',
                 category: 'MARKETING',
-                eventType: 'POST_DELIVERY_FOLLOWUP',
+                eventType: isCategoryTrigger ? 'CATEGORY_FOLLOWUP' : 'POST_DELIVERY_FOLLOWUP',
                 contentOverride: step.content,
                 variables: {
                     firstName: journey.customer.firstName || '',
@@ -156,7 +266,11 @@ class WhatsAppJourneyService {
                     updateData.status = 'COMPLETED';
                 } else {
                     const nextSendAt = new Date();
-                    nextSendAt.setDate(nextSendAt.getDate() + nextStep.delayDays);
+                    if (nextStep.delayUnit === 'HOURS' && nextStep.delayHours != null) {
+                        nextSendAt.setHours(nextSendAt.getHours() + nextStep.delayHours);
+                    } else {
+                        nextSendAt.setDate(nextSendAt.getDate() + nextStep.delayDays);
+                    }
                     updateData.nextSendAt = nextSendAt;
                 }
 
@@ -165,7 +279,7 @@ class WhatsAppJourneyService {
                     data: updateData
                 });
 
-                console.log(`✅ [JOURNEY] Step ${stepIndex + 1} sent to ${journey.customer.phone}`);
+                console.log(`✅ [JOURNEY] Step ${stepIndex + 1} sent to ${phone}`);
             } else {
                 console.error(`⚠️ [JOURNEY] Failed to send step ${stepIndex + 1}:`, result.reason);
                 // محاولة أخرى لاحقاً (بإضافة ساعة مثلاً)

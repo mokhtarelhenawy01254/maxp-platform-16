@@ -7,12 +7,14 @@ model LeadCategory {
   sortOrder             Int           @default(0)
   autoFollowUp          Boolean       @default(true)
   autoPromoteCategoryId String?
+  triggerFlowId         String?                           // NEW: ربط التصنيف بـ Flow رسائل
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   company               Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   contacts              WhatsAppContact[]
   autoPromoteCategory   LeadCategory?  @relation("CategoryPromotion", fields: [autoPromoteCategoryId], references: [id])
   promotedFrom          LeadCategory[] @relation("CategoryPromotion")
+  triggerFlow           WhatsAppFollowUpFlow? @relation(fields: [triggerFlowId], references: [id]) // NEW
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -29,6 +31,7 @@ model WhatsAppFollowUpFlow {
   company     Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   steps       WhatsAppFollowUpStep[]
   journeys    CustomerJourney[]
+  categories  LeadCategory[]         // NEW: التصنيفات اللي بتشغل الـ Flow ده
 
   @@map("whatsapp_follow_up_flows")
 }
@@ -37,6 +40,8 @@ model WhatsAppFollowUpStep {
   id          String               @id @default(cuid())
   flowId      String
   delayDays   Int                  @default(1)
+  delayHours  Int?                                       // NEW: تأخير بالساعات (لـ category flows)
+  delayUnit   String               @default("DAYS")      // NEW: "HOURS" | "DAYS"
   content     String               @db.Text
   mediaUrl    String?
   stepOrder   Int                  @default(1)

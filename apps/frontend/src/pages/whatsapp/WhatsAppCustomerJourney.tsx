@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -80,6 +81,7 @@ interface Flow {
   _count?: {
     steps: number;
     journeys: number;
+    categories: number;
   };
 }
 
@@ -102,6 +104,8 @@ interface Journey {
   customer: { firstName: string; lastName: string; phone: string };
   order: { orderNumber: string };
   flow: { name: string; steps?: Step[] };
+  whatsappContactId?: string;
+  whatsappPhone?: string;
 }
 
 type NoticeTone = "success" | "error";
@@ -243,6 +247,7 @@ function MessagePreview({ content }: { content: string }) {
 
 const WhatsAppCustomerJourney: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const isRtl = i18n.dir() === "rtl";
   const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
 
@@ -765,6 +770,12 @@ const WhatsAppCustomerJourney: React.FC = () => {
                                       ? t("whatsappJourney.flows.enabled")
                                       : t("whatsappJourney.flows.disabled")}
                                   </Badge>
+                                  {flow._count?.categories && flow._count.categories > 0 ? (
+                                    <Badge variant="outline" className="rounded-full border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200">
+                                      <Sparkles className="size-3" />
+                                      تصنيف
+                                    </Badge>
+                                  ) : null}
                                 </div>
                                 <p className="text-sm text-[color:var(--color-muted-foreground)]">
                                   {t("whatsappJourney.flows.activeCustomers", {
@@ -1149,15 +1160,28 @@ const WhatsAppCustomerJourney: React.FC = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="rounded-full"
-                              onClick={() => setSelectedJourney(journey)}
-                            >
-                              <Eye className="size-4" />
-                              <span className="sr-only">{t("common.actions")}</span>
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              {journey.whatsappContactId && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="rounded-full text-sky-600 hover:text-sky-700"
+                                  onClick={() => navigate('/whatsapp')}
+                                  title="فتح المحادثة"
+                                >
+                                  <MessageSquare className="size-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="rounded-full"
+                                onClick={() => setSelectedJourney(journey)}
+                              >
+                                <Eye className="size-4" />
+                                <span className="sr-only">{t("common.actions")}</span>
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

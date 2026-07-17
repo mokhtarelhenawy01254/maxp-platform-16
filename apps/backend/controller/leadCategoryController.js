@@ -24,15 +24,27 @@ class LeadCategoryController {
 
             const categories = await this.prisma.leadCategory.findMany({
                 where: { companyId },
+                include: {
+                    triggerFlow: { select: { id: true, name: true, isEnabled: true } },
+                },
                 orderBy: { sortOrder: 'asc' },
             });
 
-            // Attach count of contacts per category
+            // Attach count of contacts per category + active journey count
             const withCounts = await Promise.all(categories.map(async (cat) => {
-                const count = await this.prisma.whatsAppContact.count({
-                    where: { leadCategoryId: cat.id, whatsAppSession: { companyId } },
-                });
-                return { ...cat, contactCount: count };
+                const [contactCount, journeyCount] = await Promise.all([
+                    this.prisma.whatsAppContact.count({
+                        where: { leadCategoryId: cat.id, whatsAppSession: { companyId } },
+                    }),
+                    cat.triggerFlowId ? this.prisma.customerJourney.count({
+                        where: {
+                            flowId: cat.triggerFlowId,
+                            companyId,
+                            status: 'ACTIVE',
+                        },
+                    }) : Promise.resolve(0),
+                ]);
+                return { ...cat, contactCount, activeJourneyCount: journeyCount };
             }));
 
             res.json({ success: true, data: withCounts });
@@ -47,7 +59,7 @@ class LeadCategoryController {
             const companyId = this._getCompanyId(req, res);
             if (!companyId) return;
 
-            const { name, color, sortOrder, autoFollowUp, autoPromoteCategoryId } = req.body;
+            const { name, color, sortOrder, autoFollowUp, autoPromoteCategoryId, triggerFlowId } = req.body;
             if (!name || !name.trim()) {
                 return res.status(400).json({ success: false, message: 'Category name is required' });
             }
@@ -60,6 +72,7 @@ class LeadCategoryController {
                     sortOrder: sortOrder ?? 0,
                     autoFollowUp: autoFollowUp !== false,
                     autoPromoteCategoryId: autoPromoteCategoryId || null,
+                    triggerFlowId: triggerFlowId || null,
                 },
             });
 
@@ -79,7 +92,7 @@ class LeadCategoryController {
             if (!companyId) return;
 
             const { id } = req.params;
-            const { name, color, sortOrder, autoFollowUp, autoPromoteCategoryId } = req.body;
+            const { name, color, sortOrder, autoFollowUp, autoPromoteCategoryId, triggerFlowId } = req.body;
 
             const existing = await this.prisma.leadCategory.findFirst({
                 where: { id, companyId },
@@ -96,6 +109,7 @@ class LeadCategoryController {
                     ...(sortOrder !== undefined && { sortOrder }),
                     ...(autoFollowUp !== undefined && { autoFollowUp }),
                     ...(autoPromoteCategoryId !== undefined && { autoPromoteCategoryId: autoPromoteCategoryId || null }),
+                    ...(triggerFlowId !== undefined && { triggerFlowId: triggerFlowId || null }),
                 },
             });
 

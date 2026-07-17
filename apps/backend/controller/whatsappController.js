@@ -1323,12 +1323,13 @@ async function updateContact(req, res) {
             return res.status(404).json({ error: 'جهة الاتصال غير موجودة' });
         }
 
+        const newLeadCategoryId = leadCategoryId || null;
         const updatedContact = await getSharedPrismaClient().whatsAppContact.update({
             where: { id },
             data: {
                 name,
                 category,
-                leadCategoryId: leadCategoryId || null,
+                leadCategoryId: newLeadCategoryId,
                 tags: tags ? JSON.stringify(tags) : undefined,
                 notes,
                 customerId,
@@ -1337,6 +1338,17 @@ async function updateContact(req, res) {
                 isMuted
             }
         });
+
+        // Trigger category-based journey if category changed and has triggerFlowId
+        if (newLeadCategoryId && newLeadCategoryId !== contact.leadCategoryId && updatedContact.customerId) {
+            const WhatsAppJourneyService = require('../services/whatsapp/WhatsAppJourneyService');
+            WhatsAppJourneyService.enrollFromCategory(
+                companyId,
+                updatedContact.customerId,
+                id,
+                newLeadCategoryId
+            );
+        }
 
         res.json({ success: true, contact: updatedContact });
     } catch (error) {

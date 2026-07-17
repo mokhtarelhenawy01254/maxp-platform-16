@@ -42,7 +42,7 @@ class WhatsAppAutomationController {
                 where: { companyId },
                 include: {
                     _count: {
-                        select: { steps: true, journeys: true }
+                        select: { steps: true, journeys: true, categories: true }
                     }
                 },
                 orderBy: { createdAt: 'desc' }
@@ -157,7 +157,7 @@ class WhatsAppAutomationController {
             if (!companyId) return;
 
             const { flowId } = req.params;
-            const { id, delayDays, content, mediaUrl, stepOrder } = req.body;
+            const { id, delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder } = req.body;
 
             // Verify flow ownership
             const flow = await this.prisma.whatsAppFollowUpFlow.findUnique({
@@ -170,11 +170,11 @@ class WhatsAppAutomationController {
             if (id) {
                 step = await this.prisma.whatsAppFollowUpStep.update({
                     where: { id },
-                    data: { delayDays, content, mediaUrl, stepOrder }
+                    data: { delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder }
                 });
             } else {
                 step = await this.prisma.whatsAppFollowUpStep.create({
-                    data: { flowId, delayDays, content, mediaUrl, stepOrder }
+                    data: { flowId, delayDays, delayHours, delayUnit, content, mediaUrl, stepOrder }
                 });
             }
 
@@ -217,6 +217,63 @@ class WhatsAppAutomationController {
     }
 
     /**
+     * Create a preset 24-hour welcome flow
+     */
+    async createPresetFlow(req, res) {
+        try {
+            const companyId = this._getCompanyId(req, res);
+            if (!companyId) return;
+
+            const { name } = req.body;
+            const flowName = name?.trim() || 'رحلة ترحيبية ٢٤ ساعة';
+
+            const flow = await this.prisma.whatsAppFollowUpFlow.create({
+                data: {
+                    companyId,
+                    name: flowName,
+                    isEnabled: true,
+                    steps: {
+                        create: [
+                            { delayDays: 0, delayHours: 1, delayUnit: 'HOURS', stepOrder: 1, content: 'مرحبًا {firstName}! شكرًا على تواصلك معنا. 🤝 كيف نقدر نساعدك اليوم؟' },
+                            { delayDays: 0, delayHours: 6, delayUnit: 'HOURS', stepOrder: 2, content: 'مرحبًا {firstName}! 🎁 عندنا عرض خاص النهاردة! تواصل معنا عشان تعرف التفاصيل.' },
+                            { delayDays: 0, delayHours: 12, delayUnit: 'HOURS', stepOrder: 3, content: 'أهلًا {firstName} 👋 لسه محتاج مساعدة في حاجة؟ احنا موجودين.' },
+                            { delayDays: 0, delayHours: 24, delayUnit: 'HOURS', stepOrder: 4, content: 'مرحبًا {firstName} ⏳ آخر فرصة! العرض بينتهي قريب. كلمنا قبل ما يفوتك.' },
+                        ],
+                    },
+                },
+            });
+
+            res.json({ success: true, data: flow, message: 'تم إنشاء الرحلة الترحيبية بنجاح' });
+        } catch (error) {
+            console.error('[PRESET-FLOW] Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
+     * Re-enroll a customer in a category-triggered journey
+     */
+    async reEnrollJourney(req, res) {
+        try {
+            const companyId = this._getCompanyId(req, res);
+            if (!companyId) return;
+
+            const { customerId, contactId, categoryId } = req.body;
+            if (!customerId || !contactId || !categoryId) {
+                return res.status(400).json({ success: false, message: 'customerId, contactId, categoryId required' });
+            }
+
+            const WhatsAppJourneyService = require('../services/whatsapp/WhatsAppJourneyService');
+            await WhatsAppJourneyService.reEnrollFromCategory(companyId, customerId, contactId, categoryId);
+
+            res.json({ success: true, message: 'Journey re-enrolled successfully' });
+        } catch (error) {
+            console.error('[REENROLL] Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
      * Get active journeys for monitoring
      */
     async getJourneys(req, res) {
@@ -224,12 +281,13 @@ class WhatsAppAutomationController {
             const companyId = this._getCompanyId(req, res);
             if (!companyId) return;
 
-            const { status } = req.query;
+            const { status, customerId } = req.query;
 
             const journeys = await this.prisma.customerJourney.findMany({
                 where: {
                     companyId,
-                    ...(status && { status })
+                    ...(status && { status }),
+                    ...(customerId && { customerId })
                 },
                 include: {
                     customer: {
@@ -239,14 +297,23 @@ class WhatsAppAutomationController {
                         select: { orderNumber: true }
                     },
                     flow: {
-                        select: { name: true }
+                        select: { name: true, steps: { select: { id: true }, orderBy: { stepOrder: 'asc' } } }
                     }
                 },
                 orderBy: { nextSendAt: 'asc' },
                 take: 100
             });
 
-            res.json({ success: true, data: journeys });
+            // Attach WhatsApp contact info for chat linking
+            const withContact = await Promise.all(journeys.map(async (j) => {
+                const waContact = await this.prisma.whatsAppContact.findFirst({
+                    where: { customerId: j.customerId, companyId },
+                    select: { id: true, phoneNumber: true, name: true, jid: true }
+                });
+                return { ...j, whatsappContactId: waContact?.id || null, whatsappPhone: waContact?.phoneNumber || null };
+            }));
+
+            res.json({ success: true, data: withContact });
         } catch (error) {
             console.error('❌ [WHATSAPP-AUTOMATION] getJourneys error:', error.message);
             res.status(500).json({ success: false, message: error.message });
