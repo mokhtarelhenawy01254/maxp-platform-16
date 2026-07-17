@@ -1532,7 +1532,7 @@ exports.createCustomerList = async (req, res) => {
       data: {
         name,
         description: description || '',
-        criteria,
+        criteria: JSON.stringify(criteria),
         count,
         companyId
       }
@@ -1806,8 +1806,9 @@ exports.getCustomersInList = async (req, res) => {
     let whereCondition = { companyId };
 
     // تطبيق المعايير حسب نوع القائمة
-    if (list.criteria.type === 'active' && list.criteria.lastActivity) {
-      const hours = parseInt(list.criteria.lastActivity);
+    const criteria = typeof list.criteria === 'string' ? JSON.parse(list.criteria) : list.criteria;
+    if (criteria.type === 'active' && criteria.lastActivity) {
+      const hours = parseInt(criteria.lastActivity);
       const dateThreshold = new Date();
       dateThreshold.setHours(dateThreshold.getHours() - hours);
 
@@ -1820,10 +1821,10 @@ exports.getCustomersInList = async (req, res) => {
           }
         }
       };
-    } else if (list.criteria.type === 'tag' && list.criteria.tag) {
+    } else if (criteria.type === 'tag' && criteria.tag) {
       // 🏷️ فلتر بالوسم
-      whereCondition.customer = { tags: { contains: `"${list.criteria.tag}"` } };
-    } else if (list.criteria.type === 'all') {
+      whereCondition.customer = { tags: { contains: `"${criteria.tag}"` } };
+    } else if (criteria.type === 'all') {
       whereCondition.status = 'ACTIVE';
     }
 
