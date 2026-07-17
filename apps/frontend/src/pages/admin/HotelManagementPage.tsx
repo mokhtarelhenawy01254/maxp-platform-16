@@ -17,6 +17,7 @@ import FolioModal from "./hotel/FolioModal";
 import RateModal from "./hotel/RateModal";
 import ServiceModal from "./hotel/ServiceModal";
 import PolicyModal from "./hotel/PolicyModal";
+import PriceTierModal from "./hotel/PriceTierModal";
 
 type TabId = "properties" | "roomTypes" | "rooms" | "reservations" | "folio" | "policies";
 
@@ -190,8 +191,9 @@ export default function HotelManagementPage() {
                   <td className={CELL_CLS + " text-center"}>{rt._count?.rooms || 0}/{rt.totalRooms}</td>
                   <td className={CELL_CLS}>
                     <div className="flex gap-1 justify-end">
-                      <button onClick={() => setModal({ type: 'roomType', data: rt })}><PencilIcon className="w-4 h-4 text-gray-500" /></button>
-                      <button onClick={() => handleDelete(() => hotelApi.roomTypes.delete(rt.id))}><TrashIcon className="w-4 h-4 text-red-500" /></button>
+                      <button onClick={() => setModal({ type: 'roomType', data: rt })} title="تعديل"><PencilIcon className="w-4 h-4 text-gray-500" /></button>
+                      <button onClick={() => setModal({ type: 'priceTier', data: rt })} title="تسعير حسب النزلاء" className="text-xs px-1 font-bold text-blue-600 border border-blue-300 rounded">1-4</button>
+                      <button onClick={() => handleDelete(() => hotelApi.roomTypes.delete(rt.id))} title="حذف"><TrashIcon className="w-4 h-4 text-red-500" /></button>
                     </div>
                   </td>
                 </tr>
@@ -447,6 +449,7 @@ export default function HotelManagementPage() {
       {modal?.type === 'rate' && <RateModal roomTypes={roomTypes} selectedProperty={selectedProperty} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'service' && <ServiceModal data={modal.data} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'policy' && <PolicyModal data={modal.data} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
+      {modal?.type === 'priceTier' && <PriceTierModal roomType={modal.data} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
     </div>
     </div>
   );

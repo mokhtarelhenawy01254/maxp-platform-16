@@ -104,34 +104,48 @@ export default function ReservationModal({
         {avail.length > 0 && (
           <div className="border rounded-lg p-3 space-y-2">
             <p className="text-sm font-medium text-green-600">الغرف المتاحة (اضغط لإضافة):</p>
-            {avail.map((a: any) => (
-              <button
-                key={a.roomType.id}
-                type="button"
-                className="w-full flex justify-between items-center text-sm border-b pb-1 text-right hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded transition"
-                onClick={() => {
-                  const existing = form.rooms.find(r => r.roomTypeId === a.roomType.id);
-                  if (existing) {
-                    setForm({
-                      ...form,
-                      rooms: form.rooms.map(r => r.roomTypeId === a.roomType.id ? { ...r, nightlyRate: a.effectivePrice } : r)
-                    });
-                  } else {
-                    const emptyIdx = form.rooms.findIndex(r => !r.roomTypeId);
-                    if (emptyIdx >= 0) {
-                      const next = [...form.rooms];
-                      next[emptyIdx] = { ...next[emptyIdx], roomTypeId: a.roomType.id, roomId: undefined, nightlyRate: a.effectivePrice };
-                      setForm({ ...form, rooms: next });
+              {avail.map((a: any) => {
+                let displayPrice = a.effectivePrice;
+                let priceLabel = 'ليلة';
+                if (a.pricingTiers && a.pricingTiers.length > 0) {
+                  const tier = a.pricingTiers.find((t: any) => t.guests === form.adults);
+                  if (tier) displayPrice = tier.price;
+                  priceLabel = form.adults + ' نزلاء/ليلة';
+                }
+                return (
+                <button
+                  key={a.roomType.id}
+                  type="button"
+                  className="w-full flex justify-between items-center text-sm border-b pb-1 text-right hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded transition"
+                  onClick={() => {
+                    const existing = form.rooms.find(r => r.roomTypeId === a.roomType.id);
+                    if (existing) {
+                      setForm({
+                        ...form,
+                        rooms: form.rooms.map(r => r.roomTypeId === a.roomType.id ? { ...r, nightlyRate: displayPrice } : r)
+                      });
                     } else {
-                      setForm({ ...form, rooms: [...form.rooms, { roomTypeId: a.roomType.id, roomId: undefined, nightlyRate: a.effectivePrice }] });
+                      const emptyIdx = form.rooms.findIndex(r => !r.roomTypeId);
+                      if (emptyIdx >= 0) {
+                        const next = [...form.rooms];
+                        next[emptyIdx] = { ...next[emptyIdx], roomTypeId: a.roomType.id, roomId: undefined, nightlyRate: displayPrice };
+                        setForm({ ...form, rooms: next });
+                      } else {
+                        setForm({ ...form, rooms: [...form.rooms, { roomTypeId: a.roomType.id, roomId: undefined, nightlyRate: displayPrice }] });
+                      }
                     }
-                  }
-                }}
-              >
-                <span>{a.roomType.nameAr || a.roomType.name} ({a.availableRooms} متاحة)</span>
-                <span className="font-bold">{a.effectivePrice} ج.م/{a.roomType.pricingModel === "PER_PERSON" ? "للفرد/ليلة" : "ليلة"}</span>
-              </button>
-            ))}
+                  }}
+                >
+                  <div>
+                    <span>{a.roomType.nameAr || a.roomType.name} ({a.availableRooms} متاحة)</span>
+                    {a.pricingTiers && a.pricingTiers.length > 0 && (
+                      <div className="text-xs text-gray-400">{a.pricingTiers.map((t: any) => t.guests + '=' + t.price + 'ج.م').join(' | ')}</div>
+                    )}
+                  </div>
+                  <span className="font-bold">{displayPrice} ج.م/{priceLabel}</span>
+                </button>
+                );
+              })}
           </div>
         )}
 

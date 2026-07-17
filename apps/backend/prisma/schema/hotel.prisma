@@ -48,6 +48,7 @@ model HotelRoomType {
 
   rooms    HotelRoom[]
   rates    HotelRoomRate[]
+  prices   HotelRoomTypePrice[]
   reservationRooms HotelReservationRoom[]
 
   @@index([companyId])
@@ -185,6 +186,24 @@ model HotelService {
   @@index([companyId])
   @@index([itemType])
   @@map("hotel_services")
+}
+
+/// Hotel module - Tiered pricing: different price per number of guests
+model HotelRoomTypePrice {
+  id         String   @id @default(cuid())
+  roomTypeId String
+  companyId  String
+  guests     Int      /// Number of guests this price applies to
+  price      Float    /// Price per night for this many guests
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  roomType HotelRoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  company  Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, guests])
+  @@index([companyId])
+  @@map("hotel_room_type_prices")
 }
 
 /// Hotel module - Policies and house rules

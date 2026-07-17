@@ -44,6 +44,10 @@ router.post('/services', verifyToken.authenticateToken, ctrl.createService);
 router.put('/services/:id', verifyToken.authenticateToken, ctrl.updateService);
 router.delete('/services/:id', verifyToken.authenticateToken, ctrl.deleteService);
 
+// Room Type Pricing Tiers
+router.get('/room-type-prices', verifyToken.authenticateToken, ctrl.getRoomTypePrices);
+router.put('/room-type-prices', verifyToken.authenticateToken, ctrl.setRoomTypePrices);
+
 // Hotel Policies
 router.get('/policies', verifyToken.authenticateToken, ctrl.getPolicies);
 router.put('/policies', verifyToken.authenticateToken, ctrl.updatePolicies);

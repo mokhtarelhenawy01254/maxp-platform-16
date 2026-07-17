@@ -305,6 +305,7 @@ model Company {
       hotelRoomRates                   HotelRoomRate[]
       hotelServices                    HotelService[]
       hotelPolicy                      HotelPolicy?
+      hotelRoomTypePrices              HotelRoomTypePrice[]
      wholesalePriceLists              WholesalePriceList[]
    wholesaleCustomers               WholesaleCustomer[]
    wholesaleTransactions            WholesaleTransaction[]

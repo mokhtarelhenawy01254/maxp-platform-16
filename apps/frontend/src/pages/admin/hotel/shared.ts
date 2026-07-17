@@ -81,6 +81,10 @@ export const hotelApi = {
     get: () => fetch(api('policies'), { headers: getAuthHeaders() }).then(r => r.json()),
     update: (data: any) => fetch(api('policies'), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
   },
+  pricingTiers: {
+    get: (roomTypeId?: string) => fetch(api(`room-type-prices${roomTypeId ? `?roomTypeId=${roomTypeId}` : ''}`), { headers: getAuthHeaders() }).then(r => r.json()),
+    set: (roomTypeId: string, prices: { guests: number; price: number }[]) => fetch(api('room-type-prices'), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ roomTypeId, prices }) }).then(r => r.json()),
+  },
 };
 
 export type HotelProperty = {
@@ -145,6 +149,10 @@ export type HotelPolicy = {
 export type HotelRoomRate = {
   id: string; roomTypeId: string; dateFrom: string; dateTo: string;
   price: number; label?: string; roomType?: HotelRoomType;
+};
+
+export type HotelRoomTypePrice = {
+  id: string; roomTypeId: string; guests: number; price: number;
 };
 
 export const ROOM_STATUS_LABELS: Record<string, string> = {

@@ -296,7 +296,13 @@ const createReservation = async (req, res) => {
         }
         if (!rate) rate = roomType.basePrice;
 
-        if (roomType.pricingModel === 'PER_PERSON') {
+        // Try tiered pricing first
+        const tierPrice = await tx.hotelRoomTypePrice.findUnique({
+          where: { roomTypeId_guests: { roomTypeId: roomType.id, guests: adults || 1 } }
+        });
+        if (tierPrice) {
+          totalAmount += tierPrice.price * nights;
+        } else if (roomType.pricingModel === 'PER_PERSON') {
           totalAmount += rate * nights * (adults || 1);
           if (roomType.pricePerExtraAdult && (adults || 1) > 1) {
             totalAmount += roomType.pricePerExtraAdult * nights * ((adults || 1) - 1);
@@ -483,15 +489,24 @@ const checkAvailability = async (req, res) => {
       }
     });
 
+    // Fetch all tiered prices for these room types
+    const rtIds = roomTypes.map(rt => rt.id);
+    const allPrices = await getSharedPrismaClient().hotelRoomTypePrice.findMany({
+      where: { companyId, roomTypeId: { in: rtIds } },
+      orderBy: [{ roomTypeId: 'asc' }, { guests: 'asc' }]
+    });
+
     const result = roomTypes.map(rt => {
       const availableRooms = rt.rooms.filter(r => !occupiedRoomIds.includes(r.id));
       const seasonalRate = rt.rates?.[0];
+      const tieredPrices = allPrices.filter(p => p.roomTypeId === rt.id).map(p => ({ guests: p.guests, price: p.price }));
       return {
         roomType: { id: rt.id, name: rt.name, nameAr: rt.nameAr, capacity: rt.capacity, basePrice: rt.basePrice, pricingModel: rt.pricingModel, pricePerExtraAdult: rt.pricePerExtraAdult, amenities: rt.amenities, images: rt.images },
         totalRooms: rt.rooms.length,
         availableRooms: availableRooms.length,
         rooms: availableRooms.map(r => ({ id: r.id, roomNumber: r.roomNumber, floor: r.floor, status: r.status, view: r.view, wing: r.wing, hasExtraBed: r.hasExtraBed, extraBedCapacity: r.extraBedCapacity, extraBedPrice: r.extraBedPrice, basePriceOverride: r.basePriceOverride })),
-        effectivePrice: seasonalRate?.price || rt.basePrice
+        effectivePrice: seasonalRate?.price || rt.basePrice,
+        pricingTiers: tieredPrices
       };
     }).filter(rt => rt.availableRooms > 0);
 
@@ -628,6 +643,51 @@ const deleteService = async (req, res) => {
   }
 };
 
+// ── Room Type Pricing Tiers ──────────────────────────────
+const getRoomTypePrices = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { roomTypeId } = req.query;
+    const where = { companyId };
+    if (roomTypeId) where.roomTypeId = roomTypeId;
+    const data = await getSharedPrismaClient().hotelRoomTypePrice.findMany({ where, orderBy: [{ roomTypeId: 'asc' }, { guests: 'asc' }] });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching prices:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الأسعار' });
+  }
+};
+
+const setRoomTypePrices = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { roomTypeId, prices } = req.body;
+    if (!roomTypeId || !prices || !Array.isArray(prices) || prices.length === 0) {
+      return res.status(400).json({ success: false, error: 'بيانات الأسعار ناقصة' });
+    }
+    const existing = await getSharedPrismaClient().hotelRoomType.findFirst({ where: { id: roomTypeId, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'نوع الغرفة غير موجود' });
+
+    const result = await getSharedPrismaClient().$transaction(async (tx) => {
+      await tx.hotelRoomTypePrice.deleteMany({ where: { roomTypeId, companyId } });
+      const created = [];
+      for (const p of prices) {
+        if (p.guests < 1 || p.price <= 0) continue;
+        created.push(await tx.hotelRoomTypePrice.create({
+          data: { companyId, roomTypeId, guests: p.guests, price: p.price }
+        }));
+      }
+      return created;
+    });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error setting prices:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حفظ الأسعار' });
+  }
+};
+
 // ── Hotel Policies ──────────────────────────────────────
 const getPolicies = async (req, res) => {
   try {
@@ -728,5 +788,6 @@ module.exports = {
   getFolioItems, addFolioItem, removeFolioItem,
   getServices, createService, updateService, deleteService,
   getPolicies, updatePolicies,
+  getRoomTypePrices, setRoomTypePrices,
   getRoomRates, createRoomRate, deleteRoomRate
 };
