@@ -28,14 +28,7 @@
       "enabled": true
     }
   },
-  "plugin": [
-    "H:\\ponytail\\.opencode\\plugins\\ponytail.mjs",
-    "opencode-supermemory",
-    "@tarquinen/opencode-dcp",
-    "opencode-websearch-cited",
-    "opencode-pty",
-    "opencode-browser"
-  ],
+  "plugin": [],
   "instructions": [
     ".opencode/shell_strategy.md"
   ]

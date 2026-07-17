@@ -1,5 +1,12 @@
 # Backend Bugs Log
 
+### [BUG FIX / UI] Customer Import Modal Placement and Layering (Layout Containment)
+- **Date**: 2026-07-17
+- **Root Cause**: The `CustomerImportModal` component was rendered inline within the `CustomerList` component tree inside the main `<main className="... overflow-y-auto">` layout container. This caused visual clipping/placement defects and z-index issues because parent elements had specific overflow constraints and stacking contexts.
+- **Resolution**: Wrapped the modal rendering with `React.createPortal` to render the modal directly into `document.body`, escaping layout containment. Increased the overlay z-index to `z-[9999]` to guarantee it appears on top of all sidebar/header elements.
+- **Files Modified**:
+  - `apps/frontend/src/pages/customers/CustomerImportModal.tsx`
+
 ### [BUG FIX / PIPELINE] Legacy Frontend Path Conflict
 - **Date**: 2026-07-17
 - **Root Cause**: The storefront html controller (`storefrontHtmlController.js`) resolves candidates to serve `index.html` dynamically. The legacy path `path.resolve(__dirname, "../../frontend/dist/index.html")` resolved to `/var/www/frontend/dist/index.html` on the production server. Because the deployment script (`deploy-remote.sh`) only cleaned up this directory under conditional blocks that were skipped when staging tarballs were used, `/var/www/frontend` remained on disk. This caused the backend to continue serving the old `index.html` (which loaded obsolete chunk hashes like `54lLAbYb`) instead of `/var/www/frontend2/dist/index.html`.

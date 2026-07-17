@@ -1,6 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-17 / 2026-03-09
+- **Customer Import Modal Portal Rendering & Z-Index (BUGFIX / COMPLETE)**:
+  1. **Portal Rendering**: Wrapped `CustomerImportModal` inside `React.createPortal` rendering to the `document.body` level. This completely resolves the layout isolation constraints and ensures the modal escapes parent `overflow` or `transform` containment blocks from the layout.
+  2. **Z-Index Layering**: Elevated overlay z-index to `z-[9999]` to guarantee overlay sits correctly above all other elements like the HeaderBar and Sidebar navigation layout columns.
 - **Legacy Frontend Path Conflict (BUGFIX / COMPLETE)**:
   1. **Storefront HTML Controller Fix**: Updated `storefrontHtmlController.js` to prioritize the absolute production folder path `/var/www/frontend2/dist/index.html` as the candidate location before evaluating relative path candidates. This ensures the correct, recently deployed frontend code takes precedence over any legacy directories on the server.
   2. **Deployment Script Cleanup**: Enhanced `deploy-remote.sh` to unconditionally remove the legacy `/var/www/frontend` directory if it exists on the server, eliminating any potential path resolution conflicts and freeing up disk space.
