@@ -2088,10 +2088,6 @@ const WhatsAppChatContent: React.FC = () => {
         {selectedContact && showRightPanel ? (
           <ChatRightPanel
             contact={selectedContact}
-            onOpenLabels={() => {
-              setSelectedContactForLabel(selectedContact);
-              setLabelDialogOpen(true);
-            }}
             onOpenOrder={() => setShowQuickOrderModal(true)}
             onOpenTasks={() => setShowQuickCreateTaskModal(true)}
             onClose={() => setShowRightPanel(false)}

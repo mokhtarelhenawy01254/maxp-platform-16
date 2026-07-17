@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Phone, Mail, Clock, ShoppingBag, Activity, Tags, X, ExternalLink, MapPin, ChevronDown, Tag, Plus } from 'lucide-react';
+import { User, Phone, Mail, Clock, ShoppingBag, Activity, X, ExternalLink, MapPin, ChevronDown, Tag, Plus, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomerProfile } from '../../../hooks/inbox/useCustomerProfile';
 import { getInboxCustomerAvatarUrl, buildProxyImageUrl } from '../../../utils/imageUrl';
@@ -7,6 +7,7 @@ import { Contact } from '../../../hooks/useWhatsAppQueries';
 import { apiClient } from '../../../services/apiClient';
 import { customerService } from '../../../services/customerService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 
@@ -14,7 +15,6 @@ type Tab = 'info' | 'orders' | 'activity';
 
 interface ChatRightPanelProps {
   contact: Contact | null;
-  onOpenLabels: () => void;
   onOpenOrder: () => void;
   onOpenTasks: () => void;
   onClose?: () => void;
@@ -40,7 +40,7 @@ const ORDER_STATUS_THEME: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'ملغي', color: '#ef4444' },
 };
 
-const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, onOpenOrder, onOpenTasks, onClose }) => {
+const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenTasks, onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [avatarError, setAvatarError] = useState(false);
   const [leadCategories, setLeadCategories] = useState<any[]>([]);
@@ -51,6 +51,18 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
   const [newTagInput, setNewTagInput] = useState('');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isAddingTag, setIsAddingTag] = useState(false);
+
+  // 🔄 Journey Status
+  const [activeJourney, setActiveJourney] = useState<{
+    id: string;
+    status: string;
+    currentStep: number;
+    totalSteps: number;
+    flowName: string;
+    lastSentAt?: string;
+    nextSendAt?: string;
+  } | null>(null);
+  const [journeyLoading, setJourneyLoading] = useState(false);
 
   const { customer, orders, activities, loading, loadCustomerData, calculateLTV } = useCustomerProfile();
 
@@ -80,6 +92,32 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
     }
     setAvatarError(false);
   }, [customerId, loadCustomerData]);
+
+  // Fetch active journey for this customer
+  useEffect(() => {
+    if (!customerId) { setActiveJourney(null); return; }
+    setJourneyLoading(true);
+    apiClient.get("/whatsapp/automation/journeys", { params: { customerId, status: 'ACTIVE' } })
+      .then(r => {
+        const data = r.data?.data || [];
+        if (data.length > 0) {
+          const j = data[0];
+          setActiveJourney({
+            id: j.id,
+            status: j.status,
+            currentStep: j.currentStep || 0,
+            totalSteps: j.flow?.steps?.length || 0,
+            flowName: j.flow?.name || '',
+            lastSentAt: j.lastSentAt,
+            nextSendAt: j.nextSendAt,
+          });
+        } else {
+          setActiveJourney(null);
+        }
+      })
+      .catch(() => setActiveJourney(null))
+      .finally(() => setJourneyLoading(false));
+  }, [customerId]);
 
   useEffect(() => {
     apiClient.get("/whatsapp/lead-categories").then(r => {
@@ -256,25 +294,6 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
               {activeTab === 'info' && (
                 <div className="space-y-3">
                   <div style={sectionStyle}>
-                    <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">التصنيفات</h4>
-                    {contact.labels && contact.labels.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {contact.labels.map((label) => (
-                          <span key={label} className="inline-flex items-center gap-1 rounded-full border bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary">
-                            <Tags className="size-3" />
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">لا توجد تصنيفات</p>
-                    )}
-                    <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5 text-xs" onClick={onOpenLabels}>
-                      <Tags className="size-3.5" /> إدارة التصنيفات
-                    </Button>
-                  </div>
-
-                  <div style={sectionStyle}>
                     <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">تصنيف العميل</h4>
                     <div className="flex items-center gap-2">
                       {selectedCategory && (
@@ -366,6 +385,43 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
                       </Button>
                     </div>
                   </div>
+
+                  {activeJourney && (
+                    <div style={sectionStyle}>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">رحلة المتابعة</h4>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Sparkles className="size-3.5 text-amber-500" />
+                        <span className="text-sm font-medium text-foreground">{activeJourney.flowName}</span>
+                      </div>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>الخطوة:</span>
+                          <span className="font-medium text-foreground">{activeJourney.currentStep + 1}/{activeJourney.totalSteps || '?'}</span>
+                        </div>
+                        {activeJourney.lastSentAt && (
+                          <div className="flex justify-between">
+                            <span>آخر رسالة:</span>
+                            <span className="font-medium text-foreground">
+                              {format(new Date(activeJourney.lastSentAt), 'MMM d, HH:mm', { locale: arSA })}
+                            </span>
+                          </div>
+                        )}
+                        {activeJourney.nextSendAt && (
+                          <div className="flex justify-between">
+                            <span>الرسالة القادمة:</span>
+                            <span className="font-medium text-foreground">
+                              {format(new Date(activeJourney.nextSendAt), 'MMM d, HH:mm', { locale: arSA })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {journeyLoading && (
+                    <div style={sectionStyle} className="flex items-center justify-center py-3">
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
 
                   <div style={sectionStyle}>
                     <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">التواصل</h4>
