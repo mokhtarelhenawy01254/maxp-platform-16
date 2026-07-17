@@ -7,6 +7,7 @@
   3. **Customer Lists Tag Criteria**: Expanded database criteria queries (`createCustomerList` and `getCustomersInList`) to support dynamic tag lists (`criteria.type === 'tag'`) using relational filters.
   4. **Frontend Tags Filter**: Integrated tag select filters inside `CustomerList.tsx` and custom lists creator `CreateListModal.tsx`.
   5. **WhatsApp Template Broadcast Tags**: Added tag-based recipient filtering dropdown to the template broadcast campaign page, enabling quick targeting.
+  6. **Moderator Sidebar Tags Editor**: Added an interactive Customer Tags editor section in `ChatRightPanel.tsx` inside the WhatsApp Inbox/Chat sidebar, allowing agents/moderators to view, add with auto-completion suggestions, and delete tags for the active customer directly from their ongoing conversation workspace.
 - **Customer Import Modal Portal Rendering & Z-Index (BUGFIX / COMPLETE)**:
   1. **Portal Rendering**: Wrapped `CustomerImportModal` inside `React.createPortal` rendering to the `document.body` level. This completely resolves the layout isolation constraints and ensures the modal escapes parent `overflow` or `transform` containment blocks from the layout.
   2. **Z-Index Layering**: Elevated overlay z-index to `z-[9999]` to guarantee overlay sits correctly above all other elements like the HeaderBar and Sidebar navigation layout columns.

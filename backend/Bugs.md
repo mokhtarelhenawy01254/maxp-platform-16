@@ -2,13 +2,14 @@
 
 ### [FEATURE / BUG FIX] Customer Tags Integration & Filtering Gaps
 - **Date**: 2026-07-17
-- **Root Cause**: The customer tags field was saved to the DB but there was no way to filter the Customer List by tags, create smart lists matching tags, or send broadcast campaigns targeting specific tags directly.
+- **Root Cause**: The customer tags field was saved to the DB but there was no way to filter the Customer List by tags, create smart lists matching tags, send broadcast campaigns targeting specific tags directly, or add/remove tags for the customer directly from the moderator chat sidebar.
 - **Resolution**:
   1. Updated `getAllCustomer` in the backend and `getCustomers` in the frontend to support a `tag` query parameter.
   2. Implemented `GET /api/v1/customers/tags/distinct` to aggregate and return unique tags with customer counts.
   3. Added tag filter UI to `CustomerList.tsx`.
   4. Integrated tag criteria type (`criteria.type = 'tag'`) to `createCustomerList` and `getCustomersInList` on the backend and added tag criteria configuration inside `CreateListModal.tsx`.
   5. Added direct Tag selection to the WhatsApp template broadcast form.
+  6. Implemented interactive Customer Tags editor section in `ChatRightPanel.tsx` on the moderator chat sidebar to easily add, auto-complete, and delete customer tags.
 - **Files Modified**:
   - `apps/backend/controller/customerController.js`
   - `apps/backend/routes/customerRoutes.js`
@@ -17,6 +18,7 @@
   - `apps/frontend/src/pages/customers/CustomerList.tsx`
   - `apps/frontend/src/components/broadcast/CreateListModal.tsx`
   - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/ChatRightPanel.tsx`
 
 ### [BUG FIX / UI] Customer Import Modal Placement and Layering (Layout Containment)
 - **Date**: 2026-07-17

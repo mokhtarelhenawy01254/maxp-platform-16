@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { User, Phone, Mail, Clock, ShoppingBag, Activity, Tags, X, ExternalLink, MapPin, ChevronDown } from 'lucide-react';
+import { User, Phone, Mail, Clock, ShoppingBag, Activity, Tags, X, ExternalLink, MapPin, ChevronDown, Tag, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomerProfile } from '../../../hooks/inbox/useCustomerProfile';
 import { getInboxCustomerAvatarUrl, buildProxyImageUrl } from '../../../utils/imageUrl';
 import { Contact } from '../../../hooks/useWhatsAppQueries';
 import { apiClient } from '../../../services/apiClient';
+import { customerService } from '../../../services/customerService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
@@ -44,9 +45,34 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
   const [avatarError, setAvatarError] = useState(false);
   const [leadCategories, setLeadCategories] = useState<any[]>([]);
   const [updatingCategory, setUpdatingCategory] = useState(false);
+  
+  // 🏷️ Customer Tags State
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+
   const { customer, orders, activities, loading, loadCustomerData, calculateLTV } = useCustomerProfile();
 
   const customerId = contact?.customer?.id;
+
+  // Sync tags state when customer changes
+  useEffect(() => {
+    if (customer?.tags) {
+      try {
+        const parsed = typeof customer.tags === 'string' ? JSON.parse(customer.tags) : customer.tags;
+        if (Array.isArray(parsed)) {
+          setTags(parsed);
+        } else {
+          setTags([]);
+        }
+      } catch {
+        setTags([]);
+      }
+    } else {
+      setTags([]);
+    }
+  }, [customer]);
 
   useEffect(() => {
     if (customerId) {
@@ -59,6 +85,15 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
     apiClient.get("/whatsapp/lead-categories").then(r => {
       setLeadCategories(r.data?.data || []);
     }).catch(() => {});
+
+    // Fetch distinct tags for suggestions
+    customerService.getDistinctTags().then(res => {
+      const distinctNames = res.map(t => t.name);
+      // Merge with suggestions from service
+      const defaultSuggestions = customerService.getTagSuggestions();
+      const merged = Array.from(new Set([...distinctNames, ...defaultSuggestions]));
+      setAvailableTags(merged);
+    }).catch(() => {});
   }, []);
 
   const handleCategoryChange = async (categoryId: string) => {
@@ -70,6 +105,40 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
       contact.leadCategory = leadCategories.find(c => c.id === categoryId) || null;
       setUpdatingCategory(false);
     } catch { setUpdatingCategory(false); }
+  };
+
+  const handleAddTag = async (tagName: string) => {
+    if (!customerId) return;
+    const trimmed = tagName.trim();
+    if (!trimmed || tags.includes(trimmed)) return;
+    
+    const updatedTags = [...tags, trimmed];
+    setIsAddingTag(true);
+    try {
+      await customerService.updateCustomerTags(customerId, updatedTags);
+      setTags(updatedTags);
+      setNewTagInput('');
+      
+      // Update suggestions if new
+      if (!availableTags.includes(trimmed)) {
+        setAvailableTags(prev => [...prev, trimmed]);
+      }
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+    } finally {
+      setIsAddingTag(false);
+    }
+  };
+
+  const handleRemoveTag = async (tagToRemove: string) => {
+    if (!customerId) return;
+    const updatedTags = tags.filter(t => t !== tagToRemove);
+    try {
+      await customerService.updateCustomerTags(customerId, updatedTags);
+      setTags(updatedTags);
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+    }
   };
 
   const selectedCategory = contact?.leadCategoryId
@@ -227,6 +296,73 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenLabels, 
                           ))}
                         </SelectContent>
                       </Select>
+                  </div>
+
+                  <div style={sectionStyle}>
+                    <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">وسوم العميل (Tags)</h4>
+                    
+                    {/* عرض الوسوم الحالية */}
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {tags.length > 0 ? (
+                        tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-1 rounded bg-secondary/15 hover:bg-secondary/25 px-2 py-0.5 text-xs font-medium text-secondary-foreground transition-colors group"
+                          >
+                            <Tag className="size-2.5" />
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="ml-1 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground focus:outline-none"
+                              title="حذف الوسم"
+                            >
+                              <X className="size-2.5" />
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground w-full">لا توجد وسوم لهذا العميل</p>
+                      )}
+                    </div>
+
+                    {/* إدخال وسم جديد مع اقتراحات */}
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={newTagInput}
+                          onChange={(e) => setNewTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag(newTagInput);
+                            }
+                          }}
+                          className="flex h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="وسم جديد... (اضغط Enter)"
+                          disabled={isAddingTag}
+                          list="suggested-tags-list"
+                        />
+                        <datalist id="suggested-tags-list">
+                          {availableTags
+                            .filter(t => !tags.includes(t))
+                            .map(t => (
+                              <option key={t} value={t} />
+                            ))
+                          }
+                        </datalist>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon-sm"
+                        className="h-8 w-8 rounded-md"
+                        onClick={() => handleAddTag(newTagInput)}
+                        disabled={isAddingTag || !newTagInput.trim()}
+                      >
+                        <Plus className="size-3.5" />
+                      </Button>
                     </div>
                   </div>
 

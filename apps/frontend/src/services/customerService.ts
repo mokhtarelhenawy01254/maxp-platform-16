@@ -270,7 +270,12 @@ class CustomerService {
       "محتمل",
       "مؤكد",
       "ملغي",
-    ];
+  /**
+   * Update customer tags
+   */
+  async updateCustomerTags(customerId: string, tags: string[]): Promise<any> {
+    const response = await apiClient.put(`/customers/${customerId}/tags`, { tags });
+    return response.data;
   }
 }
 
