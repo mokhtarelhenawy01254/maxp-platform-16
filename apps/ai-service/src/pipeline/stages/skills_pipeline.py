@@ -117,11 +117,18 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     agent=str(ctx.agent.name or ctx.agent.id),
                     total=len(registry.get_all()),
                     filtered=len(skills),
+                    allowed_names=list(allowed_names),
+                    skill_names=[s.name for s in skills],
                 )
         except Exception as e:
             logger.warning("skills_filter_failed", error=str(e))
     if not skills:
-        logger.warning("no_skills_available_using_allowed_tools_fallback")
+        logger.warning(
+            "no_skills_available_using_allowed_tools_fallback",
+            has_agent=bool(ctx.agent),
+            allowed_skills=getattr(ctx.agent, "allowed_skills", None),
+            allowed_tools=getattr(ctx.agent, "allowed_tools", None),
+        )
 
     # 3. Build system prompt with agent instructions (soul/persona from DB agent)
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""

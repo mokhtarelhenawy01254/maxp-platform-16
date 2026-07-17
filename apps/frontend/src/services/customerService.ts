@@ -270,6 +270,9 @@ class CustomerService {
       "محتمل",
       "مؤكد",
       "ملغي",
+    ];
+  }
+
   /**
    * Update customer tags
    */

@@ -29,7 +29,7 @@ async def create_channel_agent(
                 tools.append(tool)
 
     role = getattr(channel_agent, "role", "AGENT")
-    return Agent(
+    agent = Agent(
         client=client,
         name=channel_agent._agent_name(),
         instructions=instructions,
@@ -37,6 +37,9 @@ async def create_channel_agent(
         middleware=build_maxp_function_middleware(company_id, role),
         default_options={"model": channel_agent.model},
     )
+    agent.allowed_skills = getattr(channel_agent, "allowed_skills", set())
+    agent.allowed_tools = getattr(channel_agent, "allowed_tools", set())
+    return agent
 
 
 async def create_ceo_agent(
