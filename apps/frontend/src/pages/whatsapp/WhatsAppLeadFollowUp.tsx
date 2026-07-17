@@ -89,7 +89,7 @@ const lfBase = "/api/v1/whatsapp/lead-followup";
 const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) => {
   const { t } = useTranslation();
   const ns = "whatsappLeadFollowup";
-  const tx = useCallback((k: string) => t(`${ns}.${k}`, { ns }), [t, ns]);
+  const tx = useCallback((k: string) => t(`${ns}.${k}`), [t, ns]);
 
   const wc = useCallback((c: ApiRequestConfig = {}) => companyId ? { ...c, _companyId: companyId } : c, [companyId]);
 
