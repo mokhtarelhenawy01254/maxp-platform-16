@@ -1,5 +1,10 @@
 # Team Sync Updates
 
+## 2026-07-17 / 2026-03-09
+- **Legacy Frontend Path Conflict (BUGFIX / COMPLETE)**:
+  1. **Storefront HTML Controller Fix**: Updated `storefrontHtmlController.js` to prioritize the absolute production folder path `/var/www/frontend2/dist/index.html` as the candidate location before evaluating relative path candidates. This ensures the correct, recently deployed frontend code takes precedence over any legacy directories on the server.
+  2. **Deployment Script Cleanup**: Enhanced `deploy-remote.sh` to unconditionally remove the legacy `/var/www/frontend` directory if it exists on the server, eliminating any potential path resolution conflicts and freeing up disk space.
+
 ## 2026-07-16 / 2026-03-09
 - **Customer Import Modal — Excel/CSV/Paste Support & Translation Fix (FEATURE / COMPLETE)**:
   1. **Excel Import**: Integrated `xlsx` (SheetJS) library into `CustomerImportModal.tsx` to support `.xlsx` and `.xls` file uploads alongside existing `.csv` support. The parser reads the first worksheet and maps headers automatically (Arabic/English).

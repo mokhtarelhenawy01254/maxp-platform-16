@@ -96,10 +96,15 @@ elif [ -d "$DEPLOY_STAGING/frontend/dist" ]; then
 elif [ -d "/var/www/frontend/dist" ]; then
   echo "📦 Moving frontend files from legacy location..."
   sync_frontend_dist "/var/www/frontend/dist"
-  sudo rm -rf /var/www/frontend
   echo "✅ Frontend moved successfully from legacy"
 else
   echo "⚠️ Frontend files not found, skipping..."
+fi
+
+# Clean up legacy frontend directory unconditionally
+if [ -d "/var/www/frontend" ]; then
+  echo "🧹 Cleaning up legacy /var/www/frontend directory..."
+  sudo rm -rf /var/www/frontend
 fi
 
 if [ -f "$DEPLOY_STAGING/theme-presets.tar.gz" ]; then

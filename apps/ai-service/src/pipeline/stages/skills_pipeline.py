@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import uuid
 from decimal import Decimal
 from typing import Any
 
@@ -15,6 +16,69 @@ from src.skills.integration import _iter_allowed_skills_meta as _iter_skill_meta
 from src.skills.registry import get_skill_registry
 
 logger = structlog.get_logger(__name__)
+
+
+async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> dict:
+    """Execute a single tool call from an LLM response."""
+    func_name = tc.get("function", {}).get("name", "")
+    arguments_str = tc.get("function", {}).get("arguments", "{}")
+
+    if isinstance(arguments_str, str):
+        try:
+            arguments = json.loads(arguments_str)
+        except json.JSONDecodeError:
+            return {"tool": func_name, "status": "parse_error", "error": f"Invalid JSON: {arguments_str[:200]}"}
+    else:
+        arguments = arguments_str
+
+    tool = registry.resolve(func_name)
+    if not tool:
+        logger.warning("unknown_tool_called", name=func_name)
+        return {"tool": func_name, "status": "unknown"}
+
+    if ctx.company_id and "company_id" not in arguments:
+        arguments = {**arguments, "company_id": ctx.company_id}
+
+    try:
+        validated = tool.input_model(**arguments)
+        result = await tool.func(validated)
+        return {"tool": func_name, "status": "success", "result": result}
+    except Exception as e:
+        logger.error("tool_execution_failed", name=func_name, error=str(e))
+        return {"tool": func_name, "status": "error", "error": str(e)}
+
+
+async def _execute_hotel_reserve_enforcement(ctx: PipelineContext, registry: Any, executed: list[dict]) -> dict | None:
+    """Build and execute hotel_reserve from conversation context.
+
+    Scans ctx.tool_evidence and ctx.messages for hotel_info/check_availability
+    results, extracts customer data from ctx.message, executes the tool
+    directly, and appends the result to ``executed``.
+
+    Returns the synthetic tool_call dict (for follow-up message building)
+    or None if data is insufficient.
+    """
+    hotel_tc = _build_hotel_reserve_tool_call(ctx, registry)
+    if not hotel_tc:
+        return None
+    hotel_tool = registry.resolve("hotel_reserve")
+    if not hotel_tool or not ctx.company_id:
+        return None
+    hotel_tc["id"] = f"call_enforced_{uuid.uuid4().hex[:8]}"
+    hotel_tc["type"] = "function"
+    try:
+        args = json.loads(hotel_tc["function"]["arguments"])
+        if "company_id" not in args:
+            args["company_id"] = ctx.company_id
+        validated = hotel_tool.input_model(**args)
+        result = await hotel_tool.func(validated)
+        executed.append({"tool": "hotel_reserve", "status": "success", "result": result})
+        ctx.tool_evidence.append({"tool": "hotel_reserve", "result": result})
+        return hotel_tc
+    except Exception as e:
+        logger.error("skills_pipeline_hotel_reserve_direct_failed", error=str(e))
+        executed.append({"tool": "hotel_reserve", "status": "error", "error": str(e)})
+        return hotel_tc
 
 
 async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
@@ -84,10 +148,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         logger.warning("skills_pipeline_empty_response_retrying")
         provider_response = await _llm_call(ctx, system_prompt, skills)
 
-    # 4c. Hotel booking state tracking (enforcement happens after tool execution)
-    _did_execute_hotel_reserve = False
-
     # 5. Handle tool calls
+    executed: list[dict] = []
     if provider_response.tool_calls:
         logger.info(
             "skills_pipeline_tool_calls",
@@ -107,36 +169,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 }
                 break
 
-        async def _execute_one(tc: dict) -> dict:
-            func_name = tc.get("function", {}).get("name", "")
-            arguments_str = tc.get("function", {}).get("arguments", "{}")
-
-            if isinstance(arguments_str, str):
-                try:
-                    arguments = json.loads(arguments_str)
-                except json.JSONDecodeError:
-                    return {"tool": func_name, "status": "parse_error", "error": f"Invalid JSON: {arguments_str[:200]}"}
-            else:
-                arguments = arguments_str
-
-            tool = registry.resolve(func_name)
-            if not tool:
-                logger.warning("unknown_tool_called", name=func_name)
-                return {"tool": func_name, "status": "unknown"}
-
-            if ctx.company_id and "company_id" not in arguments:
-                arguments = {**arguments, "company_id": ctx.company_id}
-
-            try:
-                validated = tool.input_model(**arguments)
-                result = await tool.func(validated)
-                return {"tool": func_name, "status": "success", "result": result}
-            except Exception as e:
-                logger.error("tool_execution_failed", name=func_name, error=str(e))
-                return {"tool": func_name, "status": "error", "error": str(e)}
-
-        results = await asyncio.gather(*[_execute_one(tc) for tc in provider_response.tool_calls])
-        executed = []
+        results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in provider_response.tool_calls])
         for item in results:
             executed.append(item)
             if item["status"] == "success":
@@ -157,7 +190,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         tool_dicts.append(tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec') else {"type": "function", "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}})
             retry_response = await _raw_llm_call(ctx, retry_messages, tools=tool_dicts)
             if retry_response.tool_calls:
-                retry_results = await asyncio.gather(*[_execute_one(tc) for tc in retry_response.tool_calls])
+                retry_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in retry_response.tool_calls])
                 ri = 0
                 for i, item in enumerate(executed):
                     if ri >= len(retry_results):
@@ -170,61 +203,74 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
         ctx.executed_tools = executed
 
-        # 4d. Hotel booking enforcement: inject hotel_reserve AFTER tools executed (data available in tool_evidence)
-        executed_names = {e.get("tool") for e in executed}
-        if _message_indicates_hotel_confirmation(ctx) and "hotel_reserve" not in executed_names:
-            hotel_tc = _build_hotel_reserve_tool_call(ctx, registry)
-            if hotel_tc:
-                logger.warning("skills_pipeline_hotel_reserve_injected_direct")
-                hotel_tool = registry.resolve("hotel_reserve")
-                if hotel_tool and ctx.company_id:
-                    try:
-                        args = json.loads(hotel_tc["function"]["arguments"])
-                        if "company_id" not in args:
-                            args["company_id"] = ctx.company_id
-                        validated = hotel_tool.input_model(**args)
-                        result = await hotel_tool.func(validated)
-                        executed.append({"tool": "hotel_reserve", "status": "success", "result": result})
-                        ctx.tool_evidence.append({"tool": "hotel_reserve", "result": result})
-                        provider_response.tool_calls = (provider_response.tool_calls or []) + [hotel_tc]
-                        _did_execute_hotel_reserve = True
-                    except Exception as e:
-                        logger.error("skills_pipeline_hotel_reserve_direct_failed", error=str(e))
-                        executed.append({"tool": "hotel_reserve", "status": "error", "error": str(e)})
-                        provider_response.tool_calls = (provider_response.tool_calls or []) + [hotel_tc]
-
-        # Follow-up LLM call for the final reply
-        if executed:
-            followup_messages = await _build_followup_messages(ctx, provider_response, executed)
-            try:
-                final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
-                if final_response.tool_calls:
-                    extra_results = await asyncio.gather(*[_execute_one(tc) for tc in final_response.tool_calls])
-                    executed.extend(extra_results)
-                    for item in extra_results:
-                        if item["status"] == "success":
-                            ctx.tool_evidence.append({"tool": item["tool"], "result": item["result"]})
-                    followup_messages = await _build_followup_messages(ctx, final_response, extra_results)
-                    final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
-                if not final_response.text:
-                    logger.warning("skills_pipeline_followup_empty_retrying")
-                    text_messages = _strip_tool_messages(followup_messages, executed)
-                    final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice=None)
-                ctx.final_reply = final_response.text or _format_tool_results(executed)
-                ctx.llm_response = final_response.text or ""
-            except Exception as e:
-                logger.error("skills_pipeline_followup_failed", error=str(e))
-                ctx.final_reply = _format_tool_results(executed)
-    else:
-        # Direct reply (no tool call — general chat)
-        if provider_response.text:
-            ctx.final_reply = provider_response.text
-            ctx.llm_response = provider_response.text
+    # 6. Hotel booking enforcement (runs for both tool_calls and no-tool-calls paths)
+    _has_hotel_reserve = any(
+        e.get("tool") == "hotel_reserve" and e.get("status") in ("success", "error")
+        for e in executed
+    )
+    if not _has_hotel_reserve and _message_indicates_hotel_confirmation(ctx):
+        hotel_injected = await _execute_hotel_reserve_enforcement(ctx, registry, executed)
+        if hotel_injected:
+            if provider_response.tool_calls is None:
+                provider_response.tool_calls = []
+            provider_response.tool_calls.append(hotel_injected)
+            logger.warning(
+                "skills_pipeline_hotel_reserve_enforced",
+                tool_calls_path=bool(provider_response.tool_calls),
+            )
         else:
-            # LLM returned empty text with no tool calls — even after retry
-            logger.warning("skills_pipeline_empty_reply_no_tools")
-            ctx.final_reply = ""
-            ctx.llm_response = ""
+            logger.warning("skills_pipeline_hotel_enforcement_skipped_no_data")
+
+    # Follow-up LLM call (only when tools were called or enforcement injected)
+    if executed:
+        # If we came from no-tool-calls path, provider_response may not have tool_calls
+        # We need them for _build_followup_messages — build synthetic ones if missing
+        if not provider_response.tool_calls:
+            _tool_call_id = 0
+            for item in executed:
+                tc_func = item.get("tool", "")
+                tc_id = f"call_{_tool_call_id}"
+                _tool_call_id += 1
+                tc_msg = {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [{
+                        "id": tc_id,
+                        "type": "function",
+                        "function": {"name": tc_func, "arguments": "{}"},
+                    }],
+                }
+                if provider_response.tool_calls is None:
+                    provider_response.tool_calls = []
+                provider_response.tool_calls.append(tc_msg["tool_calls"][0])
+
+        followup_messages = await _build_followup_messages(ctx, provider_response, executed)
+        try:
+            final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+            if final_response.tool_calls:
+                extra_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in final_response.tool_calls])
+                executed.extend(extra_results)
+                for item in extra_results:
+                    if item["status"] == "success":
+                        ctx.tool_evidence.append({"tool": item["tool"], "result": item["result"]})
+                followup_messages = await _build_followup_messages(ctx, final_response, extra_results)
+                final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+            if not final_response.text:
+                logger.warning("skills_pipeline_followup_empty_retrying")
+                text_messages = _strip_tool_messages(followup_messages, executed)
+                final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice=None)
+            ctx.final_reply = final_response.text or _format_tool_results(executed)
+            ctx.llm_response = final_response.text or ""
+        except Exception as e:
+            logger.error("skills_pipeline_followup_failed", error=str(e))
+            ctx.final_reply = _format_tool_results(executed)
+    elif provider_response.text:
+        ctx.final_reply = provider_response.text
+        ctx.llm_response = provider_response.text
+    else:
+        logger.warning("skills_pipeline_empty_reply_no_tools")
+        ctx.final_reply = ""
+        ctx.llm_response = ""
 
     # Auto-populate response_attachments from landmarkImage in tool evidence
     import os
@@ -803,22 +849,24 @@ def _message_indicates_hotel_confirmation(ctx: PipelineContext) -> bool:
     has_keyword = any(kw in msg for kw in confirm_keywords)
     if not has_keyword:
         return False
-    has_hotel_context = any(
+    if any(
         ev.get("tool", "").startswith("hotel_") and ev.get("tool") != "hotel_reserve"
         for ev in getattr(ctx, "tool_evidence", [])
-    )
-    if has_hotel_context:
+    ):
         return True
-    has_hotel_tool = any(
-        t.get("function", {}).get("name") == "hotel_reserve" or t.get("name") == "hotel_reserve"
-        for t in getattr(ctx, "native_tools", [])
-    )
-    if not has_hotel_context and not has_hotel_tool:
-        has_hotel_context = any(
-            t.get("function", {}).get("name", "").startswith("hotel_") or t.get("name", "").startswith("hotel_")
-            for t in getattr(ctx, "native_tools", [])
-        )
-    return has_hotel_tool
+    for m in getattr(ctx, "messages", []):
+        for tc in (m.get("tool_calls") or []):
+            fn = tc.get("function", {}).get("name", "")
+            if fn.startswith("hotel_") and fn != "hotel_reserve":
+                return True
+        if m.get("role") == "tool":
+            try:
+                result = json.loads(m["content"]) if isinstance(m["content"], str) else m["content"]
+            except (json.JSONDecodeError, TypeError, ValueError):
+                continue
+            if isinstance(result, dict) and ("hotels" in result or "available_room_types" in result):
+                return True
+    return False
 
 
 def _scan_messages_for_hotel_data(ctx: PipelineContext) -> tuple[str | None, list[dict], dict[str, Any]]:
@@ -842,12 +890,6 @@ def _scan_messages_for_hotel_data(ctx: PipelineContext) -> tuple[str | None, lis
                     available_rooms.append({**rm, "roomType": rt})
 
     for m in getattr(ctx, "messages", []):
-        for tc in (m.get("tool_calls") or []):
-            fn = tc.get("function", {})
-            if fn.get("name") == "hotel_info":
-                pid = "cmrkmazk800a5jugij9jrptqm"
-                if not property_id:
-                    property_id = pid
         if m.get("role") == "tool":
             try:
                 result = json.loads(m["content"]) if isinstance(m["content"], str) else m["content"]
@@ -872,6 +914,7 @@ def _build_hotel_reserve_tool_call(ctx: PipelineContext, registry: Any) -> dict 
         return None
 
     import re
+    from datetime import date as _date
 
     property_id, available_rooms, room_types_map = _scan_messages_for_hotel_data(ctx)
 
@@ -900,14 +943,15 @@ def _build_hotel_reserve_tool_call(ctx: PipelineContext, registry: Any) -> dict 
     }
     check_in = None
     check_out = None
+    _year = str(_date.today().year)
     date_matches = re.findall(r'(\d{1,2})\s*(يناير|فبراير|مارس|أبريل|إبريل|مايو|ماي|يونيه|يونيو|يوليه|يوليو|أغسطس|اغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)', msg)
     if len(date_matches) >= 2:
         day1, mon1 = date_matches[0]
         day2, mon2 = date_matches[1]
         month1 = AR_MONTHS.get(mon1, "07")
         month2 = AR_MONTHS.get(mon2, "07")
-        check_in = f"2026-{month1}-{int(day1):02d}"
-        check_out = f"2026-{month2}-{int(day2):02d}"
+        check_in = f"{_year}-{month1}-{int(day1):02d}"
+        check_out = f"{_year}-{month2}-{int(day2):02d}"
 
     # 5. Extract adults count
     adults = 2
@@ -917,7 +961,14 @@ def _build_hotel_reserve_tool_call(ctx: PipelineContext, registry: Any) -> dict 
 
     # 6. Build rooms list — only include rooms matching user's requested type from available data
     rooms = []
-    room_ar_names = {"ديلوكس": "غرفة ديلوكس", "مفردة": "غرفة مفردة", "مزدوجة": "غرفة مزدوجة", "جناح": "جناح"}
+    room_ar_names = {
+        "ديلوكس": "غرفة ديلوكس", "مفردة": "غرفة مفردة", "مزدوجة": "غرفة مزدوجة",
+        "جناح": "جناح", "سويت": "جناح", "suite": "جناح",
+        "standard": "غرفة قياسية", "قياسية": "غرفة قياسية",
+        "توأم": "غرفة توأم", "twin": "غرفة توأم",
+        "triple": "غرفة ثلاثية", "ثلاثية": "غرفة ثلاثية",
+        "family": "غرفة عائلية", "عائلية": "غرفة عائلية",
+    }
     req_ar_name = None
     for keyword, ar_name in room_ar_names.items():
         if keyword in msg:
@@ -942,18 +993,15 @@ def _build_hotel_reserve_tool_call(ctx: PipelineContext, registry: Any) -> dict 
         nightly_rate = rt.get("basePrice", 0)
         rooms.append({"roomTypeId": rt.get("id", ""), "nightlyRate": nightly_rate})
 
-    if not property_id:
-        property_id = "cmrkmazk800a5jugij9jrptqm"
-
-    if not customer_name or not customer_phone or not rooms:
+    if not customer_name or not customer_phone or not property_id or not rooms:
         return None
 
     args = {
         "customer_name": customer_name,
         "customer_phone": customer_phone,
         "property_id": property_id,
-        "check_in": check_in or "2026-07-20",
-        "check_out": check_out or "2026-07-22",
+        "check_in": check_in or f"{_year}-07-20",
+        "check_out": check_out or f"{_year}-07-22",
         "adults": adults,
         "rooms": rooms,
     }

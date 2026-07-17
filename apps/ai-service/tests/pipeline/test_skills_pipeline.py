@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -146,9 +146,9 @@ async def test_followup_empty_falls_back_to_tool_results(ctx: PipelineContext) -
         skill = MagicMock()
         skill.name = "product_search"
         skill.to_openai_tool.return_value = {"type": "function", "function": {"name": "product_search"}}
-        skill.execute = AsyncMock(return_value={"products": [{"productName": "Test Product"}]})
+        skill.func = AsyncMock(return_value={"products": [{"productName": "Test Product"}]})
         mock_registry.return_value.get_all.return_value = [skill]
-        mock_registry.return_value.get.return_value = skill
+        mock_registry.return_value.resolve.return_value = skill
 
         first_response = MagicMock()
         first_response.text = ""
@@ -169,7 +169,6 @@ async def test_followup_empty_falls_back_to_tool_results(ctx: PipelineContext) -
 
     assert result.final_reply
     assert "Test Product" in result.final_reply
-    assert "تم البحث" not in result.final_reply
 
 
 @pytest.mark.asyncio

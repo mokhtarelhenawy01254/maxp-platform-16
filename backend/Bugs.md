@@ -1,5 +1,13 @@
 # Backend Bugs Log
 
+### [BUG FIX / PIPELINE] Legacy Frontend Path Conflict
+- **Date**: 2026-07-17
+- **Root Cause**: The storefront html controller (`storefrontHtmlController.js`) resolves candidates to serve `index.html` dynamically. The legacy path `path.resolve(__dirname, "../../frontend/dist/index.html")` resolved to `/var/www/frontend/dist/index.html` on the production server. Because the deployment script (`deploy-remote.sh`) only cleaned up this directory under conditional blocks that were skipped when staging tarballs were used, `/var/www/frontend` remained on disk. This caused the backend to continue serving the old `index.html` (which loaded obsolete chunk hashes like `54lLAbYb`) instead of `/var/www/frontend2/dist/index.html`.
+- **Resolution**: Updated `storefrontHtmlController.js` to prioritize the absolute production path `/var/www/frontend2/dist/index.html` before checking the relative path (preserving local development). Also updated `deploy-remote.sh` to unconditionally remove the legacy `/var/www/frontend` directory if it exists on the server.
+- **Files Modified**:
+  - `apps/backend/controller/storefrontHtmlController.js`
+  - `scripts/deploy-remote.sh`
+
 ### [BUG FIX / UI] Customer Import Modal — Missing Translation Keys
 - **Date**: 2026-07-16
 - **Root Cause**: `CustomerImportModal.tsx` used `t("customers.import.title")`, `t("customers.import.clickOrDrag")`, and 8+ other i18n keys under the `customers.import.*` namespace, but none were defined in either `ar/sections/customers.json` or `en/sections/customers.json`. This caused the UI to display raw translation key strings instead of proper Arabic/English text.
