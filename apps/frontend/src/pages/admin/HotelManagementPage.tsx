@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import {
   hotelApi, HotelProperty, HotelRoomType, HotelRoom, HotelReservation,
+  HotelService, HotelPolicy, HotelRoomRate,
   ROOM_STATUS_LABELS, ROOM_STATUS_COLORS, RESERVATION_STATUS_LABELS, RESERVATION_STATUS_COLORS, FOLIO_TYPE_LABELS
 } from "./hotel/shared";
 import {
   BuildingOffice2Icon, HomeIcon, KeyIcon, CalendarDaysIcon, CurrencyDollarIcon,
-  PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon
+  PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, Cog6ToothIcon
 } from "@heroicons/react/24/outline";
 
 import PropertyModal from "./hotel/PropertyModal";
@@ -14,8 +15,10 @@ import RoomModal from "./hotel/RoomModal";
 import ReservationModal from "./hotel/ReservationModal";
 import FolioModal from "./hotel/FolioModal";
 import RateModal from "./hotel/RateModal";
+import ServiceModal from "./hotel/ServiceModal";
+import PolicyModal from "./hotel/PolicyModal";
 
-type TabId = "properties" | "roomTypes" | "rooms" | "reservations" | "folio";
+type TabId = "properties" | "roomTypes" | "rooms" | "reservations" | "folio" | "policies";
 
 const TABS: { id: TabId; label: string; icon: any }[] = [
   { id: "properties", label: "الفنادق", icon: BuildingOffice2Icon },
@@ -23,6 +26,7 @@ const TABS: { id: TabId; label: string; icon: any }[] = [
   { id: "rooms", label: "الغرف", icon: KeyIcon },
   { id: "reservations", label: "الحجوزات", icon: CalendarDaysIcon },
   { id: "folio", label: "الخدمات والأسعار", icon: CurrencyDollarIcon },
+  { id: "policies", label: "السياسات", icon: Cog6ToothIcon },
 ];
 
 const BTN_CLS = "px-4 py-2 rounded-lg text-sm font-medium transition-colors";
@@ -47,25 +51,35 @@ export default function HotelManagementPage() {
   const [roomTypes, setRoomTypes] = useState<HotelRoomType[]>([]);
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [reservations, setReservations] = useState<HotelReservation[]>([]);
+  const [services, setServices] = useState<HotelService[]>([]);
+  const [roomRates, setRoomRates] = useState<HotelRoomRate[]>([]);
+  const [policies, setPolicies] = useState<HotelPolicy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedProperty, setSelectedProperty] = useState("");
+  const [folioSubTab, setFolioSubTab] = useState<"folio" | "services" | "rates">("folio");
   const [modal, setModal] = useState<{ type: string; data?: any } | null>(null);
 
   const loadAll = async () => {
     setLoading(true); setError("");
     try {
-      const [props, rtypes, rms, resvs] = await Promise.all([
+      const [props, rtypes, rms, resvs, svcs, rrates, pols] = await Promise.all([
         fetchJson(() => hotelApi.properties.list().then(r => r.success ? r.data : [])),
         fetchJson(() => hotelApi.roomTypes.list().then(r => r.success ? r.data : [])),
         fetchJson(() => hotelApi.rooms.list().then(r => r.success ? r.data : [])),
         fetchJson(() => hotelApi.reservations.list().then(r => r.success ? r.data : [])),
+        fetchJson(() => hotelApi.services.list().then(r => r.success ? r.data : [])),
+        fetchJson(() => hotelApi.rates.list().then(r => r.success ? r.data : [])),
+        fetchJson(() => hotelApi.policies.get().then(r => r.success ? r.data : null)),
       ]);
       setProperties(props);
       setRoomTypes(rtypes);
       setRooms(rms);
       setReservations(resvs);
+      setServices(svcs);
+      setRoomRates(rrates);
+      setPolicies(pols);
       if (props.length && !selectedProperty) setSelectedProperty(props[0].id);
     } catch (e: any) { setError(e.message); }
     setLoading(false);
@@ -266,13 +280,22 @@ export default function HotelManagementPage() {
 
       {/* ── Folio & Rates Tab ── */}
       {tab === 'folio' && (
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold">الخدمات الإضافية (Folio)</h2>
-              <button className={BTN_PRIMARY} onClick={() => setModal({ type: 'folio' })}>إضافة خدمة</button>
-            </div>
+        <div>
+          <div className="flex gap-1 mb-4 border-b">
+            {(["folio", "services", "rates"] as const).map(st => (
+              <button key={st} onClick={() => setFolioSubTab(st)}
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${folioSubTab === st ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500'}`}>
+                {st === 'folio' ? 'الخدمات (Folio)' : st === 'services' ? 'كتالوج الخدمات' : 'الأسعار الموسمية'}
+              </button>
+            ))}
+          </div>
+
+          {folioSubTab === 'folio' && (
             <div className="space-y-2">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm text-gray-500">الخدمات المضافة للحجوزات النشطة</span>
+                <button className={BTN_PRIMARY} onClick={() => setModal({ type: 'folio' })}>إضافة خدمة للحجز</button>
+              </div>
               {reservations.filter(r => r.status === 'CHECKED_IN' || r.status === 'CONFIRMED').map(r => (
                 <div key={r.id} className="border dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                   <p className="font-medium text-sm">{r.customerName} - {r.property?.name}</p>
@@ -286,20 +309,133 @@ export default function HotelManagementPage() {
                 </div>
               ))}
             </div>
-          </div>
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold">الأسعار الموسمية</h2>
-              <button className={BTN_PRIMARY} onClick={() => setModal({ type: 'rate' })}>إضافة سعر</button>
+          )}
+
+          {folioSubTab === 'services' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold">كتالوج الخدمات</h2>
+                <button className={BTN_PRIMARY} onClick={() => setModal({ type: 'service' })}>إضافة خدمة</button>
+              </div>
+              {services.length === 0 && <p className="text-gray-500 text-sm">لا توجد خدمات في الكتالوج. أضف الخدمات التي يقدمها الفندق.</p>}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead><tr className="border-b dark:border-gray-700 text-sm text-gray-500">
+                    <th className={CELL_CLS + " text-right"}>الخدمة</th>
+                    <th className={CELL_CLS + " text-right"}>بالعربية</th>
+                    <th className={CELL_CLS}>النوع</th>
+                    <th className={CELL_CLS}>السعر</th>
+                    <th className={CELL_CLS}>الحالة</th>
+                    <th className={CELL_CLS}></th>
+                  </tr></thead>
+                  <tbody>
+                    {services.map(s => (
+                      <tr key={s.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className={CELL_CLS}>{s.name}</td>
+                        <td className={CELL_CLS}>{s.nameAr || '-'}</td>
+                        <td className={CELL_CLS}>{FOLIO_TYPE_LABELS[s.itemType] || s.itemType}</td>
+                        <td className={CELL_CLS + " font-bold"}>{s.price} ج.م</td>
+                        <td className={CELL_CLS}><span className={`px-2 py-0.5 rounded-full text-xs ${s.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{s.isActive ? 'نشط' : 'غير نشط'}</span></td>
+                        <td className={CELL_CLS}>
+                          <div className="flex gap-1 justify-end">
+                            <button onClick={() => setModal({ type: 'service', data: s })}><PencilIcon className="w-4 h-4 text-gray-500" /></button>
+                            <button onClick={async () => { try { await hotelApi.services.delete(s.id); loadAll(); } catch (e: any) { setError(e.message); } }}><TrashIcon className="w-4 h-4 text-red-500" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="space-y-2">
-              {filteredRoomTypes.map(rt => (
-                <div key={rt.id} className="border dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
-                  <p className="font-medium text-sm">{rt.name} - {rt.basePrice} ج.م (أساسي)</p>
+          )}
+
+          {folioSubTab === 'rates' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold">الأسعار الموسمية</h2>
+                <button className={BTN_PRIMARY} onClick={() => setModal({ type: 'rate' })}>إضافة سعر</button>
+              </div>
+              <div className="space-y-3">
+                {filteredRoomTypes.map(rt => {
+                  const rtRates = roomRates.filter(r => r.roomTypeId === rt.id);
+                  return (
+                    <div key={rt.id} className="border dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
+                      <p className="font-medium text-sm">{rt.name} - <span className="text-blue-600">{rt.basePrice} ج.م</span> (أساسي)</p>
+                      {rtRates.length > 0 ? (
+                        <div className="mt-2 space-y-1 pr-4">
+                          {rtRates.map(rr => (
+                            <div key={rr.id} className="flex justify-between text-xs text-gray-500">
+                              <span>{rr.label || 'سعر موسمي'}: {new Date(rr.dateFrom).toLocaleDateString('ar-EG')} → {new Date(rr.dateTo).toLocaleDateString('ar-EG')}</span>
+                              <span><span className="font-bold text-gray-700">{rr.price} ج.م</span> <button className="text-red-500 mr-2" onClick={async () => { await hotelApi.rates.delete(rr.id); loadAll(); }}>×</button></span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-xs text-gray-400 pr-4 mt-1">لا توجد أسعار موسمية</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Policies Tab ── */}
+      {tab === 'policies' && (
+        <div className="max-w-2xl">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-bold">سياسة الفندق</h2>
+            <button className={BTN_PRIMARY} onClick={() => setModal({ type: 'policy', data: policies })}>
+              <PencilIcon className="w-4 h-4 inline ml-1" />تعديل
+            </button>
+          </div>
+          {!policies ? (
+            <p className="text-gray-500">جاري التحميل...</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+                <h3 className="font-medium text-sm mb-2">⏰ أوقات الدخول والخروج</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span>تسجيل الوصول: {policies.checkInTime || '14:00'}</span>
+                  <span>تسجيل المغادرة: {policies.checkOutTime || '12:00'}</span>
+                  {policies.earlyCheckInFee > 0 && <span>رسوم الدخول المبكر: {policies.earlyCheckInFee} ج.م</span>}
+                  {policies.lateCheckOutFee > 0 && <span>رسوم المغادرة المتأخرة: {policies.lateCheckOutFee} ج.م</span>}
                 </div>
-              ))}
+              </div>
+              <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+                <h3 className="font-medium text-sm mb-2">📋 سياسة الإلغاء</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  إلغاء مجاني قبل {policies.cancelFreeBefore} أيام من تاريخ الوصول. بعد ذلك، {policies.cancelPenaltyPct}% من قيمة الحجز.
+                </p>
+              </div>
+              <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+                <h3 className="font-medium text-sm mb-2">👶 سياسة الأطفال</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {policies.childrenAllowed ? 'مسموح بوجود أطفال' : 'غير مسموح بوجود أطفال'}
+                  {policies.extraBedPrice > 0 && ` | سرير إضافي: ${policies.extraBedPrice} ج.م`}
+                </p>
+              </div>
+              <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+                <h3 className="font-medium text-sm mb-2">🚭 سياسات عامة</h3>
+                <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                  <p>{policies.smokingAllowed ? 'التدخين مسموح' : 'التدخين ممنوع'}</p>
+                  <p>{policies.visitorsAllowed ? `الزوار مسموح بهم (${policies.visitorsHours || '10:00-20:00'})` : 'الزوار غير مسموح بهم'}</p>
+                  {policies.quietHoursFrom && policies.quietHoursTo && (
+                    <p>ساعات الهدوء: من {policies.quietHoursFrom} إلى {policies.quietHoursTo}</p>
+                  )}
+                </div>
+              </div>
+              {policies.customRules && Array.isArray(policies.customRules) && policies.customRules.length > 0 && (
+                <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+                  <h3 className="font-medium text-sm mb-2">📜 قواعد إضافية</h3>
+                  <ul className="list-disc pr-5 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    {policies.customRules.map((rule: string, i: number) => <li key={i}>{rule}</li>)}
+                  </ul>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -309,6 +445,8 @@ export default function HotelManagementPage() {
       {modal?.type === 'reservation' && <ReservationModal properties={properties} roomTypes={roomTypes} rooms={rooms} selectedProperty={selectedProperty} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'folio' && <FolioModal reservations={reservations} preselectedId={modal.data?.reservationId} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
       {modal?.type === 'rate' && <RateModal roomTypes={roomTypes} selectedProperty={selectedProperty} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
+      {modal?.type === 'service' && <ServiceModal data={modal.data} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
+      {modal?.type === 'policy' && <PolicyModal data={modal.data} onClose={() => setModal(null)} onSaved={onSaved} onError={onError} />}
     </div>
     </div>
   );

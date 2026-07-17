@@ -2,6 +2,45 @@
 
 _Last updated: 2026-07-17_
 
+## Hotel System Enhancements (2026-07-17)
+
+### Service Catalog
+- **New Prisma model**: `HotelService` in `apps/backend/prisma/schema/hotel.prisma` — standalone service catalog NOT tied to reservations
+- Fields: name, nameAr, itemType (HotelFolioItemType enum), price, isActive
+- **Backend API**: `apps/backend/routes/hotelRoutes.js` + `apps/backend/controller/hotelController.js`
+  - `GET/POST /api/v1/hotel/services` — list/create services
+  - `PUT/DELETE /api/v1/hotel/services/:id` — update/delete services
+- **Frontend**:
+  - `apps/frontend/src/pages/admin/hotel/ServiceModal.tsx` — Add/edit service modal
+  - `apps/frontend/src/pages/admin/HotelManagementPage.tsx` — Services sub-tab in Folio & Rates
+  - `apps/frontend/src/pages/admin/hotel/FolioModal.tsx` — Updated to pick from service catalog
+
+### Seasonal Rates Display
+- Rates tab now fetches and displays `HotelRoomRate` records per room type
+- Shows date range, label, price with delete option
+
+### Hotel Policies
+- **New Prisma model**: `HotelPolicy` in `apps/backend/prisma/schema/hotel.prisma`
+- Fields: checkInTime, checkOutTime, earlyCheckInFee, lateCheckOutFee, cancelFreeBefore, cancelPenaltyPct, childrenAllowed, extraBedPrice, quietHours, smokingAllowed, visitorsAllowed, customRules (JSON)
+- **Backend API**: `GET/PUT /api/v1/hotel/policies` — get/update policies (one per company)
+- **Frontend**:
+  - `apps/frontend/src/pages/admin/hotel/PolicyModal.tsx` — Edit policies modal
+  - `apps/frontend/src/pages/admin/HotelManagementPage.tsx` — Policies tab with display cards
+- Auto-creates default policy on first request
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `apps/backend/prisma/schema/hotel.prisma` | Added HotelService, HotelPolicy models |
+| `apps/backend/prisma/schema/core.prisma` | Added hotelServices, hotelPolicy back-refs |
+| `apps/backend/controller/hotelController.js` | Added services CRUD + policies get/update |
+| `apps/backend/routes/hotelRoutes.js` | Added services + policies routes |
+| `apps/frontend/src/pages/admin/hotel/shared.ts` | Added HotelService, HotelPolicy, HotelRoomRate types + API methods |
+| `apps/frontend/src/pages/admin/HotelManagementPage.tsx` | Service catalog sub-tab, rates display, policies tab |
+| `apps/frontend/src/pages/admin/hotel/ServiceModal.tsx` | NEW — service add/edit modal |
+| `apps/frontend/src/pages/admin/hotel/PolicyModal.tsx` | NEW — policy editor modal |
+| `apps/frontend/src/pages/admin/hotel/FolioModal.tsx` | Updated — pick from service catalog |
+
 ## Project Context
 
 ### WhatsApp Chat Right Panel (Customer Profile)

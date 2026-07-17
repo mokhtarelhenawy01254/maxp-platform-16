@@ -38,6 +38,16 @@ router.get('/reservations/:reservationId/folio', verifyToken.authenticateToken, 
 router.post('/reservations/:reservationId/folio', verifyToken.authenticateToken, ctrl.addFolioItem);
 router.delete('/reservations/:reservationId/folio/:id', verifyToken.authenticateToken, ctrl.removeFolioItem);
 
+// Service Catalog
+router.get('/services', verifyToken.authenticateToken, ctrl.getServices);
+router.post('/services', verifyToken.authenticateToken, ctrl.createService);
+router.put('/services/:id', verifyToken.authenticateToken, ctrl.updateService);
+router.delete('/services/:id', verifyToken.authenticateToken, ctrl.deleteService);
+
+// Hotel Policies
+router.get('/policies', verifyToken.authenticateToken, ctrl.getPolicies);
+router.put('/policies', verifyToken.authenticateToken, ctrl.updatePolicies);
+
 // Seasonal Rates
 router.get('/room-rates', verifyToken.authenticateToken, ctrl.getRoomRates);
 router.post('/room-rates', verifyToken.authenticateToken, ctrl.createRoomRate);

@@ -168,6 +168,53 @@ model HotelFolioItem {
   @@map("hotel_folio_items")
 }
 
+/// Hotel module - Service catalog (standalone, NOT tied to reservations)
+model HotelService {
+  id        String              @id @default(cuid())
+  companyId String
+  name      String              /// Service name (English)
+  nameAr    String?             /// Service name (Arabic)
+  itemType  HotelFolioItemType  @default(SERVICE)
+  price     Float               /// Price per unit
+  isActive  Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([itemType])
+  @@map("hotel_services")
+}
+
+/// Hotel module - Policies and house rules
+model HotelPolicy {
+  id               String   @id @default(cuid())
+  companyId        String
+  checkInTime      String   @default("14:00")
+  checkOutTime     String   @default("12:00")
+  earlyCheckInFee  Float    @default(0)
+  lateCheckOutFee  Float    @default(0)
+  cancelFreeBefore Int      @default(5)  /// Days before check-in for free cancellation
+  cancelPenaltyPct Int      @default(100)
+  childrenAllowed  Boolean  @default(true)
+  extraBedPrice    Float    @default(0)
+  quietHoursFrom   String?  @default("22:00")
+  quietHoursTo     String?  @default("08:00")
+  smokingAllowed   Boolean  @default(false)
+  visitorsAllowed  Boolean  @default(false)
+  visitorsHours    String?  @default("10:00-20:00")
+  customRules      Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId])
+  @@index([companyId])
+  @@map("hotel_policies")
+}
+
 /// Hotel module - Seasonal/custom pricing for room types
 model HotelRoomRate {
   id         String   @id @default(cuid())

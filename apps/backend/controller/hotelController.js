@@ -566,6 +566,108 @@ const removeFolioItem = async (req, res) => {
   }
 };
 
+// ── Service Catalog ──────────────────────────────────────
+const getServices = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { itemType } = req.query;
+    const where = { companyId };
+    if (itemType) where.itemType = itemType;
+    const data = await getSharedPrismaClient().hotelService.findMany({ where, orderBy: { name: 'asc' } });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching services:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب الخدمات' });
+  }
+};
+
+const createService = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { name, nameAr, itemType, price } = req.body;
+    if (!name || !price) return res.status(400).json({ success: false, error: 'اسم الخدمة والسعر مطلوب' });
+    const data = await getSharedPrismaClient().hotelService.create({
+      data: { companyId, name: name.trim(), nameAr, itemType: itemType || 'SERVICE', price }
+    });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error creating service:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الخدمة' });
+  }
+};
+
+const updateService = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { id } = req.params;
+    const existing = await getSharedPrismaClient().hotelService.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الخدمة غير موجودة' });
+    const data = await getSharedPrismaClient().hotelService.update({ where: { id }, data: req.body });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error updating service:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الخدمة' });
+  }
+};
+
+const deleteService = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { id } = req.params;
+    const existing = await getSharedPrismaClient().hotelService.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الخدمة غير موجودة' });
+    await getSharedPrismaClient().hotelService.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting service:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف الخدمة' });
+  }
+};
+
+// ── Hotel Policies ──────────────────────────────────────
+const getPolicies = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    let data = await getSharedPrismaClient().hotelPolicy.findUnique({ where: { companyId } });
+    if (!data) {
+      data = await getSharedPrismaClient().hotelPolicy.create({
+        data: { companyId }
+      });
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching policies:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب السياسات' });
+  }
+};
+
+const updatePolicies = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const existing = await getSharedPrismaClient().hotelPolicy.findUnique({ where: { companyId } });
+    if (!existing) {
+      const data = await getSharedPrismaClient().hotelPolicy.create({
+        data: { companyId, ...req.body }
+      });
+      return res.json({ success: true, data });
+    }
+    const data = await getSharedPrismaClient().hotelPolicy.update({
+      where: { companyId },
+      data: req.body
+    });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error updating policies:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث السياسات' });
+  }
+};
+
 // ── Seasonal Rates ──────────────────────────────────────
 const getRoomRates = async (req, res) => {
   try {
@@ -624,5 +726,7 @@ module.exports = {
   getReservations, getReservation, createReservation, updateReservation, updateReservationStatus, deleteReservation,
   checkAvailability,
   getFolioItems, addFolioItem, removeFolioItem,
+  getServices, createService, updateService, deleteService,
+  getPolicies, updatePolicies,
   getRoomRates, createRoomRate, deleteRoomRate
 };

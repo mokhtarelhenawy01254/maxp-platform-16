@@ -71,6 +71,16 @@ export const hotelApi = {
     create: (data: any) => fetch(api('room-rates'), { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
     delete: (id: string) => fetch(api(`room-rates/${id}`), { method: 'DELETE', headers: getAuthHeaders() }).then(r => r.json()),
   },
+  services: {
+    list: (itemType?: string) => fetch(api(`services${itemType ? `?itemType=${itemType}` : ''}`), { headers: getAuthHeaders() }).then(r => r.json()),
+    create: (data: any) => fetch(api('services'), { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    update: (id: string, data: any) => fetch(api(`services/${id}`), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    delete: (id: string) => fetch(api(`services/${id}`), { method: 'DELETE', headers: getAuthHeaders() }).then(r => r.json()),
+  },
+  policies: {
+    get: () => fetch(api('policies'), { headers: getAuthHeaders() }).then(r => r.json()),
+    update: (data: any) => fetch(api('policies'), { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+  },
 };
 
 export type HotelProperty = {
@@ -113,6 +123,28 @@ export type HotelReservationRoom = {
 export type HotelFolioItem = {
   id: string; reservationId: string; description: string; amount: number;
   itemType: string; quantity: number; chargedAt: string;
+};
+
+export type HotelService = {
+  id: string; name: string; nameAr?: string; itemType: string;
+  price: number; isActive: boolean;
+};
+
+export type HotelPolicy = {
+  id?: string; companyId?: string;
+  checkInTime: string; checkOutTime: string;
+  earlyCheckInFee: number; lateCheckOutFee: number;
+  cancelFreeBefore: number; cancelPenaltyPct: number;
+  childrenAllowed: boolean; extraBedPrice: number;
+  quietHoursFrom?: string; quietHoursTo?: string;
+  smokingAllowed: boolean;
+  visitorsAllowed: boolean; visitorsHours?: string;
+  customRules?: string[];
+};
+
+export type HotelRoomRate = {
+  id: string; roomTypeId: string; dateFrom: string; dateTo: string;
+  price: number; label?: string; roomType?: HotelRoomType;
 };
 
 export const ROOM_STATUS_LABELS: Record<string, string> = {

@@ -302,7 +302,9 @@ model Company {
      hotelRooms                       HotelRoom[]
      hotelReservations                HotelReservation[]
      hotelFolioItems                  HotelFolioItem[]
-     hotelRoomRates                   HotelRoomRate[]
+      hotelRoomRates                   HotelRoomRate[]
+      hotelServices                    HotelService[]
+      hotelPolicy                      HotelPolicy?
      wholesalePriceLists              WholesalePriceList[]
    wholesaleCustomers               WholesaleCustomer[]
    wholesaleTransactions            WholesaleTransaction[]
