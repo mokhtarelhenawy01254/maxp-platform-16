@@ -14,6 +14,7 @@
     "totalEnrollments": "Total Enrolled"
   },
   "flows": {
+    "title": "Follow-up Flows",
     "addNew": "Create New Flow",
     "edit": "Edit Flow",
     "empty": "No follow-up flows yet",
@@ -26,7 +27,8 @@
     "categories": "Categories",
     "noCategory": "No category linked",
     "activeLeads": "{{count}} Active",
-    "deleteConfirm": "Delete this flow? It will stop for all enrolled leads."
+    "deleteConfirm": "Delete this flow? It will stop for all enrolled leads.",
+    "presetWelcome": "24h Welcome Flow"
   },
   "steps": {
     "title": "Steps",
@@ -58,7 +60,14 @@
     "noCategories": "No lead categories defined yet",
     "autoFollowUp": "Auto follow-up",
     "linkedFlow": "Linked flow",
-    "none": "None"
+    "none": "None",
+    "performanceTitle": "Category Performance",
+    "performanceDesc": "Enrollment and reply rates per category",
+    "total": "Total",
+    "enrolled": "Enrolled",
+    "completed": "Completed",
+    "replied": "Replied",
+    "replyRate": "Reply Rate"
   },
   "monitoring": {
     "customer": "Customer",
@@ -86,6 +95,10 @@
     "delete": "Delete",
     "creating": "Creating...",
     "saving": "Saving..."
+  },
+  "status": {
+    "active": "Active",
+    "paused": "Paused"
   },
   "hints": {
     "title": "Smart Tips",

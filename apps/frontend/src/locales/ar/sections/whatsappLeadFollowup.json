@@ -14,6 +14,7 @@
     "totalEnrollments": "إجمالي المسجلين"
   },
   "flows": {
+    "title": "تدفقات المتابعة",
     "addNew": "إنشاء تدفق جديد",
     "edit": "تعديل التدفق",
     "empty": "لا توجد تدفقات متابعة بعد",
@@ -26,7 +27,8 @@
     "categories": "التصنيفات",
     "noCategory": "بدون تصنيف",
     "activeLeads": "{{count}} نشط",
-    "deleteConfirm": "حذف هذا التدفق؟ سيتم إيقافه لجميع العملاء المسجلين."
+    "deleteConfirm": "حذف هذا التدفق؟ سيتم إيقافه لجميع العملاء المسجلين.",
+    "presetWelcome": "رحلة ترحيبية ٢٤ س"
   },
   "steps": {
     "title": "الخطوات",
@@ -58,7 +60,14 @@
     "noCategories": "لا توجد تصنيفات بعد",
     "autoFollowUp": "متابعة تلقائية",
     "linkedFlow": "التدفق المرتبط",
-    "none": "بدون"
+    "none": "بدون",
+    "performanceTitle": "أداء التصنيفات",
+    "performanceDesc": "معدلات التسجيل والرد لكل تصنيف",
+    "total": "العدد",
+    "enrolled": "مسجل",
+    "completed": "مكتمل",
+    "replied": "رد",
+    "replyRate": "معدل الرد"
   },
   "monitoring": {
     "customer": "العميل",
@@ -86,6 +95,10 @@
     "delete": "حذف",
     "creating": "جارٍ الإنشاء...",
     "saving": "جارٍ الحفظ..."
+  },
+  "status": {
+    "active": "مفعل",
+    "paused": "متوقف"
   },
   "hints": {
     "title": "نصائح ذكية",

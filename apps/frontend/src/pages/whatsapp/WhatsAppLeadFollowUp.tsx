@@ -154,7 +154,7 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
     setLoading(true);
     await Promise.all([loadFlows(), loadStats(), loadCategories(), loadSettings(), loadCategoryStats()]);
     setLoading(false);
-  }, [loadFlows, loadStats, loadCategories, loadSettings]);
+  }, [loadFlows, loadStats, loadCategories, loadSettings, loadCategoryStats]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -353,9 +353,9 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                         try {
                           await apiClient.post(`${apiBase}/flows/preset`, {}, wc());
                           await loadFlows();
-                        } catch {}
+                        } catch { /* */ }
                       }}>
-                      <Sparkles className="size-4" /> رحلة ترحيبية ٢٤ س
+                      <Sparkles className="size-4" /> {tx("flows.presetWelcome")}
                     </Button>
                     <Dialog open={showNewFlow} onOpenChange={setShowNewFlow}>
                       <DialogTrigger asChild>
@@ -517,17 +517,17 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
 
               {/* Category Performance */}
               {categoryStats.length > 0 && (
-                <WhatsAppSurfaceCard title="أداء التصنيفات" description="معدلات التسجيل والرد لكل تصنيف">
+                <WhatsAppSurfaceCard title={tx("categories.performanceTitle")} description={tx("categories.performanceDesc")}>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                       <thead>
                         <tr className="border-b border-[color:var(--shell-control-border)]">
-                          <th className="py-2 pr-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">التصنيف</th>
-                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">العدد</th>
-                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">مسجل</th>
-                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">مكتمل</th>
-                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">رد</th>
-                          <th className="py-2 pr-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">معدل الرد</th>
+                          <th className="py-2 pr-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">{tx("categories.title")}</th>
+                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">{tx("categories.total")}</th>
+                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">{tx("categories.enrolled")}</th>
+                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">{tx("categories.completed")}</th>
+                          <th className="py-2 px-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">{tx("categories.replied")}</th>
+                          <th className="py-2 pr-2 text-right text-xs font-medium text-[color:var(--color-muted-foreground)]">{tx("categories.replyRate")}</th>
                         </tr>
                       </thead>
                       <tbody>
