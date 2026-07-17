@@ -30,7 +30,7 @@ class LeadCategoryController {
             // Attach count of contacts per category
             const withCounts = await Promise.all(categories.map(async (cat) => {
                 const count = await this.prisma.whatsAppContact.count({
-                    where: { leadCategoryId: cat.id, session: { companyId } },
+                    where: { leadCategoryId: cat.id, whatsAppSession: { companyId } },
                 });
                 return { ...cat, contactCount: count };
             }));
