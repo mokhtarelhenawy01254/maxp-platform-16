@@ -125,13 +125,10 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
     const newVariants: ProductVariant[] = allCombinations.map((combo, idx) => {
       const attributeValues = combo.reduce((acc, curr) => ({ ...acc, ...curr }), {});
       const name = Object.values(attributeValues).join(" - ");
-      const timestamp = Date.now();
-      const uniqueSku = baseSku && baseSku !== "-" ? `${baseSku}-${idx + 1}-${timestamp}` : `VAR-${timestamp}-${idx + 1}`;
-
       return {
         name,
         type: "combination",
-        sku: uniqueSku,
+        sku: "",
         images: [],
         stock: 0,
         trackInventory: initialTrackInventory,
