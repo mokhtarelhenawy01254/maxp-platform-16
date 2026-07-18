@@ -39,9 +39,19 @@ type ConnectionStep =
   | "error"
   | "callback";
 
+declare global {
+  interface Window {
+    FB?: {
+      init: (opts: Record<string, unknown>) => void;
+      login: (cb: (r: { authResponse?: { code: string } }) => void, opts: Record<string, unknown>) => void;
+    };
+  }
+}
+
 interface FacebookConfig {
   appId: string;
   redirectUri: string;
+  configId?: string;
   configured?: boolean;
 }
 
@@ -135,6 +145,11 @@ const WhatsAppCloudConnect: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [fbConfig, setFbConfig] = useState<FacebookConfig | null>(null);
   const [stateToken, setStateToken] = useState("");
+  const [fbSdkReady, setFbSdkReady] = useState(false);
+
+  const embeddedAssetData = useRef<{ wabaId?: string; phoneNumberId?: string; businessId?: string }>({});
+  const sessionNameRef = useRef(sessionName);
+  useEffect(() => { sessionNameRef.current = sessionName; }, [sessionName]);
 
   const loadFbConfig = useCallback(async () => {
     try {
@@ -148,6 +163,45 @@ const WhatsAppCloudConnect: React.FC = () => {
   React.useEffect(() => {
     void loadFbConfig();
   }, [loadFbConfig]);
+
+  React.useEffect(() => {
+    if (!fbConfig?.appId || !fbConfig?.configId) return;
+    if (window.FB) {
+      window.FB.init({ appId: fbConfig.appId, version: "v25.0", autoLogAppEvents: true, xfbml: true });
+      setFbSdkReady(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://connect.facebook.net/en_US/sdk.js";
+    script.async = true;
+    script.defer = true;
+    script.crossOrigin = "anonymous";
+    script.onload = () => {
+      window.FB?.init({ appId: fbConfig.appId, version: "v25.0", autoLogAppEvents: true, xfbml: true });
+      setFbSdkReady(true);
+    };
+    document.body.appendChild(script);
+  }, [fbConfig?.appId, fbConfig?.configId]);
+
+  React.useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (!event.origin.endsWith("facebook.com")) return;
+      try {
+        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (data?.type === "WA_EMBEDDED_SIGNUP" && data?.data) {
+          embeddedAssetData.current = {
+            wabaId: data.data.waba_id || data.data.wabaIds?.[0],
+            phoneNumberId: data.data.phone_number_id,
+            businessId: data.data.business_id,
+          };
+        }
+      } catch {
+        /**/
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
 
   React.useEffect(() => {
     const code = searchParams.get("code");
@@ -204,10 +258,57 @@ const WhatsAppCloudConnect: React.FC = () => {
     void exchangeCode();
   }, [searchParams, setSearchParams]);
 
+  const handleFBLoginCallback = (response: { authResponse?: { code: string } }) => {
+    if (!response.authResponse) {
+      setErrorMessage("تم إلغاء الاتصال بحساب Facebook");
+      setStep("error");
+      return;
+    }
+
+    const code = response.authResponse.code;
+    const { wabaId, phoneNumberId, businessId } = embeddedAssetData.current;
+    const name = sessionNameRef.current;
+
+    setStep("connecting");
+
+    const exchangeCode = async () => {
+      try {
+        setIsLoading(true);
+        const payload: Record<string, unknown> = { code, sessionName: name };
+        if (wabaId && phoneNumberId) {
+          Object.assign(payload, { wabaId, phoneNumberId, businessId });
+        }
+        const res = await apiClient.post("/whatsapp/facebook/connect-embedded", payload);
+        setSessionId(res.data.session.id);
+        setStep("success");
+      } catch (err: unknown) {
+        const apiErr = err as { response?: { data?: { error?: string } } };
+        setErrorMessage(apiErr.response?.data?.error || "فشل الاتصال بحساب Facebook");
+        setStep("error");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void exchangeCode();
+  };
+
   const handleStartConnect = () => {
     if (!fbConfig) {
       setErrorMessage("لم يتم تحميل إعدادات Facebook بعد");
       setStep("error");
+      return;
+    }
+
+    sessionStorage.setItem("wa_cloud_session_name", sessionName);
+
+    if (fbConfig.configId && window.FB && fbSdkReady) {
+      embeddedAssetData.current = {};
+      window.FB.login(handleFBLoginCallback, {
+        config_id: fbConfig.configId,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: { setup: {} },
+      });
       return;
     }
 
@@ -216,7 +317,6 @@ const WhatsAppCloudConnect: React.FC = () => {
       Math.random().toString(36).substring(2, 15);
     setStateToken(csrfToken);
     sessionStorage.setItem("wa_cloud_csrf", csrfToken);
-    sessionStorage.setItem("wa_cloud_session_name", sessionName);
 
     const oauthUrl = getFacebookOAuthUrl(fbConfig, csrfToken);
     window.location.href = oauthUrl;

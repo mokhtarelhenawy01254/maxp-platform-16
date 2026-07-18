@@ -5812,7 +5812,7 @@
     "customerAnalytics": "Customer Analytics",
     "customerLoyalty": "Customer Loyalty",
     "customerPointsCenter": "Customer Points Center",
-    "customerSegments": "Customer Segments",
+    "customerSegments": "Segmentation Hub",
     "customers": "Customers",
     "customersBirthday": "Customers Birthdays",
     "customersOccasions": "Customer Occasions",
@@ -7898,7 +7898,12 @@
       "noCategory": "No category linked",
       "activeLeads": "{{count}} Active",
       "deleteConfirm": "Delete this flow? It will stop for all enrolled leads.",
-      "presetWelcome": "24h Welcome Flow"
+      "presetWelcome": "24h Welcome Flow",
+      "scope": "Targeting Scope",
+      "general": "General",
+      "targeted": "Targeted",
+      "generalDesc": "Applies to all customers unless they have a category-specific flow",
+      "targetedDesc": "Applies only to customers in selected categories"
     },
     "steps": {
       "title": "Steps",

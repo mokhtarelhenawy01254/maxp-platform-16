@@ -677,6 +677,9 @@ router.get('/facebook/config', verifyToken.authenticateToken, checkAppAccess('wh
 // استلام كود OAuth من Facebook وإنشاء جلسة واتساب
 router.post('/facebook/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.facebookConnect);
 
+// استلام بيانات Embedded Sign-Up من Facebook SDK وإنشاء جلسة واتساب (WABA + رقم)
+router.post('/facebook/connect-embedded', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.facebookEmbeddedConnect);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 قوالب الرسائل
 // ═══════════════════════════════════════════════════════════════════════════════

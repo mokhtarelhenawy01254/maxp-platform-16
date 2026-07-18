@@ -5873,7 +5873,7 @@
     "customerAnalytics": "تحليلات العملاء",
     "customerLoyalty": "ولاء العملاء",
     "customerPointsCenter": "مركز نقاط العملاء",
-    "customerSegments": "تقسيمات العملاء",
+    "customerSegments": "مركز التقسيم",
     "customers": "العملاء",
     "customersBirthday": "عيد ميلاد العملاء",
     "customersOccasions": "مناسبات العملاء",
@@ -7968,7 +7968,12 @@
       "noCategory": "بدون تصنيف",
       "activeLeads": "{{count}} نشط",
       "deleteConfirm": "حذف هذا التدفق؟ سيتم إيقافه لجميع العملاء المسجلين.",
-      "presetWelcome": "رحلة ترحيبية ٢٤ س"
+      "presetWelcome": "رحلة ترحيبية ٢٤ س",
+      "scope": "نطاق الاستهداف",
+      "general": "عام",
+      "targeted": "مخصص",
+      "generalDesc": "يشتغل مع كل العملاء ما لم يخصص لهم تدفق خاص",
+      "targetedDesc": "يشتغل بس مع العملاء اللي في التصنيفات المختارة"
     },
     "steps": {
       "title": "الخطوات",

@@ -4072,7 +4072,8 @@ module.exports = {
 
     // Facebook Embedded Sign-Up
     getFacebookConfig,
-    facebookConnect
+    facebookConnect,
+    facebookEmbeddedConnect
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4230,6 +4231,7 @@ async function getFacebookConfig(req, res) {
             return res.status(200).json({
                 appId: config.appId,
                 redirectUri,
+                configId: config.configId,
                 configured: false
             });
         }
@@ -4237,6 +4239,7 @@ async function getFacebookConfig(req, res) {
         res.json({
             appId: config.appId,
             redirectUri,
+            configId: config.configId,
             configured: true
         });
     } catch (error) {
@@ -4413,6 +4416,135 @@ async function facebookConnect(req, res) {
         const errorMsg = error.response?.data?.error?.message
             || error.response?.data?.error?.error_user_msg
             || 'فشل الاتصال بحساب Facebook. الرجاء التحقق من الإعدادات والمحاولة مرة أخرى.';
+        res.status(500).json({ error: errorMsg });
+    }
+}
+
+async function facebookEmbeddedConnect(req, res) {
+    try {
+        const { wabaId, phoneNumberId, businessId, code, sessionName } = req.body;
+        const { companyId } = req.user;
+
+        if (!wabaId || !phoneNumberId || !businessId || !code) {
+            return res.status(400).json({
+                error: 'Missing required fields: wabaId, phoneNumberId, businessId, code'
+            });
+        }
+
+        const config = facebookAppConfig.getFacebookOAuthConfig();
+
+        if (!config.appSecret) {
+            return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });
+        }
+
+        const axios = require('axios');
+
+        const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+            params: {
+                client_id: config.appId,
+                redirect_uri: '',
+                client_secret: config.appSecret,
+                code
+            },
+            timeout: 15000
+        });
+
+        const shortLivedToken = tokenResponse.data?.access_token;
+        if (!shortLivedToken) {
+            return res.status(400).json({ error: 'فشل الحصول على رمز الوصول من Facebook' });
+        }
+
+        const longTokenResponse = await axios.get(`${META_GRAPH_BASE}/oauth/access_token`, {
+            params: {
+                grant_type: 'fb_exchange_token',
+                client_id: config.appId,
+                client_secret: config.appSecret,
+                fb_exchange_token: shortLivedToken
+            },
+            timeout: 15000
+        });
+
+        const longLivedToken = longTokenResponse.data?.access_token || shortLivedToken;
+        const tokenExpiresAt = longTokenResponse.data?.expires_in
+            ? new Date(Date.now() + longTokenResponse.data.expires_in * 1000)
+            : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
+        try {
+            await axios.post(`${META_GRAPH_BASE}/${wabaId}/subscribed_apps`, null, {
+                params: { access_token: longLivedToken },
+                timeout: 15000
+            });
+        } catch (webhookErr) {
+            console.warn('⚠️ Could not subscribe to WABA webhooks:', webhookErr.message);
+        }
+
+        try {
+            await axios.post(`${META_GRAPH_BASE}/${phoneNumberId}/register`, {
+                messaging_product: 'whatsapp',
+                pin: '000000'
+            }, {
+                params: { access_token: longLivedToken },
+                timeout: 15000
+            });
+        } catch (regErr) {
+            console.warn('⚠️ Could not register phone number (may already be registered):', regErr.message);
+        }
+
+        let displayPhoneNumber = null;
+        try {
+            const phoneInfo = await axios.get(`${META_GRAPH_BASE}/${phoneNumberId}`, {
+                params: {
+                    access_token: longLivedToken,
+                    fields: 'display_phone_number,verified_name'
+                },
+                timeout: 15000
+            });
+            displayPhoneNumber = phoneInfo.data?.display_phone_number || null;
+        } catch (phoneErr) {
+            console.warn('⚠️ Could not fetch phone number details:', phoneErr.message);
+        }
+
+        const session = await getSharedPrismaClient().whatsAppSession.create({
+            data: {
+                companyId,
+                name: sessionName || `WhatsApp Cloud (${displayPhoneNumber || phoneNumberId})`,
+                provider: 'META_CLOUD',
+                status: 'CONNECTED',
+                metaAccessToken: longLivedToken,
+                metaTokenExpiresAt: tokenExpiresAt,
+                metaWabaId: wabaId,
+                metaPhoneNumberId: phoneNumberId,
+                metaBusinessId: businessId,
+                metaDisplayPhoneNumber: displayPhoneNumber,
+                metaApiVersion: META_GRAPH_VERSION,
+                aiEnabled: true,
+                autoReply: false,
+                aiMode: 'suggest',
+                loadBalanceWeight: 1,
+                updatedAt: new Date()
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            session: {
+                id: session.id,
+                name: session.name,
+                provider: session.provider,
+                status: session.status,
+                phoneNumber: displayPhoneNumber,
+                metaDisplayPhoneNumber: displayPhoneNumber,
+                metaPhoneNumberId: phoneNumberId,
+                metaWabaId: wabaId,
+                createdAt: session.createdAt
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Facebook Embedded Connect Error:', error.response?.data || error.message);
+        const errorMsg = error.response?.data?.error?.message
+            || error.response?.data?.error?.error_user_msg
+            || 'فشل ربط واتساب السحابي. الرجاء التحقق من الإعدادات والمحاولة مرة أخرى.';
         res.status(500).json({ error: errorMsg });
     }
 }
