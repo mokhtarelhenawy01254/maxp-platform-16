@@ -395,58 +395,58 @@ export default function MarketplaceV2() {
 // ponytail: handleSubscribeUnlimited removed — unlimited plan system deleted
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95">
+    <div className="min-h-screen bg-background">
       {/* Sticky filter bar — backdrop-blur, stays on scroll */}
-      <div className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-50 border-b border-border/30 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-          {/* Search + Sort Toolbar */}
-          <div className="relative flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-              <Input
-                ref={searchRef}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder={t('marketplace.searchPlaceholder')}
-                className="h-11 w-full rounded-xl border-border/60 bg-background/80 pl-3 pr-10 text-sm backdrop-blur-sm"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                  aria-label={t('marketplace.clearSearch')}
+          {/* Search + Filters merged */}
+          <div className="flex flex-col gap-2 py-2.5">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={15} />
+                <Input
+                  ref={searchRef}
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder={t('marketplace.searchPlaceholder')}
+                  className="h-10 w-full rounded-xl border-border/50 bg-background/60 pl-3 pr-9 text-sm backdrop-blur-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    aria-label={t('marketplace.clearSearch')}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <div className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-border/50 bg-background/60 px-2.5 text-sm backdrop-blur-sm">
+                <span className="text-xs text-muted-foreground shrink-0">{t('marketplace.sortLabel')}</span>
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
                 >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-            <div className="flex h-11 items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-3 text-sm backdrop-blur-sm shrink-0">
-              <span className="text-xs text-muted-foreground shrink-0">{t('marketplace.sortLabel')}</span>
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-                className="bg-transparent text-sm font-bold text-foreground focus:outline-none cursor-pointer"
+                  <option value="featured">{t('marketplace.sortFeatured')}</option>
+                  <option value="popular">{t('marketplace.sortPopular')}</option>
+                  <option value="newest">{t('marketplace.sortNewest')}</option>
+                  <option value="price_low">{t('marketplace.sortPriceLow')}</option>
+                </select>
+              </div>
+              {/* Activate All CTA */}
+              <Button
+                size="sm"
+                onClick={() => setConfirmBulkInstall(true)}
+                disabled={isInstallingAll || !collectionFiltered.some(a => !a.isInstalled)}
+                className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-bold shrink-0 shadow-sm"
               >
-                <option value="featured">{t('marketplace.sortFeatured')}</option>
-                <option value="popular">{t('marketplace.sortPopular')}</option>
-                <option value="newest">{t('marketplace.sortNewest')}</option>
-                <option value="price_low">{t('marketplace.sortPriceLow')}</option>
-              </select>
+                {isInstallingAll ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                {t('marketplace.activateAll')}
+              </Button>
             </div>
-            {/* Activate All CTA */}
-            <Button
-              size="sm"
-              onClick={() => setConfirmBulkInstall(true)}
-              disabled={isInstallingAll || !collectionFiltered.some(a => !a.isInstalled)}
-              className="h-11 gap-1.5 rounded-xl px-4 text-sm font-bold shrink-0 shadow-sm"
-            >
-              {isInstallingAll ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-              {t('marketplace.activateAll')}
-            </Button>
-          </div>
-
-          {/* Filter Pills — collections + categories merged */}
-          <div className="relative flex gap-2 overflow-x-auto pb-3 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+            {/* Filter Pills */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: "none" }}>
             {collections.map(c => (
               <button
                 key={c.id}
@@ -509,51 +509,46 @@ export default function MarketplaceV2() {
               {t('sidebar.storeThemes')}
             </Link>
           </div>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-[1400px] px-4 pb-16 pt-4 sm:px-6 lg:px-8">
-        {/* Header Hero */}
-        <div className="relative mb-6 overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card via-card to-primary/[0.04] p-5 sm:p-6 shadow-sm">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(120,120,255,0.08),transparent_50%),radial-gradient(ellipse_at_80%_100%,rgba(255,120,200,0.05),transparent_50%)]" />
-          <div className="relative">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2 flex-wrap">
-              <span className="flex items-center gap-1.5 font-bold text-foreground/80">
-                <Package size={14} className="text-primary" />
-                {t('marketplace.appCount', { count: apps.length })}
-              </span>
-              <span className="text-border">•</span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-success" />
-                {t('marketplace.installedCount', { count: installedCount })}
-              </span>
-              {activeSpecialty && (
-                <>
-                  <span className="text-border">•</span>
-                  <Badge variant="outline" className="gap-1 border px-2 py-0.5 font-bold text-xs">
-                    <Layers3 size={12} />
-                    {activeSpecialty.nameAr}
-                  </Badge>
-                </>
-              )}
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {t('marketplace.pageTitle')}
-            </h1>
-            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground leading-relaxed">
-              {t('marketplace.pageSubtitle')}
-            </p>
-          </div>
+        {/* Compact header info line */}
+        <div className="flex items-center gap-3 py-3.5 text-sm text-muted-foreground flex-wrap border-b border-border/20 mb-4">
+          <span className="flex items-center gap-1.5 font-bold text-foreground/80">
+            <Package size={13} className="text-primary" />
+            {t('marketplace.appCount', { count: apps.length })}
+          </span>
+          <span className="text-border/50">•</span>
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 size={13} className="text-success" />
+            {t('marketplace.installedCount', { count: installedCount })}
+          </span>
+          {activeSpecialty && (
+            <>
+              <span className="text-border/50">•</span>
+              <Badge variant="outline" className="gap-1 border px-2 py-0.5 font-bold text-xs">
+                <Layers3 size={11} />
+                {activeSpecialty.nameAr}
+              </Badge>
+            </>
+          )}
         </div>
 
         {/* Loading State */}
         {loading ? (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card px-3.5 py-3 shadow-sm">
-                <Skeleton className="size-10 shrink-0 rounded-xl" />
-                <Skeleton className="h-4 flex-1 rounded-md" />
-                <Skeleton className="h-7 w-16 shrink-0 rounded-lg" />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-2xl border border-border/15 bg-card/40 p-3 backdrop-blur-sm">
+                <Skeleton className="size-9 shrink-0 rounded-xl" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4 rounded-md" />
+                  <div className="flex items-center justify-between gap-2">
+                    <Skeleton className="h-3.5 w-14 rounded-md" />
+                    <Skeleton className="h-7 w-14 shrink-0 rounded-lg" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -586,16 +581,16 @@ export default function MarketplaceV2() {
           </div>
         ) : (
           <>
-            {/* Featured Section — uniform grid, no bento gaps */}
+            {/* Featured Section */}
             {featuredApps.length >= 2 && (
-              <div className="mb-8">
+              <div className="mb-8 rounded-2xl bg-gradient-to-br from-primary/[0.02] to-transparent p-4 sm:p-5 border border-primary/5">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-primary" />
-                    <h2 className="text-base font-bold text-foreground">
+                    <Sparkles size={15} className="text-primary" />
+                    <h2 className="text-sm font-bold text-foreground">
                       {t('marketplace.featured')}
                     </h2>
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 font-bold border-primary/30 text-primary">
+                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 font-bold border-primary/20 text-primary/80">
                       {featuredApps.length}
                     </Badge>
                   </div>
@@ -803,7 +798,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
             to={`/marketplace/${app.slug}`}
             aria-haspopup="dialog"
             aria-expanded={previewOpen}
-            className="group relative flex items-start gap-3 rounded-2xl border border-border/40 bg-card p-3 shadow-sm transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="group relative flex items-start gap-3 rounded-2xl border border-border/20 bg-card/60 p-3 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-primary/20 hover:bg-card/80 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {app.isInstalled && (
               <span className="absolute right-2.5 top-2.5 flex size-2 rounded-full bg-success ring-2 ring-background" />
