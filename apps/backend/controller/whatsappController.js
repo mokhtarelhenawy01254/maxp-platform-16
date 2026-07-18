@@ -4351,6 +4351,18 @@ async function facebookConnect(req, res) {
             }
         }
 
+        // Step 5.5: Subscribe to WABA webhooks
+        if (wabaId) {
+            try {
+                await axios.post(`${META_GRAPH_BASE}/${wabaId}/subscribed_apps`, null, {
+                    params: { access_token: longLivedToken },
+                    timeout: 15000
+                });
+            } catch (webhookErr) {
+                console.warn('⚠️ Could not subscribe to WABA webhooks:', webhookErr.message);
+            }
+        }
+
         // Step 6: Create WhatsAppSession in DB
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
