@@ -4220,8 +4220,11 @@ const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 async function getFacebookConfig(req, res) {
     try {
         const config = facebookAppConfig.getFacebookOAuthConfig();
-        const envConfig = require('../config/environment');
-        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+        const origin = req.get('Origin') || req.get('Referer') || '';
+        const frontendUrl = origin
+            ? new URL(origin).origin
+            : require('../config/environment').frontendUrl;
+        const redirectUri = new URL('/whatsapp/cloud-connect', `${frontendUrl}/`).toString();
 
         if (!config.appId || facebookAppConfig.isPlaceholderFacebookCredential(config.appId)) {
             return res.status(200).json({
@@ -4237,14 +4240,14 @@ async function getFacebookConfig(req, res) {
             configured: true
         });
     } catch (error) {
-        console.error('❌ Error getting Facebook config:', error);
+        console.error('❌ Error getting Facebook config:', error.message);
         res.status(500).json({ error: 'فشل تحميل إعدادات Facebook' });
     }
 }
 
 async function facebookConnect(req, res) {
     try {
-        const { code, state, sessionName } = req.body;
+        const { code, state, sessionName, redirectUri: clientRedirectUri } = req.body;
         const { companyId } = req.user;
 
         if (!code) {
@@ -4252,8 +4255,13 @@ async function facebookConnect(req, res) {
         }
 
         const config = facebookAppConfig.getFacebookOAuthConfig();
-        const envConfig = require('../config/environment');
-        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+        const redirectUri = clientRedirectUri || (() => {
+            const origin = req.get('Origin') || req.get('Referer') || '';
+            const frontendUrl = origin
+                ? new URL(origin).origin
+                : require('../config/environment').frontendUrl;
+            return new URL('/whatsapp/cloud-connect', `${frontendUrl}/`).toString();
+        })();
 
         if (!config.appSecret) {
             return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });

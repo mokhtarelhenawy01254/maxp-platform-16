@@ -51,11 +51,14 @@ const FACEBOOK_PERMISSIONS = [
   "whatsapp_business_management",
 ].join(",");
 
+const buildRedirectUri = () =>
+  `${window.location.origin}/whatsapp/cloud-connect`;
+
 const getFacebookOAuthUrl = (config: FacebookConfig, state: string) => {
   const base = "https://www.facebook.com/v25.0/dialog/oauth";
   const params = new URLSearchParams({
     client_id: config.appId,
-    redirect_uri: config.redirectUri,
+    redirect_uri: buildRedirectUri(),
     scope: FACEBOOK_PERMISSIONS,
     state,
     response_type: "code",
@@ -163,6 +166,7 @@ const WhatsAppCloudConnect: React.FC = () => {
             code,
             state,
             sessionName: name,
+            redirectUri: buildRedirectUri(),
           });
           setSessionId(response.data.session.id);
           setStep("success");
