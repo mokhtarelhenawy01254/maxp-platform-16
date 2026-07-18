@@ -9,6 +9,7 @@ import {
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import analyticsService from "../../services/analyticsService";
+import { useCurrency } from "../../hooks/useCurrency";
 
 // ── Shared Types ────────────────────────────────────
 interface LeadCategory {
@@ -219,6 +220,7 @@ const UnifiedTableRow = ({ c, isSelected, onSelect }: { c: UnifiedCustomer; isSe
 // ── Main Component ─────────────────────────────────
 const CustomerSegments: React.FC = () => {
   const { t } = useTranslation();
+  const { formatPrice } = useCurrency();
 
   // ── Tab state ─────────────────────────────────
   const [activeTab, setActiveTab] = useState<"overview" | "quality" | "loyalty" | "categories" | "tags">("overview");
@@ -619,7 +621,7 @@ const CustomerSegments: React.FC = () => {
                 </div>
                 <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">إجمالي المشتريات</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedCustomer.totalSpent.toLocaleString("ar-EG")} <span className="text-xs font-normal text-gray-500">ر.س</span></p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{formatPrice(selectedCustomer.totalSpent)}</p>
                   <p className="text-xs text-gray-400 mt-1">{selectedCustomer.totalOrders} طلب</p>
                 </div>
               </div>
@@ -688,7 +690,7 @@ const CustomerSegments: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{c.totalOrders}</td>
-                        <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">{c.totalSpent.toLocaleString("ar-EG")} <span className="text-xs text-gray-500">ر.س</span></td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">{formatPrice(c.totalSpent)}</td>
                       </tr>
                     ))}
                 </tbody>
