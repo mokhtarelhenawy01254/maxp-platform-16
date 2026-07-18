@@ -6,7 +6,9 @@
   2. **Dynamic Registration PIN**: Upgraded `facebookEmbeddedConnect` in `whatsappController.js` to generate a random 6-digit PIN dynamically for every phone number registration instead of using the insecure hardcoded `'000000'` value.
   3. **Metadata Storage**: Stored the dynamically generated registration PIN inside the `WhatsAppSession` record's `metadata` field as a JSON string (`JSON.stringify({ registrationPin })`).
   4. **Graph API Alignment**: Standardized `META_GRAPH_VERSION` default to `'v25.0'` in `whatsappController.js` to match the frontend version.
-  5. **Verification**: Ran all tests for `whatsappMetaWebhookController` successfully to ensure changes didn't affect inbound messages processing.
+  5. **Autodiscover Fallback**: Added auto-discovery logic inside `facebookEmbeddedConnect` to query Meta's Graph API for missing WABA, business, and phone IDs when they are omitted in the frontend payload (e.g. if the iframe postMessage was blocked or lost), preventing 400 Bad Request failures.
+  6. **Diagnostic Logging**: Added structured logging to `facebookEmbeddedConnect` for request payload inspection, Facebook config validation, and detailed error messages to diagnose 400 errors in production (e.g. missing appSecret after deployment).
+  7. **Verification**: Ran all tests for `whatsappMetaWebhookController` successfully to ensure changes didn't affect inbound messages processing.
 
 ## 2026-07-18 / 2026-03-09
 - **Customer Classification & Tags Sync Bugs Fix (BUGFIX / COMPLETE)**:

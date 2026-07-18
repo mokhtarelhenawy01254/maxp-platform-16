@@ -4430,19 +4430,36 @@ async function facebookConnect(req, res) {
 
 async function facebookEmbeddedConnect(req, res) {
     try {
-        const { wabaId, phoneNumberId, businessId, code, sessionName } = req.body;
+        let { wabaId, phoneNumberId, businessId, code, sessionName } = req.body;
         const { companyId } = req.user;
 
-        if (!wabaId || !phoneNumberId || !businessId || !code) {
+        console.log('📲 [facebookEmbeddedConnect] Request received:', {
+            hasCode: !!code,
+            hasWabaId: !!wabaId,
+            hasPhoneNumberId: !!phoneNumberId,
+            hasBusinessId: !!businessId,
+            sessionName: sessionName || '(not provided)',
+            companyId
+        });
+
+        if (!code) {
+            console.warn('⚠️ [facebookEmbeddedConnect] Missing authorization code');
             return res.status(400).json({
-                error: 'Missing required fields: wabaId, phoneNumberId, businessId, code'
+                error: 'Authorization code مطلوب'
             });
         }
 
         const config = facebookAppConfig.getFacebookOAuthConfig();
+        console.log('🔧 [facebookEmbeddedConnect] Facebook config:', {
+            appId: config.appId ? `${config.appId.substring(0, 6)}...` : '(empty)',
+            hasAppSecret: !!config.appSecret,
+            appSecretLength: config.appSecret?.length || 0,
+            configId: config.configId || '(none)'
+        });
 
         if (!config.appSecret) {
-            return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });
+            console.error('❌ [facebookEmbeddedConnect] Facebook App Secret is not configured! Please set it via /super-admin/facebook-oauth or FACEBOOK_APP_SECRET env var.');
+            return res.status(400).json({ error: 'Facebook App Secret غير مضبوط. الرجاء ضبطه من لوحة تحكم السوبر أدمن.' });
         }
 
         const axios = require('axios');
@@ -4476,6 +4493,63 @@ async function facebookEmbeddedConnect(req, res) {
         const tokenExpiresAt = longTokenResponse.data?.expires_in
             ? new Date(Date.now() + longTokenResponse.data.expires_in * 1000)
             : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
+        // Step 2.5: Auto-discover missing asset IDs if not passed by frontend
+        if (!businessId || !wabaId || !phoneNumberId) {
+            console.log('ℹ️ [facebookEmbeddedConnect] Missing asset IDs. Starting auto-discovery...');
+            if (!businessId) {
+                try {
+                    const meResponse = await axios.get(`${META_GRAPH_BASE}/me/businesses`, {
+                        params: { access_token: longLivedToken },
+                        timeout: 15000
+                    });
+                    const businesses = meResponse.data?.data || [];
+                    if (businesses.length > 0) {
+                        businessId = businesses[0].id;
+                    }
+                } catch (bizErr) {
+                    console.warn('⚠️ Could not fetch businesses:', bizErr.message);
+                }
+            }
+
+            if (businessId && !wabaId) {
+                try {
+                    const wabaResponse = await axios.get(`${META_GRAPH_BASE}/${businessId}/client_whatsapp_business_accounts`, {
+                        params: { access_token: longLivedToken },
+                        timeout: 15000
+                    });
+                    const existingWABAs = wabaResponse.data?.data || [];
+                    if (existingWABAs.length > 0) {
+                        wabaId = existingWABAs[0].id;
+                    }
+                } catch (wabaErr) {
+                    console.warn('⚠️ Could not fetch WABAs:', wabaErr.message);
+                }
+            }
+
+            if (wabaId && !phoneNumberId) {
+                try {
+                    const phoneResponse = await axios.get(`${META_GRAPH_BASE}/${wabaId}/phone_numbers`, {
+                        params: { access_token: longLivedToken },
+                        timeout: 15000
+                    });
+                    const phoneNumbers = phoneResponse.data?.data || [];
+                    if (phoneNumbers.length > 0) {
+                        const activePhone = phoneNumbers.find(p => p.code_verification_status === 'VERIFIED')
+                            || phoneNumbers[0];
+                        phoneNumberId = activePhone.id;
+                    }
+                } catch (phoneErr) {
+                    console.warn('⚠️ Could not fetch phone numbers:', phoneErr.message);
+                }
+            }
+        }
+
+        if (!wabaId || !phoneNumberId || !businessId) {
+            return res.status(400).json({
+                error: 'تعذر تحديد حساب الأعمال أو حساب الواتساب السحابي تلقائياً. الرجاء التحقق من الصلاحيات الممنوحة للتطبيق.'
+            });
+        }
 
         try {
             await axios.post(`${META_GRAPH_BASE}/${wabaId}/subscribed_apps`, null, {
