@@ -8,7 +8,8 @@
   4. **Graph API Alignment**: Standardized `META_GRAPH_VERSION` default to `'v25.0'` in `whatsappController.js` to match the frontend version.
   5. **Autodiscover Fallback**: Added auto-discovery logic inside `facebookEmbeddedConnect` to query Meta's Graph API for missing WABA, business, and phone IDs when they are omitted in the frontend payload (e.g. if the iframe postMessage was blocked or lost), preventing 400 Bad Request failures.
   6. **Diagnostic Logging**: Added structured logging to `facebookEmbeddedConnect` for request payload inspection, Facebook config validation, and detailed error messages to diagnose 400 errors in production (e.g. missing appSecret after deployment).
-  7. **Verification**: Ran all tests for `whatsappMetaWebhookController` successfully to ensure changes didn't affect inbound messages processing.
+  7. **Single Source of Truth Realignment**: Modified `getFacebookOAuthConfig` in `facebookAppConfig.js` to read credentials strictly from the local `facebook-oauth-config.json` configuration file. Completely removed all `.env` fallsbacks and hardcoded credential backups, ensuring the `/super-admin/facebook-oauth` dashboard acts as the absolute single source of truth.
+  8. **Verification**: Updated config unit tests and ran test suites successfully to verify the strict JSON loading mechanism.
 
 ## 2026-07-18 / 2026-03-09
 - **Customer Classification & Tags Sync Bugs Fix (BUGFIX / COMPLETE)**:

@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [ARCHITECTURAL FIX] Facebook OAuth Credentials Single Source of Truth Alignment (Overwriting / 400 Errors)
+- **Date**: 2026-07-19
+- **Root Cause**:
+  1. **Deployment Overwriting Stored Configurations**: The `facebook-oauth-config.json` was tracked in Git history. When we untracked it and populated placeholders, git pull on the server applied the modification, replacing the actual production keys with placeholders.
+  2. **Multi-Source Fallback Confusion**: The configuration loader `getFacebookOAuthConfig` had fallback options looking at `process.env.FACEBOOK_APP_SECRET` and hardcoded default app IDs. This caused silent credential mix-ups and made debugging 400 errors in production difficult.
+- **Resolution**:
+  1. **Eliminated Fallbacks**: Rewrote `getFacebookOAuthConfig` in `facebookAppConfig.js` to strictly load `appId` and `appSecret` from the local `facebook-oauth-config.json` file. Removed all `.env` fallbacks (`env.FACEBOOK_APP_SECRET`, `env.FACEBOOK_APP_ID`) and hardcoded credential fallbacks.
+  2. **Refactored Helpers & Tests**: Updated helper functions `getFacebookAppSecret` and `getFacebookConfigId` to align with the new signature. Rewrote configuration unit tests to mock and test JSON file scenarios exclusively.
+- **Files Modified**:
+  - `apps/backend/config/facebookAppConfig.js` (MODIFIED)
+  - `apps/backend/tests/config/facebookAppConfig.test.js` (MODIFIED)
+
 ### [BUG FIX / API & UI] Customer Classification Not Persisting, Tags Invisible, Classification Shows ID
 - **Date**: 2026-07-18
 - **Root Cause**:
@@ -1188,6 +1200,7 @@
   1. Replaced sensitive credentials in `facebook-oauth-config.json` with safe placeholders and added the file to `.gitignore` to prevent future check-ins of server configuration values. Provided `facebook-oauth-config.example.json` as a baseline template.
   2. Modified the `facebookEmbeddedConnect` method in `whatsappController.js` to generate a random 6-digit PIN dynamically for phone registrations, and stored it inside the session record's `metadata` field.
   3. Updated default `META_GRAPH_VERSION` to `'v25.0'` in `whatsappController.js` to align with the frontend and modern Graph API features.
+  4. Added dynamic autodiscovery fallback to `facebookEmbeddedConnect` to dynamically query and resolve `businessId`, `wabaId`, and `phoneNumberId` from Meta's Graph API when they are not passed by the frontend payload, avoiding 400 Bad Request failures.
 - **Files Modified**:
   - `apps/backend/data/facebook-oauth-config.json`
   - `apps/backend/data/facebook-oauth-config.example.json`

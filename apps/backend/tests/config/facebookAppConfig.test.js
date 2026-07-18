@@ -5,7 +5,6 @@ describe("facebookAppConfig", () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.spyOn(fs, "existsSync").mockReturnValue(false);
     facebookAppConfig = require("../../config/facebookAppConfig");
   });
 
@@ -13,25 +12,45 @@ describe("facebookAppConfig", () => {
     jest.restoreAllMocks();
   });
 
-  it("ignores placeholder environment app credentials", () => {
-    const config = facebookAppConfig.getFacebookOAuthConfig({
-      FACEBOOK_APP_ID: "your-production-facebook-app-id",
-      FACEBOOK_APP_SECRET: "your-production-facebook-app-secret",
-    });
+  it("returns empty credentials when configuration file does not exist", () => {
+    jest.spyOn(fs, "existsSync").mockReturnValue(false);
 
-    expect(config.appId).toBe(facebookAppConfig.DEFAULT_FACEBOOK_APP_ID);
-    expect(config.appSecret).toBeTruthy();
-    expect(config.appSecret).not.toBe("your-production-facebook-app-secret");
+    const config = facebookAppConfig.getFacebookOAuthConfig();
+
+    expect(config.appId).toBe("");
+    expect(config.appSecret).toBe("");
   });
 
-  it("uses real environment app credentials when configured", () => {
-    const config = facebookAppConfig.getFacebookOAuthConfig({
-      FACEBOOK_APP_ID: "1234567890",
-      FACEBOOK_APP_SECRET: "real-secret",
-    });
+  it("uses real credentials from the configuration file when they are valid", () => {
+    jest.spyOn(fs, "existsSync").mockReturnValue(true);
+    jest.spyOn(fs, "readFileSync").mockReturnValue(
+      JSON.stringify({
+        appId: "1234567890",
+        appSecret: "real-secret",
+        redirectUri: "https://example.com/callback",
+      })
+    );
+
+    const config = facebookAppConfig.getFacebookOAuthConfig();
 
     expect(config.appId).toBe("1234567890");
     expect(config.appSecret).toBe("real-secret");
+    expect(config.redirectUri).toBe("https://example.com/callback");
+  });
+
+  it("ignores placeholder credential values in the configuration file", () => {
+    jest.spyOn(fs, "existsSync").mockReturnValue(true);
+    jest.spyOn(fs, "readFileSync").mockReturnValue(
+      JSON.stringify({
+        appId: "your-facebook-app-id",
+        appSecret: "your-facebook-app-secret",
+      })
+    );
+
+    const config = facebookAppConfig.getFacebookOAuthConfig();
+
+    expect(config.appId).toBe("");
+    expect(config.appSecret).toBe("");
   });
 
   it("detects common placeholder credential values", () => {

@@ -83,24 +83,16 @@ const saveFacebookOAuthConfig = (config) => {
   return payload;
 };
 
-const getFacebookOAuthConfig = (env = process.env) => {
+const getFacebookOAuthConfig = () => {
   const stored = getStoredFacebookOAuthConfig() || {};
 
   return {
-    appId: chooseCredential(
-      stored.appId,
-      env.FACEBOOK_APP_ID,
-      DEFAULT_FACEBOOK_APP_ID,
-    ),
-    appSecret: chooseCredential(
-      stored.appSecret,
-      env.FACEBOOK_APP_SECRET,
-      DEFAULT_FACEBOOK_APP_SECRET,
-    ),
+    appId: chooseCredential(stored.appId),
+    appSecret: chooseCredential(stored.appSecret),
     redirectUri:
       normalizeCredential(stored.redirectUri) ||
       buildFacebookBackendCallbackUrl("page"),
-    configId: normalizeCredential(FACEBOOK_LOGIN_CONFIG_ID || env.FACEBOOK_LOGIN_CONFIG_ID),
+    configId: normalizeCredential(FACEBOOK_LOGIN_CONFIG_ID),
   };
 };
 
@@ -109,11 +101,11 @@ const getFacebookRedirectUri = (type = "page") =>
     ? buildFacebookBackendCallbackUrl("pixel")
     : getFacebookOAuthConfig().redirectUri;
 
-const getFacebookAppSecret = (env = process.env) =>
-  getFacebookOAuthConfig(env).appSecret;
+const getFacebookAppSecret = () =>
+  getFacebookOAuthConfig().appSecret;
 
-const getFacebookConfigId = (env = process.env) =>
-  getFacebookOAuthConfig(env).configId;
+const getFacebookConfigId = () =>
+  getFacebookOAuthConfig().configId;
 
 module.exports = {
   DEFAULT_FACEBOOK_APP_ID,
