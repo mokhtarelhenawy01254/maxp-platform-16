@@ -172,6 +172,8 @@ describe("OrderInvoiceSettings", () => {
         primaryColor: "#112233",
         secondaryColor: "#445566",
         fontFamily: "Tahoma",
+        showBarcodeOrderCode: true,
+        showBarcodeShippingCode: true,
       });
     });
 

@@ -259,6 +259,7 @@ export const printOrderInvoice = async ({
               )}
             </div>
           </td>
+          <td class="center">—</td>
           <td class="center">${escapeHtml(group.offerQuantity || group.selectedPieces)}</td>
           <td class="amount">-</td>
           <td class="amount total-cell">${escapeHtml(formatCurrency(group.total, currency))}</td>
@@ -290,109 +291,130 @@ export const printOrderInvoice = async ({
           body {
             margin: 0;
             font-family: ${settings.fontFamily};
-            background: #eef2f7;
-            color: #111827;
+            background: #f1f5f9;
+            color: #0f172a;
           }
           .page {
             max-width: ${pageWidth};
             min-height: ${pageHeight};
             margin: 24px auto;
             background: #ffffff;
-            padding: 18mm 16mm;
-            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
           }
-          .header {
+          .header-bg {
+            padding: 40px 48px 24px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          }
+          .header-flex {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 24px;
-            padding-bottom: 18px;
-            border-bottom: 2px solid ${settings.primaryColor}33;
           }
-          .brand {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+          .header-right {
+            text-align: right;
           }
-          .brand img {
-            max-width: 120px;
-            max-height: 72px;
-            object-fit: contain;
+          .header-right h1 {
+            margin: 0 0 4px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
           }
-          .brand h1 {
-            margin: 0;
-            font-size: 28px;
-            line-height: 1.2;
+          .header-muted {
+            color: #94a3b8;
+            font-size: 14px;
           }
-          .muted {
-            color: ${settings.secondaryColor};
-            font-size: 13px;
-          }
-          .invoice-title {
+          .header-left {
             text-align: left;
           }
-          .invoice-title h2 {
-            margin: 0 0 8px;
-            font-size: 30px;
-            color: ${settings.primaryColor};
+          .header-left .label {
+            margin: 0 0 4px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
           }
-          .invoice-title p {
-            margin: 4px 0;
+          .header-left .number {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+          }
+          .header-left .date {
+            margin: 4px 0 0;
             font-size: 14px;
+            color: #94a3b8;
+          }
+          .body-content {
+            padding: 24px 48px;
           }
           .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin: 22px 0;
+            gap: 32px;
+            margin-bottom: 32px;
           }
-          .card {
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 16px;
-            background: #fafafa;
+          .info-col h3 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            text-transform: uppercase;
           }
-          .card h3 {
-            margin: 0 0 10px;
-            font-size: 16px;
-          }
-          .card p {
-            margin: 6px 0;
+          .info-col .name {
+            margin: 0;
             font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+          }
+          .info-col .detail {
+            margin: 4px 0 0;
+            font-size: 14px;
+            color: #475569;
             line-height: 1.6;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
+            margin-bottom: 32px;
           }
           thead th {
-            padding: 12px 10px;
-            border-bottom: 2px solid #d1d5db;
-            font-size: 13px;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
             text-align: right;
-            background: #f8fafc;
           }
+          thead th.center { text-align: center; }
+          thead th.amount { text-align: left; }
           tbody td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
             vertical-align: top;
-            font-size: 14px;
+          }
+          tbody tr:last-child td {
+            border-bottom: none;
           }
           .offer-summary-row td {
             background: #ecfdf5;
-            border-bottom: 1px solid #bbf7d0;
             font-weight: 700;
           }
           .offer-item-row td:first-child {
-            padding-right: 24px;
+            padding-right: 32px;
           }
           .item-name {
             font-weight: 600;
+            color: #0f172a;
           }
           .item-meta {
             margin-top: 4px;
-            color: #6b7280;
+            color: #64748b;
             font-size: 12px;
           }
           .center { text-align: center; }
@@ -400,47 +422,50 @@ export const printOrderInvoice = async ({
             text-align: left;
             white-space: nowrap;
           }
-          .totals {
-            width: 340px;
-            margin-right: auto;
-            margin-top: 22px;
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 12px 16px;
-            background: #fcfcfd;
+          .totals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
+          }
+          .totals-left {
+            text-align: left;
           }
           .totals-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 0;
+            padding: 4px 0;
             font-size: 14px;
           }
-          .totals-row.total {
-            margin-top: 6px;
-            padding-top: 14px;
-            border-top: 2px solid #e5e7eb;
+          .totals-row .label {
+            color: #64748b;
+          }
+          .totals-row .value {
+            color: #334155;
+          }
+          .totals-row.total-line {
+            margin-top: 4px;
+            padding-top: 12px;
+            border-top: 2px solid #0f172a;
+          }
+          .totals-row.total-line .value {
             font-size: 18px;
             font-weight: 700;
+            color: #0f172a;
           }
-          .footer {
-            margin-top: 24px;
-            padding-top: 18px;
-            border-top: 1px dashed #d1d5db;
-          }
-          .footer p {
-            margin: 6px 0;
+          .payment-info {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
             font-size: 13px;
-            color: #4b5563;
+            color: #64748b;
           }
           .barcode-section {
             display: flex;
             justify-content: center;
-            gap: 40px;
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid #d1d5db;
+            gap: 48px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
             flex-wrap: wrap;
           }
           .barcode-item {
@@ -460,6 +485,17 @@ export const printOrderInvoice = async ({
             color: #6b7280;
             font-family: "Courier New", monospace;
           }
+          .footer {
+            padding: 16px 48px;
+            text-align: center;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+          }
+          .footer p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #94a3b8;
+          }
           @media print {
             body {
               background: #ffffff;
@@ -467,147 +503,132 @@ export const printOrderInvoice = async ({
             .page {
               margin: 0;
               min-height: auto;
+              border-radius: 0;
               box-shadow: none;
-              padding: 12mm;
+            }
+            .header-bg {
+              padding: 30px 40px 20px;
+            }
+            .body-content {
+              padding: 20px 40px;
+            }
+            .footer {
+              padding: 12px 40px;
             }
             @page {
               size: ${settings.pdfPageSize} ${settings.pdfOrientation};
-              margin: 10mm;
+              margin: 0;
             }
           }
         </style>
       </head>
       <body>
         <div class="page">
-          <div class="header">
-            <div class="brand">
-              ${
-                settings.showCompanyLogo && companyLogoUrl
-                  ? `<img src="${escapeHtml(companyLogoUrl)}" alt="Company Logo" />`
-                  : ""
-              }
-              <h1>${escapeHtml(companyName || "منصة MaxP")}</h1>
-              <div class="muted">${escapeHtml(invoiceTitle)}</div>
-            </div>
-            <div class="invoice-title">
-              <h2>فاتورة</h2>
-              <p><strong>رقم الطلب:</strong> ${escapeHtml(order.orderNumber)}</p>
-              ${
-                order.turboTrackingNumber
-                  ? `<p><strong>رقم تتبع تربو:</strong> ${escapeHtml(order.turboTrackingNumber)}</p>`
-                  : ""
-              }
-              <p><strong>التاريخ:</strong> ${escapeHtml(
-                new Date(order.createdAt).toLocaleDateString("ar-EG", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                }),
-              )}</p>
-              <p><strong>الحالة:</strong> ${escapeHtml(getStatusLabel(order.status))}</p>
-              <p><strong>حالة الدفع:</strong> ${escapeHtml(
-                getPaymentStatusLabel(order.paymentStatus),
-              )}</p>
+          <div class="header-bg">
+            <div class="header-flex">
+              <div class="header-right">
+                <h1>${escapeHtml(companyName || "منصة MaxP")}</h1>
+                <div class="header-muted">${escapeHtml(invoiceTitle)}</div>
+              </div>
+              <div class="header-left">
+                <div class="label">فاتورة</div>
+                <div class="number">${escapeHtml(order.orderNumber)}</div>
+                <div class="date">${escapeHtml(
+                  new Date(order.createdAt).toLocaleDateString("ar-EG", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }),
+                )}</div>
+              </div>
             </div>
           </div>
 
-          <div class="info-grid">
-            <div class="card">
-              <h3>بيانات العميل</h3>
-              <p><strong>الاسم:</strong> ${escapeHtml(order.customerName || "عميل غير محدد")}</p>
-              ${
-                order.customerPhone
-                  ? `<p><strong>الهاتف:</strong> ${escapeHtml(order.customerPhone)}</p>`
-                  : ""
-              }
-              ${
-                order.customerEmail
-                  ? `<p><strong>البريد:</strong> ${escapeHtml(order.customerEmail)}</p>`
-                  : ""
-              }
-              ${
-                addressText
-                  ? `<p><strong>العنوان:</strong> ${escapeHtml(addressText)}</p>`
-                  : ""
-              }
+          <div class="body-content">
+            <div class="info-grid">
+              <div class="info-col">
+                <h3>بيانات العميل</h3>
+                <p class="name">${escapeHtml(order.customerName || "عميل غير محدد")}</p>
+                <div class="detail">
+                  ${order.customerPhone ? `<p>هاتف: ${escapeHtml(order.customerPhone)}</p>` : ""}
+                  ${order.customerEmail ? `<p>بريد: ${escapeHtml(order.customerEmail)}</p>` : ""}
+                  ${addressText ? `<p>${escapeHtml(addressText)}</p>` : ""}
+                </div>
+              </div>
+              <div class="info-col" style="text-align: left;">
+                <h3>بيانات الطلب</h3>
+                <div class="detail" style="text-align: left;">
+                  ${settings.showPaymentMethod && order.paymentMethod ? `<p><strong>طريقة الدفع:</strong> ${escapeHtml(order.paymentMethod)}</p>` : ""}
+                  <p><strong>عدد المنتجات:</strong> ${escapeHtml(order.items.length)}</p>
+                  <p><strong>المبلغ المطلوب تحصيله:</strong> ${escapeHtml(formatCurrency(amountToCollect, currency))}</p>
+                  ${order.notes ? `<p><strong>ملاحظات:</strong> ${escapeHtml(order.notes)}</p>` : ""}
+                </div>
+              </div>
             </div>
-            <div class="card">
-              <h3>بيانات الطلب</h3>
-              ${
-                settings.showPaymentMethod && order.paymentMethod
-                  ? `<p><strong>طريقة الدفع:</strong> ${escapeHtml(order.paymentMethod)}</p>`
-                  : ""
-              }
-              <p><strong>عدد المنتجات:</strong> ${escapeHtml(order.items.length)}</p>
-              <p><strong>المبلغ المطلوب تحصيله:</strong> ${escapeHtml(
-                formatCurrency(amountToCollect, currency),
-              )}</p>
-              ${
-                order.notes
-                  ? `<p><strong>ملاحظات:</strong> ${escapeHtml(order.notes)}</p>`
-                  : ""
-              }
-            </div>
-          </div>
 
-          ${
-            settings.showOrderItems
-              ? `<table>
-            <thead>
-              <tr>
-                <th>المنتج</th>
-                <th class="center">SKU</th>
-                <th class="center">الكمية</th>
-                <th class="amount">السعر</th>
-                <th class="amount">الإجمالي</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsRows}
-            </tbody>
-          </table>`
-              : ""
-          }
-
-          <div class="totals">
-            <div class="totals-row">
-              <span>المجموع الفرعي</span>
-              <strong>${escapeHtml(formatCurrency(subtotal, currency))}</strong>
-            </div>
-            <div class="totals-row">
-              <span>الشحن</span>
-              <strong>${escapeHtml(formatCurrency(shipping, currency))}</strong>
-            </div>
             ${
-              settings.showTaxBreakdown
-                ? `<div class="totals-row">
-              <span>الضريبة</span>
-              <strong>${escapeHtml(formatCurrency(tax, currency))}</strong>
-            </div>`
+              settings.showOrderItems
+                ? `<table>
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th class="center">SKU</th>
+                  <th class="center">الكمية</th>
+                  <th class="amount">السعر</th>
+                  <th class="amount">الإجمالي</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsRows}
+              </tbody>
+            </table>`
                 : ""
             }
-            <div class="totals-row total">
-              <span>الإجمالي</span>
-              <strong>${escapeHtml(formatCurrency(total, currency))}</strong>
-            </div>
-          </div>
 
-          ${
-            order.orderNumber || order.turboTrackingNumber
-              ? `<div class="barcode-section">
-                  ${order.orderNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.orderNumber)}<div class="barcode-label">رقم الطلب</div><div class="barcode-value">${escapeHtml(order.orderNumber)}</div></div>` : ""}
-                  ${order.turboTrackingNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.turboTrackingNumber)}<div class="barcode-label">كود الشحن</div><div class="barcode-value">${escapeHtml(order.turboTrackingNumber)}</div></div>` : ""}
+            <div class="totals-grid">
+              <div></div>
+              <div class="totals-left">
+                <div class="totals-row">
+                  <span class="label">المجموع الفرعي</span>
+                  <span class="value"><strong>${escapeHtml(formatCurrency(subtotal, currency))}</strong></span>
+                </div>
+                <div class="totals-row">
+                  <span class="label">الشحن</span>
+                  <span class="value"><strong>${escapeHtml(formatCurrency(shipping, currency))}</strong></span>
+                </div>
+                ${
+                  settings.showTaxBreakdown
+                    ? `<div class="totals-row">
+                  <span class="label">الضريبة</span>
+                  <span class="value"><strong>${escapeHtml(formatCurrency(tax, currency))}</strong></span>
                 </div>`
-              : ""
-          }
+                    : ""
+                }
+                <div class="totals-row total-line">
+                  <span class="label">الإجمالي</span>
+                  <span class="value">${escapeHtml(formatCurrency(total, currency))}</span>
+                </div>
+                <div class="payment-info">
+                  <strong>الحالة:</strong> ${escapeHtml(getStatusLabel(order.status))}
+                  &nbsp;|&nbsp;
+                  <strong>حالة الدفع:</strong> ${escapeHtml(getPaymentStatusLabel(order.paymentStatus))}
+                </div>
+              </div>
+            </div>
+
+            ${
+              order.orderNumber || order.turboTrackingNumber
+                ? `<div class="barcode-section">
+                    ${order.orderNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.orderNumber)}<div class="barcode-label">رقم الطلب</div><div class="barcode-value">${escapeHtml(order.orderNumber)}</div></div>` : ""}
+                    ${order.turboTrackingNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.turboTrackingNumber)}<div class="barcode-label">كود الشحن</div><div class="barcode-value">${escapeHtml(order.turboTrackingNumber)}</div></div>` : ""}
+                  </div>`
+                : ""
+            }
+          </div>
 
           <div class="footer">
-            <p>تم توليد هذه الفاتورة مباشرة من صفحة تفاصيل الطلب.</p>
-            ${
-              order.metadata?.isGuestOrder
-                ? "<p>هذا الطلب من نوع طلب ضيف، لذلك تم استخدام الطباعة المباشرة بدل الفاتورة المحفوظة.</p>"
-                : ""
-            }
+            <p>شكراً لتعاملكم معنا</p>
+            <p>منصة إدارة التواصل والمبيعات الإلكترونية</p>
           </div>
         </div>
       </body>

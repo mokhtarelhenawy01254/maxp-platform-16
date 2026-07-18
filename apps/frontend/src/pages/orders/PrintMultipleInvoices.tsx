@@ -105,6 +105,27 @@ const PrintMultipleInvoices: React.FC = () => {
     }).format(amount);
   };
 
+  const getPaymentStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      PAID: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+      CANCELLED: "bg-red-50 text-red-700 border-red-200",
+      REFUNDED: "bg-slate-50 text-slate-700 border-slate-200",
+      PARTIALLY_PAID: "bg-amber-50 text-amber-700 border-amber-200",
+    };
+    const labels: Record<string, string> = {
+      PAID: "مدفوعة",
+      PENDING: "قيد الانتظار",
+      CANCELLED: "ملغاة",
+      REFUNDED: "مستردة",
+      PARTIALLY_PAID: "مدفوعة جزئياً",
+    };
+    return {
+      className: styles[status] || "bg-slate-50 text-slate-700 border-slate-200",
+      label: labels[status] || status,
+    };
+  };
+
   const renderInvoiceRows = (invoice: Invoice) => {
     const groupedItems = groupOrderDocumentQuantityOffers(
       invoice.order.orderItems || [],
@@ -117,18 +138,19 @@ const PrintMultipleInvoices: React.FC = () => {
             key={`${invoice.id}-${group.groupId}-summary`}
             className="border-b border-emerald-200 bg-emerald-50/70"
           >
-            <td className="text-right py-2 font-bold">
+            <td className="text-right py-3 pr-4 font-bold">
               <div>عرض كميات: {group.offerLabel}</div>
-              <div className="text-xs font-medium text-gray-600 mt-1">
+              <div className="text-xs font-medium text-slate-600 mt-1">
                 {group.selectedPieces}/{group.offerQuantity || group.selectedPieces} قطع
                 {group.freeShipping ? " • شحن مجاني" : ""}
               </div>
             </td>
-            <td className="text-center py-2 font-bold">
+            <td className="text-center font-mono text-xs text-slate-400">—</td>
+            <td className="text-center font-bold">
               {group.offerQuantity || group.selectedPieces}
             </td>
-            <td className="text-right py-2">-</td>
-            <td className="text-right py-2 font-bold">
+            <td className="text-left text-slate-500">-</td>
+            <td className="text-left font-bold">
               {formatCurrency(group.total, invoice.currency)}
             </td>
           </tr>
@@ -147,20 +169,20 @@ const PrintMultipleInvoices: React.FC = () => {
           return (
             <tr
               key={`${invoice.id}-${group.groupId}-${itemIndex}`}
-              className="border-b border-gray-300"
+              className="border-b border-slate-100"
             >
-              <td className="text-right py-2 pr-6">
-                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}`}</div>
+              <td className="text-right py-3 pr-8">
+                <div className="font-medium text-slate-900">{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}`}</div>
                 {extraDetails ? (
-                  <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
+                  <div className="text-xs text-slate-500 mt-1">{extraDetails}</div>
                 ) : null}
               </td>
-              <td className="text-center py-2">{code || "—"}</td>
-              <td className="text-center py-2">{item.quantity}</td>
-              <td className="text-right py-2">
+              <td className="text-center font-mono text-xs text-slate-500">{code || "—"}</td>
+              <td className="text-center text-slate-700">{item.quantity}</td>
+              <td className="text-left text-slate-700">
                 {formatCurrency(item.price, invoice.currency)}
               </td>
-              <td className="text-right py-2">
+              <td className="text-left font-semibold text-slate-900">
                 {formatCurrency(item.total, invoice.currency)}
               </td>
             </tr>
@@ -180,19 +202,19 @@ const PrintMultipleInvoices: React.FC = () => {
           .join(" | ");
 
         return (
-          <tr key={`${invoice.id}-single-${idx}`} className="border-b border-gray-300">
-            <td className="text-right py-2">
-              <div>{item.productName}</div>
+          <tr key={`${invoice.id}-single-${idx}`} className="border-b border-slate-100">
+            <td className="text-right py-3">
+              <div className="font-medium text-slate-900">{item.productName}</div>
               {extraDetails ? (
-                <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
+                <div className="text-xs text-slate-500 mt-1">{extraDetails}</div>
               ) : null}
             </td>
-            <td className="text-center py-2">{code || "—"}</td>
-            <td className="text-center py-2">{item.quantity}</td>
-            <td className="text-right py-2">
+            <td className="text-center font-mono text-xs text-slate-500">{code || "—"}</td>
+            <td className="text-center text-slate-700">{item.quantity}</td>
+            <td className="text-left text-slate-700">
               {formatCurrency(item.price, invoice.currency)}
             </td>
-            <td className="text-right py-2">
+            <td className="text-left font-semibold text-slate-900">
               {formatCurrency(item.total, invoice.currency)}
             </td>
           </tr>
@@ -223,47 +245,46 @@ const PrintMultipleInvoices: React.FC = () => {
   }
 
   return (
-    <div className="print-container">
+    <div className="invoice-print-wrapper">
       <style>{`
         @media print {
-          body {
-            margin: 0;
-            padding: 0;
+          body { margin: 0; padding: 0; background: #fff; }
+          .invoice-page { page-break-after: always; padding: 0 !important; }
+          .invoice-page:last-child { page-break-after: auto; }
+          .no-print { display: none !important; }
+          @page { margin: 0; size: A4; }
+        }
+        @media screen {
+          .invoice-print-wrapper {
+            background: #f1f5f9;
+            min-height: 100vh;
+            padding: 32px 16px;
           }
-
           .invoice-page {
-            page-break-after: always;
-            page-break-inside: avoid;
-            padding: 15mm !important;
-          }
-
-          .invoice-page:last-child {
-            page-break-after: auto;
-          }
-
-          .no-print {
-            display: none !important;
-          }
-
-          @page {
-            margin: 1cm;
-            size: A4;
+            background: #fff;
+            max-width: 210mm;
+            margin: 0 auto 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            overflow: hidden;
           }
         }
-
-        @media screen {
-          .print-container {
-            background: #f3f4f6;
-            padding: 20px;
-          }
-
-          .invoice-page {
-            background: white;
-            max-width: 210mm;
-            margin: 0 auto 20px;
-            padding: 20mm;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-          }
+        .invoice-table th {
+          font-weight: 600;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #64748b;
+          padding: 12px 16px;
+          border-bottom: 2px solid #e2e8f0;
+        }
+        .invoice-table td {
+          padding: 14px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          font-size: 13px;
+        }
+        .invoice-table tr:last-child td {
+          border-bottom: none;
         }
       `}</style>
 
@@ -290,97 +311,143 @@ const PrintMultipleInvoices: React.FC = () => {
         </button>
       </div>
 
-      {invoices.map((invoice) => (
-        <div key={invoice.id} className="invoice-page" dir="rtl">
-          {/* رأس الفاتورة - اسم الشركة والتاريخ */}
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-right">
-              <p className="text-sm">
-                {new Date(invoice.issueDate).toLocaleDateString("ar-EG", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                })}
-              </p>
+      {invoices.map((invoice) => {
+        const statusBadge = getPaymentStatusBadge(invoice.paymentStatus);
+        return (
+          <div key={invoice.id} className="invoice-page" dir="rtl">
+            {/* الهيدر */}
+            <div className="px-10 pt-10 pb-6" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}>
+              <div className="flex justify-between items-start">
+                <div className="text-right">
+                  <h1 className="text-2xl font-bold text-white mb-1">{invoice.companyName}</h1>
+                  <div className="text-sm text-slate-400 space-y-0.5 mt-2">
+                    {invoice.companyPhone && <p>{invoice.companyPhone}</p>}
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className="text-xs text-slate-400 mb-1 font-medium tracking-wider">فاتورة</p>
+                  <h2 className="text-lg font-bold text-white">{invoice.invoiceNumber}</h2>
+                  <p className="text-sm text-slate-400 mt-1">
+                    {new Date(invoice.issueDate).toLocaleDateString("ar-EG", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold mb-1">{invoice.companyName}</h1>
-              <p className="text-sm">{invoice.customerPhone || ""}</p>
-            </div>
-          </div>
 
-          {/* معلومات العميل */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold mb-2 border-b pb-1">
-              معلومات العميل
-            </h3>
-            <p className="text-sm mb-1">{invoice.customerName}</p>
-            <p className="text-sm mb-1">هاتف: {invoice.customerPhone}</p>
-            <p className="text-sm mb-1">
-              العنوان: {invoice.customerAddress || ""}
-            </p>
-            <p className="text-sm">المدينة: {invoice.city || ""}</p>
-          </div>
+            <div className="px-10 py-6">
+              {/* معلومات العميل + الطلب */}
+              <div className="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">معلومات العميل</p>
+                  <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
+                  <div className="text-sm text-slate-600 space-y-0.5 mt-1">
+                    <p>هاتف: {invoice.customerPhone}</p>
+                    <p className="max-w-xs">العنوان: {invoice.customerAddress || ""}</p>
+                    <p>المدينة: {invoice.city || ""}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">بيانات الطلب</p>
+                  <div className="text-sm text-slate-600 space-y-0.5">
+                    <p><span className="font-medium text-slate-900">رقم الطلب:</span> {invoice.order.orderNumber}</p>
+                    {invoice.order.turboTrackingNumber && (
+                      <p><span className="font-medium text-slate-900">رقم تتبع:</span> {invoice.order.turboTrackingNumber}</p>
+                    )}
+                    <p><span className="font-medium text-slate-900">الحالة:</span>{" "}
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${statusBadge.className}`}>
+                        {statusBadge.label}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-          {/* جدول المنتجات */}
-          <table className="w-full mb-6 text-sm">
-            <thead>
-              <tr className="border-b-2 border-gray-800">
-                <th className="text-right py-2 font-bold">المنتج</th>
-                <th className="text-center py-2 font-bold">SKU</th>
-                <th className="text-center py-2 font-bold">الكمية</th>
-                <th className="text-right py-2 font-bold">السعر</th>
-                <th className="text-right py-2 font-bold">الإجمالي</th>
-              </tr>
-            </thead>
-            <tbody>
-              {renderInvoiceRows(invoice)}
-            </tbody>
-          </table>
+              {/* جدول المنتجات */}
+              <div className="mb-8">
+                <table className="w-full invoice-table">
+                  <thead>
+                    <tr>
+                      <th className="text-right">المنتج</th>
+                      <th className="text-center">SKU</th>
+                      <th className="text-center">الكمية</th>
+                      <th className="text-left">السعر</th>
+                      <th className="text-left">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {renderInvoiceRows(invoice)}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* المجاميع */}
-          <div className="text-right text-sm space-y-1">
-            <p>
-              المجموع الفرعي:{" "}
-              <span className="font-bold">
-                {formatCurrency(invoice.subtotal, invoice.currency)}
-              </span>
-            </p>
-            {invoice.shipping > 0 && (
-              <p>
-                الشحن:{" "}
-                <span className="font-bold">
-                  {formatCurrency(invoice.shipping, invoice.currency)}
-                </span>
-              </p>
-            )}
-            <p className="text-base pt-2 border-t border-gray-800">
-              <span className="font-bold">الإجمالي: </span>
-              <span className="font-bold text-lg">
-                {formatCurrency(invoice.totalAmount, invoice.currency)}
-              </span>
-            </p>
-          </div>
+              {/* المجاميع + الدفع */}
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  {invoice.notes && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">ملاحظات</p>
+                      <p className="text-sm text-slate-600 leading-relaxed">{invoice.notes}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="text-left">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm py-1">
+                      <span className="text-slate-500">المجموع الفرعي</span>
+                      <span className="text-slate-700">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+                    </div>
+                    {invoice.discount > 0 && (
+                      <div className="flex justify-between text-sm py-1">
+                        <span className="text-slate-500">الخصم</span>
+                        <span className="text-red-500">- {formatCurrency(invoice.discount, invoice.currency)}</span>
+                      </div>
+                    )}
+                    {invoice.shipping > 0 && (
+                      <div className="flex justify-between text-sm py-1">
+                        <span className="text-slate-500">الشحن</span>
+                        <span className="text-slate-700">{formatCurrency(invoice.shipping, invoice.currency)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-3 mt-1" style={{ borderTop: "2px solid #0f172a" }}>
+                      <span className="text-sm font-bold text-slate-900">الإجمالي</span>
+                      <span className="text-lg font-bold text-slate-900">{formatCurrency(invoice.totalAmount, invoice.currency)}</span>
+                    </div>
+                  </div>
+                  {invoice.paymentMethod && (
+                    <div className="mt-4 pt-4" style={{ borderTop: "1px solid #e2e8f0" }}>
+                      <p className="text-xs text-slate-500">طريقة الدفع: <span className="font-medium text-slate-700">{invoice.paymentMethod}</span></p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          {/* الباركود */}
-          {(invoice.order.orderNumber || invoice.order.turboTrackingNumber) && (
-            <div className="flex justify-center gap-8 mt-4 pt-3" style={{ borderTop: "1px solid #e2e8f0" }}>
-              {invoice.order.orderNumber && (
-                <InvoiceBarcode
-                  value={invoice.order.orderNumber}
-                  label="رقم الطلب"
-                />
+              {/* الباركود */}
+              {(invoice.order.orderNumber || invoice.order.turboTrackingNumber) && (
+                <div className="pt-6 mt-6" style={{ borderTop: "1px solid #e2e8f0" }}>
+                  <div className="flex justify-center gap-12">
+                    {invoice.order.orderNumber && (
+                      <InvoiceBarcode value={invoice.order.orderNumber} label="رقم الطلب" />
+                    )}
+                    {invoice.order.turboTrackingNumber && (
+                      <InvoiceBarcode value={invoice.order.turboTrackingNumber} label="كود الشحن" />
+                    )}
+                  </div>
+                </div>
               )}
-              {invoice.order.turboTrackingNumber && (
-                <InvoiceBarcode
-                  value={invoice.order.turboTrackingNumber}
-                  label="كود الشحن"
-                />
-              )}
             </div>
-          )}
-        </div>
-      ))}
+
+            {/* الفوتر */}
+            <div className="px-10 py-4 text-center" style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+              <p className="text-xs text-slate-400">شكراً لتعاملكم معنا</p>
+              <p className="text-xs text-slate-400 mt-0.5">منصة إدارة التواصل والمبيعات الإلكترونية</p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

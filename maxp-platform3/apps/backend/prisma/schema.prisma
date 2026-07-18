@@ -8950,6 +8950,8 @@ model OrderInvoiceSettings {
   primaryColor                  String   @default("#4F46E5")
   secondaryColor                String   @default("#6B7280")
   fontFamily                    String   @default("Arial")
+  showBarcodeOrderCode          Boolean  @default(true)
+  showBarcodeShippingCode       Boolean  @default(true)
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
   enableSequentialOrders        Boolean  @default(false)
