@@ -76,6 +76,19 @@ class LeadCategoryController {
                 },
             });
 
+            await this.prisma.activityLog.create({
+                data: {
+                    userId: req.user?.userId || req.user?.id || '',
+                    companyId,
+                    category: 'CRM',
+                    action: 'CREATE_LEAD_CATEGORY',
+                    description: `تم إنشاء تصنيف "${name.trim()}"`,
+                    targetType: 'LeadCategory',
+                    targetId: category.id,
+                    severity: 'LOW',
+                },
+            }).catch(() => {});
+
             res.json({ success: true, data: category });
         } catch (error) {
             if (error.code === 'P2002') {
@@ -113,6 +126,19 @@ class LeadCategoryController {
                 },
             });
 
+            await this.prisma.activityLog.create({
+                data: {
+                    userId: req.user?.userId || req.user?.id || '',
+                    companyId,
+                    category: 'CRM',
+                    action: 'UPDATE_LEAD_CATEGORY',
+                    description: `تم تحديث تصنيف "${category.name}"`,
+                    targetType: 'LeadCategory',
+                    targetId: category.id,
+                    severity: 'LOW',
+                },
+            }).catch(() => {});
+
             res.json({ success: true, data: category });
         } catch (error) {
             if (error.code === 'P2002') {
@@ -144,6 +170,19 @@ class LeadCategoryController {
             });
 
             await this.prisma.leadCategory.delete({ where: { id } });
+
+            await this.prisma.activityLog.create({
+                data: {
+                    userId: req.user?.userId || req.user?.id || '',
+                    companyId,
+                    category: 'CRM',
+                    action: 'DELETE_LEAD_CATEGORY',
+                    description: `تم حذف تصنيف "${existing.name}"`,
+                    targetType: 'LeadCategory',
+                    targetId: id,
+                    severity: 'MEDIUM',
+                },
+            }).catch(() => {});
 
             res.json({ success: true, message: 'Category deleted' });
         } catch (error) {

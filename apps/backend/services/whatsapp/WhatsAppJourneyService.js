@@ -50,10 +50,12 @@ class WhatsAppJourneyService {
             // Calculate first step send time (support hours or days)
             const firstStep = flow.steps[0];
             const nextSendAt = new Date();
-            if (firstStep.delayUnit === 'HOURS' && firstStep.delayHours != null) {
-                nextSendAt.setHours(nextSendAt.getHours() + firstStep.delayHours);
+            if (firstStep.delayUnit === 'HOURS' && firstStep.delayHours != null && firstStep.delayHours > 0) {
+                nextSendAt.setHours(nextSendAt.getHours() + Math.min(firstStep.delayHours, 720));
+            } else if (firstStep.delayDays != null && firstStep.delayDays > 0) {
+                nextSendAt.setDate(nextSendAt.getDate() + Math.min(firstStep.delayDays, 365));
             } else {
-                nextSendAt.setDate(nextSendAt.getDate() + firstStep.delayDays);
+                nextSendAt.setHours(nextSendAt.getHours() + 1);
             }
 
             await this.prisma.customerJourney.create({

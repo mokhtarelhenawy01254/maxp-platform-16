@@ -1537,47 +1537,49 @@ const updateCustomerTags = async (req, res) => {
     const { customerId } = req.params;
     const { tags } = req.body;
 
-    // التحقق من وجود العميل وانتمائه للشركة
-    const customer = await getSharedPrismaClient().customer.findUnique({
+    // Validate tags input
+    if (!Array.isArray(tags)) {
+      return res.status(400).json({ success: false, message: 'الوسوم يجب أن تكون مصفوفة' });
+    }
+    for (const tag of tags) {
+      if (typeof tag !== 'string' || tag.length > 50 || !tag.trim()) {
+        return res.status(400).json({ success: false, message: 'كل وسم يجب أن يكون نصاً بين 1 و 50 حرفاً' });
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findUnique({
       where: { id: customerId },
-      select: { id: true, companyId: true }
+      select: { id: true, companyId: true, tags: true }
     });
 
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: 'العميل غير موجود'
-      });
+      return res.status(404).json({ success: false, message: 'العميل غير موجود' });
     }
-
     if (customer.companyId !== companyId) {
-      return res.status(403).json({
-        success: false,
-        message: 'غير مصرح بتعديل هذا العميل'
-      });
+      return res.status(403).json({ success: false, message: 'غير مصرح بتعديل هذا العميل' });
     }
 
-    // تحديث العلامات (تخزينها كـ JSON string)
-    const tagsString = Array.isArray(tags) ? JSON.stringify(tags) : tags;
+    const tagsString = JSON.stringify(tags);
 
-    const updatedCustomer = await getSharedPrismaClient().customer.update({
+    const updatedCustomer = await prisma.customer.update({
       where: { id: customerId },
       data: { tags: tagsString }
     });
 
-    res.json({
-      success: true,
-      data: updatedCustomer,
-      message: 'تم تحديث العلامات بنجاح'
-    });
+    // Sync to WhatsAppContact
+    if (customer.tags !== tagsString) {
+      await prisma.whatsAppContact.updateMany({
+        where: { customerId },
+        data: { tags: tagsString }
+      });
+    }
+
+    res.json({ success: true, data: updatedCustomer, message: 'تم تحديث العلامات بنجاح' });
 
   } catch (error) {
     console.error('❌ Error updating customer tags:', error);
-    res.status(500).json({
-      success: false,
-      message: 'خطأ في تحديث العلامات',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'خطأ في تحديث العلامات', error: error.message });
   }
 };
 
@@ -1924,6 +1926,7 @@ const renameTag = async (req, res) => {
     });
 
     let updatedCount = 0;
+    const prisma = getSharedPrismaClient();
     for (const c of customers) {
       let tags;
       try { tags = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags; } catch { continue; }
@@ -1933,9 +1936,15 @@ const renameTag = async (req, res) => {
       if (idx === -1) continue;
 
       tags[idx] = trimmedNew;
-      await getSharedPrismaClient().customer.update({
+      const newTagsStr = JSON.stringify([...new Set(tags)]);
+      await prisma.customer.update({
         where: { id: c.id },
-        data: { tags: JSON.stringify([...new Set(tags)]) }
+        data: { tags: newTagsStr }
+      });
+      // Sync to WhatsAppContact
+      await prisma.whatsAppContact.updateMany({
+        where: { customerId: c.id },
+        data: { tags: newTagsStr }
       });
       updatedCount++;
     }
@@ -1967,6 +1976,7 @@ const deleteTag = async (req, res) => {
     });
 
     let updatedCount = 0;
+    const prisma = getSharedPrismaClient();
     for (const c of customers) {
       let tags;
       try { tags = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags; } catch { continue; }
@@ -1975,9 +1985,15 @@ const deleteTag = async (req, res) => {
       const filtered = tags.filter(t => t !== decodedTag);
       if (filtered.length === tags.length) continue;
 
-      await getSharedPrismaClient().customer.update({
+      const newTagsStr = JSON.stringify(filtered);
+      await prisma.customer.update({
         where: { id: c.id },
-        data: { tags: JSON.stringify(filtered) }
+        data: { tags: newTagsStr }
+      });
+      // Sync to WhatsAppContact
+      await prisma.whatsAppContact.updateMany({
+        where: { customerId: c.id },
+        data: { tags: newTagsStr }
       });
       updatedCount++;
     }

@@ -1339,6 +1339,17 @@ async function updateContact(req, res) {
             }
         });
 
+        // Sync tags to Customer model if linked
+        if (Array.isArray(tags) && updatedContact.customerId) {
+            const tagsStr = JSON.stringify(tags);
+            if (contact.tags !== tagsStr) {
+                await getSharedPrismaClient().customer.update({
+                    where: { id: updatedContact.customerId },
+                    data: { tags: tagsStr }
+                }).catch(err => console.error('❌ Failed to sync tags to customer:', err));
+            }
+        }
+
         // Cancel old journey + enroll in new category-based journey
         if (newLeadCategoryId && newLeadCategoryId !== contact.leadCategoryId && updatedContact.customerId) {
             try {
