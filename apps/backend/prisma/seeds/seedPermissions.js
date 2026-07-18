@@ -324,6 +324,7 @@ const BUILT_IN_ROLES = {
     permissions: [
       'marketing.campaigns', 'marketing.coupons',
       'reports.view',
+      'products.view', 'products.create',
     ],
   },
 };

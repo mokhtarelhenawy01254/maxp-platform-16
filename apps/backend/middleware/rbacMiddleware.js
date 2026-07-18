@@ -34,7 +34,7 @@ const PERMISSIONS = {
   'tags.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
 
   // Products
-  'products.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'products.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR', 'AFFILIATE'],
   'products.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'products.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'products.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
