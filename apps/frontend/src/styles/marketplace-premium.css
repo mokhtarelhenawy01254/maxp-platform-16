@@ -228,6 +228,139 @@
   animation: mp-card-in 0.5s cubic-bezier(.22,1,.36,1) both;
 }
 
+/* ── Popular / Highlighted Card (Asymmetric Grid) ── */
+.mp-card-highlighted {
+  grid-column: span 2;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 20px;
+  padding: 20px;
+  border: none;
+  background:
+    radial-gradient(ellipse at 30% 0%, hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.05), transparent 65%),
+    var(--color-card, #fff);
+  box-shadow:
+    0 2px 12px rgba(0,0,0,0.04),
+    0 0 0 1px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.08);
+}
+
+.mp-card-highlighted:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 16px 48px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.14),
+    0 0 0 1px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.20);
+}
+
+.mp-card-highlighted .mp-icon-box {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 16px;
+  font-size: 24px;
+}
+
+.mp-card-highlighted .mp-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-card-highlighted .mp-card-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.mp-card-highlighted .mp-card-features .mp-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.07);
+  color: hsl(var(--cat-h, 220) var(--cat-s, 80%) calc(var(--cat-l, 50%) - 5%));
+}
+
+.dark .mp-card-highlighted {
+  background:
+    radial-gradient(ellipse at 30% 0%, hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.08), transparent 65%),
+    var(--color-card, hsl(222 47% 8%));
+  box-shadow:
+    0 2px 12px rgba(0,0,0,0.15),
+    0 0 0 1px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.12);
+}
+
+.dark .mp-card-highlighted .mp-card-features .mp-feature-chip {
+  background: hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.14);
+  color: hsl(var(--cat-h, 220) var(--cat-s, 80%) calc(var(--cat-l, 50%) + 18%));
+}
+
+/* ── Borderless depth cards ── */
+.mp-app-card.mp-depth {
+  border: none;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.04),
+    0 0 0 1px hsl(0 0% 50% / 0.06);
+}
+
+.mp-app-card.mp-depth:hover {
+  box-shadow:
+    0 12px 40px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.12),
+    0 0 0 1px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.22);
+}
+
+.dark .mp-app-card.mp-depth {
+  box-shadow:
+    0 1px 4px rgba(0,0,0,0.2),
+    0 0 0 1px hsl(0 0% 100% / 0.05);
+}
+
+.dark .mp-app-card.mp-depth:hover {
+  box-shadow:
+    0 16px 48px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.18),
+    0 0 0 1px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.30);
+}
+
+/* ── Rating stars inline ── */
+.mp-rating-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #d97706;
+  opacity: 0.85;
+}
+
+/* ── Section header editorial ── */
+.mp-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.mp-section-header h2 {
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: var(--color-foreground, #0f172a);
+}
+
+.mp-section-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  background: var(--color-muted, hsl(220 14% 96%));
+  color: var(--color-muted-foreground, hsl(220 9% 46%));
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .mp-featured-card {
@@ -243,6 +376,23 @@
     height: 38px;
     min-width: 38px;
     border-radius: 11px;
+  }
+
+  .mp-card-highlighted {
+    grid-column: span 1;
+    flex-direction: column;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .mp-card-highlighted .mp-icon-box {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .mp-card-highlighted .mp-card-features {
+    display: none;
   }
 }
 

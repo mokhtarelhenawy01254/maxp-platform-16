@@ -681,17 +681,25 @@ export default function MarketplaceV2() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
-              {displayedApps.map((app, i) => (
-                <div key={app.id} className="mp-stagger" style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}>
-                  <AppCardV2
-                    app={app}
-                    installingApp={installingApp}
-                    uninstallingApp={uninstallingApp}
-                    onQuickInstall={handleQuickInstall}
-                    onUninstall={(a) => setConfirmUninstallApp(a)}
-                  />
-                </div>
-              ))}
+              {displayedApps.map((app, i) => {
+                const isHighlighted = !!(app.isPopular || app.isFeatured) && i < 6;
+                return (
+                  <div
+                    key={app.id}
+                    className={cn("mp-stagger", isHighlighted && "sm:col-span-2")}
+                    style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}
+                  >
+                    <AppCardV2
+                      app={app}
+                      installingApp={installingApp}
+                      uninstallingApp={uninstallingApp}
+                      onQuickInstall={handleQuickInstall}
+                      onUninstall={(a) => setConfirmUninstallApp(a)}
+                      isHighlighted={isHighlighted}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             {/* Infinite scroll sentinel */}
@@ -807,12 +815,13 @@ export default function MarketplaceV2() {
 }
 
 /* ─── App Card (compact) ─── */
-function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall }: {
+function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall, isHighlighted = false }: {
   app: MarketplaceApp;
   installingApp: string | null;
   uninstallingApp: string | null;
   onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
   onUninstall: (app: MarketplaceApp) => void;
+  isHighlighted?: boolean;
 }) {
   const { t } = useTranslation();
   const BrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
@@ -836,9 +845,13 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
     hoverTimer.current = setTimeout(() => setPreviewOpen(false), 150);
   }, []);
 
-
-
   const catCls = categoryCssClass[app.category] || "";
+
+  const iconEl = BrandIcon
+    ? <BrandIcon className={isHighlighted ? "size-[24px]" : "size-[20px]"} />
+    : textIcon
+      ? <span className="text-base font-bold">{textIcon}</span>
+      : <Icon size={isHighlighted ? 24 : 20} />;
 
   return (
     <Popover open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -849,53 +862,125 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
             aria-haspopup="dialog"
             aria-expanded={previewOpen}
             className={cn(
-              "mp-app-card",
+              "mp-app-card mp-depth",
               catCls,
               app.isInstalled && "mp-installed",
+              isHighlighted && "mp-card-highlighted",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             )}
           >
             <div className="mp-icon-box">
-              {BrandIcon ? <BrandIcon className="size-[20px]" /> : textIcon ? <span className="text-base font-bold">{textIcon}</span> : <Icon size={20} />}
+              {iconEl}
             </div>
-            <div className="min-w-0 flex-1 flex flex-col justify-between h-full min-h-[44px]">
-              <h3
-                dir="auto"
-                className="text-xs font-extrabold text-foreground truncate group-hover:text-primary transition-colors"
-                style={{ unicodeBidi: 'plaintext' }}
-                title={app.name}
-              >
-                {app.name}
-              </h3>
-              <div className="mt-1.5 flex items-center justify-between gap-1">
-                <span className="mp-price-tag">{getPrice(app, t)}</span>
-                {app.isInstalled ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 shrink-0 rounded-lg p-0 text-destructive hover:bg-destructive/10"
-                    onClick={(e) => { e.preventDefault(); onUninstall(app); }}
-                    disabled={uninstallingApp === app.slug}
+
+            {isHighlighted ? (
+              /* ── Highlighted / Popular layout ── */
+              <div className="mp-card-body">
+                <div className="flex items-center gap-2">
+                  <h3
+                    dir="auto"
+                    className="text-sm font-extrabold text-foreground truncate"
+                    style={{ unicodeBidi: 'plaintext' }}
+                    title={app.name}
                   >
-                    {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="h-7 shrink-0 gap-1 rounded-lg px-2 text-xs font-bold"
-                    onClick={(e) => onQuickInstall(e, app)}
-                    disabled={installingApp === app.slug}
-                  >
-                    {installingApp === app.slug ? (
-                      <Loader2 size={11} className="animate-spin" />
-                    ) : (
-                      <Zap size={11} />
-                    )}
-                    {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                  </Button>
+                    {app.name}
+                  </h3>
+                  {app.rating ? (
+                    <span className="mp-rating-inline">
+                      <Star size={10} className="fill-current" />{app.rating}
+                    </span>
+                  ) : null}
+                </div>
+                <p
+                  dir="auto"
+                  className="text-xs text-muted-foreground line-clamp-1 mt-0.5"
+                  style={{ unicodeBidi: 'plaintext' }}
+                >
+                  {app.description}
+                </p>
+                {features.length > 0 && (
+                  <div className="mp-card-features">
+                    {features.slice(0, 4).map(f => (
+                      <span key={f.key} className="mp-feature-chip">
+                        <CheckCircle2 size={9} />
+                        {f.name}
+                      </span>
+                    ))}
+                  </div>
                 )}
+                <div className="mt-auto pt-2 flex items-center justify-between gap-1">
+                  <span className="mp-price-tag">{getPrice(app, t)}</span>
+                  {app.isInstalled ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 shrink-0 rounded-lg p-0 text-destructive hover:bg-destructive/10"
+                      onClick={(e) => { e.preventDefault(); onUninstall(app); }}
+                      disabled={uninstallingApp === app.slug}
+                    >
+                      {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="h-7 shrink-0 gap-1 rounded-lg px-2.5 text-xs font-bold"
+                      onClick={(e) => onQuickInstall(e, app)}
+                      disabled={installingApp === app.slug}
+                    >
+                      {installingApp === app.slug ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
+                      {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              /* ── Standard compact layout ── */
+              <div className="min-w-0 flex-1 flex flex-col justify-between h-full min-h-[44px]">
+                <div className="flex items-center gap-1.5">
+                  <h3
+                    dir="auto"
+                    className="text-xs font-extrabold text-foreground truncate"
+                    style={{ unicodeBidi: 'plaintext' }}
+                    title={app.name}
+                  >
+                    {app.name}
+                  </h3>
+                  {app.rating ? (
+                    <span className="mp-rating-inline">
+                      <Star size={9} className="fill-current" />{app.rating}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="mt-1.5 flex items-center justify-between gap-1">
+                  <span className="mp-price-tag">{getPrice(app, t)}</span>
+                  {app.isInstalled ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 shrink-0 rounded-lg p-0 text-destructive hover:bg-destructive/10"
+                      onClick={(e) => { e.preventDefault(); onUninstall(app); }}
+                      disabled={uninstallingApp === app.slug}
+                    >
+                      {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="h-7 shrink-0 gap-1 rounded-lg px-2 text-xs font-bold"
+                      onClick={(e) => onQuickInstall(e, app)}
+                      disabled={installingApp === app.slug}
+                    >
+                      {installingApp === app.slug ? (
+                        <Loader2 size={11} className="animate-spin" />
+                      ) : (
+                        <Zap size={11} />
+                      )}
+                      {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </Link>
         </PopoverTrigger>
 
