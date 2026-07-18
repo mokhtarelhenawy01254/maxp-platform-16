@@ -4104,6 +4104,132 @@ const getStatusSummaryItems = async (req, res) => {
   }
 };
 
+const getTodayOps = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+    const prisma = getSharedPrismaClient();
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date(now); todayEnd.setHours(23,59,59,999);
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const companyFilter = { companyId };
+
+    const [totalOrders, totalGuests] = await Promise.all([
+      prisma.order.count({ where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } } }),
+      prisma.guestOrder.count({ where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } } }),
+    ]);
+
+    const [confirmedOrders, cancelledOrders] = await Promise.all([
+      prisma.order.count({ where: { ...companyFilter, confirmedAt: { gte: todayStart, lte: todayEnd } } }),
+      prisma.order.count({ where: { ...companyFilter, status: 'CANCELLED', updatedAt: { gte: todayStart, lte: todayEnd } } }),
+    ]);
+
+    const pendingOrders = await prisma.order.count({
+      where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd }, confirmedAt: null, status: { notIn: ['CANCELLED','DELIVERED','REFUNDED','DUPLICATE_ORDER'] } }
+    });
+
+    const guestConfirmedHistory = await prisma.orderStatusHistory.findMany({
+      where: { guestOrder: { companyId }, status: 'CONFIRMED', createdAt: { gte: todayStart, lte: todayEnd } },
+      select: { guestOrderId: true }
+    });
+    const guestCancelledHistory = await prisma.orderStatusHistory.findMany({
+      where: { guestOrder: { companyId }, status: 'CANCELLED', createdAt: { gte: todayStart, lte: todayEnd } },
+      select: { guestOrderId: true }
+    });
+
+    const guestConfirmed = new Set(guestConfirmedHistory.map(h => h.guestOrderId)).size;
+    const guestCancelled = new Set(guestCancelledHistory.map(h => h.guestOrderId)).size;
+
+    const statusCounts = await prisma.order.groupBy({
+      by: ['status'],
+      where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } },
+      _count: true,
+    });
+    const guestStatusCounts = await prisma.guestOrder.groupBy({
+      by: ['status'],
+      where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } },
+      _count: true,
+    });
+
+    const recentHistory = await prisma.orderStatusHistory.findMany({
+      where: { createdAt: { gte: weekAgo }, order: companyFilter },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        id: true, orderId: true, guestOrderId: true,
+        status: true, oldStatus: true, changedBy: true, userName: true, createdAt: true,
+      }
+    });
+
+    const orderIds = [...new Set(recentHistory.filter(h => h.orderId).map(h => h.orderId))].filter(Boolean);
+    const guestOrderIds = [...new Set(recentHistory.filter(h => h.guestOrderId).map(h => h.guestOrderId))].filter(Boolean);
+
+    const [orders, guestOrders] = await Promise.all([
+      orderIds.length ? prisma.order.findMany({ where: { id: { in: orderIds } }, select: { id: true, orderNumber: true, customerName: true, total: true, status: true, createdAt: true } }) : [],
+      guestOrderIds.length ? prisma.guestOrder.findMany({ where: { id: { in: guestOrderIds } }, select: { id: true, orderNumber: true, guestName: true, finalTotal: true, status: true, createdAt: true } }) : [],
+    ]);
+
+    const orderMap = {}; orders.forEach(o => orderMap[o.id] = o);
+    const guestMap = {}; guestOrders.forEach(o => guestMap[o.id] = o);
+
+    const userActions = {};
+    recentHistory.forEach(h => {
+      const key = h.userName || h.changedBy || 'system';
+      if (!userActions[key]) userActions[key] = { changes: 0, confirms: 0, cancels: 0, others: 0 };
+      userActions[key].changes++;
+      if (h.status === 'CONFIRMED') userActions[key].confirms++;
+      else if (h.status === 'CANCELLED') userActions[key].cancels++;
+      else userActions[key].others++;
+    });
+
+    const activityFeed = recentHistory.slice(0, 50).map(h => {
+      const ord = orderMap[h.orderId] || guestMap[h.guestOrderId];
+      return {
+        id: h.id,
+        orderLabel: ord ? (ord.orderNumber || ord.guestName) : (h.orderId || h.guestOrderId || '').slice(0, 8),
+        oldStatus: h.oldStatus,
+        newStatus: h.status,
+        changedBy: h.userName || h.changedBy || 'system',
+        createdAt: h.createdAt,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalOrders, totalGuests, totalAll: totalOrders + totalGuests,
+          confirmedOrders, guestConfirmed, totalConfirmed: confirmedOrders + guestConfirmed,
+          cancelledOrders, guestCancelled, totalCancelled: cancelledOrders + guestCancelled,
+          pendingOrders,
+          cancellationRate: (totalOrders + totalGuests) > 0 ? Number((((cancelledOrders + guestCancelled) / (totalOrders + totalGuests)) * 100).toFixed(2)) : 0,
+          confirmationRate: (totalOrders + totalGuests) > 0 ? Number((((confirmedOrders + guestConfirmed) / (totalOrders + totalGuests)) * 100).toFixed(2)) : 0,
+        },
+        statusBreakdown: {
+          regular: statusCounts.map(s => ({ status: s.status, count: s._count })),
+          guest: guestStatusCounts.map(s => ({ status: s.status, count: s._count })),
+        },
+        teamActivity: Object.entries(userActions)
+          .map(([name, acts]) => ({ name, ...acts }))
+          .sort((a, b) => b.changes - a.changes),
+        activityFeed,
+      },
+    });
+  } catch (error) {
+    console.error('Error in getTodayOps:', error);
+    res.status(200).json({ success: true, data: {
+      summary: { totalOrders:0,totalGuests:0,totalAll:0,confirmedOrders:0,guestConfirmed:0,totalConfirmed:0,cancelledOrders:0,guestCancelled:0,totalCancelled:0,pendingOrders:0,cancellationRate:0,confirmationRate:0 },
+      statusBreakdown: { regular: [], guest: [] },
+      teamActivity: [],
+      activityFeed: [],
+    }, error: error.message });
+  }
+};
+
 module.exports = {
   getStoreAnalytics,
   getConversionRate,
@@ -4138,6 +4264,7 @@ module.exports = {
   getStatusSummaryReport,
   getStatusSummaryOrders,
   getStatusSummaryItems,
+  getTodayOps,
   // Public endpoints
   getPublicStoreAnalytics,
   getPublicTopProducts,

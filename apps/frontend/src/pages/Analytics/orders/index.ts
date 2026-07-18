@@ -27,3 +27,6 @@ export { default as ConversionRateAnalytics } from "./ConversionRateAnalytics";
 export { default as TeamPerformanceAnalytics } from "./TeamPerformanceAnalytics";
 export { default as AbandonedCartAnalytics } from "./AbandonedCartAnalytics";
 
+// Today Operations
+export { default as TodayOps } from "./TodayOps";
+
