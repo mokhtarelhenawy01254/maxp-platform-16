@@ -116,132 +116,108 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #64748b;
-            padding: 12px 16px;
-            border-bottom: 2px solid #e2e8f0;
+            padding: 4px 8px;
+            border-bottom: 1.5px solid #e2e8f0;
           }
           .invoice-table td {
-            padding: 14px 16px;
+            padding: 3px 8px;
             border-bottom: 1px solid #f1f5f9;
-            font-size: 13px;
+            font-size: 12px;
           }
           .invoice-table tr:last-child td {
             border-bottom: none;
           }
         `}</style>
 
-        {/* محتوى الفاتورة - التصميم الموحد */}
-        <div className="p-5 sm:p-6 print:p-8">
-          {/* الهيدر */}
-          <div className="px-6 pt-6 pb-4 rounded-t-xl" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}>
-            <div className="flex justify-between items-start">
-              <div className="text-right">
-                <h1 className="text-xl font-bold text-white mb-1">{invoice.companyName}</h1>
-                {invoice.companyPhone && (
-                  <div className="text-sm text-slate-400 space-y-0.5 mt-2">
-                    <p>{invoice.companyPhone}</p>
-                  </div>
+        {/* محتوى الفاتورة */}
+        <div className="p-3 print:p-2">
+          {/* الهيدر - سوان */}
+          <div className="mb-2">
+            <h1 className="text-base font-bold text-slate-900">{invoice.companyName}</h1>
+          </div>
+
+          {/* الباركود - فوق */}
+          {(invoice.order?.orderNumber || invoice.order?.turboTrackingNumber) && (
+            <div className="mb-2">
+              <div className="flex justify-center gap-6" style={{ transform: "scale(0.7)", transformOrigin: "center" }}>
+                {invoice.order.orderNumber && (
+                  <InvoiceBarcode value={invoice.order.orderNumber} label="رقم الطلب" />
+                )}
+                {invoice.order.turboTrackingNumber && (
+                  <InvoiceBarcode value={invoice.order.turboTrackingNumber} label="كود الشحن" />
                 )}
               </div>
-              <div className="text-left">
-                <p className="text-xs text-slate-400 mb-1 font-medium tracking-wider">فاتورة</p>
-                <h2 className="text-lg font-bold text-white">{invoice.invoiceNumber}</h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  {new Date(invoice.issueDate).toLocaleDateString("ar-EG")}
-                </p>
-              </div>
+            </div>
+          )}
+
+          {/* العميل */}
+          <div className="mb-2">
+            <p className="text-xs font-semibold text-slate-900">{invoice.customerName}</p>
+            <div className="text-xs text-slate-600 space-y-0.5 mt-0.5">
+              {invoice.customerPhone && <p>{invoice.customerPhone}</p>}
+              {invoice.customerEmail && <p>{invoice.customerEmail}</p>}
+              <p className="max-w-xs">{formatAddress(invoice.customerAddress)}</p>
+              {invoice.city && <p>{invoice.city}</p>}
             </div>
           </div>
 
-          <div className="px-6 py-5">
-            {/* معلومات العميل */}
-            <div className="mb-6">
-              <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">معلومات العميل</p>
-              <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
-              <div className="text-sm text-slate-600 space-y-0.5 mt-1">
-                {invoice.customerPhone && <p>هاتف: {invoice.customerPhone}</p>}
-                {invoice.customerEmail && <p>بريد: {invoice.customerEmail}</p>}
-                <p className="max-w-xs">{formatAddress(invoice.customerAddress)}</p>
-                {invoice.city && <p>{invoice.city}</p>}
-              </div>
-            </div>
-
-            {/* جدول المنتجات */}
-            <div className="mb-6">
-              <table className="w-full invoice-table">
-                <thead>
-                  <tr>
-                    <th className="text-right">المنتج</th>
-                    <th className="text-center">SKU</th>
-                    <th className="text-center">الكمية</th>
-                    <th className="text-left">السعر</th>
-                    <th className="text-left">الإجمالي</th>
+          {/* جدول المنتجات */}
+          <div className="mb-1">
+            <table className="w-full invoice-table">
+              <thead>
+                <tr>
+                  <th className="text-right">المنتج</th>
+                  <th className="text-center">SKU</th>
+                  <th className="text-center">الكمية</th>
+                  <th className="text-left">السعر</th>
+                  <th className="text-left">الإجمالي</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.order?.orderItems?.map((item: any, idx: number) => (
+                  <tr key={idx}>
+                    <td className="text-right font-medium text-slate-900">{item.productName}</td>
+                    <td className="text-center font-mono text-xs text-slate-500">{item.productSku || "—"}</td>
+                    <td className="text-center text-slate-700">{item.quantity}</td>
+                    <td className="text-left text-slate-700">{formatCurrency(item.price, invoice.currency)}</td>
+                    <td className="text-left font-semibold text-slate-900">{formatCurrency(item.total, invoice.currency)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {invoice.order?.orderItems?.map((item: any, idx: number) => (
-                    <tr key={idx}>
-                      <td className="text-right font-medium text-slate-900">{item.productName}</td>
-                      <td className="text-center font-mono text-xs text-slate-500">{item.productSku || "—"}</td>
-                      <td className="text-center text-slate-700">{item.quantity}</td>
-                      <td className="text-left text-slate-700">{formatCurrency(item.price, invoice.currency)}</td>
-                      <td className="text-left font-semibold text-slate-900">{formatCurrency(item.total, invoice.currency)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* المجاميع + الدفع */}
-            <div className="mb-6">
-              <div className="max-w-xs mr-auto text-left">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm py-1">
-                    <span className="text-slate-500">المجموع الفرعي</span>
-                    <span className="text-slate-700">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
-                  </div>
-                  {invoice.discount > 0 && (
-                    <div className="flex justify-between text-sm py-1">
-                      <span className="text-slate-500">الخصم</span>
-                      <span className="text-red-500">- {formatCurrency(invoice.discount, invoice.currency)}</span>
-                    </div>
-                  )}
-                  {invoice.shipping > 0 && (
-                    <div className="flex justify-between text-sm py-1">
-                      <span className="text-slate-500">الشحن</span>
-                      <span className="text-slate-700">{formatCurrency(invoice.shipping, invoice.currency)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between pt-3 mt-1" style={{ borderTop: "2px solid #0f172a" }}>
-                    <span className="text-sm font-bold text-slate-900">الإجمالي</span>
-                    <span className="text-lg font-bold text-slate-900">{formatCurrency(invoice.totalAmount, invoice.currency)}</span>
-                  </div>
-                </div>
-                {invoice.paymentMethod && (
-                  <div className="mt-4 pt-4" style={{ borderTop: "1px solid #e2e8f0" }}>
-                    <p className="text-xs text-slate-500">طريقة الدفع: <span className="font-medium text-slate-700">{invoice.paymentMethod}</span></p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* الباركود */}
-            {(invoice.order?.orderNumber || invoice.order?.turboTrackingNumber) && (
-              <div className="pt-5" style={{ borderTop: "1px solid #e2e8f0" }}>
-                <div className="flex justify-center gap-10">
-                  {invoice.order.orderNumber && (
-                    <InvoiceBarcode value={invoice.order.orderNumber} label="رقم الطلب" />
-                  )}
-                  {invoice.order.turboTrackingNumber && (
-                    <InvoiceBarcode value={invoice.order.turboTrackingNumber} label="كود الشحن" />
-                  )}
-                </div>
-              </div>
-            )}
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          {/* الفوتر */}
-          <div className="px-6 py-3 text-center rounded-b-xl" style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-            <p className="text-xs text-slate-400">شكراً لتعاملكم معنا</p>
+          {/* المجاميع */}
+          <div className="mb-1">
+            <div className="max-w-xs mr-auto text-left">
+              <div className="space-y-0.5">
+                <div className="flex justify-between text-xs py-0.5">
+                  <span className="text-slate-500">المجموع الفرعي</span>
+                  <span className="text-slate-700">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+                </div>
+                {invoice.discount > 0 && (
+                  <div className="flex justify-between text-xs py-0.5">
+                    <span className="text-slate-500">الخصم</span>
+                    <span className="text-red-500">- {formatCurrency(invoice.discount, invoice.currency)}</span>
+                  </div>
+                )}
+                {invoice.shipping > 0 && (
+                  <div className="flex justify-between text-xs py-0.5">
+                    <span className="text-slate-500">الشحن</span>
+                    <span className="text-slate-700">{formatCurrency(invoice.shipping, invoice.currency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-1 mt-0.5" style={{ borderTop: "1.5px solid #0f172a" }}>
+                  <span className="text-xs font-bold text-slate-900">الإجمالي</span>
+                  <span className="text-sm font-bold text-slate-900">{formatCurrency(invoice.totalAmount, invoice.currency)}</span>
+                </div>
+              </div>
+              {invoice.paymentMethod && (
+                <div className="mt-1 pt-1" style={{ borderTop: "1px solid #e2e8f0" }}>
+                  <p className="text-xs text-slate-500">طريقة الدفع: <span className="font-medium text-slate-700">{invoice.paymentMethod}</span></p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -295,107 +295,54 @@ export const printOrderInvoice = async ({
             color: #0f172a;
           }
           .page {
-            max-width: ${pageWidth};
-            min-height: ${pageHeight};
-            margin: 24px auto;
+            max-width: 148mm;
+            margin: 16px auto;
             background: #ffffff;
-            border-radius: 16px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
           }
-          .header-bg {
-            padding: 40px 48px 24px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-          }
-          .header-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-          }
-          .header-right {
-            text-align: right;
-          }
-          .header-right h1 {
-            margin: 0 0 4px;
-            font-size: 24px;
-            font-weight: 700;
-            color: #ffffff;
-          }
-          .header-muted {
-            color: #94a3b8;
-            font-size: 14px;
-          }
-          .header-left {
-            text-align: left;
-          }
-          .header-left .label {
-            margin: 0 0 4px;
-            font-size: 12px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            color: #94a3b8;
-          }
-          .header-left .number {
+          .page-title {
             margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-            color: #ffffff;
-          }
-          .header-left .date {
-            margin: 4px 0 0;
             font-size: 14px;
-            color: #94a3b8;
+            font-weight: 700;
+            color: #0f172a;
+            padding: 12px 12px 4px;
           }
           .body-content {
-            padding: 24px 48px;
+            padding: 4px 12px 12px;
           }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            margin-bottom: 32px;
-          }
-          .info-col h3 {
-            margin: 0 0 8px;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            color: #64748b;
-            text-transform: uppercase;
-          }
-          .info-col .name {
+          .customer-name {
             margin: 0;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
             color: #0f172a;
           }
-          .info-col .detail {
-            margin: 4px 0 0;
-            font-size: 14px;
+          .customer-detail {
+            font-size: 11px;
             color: #475569;
-            line-height: 1.6;
+            line-height: 1.4;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 32px;
           }
           thead th {
-            padding: 12px 16px;
+            padding: 3px 6px;
             font-weight: 600;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #64748b;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 1.5px solid #e2e8f0;
             text-align: right;
           }
           thead th.center { text-align: center; }
           thead th.amount { text-align: left; }
           tbody td {
-            padding: 14px 16px;
+            padding: 2px 6px;
             border-bottom: 1px solid #f1f5f9;
-            font-size: 13px;
+            font-size: 11px;
             vertical-align: top;
           }
           tbody tr:last-child td {
@@ -406,36 +353,32 @@ export const printOrderInvoice = async ({
             font-weight: 700;
           }
           .offer-item-row td:first-child {
-            padding-right: 32px;
+            padding-right: 20px;
           }
           .item-name {
             font-weight: 600;
             color: #0f172a;
+            font-size: 11px;
           }
           .item-meta {
-            margin-top: 4px;
             color: #64748b;
-            font-size: 12px;
+            font-size: 10px;
           }
           .center { text-align: center; }
           .amount {
             text-align: left;
             white-space: nowrap;
           }
-          .totals-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            margin-bottom: 32px;
-          }
           .totals-left {
             text-align: left;
+            margin-right: auto;
+            max-width: 250px;
           }
           .totals-row {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
-            font-size: 14px;
+            padding: 2px 0;
+            font-size: 11px;
           }
           .totals-row .label {
             color: #64748b;
@@ -444,120 +387,62 @@ export const printOrderInvoice = async ({
             color: #334155;
           }
           .totals-row.total-line {
-            margin-top: 4px;
-            padding-top: 12px;
-            border-top: 2px solid #0f172a;
+            margin-top: 2px;
+            padding-top: 6px;
+            border-top: 1.5px solid #0f172a;
           }
           .totals-row.total-line .value {
-            font-size: 18px;
+            font-size: 13px;
             font-weight: 700;
             color: #0f172a;
           }
+          .barcode-wrap {
+            text-align: center;
+            margin-bottom: 6px;
+          }
+          .barcode-wrap svg {
+            transform: scale(0.6);
+            transform-origin: center;
+          }
           .payment-info {
-            margin-top: 16px;
-            padding-top: 16px;
+            margin-top: 4px;
+            padding-top: 4px;
             border-top: 1px solid #e2e8f0;
-            font-size: 13px;
+            font-size: 11px;
             color: #64748b;
           }
-          .barcode-section {
-            display: flex;
-            justify-content: center;
-            gap: 48px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-            flex-wrap: wrap;
-          }
-          .barcode-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            text-align: center;
-          }
-          .barcode-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: #374151;
-          }
-          .barcode-value {
-            font-size: 11px;
-            color: #6b7280;
-            font-family: "Courier New", monospace;
-          }
-          .footer {
-            padding: 16px 48px;
-            text-align: center;
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-          }
-          .footer p {
-            margin: 2px 0;
-            font-size: 12px;
-            color: #94a3b8;
-          }
           @media print {
-            body {
-              background: #ffffff;
-            }
-            .page {
-              margin: 0;
-              min-height: auto;
-              border-radius: 0;
-              box-shadow: none;
-            }
-            .header-bg {
-              padding: 30px 40px 20px;
-            }
-            .body-content {
-              padding: 20px 40px;
-            }
-            .footer {
-              padding: 12px 40px;
-            }
-            @page {
-              size: ${settings.pdfPageSize} ${settings.pdfOrientation};
-              margin: 0;
-            }
+            body { background: #ffffff; }
+            .page { margin: 0; min-height: auto; border: none; }
+            @page { size: A5; margin: 0; }
           }
         </style>
       </head>
       <body>
         <div class="page">
-          <div class="header-bg">
-            <div class="header-flex">
-              <div class="header-right">
-                <h1>${escapeHtml(companyName || "منصة MaxP")}</h1>
-                <div class="header-muted">${escapeHtml(invoiceTitle)}</div>
-              </div>
-              <div class="header-left">
-                <div class="label">فاتورة</div>
-                <div class="number">${escapeHtml(order.orderNumber)}</div>
-                <div class="date">${escapeHtml(
-                  new Date(order.createdAt).toLocaleDateString("ar-EG", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  }),
-                )}</div>
-              </div>
-            </div>
-          </div>
+          <div class="page-title">${escapeHtml(companyName || "منصة MaxP")}</div>
 
           <div class="body-content">
-            <div class="info-col">
-              <h3>بيانات العميل</h3>
-              <p class="name">${escapeHtml(order.customerName || "عميل غير محدد")}</p>
-              <div class="detail">
-                ${order.customerPhone ? `<p>هاتف: ${escapeHtml(order.customerPhone)}</p>` : ""}
-                ${order.customerEmail ? `<p>بريد: ${escapeHtml(order.customerEmail)}</p>` : ""}
-                ${addressText ? `<p>${escapeHtml(addressText)}</p>` : ""}
-              </div>
+            <!-- الباركود فوق -->
+            ${
+              order.orderNumber || order.turboTrackingNumber
+                ? `<div class="barcode-wrap">
+                    ${order.orderNumber ? generateBarcodeSvg(order.orderNumber) : ""}
+                    ${order.turboTrackingNumber ? generateBarcodeSvg(order.turboTrackingNumber) : ""}
+                  </div>`
+                : ""
+            }
+
+            <p class="customer-name">${escapeHtml(order.customerName || "عميل غير محدد")}</p>
+            <div class="customer-detail">
+              ${order.customerPhone ? `<p>${escapeHtml(order.customerPhone)}</p>` : ""}
+              ${order.customerEmail ? `<p>${escapeHtml(order.customerEmail)}</p>` : ""}
+              ${addressText ? `<p>${escapeHtml(addressText)}</p>` : ""}
             </div>
 
             ${
               settings.showOrderItems
-                ? `<table>
+                ? `<table style="margin-top: 6px;">
               <thead>
                 <tr>
                   <th>المنتج</th>
@@ -574,7 +459,7 @@ export const printOrderInvoice = async ({
                 : ""
             }
 
-            <div class="totals-left" style="margin-right: auto; max-width: 300px;">
+            <div class="totals-left" style="margin-top: 4px;">
                 <div class="totals-row">
                   <span class="label">المجموع الفرعي</span>
                   <span class="value"><strong>${escapeHtml(formatCurrency(subtotal, currency))}</strong></span>
@@ -601,20 +486,6 @@ export const printOrderInvoice = async ({
                   <strong>حالة الدفع:</strong> ${escapeHtml(getPaymentStatusLabel(order.paymentStatus))}
                 </div>
                 </div>
-
-            ${
-              order.orderNumber || order.turboTrackingNumber
-                ? `<div class="barcode-section">
-                    ${order.orderNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.orderNumber)}<div class="barcode-label">رقم الطلب</div><div class="barcode-value">${escapeHtml(order.orderNumber)}</div></div>` : ""}
-                    ${order.turboTrackingNumber ? `<div class="barcode-item">${generateBarcodeSvg(order.turboTrackingNumber)}<div class="barcode-label">كود الشحن</div><div class="barcode-value">${escapeHtml(order.turboTrackingNumber)}</div></div>` : ""}
-                  </div>`
-                : ""
-            }
-          </div>
-
-          <div class="footer">
-            <p>شكراً لتعاملكم معنا</p>
-            <p>منصة إدارة التواصل والمبيعات الإلكترونية</p>
           </div>
         </div>
       </body>
