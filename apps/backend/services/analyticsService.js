@@ -566,6 +566,75 @@ class AnalyticsService {
     };
   }
 
+  async getOrderBreakdown(companyId, startDate, endDate) {
+    const prisma = getSharedPrismaClient();
+    const where = {
+      companyId,
+      createdAt: { gte: startDate, lte: endDate },
+    };
+
+    const [regularOrders, guestOrders] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        select: { orderNumber: true, status: true, paymentMethod: true },
+      }),
+      prisma.guestOrder.findMany({
+        where,
+        select: { orderNumber: true, status: true, paymentMethod: true },
+      }),
+    ]);
+
+    const regularOrderNumbers = new Set(
+      regularOrders
+        .map((o) => o.orderNumber)
+        .filter(Boolean),
+    );
+    const supplementalGuests = guestOrders.filter(
+      (o) => !o.orderNumber || !regularOrderNumbers.has(o.orderNumber),
+    );
+
+    const statusMap = {
+      DELIVERED: 'completed',
+      PROCESSING: 'processing',
+      PENDING: 'pending',
+      CANCELLED: 'cancelled',
+      REFUNDED: 'refunded',
+      RETURNED: 'refunded',
+      PARTIALLY_REFUNDED: 'refunded',
+      PARTIALLY_RETURNED: 'refunded',
+      ON_HOLD: 'on-hold',
+    };
+
+    const byStatus = {};
+    let codOrders = 0;
+    let prepaidOrders = 0;
+
+    const countOrder = (order) => {
+      const raw = typeof order.status === 'string' ? order.status.toUpperCase() : '';
+      const key = statusMap[raw] || raw.toLowerCase() || 'unknown';
+      byStatus[key] = (byStatus[key] || 0) + 1;
+
+      const pm = typeof order.paymentMethod === 'string' ? order.paymentMethod.toUpperCase() : '';
+      if (pm === 'CASH') {
+        codOrders++;
+      } else if (pm) {
+        prepaidOrders++;
+      }
+    };
+
+    regularOrders.forEach(countOrder);
+    supplementalGuests.forEach(countOrder);
+
+    return {
+      totalOrders: regularOrders.length + supplementalGuests.length,
+      ordersByStatus: byStatus,
+      codOrders,
+      prepaidOrders,
+      cancelledOrders: byStatus['cancelled'] || 0,
+      rejectedOrders: 0,
+    };
+  }
+
   async getStoreAnalytics(companyId, startDate, endDate) {
     if (!companyId) {
       throw new Error('companyId is required');
@@ -576,7 +645,8 @@ class AnalyticsService {
       uniqueVisitors,
       totalProductViews,
       conversionEvents,
-      orderSummary
+      orderSummary,
+      orderBreakdown
     ] = await Promise.all([
       getSharedPrismaClient().storeVisit.count({
         where: { companyId, visitedAt: { gte: startDate, lte: endDate } }
@@ -593,7 +663,8 @@ class AnalyticsService {
         where: { companyId, createdAt: { gte: startDate, lte: endDate } },
         _count: true
       }),
-      this.getOrderSummary(companyId, startDate, endDate)
+      this.getOrderSummary(companyId, startDate, endDate),
+      this.getOrderBreakdown(companyId, startDate, endDate)
     ]);
 
     const addToCarts = conversionEvents.find(e => e.eventType === 'add_to_cart')?._count || 0;
@@ -628,14 +699,13 @@ class AnalyticsService {
       checkouts,
       purchases,
       totalRevenue,
-      // Main conversion rate (store-level): purchases / visits
       conversionRate: parseFloat(storeConversionRate),
-      // Product engagement rate: purchases / product views
       productConversionRate: parseFloat(productConversionRate),
       avgOrderValue: parseFloat(avgOrderValue),
       addToCartRate: parseFloat(addToCartRate),
       checkoutRate: parseFloat(checkoutRate),
-      purchaseRate: parseFloat(purchaseRate)
+      purchaseRate: parseFloat(purchaseRate),
+      ...orderBreakdown,
     };
   }
 
