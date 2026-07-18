@@ -1,5 +1,270 @@
-/* Marketplace Premium Styles */
+/* ═══════════════════════════════════════════════════════
+   Marketplace Premium Styles — V2 Redesign
+   ═══════════════════════════════════════════════════════ */
 
+/* ── Category Color Custom Properties ── */
+.mp-cat-ecommerce   { --cat-h: 160; --cat-s: 84%; --cat-l: 39%; --cat-gradient: linear-gradient(135deg, #059669, #10b981); }
+.mp-cat-hr          { --cat-h: 270; --cat-s: 76%; --cat-l: 53%; --cat-gradient: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.mp-cat-communication { --cat-h: 199; --cat-s: 89%; --cat-l: 48%; --cat-gradient: linear-gradient(135deg, #0284c7, #38bdf8); }
+.mp-cat-crm         { --cat-h: 25;  --cat-s: 95%; --cat-l: 53%; --cat-gradient: linear-gradient(135deg, #ea580c, #fb923c); }
+.mp-cat-analytics   { --cat-h: 340; --cat-s: 82%; --cat-l: 52%; --cat-gradient: linear-gradient(135deg, #e11d48, #fb7185); }
+.mp-cat-integration { --cat-h: 234; --cat-s: 89%; --cat-l: 56%; --cat-gradient: linear-gradient(135deg, #4f46e5, #818cf8); }
+.mp-cat-productivity { --cat-h: 142; --cat-s: 71%; --cat-l: 45%; --cat-gradient: linear-gradient(135deg, #16a34a, #4ade80); }
+.mp-cat-finance     { --cat-h: 45;  --cat-s: 93%; --cat-l: 47%; --cat-gradient: linear-gradient(135deg, #ca8a04, #facc15); }
+.mp-cat-marketing   { --cat-h: 292; --cat-s: 84%; --cat-l: 61%; --cat-gradient: linear-gradient(135deg, #c026d3, #e879f9); }
+.mp-cat-medical     { --cat-h: 350; --cat-s: 89%; --cat-l: 50%; --cat-gradient: linear-gradient(135deg, #dc2626, #f87171); }
+
+/* ── App Card — Premium ── */
+.mp-app-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 18px;
+  border: 1px solid var(--color-border, hsl(0 0% 90%));
+  background: var(--color-card, #fff);
+  padding: 16px;
+  transition: transform 280ms cubic-bezier(.22,1,.36,1),
+              box-shadow 280ms cubic-bezier(.22,1,.36,1),
+              border-color 280ms ease;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.mp-app-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.06),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.mp-app-card:hover {
+  transform: translateY(-3px);
+  border-color: hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.35);
+  box-shadow:
+    0 8px 30px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.10),
+    0 2px 8px rgba(0,0,0,0.04);
+}
+
+.mp-app-card:hover::before {
+  opacity: 1;
+}
+
+/* Installed state */
+.mp-app-card.mp-installed {
+  border-color: hsl(160 84% 39% / 0.25);
+}
+
+.mp-app-card.mp-installed::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success, #14b87a);
+  box-shadow: 0 0 0 3px var(--color-card, #fff), 0 0 6px hsl(160 84% 39% / 0.4);
+}
+
+[dir="rtl"] .mp-app-card.mp-installed::after {
+  left: auto;
+  right: 12px;
+}
+
+/* ── Icon Gradient Background ── */
+.mp-icon-box {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cat-gradient, linear-gradient(135deg, #2f6bff, #60a5fa));
+  color: #fff;
+  font-size: 20px;
+  box-shadow: 0 4px 12px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.20);
+  transition: transform 280ms cubic-bezier(.22,1,.36,1), box-shadow 280ms ease;
+  flex-shrink: 0;
+}
+
+.mp-app-card:hover .mp-icon-box {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.28);
+}
+
+/* ── Category Dot ── */
+.mp-category-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%));
+  flex-shrink: 0;
+}
+
+/* ── Price Tag ── */
+.mp-price-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.08);
+  color: hsl(var(--cat-h, 220) var(--cat-s, 80%) calc(var(--cat-l, 50%) - 8%));
+  white-space: nowrap;
+}
+
+.dark .mp-price-tag {
+  background: hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.15);
+  color: hsl(var(--cat-h, 220) var(--cat-s, 80%) calc(var(--cat-l, 50%) + 15%));
+}
+
+/* ── Featured Hero Section ── */
+.mp-featured-section {
+  position: relative;
+  margin-bottom: 2rem;
+  padding: 1.25rem;
+  border-radius: 22px;
+  background:
+    radial-gradient(900px 350px at 15% -20%, rgba(47, 107, 255, 0.08), transparent 60%),
+    radial-gradient(700px 400px at 85% 10%, rgba(139, 92, 246, 0.06), transparent 60%),
+    var(--color-card, #fff);
+  border: 1px solid hsl(220 20% 88% / 0.3);
+  overflow: hidden;
+}
+
+.dark .mp-featured-section {
+  background:
+    radial-gradient(900px 350px at 15% -20%, rgba(47, 107, 255, 0.12), transparent 60%),
+    radial-gradient(700px 400px at 85% 10%, rgba(139, 92, 246, 0.10), transparent 60%),
+    hsl(222 47% 8%);
+  border-color: hsl(220 20% 30% / 0.3);
+}
+
+/* Featured scroll container */
+.mp-featured-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.mp-featured-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Featured hero card */
+.mp-featured-card {
+  flex: 0 0 260px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.12);
+  background: var(--color-card, #fff);
+  transition: transform 280ms cubic-bezier(.22,1,.36,1),
+              box-shadow 280ms cubic-bezier(.22,1,.36,1),
+              border-color 280ms ease;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.mp-featured-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background: var(--cat-gradient, linear-gradient(135deg, #2f6bff, #60a5fa));
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+.mp-featured-card:hover {
+  transform: translateY(-4px);
+  border-color: hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.30);
+  box-shadow:
+    0 12px 36px hsl(var(--cat-h, 220) var(--cat-s, 80%) var(--cat-l, 50%) / 0.12),
+    0 2px 8px rgba(0,0,0,0.04);
+}
+
+.mp-featured-card:hover::before {
+  opacity: 0.07;
+}
+
+/* ── Stagger Animation ── */
+@keyframes mp-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mp-stagger {
+  animation: mp-card-in 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .mp-featured-card {
+    flex: 0 0 220px;
+  }
+
+  .mp-app-card {
+    padding: 12px;
+  }
+
+  .mp-icon-box {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 11px;
+  }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .mp-app-card,
+  .mp-featured-card,
+  .mp-icon-box {
+    transition: none !important;
+  }
+
+  .mp-stagger {
+    animation: none !important;
+  }
+
+  .mp-app-card:hover,
+  .mp-featured-card:hover {
+    transform: none !important;
+  }
+}
+
+/* ── Legacy overrides (keep old .marketplace-container styles for theme page) ── */
 .marketplace-container .premium-hero {
   position: relative;
   border-radius: 28px;

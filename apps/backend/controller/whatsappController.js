@@ -1315,11 +1315,11 @@ async function updateContact(req, res) {
         const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
             where: { id },
             include: {
-                whatsapp_sessions: { select: { companyId: true } }
+                whatsAppSession: { select: { companyId: true } }
             }
         });
 
-        if (!contact || contact.whatsapp_sessions.companyId !== companyId) {
+        if (!contact || contact.whatsAppSession.companyId !== companyId) {
             return res.status(404).json({ error: 'جهة الاتصال غير موجودة' });
         }
 
@@ -1371,11 +1371,11 @@ async function linkCustomer(req, res) {
         const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
             where: { id },
             include: {
-                whatsapp_sessions: { select: { companyId: true } }
+                whatsAppSession: { select: { companyId: true } }
             }
         });
 
-        if (!contact || contact.whatsapp_sessions.companyId !== companyId) {
+        if (!contact || contact.whatsAppSession.companyId !== companyId) {
             return res.status(404).json({ error: 'جهة الاتصال غير موجودة' });
         }
 
