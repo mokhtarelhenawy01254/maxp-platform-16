@@ -268,7 +268,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
-          timeout: 300s
+          timeout: 60m
           command_timeout: 50m
           envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD
           script: |
