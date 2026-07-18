@@ -580,9 +580,23 @@ const WhatsAppCloudConnect: React.FC = () => {
                     {isRtl ? "Facebook غير مهيأ" : "Facebook Not Configured"}
                   </AlertTitle>
                   <AlertDescription className="text-amber-700 dark:text-amber-300">
-                    {isRtl
-                      ? "بيانات اعتماد Facebook App غير مضبوطة. الرجاء ضبط FACEBOOK_APP_SECRET في ملف .env."
-                      : "Facebook App credentials not configured. Please set FACEBOOK_APP_SECRET in the .env file."}
+                    {isRtl ? (
+                      <>
+                        بيانات اعتماد Facebook App غير مضبوطة. الرجاء ضبطها من{" "}
+                        <a href="/super-admin/facebook-oauth" className="font-semibold underline">
+                          لوحة تحكم السوبر أدمن
+                        </a>{" "}
+                        أولاً.
+                      </>
+                    ) : (
+                      <>
+                        Facebook App credentials not configured. Please configure them in the{" "}
+                        <a href="/super-admin/facebook-oauth" className="font-semibold underline">
+                          Super Admin Dashboard
+                        </a>{" "}
+                        first.
+                      </>
+                    )}
                   </AlertDescription>
                 </Alert>
               )}
@@ -634,7 +648,7 @@ const WhatsAppCloudConnect: React.FC = () => {
                   <Button
                     className="w-full rounded-xl bg-[#1877F2] py-6 text-white hover:bg-[#1877F2]/90"
                     onClick={handleStartConnect}
-                    disabled={!fbConfig}
+                    disabled={!fbConfig || fbConfig.configured === false}
                   >
                     {!fbConfig ? (
                       <>
