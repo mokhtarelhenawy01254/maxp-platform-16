@@ -594,15 +594,21 @@ class AnalyticsService {
     );
 
     const statusMap = {
-      DELIVERED: 'completed',
+      DELIVERED: 'delivered',
       PROCESSING: 'processing',
       PENDING: 'pending',
       CANCELLED: 'cancelled',
       REFUNDED: 'refunded',
-      RETURNED: 'refunded',
+      RETURNED: 'returned',
       PARTIALLY_REFUNDED: 'refunded',
-      PARTIALLY_RETURNED: 'refunded',
+      PARTIALLY_RETURNED: 'returned',
       ON_HOLD: 'on-hold',
+      CONFIRMED: 'confirmed',
+      TRASH: 'trash',
+      EXCHANGED: 'exchanged',
+      SCHEDULED: 'scheduled',
+      SHIPPED: 'shipped',
+      READY_TO_SHIP: 'ready_to_ship',
     };
 
     const byStatus = {};

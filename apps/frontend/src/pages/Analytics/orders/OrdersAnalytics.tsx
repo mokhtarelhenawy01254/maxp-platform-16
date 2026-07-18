@@ -90,6 +90,14 @@ const OrdersAnalytics: React.FC = () => {
     refunded: "bg-purple-500",
     "on-hold": "bg-orange-500",
     failed: "bg-gray-500",
+    confirmed: "bg-blue-400",
+    delivered: "bg-green-500",
+    trash: "bg-gray-400",
+    exchanged: "bg-purple-400",
+    returned: "bg-indigo-500",
+    scheduled: "bg-cyan-500",
+    shipped: "bg-teal-500",
+    ready_to_ship: "bg-sky-500",
   };
 
   const statusLabels: Record<string, string> = {
@@ -100,6 +108,14 @@ const OrdersAnalytics: React.FC = () => {
     refunded: "مسترد",
     "on-hold": "معلق",
     failed: "فاشل",
+    confirmed: "مؤكد",
+    delivered: "تم التوصيل",
+    trash: "محذوف",
+    exchanged: "مستبدل",
+    returned: "مرتجع",
+    scheduled: "مجدول",
+    shipped: "تم الشحن",
+    ready_to_ship: "جاهز للشحن",
   };
 
   if (loading) {
