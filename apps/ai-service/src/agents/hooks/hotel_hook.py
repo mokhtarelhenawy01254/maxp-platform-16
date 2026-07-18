@@ -30,6 +30,13 @@ class HotelEnforcementHook:
     ) -> str:
         return system_prompt
 
+    async def before_reply(
+        self,
+        ctx: PipelineContext,
+        executed: list[dict[str, Any]],
+    ) -> None:
+        pass
+
     async def after_tools(
         self,
         ctx: PipelineContext,

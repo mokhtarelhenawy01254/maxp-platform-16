@@ -48,6 +48,21 @@ class AgentHook(Protocol):
 class AttachmentHook:
     """Auto-populate response_attachments from tool results."""
 
+    async def before_llm(
+        self,
+        ctx: PipelineContext,
+        system_prompt: str,
+        skills: list[Any],
+    ) -> str:
+        return system_prompt
+
+    async def after_tools(
+        self,
+        ctx: PipelineContext,
+        executed: list[dict[str, Any]],
+    ) -> list[dict[str, Any]] | None:
+        return None
+
     async def before_reply(
         self,
         ctx: PipelineContext,
