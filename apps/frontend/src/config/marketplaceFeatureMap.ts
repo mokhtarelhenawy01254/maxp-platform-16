@@ -528,8 +528,8 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     legacyGate: "ecommerce-basic",
     routes: [
       { path: "/affiliates/management", label: "إدارة الأفليت" },
-      { path: "/affiliates/marketplace", label: "كتالوج منتجات الشركة" },
-      { path: "/affiliates/products", label: "منتجات الأفليت" },
+      { path: "/affiliates/products",   label: "منتجات الأفليت" },
+      { path: "/affiliates/products/visibility", label: "إدارة ظهور المنتجات للمسوقين" },
       { path: "/merchants", label: "التجار والدروب شيبنج" },
       { path: "/affiliates/commission", label: "العمولات" },
       { path: "/affiliates/settings", label: "إعدادات الأفليت" },

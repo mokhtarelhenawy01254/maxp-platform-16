@@ -157,6 +157,9 @@ export const useProductApi = () => {
         affiliateCommission: formData.affiliateCommission || 0,
         commissionType: formData.commissionType,
         allowAffiliateMarkup: formData.allowAffiliateMarkup,
+        affiliateVisibility: affiliateVisibility,
+        affiliateVisibleAffiliateIds:
+          affiliateVisibility === "SELECTED" ? JSON.stringify(affiliateVisibleAffiliateIds) : null,
         // SEO fields
         metaTitle: formData.metaTitle || null,
         metaDescription: formData.metaDescription || null,

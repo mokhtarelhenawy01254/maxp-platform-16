@@ -21,7 +21,6 @@ describe("affiliate and merchant app routes", () => {
     expect(appSource).toContain('path="/affiliates/orders"');
     expect(appSource).toContain('path="/affiliates/orders/create"');
     expect(appSource).toContain('path="/affiliates/customers"');
-    expect(appSource).toContain('path="/affiliates/marketplace"');
     expect(appSource).toContain('path="/affiliates/products"');
     expect(appSource).toContain('path="/affiliates/commission"');
   });

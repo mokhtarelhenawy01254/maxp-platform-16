@@ -821,6 +821,7 @@ export const getSidebarConfig = (
                     { to: '/merchants', icon: BuildingStorefrontIcon, label: t('sidebar.merchants') },
                     { to: '/platform/commissions', icon: CurrencyDollarIcon, label: t('sidebar.commissions') },
                     { to: '/affiliates/settings', icon: CogIcon, label: t('sidebar.affiliateSettings') },
+                    { to: '/affiliates/products/visibility', icon: EyeIcon, label: t('sidebar.affiliateProductVisibility') },
                 ] : []),
                 ...(user?.role === 'AFFILIATE' ? [
                     { to: '/affiliates/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },

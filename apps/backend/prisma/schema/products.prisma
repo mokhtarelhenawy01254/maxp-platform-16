@@ -356,6 +356,8 @@ model Product {
   merchantProductId          String?
   basePrice                  Decimal?                  @db.Decimal(10, 2)
   allowAffiliateMarkup       Boolean                   @default(false)
+  affiliateVisibility        String                    @default("ALL")
+  affiliateVisibleAffiliateIds String?
   affiliateCommission        Decimal?                  @db.Decimal(10, 2)
   commissionType             String?                   @default("PERCENTAGE")
   affiliate_products         AffiliateProduct[]

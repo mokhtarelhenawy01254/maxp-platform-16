@@ -644,9 +644,12 @@ export const ProductNewFinal: React.FC = () => {
           commissionType: product.commissionType || "PERCENTAGE",
           allowAffiliateMarkup: product.allowAffiliateMarkup || false,
           affiliateVisibility: normalizeAffiliateVisibility(
-            parsedMetadata.affiliateVisibility,
+            product.affiliateVisibility || parsedMetadata.affiliateVisibility,
           ),
           affiliateVisibleAffiliateIds: normalizeAffiliateVisibilityIds(
+            product.affiliateVisibleAffiliateIds
+              ? (() => { try { return JSON.parse(product.affiliateVisibleAffiliateIds); } catch { return []; } })()
+              : undefined,
             parsedMetadata.affiliateVisibleAffiliateIds,
             parsedMetadata.visibleAffiliateIds,
             parsedMetadata.allowedAffiliateIds,
