@@ -60,7 +60,6 @@ const formatChange = (current: number, prev: number | undefined): string | null 
 };
 
 const OrdersAnalytics: React.FC = () => {
-  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState("30");
