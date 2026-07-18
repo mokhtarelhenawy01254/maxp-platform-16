@@ -66,6 +66,7 @@ const ShippingReport: React.FC = () => {
   const [govCostsLoading, setGovCostsLoading] = useState(false);
   const [govCostsSaving, setGovCostsSaving] = useState(false);
   const [govCostsForm, setGovCostsForm] = useState<Record<string, string>>({});
+  const [govCostsRetroactive, setGovCostsRetroactive] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -166,7 +167,7 @@ const ShippingReport: React.FC = () => {
         const num = parseFloat(val);
         if (!isNaN(num) && num >= 0) costs[gov] = num;
       }
-      await apiClient.put("/turbo/reports/shipping/governorate-costs", { costs });
+      await apiClient.put("/turbo/reports/shipping/governorate-costs", { costs, applyRetroactive: govCostsRetroactive });
       toast.success("تم حفظ تكاليف المحافظات");
       setGovCostModal(false);
       fetchReport();
@@ -480,6 +481,21 @@ const ShippingReport: React.FC = () => {
                     ))}
                   </div>
                 )}
+                <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
+                  <input
+                    id="retroactive-check"
+                    type="checkbox"
+                    checked={govCostsRetroactive}
+                    onChange={(e) => setGovCostsRetroactive(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <label htmlFor="retroactive-check" className="text-sm text-amber-800 dark:text-amber-300 cursor-pointer">
+                    <span className="font-medium">تطبيق بأثر رجعي</span>
+                    <span className="block text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                      تحديث الطلبات القديمة اللي مالهاش تكلفة فعلية بالتكلفة الجديدة
+                    </span>
+                  </label>
+                </div>
                 <div className="flex justify-end gap-3">
                   <button
                     onClick={() => setGovCostModal(false)}
