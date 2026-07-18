@@ -38,18 +38,28 @@
     "hotel-booking",
     "handoff-to-human"
   ],
-  "channels": ["dashboard", "whatsapp", "messenger"],
+  "channels": [
+    "dashboard",
+    "whatsapp",
+    "messenger"
+  ],
   "humanApproval": {
     "mode": "ON_WRITE",
-    "requiredTools": ["hotel_reserve", "hotel_cancel_reservation"],
+    "requiredTools": [
+      "hotel_reserve",
+      "hotel_cancel_reservation"
+    ],
     "approvalCode": false,
-    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
+    "merchantChannels": [
+      "DASHBOARD",
+      "WHATSAPP"
+    ]
   },
   "budget": {
     "dailyUsd": 2,
     "maxToolCallsPerRun": 10
   },
   "config": {
-    "toolChoice": "required"
+    "toolChoice": null
   }
 }
