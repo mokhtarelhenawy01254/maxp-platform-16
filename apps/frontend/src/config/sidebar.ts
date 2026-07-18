@@ -670,6 +670,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/campaign-attribution', icon: MegaphoneIcon, label: t('sidebar.campaignAttribution') },
                 { to: '/analytics/orders/profit', icon: CurrencyDollarIcon, label: t('sidebar.profitAnalytics') },
                 { to: '/analytics/orders/cod-performance', icon: TruckIcon, label: t('sidebar.codPerformance') },
+                { to: '/analytics/orders/today-ops', icon: SparklesIcon, label: t('sidebar.todayOps') },
                 { to: '/analytics/orders/cancellations', icon: XCircleIcon, label: t('sidebar.cancellationAnalytics') },
                 { to: '/analytics/orders/delivery-rate', icon: TruckIcon, label: t('sidebar.deliveryRate') },
                 { to: '/analytics/orders/regions', icon: MapPinIcon, label: t('sidebar.regionAnalytics') },

@@ -632,6 +632,9 @@ const ConversionRateAnalytics = React.lazy(
 const TeamPerformanceAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/TeamPerformanceAnalytics"),
 );
+const TodayOps = React.lazy(
+  () => import("./pages/Analytics/orders/TodayOps"),
+);
 const AbandonedCartAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/AbandonedCartAnalytics"),
 );
@@ -4378,6 +4381,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CODPerformanceAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/today-ops"
+                  element={
+                    <Layout>
+                      <TodayOps />
                     </Layout>
                   }
                 />

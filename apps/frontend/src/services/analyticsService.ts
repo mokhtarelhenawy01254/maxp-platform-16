@@ -1151,6 +1151,16 @@ class AnalyticsService {
     }
   }
 
+  async getTodayOps() {
+    try {
+      const response = await apiClient.get("/analytics/today-ops");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching today ops:", error);
+      throw error;
+    }
+  }
+
   async getStatusSummaryReport(
     statuses: string[],
     startDate?: string,
