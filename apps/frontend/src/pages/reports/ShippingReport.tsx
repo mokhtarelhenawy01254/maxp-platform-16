@@ -21,6 +21,8 @@ interface ShippingReportData {
   status: string;
   trackingNumber: string;
   createdAt: string;
+  governorate: string;
+  costSource: string;
 }
 
 interface ShippingStatistics {
@@ -59,6 +61,11 @@ const ShippingReport: React.FC = () => {
     saving: boolean;
   }>({ open: false, newCost: "", saving: false });
   const [savingCost, setSavingCost] = useState(false);
+  const [govCostModal, setGovCostModal] = useState(false);
+  const [govCosts, setGovCosts] = useState<Record<string, number>>({});
+  const [govCostsLoading, setGovCostsLoading] = useState(false);
+  const [govCostsSaving, setGovCostsSaving] = useState(false);
+  const [govCostsForm, setGovCostsForm] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -128,6 +135,48 @@ const ShippingReport: React.FC = () => {
     }
   };
 
+  const loadGovernorateCosts = async () => {
+    setGovCostsLoading(true);
+    try {
+      const res = await apiClient.get("/turbo/reports/shipping/governorate-costs");
+      if (res.data.success) {
+        const data = res.data.data || {};
+        setGovCosts(data);
+        const form: Record<string, string> = {};
+        for (const [k, v] of Object.entries(data)) form[k] = String(v);
+        setGovCostsForm(form);
+      }
+    } catch (e: any) {
+      toast.error("فشل تحميل إعدادات المحافظات");
+    } finally {
+      setGovCostsLoading(false);
+    }
+  };
+
+  const openGovernorateCosts = async () => {
+    setGovCostModal(true);
+    await loadGovernorateCosts();
+  };
+
+  const saveGovernorateCosts = async () => {
+    setGovCostsSaving(true);
+    try {
+      const costs: Record<string, number> = {};
+      for (const [gov, val] of Object.entries(govCostsForm)) {
+        const num = parseFloat(val);
+        if (!isNaN(num) && num >= 0) costs[gov] = num;
+      }
+      await apiClient.put("/turbo/reports/shipping/governorate-costs", { costs });
+      toast.success("تم حفظ تكاليف المحافظات");
+      setGovCostModal(false);
+      fetchReport();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || "فشل الحفظ");
+    } finally {
+      setGovCostsSaving(false);
+    }
+  };
+
   const handleExportCSV = async () => {
     try {
       const params = new URLSearchParams();
@@ -194,7 +243,14 @@ const ShippingReport: React.FC = () => {
               <ChartBarIcon className="h-6 w-6 text-blue-500 ml-2" />
               تقرير الشحن - مقارنة الأسعار
             </h1>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={openGovernorateCosts}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                <ChartBarIcon className="w-5 h-5 ml-2" />
+                تكاليف المحافظات
+              </button>
               {reportData.length > 0 && (
                 <button
                   onClick={() => setBulkModal({ open: true, newCost: "", saving: false })}
@@ -386,6 +442,63 @@ const ShippingReport: React.FC = () => {
             </>
           )}
 
+          {/* Governorate Costs Modal */}
+          {govCostModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+                <h3 className="mb-4 text-lg font-bold">تكاليف الشحن الفعلية حسب المحافظة</h3>
+                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                  أدخل التكلفة الفعلية من شركة الشحن لكل محافظة. هتطبق تلقائي على كل الطلبات اللي نفس المحافظة.
+                </p>
+                {govCostsLoading ? (
+                  <div className="text-center py-8 text-gray-500">جاري التحميل...</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    {[
+                      "القاهرة", "الجيزة", "الإسكندرية", "الشرقية", "الدقهلية",
+                      "البحيرة", "المنيا", "القليوبية", "سوهاج", "كفر الشيخ",
+                      "الغربية", "المنوفية", "قنا", "أسيوط", "الفيوم",
+                      "بني سويف", "دمياط", "الإسماعيلية", "أسوان", "الأقصر",
+                      "مطروح", "بورسعيد", "السويس", "شمال سيناء", "جنوب سيناء",
+                      "الوادي الجديد", "البحر الأحمر"
+                    ].map((gov) => (
+                      <div key={gov} className="flex items-center gap-2 rounded-lg border border-gray-200 p-2 dark:border-gray-700">
+                        <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">{gov}</span>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={govCostsForm[gov] ?? ""}
+                            onChange={(e) => setGovCostsForm({ ...govCostsForm, [gov]: e.target.value })}
+                            placeholder="التكلفة"
+                            className="w-24 rounded border border-gray-300 px-2 py-1 text-left text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                          />
+                          <span className="text-xs text-gray-400">ج.م</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setGovCostModal(false)}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={saveGovernorateCosts}
+                    disabled={govCostsSaving}
+                    className="rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    {govCostsSaving ? "جاري الحفظ..." : "حفظ التكاليف"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Edit Single Cost Modal */}
           {editModal.open && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -482,6 +595,9 @@ const ShippingReport: React.FC = () => {
                       رقم الطلب
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                      المحافظة
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                       كود Turbo
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
@@ -516,6 +632,9 @@ const ShippingReport: React.FC = () => {
                         >
                           #{row.orderNumber}
                         </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {row.governorate || "--"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {row.trackingNumber || "--"}
