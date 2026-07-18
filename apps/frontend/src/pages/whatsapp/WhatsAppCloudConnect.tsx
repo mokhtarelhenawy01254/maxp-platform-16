@@ -307,7 +307,7 @@ const WhatsAppCloudConnect: React.FC = () => {
         config_id: fbConfig.configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: { setup: {} },
+        extras: { sessionInfoVersion: "3", setup: {} },
       });
       return;
     }
