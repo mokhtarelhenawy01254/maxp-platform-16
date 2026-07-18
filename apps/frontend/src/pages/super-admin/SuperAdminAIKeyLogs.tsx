@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Select,
@@ -110,7 +110,7 @@ function KeyLogsContent() {
     queryKey: ["super-admin", "companies"],
     queryFn: () => companyAwareApi.getAllCompanies({ pageSize: 0 }),
     staleTime: 300_000,
-    select: (res) => res.data?.data?.companies ?? [],
+    select: (res: any) => res.data?.data?.companies ?? [],
   });
 
   const companyNameMap = useMemo(() => {
@@ -161,13 +161,21 @@ function KeyLogsContent() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const stats = useMemo(() => {
+    if (logsRes && logsRes.success_count !== undefined) {
+      return {
+        total,
+        success: logsRes.success_count,
+        failed: logsRes.failed_count ?? 0,
+        avgLatency: logsRes.avg_latency ?? 0,
+      };
+    }
     if (!Array.isArray(logs)) return { total: 0, success: 0, failed: 0, avgLatency: 0 };
     const success = logs.filter((l) => l.status === "success" || l.status === "ok").length;
     const failed = logs.filter((l) => l.status === "failed" || l.status === "error").length;
     const latencies = logs.map((l) => l.latency_ms).filter((v): v is number => v != null);
     const avgLatency = latencies.length ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
     return { total: logs.length, success, failed, avgLatency };
-  }, [logs]);
+  }, [logs, logsRes, total]);
 
   const exportCSV = useCallback(() => {
     if (!Array.isArray(logs) || logs.length === 0) return;
@@ -184,18 +192,6 @@ function KeyLogsContent() {
     URL.revokeObjectURL(url);
   }, [logs, keyNameMap]);
 
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <Alert variant="destructive">
-          <AlertDescription>فشل تحميل السجل. يرجى المحاولة مرة أخرى.</AlertDescription>
-        </Alert>
-        <Button variant="outline" onClick={() => refetch()}>
-          <RefreshCw className="size-4 ml-1" /> إعادة المحاولة
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -264,7 +260,7 @@ function KeyLogsContent() {
       </div>
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); setKeyFilter(""); setPage(0); }}>
+        <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v || ""); setKeyFilter(""); setPage(0); }}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="كل المزودين" />
           </SelectTrigger>
@@ -275,7 +271,7 @@ function KeyLogsContent() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={keyFilter} onValueChange={(v) => { setKeyFilter(v); setPage(0); }}>
+        <Select value={keyFilter} onValueChange={(v) => { setKeyFilter(v || ""); setPage(0); }}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="كل المفاتيح" />
           </SelectTrigger>
@@ -286,7 +282,7 @@ function KeyLogsContent() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v || ""); setPage(0); }}>
           <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="كل الحالات" />
           </SelectTrigger>
@@ -299,12 +295,23 @@ function KeyLogsContent() {
         <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث" className={isFetching ? "animate-spin" : ""}>
           <RefreshCw className="size-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={exportCSV} title="تصدير CSV"
+        <Button variant="outline" size="sm" onClick={exportCSV} title="تصدير السجلات المعروضة في الصفحة الحالية"
           disabled={!logs || logs.length === 0}>
-          <Download className="size-4 ml-1" /> CSV
+          <Download className="size-4 ml-1" /> تصدير الصفحة (CSV)
         </Button>
         {isFetching && <span className="text-xs text-muted-foreground">جاري التحديث…</span>}
       </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription className="flex items-center justify-between">
+            <span>فشل تحميل السجل. يرجى المحاولة مرة أخرى.</span>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="mr-2 h-8">
+              <RefreshCw className="size-3 ml-1" /> إعادة المحاولة
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center min-h-[300px]">

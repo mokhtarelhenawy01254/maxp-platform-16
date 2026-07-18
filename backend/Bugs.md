@@ -1,5 +1,25 @@
 # Backend Bugs Log
 
+### [BUG FIX / API & UI] AI Key Logs Filter Mismatch, Global Stats & Pagination Bypass
+- **Date**: 2026-07-18
+- **Root Cause**:
+  1. **Status filter mismatch**: Backend database log status used `success`/`failed` for LLM requests but `ok`/`error` for key tests/creation. The frontend filter only sent `success` or `failed` which was strictly matched by backend, hiding the other statuses.
+  2. **Page-level vs Global Stats**: The frontend statistics cards computed successful/failed counts and average latency locally from the current page's slice (25 logs), instead of retrieving global statistics from the backend, capped success/failed cards at 25.
+  3. **Backend Pagination Bypass**: If the raw SQL query to `public.ai_provider_logs` threw an exception, the exception block swallowed the error but bypassed pagination slicing `rows[offset:offset+limit]`, returning full raw data length `fetch_limit` to the client.
+  4. **Error handling UX**: Any error from the queries triggered an early return of the layout, rendering a blank screen with only an error message and retry button, making filters unusable.
+- **Resolution**:
+  1. Updated the backend status filter mapping (`list_logs` and `_build_public_filters` helper in `keys.py`) to resolve `success` to `["success", "ok"]` and `failed` to `["failed", "error"]`.
+  2. Extended backend schema `LogListResponse` and `list_logs` implementation to dynamically calculate global success, failed, and average latency stats across both ORM and raw SQL tables.
+  3. Modified frontend `SuperAdminAIKeyLogs.tsx` to read stats globally from `logsRes`, falling back to page-level slice if undefined. Updated Select value onChange callbacks with nullish coalescing to prevent TypeScript null-assignment compilation errors.
+  4. Moved slicing and sorting outside of the `try-except` block in `keys.py` to ensure pagination limit is always enforced.
+  5. Rendered the error alert inline on the frontend logs page instead of early-returning the page layout.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/keys.py` (MODIFIED)
+  - `apps/ai-service/src/api/admin/schemas.py` (MODIFIED)
+  - `apps/frontend/src/services/aiAdminService.ts` (MODIFIED)
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIKeyLogs.tsx` (MODIFIED)
+
+
 ### [BUG FIX / SEEDING] Dev Seeding Script Password Hashing & Role Mismatch
 - **Date**: 2026-07-17
 - **Root Cause**: The development database seeding script `seed-agentic-dev.js` inserted the test user `dev@maxp.test` with a plain-text password `dev123456` and a `null` role. The authentication login handler checks passwords using bcrypt matching (`bcrypt.compare`), and sandbox routes require roles of `OWNER`, `COMPANY_ADMIN`, or `SUPER_ADMIN`. This caused login to fail and restricted sandbox access for local verification.

@@ -5,7 +5,9 @@
 2. Extracted `NavLink` into a standalone, file-scoped component within `ClassicSidebar.tsx` to optimize React rendering performance and avoid reconciliation re-mount loops.
 
 ### API Endpoints
-1. Added Facebook connected user details to the `/facebook-oauth/status` endpoint:
+1. Extended `/ai-admin/logs` endpoint (`LogListResponse` schema):
+   - `GET /api/v1/ai-admin/logs` — Extended response payload to include global aggregated stats (`success_count`, `failed_count`, and `avg_latency`) for the filtered keys and providers, computed across both PostgreSQL tables: `ai.provider_logs` (ORM) and `public.ai_provider_logs` (Raw SQL).
+2. Added Facebook connected user details to the `/facebook-oauth/status` endpoint:
    - `GET /api/v1/facebook-oauth/status` — Now queries the database for the company's `facebookUserAccessToken` and makes a Graph API request to `GET /me` (fields: `id,name,picture`) to fetch the connected Facebook personal account profile info. Returns `facebookUser: { id, name, picture } | null`.
 2. Added FastAPI REST admin API endpoints for agent guardrails (mounted under the FastAPI `/admin` router prefix):
    - `GET /agents/{agent_id}/guardrails` (List active rules)

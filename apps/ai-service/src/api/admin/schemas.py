@@ -153,3 +153,7 @@ class LogEntry(BaseModel):
 class LogListResponse(BaseModel):
     items: list[LogEntry]
     total: int
+    success_count: int | None = None
+    failed_count: int | None = None
+    avg_latency: int | None = None
+

@@ -1,5 +1,13 @@
 # Team Sync Updates
 
+## 2026-07-18 / 2026-03-09
+- **AI Key Logs Analysis Page & API Fixes (BUGFIX / COMPLETE)**:
+  1. **Global stats computation**: Overhauled `/ai-admin/logs` endpoint (`keys.py`) to query and sum success, failed, and average latency stats across both ORM and raw SQL tables for the filtered query, returning them globally to the frontend.
+  2. **Dropdown selection null-checks**: Updated `SuperAdminAIKeyLogs.tsx` select components onValueChange handlers with null-checks (`v || ""`) and casted companies select query response to `any`, resolving all local TypeScript compiler warnings and errors.
+  3. **Pagination bypass fix**: Reordered sorting and slicing instructions in keys.py to execute outside the public logs database try-except block, guaranteeing pagination limits are always enforced when queries throw exceptions.
+  4. **Status mapping alignment**: Resolved status filtering discrepancies between client and server: `success` filters map to both `["success", "ok"]` and `failed` filters map to `["failed", "error"]`.
+  5. **UX inline error handling**: Replaced early return layout with inline alert components, allowing administrators to still toggle filters and retry requests.
+
 ## 2026-07-17 / 2026-03-09
 - **Agent Refactoring to SOTA 2026 paradigms & Removal of Legacy Heuristics (REFACTOR / COMPLETE)**:
   1. **Hook & File Deletion**: Completely removed `HotelEnforcementHook` registration in `base.py` and deleted the hook file `hotel_hook.py` from `apps/ai-service/src/agents/hooks/`. This eliminates 150+ lines of brittle regex-based parsing, hardcoded Arabic month translations, and manual `hotel_reserve` tool-call injection.
