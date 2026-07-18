@@ -600,8 +600,8 @@ export default function MarketplaceV2() {
                     </Badge>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                  {featuredApps.slice(0, 4).map((app, i) => (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+                  {featuredApps.map((app, i) => (
                     <div
                       key={app.id}
                       className="flex h-full motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 duration-500"
@@ -627,13 +627,13 @@ export default function MarketplaceV2() {
                   ? categories.find(c => c.category === selectedCategory)?.name
                   : t(collections.find(c => c.id === collection)?.labelKey || "marketplace.allTools")}
                 <span className="mr-1.5 text-sm font-normal text-muted-foreground/60">
-                  ({displayedApps.filter(a => !a.isFeatured || !!selectedCategory).length})
+                  ({displayedApps.length})
                 </span>
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              {displayedApps.filter(a => !a.isFeatured || !!selectedCategory).map((app, i) => (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+              {displayedApps.map((app, i) => (
                 <div key={app.id} className="flex h-full motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 duration-500" style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}>
                   <AppCardV2
                     app={app}
@@ -803,49 +803,51 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
             to={`/marketplace/${app.slug}`}
             aria-haspopup="dialog"
             aria-expanded={previewOpen}
-            className="group relative flex h-full items-center gap-3 overflow-hidden rounded-2xl border border-border/40 bg-card px-3.5 py-3 shadow-sm transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="group relative flex items-start gap-3 rounded-2xl border border-border/40 bg-card p-3 shadow-sm transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {app.isInstalled && (
               <span className="absolute right-2.5 top-2.5 flex size-2 rounded-full bg-success ring-2 ring-background" />
             )}
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              {BrandIcon ? <BrandIcon className="size-5" /> : textIcon ? <span className="text-lg">{textIcon}</span> : <Icon size={20} />}
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              {BrandIcon ? <BrandIcon className="size-[18px]" /> : textIcon ? <span className="text-base">{textIcon}</span> : <Icon size={18} />}
             </div>
-            <h3
-              dir="auto"
-              className="min-w-0 flex-1 text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors"
-              style={{ unicodeBidi: 'plaintext' }}
-              title={app.name}
-            >
-              {app.name}
-            </h3>
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="text-xs font-bold text-primary">{getPrice(app)}</span>
-              {app.isInstalled ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 rounded-lg p-0 text-destructive hover:bg-destructive/10"
-                  onClick={(e) => { e.preventDefault(); onUninstall(app); }}
-                  disabled={uninstallingApp === app.slug}
-                >
-                  {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  className="h-7 gap-1 rounded-lg px-2.5 text-xs font-bold"
-                  onClick={(e) => onQuickInstall(e, app)}
-                  disabled={installingApp === app.slug}
-                >
-                  {installingApp === app.slug ? (
-                    <Loader2 size={11} className="animate-spin" />
-                  ) : (
-                    <Zap size={11} />
-                  )}
-                  {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                </Button>
-              )}
+            <div className="min-w-0 flex-1">
+              <h3
+                dir="auto"
+                className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors"
+                style={{ unicodeBidi: 'plaintext' }}
+                title={app.name}
+              >
+                {app.name}
+              </h3>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-primary">{getPrice(app)}</span>
+                {app.isInstalled ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 shrink-0 rounded-lg p-0 text-destructive hover:bg-destructive/10"
+                    onClick={(e) => { e.preventDefault(); onUninstall(app); }}
+                    disabled={uninstallingApp === app.slug}
+                  >
+                    {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="h-7 shrink-0 gap-1 rounded-lg px-2.5 text-xs font-bold"
+                    onClick={(e) => onQuickInstall(e, app)}
+                    disabled={installingApp === app.slug}
+                  >
+                    {installingApp === app.slug ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      <Zap size={11} />
+                    )}
+                    {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
+                  </Button>
+                )}
+              </div>
             </div>
           </Link>
         </PopoverTrigger>
