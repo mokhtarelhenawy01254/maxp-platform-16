@@ -528,7 +528,7 @@ async def list_logs(
             SELECT id, provider, "keyId" AS key_id, action, status,
                    model, "latencyMs" AS latency_ms,
                    COALESCE(message, '') AS error,
-                   metadata->>'response' AS response,
+                   CAST(COALESCE(metadata, '{{}}') AS jsonb)->>'response' AS response,
                    "companyId" AS company_id, "createdAt" AS created_at
             FROM public.ai_provider_logs
             WHERE {clause}

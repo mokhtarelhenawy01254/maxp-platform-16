@@ -7,6 +7,7 @@
   3. **Pagination bypass fix**: Reordered sorting and slicing instructions in keys.py to execute outside the public logs database try-except block, guaranteeing pagination limits are always enforced when queries throw exceptions.
   4. **Status mapping alignment**: Resolved status filtering discrepancies between client and server: `success` filters map to both `["success", "ok"]` and `failed` filters map to `["failed", "error"]`.
   5. **UX inline error handling**: Replaced early return layout with inline alert components, allowing administrators to still toggle filters and retry requests.
+  6. **Postgres metadata casting**: Resolved UndefinedFunctionError exception in the raw SQL query to `public.ai_provider_logs` by explicitly casting the text-based `metadata` column: `CAST(COALESCE(metadata, '{}') AS jsonb)->>'response'`, which successfully restored generation logs to the view.
 
 ## 2026-07-17 / 2026-03-09
 - **Agent Refactoring to SOTA 2026 paradigms & Removal of Legacy Heuristics (REFACTOR / COMPLETE)**:

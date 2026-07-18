@@ -7,12 +7,14 @@
   2. **Page-level vs Global Stats**: The frontend statistics cards computed successful/failed counts and average latency locally from the current page's slice (25 logs), instead of retrieving global statistics from the backend, capped success/failed cards at 25.
   3. **Backend Pagination Bypass**: If the raw SQL query to `public.ai_provider_logs` threw an exception, the exception block swallowed the error but bypassed pagination slicing `rows[offset:offset+limit]`, returning full raw data length `fetch_limit` to the client.
   4. **Error handling UX**: Any error from the queries triggered an early return of the layout, rendering a blank screen with only an error message and retry button, making filters unusable.
+  5. **PostgreSQL JSON Operator Error**: The raw SQL query for `public.ai_provider_logs` used the `->>` operator on the `metadata` column directly (`metadata->>'response'`). Since `metadata` is a `text` type column (not `jsonb` or `json`) in the DB schema, Postgres failed with an `UndefinedFunctionError: operator does not exist: text ->> unknown` exception. The exception was swallowed in the raw SQL block, silently causing generation logs to never load.
 - **Resolution**:
   1. Updated the backend status filter mapping (`list_logs` and `_build_public_filters` helper in `keys.py`) to resolve `success` to `["success", "ok"]` and `failed` to `["failed", "error"]`.
   2. Extended backend schema `LogListResponse` and `list_logs` implementation to dynamically calculate global success, failed, and average latency stats across both ORM and raw SQL tables.
   3. Modified frontend `SuperAdminAIKeyLogs.tsx` to read stats globally from `logsRes`, falling back to page-level slice if undefined. Updated Select value onChange callbacks with nullish coalescing to prevent TypeScript null-assignment compilation errors.
   4. Moved slicing and sorting outside of the `try-except` block in `keys.py` to ensure pagination limit is always enforced.
   5. Rendered the error alert inline on the frontend logs page instead of early-returning the page layout.
+  6. Added explicit `CAST(COALESCE(metadata, '{}') AS jsonb)->>'response'` casting to the raw SQL query in `keys.py`, resolving the exception and successfully restoring generation logs.
 - **Files Modified**:
   - `apps/ai-service/src/api/admin/keys.py` (MODIFIED)
   - `apps/ai-service/src/api/admin/schemas.py` (MODIFIED)
