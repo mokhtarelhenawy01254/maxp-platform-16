@@ -7,7 +7,7 @@ import {
   Search, Package, Loader2, Crown,
   Layers3, Sparkles, CheckCircle2, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Grid3X3, Star, Heart, Download,
+  DollarSign, Grid3X3, Star, Heart,
   Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
   ClipboardList, Route, ClipboardCheck, Inbox, Bell,
   Calendar, Truck, FileText, Percent,
@@ -150,19 +150,6 @@ const appIcons: Record<string, LucideIcon> = {
 
 const brandIconsBySlug: Record<string, React.ElementType> = {
   "facebook-ads-pro": FacebookIcon,
-};
-
-const categoryGradients: Record<string, string> = {
-  ECOMMERCE: "from-emerald-500/20 to-emerald-600/5",
-  HR: "from-blue-500/20 to-blue-600/5",
-  COMMUNICATION: "from-violet-500/20 to-violet-600/5",
-  CRM: "from-amber-500/20 to-amber-600/5",
-  ANALYTICS: "from-rose-500/20 to-rose-600/5",
-  INTEGRATION: "from-cyan-500/20 to-cyan-600/5",
-  PRODUCTIVITY: "from-indigo-500/20 to-indigo-600/5",
-  FINANCE: "from-green-500/20 to-green-600/5",
-  MARKETING: "from-pink-500/20 to-pink-600/5",
-  MEDICAL: "from-red-500/20 to-red-600/5",
 };
 
 type ViewMode = "grid" | "compact";
@@ -561,20 +548,12 @@ export default function MarketplaceV2() {
 
         {/* Loading State */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm">
-                <Skeleton className="aspect-[2/1] w-full rounded-none" />
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="size-10 rounded-xl" />
-                    <div className="space-y-1.5 flex-1">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-3 w-14" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-8 w-full rounded-lg" />
-                </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card px-3.5 py-3 shadow-sm">
+                <Skeleton className="size-10 shrink-0 rounded-xl" />
+                <Skeleton className="h-4 flex-1 rounded-md" />
+                <Skeleton className="h-7 w-16 shrink-0 rounded-lg" />
               </div>
             ))}
           </div>
@@ -621,7 +600,7 @@ export default function MarketplaceV2() {
                     </Badge>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                   {featuredApps.slice(0, 4).map((app, i) => (
                     <div
                       key={app.id}
@@ -653,7 +632,7 @@ export default function MarketplaceV2() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {displayedApps.filter(a => !a.isFeatured || !!selectedCategory).map((app, i) => (
                 <div key={app.id} className="flex h-full motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 duration-500" style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}>
                   <AppCardV2
@@ -779,7 +758,7 @@ export default function MarketplaceV2() {
   );
 }
 
-/* ─── App Card ─── */
+/* ─── App Card (compact) ─── */
 function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall }: {
   app: MarketplaceApp;
   installingApp: string | null;
@@ -793,7 +772,6 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
   const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
   const Icon = AppIcon || categoryIcons[app.category] || Package;
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
-  const gradient = categoryGradients[app.category] || "from-primary/10 to-primary/5";
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -825,99 +803,49 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
             to={`/marketplace/${app.slug}`}
             aria-haspopup="dialog"
             aria-expanded={previewOpen}
-            className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="group relative flex h-full items-center gap-3 overflow-hidden rounded-2xl border border-border/40 bg-card px-3.5 py-3 shadow-sm transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            <div className={cn("relative overflow-hidden bg-gradient-to-br", !app.coverImage && gradient, "aspect-[2.8/1]")}>
-              {app.coverImage && (
-                <img src={app.coverImage} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
-              )}
-              {app.isInstalled && (
-                <div className="absolute left-2.5 top-2.5 z-10">
-                  <span className="flex size-2.5 rounded-full bg-success ring-2 ring-background" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent" />
-              {app.coverImage ? (
-                <div className="absolute bottom-2.5 right-3 flex size-9 items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm shadow-sm text-primary">
-                  {BrandIcon ? <BrandIcon className="size-[17px]" /> : textIcon || <Icon size={17} />}
-                </div>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex size-[44px] items-center justify-center rounded-2xl bg-background/20 text-primary/70">
-                    {BrandIcon ? <BrandIcon className="size-6" /> : textIcon ? <span className="text-2xl">{textIcon}</span> : <Icon size={24} />}
-                  </div>
-                </div>
-              )}
+            {app.isInstalled && (
+              <span className="absolute right-2.5 top-2.5 flex size-2 rounded-full bg-success ring-2 ring-background" />
+            )}
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              {BrandIcon ? <BrandIcon className="size-5" /> : textIcon ? <span className="text-lg">{textIcon}</span> : <Icon size={20} />}
             </div>
-
-            <div className="flex flex-col p-3 pb-2.5">
-              <div className="min-w-0 flex-1">
-                <h3
-                  dir="auto"
-                  className="font-bold text-xs text-foreground leading-tight truncate group-hover:text-primary transition-colors"
-                  style={{ unicodeBidi: 'plaintext' }}
-                  title={app.name}
+            <h3
+              dir="auto"
+              className="min-w-0 flex-1 text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors"
+              style={{ unicodeBidi: 'plaintext' }}
+              title={app.name}
+            >
+              {app.name}
+            </h3>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="text-xs font-bold text-primary">{getPrice(app)}</span>
+              {app.isInstalled ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 rounded-lg p-0 text-destructive hover:bg-destructive/10"
+                  onClick={(e) => { e.preventDefault(); onUninstall(app); }}
+                  disabled={uninstallingApp === app.slug}
                 >
-                  {app.name}
-                </h3>
-                <p
-                  dir="auto"
-                  className="mt-0.5 text-xs text-muted-foreground leading-relaxed line-clamp-1"
-                  style={{ unicodeBidi: 'plaintext' }}
-                  title={app.description}
+                  {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="h-7 gap-1 rounded-lg px-2.5 text-xs font-bold"
+                  onClick={(e) => onQuickInstall(e, app)}
+                  disabled={installingApp === app.slug}
                 >
-                  {app.description}
-                </p>
-              </div>
-
-              {(app.installCount > 0 || app.rating) && (
-                <div className="mt-2 flex items-center gap-3">
-                  {app.installCount > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground font-bold">
-                      <Download size={11} />
-                      {app.installCount > 999 ? `${(app.installCount / 1000).toFixed(1)}K` : app.installCount}
-                    </span>
+                  {installingApp === app.slug ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <Zap size={11} />
                   )}
-                  {app.rating && (
-                    <span className="flex items-center gap-0.5 text-xs text-amber-500 font-bold">
-                      <Star size={11} className="fill-current" />
-                      {app.rating.toFixed(1)}
-                    </span>
-                  )}
-                </div>
+                  {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
+                </Button>
               )}
-
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-primary">
-                  {getPrice(app)}
-                </span>
-
-                {app.isInstalled ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0 h-7 w-7 rounded-lg p-0 text-destructive hover:bg-destructive/10"
-                    onClick={(e) => { e.preventDefault(); onUninstall(app); }}
-                    disabled={uninstallingApp === app.slug}
-                  >
-                    {uninstallingApp === app.slug ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="shrink-0 gap-1 rounded-lg px-2.5 text-xs font-bold h-7"
-                    onClick={(e) => onQuickInstall(e, app)}
-                    disabled={installingApp === app.slug}
-                  >
-                    {installingApp === app.slug ? (
-                      <Loader2 size={11} className="animate-spin" />
-                    ) : (
-                      <Zap size={11} />
-                    )}
-                    {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                  </Button>
-                )}
-              </div>
             </div>
           </Link>
         </PopoverTrigger>
@@ -926,11 +854,11 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
           side="right"
           align="start"
           sideOffset={12}
-          className="w-80 p-0 overflow-hidden rounded-xl border border-border bg-card shadow-xl"
+          className="w-80 overflow-hidden rounded-xl border border-border bg-card p-0 shadow-xl"
           onMouseEnter={showPreview}
           onMouseLeave={hidePreview}
         >
-          <div className="p-4 border-b border-border/40">
+          <div className="border-b border-border/40 p-4">
             <div className="flex items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 {BrandIcon ? <BrandIcon className="size-5" /> : textIcon || <Icon size={20} />}
@@ -939,21 +867,21 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
                 <div className="flex items-center gap-2">
                   <h4
                     dir="auto"
-                    className="font-bold text-sm"
+                    className="text-sm font-bold"
                     style={{ unicodeBidi: 'plaintext' }}
                     title={app.name}
                   >
                     {app.name}
                   </h4>
                   {app.rating ? (
-                    <span className="flex items-center gap-0.5 text-xs text-amber-500 shrink-0">
+                    <span className="flex shrink-0 items-center gap-0.5 text-xs text-amber-500">
                       <Star size={11} className="fill-current" />{app.rating}
                     </span>
                   ) : null}
                 </div>
                 <p
                   dir="auto"
-                  className="text-xs text-muted-foreground line-clamp-2 mt-0.5"
+                  className="mt-0.5 line-clamp-2 text-xs text-muted-foreground"
                   style={{ unicodeBidi: 'plaintext' }}
                   title={app.description}
                 >
@@ -964,8 +892,8 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
           </div>
 
           {features.length > 0 && (
-            <div className="px-4 py-3 border-b border-border/40">
-              <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t('marketplace.features')}</h5>
+            <div className="border-b border-border/40 px-4 py-3">
+              <h5 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('marketplace.features')}</h5>
               <div className="space-y-1.5">
                 {features.slice(0, 6).map(f => (
                   <div key={f.key} className="flex items-start gap-2 text-xs">
@@ -974,18 +902,18 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
                   </div>
                 ))}
                 {features.length > 6 && (
-                  <p className="text-xs text-muted-foreground pt-1">{t('marketplace.moreFeatures', { count: features.length - 6 })}</p>
+                  <p className="pt-1 text-xs text-muted-foreground">{t('marketplace.moreFeatures', { count: features.length - 6 })}</p>
                 )}
               </div>
             </div>
           )}
 
           {requiredApps.length > 0 && (
-            <div className="px-4 py-2.5 border-b border-border/40">
+            <div className="border-b border-border/40 px-4 py-2.5">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">{t('marketplace.requires')}:</span>
                 {requiredApps.map(slug => (
-                  <Badge key={slug} variant="outline" className="text-xs px-1.5 py-0.5">
+                  <Badge key={slug} variant="outline" className="px-1.5 py-0.5 text-xs">
                     {slug}
                   </Badge>
                 ))}
@@ -997,18 +925,18 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
             <div>
               <span className="text-sm font-bold text-primary">{getPrice(app)}</span>
               {app.trialDays > 0 && (
-                <span className="mr-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">{t('marketplace.trialDays', { count: app.trialDays })}</span>
+                <span className="mr-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">{t('marketplace.trialDays', { count: app.trialDays })}</span>
               )}
             </div>
             {app.isInstalled ? (
-              <Badge variant="secondary" className="text-xs gap-1">
+              <Badge variant="secondary" className="gap-1 text-xs">
                 <CheckCircle2 size={10} />
                 {t('marketplace.installed')}
               </Badge>
             ) : (
               <Button
                 size="sm"
-                className="h-8 rounded-lg text-xs gap-1 font-bold"
+                className="h-8 gap-1 rounded-lg text-xs font-bold"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickInstall(e, app); }}
                 disabled={installingApp === app.slug}
               >
