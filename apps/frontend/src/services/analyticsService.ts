@@ -525,6 +525,7 @@ class AnalyticsService {
     period: string = "30",
     startDate?: string,
     endDate?: string,
+    comparisonType?: string,
     signal?: AbortSignal,
   ) {
     try {
@@ -533,9 +534,10 @@ class AnalyticsService {
         throw new Error("No companyId found");
       }
 
-      const params: AnalyticsQueryParams = { period };
+      const params: any = { period };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
+      if (comparisonType) params.comparisonType = comparisonType;
 
       const response = await this.getAnalyticsReport("/store", "/analytics/store", {
         params,

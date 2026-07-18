@@ -616,11 +616,11 @@ const getStoreAnalytics = async (req, res) => {
       });
     }
 
-    const { startDate, endDate, period = '30' } = req.query;
+    const { startDate, endDate, period = '30', comparisonType = 'previous' } = req.query;
 
     const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
 
-    const analytics = await analyticsService.getStoreAnalytics(companyId, start, end);
+    const analytics = await analyticsService.getStoreAnalytics(companyId, start, end, comparisonType);
 
     res.json({
       success: true,
@@ -3590,6 +3590,7 @@ const getPublicStoreAnalytics = async (req, res) => {
       data: analytics,
       period: { start, end, days: period }
     });
+    return;
   } catch (error) {
     console.error('Error in getPublicStoreAnalytics:', error);
     res.status(500).json({

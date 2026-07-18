@@ -59,10 +59,26 @@ const formatChange = (current: number, prev: number | undefined): string | null 
   return `${sign}${pct.toFixed(1)}%`;
 };
 
+const PERIODS = [
+  { value: "7", label: "آخر 7 أيام" },
+  { value: "30", label: "آخر 30 يوم" },
+  { value: "90", label: "آخر 3 شهور" },
+  { value: "180", label: "آخر 6 شهور" },
+  { value: "365", label: "آخر سنة" },
+  { value: "730", label: "آخر سنتين" },
+];
+
+const COMPARISONS = [
+  { value: "previous", label: "الفترة السابقة" },
+  { value: "yoy", label: "نفس الفترة العام الماضي" },
+  { value: "none", label: "بدون مقارنة" },
+];
+
 const OrdersAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState("30");
+  const [comparisonType, setComparisonType] = useState("previous");
   const [totalOrders, setTotalOrders] = useState(0);
   const [codOrders, setCodOrders] = useState(0);
   const [prepaidOrders, setPrepaidOrders] = useState(0);
@@ -74,7 +90,7 @@ const OrdersAnalytics: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [period]);
+  }, [period, comparisonType]);
 
   const fetchData = async () => {
     try {
@@ -82,7 +98,7 @@ const OrdersAnalytics: React.FC = () => {
       setError(null);
 
       const [storeData, dailyRes] = await Promise.all([
-        analyticsService.getStoreAnalytics(period),
+        analyticsService.getStoreAnalytics(period, undefined, undefined, comparisonType),
         analyticsService.getDailyAnalytics(period),
       ]);
 
@@ -226,16 +242,30 @@ const OrdersAnalytics: React.FC = () => {
             تتبع وتحليل حالات الطلبات
           </p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-        >
-          <option value="7">آخر 7 أيام</option>
-          <option value="30">آخر 30 يوم</option>
-          <option value="90">آخر 90 يوم</option>
-          <option value="365">آخر سنة</option>
-        </select>
+        <div className="flex gap-2">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+          >
+            {PERIODS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={comparisonType}
+            onChange={(e) => setComparisonType(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+          >
+            {COMPARISONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -261,7 +291,10 @@ const OrdersAnalytics: React.FC = () => {
                           : "text-red-600"
                       }`}
                     >
-                      {change} عن الفترة السابقة
+                      {change}{" "}
+                      {comparisonType === "yoy"
+                        ? "عن العام الماضي"
+                        : "عن الفترة السابقة"}
                     </p>
                   )}
                 </div>

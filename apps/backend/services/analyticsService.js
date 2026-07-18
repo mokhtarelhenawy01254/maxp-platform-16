@@ -566,7 +566,9 @@ class AnalyticsService {
     };
   }
 
-  async getOrderBreakdown(companyId, startDate, endDate) {
+  async getOrderBreakdown(companyId, startDate, endDate, comparisonType = 'previous') {
+    const cmpNone = comparisonType === 'none';
+
     const buildOne = async (cid, start, end) => {
       const prisma = getSharedPrismaClient();
       const where = { companyId: cid, createdAt: { gte: start, lte: end } };
@@ -643,10 +645,21 @@ class AnalyticsService {
     };
 
     const current = await buildOne(companyId, startDate, endDate);
+    if (cmpNone) return { ...current, prevPeriod: null };
 
     const periodMs = endDate.getTime() - startDate.getTime();
-    const prevEnd = new Date(startDate.getTime() - 86400000);
-    const prevStart = new Date(prevEnd.getTime() - periodMs);
+    let prevEnd, prevStart;
+
+    if (comparisonType === 'yoy') {
+      prevEnd = new Date(startDate.getTime() - 86400000);
+      prevStart = new Date(prevEnd.getTime() - periodMs);
+      // Shift both back one full year
+      prevEnd.setFullYear(prevEnd.getFullYear() - 1);
+      prevStart.setFullYear(prevStart.getFullYear() - 1);
+    } else {
+      prevEnd = new Date(startDate.getTime() - 86400000);
+      prevStart = new Date(prevEnd.getTime() - periodMs);
+    }
 
     if (prevStart < startDate) {
       const prev = await buildOne(companyId, prevStart, prevEnd);
@@ -664,7 +677,7 @@ class AnalyticsService {
     return { ...current, prevPeriod: null };
   }
 
-  async getStoreAnalytics(companyId, startDate, endDate) {
+  async getStoreAnalytics(companyId, startDate, endDate, comparisonType = 'previous') {
     if (!companyId) {
       throw new Error('companyId is required');
     }
@@ -693,7 +706,7 @@ class AnalyticsService {
         _count: true
       }),
       this.getOrderSummary(companyId, startDate, endDate),
-      this.getOrderBreakdown(companyId, startDate, endDate)
+      this.getOrderBreakdown(companyId, startDate, endDate, comparisonType)
     ]);
 
     const addToCarts = conversionEvents.find(e => e.eventType === 'add_to_cart')?._count || 0;
