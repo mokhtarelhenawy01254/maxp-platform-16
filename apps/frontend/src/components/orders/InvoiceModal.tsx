@@ -166,12 +166,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
                   {invoice.customerPhone}
                 </div>
               )}
-              {invoice.order?.createdByName && (
-                <div>
-                  <span className="font-semibold">الكوتشي:</span>{" "}
-                  {invoice.order.createdByName}
-                </div>
-              )}
               {invoice.customerAddress && (
                 <div className="col-span-2">
                   <span className="font-semibold">العنوان:</span>{" "}
@@ -192,6 +186,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
               <thead>
                 <tr className="border-b-2 border-slate-800 dark:border-slate-500 print:border-slate-800">
                   <th className="text-right py-2 font-bold">المنتج</th>
+                  <th className="text-center py-2 font-bold w-16">SQ</th>
                   <th className="text-center py-2 font-bold w-20">الكمية</th>
                   <th className="text-right py-2 font-bold w-24">السعر</th>
                   <th className="text-right py-2 font-bold w-28">الإجمالي</th>
@@ -208,12 +203,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
                         {item.productName}
                       </div>
                       <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 print:text-slate-600">
-                        {item.productSku && (
-                          <span>SQ: {item.productSku}</span>
-                        )}
-                        {item.productSku && (item.productColor || item.productSize) && (
-                          <span> | </span>
-                        )}
                         {item.productColor && (
                           <span>اللون: {item.productColor}</span>
                         )}
@@ -225,6 +214,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
                         )}
                       </div>
                     </td>
+                    <td className="text-center py-3">{item.productSku || "—"}</td>
                     <td className="text-center py-3">{item.quantity}</td>
                     <td className="text-right py-3">
                       {formatCurrency(item.price, invoice.currency)}

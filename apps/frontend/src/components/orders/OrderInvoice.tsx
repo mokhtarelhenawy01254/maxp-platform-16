@@ -41,6 +41,8 @@ interface InvoiceSettings {
   primaryColor: string;
   secondaryColor: string;
   fontFamily: string;
+  showBarcodeOrderCode: boolean;
+  showBarcodeShippingCode: boolean;
 }
 
 interface InvoiceOrderItem {
@@ -111,6 +113,8 @@ const defaultSettings: InvoiceSettings = {
   primaryColor: "#4F46E5",
   secondaryColor: "#6B7280",
   fontFamily: "Arial",
+  showBarcodeOrderCode: true,
+  showBarcodeShippingCode: true,
 };
 
 const pageWidths: Record<string, { portrait: string; landscape: string }> = {
@@ -271,6 +275,8 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
   const showTaxBreakdown = settings.showTaxBreakdown !== false;
   const showPaymentMethod = settings.showPaymentMethod !== false;
   const showOrderItems = settings.showOrderItems !== false;
+  const showBarcodeOrderCode = settings.showBarcodeOrderCode !== false;
+  const showBarcodeShippingCode = settings.showBarcodeShippingCode !== false;
 
   if (loading) {
     return (
@@ -420,11 +426,6 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             <p className="text-sm">
               <strong>{t("orders.invoice.orderNumber")}</strong> {invoice.order?.orderNumber || "-"}
             </p>
-            {invoice.order?.createdByName && (
-              <p className="text-sm">
-                <strong>الكوتشي:</strong> {invoice.order.createdByName}
-              </p>
-            )}
             {invoice.order?.turboTrackingNumber && (
               <p className="text-sm">
                 <strong>رقم تتبع تربو:</strong> {invoice.order.turboTrackingNumber}
@@ -448,6 +449,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
                 <TableRow style={{ backgroundColor: `${primaryColor}15` }}>
                   <TableHead className="font-bold">#</TableHead>
                   <TableHead className="font-bold">{t("orders.invoice.product")}</TableHead>
+                  <TableHead className="text-center font-bold">SQ</TableHead>
                   <TableHead className="text-center font-bold">{t("orders.invoice.quantity")}</TableHead>
                   <TableHead className="text-right font-bold">{t("orders.invoice.price")}</TableHead>
                   <TableHead className="text-right font-bold">{t("orders.invoice.total")}</TableHead>
@@ -459,11 +461,6 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
                       <p className="text-sm font-medium">{item.productName}</p>
-                      {item.productSku && (
-                        <p className="text-xs" style={{ color: secondaryColor }}>
-                          SQ: {item.productSku}
-                        </p>
-                      )}
                       {(item.variantName || item.productColor || item.productSize) && (
                         <p className="text-xs" style={{ color: secondaryColor }}>
                           {[item.variantName, item.productColor, item.productSize]
@@ -471,6 +468,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
                         </p>
                       )}
                     </TableCell>
+                    <TableCell className="text-center" dir="ltr">{item.productSku || "—"}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(parseNumber(item.price), invoice.currency)}
@@ -548,18 +546,19 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
           </div>
         )}
 
-        {(invoice.order?.orderNumber || invoice.order?.turboTrackingNumber) && (
+        {(showBarcodeOrderCode || showBarcodeShippingCode) &&
+          (invoice.order?.orderNumber || invoice.order?.turboTrackingNumber) && (
           <div
             className="mt-4 pt-3 flex justify-center gap-8 flex-wrap"
             style={{ borderTop: "1px solid #e2e8f0" }}
           >
-            {invoice.order?.orderNumber && (
+            {showBarcodeOrderCode && invoice.order?.orderNumber && (
               <InvoiceBarcode
                 value={invoice.order.orderNumber}
                 label="رقم الطلب"
               />
             )}
-            {invoice.order?.turboTrackingNumber && (
+            {showBarcodeShippingCode && invoice.order?.turboTrackingNumber && (
               <InvoiceBarcode
                 value={invoice.order.turboTrackingNumber}
                 label="كود الشحن"

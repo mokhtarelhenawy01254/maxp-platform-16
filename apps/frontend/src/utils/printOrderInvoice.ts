@@ -107,7 +107,6 @@ const getItemTotal = (item: OrderItem) => {
 
 const buildItemDetailsText = (item: OrderItem) =>
   [
-    item.productSku ? `SQ: ${item.productSku}` : "",
     item.productColor ? `اللون: ${item.productColor}` : "",
     item.productSize ? `المقاس: ${item.productSize}` : "",
     item.productDetails ? item.productDetails : "",
@@ -132,6 +131,7 @@ const renderInvoiceItemRow = (item: OrderItem, currency: string, slotLabel = "")
             : ""
         }
       </td>
+      <td class="center">${item.productSku ? escapeHtml(item.productSku) : "—"}</td>
       <td class="center">${escapeHtml(item.quantity)}</td>
       <td class="amount">${escapeHtml(formatCurrency(item.price, currency))}</td>
       <td class="amount total-cell">${escapeHtml(formatCurrency(itemTotal, currency))}</td>
@@ -534,11 +534,6 @@ export const printOrderInvoice = async ({
             <div class="card">
               <h3>بيانات الطلب</h3>
               ${
-                order.createdByName
-                  ? `<p><strong>الكوتشي:</strong> ${escapeHtml(order.createdByName)}</p>`
-                  : ""
-              }
-              ${
                 settings.showPaymentMethod && order.paymentMethod
                   ? `<p><strong>طريقة الدفع:</strong> ${escapeHtml(order.paymentMethod)}</p>`
                   : ""
@@ -561,6 +556,7 @@ export const printOrderInvoice = async ({
             <thead>
               <tr>
                 <th>المنتج</th>
+                <th class="center">SQ</th>
                 <th class="center">الكمية</th>
                 <th class="amount">السعر</th>
                 <th class="amount">الإجمالي</th>

@@ -207,12 +207,6 @@ const OrderInvoiceCompact: React.FC = () => {
             معلومات العميل
           </h3>
           <p className="text-sm mb-1">{invoice.customerName}</p>
-          {invoice.order.createdByName && (
-            <p className="text-sm mb-1">
-              <span className="font-bold">الكوتشي: </span>
-              {invoice.order.createdByName}
-            </p>
-          )}
           <p className="text-sm mb-1">هاتف: {invoice.customerPhone}</p>
           <p className="text-sm mb-1">
             العنوان: {invoice.customerAddress || ""}
@@ -225,6 +219,7 @@ const OrderInvoiceCompact: React.FC = () => {
           <thead>
             <tr className="border-b-2 border-gray-800">
               <th className="text-right py-2 font-bold">المنتج</th>
+              <th className="text-center py-2 font-bold">SQ</th>
               <th className="text-center py-2 font-bold">الكمية</th>
               <th className="text-right py-2 font-bold">السعر</th>
               <th className="text-right py-2 font-bold">الإجمالي</th>
@@ -233,12 +228,8 @@ const OrderInvoiceCompact: React.FC = () => {
           <tbody>
             {invoice.order.orderItems.map((item, idx) => (
               <tr key={idx} className="border-b border-gray-300">
-                <td className="text-right py-2">
-                  {item.productName}
-                  {item.productSku && (
-                    <span className="text-xs text-gray-500 block">SQ: {item.productSku}</span>
-                  )}
-                </td>
+                <td className="text-right py-2">{item.productName}</td>
+                <td className="text-center py-2" dir="ltr">{item.productSku || "—"}</td>
                 <td className="text-center py-2">{item.quantity}</td>
                 <td className="text-right py-2">
                   {formatCurrency(item.price, invoice.currency)}

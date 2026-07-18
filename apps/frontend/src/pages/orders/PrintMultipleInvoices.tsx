@@ -150,11 +150,12 @@ const PrintMultipleInvoices: React.FC = () => {
               className="border-b border-gray-300"
             >
               <td className="text-right py-2 pr-6">
-                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}${code ? ` (${code})` : ""}`}</div>
+                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}`}</div>
                 {extraDetails ? (
                   <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
                 ) : null}
               </td>
+              <td className="text-center py-2">{code || "—"}</td>
               <td className="text-center py-2">{item.quantity}</td>
               <td className="text-right py-2">
                 {formatCurrency(item.price, invoice.currency)}
@@ -181,11 +182,12 @@ const PrintMultipleInvoices: React.FC = () => {
         return (
           <tr key={`${invoice.id}-single-${idx}`} className="border-b border-gray-300">
             <td className="text-right py-2">
-              <div>{`${item.productName}${code ? ` (${code})` : ""}`}</div>
+              <div>{item.productName}</div>
               {extraDetails ? (
                 <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
               ) : null}
             </td>
+            <td className="text-center py-2">{code || "—"}</td>
             <td className="text-center py-2">{item.quantity}</td>
             <td className="text-right py-2">
               {formatCurrency(item.price, invoice.currency)}
@@ -325,6 +327,7 @@ const PrintMultipleInvoices: React.FC = () => {
             <thead>
               <tr className="border-b-2 border-gray-800">
                 <th className="text-right py-2 font-bold">المنتج</th>
+                <th className="text-center py-2 font-bold">SQ</th>
                 <th className="text-center py-2 font-bold">الكمية</th>
                 <th className="text-right py-2 font-bold">السعر</th>
                 <th className="text-right py-2 font-bold">الإجمالي</th>
