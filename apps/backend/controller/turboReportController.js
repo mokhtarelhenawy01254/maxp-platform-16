@@ -316,7 +316,7 @@ const saveGovernorateCostsHandler = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
 
-    const { costs, applyRetroactive } = req.body;
+    const { costs, applyRetroactive, retroactiveFrom } = req.body;
     if (!costs || typeof costs !== 'object') {
       return res.status(400).json({ success: false, error: 'costs (object) مطلوب بصيغة { "القاهرة": 50, "الجيزة": 60 }' });
     }
@@ -338,13 +338,20 @@ const saveGovernorateCostsHandler = async (req, res) => {
       const prisma = getSharedPrismaClient();
       const now = new Date().toISOString();
 
+      const retroWhere = {
+        companyId,
+        turboTrackingNumber: { not: null }
+      };
+
+      // فلترة بتاريخ محدد لو المستخدم اختار
+      if (retroactiveFrom) {
+        const fromDate = new Date(retroactiveFrom);
+        retroWhere.createdAt = { gte: fromDate };
+      }
+
       for (const [governorate, cost] of Object.entries(cleaned)) {
         const orders = await prisma.order.findMany({
-          where: {
-            companyId,
-            governorate,
-            turboTrackingNumber: { not: null }
-          },
+          where: { ...retroWhere, governorate },
           select: { id: true, turboMetadata: true }
         });
 
