@@ -556,7 +556,7 @@ export const printOrderInvoice = async ({
             <thead>
               <tr>
                 <th>المنتج</th>
-                <th class="center">SQ</th>
+                <th class="center">SKU</th>
                 <th class="center">الكمية</th>
                 <th class="amount">السعر</th>
                 <th class="amount">الإجمالي</th>

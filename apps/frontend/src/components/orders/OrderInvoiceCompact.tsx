@@ -219,7 +219,7 @@ const OrderInvoiceCompact: React.FC = () => {
           <thead>
             <tr className="border-b-2 border-gray-800">
               <th className="text-right py-2 font-bold">المنتج</th>
-              <th className="text-center py-2 font-bold">SQ</th>
+              <th className="text-center py-2 font-bold">SKU</th>
               <th className="text-center py-2 font-bold">الكمية</th>
               <th className="text-right py-2 font-bold">السعر</th>
               <th className="text-right py-2 font-bold">الإجمالي</th>

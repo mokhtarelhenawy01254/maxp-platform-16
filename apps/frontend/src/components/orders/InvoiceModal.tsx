@@ -186,7 +186,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
               <thead>
                 <tr className="border-b-2 border-slate-800 dark:border-slate-500 print:border-slate-800">
                   <th className="text-right py-2 font-bold">المنتج</th>
-                  <th className="text-center py-2 font-bold w-16">SQ</th>
+                  <th className="text-center py-2 font-bold w-16">SKU</th>
                   <th className="text-center py-2 font-bold w-20">الكمية</th>
                   <th className="text-right py-2 font-bold w-24">السعر</th>
                   <th className="text-right py-2 font-bold w-28">الإجمالي</th>

@@ -449,7 +449,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
                 <TableRow style={{ backgroundColor: `${primaryColor}15` }}>
                   <TableHead className="font-bold">#</TableHead>
                   <TableHead className="font-bold">{t("orders.invoice.product")}</TableHead>
-                  <TableHead className="text-center font-bold">SQ</TableHead>
+                  <TableHead className="text-center font-bold">SKU</TableHead>
                   <TableHead className="text-center font-bold">{t("orders.invoice.quantity")}</TableHead>
                   <TableHead className="text-right font-bold">{t("orders.invoice.price")}</TableHead>
                   <TableHead className="text-right font-bold">{t("orders.invoice.total")}</TableHead>
