@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -125,7 +125,8 @@ function RequirementItem({
 const WhatsAppCloudConnect: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const processedCode = useRef<Record<string, boolean>>({});
 
   const [step, setStep] = useState<ConnectionStep>("intro");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -153,39 +154,55 @@ const WhatsAppCloudConnect: React.FC = () => {
     const state = searchParams.get("state");
     const error = searchParams.get("error");
 
-    if (code && state) {
-      setStep("connecting");
-      setStateToken(state);
-      const name = sessionStorage.getItem("wa_cloud_session_name") || "";
-      setSessionName(name);
+    if (!code && !state && !error) return;
 
-      const exchangeCode = async () => {
-        try {
-          setIsLoading(true);
-          const response = await apiClient.post("/whatsapp/facebook/connect", {
-            code,
-            state,
-            sessionName: name,
-            redirectUri: buildRedirectUri(),
-          });
-          setSessionId(response.data.session.id);
-          setStep("success");
-        } catch (err: unknown) {
-          const apiErr = err as { response?: { data?: { error?: string } } };
-          setErrorMessage(
-            apiErr.response?.data?.error || "فشل الاتصال بحساب Facebook",
-          );
-          setStep("error");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      void exchangeCode();
-    } else if (error) {
+    const cleanUrl = () => {
+      setSearchParams({}, { replace: true });
+    };
+
+    if (error) {
+      cleanUrl();
       setErrorMessage("تم إلغاء الاتصال بحساب Facebook");
       setStep("error");
+      return;
     }
-  }, [searchParams]);
+
+    if (!code || !state) return;
+
+    const processedRef = processedCode.current;
+    if (processedRef[code]) return;
+    processedRef[code] = true;
+
+    setStep("connecting");
+    setStateToken(state);
+    const name = sessionStorage.getItem("wa_cloud_session_name") || "";
+    setSessionName(name);
+
+    const exchangeCode = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.post("/whatsapp/facebook/connect", {
+          code,
+          state,
+          sessionName: name,
+          redirectUri: buildRedirectUri(),
+        });
+        cleanUrl();
+        setSessionId(response.data.session.id);
+        setStep("success");
+      } catch (err: unknown) {
+        cleanUrl();
+        const apiErr = err as { response?: { data?: { error?: string } } };
+        setErrorMessage(
+          apiErr.response?.data?.error || "فشل الاتصال بحساب Facebook",
+        );
+        setStep("error");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void exchangeCode();
+  }, [searchParams, setSearchParams]);
 
   const handleStartConnect = () => {
     if (!fbConfig) {
