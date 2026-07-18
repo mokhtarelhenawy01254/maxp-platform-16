@@ -316,9 +316,9 @@ const saveGovernorateCostsHandler = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
 
-    const { costs } = req.body;
+    const { costs, applyRetroactive } = req.body;
     if (!costs || typeof costs !== 'object') {
-      return res.status(400).json({ success: false, error: 'costs (object) مطلوب بصيغة { \"القاهرة\": 50, \"الجيزة\": 60 }' });
+      return res.status(400).json({ success: false, error: 'costs (object) مطلوب بصيغة { "القاهرة": 50, "الجيزة": 60 }' });
     }
 
     // تنظيف القيم
@@ -331,7 +331,50 @@ const saveGovernorateCostsHandler = async (req, res) => {
     }
 
     saveGovernorateCosts(companyId, cleaned);
-    res.json({ success: true, message: `تم حفظ ${Object.keys(cleaned).length} محافظة` });
+
+    // بأثر رجعي: تحديث الاوردرات الموجودة
+    let updatedCount = 0;
+    if (applyRetroactive) {
+      const prisma = getSharedPrismaClient();
+      const now = new Date().toISOString();
+
+      for (const [governorate, cost] of Object.entries(cleaned)) {
+        const orders = await prisma.order.findMany({
+          where: {
+            companyId,
+            governorate,
+            turboTrackingNumber: { not: null }
+          },
+          select: { id: true, turboMetadata: true }
+        });
+
+        for (const order of orders) {
+          let metadata = {};
+          try {
+            if (order.turboMetadata) metadata = JSON.parse(order.turboMetadata);
+          } catch (e) { /* ignore */ }
+
+          // فقط لو مفيش actualShippingCost ولا هو جايبها من governorate
+          const existing = parseFloat(metadata.actualShippingCost || 0);
+          if (existing <= 0 || metadata.actualShippingCostSource === 'governorate') {
+            metadata.actualShippingCost = cost;
+            metadata.actualShippingCostUpdatedAt = now;
+            metadata.actualShippingCostSource = 'governorate-retroactive';
+
+            await prisma.order.update({
+              where: { id: order.id },
+              data: { turboMetadata: JSON.stringify(metadata) }
+            });
+            updatedCount++;
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `تم حفظ ${Object.keys(cleaned).length} محافظة` + (applyRetroactive ? ` وتحديث ${updatedCount} طلب بأثر رجعي` : '')
+    });
   } catch (error) {
     console.error('❌ [TURBO-REPORT] Error saving governorate costs:', error);
     res.status(500).json({ success: false, error: error.message });
