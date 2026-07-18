@@ -4112,120 +4112,144 @@ const getTodayOps = async (req, res) => {
     }
     const prisma = getSharedPrismaClient();
     const now = new Date();
-    const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
-    const todayEnd = new Date(now); todayEnd.setHours(23,59,59,999);
-    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+    const todayS = new Date(now); todayS.setHours(0,0,0,0);
+    const todayE = new Date(now); todayE.setHours(23,59,59,999);
 
-    const companyFilter = { companyId };
-
-    const [totalOrders, totalGuests] = await Promise.all([
-      prisma.order.count({ where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } } }),
-      prisma.guestOrder.count({ where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } } }),
-    ]);
-
-    const [confirmedOrders, cancelledOrders] = await Promise.all([
-      prisma.order.count({ where: { ...companyFilter, confirmedAt: { gte: todayStart, lte: todayEnd } } }),
-      prisma.order.count({ where: { ...companyFilter, status: 'CANCELLED', updatedAt: { gte: todayStart, lte: todayEnd } } }),
-    ]);
-
-    const pendingOrders = await prisma.order.count({
-      where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd }, confirmedAt: null, status: { notIn: ['CANCELLED','DELIVERED','REFUNDED','DUPLICATE_ORDER'] } }
-    });
-
-    const guestConfirmedHistory = await prisma.orderStatusHistory.findMany({
-      where: { guestOrder: { companyId }, status: 'CONFIRMED', createdAt: { gte: todayStart, lte: todayEnd } },
-      select: { guestOrderId: true }
-    });
-    const guestCancelledHistory = await prisma.orderStatusHistory.findMany({
-      where: { guestOrder: { companyId }, status: 'CANCELLED', createdAt: { gte: todayStart, lte: todayEnd } },
-      select: { guestOrderId: true }
-    });
-
-    const guestConfirmed = new Set(guestConfirmedHistory.map(h => h.guestOrderId)).size;
-    const guestCancelled = new Set(guestCancelledHistory.map(h => h.guestOrderId)).size;
-
-    const statusCounts = await prisma.order.groupBy({
-      by: ['status'],
-      where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } },
-      _count: true,
-    });
-    const guestStatusCounts = await prisma.guestOrder.groupBy({
-      by: ['status'],
-      where: { ...companyFilter, createdAt: { gte: todayStart, lte: todayEnd } },
-      _count: true,
-    });
-
-    const recentHistory = await prisma.orderStatusHistory.findMany({
-      where: { createdAt: { gte: weekAgo }, order: companyFilter },
+    // ── Section 1: شغل النهارده (Actions Today) ──
+    // All status-change actions that happened today
+    const todayHistory = await prisma.orderStatusHistory.findMany({
+      where: { order: { companyId }, createdAt: { gte: todayS, lte: todayE } },
       orderBy: { createdAt: 'desc' },
-      take: 100,
-      select: {
-        id: true, orderId: true, guestOrderId: true,
-        status: true, oldStatus: true, changedBy: true, userName: true, createdAt: true,
-      }
+      take: 200,
+      select: { id: true, orderId: true, guestOrderId: true, status: true, oldStatus: true, changedBy: true, userName: true, createdAt: true }
     });
 
-    const orderIds = [...new Set(recentHistory.filter(h => h.orderId).map(h => h.orderId))].filter(Boolean);
-    const guestOrderIds = [...new Set(recentHistory.filter(h => h.guestOrderId).map(h => h.guestOrderId))].filter(Boolean);
+    // Confirmations today (via Order.confirmedAt)
+    const confirmsFromDb = await prisma.order.count({ where: { companyId, confirmedAt: { gte: todayS, lte: todayE } } });
+    // Also track confirmed guest orders via history today
+    const guestConfirmIds = [...new Set(todayHistory.filter(h => h.status === 'CONFIRMED' && h.guestOrderId).map(h => h.guestOrderId))];
+    const guestCancelsIds = [...new Set(todayHistory.filter(h => h.status === 'CANCELLED' && h.guestOrderId).map(h => h.guestOrderId))];
+    // Cancellations today (via Order.status + updatedAt today, OR via history)
+    const cancelsFromDb = await prisma.order.count({ where: { companyId, status: 'CANCELLED', updatedAt: { gte: todayS, lte: todayE } } });
 
-    const [orders, guestOrders] = await Promise.all([
-      orderIds.length ? prisma.order.findMany({ where: { id: { in: orderIds } }, select: { id: true, orderNumber: true, customerName: true, total: true, status: true, createdAt: true } }) : [],
-      guestOrderIds.length ? prisma.guestOrder.findMany({ where: { id: { in: guestOrderIds } }, select: { id: true, orderNumber: true, guestName: true, finalTotal: true, status: true, createdAt: true } }) : [],
-    ]);
+    // Actions summary
+    const todayConfirms = confirmsFromDb + guestConfirmIds.length;
+    const todayCancels = cancelsFromDb + guestCancelsIds.length;
 
-    const orderMap = {}; orders.forEach(o => orderMap[o.id] = o);
-    const guestMap = {}; guestOrders.forEach(o => guestMap[o.id] = o);
-
-    const userActions = {};
-    recentHistory.forEach(h => {
-      const key = h.userName || h.changedBy || 'system';
-      if (!userActions[key]) userActions[key] = { changes: 0, confirms: 0, cancels: 0, others: 0 };
-      userActions[key].changes++;
-      if (h.status === 'CONFIRMED') userActions[key].confirms++;
-      else if (h.status === 'CANCELLED') userActions[key].cancels++;
-      else userActions[key].others++;
+    // Team grouping: who did what today
+    const teamMap = {};
+    todayHistory.forEach(h => {
+      const name = h.userName || h.changedBy || 'system';
+      if (!teamMap[name]) teamMap[name] = { confirms: 0, cancels: 0, others: 0, total: 0 };
+      teamMap[name].total++;
+      if (h.status === 'CONFIRMED') teamMap[name].confirms++;
+      else if (h.status === 'CANCELLED') teamMap[name].cancels++;
+      else teamMap[name].others++;
     });
 
-    const activityFeed = recentHistory.slice(0, 50).map(h => {
-      const ord = orderMap[h.orderId] || guestMap[h.guestOrderId];
+    // Build order lookup for today's history
+    const hOrderIds = [...new Set(todayHistory.filter(h => h.orderId).map(h => h.orderId))].filter(Boolean);
+    const hGuestIds = [...new Set(todayHistory.filter(h => h.guestOrderId).map(h => h.guestOrderId))].filter(Boolean);
+    let hOrderMap = {};
+    let hGuestMap = {};
+    if (hOrderIds.length) {
+      const hOrders = await prisma.order.findMany({ where: { id: { in: hOrderIds } }, select: { id: true, orderNumber: true, createdAt: true } });
+      hOrders.forEach(o => hOrderMap[o.id] = o);
+    }
+    if (hGuestIds.length) {
+      const hGuests = await prisma.guestOrder.findMany({ where: { id: { in: hGuestIds } }, select: { id: true, orderNumber: true, createdAt: true } });
+      hGuests.forEach(o => hGuestMap[o.id] = o);
+    }
+
+    // Distinguish old vs new orders for today's actions
+    const actionsFeed = todayHistory.slice(0, 100).map(h => {
+      const ord = hOrderMap[h.orderId] || hGuestMap[h.guestOrderId];
+      const orderCreated = ord ? new Date(ord.createdAt) : null;
+      const isOld = orderCreated && orderCreated < todayS;
       return {
         id: h.id,
-        orderLabel: ord ? (ord.orderNumber || ord.guestName) : (h.orderId || h.guestOrderId || '').slice(0, 8),
-        oldStatus: h.oldStatus,
-        newStatus: h.status,
+        orderLabel: ord ? ord.orderNumber : (h.orderId || h.guestOrderId || '').slice(0, 8),
+        oldStatus: h.oldStatus, newStatus: h.status,
         changedBy: h.userName || h.changedBy || 'system',
         createdAt: h.createdAt,
+        orderDate: ord ? ord.createdAt : null,
+        isOldOrder: isOld,
       };
     });
+
+    // ── Section 2: تقرير يوم (Day Snapshot) ──
+    // نستخدم snapshotDate من query洗干净، افتراضيًا اليوم
+    const { snapshotDate } = req.query || {};
+    let snapS = snapshotDate ? normalizeAnalyticsDateInput(snapshotDate) : new Date(todayS);
+    if (!snapS) { snapS = new Date(todayS); }
+    const snapE = new Date(snapS); snapE.setHours(23, 59, 59, 999);
+
+    const snapOrders = await prisma.order.findMany({
+      where: { companyId, createdAt: { gte: snapS, lte: snapE } },
+      select: { id: true, orderNumber: true, customerName: true, customerPhone: true, total: true, status: true, confirmedAt: true, createdAt: true, sourceType: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const snapGuests = await prisma.guestOrder.findMany({
+      where: { companyId, createdAt: { gte: snapS, lte: snapE } },
+      select: { id: true, orderNumber: true, guestName: true, guestPhone: true, finalTotal: true, status: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Status distribution for snapshot
+    const snapStatusMap = {};
+    snapOrders.forEach(o => { snapStatusMap[o.status] = (snapStatusMap[o.status] || 0) + 1; });
+    snapGuests.forEach(o => { snapStatusMap[o.status] = (snapStatusMap[o.status] || 0) + 1; });
+    const snapStatusBreakdown = Object.entries(snapStatusMap)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Pending orders in snapshot (not confirmed, not cancelled/terminal)
+    const terminalStatuses = ['CANCELLED','DELIVERED','REFUNDED','DUPLICATE_ORDER'];
+    const snapPending = snapOrders.filter(o => !o.confirmedAt && !terminalStatuses.includes(o.status));
+    const snapPendingGuests = snapGuests.filter(o => !terminalStatuses.includes(o.status));
+
+    const snapshot = {
+      date: snapS.toISOString().slice(0, 10),
+      totalOrders: snapOrders.length + snapGuests.length,
+      regular: snapOrders.length,
+      guests: snapGuests.length,
+      pendingList: snapPending.slice(0, 50).map(o => ({
+        orderNumber: o.orderNumber, customerName: o.customerName, customerPhone: o.customerPhone,
+        total: o.total, status: o.status, sourceType: o.sourceType, createdAt: o.createdAt,
+      })),
+      pendingListGuests: snapPendingGuests.slice(0, 50).map(o => ({
+        orderNumber: o.orderNumber, customerName: o.guestName, customerPhone: o.guestPhone,
+        total: o.finalTotal, status: o.status, createdAt: o.createdAt,
+      })),
+      statusBreakdown: snapStatusBreakdown,
+      // Hourly distribution (for orders created on that day)
+      hourly: Object.entries(
+        [...snapOrders, ...snapGuests].reduce(function(acc, o) {
+          const h = new Date(o.createdAt).getHours();
+          acc[h] = (acc[h] || 0) + 1;
+          return acc;
+        }, {})
+      ).sort(function(a, b) { return Number(a[0]) - Number(b[0]); }).map(function(e) { return { hour: Number(e[0]), count: e[1] }; }),
+    };
 
     res.json({
       success: true,
       data: {
-        summary: {
-          totalOrders, totalGuests, totalAll: totalOrders + totalGuests,
-          confirmedOrders, guestConfirmed, totalConfirmed: confirmedOrders + guestConfirmed,
-          cancelledOrders, guestCancelled, totalCancelled: cancelledOrders + guestCancelled,
-          pendingOrders,
-          cancellationRate: (totalOrders + totalGuests) > 0 ? Number((((cancelledOrders + guestCancelled) / (totalOrders + totalGuests)) * 100).toFixed(2)) : 0,
-          confirmationRate: (totalOrders + totalGuests) > 0 ? Number((((confirmedOrders + guestConfirmed) / (totalOrders + totalGuests)) * 100).toFixed(2)) : 0,
+        todayActions: {
+          confirms: todayConfirms,
+          cancels: todayCancels,
+          total: todayConfirms + todayCancels,
+          team: Object.entries(teamMap).map(function(e) { return { name: e[0], confirms: e[1].confirms, cancels: e[1].cancels, others: e[1].others, total: e[1].total }; }).sort(function(a, b) { return b.total - a.total; }),
+          feed: actionsFeed,
         },
-        statusBreakdown: {
-          regular: statusCounts.map(s => ({ status: s.status, count: s._count })),
-          guest: guestStatusCounts.map(s => ({ status: s.status, count: s._count })),
-        },
-        teamActivity: Object.entries(userActions)
-          .map(([name, acts]) => ({ name, ...acts }))
-          .sort((a, b) => b.changes - a.changes),
-        activityFeed,
+        daySnapshot: snapshot,
       },
     });
   } catch (error) {
     console.error('Error in getTodayOps:', error);
     res.status(200).json({ success: true, data: {
-      summary: { totalOrders:0,totalGuests:0,totalAll:0,confirmedOrders:0,guestConfirmed:0,totalConfirmed:0,cancelledOrders:0,guestCancelled:0,totalCancelled:0,pendingOrders:0,cancellationRate:0,confirmationRate:0 },
-      statusBreakdown: { regular: [], guest: [] },
-      teamActivity: [],
-      activityFeed: [],
+      todayActions: { confirms: 0, cancels: 0, total: 0, team: [], feed: [] },
+      daySnapshot: { date: '', totalOrders: 0, regular: 0, guests: 0, pendingList: [], pendingListGuests: [], statusBreakdown: [], hourly: [] },
     }, error: error.message });
   }
 };

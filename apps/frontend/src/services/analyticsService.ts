@@ -1151,9 +1151,10 @@ class AnalyticsService {
     }
   }
 
-  async getTodayOps() {
+  async getTodayOps(queryString?: string) {
     try {
-      const response = await apiClient.get("/analytics/today-ops");
+      const url = queryString ? `/analytics/today-ops?${queryString}` : "/analytics/today-ops";
+      const response = await apiClient.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching today ops:", error);
