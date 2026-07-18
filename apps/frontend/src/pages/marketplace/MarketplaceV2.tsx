@@ -11,6 +11,9 @@ import {
   Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
   ClipboardList, Route, ClipboardCheck, Inbox, Bell,
   Calendar, Truck, FileText, Percent,
+  Clock, CreditCard, Monitor, UserPlus, Image, Database,
+  HeartHandshake, Gift, GitBranch, ShoppingBag, Webhook,
+  Activity, FileSpreadsheet, Wallet, Award, Gamepad2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -44,7 +47,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getMarketplaceFeatureItems } from "./featureCatalog";
-import { FacebookIcon } from "../../components/icons/brands";
+import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon, MessengerIcon } from "../../components/icons/brands";
 
 interface MarketplaceApp {
   id: string;
@@ -148,8 +151,62 @@ const appIcons: Record<string, LucideIcon> = {
   percent: Percent,
 };
 
-const brandIconsBySlug: Record<string, React.ElementType> = {
+const appIconsBySlug: Record<string, React.ElementType> = {
+  // ECOMMERCE
+  "store-basic": Store,
+  "store-pro": Store,
+  "inventory-pro": Package,
+  "woocommerce-sync": ShoppingBag,
+  "order-core": ShoppingCart,
+  "order-shipping-turbo": Truck,
+  "order-shipping-reports": FileText,
+  "order-invoicing": FileSpreadsheet,
+
+  // HR
+  "hr-core": Users,
+  "hr-attendance-pro": Clock,
+  "hr-payroll": CreditCard,
+  "hr-assets": Monitor,
+  "hr-recruitment": UserPlus,
+  "kudos-recognition": Award,
+  "gamification-pro": Gamepad2,
+
+  // AI
+  "ai-chat-basic": Bot,
+  "ai-chat-pro": Bot,
+  "ai-image-studio": Image,
+  "ai-rag-knowledge": Database,
+  "ai-inbox-bundle": Inbox,
+
+  // COMMUNICATION
+  "whatsapp-business": WhatsAppIcon,
+  "telegram-business": TelegramIcon,
+  "broadcast-pro": Megaphone,
+  "messaging-bundle": Inbox,
+
+  // CRM
+  "crm-basic": HeartHandshake,
+  "crm-loyalty": Gift,
+  "opportunities-pipeline": GitBranch,
+
+  // ANALYTICS
+  "analytics-basic": BarChart3,
+  "turbo-analytics": TrendingUp,
+
+  // INTEGRATION / SCHEDULING
+  "appointments-pro": Calendar,
+  "smart-scheduler": Clock,
+  "webhooks-pro": Webhook,
+
+  // FACEBOOK
+  "facebook-pages-connect": FacebookIcon,
+  "facebook-pixel-capi": Activity,
   "facebook-ads-pro": FacebookIcon,
+  "facebook-catalog-shop": ShoppingBag,
+
+  // FINANCE
+  "invoicing-pro": FileSpreadsheet,
+  "wallet-system": Wallet,
 };
 
 /** CSS class that sets --cat-h/--cat-s/--cat-l/--cat-gradient for each category */
@@ -463,61 +520,6 @@ export default function MarketplaceV2() {
                 {t('marketplace.activateAll')}
               </Button>
             </div>
-            {/* Collection + Category filter pills */}
-            <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" style={{ scrollbarWidth: "none" }}>
-              {collections.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => { setCollection(c.id); setSelectedCategory(""); setDisplayCount(DISPLAY_INCREMENT); }}
-                  className={cn(
-                    "mp-filter-pill",
-                    collection === c.id && !selectedCategory
-                      ? "active"
-                      : ""
-                  )}
-                >
-                  <c.icon size={13} />
-                  {t(c.labelKey)}
-                </button>
-              ))}
-              <button
-                onClick={() => { setShowInstalled(!showInstalled); setDisplayCount(DISPLAY_INCREMENT); }}
-                className={cn(
-                  "mp-filter-pill",
-                  showInstalled ? "active-success" : ""
-                )}
-              >
-                <CheckCircle2 size={13} />
-                {t('marketplace.installedApps')}
-              </button>
-              <span className="mp-separator" />
-              {categories.map(cat => {
-                const CatIcon = categoryIcons[cat.category];
-                const catCls = categoryCssClass[cat.category] || "";
-                return (
-                  <button
-                    key={cat.category}
-                    onClick={() => { setSelectedCategory(cat.category); setCollection("ALL"); setDisplayCount(DISPLAY_INCREMENT); }}
-                    className={cn(
-                      "mp-filter-pill",
-                      catCls,
-                      selectedCategory === cat.category ? "active-category" : ""
-                    )}
-                  >
-                    {CatIcon && <CatIcon size={12} />}
-                    {cat.name}
-                  </button>
-                );
-              })}
-              <span className="mp-separator" />
-              <Link
-                to="/marketplace/themes"
-                className="mp-filter-pill"
-              >
-                <Package size={13} />
-                {t('sidebar.storeThemes')}
-              </Link>
-            </div>
           </div>
         </div>
       </div>
@@ -607,7 +609,7 @@ export default function MarketplaceV2() {
                 <div className="mp-featured-scroll">
                   {featuredApps.map((app, i) => {
                     const catCls = categoryCssClass[app.category] || "";
-                    const PricingBrandIcon = app.slug ? brandIconsBySlug[app.slug] : undefined;
+                    const PricingBrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
                     const appIconKey = app.icon?.trim().toLowerCase();
                     const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
                     const Icon = AppIcon || categoryIcons[app.category] || Package;
@@ -705,7 +707,7 @@ export default function MarketplaceV2() {
       {/* Pricing Dialog */}
       <Dialog open={!!showPricingDialog} onOpenChange={(o) => !o && setShowPricingDialog(null)}>
         {showPricingDialog && (() => {
-          const PricingBrandIcon = showPricingDialog.slug ? brandIconsBySlug[showPricingDialog.slug] : undefined;
+          const PricingBrandIcon = showPricingDialog.slug ? appIconsBySlug[showPricingDialog.slug] : undefined;
           const pricingIconKey = showPricingDialog.icon?.trim().toLowerCase();
           const PricingIcon = pricingIconKey ? appIcons[pricingIconKey] : undefined;
           const Icon = PricingIcon || categoryIcons[showPricingDialog.category] || Package;
@@ -813,7 +815,7 @@ function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUnin
   onUninstall: (app: MarketplaceApp) => void;
 }) {
   const { t } = useTranslation();
-  const BrandIcon = app.slug ? brandIconsBySlug[app.slug] : undefined;
+  const BrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
   const appIconKey = app.icon?.trim().toLowerCase();
   const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
   const Icon = AppIcon || categoryIcons[app.category] || Package;
