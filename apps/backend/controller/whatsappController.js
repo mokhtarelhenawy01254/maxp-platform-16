@@ -1330,7 +1330,7 @@ async function updateContact(req, res) {
                 name,
                 category,
                 leadCategoryId: newLeadCategoryId,
-                tags: tags ? JSON.stringify(tags) : undefined,
+                tags: Array.isArray(tags) ? JSON.stringify(tags) : undefined,
                 notes,
                 customerId,
                 isArchived,
@@ -1339,15 +1339,19 @@ async function updateContact(req, res) {
             }
         });
 
-        // Trigger category-based journey if category changed and has triggerFlowId
+        // Cancel old journey + enroll in new category-based journey
         if (newLeadCategoryId && newLeadCategoryId !== contact.leadCategoryId && updatedContact.customerId) {
-            const WhatsAppJourneyService = require('../services/whatsapp/WhatsAppJourneyService');
-            WhatsAppJourneyService.enrollFromCategory(
-                companyId,
-                updatedContact.customerId,
-                id,
-                newLeadCategoryId
-            );
+            try {
+                const WhatsAppJourneyService = require('../services/whatsapp/WhatsAppJourneyService');
+                await WhatsAppJourneyService.reEnrollFromCategory(
+                    companyId,
+                    updatedContact.customerId,
+                    id,
+                    newLeadCategoryId
+                );
+            } catch (err) {
+                console.error('❌ Journey re-enrollment failed:', err);
+            }
         }
 
         res.json({ success: true, contact: updatedContact });
@@ -1393,6 +1397,21 @@ async function linkCustomer(req, res) {
             data: { customerId },
             include: { customer: true }
         });
+
+        // Enroll in journey if contact has a category with trigger flow
+        if (contact.leadCategoryId && updatedContact.customerId) {
+            try {
+                const WhatsAppJourneyService = require('../services/whatsapp/WhatsAppJourneyService');
+                await WhatsAppJourneyService.enrollFromCategory(
+                    companyId,
+                    updatedContact.customerId,
+                    id,
+                    contact.leadCategoryId
+                );
+            } catch (err) {
+                console.error('❌ Journey enrollment on linkCustomer failed:', err);
+            }
+        }
 
         res.json({ success: true, contact: updatedContact });
     } catch (error) {

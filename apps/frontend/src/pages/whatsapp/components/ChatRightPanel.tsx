@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 type Tab = 'info' | 'orders' | 'activity';
 
@@ -45,6 +46,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
   const [avatarError, setAvatarError] = useState(false);
   const [leadCategories, setLeadCategories] = useState<any[]>([]);
   const [updatingCategory, setUpdatingCategory] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
   
   // 🏷️ Customer Tags State
   const [tags, setTags] = useState<string[]>([]);
@@ -68,6 +70,11 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
   const { customer, orders, activities, loading, loadCustomerData, calculateLTV } = useCustomerProfile();
 
   const customerId = contact?.customer?.id;
+
+  // Sync selected category from contact
+  useEffect(() => {
+    setSelectedCategoryId(contact?.leadCategoryId || '');
+  }, [contact?.leadCategoryId]);
 
   // Sync tags state when customer changes
   useEffect(() => {
@@ -162,12 +169,17 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
   const handleCategoryChange = async (categoryId: string) => {
     if (!contact) return;
     setUpdatingCategory(true);
+    const prevCategoryId = selectedCategoryId;
+    setSelectedCategoryId(categoryId);
     try {
       await apiClient.put("/whatsapp/contacts/" + contact.id, { leadCategoryId: categoryId || null });
-      contact.leadCategoryId = categoryId || null;
-      contact.leadCategory = leadCategories.find(c => c.id === categoryId) || null;
+      toast.success('تم تحديث التصنيف');
+    } catch {
+      setSelectedCategoryId(prevCategoryId);
+      toast.error('فشل تحديث التصنيف');
+    } finally {
       setUpdatingCategory(false);
-    } catch { setUpdatingCategory(false); }
+    }
   };
 
   const handleAddTag = async (tagName: string) => {
@@ -204,8 +216,8 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     }
   };
 
-  const selectedCategory = contact?.leadCategoryId
-    ? leadCategories.find(c => c.id === contact.leadCategoryId)
+  const selectedCategory = selectedCategoryId
+    ? leadCategories.find(c => c.id === selectedCategoryId)
     : null;
 
   if (!contact) return null;
@@ -324,7 +336,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                       {selectedCategory && (
                         <span className="inline-block size-3 shrink-0 rounded-full" style={{ background: selectedCategory.color || '#6366f1' }} />
                       )}
-                      <Select value={contact.leadCategoryId || ""} onValueChange={handleCategoryChange} disabled={updatingCategory}>
+                      <Select value={selectedCategoryId} onValueChange={handleCategoryChange} disabled={updatingCategory}>
                         <SelectTrigger className="h-9 w-full text-xs">
                           <SelectValue placeholder="اختر التصنيف" />
                         </SelectTrigger>

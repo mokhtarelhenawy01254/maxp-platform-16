@@ -79,18 +79,20 @@ class WhatsAppJourneyService {
      */
     async reEnrollFromCategory(companyId, customerId, whatsappContactId, categoryId) {
         try {
-            // Cancel any active journeys for this customer
-            const active = await this.prisma.customerJourney.findMany({
-                where: { companyId, customerId, status: 'ACTIVE' }
-            });
-            for (const j of active) {
-                await this.prisma.customerJourney.update({
-                    where: { id: j.id },
-                    data: { status: 'CANCELLED', logs: (j.logs || '') + `\nCancelled for re-enrollment at ${new Date().toISOString()}` }
+            await this.prisma.$transaction(async (tx) => {
+                // Cancel any active journeys for this customer
+                const active = await tx.customerJourney.findMany({
+                    where: { companyId, customerId, status: 'ACTIVE' }
                 });
-            }
+                for (const j of active) {
+                    await tx.customerJourney.update({
+                        where: { id: j.id },
+                        data: { status: 'CANCELLED', logs: (j.logs || '') + `\nCancelled for re-enrollment at ${new Date().toISOString()}` }
+                    });
+                }
+            });
 
-            // Enroll fresh
+            // Enroll fresh (outside transaction — separate operation)
             await this.enrollFromCategory(companyId, customerId, whatsappContactId, categoryId);
         } catch (error) {
             console.error('[JOURNEY-REENROLL-ERROR]', error);

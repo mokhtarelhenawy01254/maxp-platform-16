@@ -9,6 +9,7 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
 // ── Types ──────────────────────────────────────────
@@ -23,6 +24,8 @@ interface LeadCategory {
   triggerFlow: { id: string; name: string; isEnabled: boolean } | null;
   contactCount: number;
   activeJourneyCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Flow {
@@ -61,6 +64,7 @@ const CustomerSegments: React.FC = () => {
   const [catColor, setCatColor] = useState("#6366f1");
   const [catAutoFollowUp, setCatAutoFollowUp] = useState(true);
   const [catTriggerFlowId, setCatTriggerFlowId] = useState("");
+  const [catSortOrder, setCatSortOrder] = useState(0);
   const [catSaving, setCatSaving] = useState(false);
 
   // ── Available flows for trigger ────────────────
@@ -94,7 +98,9 @@ const CustomerSegments: React.FC = () => {
   useEffect(() => {
     apiClient.get("/whatsapp/automation/flows").then(r => {
       setFlows(r.data?.data || []);
-    }).catch(() => {});
+    }).catch(() => {
+      toast.error("فشل تحميل الرحلات");
+    });
   }, []);
 
   // ── Load tags ──────────────────────────────────
@@ -121,6 +127,7 @@ const CustomerSegments: React.FC = () => {
     setCatColor("#6366f1");
     setCatAutoFollowUp(true);
     setCatTriggerFlowId("");
+    setCatSortOrder(0);
   };
 
   const openEditCat = (cat: LeadCategory) => {
@@ -129,6 +136,7 @@ const CustomerSegments: React.FC = () => {
     setCatColor(cat.color);
     setCatAutoFollowUp(cat.autoFollowUp);
     setCatTriggerFlowId(cat.triggerFlowId || "");
+    setCatSortOrder(cat.sortOrder || 0);
     setShowCatForm(true);
   };
 
@@ -142,6 +150,7 @@ const CustomerSegments: React.FC = () => {
           color: catColor,
           autoFollowUp: catAutoFollowUp,
           triggerFlowId: catTriggerFlowId || null,
+          sortOrder: catSortOrder,
         });
       } else {
         await apiClient.post("/whatsapp/lead-categories", {
@@ -149,24 +158,26 @@ const CustomerSegments: React.FC = () => {
           color: catColor,
           autoFollowUp: catAutoFollowUp,
           triggerFlowId: catTriggerFlowId || null,
+          sortOrder: catSortOrder,
         });
       }
       resetCatForm();
       await loadCategories();
+      toast.success("تم حفظ التصنيف بنجاح");
     } catch (err: any) {
-      alert(err.response?.data?.message || "فشل حفظ التصنيف");
+      toast.error(err.response?.data?.message || "فشل حفظ التصنيف");
     } finally {
       setCatSaving(false);
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا التصنيف؟")) return;
     try {
       await apiClient.delete(`/whatsapp/lead-categories/${id}`);
       await loadCategories();
+      toast.success("تم حذف التصنيف");
     } catch (err: any) {
-      alert(err.response?.data?.message || "فشل حذف التصنيف");
+      toast.error(err.response?.data?.message || "فشل حذف التصنيف");
     }
   };
 
@@ -182,21 +193,22 @@ const CustomerSegments: React.FC = () => {
       setRenamingTag(null);
       setNewTagName("");
       await loadTags();
+      toast.success("تم إعادة تسمية الوسم");
     } catch (err: any) {
-      alert(err.response?.data?.message || "فشل إعادة تسمية الوسم");
+      toast.error(err.response?.data?.message || "فشل إعادة تسمية الوسم");
     } finally {
       setTagActionLoading(false);
     }
   };
 
   const handleDeleteTag = async (tagName: string) => {
-    if (!confirm(`هل أنت متأكد من حذف الوسم "${tagName}" من جميع العملاء؟`)) return;
     setTagActionLoading(true);
     try {
       await apiClient.delete(`/customers/tags/${encodeURIComponent(tagName)}`);
       await loadTags();
+      toast.success("تم حذف الوسم");
     } catch (err: any) {
-      alert(err.response?.data?.message || "فشل حذف الوسم");
+      toast.error(err.response?.data?.message || "فشل حذف الوسم");
     } finally {
       setTagActionLoading(false);
     }
@@ -254,7 +266,7 @@ const CustomerSegments: React.FC = () => {
           {/* Inline form */}
           {showCatForm && (
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow dark:shadow-md border border-indigo-200 dark:border-indigo-700">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label>
                   <input
@@ -294,6 +306,16 @@ const CustomerSegments: React.FC = () => {
                   </label>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الترتيب</label>
+                  <input
+                    type="number"
+                    value={catSortOrder}
+                    onChange={(e) => setCatSortOrder(Number(e.target.value))}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                    min="0"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رحلة رسائل تلقائية</label>
                   <select
                     value={catTriggerFlowId}
@@ -301,8 +323,10 @@ const CustomerSegments: React.FC = () => {
                     className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                   >
                     <option value="">بدون رحلة</option>
-                    {flows.filter(f => f.isEnabled).map(f => (
-                      <option key={f.id} value={f.id}>{f.name}</option>
+                    {flows.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}{f.isEnabled ? '' : ' (معطلة)'}
+                      </option>
                     ))}
                   </select>
                   <p className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">

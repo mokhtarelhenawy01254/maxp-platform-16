@@ -23,6 +23,7 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { formatCurrency } from "../../utils/currency";
@@ -226,9 +227,13 @@ const CustomerDetails: React.FC = () => {
     if (!newNote.trim()) return;
     setIsAddingNote(true);
     try {
-      await apiClient.post(`/customers/${id}/notes`, { content: newNote });
+      const res = await apiClient.post(`/customers/${id}/notes`, { content: newNote });
       setNewNote("");
-      loadCustomerDetails(); // Reload to get fresh notes
+      if (res.data?.data) {
+        setData(prev => prev ? { ...prev, notes: [...(prev.notes || []), res.data.data] } : prev);
+      } else {
+        loadCustomerDetails();
+      }
     } catch (err: any) {
       console.error("Error adding note:", err);
     } finally {
@@ -244,7 +249,7 @@ const CustomerDetails: React.FC = () => {
       navigate("/customers", { replace: true });
     } catch (err: any) {
       console.error("Error deleting customer:", err);
-      alert(err.response?.data?.message || t("customers.deleteError"));
+      toast.error(t("customers.deleteError"));
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -256,10 +261,10 @@ const CustomerDetails: React.FC = () => {
     setDeletingNoteId(noteId);
     try {
       await apiClient.delete(`/customers/notes/${noteId}`);
-      loadCustomerDetails(); // Reload to refresh notes
+      setData(prev => prev ? { ...prev, notes: (prev.notes || []).filter(n => n.id !== noteId) } : prev);
     } catch (err: any) {
       console.error("Error deleting note:", err);
-      alert(err.response?.data?.message || t("customers.deleteNoteError"));
+      toast.error(t("customers.deleteNoteError"));
     } finally {
       setDeletingNoteId(null);
     }
@@ -756,7 +761,7 @@ const CustomerDetails: React.FC = () => {
                     type="text"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
                     placeholder={t("customers.addTagPlaceholder")}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
                   />
