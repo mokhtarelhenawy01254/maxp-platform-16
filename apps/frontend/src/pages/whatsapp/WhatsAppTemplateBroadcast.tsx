@@ -84,6 +84,7 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [listMembers, setListMembers] = useState<Record<string, any[]>>({});
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [importingCategoryId, setImportingCategoryId] = useState<string | null>(null);
 
 
 
@@ -187,6 +188,26 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
       toast.error("فشل في تحميل العملاء حسب الوسم");
     }
   }, []);
+
+  const handleImportFromCategory = useCallback(async (categoryId: string, categoryName: string) => {
+    setImportingCategoryId(categoryId);
+    try {
+      const res = await apiClient.get(`/whatsapp/lead-categories/${categoryId}/contacts`, withCompanyConfig());
+      const contacts = res.data?.data || [];
+      const phones = contacts.map((c: any) => c.phoneNumber).filter(Boolean);
+      if (phones.length === 0) {
+        toast.warning(`لا يوجد جهات اتصال في تصنيف "${categoryName}"`);
+        return;
+      }
+      setRecipients((prev) => [...new Set([...prev, ...phones])]);
+      toast.success(`تم استيراد ${phones.length} جهة اتصال من "${categoryName}"`);
+      setActiveTab("create");
+    } catch (err: any) {
+      toast.error("فشل في استيراد جهات الاتصال");
+    } finally {
+      setImportingCategoryId(null);
+    }
+  }, [withCompanyConfig]);
 
   const handleCreateCampaign = useCallback(async () => {
     if (!campaignName || !selectedTemplate || recipients.length === 0) {
@@ -699,66 +720,74 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
         {/* ===================== CUSTOMER LISTS TAB ===================== */}
         <TabsContent value="lists" className="space-y-6">
           <Card className="rounded-2xl">
-
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-lg">قوائم العملاء</CardTitle>
-                  <CardDescription>إدارة قوائم العملاء لاستخدامها في حملات واتساب</CardDescription>
+                  <CardTitle className="text-lg">تصنيفات العملاء</CardTitle>
+                  <CardDescription>استيراد جهات الاتصال من التصنيفات المتاحة في صفحة تقسيم العملاء</CardDescription>
                 </div>
-                <Button variant="outline" className="rounded-full" onClick={async () => {
-                  const name = prompt("اسم القائمة الجديدة:");
-                  if (!name) return;
-                  try {
-                    await broadcastService.createCustomerList({
-                      name, description: "", criteria: { type: "all" }
-                    } as any);
-                    toast.success("تم إنشاء القائمة");
-                    fetchCustomerLists();
-                  } catch { toast.error("فشل إنشاء القائمة"); }
-                }}>
-                  <UserPlus className="size-4" /> قائمة جديدة
+                <Button variant="outline" className="rounded-full" asChild>
+                  <a href="/customers/segments">
+                    <List className="size-4" /> مركز التقسيم
+                  </a>
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {customerLists.length === 0 ? (
+              {leadCategories.length === 0 ? (
                 <div className="text-center py-8 text-[color:var(--color-muted-foreground)]">
                   <List className="mx-auto size-10 opacity-40" />
-                  <p className="mt-2">لا توجد قوائم عملاء. أنشئ قائمة جديدة للبدء.</p>
+                  <p className="mt-2">لا توجد تصنيفات عملاء. أنشئ تصنيفات من صفحة تقسيم العملاء.</p>
                 </div>
               ) : (
-                customerLists.map((l) => {
-                  const isExpanded = expandedListId === l.id;
-                  const members = listMembers[l.id] || [];
+                leadCategories.map((cat) => {
+                  const isExpanded = expandedListId === cat.id;
+                  const members = listMembers[cat.id] || [];
+                  const isImporting = importingCategoryId === cat.id;
                   return (
-                    <div key={l.id} className="rounded-xl border">
+                    <div key={cat.id} className="rounded-xl border">
                       <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-[color:var(--color-muted)]/30"
                         onClick={async () => {
                           if (isExpanded) { setExpandedListId(null); return; }
-                          setExpandedListId(l.id);
-                          if (members.length === 0 && l.count > 0) {
+                          setExpandedListId(cat.id);
+                          if (members.length === 0 && cat.contactCount > 0) {
                             setLoadingMembers(true);
                             try {
-                              const res = await broadcastService.getCustomersInList(l.id);
-                              setListMembers(prev => ({ ...prev, [l.id]: Array.isArray(res) ? res : res?.data || [] }));
+                              const res = await apiClient.get(`/whatsapp/lead-categories/${cat.id}/contacts`, withCompanyConfig());
+                              setListMembers(prev => ({ ...prev, [cat.id]: res.data?.data || [] }));
                             } catch { }
                             finally { setLoadingMembers(false); }
                           }
                         }}>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium">{l.name}</p>
-                          <p className="text-sm text-[color:var(--color-muted-foreground)] truncate">{l.description || `${l.count} عميل`}</p>
+                        <div className="min-w-0 flex-1 flex items-center gap-3">
+                          <span className="inline-block size-3 rounded-full shrink-0" style={{ background: cat.color || '#6366f1' }} />
+                          <div>
+                            <p className="font-medium">{cat.name}</p>
+                            <p className="text-sm text-[color:var(--color-muted-foreground)]">{cat.contactCount} جهة اتصال</p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="secondary">{l.count}</Badge>
-                          {!l.isDefault && (
-                            <button onClick={(e) => { e.stopPropagation();
-                              if (confirm("حذف القائمة؟")) broadcastService.deleteCustomerList(l.id).then(() => { toast.success("تم الحذف"); fetchCustomerLists(); }).catch(() => toast.error("فشل الحذف"));
-                            }} className="p-1.5 rounded-full hover:bg-red-500/10 text-red-500">
-                              <XCircle className="size-4" />
-                            </button>
-                          )}
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="rounded-full"
+                            disabled={isImporting || cat.contactCount === 0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleImportFromCategory(cat.id, cat.name);
+                            }}
+                          >
+                            {isImporting ? (
+                              <span className="flex items-center gap-1">
+                                <span className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
+                                جاري الاستيراد...
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <UserPlus className="size-3" /> استيراد
+                              </span>
+                            )}
+                          </Button>
                         </div>
                       </div>
                       {isExpanded && (
@@ -766,12 +795,12 @@ const WhatsAppTemplateBroadcast: React.FC<{ companyId?: string; companyName?: st
                           {loadingMembers ? (
                             <p className="text-sm text-[color:var(--color-muted-foreground)]">جاري التحميل...</p>
                           ) : members.length === 0 ? (
-                            <p className="text-sm text-[color:var(--color-muted-foreground)]">لا يوجد عملاء في هذه القائمة</p>
+                            <p className="text-sm text-[color:var(--color-muted-foreground)]">لا يوجد جهات اتصال في هذا التصنيف</p>
                           ) : (
                             members.map((m: any, i: number) => (
                               <div key={i} className="flex items-center justify-between text-sm py-1">
-                                <span>{m.firstName || m.name || "?"} {m.lastName || ""}</span>
-                                <span className="text-[color:var(--color-muted-foreground)]" dir="ltr">{m.phone || ""}</span>
+                                <span>{m.name || m.pushName || "?"}</span>
+                                <span className="text-[color:var(--color-muted-foreground)]" dir="ltr">{m.phoneNumber || ""}</span>
                               </div>
                             ))
                           )}

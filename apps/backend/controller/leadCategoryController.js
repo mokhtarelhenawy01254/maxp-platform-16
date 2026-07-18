@@ -149,6 +149,32 @@ class LeadCategoryController {
         }
     }
 
+    async getContacts(req, res) {
+        try {
+            const companyId = this._getCompanyId(req, res);
+            if (!companyId) return;
+
+            const { id } = req.params;
+            const existing = await this.prisma.leadCategory.findFirst({
+                where: { id, companyId },
+            });
+            if (!existing) {
+                return res.status(404).json({ success: false, message: 'Category not found' });
+            }
+
+            const contacts = await this.prisma.whatsAppContact.findMany({
+                where: { leadCategoryId: id, whatsAppSession: { companyId } },
+                select: { id: true, phoneNumber: true, name: true, pushName: true, customerId: true },
+                orderBy: { lastMessageAt: 'desc' },
+            });
+
+            res.json({ success: true, data: contacts });
+        } catch (error) {
+            console.error('❌ Error fetching contacts by category:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
     async delete(req, res) {
         try {
             const companyId = this._getCompanyId(req, res);
