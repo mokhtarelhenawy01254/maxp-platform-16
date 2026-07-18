@@ -4430,7 +4430,7 @@ async function facebookConnect(req, res) {
 
 async function facebookEmbeddedConnect(req, res) {
     try {
-        let { wabaId, phoneNumberId, businessId, code, sessionName } = req.body;
+        let { wabaId, phoneNumberId, businessId, code, sessionName, redirectUri: clientRedirectUri } = req.body;
         const { companyId } = req.user;
 
         console.log('📲 [facebookEmbeddedConnect] Request received:', {
@@ -4439,7 +4439,8 @@ async function facebookEmbeddedConnect(req, res) {
             hasPhoneNumberId: !!phoneNumberId,
             hasBusinessId: !!businessId,
             sessionName: sessionName || '(not provided)',
-            companyId
+            companyId,
+            clientRedirectUri
         });
 
         if (!code) {
@@ -4462,12 +4463,23 @@ async function facebookEmbeddedConnect(req, res) {
             return res.status(400).json({ error: 'Facebook App Secret غير مضبوط. الرجاء ضبطه من لوحة تحكم السوبر أدمن.' });
         }
 
+        const redirectUri = clientRedirectUri || (() => {
+            const origin = req.get('Origin') || req.get('Referer') || '';
+            try {
+                return origin ? new URL(origin).origin : '';
+            } catch (err) {
+                return '';
+            }
+        })();
+
+        console.log('🔗 [facebookEmbeddedConnect] Using redirect_uri for token exchange:', redirectUri);
+
         const axios = require('axios');
 
         const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
             params: {
                 client_id: config.appId,
-                redirect_uri: '',
+                redirect_uri: redirectUri,
                 client_secret: config.appSecret,
                 code
             },

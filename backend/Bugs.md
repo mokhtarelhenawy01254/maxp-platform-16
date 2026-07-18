@@ -1,5 +1,17 @@
 # Backend Bugs Log
 
+### [BUG FIX / API & UI] Facebook Embedded Connect redirect_uri Mismatch (500 Internal Server Error)
+- **Date**: 2026-07-19
+- **Root Cause**:
+  1. **Hardcoded Empty redirect_uri**: In the `facebookEmbeddedConnect` backend controller, the `redirect_uri` for code exchange was hardcoded as `''` (empty string).
+  2. **SDK Redirect Mismatch**: When the frontend utilizes the Facebook JavaScript SDK's `FB.login` method with `response_type: "code"`, the SDK automatically assigns the current origin (e.g. `https://maxp.online`) as the `redirect_uri` in the OAuth dialog request. Because the backend attempted to exchange the code using an empty string `redirect_uri`, Meta rejected it with: `"Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request"`.
+- **Resolution**:
+  1. **Accept clientRedirectUri**: Modified `facebookEmbeddedConnect` in `whatsappController.js` to accept `redirectUri` from the request payload, falling back dynamically to the request Origin or Referer domain if omitted.
+  2. **Frontend Payload Update**: Updated frontend `WhatsAppCloudConnect.tsx` callback method `handleFBLoginCallback` to send `redirectUri: window.location.origin` inside the payload.
+- **Files Modified**:
+  - `apps/backend/controller/whatsappController.js` (MODIFIED)
+  - `apps/frontend/src/pages/whatsapp/WhatsAppCloudConnect.tsx` (MODIFIED)
+
 ### [ARCHITECTURAL FIX] Facebook OAuth Credentials Single Source of Truth Alignment (Overwriting / 400 Errors)
 - **Date**: 2026-07-19
 - **Root Cause**:
