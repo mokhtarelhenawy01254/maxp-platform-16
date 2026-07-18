@@ -290,17 +290,17 @@ const PrintMultipleInvoices: React.FC = () => {
         }
         .invoice-table th {
           font-weight: 600;
-          font-size: 11px;
+          font-size: 13px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           color: #64748b;
-          padding: 4px 8px;
+          padding: 5px 10px;
           border-bottom: 1.5px solid #e2e8f0;
         }
         .invoice-table td {
-          padding: 3px 8px;
+          padding: 4px 10px;
           border-bottom: 1px solid #f1f5f9;
-          font-size: 12px;
+          font-size: 14px;
         }
         .invoice-table tr:last-child td {
           border-bottom: none;
@@ -336,7 +336,7 @@ const PrintMultipleInvoices: React.FC = () => {
           <div key={invoice.id} className="invoice-page" dir="rtl">
             {/* الهيدر - سوان */}
             <div className="px-3 pt-3 pb-1">
-              <h1 className="text-base font-bold text-slate-900">{invoice.companyName}</h1>
+              <h1 className="text-lg font-bold text-slate-900">{invoice.companyName}</h1>
             </div>
 
             <div className="px-3 py-2">
@@ -357,8 +357,8 @@ const PrintMultipleInvoices: React.FC = () => {
 
               {/* العميل */}
               <div className="mb-2">
-                <p className="text-xs font-semibold text-slate-900">{invoice.customerName}</p>
-                <div className="text-xs text-slate-600 space-y-0.5 mt-0.5">
+                <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
+                <div className="text-sm text-slate-600 space-y-0.5 mt-0.5">
                   <p>{invoice.customerPhone}</p>
                   <p className="max-w-xs">{invoice.customerAddress || ""}</p>
                   <p>{invoice.city || ""}</p>
@@ -385,32 +385,32 @@ const PrintMultipleInvoices: React.FC = () => {
 
               {/* المجاميع */}
               <div className="mb-1">
-                <div className="max-w-xs mr-auto text-left">
+                <div className="mr-auto text-left">
                   <div className="space-y-0.5">
-                    <div className="flex justify-between text-xs py-0.5">
+                    <div className="flex justify-between text-sm py-0.5">
                       <span className="text-slate-500">المجموع الفرعي</span>
                       <span className="text-slate-700">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
                     </div>
                     {invoice.discount > 0 && (
-                      <div className="flex justify-between text-xs py-0.5">
+                      <div className="flex justify-between text-sm py-0.5">
                         <span className="text-slate-500">الخصم</span>
                         <span className="text-red-500">- {formatCurrency(invoice.discount, invoice.currency)}</span>
                       </div>
                     )}
                     {invoice.shipping > 0 && (
-                      <div className="flex justify-between text-xs py-0.5">
+                      <div className="flex justify-between text-sm py-0.5">
                         <span className="text-slate-500">الشحن</span>
                         <span className="text-slate-700">{formatCurrency(invoice.shipping, invoice.currency)}</span>
                       </div>
                     )}
                     <div className="flex justify-between py-1 mt-0.5" style={{ borderTop: "1.5px solid #0f172a" }}>
-                      <span className="text-xs font-bold text-slate-900">الإجمالي</span>
-                      <span className="text-sm font-bold text-slate-900">{formatCurrency(invoice.totalAmount, invoice.currency)}</span>
+                      <span className="text-sm font-bold text-slate-900">الإجمالي</span>
+                      <span className="text-base font-bold text-slate-900">{formatCurrency(invoice.totalAmount, invoice.currency)}</span>
                     </div>
                   </div>
                   {invoice.paymentMethod && (
                     <div className="mt-1 pt-1" style={{ borderTop: "1px solid #e2e8f0" }}>
-                      <p className="text-xs text-slate-500">طريقة الدفع: <span className="font-medium text-slate-700">{invoice.paymentMethod}</span></p>
+                      <p className="text-sm text-slate-500">طريقة الدفع: <span className="font-medium text-slate-700">{invoice.paymentMethod}</span></p>
                     </div>
                   )}
                 </div>

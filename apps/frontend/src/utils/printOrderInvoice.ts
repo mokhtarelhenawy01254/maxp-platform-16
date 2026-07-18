@@ -304,22 +304,22 @@ export const printOrderInvoice = async ({
           }
           .page-title {
             margin: 0;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 700;
             color: #0f172a;
-            padding: 12px 12px 4px;
+            padding: 14px 14px 6px;
           }
           .body-content {
-            padding: 4px 12px 12px;
+            padding: 6px 14px 14px;
           }
           .customer-name {
             margin: 0;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 600;
             color: #0f172a;
           }
           .customer-detail {
-            font-size: 11px;
+            font-size: 13px;
             color: #475569;
             line-height: 1.4;
           }
@@ -328,9 +328,9 @@ export const printOrderInvoice = async ({
             border-collapse: collapse;
           }
           thead th {
-            padding: 3px 6px;
+            padding: 5px 10px;
             font-weight: 600;
-            font-size: 10px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #64748b;
@@ -340,9 +340,9 @@ export const printOrderInvoice = async ({
           thead th.center { text-align: center; }
           thead th.amount { text-align: left; }
           tbody td {
-            padding: 2px 6px;
+            padding: 4px 10px;
             border-bottom: 1px solid #f1f5f9;
-            font-size: 11px;
+            font-size: 14px;
             vertical-align: top;
           }
           tbody tr:last-child td {
@@ -358,11 +358,11 @@ export const printOrderInvoice = async ({
           .item-name {
             font-weight: 600;
             color: #0f172a;
-            font-size: 11px;
+            font-size: 14px;
           }
           .item-meta {
             color: #64748b;
-            font-size: 10px;
+            font-size: 12px;
           }
           .center { text-align: center; }
           .amount {
@@ -372,13 +372,12 @@ export const printOrderInvoice = async ({
           .totals-left {
             text-align: left;
             margin-right: auto;
-            max-width: 250px;
           }
           .totals-row {
             display: flex;
             justify-content: space-between;
-            padding: 2px 0;
-            font-size: 11px;
+            padding: 3px 0;
+            font-size: 14px;
           }
           .totals-row .label {
             color: #64748b;
@@ -387,28 +386,28 @@ export const printOrderInvoice = async ({
             color: #334155;
           }
           .totals-row.total-line {
-            margin-top: 2px;
-            padding-top: 6px;
+            margin-top: 4px;
+            padding-top: 8px;
             border-top: 1.5px solid #0f172a;
           }
           .totals-row.total-line .value {
-            font-size: 13px;
+            font-size: 16px;
             font-weight: 700;
             color: #0f172a;
           }
           .barcode-wrap {
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
           }
           .barcode-wrap svg {
-            transform: scale(0.6);
+            transform: scale(0.7);
             transform-origin: center;
           }
           .payment-info {
-            margin-top: 4px;
-            padding-top: 4px;
+            margin-top: 6px;
+            padding-top: 6px;
             border-top: 1px solid #e2e8f0;
-            font-size: 11px;
+            font-size: 13px;
             color: #64748b;
           }
           @media print {
