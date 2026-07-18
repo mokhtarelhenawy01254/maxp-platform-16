@@ -318,31 +318,15 @@ const OrderInvoice: React.FC<{ orderId?: string; invoiceId?: string }> = ({
         </div>
 
         <div className="px-10 py-6">
-          {/* معلومة العميل + الطلب */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">معلومات العميل</p>
-              <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
-              <div className="text-sm text-slate-600 space-y-0.5 mt-1">
-                {invoice.customerPhone && <p>هاتف: {invoice.customerPhone}</p>}
-                {invoice.customerEmail && <p>بريد: {invoice.customerEmail}</p>}
-                {invoice.customerAddress && <p className="max-w-xs">{invoice.customerAddress}</p>}
-                {invoice.city && <p>{invoice.city}</p>}
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">بيانات الطلب</p>
-              <div className="text-sm text-slate-600 space-y-0.5">
-                <p><span className="font-medium text-slate-900">رقم الطلب:</span> {invoice.order?.orderNumber || "-"}</p>
-                {invoice.order?.turboTrackingNumber && (
-                  <p><span className="font-medium text-slate-900">رقم تتبع:</span> {invoice.order.turboTrackingNumber}</p>
-                )}
-                <p><span className="font-medium text-slate-900">الحالة:</span>{" "}
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${statusBadge.className}`}>
-                    {statusBadge.label}
-                  </span>
-                </p>
-              </div>
+          {/* معلومة العميل */}
+          <div className="mb-8">
+            <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">معلومات العميل</p>
+            <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
+            <div className="text-sm text-slate-600 space-y-0.5 mt-1">
+              {invoice.customerPhone && <p>هاتف: {invoice.customerPhone}</p>}
+              {invoice.customerEmail && <p>بريد: {invoice.customerEmail}</p>}
+              {invoice.customerAddress && <p className="max-w-xs">{invoice.customerAddress}</p>}
+              {invoice.city && <p>{invoice.city}</p>}
             </div>
           </div>
 
@@ -373,19 +357,9 @@ const OrderInvoice: React.FC<{ orderId?: string; invoiceId?: string }> = ({
           </div>
 
           {/* المجاميع + الدفع */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            {/* ملاحظات */}
-            <div>
-              {invoice.notes && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">ملاحظات</p>
-                  <p className="text-sm text-slate-600 leading-relaxed">{invoice.notes}</p>
-                </div>
-              )}
-            </div>
-
+          <div className="mb-8">
             {/* المجاميع */}
-            <div className="text-left">
+            <div className="max-w-xs mr-auto text-left">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm py-1">
                   <span className="text-slate-500">المجموع الفرعي</span>

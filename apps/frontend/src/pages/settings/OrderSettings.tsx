@@ -276,7 +276,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "incomplete" && <IncompleteOrdersSettings />}
             {activeTab === "numbering" && <OrderNumberingSettings />}
             {activeTab === "duplicates" && <DuplicateOrderSettings />}
-            {activeTab === "invoices" && <OrderInvoiceSettings />}
+            {activeTab === "invoices" && <OrderInvoiceSettings isEmbedded={true} />}
             {activeTab === "ratings" && <RatingSettingsManager />}
             {activeTab === "workflow" && <OrderWorkflow isEmbedded={true} />}
             {activeTab === "confirmation" && <OrderConfirmationSettings />}

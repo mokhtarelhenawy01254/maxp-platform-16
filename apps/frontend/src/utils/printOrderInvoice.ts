@@ -545,24 +545,13 @@ export const printOrderInvoice = async ({
           </div>
 
           <div class="body-content">
-            <div class="info-grid">
-              <div class="info-col">
-                <h3>بيانات العميل</h3>
-                <p class="name">${escapeHtml(order.customerName || "عميل غير محدد")}</p>
-                <div class="detail">
-                  ${order.customerPhone ? `<p>هاتف: ${escapeHtml(order.customerPhone)}</p>` : ""}
-                  ${order.customerEmail ? `<p>بريد: ${escapeHtml(order.customerEmail)}</p>` : ""}
-                  ${addressText ? `<p>${escapeHtml(addressText)}</p>` : ""}
-                </div>
-              </div>
-              <div class="info-col" style="text-align: left;">
-                <h3>بيانات الطلب</h3>
-                <div class="detail" style="text-align: left;">
-                  ${settings.showPaymentMethod && order.paymentMethod ? `<p><strong>طريقة الدفع:</strong> ${escapeHtml(order.paymentMethod)}</p>` : ""}
-                  <p><strong>عدد المنتجات:</strong> ${escapeHtml(order.items.length)}</p>
-                  <p><strong>المبلغ المطلوب تحصيله:</strong> ${escapeHtml(formatCurrency(amountToCollect, currency))}</p>
-                  ${order.notes ? `<p><strong>ملاحظات:</strong> ${escapeHtml(order.notes)}</p>` : ""}
-                </div>
+            <div class="info-col">
+              <h3>بيانات العميل</h3>
+              <p class="name">${escapeHtml(order.customerName || "عميل غير محدد")}</p>
+              <div class="detail">
+                ${order.customerPhone ? `<p>هاتف: ${escapeHtml(order.customerPhone)}</p>` : ""}
+                ${order.customerEmail ? `<p>بريد: ${escapeHtml(order.customerEmail)}</p>` : ""}
+                ${addressText ? `<p>${escapeHtml(addressText)}</p>` : ""}
               </div>
             </div>
 
@@ -585,9 +574,7 @@ export const printOrderInvoice = async ({
                 : ""
             }
 
-            <div class="totals-grid">
-              <div></div>
-              <div class="totals-left">
+            <div class="totals-left" style="margin-right: auto; max-width: 300px;">
                 <div class="totals-row">
                   <span class="label">المجموع الفرعي</span>
                   <span class="value"><strong>${escapeHtml(formatCurrency(subtotal, currency))}</strong></span>
@@ -613,8 +600,7 @@ export const printOrderInvoice = async ({
                   &nbsp;|&nbsp;
                   <strong>حالة الدفع:</strong> ${escapeHtml(getPaymentStatusLabel(order.paymentStatus))}
                 </div>
-              </div>
-            </div>
+                </div>
 
             ${
               order.orderNumber || order.turboTrackingNumber

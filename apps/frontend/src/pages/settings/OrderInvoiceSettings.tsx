@@ -319,7 +319,7 @@ const orientationLabelMap: Record<
   landscape: "أفقي",
 };
 
-const OrderInvoiceSettings: React.FC = () => {
+const OrderInvoiceSettings: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded = false }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -470,6 +470,9 @@ const OrderInvoiceSettings: React.FC = () => {
   }`;
 
   if (loading) {
+    if (isEmbedded) {
+      return <div className="p-4 text-center text-slate-500">جاري تحميل الإعدادات...</div>;
+    }
     return (
       <SettingsLoadingState
         title="جاري تحميل مركز الفواتير والطباعة..."
@@ -478,29 +481,31 @@ const OrderInvoiceSettings: React.FC = () => {
     );
   }
 
-  return (
-    <SettingsPageShell>
-      <SettingsPageHero
-        badgeIcon={Sparkles}
-        badgeLabel="منصة الفاتورة والإخراج"
-        title="مركز الفواتير والطباعة"
-        description="صفحة تشغيل موحدة تضبط التوليد الآلي للفواتير، إعدادات قالب الطباعة، والنسخة الداخلية الخاصة بورقة تجهيز الطلبات."
-        summaryItems={[
-          { label: "الفاتورة", value: invoiceSummary },
-          { label: "ورقة التجهيز", value: slipSummary },
-          {
-            label: "البريد التلقائي",
-            value: invoice.autoEmailToCustomer ? "مفعل" : "متوقف",
-          },
-          {
-            label: "التوليد التلقائي",
-            value: invoice.autoGenerate ? "يعمل" : "متوقف",
-          },
-        ]}
-        gradientClassName="bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_36%),linear-gradient(135deg,_rgba(248,250,252,0.98),_rgba(239,246,255,0.9))]"
-      />
+  const content = (
+    <>
+      {!isEmbedded && (
+        <SettingsPageHero
+          badgeIcon={Sparkles}
+          badgeLabel="منصة الفاتورة والإخراج"
+          title="مركز الفواتير والطباعة"
+          description="صفحة تشغيل موحدة تضبط التوليد الآلي للفواتير، إعدادات قالب الطباعة، والنسخة الداخلية الخاصة بورقة تجهيز الطلبات."
+          summaryItems={[
+            { label: "الفاتورة", value: invoiceSummary },
+            { label: "ورقة التجهيز", value: slipSummary },
+            {
+              label: "البريد التلقائي",
+              value: invoice.autoEmailToCustomer ? "مفعل" : "متوقف",
+            },
+            {
+              label: "التوليد التلقائي",
+              value: invoice.autoGenerate ? "يعمل" : "متوقف",
+            },
+          ]}
+          gradientClassName="bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_36%),linear-gradient(135deg,_rgba(248,250,252,0.98),_rgba(239,246,255,0.9))]"
+        />
+      )}
 
-      <div className="space-y-6 px-6 py-6">
+      <div className={isEmbedded ? "" : "space-y-6 px-6 py-6"}>
         <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-slate-50/70 p-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="grid gap-3 sm:grid-cols-3 xl:flex xl:flex-wrap">
             <Button
@@ -1295,8 +1300,10 @@ const OrderInvoiceSettings: React.FC = () => {
             </TabsContent>
           </Tabs>
       </div>
-    </SettingsPageShell>
+    </>
   );
+
+  return isEmbedded ? content : <SettingsPageShell>{content}</SettingsPageShell>;
 };
 
 export default OrderInvoiceSettings;

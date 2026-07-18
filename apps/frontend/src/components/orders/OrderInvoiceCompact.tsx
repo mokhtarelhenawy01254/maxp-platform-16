@@ -3,6 +3,16 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import InvoiceBarcode from "./InvoiceBarcode";
 
+interface InvoiceSettings {
+  showBarcodeOrderCode: boolean;
+  showBarcodeShippingCode: boolean;
+}
+
+const defaultSettings: InvoiceSettings = {
+  showBarcodeOrderCode: true,
+  showBarcodeShippingCode: true,
+};
+
 interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -44,10 +54,19 @@ const OrderInvoiceCompact: React.FC = () => {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [settings, setSettings] = useState<InvoiceSettings>(defaultSettings);
 
   useEffect(() => {
     fetchInvoice();
   }, [invoiceId]);
+
+  useEffect(() => {
+    apiClient.get("/order-invoice-settings").then((res) => {
+      if (res.data?.success && res.data?.data) {
+        setSettings((prev) => ({ ...prev, ...res.data.data }));
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const shouldPrint = searchParams.get("print") === "true";
@@ -194,30 +213,14 @@ const OrderInvoiceCompact: React.FC = () => {
         </div>
 
         <div className="px-10 py-6">
-          {/* معلومات العميل + الطلب */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">معلومات العميل</p>
-              <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
-              <div className="text-sm text-slate-600 space-y-0.5 mt-1">
-                <p>هاتف: {invoice.customerPhone}</p>
-                <p className="max-w-xs">العنوان: {invoice.customerAddress || ""}</p>
-                <p>المدينة: {invoice.city || ""}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">بيانات الطلب</p>
-              <div className="text-sm text-slate-600 space-y-0.5">
-                <p><span className="font-medium text-slate-900">رقم الطلب:</span> {invoice.order.orderNumber}</p>
-                {invoice.order.turboTrackingNumber && (
-                  <p><span className="font-medium text-slate-900">رقم تتبع:</span> {invoice.order.turboTrackingNumber}</p>
-                )}
-                <p><span className="font-medium text-slate-900">الحالة:</span>{" "}
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${statusBadge.className}`}>
-                    {statusBadge.label}
-                  </span>
-                </p>
-              </div>
+          {/* معلومات العميل */}
+          <div className="mb-8">
+            <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">معلومات العميل</p>
+            <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
+            <div className="text-sm text-slate-600 space-y-0.5 mt-1">
+              <p>هاتف: {invoice.customerPhone}</p>
+              <p className="max-w-xs">العنوان: {invoice.customerAddress || ""}</p>
+              <p>المدينة: {invoice.city || ""}</p>
             </div>
           </div>
 
@@ -248,16 +251,8 @@ const OrderInvoiceCompact: React.FC = () => {
           </div>
 
           {/* المجاميع + الدفع */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              {invoice.notes && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 mb-2 tracking-wide">ملاحظات</p>
-                  <p className="text-sm text-slate-600 leading-relaxed">{invoice.notes}</p>
-                </div>
-              )}
-            </div>
-            <div className="text-left">
+          <div className="mb-8">
+            <div className="max-w-xs mr-auto text-left">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm py-1">
                   <span className="text-slate-500">المجموع الفرعي</span>
@@ -289,13 +284,14 @@ const OrderInvoiceCompact: React.FC = () => {
           </div>
 
           {/* الباركود */}
-          {(invoice.order.orderNumber || invoice.order.turboTrackingNumber) && (
+          {(settings.showBarcodeOrderCode || settings.showBarcodeShippingCode) &&
+            (invoice.order.orderNumber || invoice.order.turboTrackingNumber) && (
             <div className="pt-6" style={{ borderTop: "1px solid #e2e8f0" }}>
               <div className="flex justify-center gap-12">
-                {invoice.order.orderNumber && (
+                {settings.showBarcodeOrderCode && invoice.order.orderNumber && (
                   <InvoiceBarcode value={invoice.order.orderNumber} label="رقم الطلب" />
                 )}
-                {invoice.order.turboTrackingNumber && (
+                {settings.showBarcodeShippingCode && invoice.order.turboTrackingNumber && (
                   <InvoiceBarcode value={invoice.order.turboTrackingNumber} label="كود الشحن" />
                 )}
               </div>

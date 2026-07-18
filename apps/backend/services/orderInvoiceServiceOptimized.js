@@ -1,7 +1,8 @@
 const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
 const {
   buildInvoiceData,
-  getInvoiceSettingsMap
+  getInvoiceSettingsMap,
+  getOrCreateInvoiceSettings
 } = require('./orderInvoiceDocumentUtils');
 
 // Batch: جلب جميع الطلبات مرة واحدة
@@ -226,6 +227,8 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
       throw new Error('الطلب غير موجود');
     }
 
+    const invoiceSettings = await getOrCreateInvoiceSettings(prisma, order.companyId);
+
     // التحقق من وجود فاتورة سابقة
     const existingInvoice = await prisma.orderInvoice.findUnique({
       where: { orderId: order.id }
@@ -239,7 +242,7 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
       };
     }
 
-    const invoiceData = buildInvoiceData(order, userId);
+    const invoiceData = buildInvoiceData(order, invoiceSettings, userId);
 
     const invoice = await executeWithRetry(async () => {
       return await prisma.orderInvoice.create({
