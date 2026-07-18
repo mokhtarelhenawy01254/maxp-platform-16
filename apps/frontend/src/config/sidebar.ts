@@ -760,6 +760,10 @@ export const getSidebarConfig = (
             items: [
                 { to: '/customers', icon: UsersIcon, label: t('sidebar.customers') },
                 { to: '/leads', icon: UserPlusIcon, label: t('sidebar.leads') },
+                { to: '/customers?status=LEAD', icon: UserPlusIcon, label: t('sidebar.customerStatusLead') },
+                { to: '/customers?status=ACTIVE', icon: CheckCircleIcon, label: t('sidebar.customerStatusActive') },
+                { to: '/customers?status=INACTIVE', icon: ClockIcon, label: t('sidebar.customerStatusInactive') },
+                { to: '/customers?status=BLOCKED', icon: NoSymbolIcon, label: t('sidebar.customerStatusBlocked') },
                 { to: '/customers/whatsapp-notify', icon: MegaphoneIcon, label: t('sidebar.whatsappNotifications') },
 
                 { to: '/customers/occasions-notify', icon: CalendarIcon, label: t('sidebar.customersOccasions') },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   PlusIcon,
@@ -24,6 +24,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [__cb] = useState("v2");
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
@@ -36,11 +37,15 @@ const CustomerList: React.FC = () => {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showOnlyWithOrders, setShowOnlyWithOrders] = useState(false);
-  const [filters, setFilters] = useState<CustomerFilters>({
-    page: 1,
-    limit: 10,
-    sortBy: "updatedAt",
-    sortOrder: "desc",
+  const [filters, setFilters] = useState<CustomerFilters>(() => {
+    const statusFromUrl = searchParams.get("status");
+    return {
+      page: 1,
+      limit: 10,
+      sortBy: "updatedAt",
+      sortOrder: "desc",
+      ...(statusFromUrl ? { status: statusFromUrl } : {}),
+    };
   });
 
   const [pagination, setPagination] = useState({
@@ -58,6 +63,16 @@ const CustomerList: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState("");
 
   const statusOptions = customerService.getStatusOptions();
+
+  // Sync status filter from URL search params (set by sidebar links)
+  useEffect(() => {
+    const statusFromUrl = searchParams.get("status");
+    setFilters((prev) => {
+      const newStatus = statusFromUrl || undefined;
+      if (prev.status === newStatus) return prev;
+      return { ...prev, page: 1, status: newStatus };
+    });
+  }, [searchParams]);
 
   // Toggle hasOrders filter
   const handleToggleWithOrders = () => {
@@ -120,18 +135,6 @@ const CustomerList: React.FC = () => {
       search: searchQuery,
       page: 1,
     }));
-  };
-
-  const handleStatusFilter = (status: string) => {
-    setFilters((prev) => {
-      const newFilters: CustomerFilters = { ...prev, page: 1 };
-      if (status === "all") {
-        delete newFilters.status;
-      } else {
-        newFilters.status = status;
-      }
-      return newFilters;
-    });
   };
 
   // Parse tags safely — DB stores them as a JSON string or real array
@@ -264,33 +267,6 @@ const CustomerList: React.FC = () => {
               </Link>
             </div>
           )}
-        </div>
-
-        {/* Status Tabs */}
-        <div className="flex gap-1 bg-white dark:bg-gray-800 p-1.5 rounded-lg shadow dark:shadow-md overflow-x-auto">
-          <button
-            onClick={() => handleStatusFilter("all")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-              !filters.status
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            }`}
-          >
-            الكل
-          </button>
-          {statusOptions.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleStatusFilter(opt.value)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                filters.status === opt.value
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
         </div>
 
         {/* Filters */}
