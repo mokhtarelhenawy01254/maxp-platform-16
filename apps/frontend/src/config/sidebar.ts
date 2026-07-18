@@ -822,7 +822,7 @@ export const getSidebarConfig = (
                     { to: '/merchants', icon: BuildingStorefrontIcon, label: t('sidebar.merchants') },
                     { to: '/platform/commissions', icon: CurrencyDollarIcon, label: t('sidebar.commissions') },
                     { to: '/affiliates/settings', icon: CogIcon, label: t('sidebar.affiliateSettings') },
-                    { to: '/affiliates/products/visibility', icon: GlobeAltIcon, label: t('sidebar.affiliateProductVisibility') },
+                    { to: '/affiliates/products/visibility', icon: GlobeAltIcon, label: 'إدارة ظهور المنتجات للمسوقين' },
                 ] : []),
                 ...(user?.role === 'AFFILIATE' ? [
                     { to: '/affiliates/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
