@@ -83,11 +83,17 @@ interface CustomerBasic {
   lastName: string;
   email?: string;
   phone?: string;
-  tags: string[];
+  tags: string[] | string;
   status: string;
   customerRating?: string;
   successScore?: number;
 }
+
+const parseTags = (tags: string[] | string | null | undefined): string[] => {
+  if (!tags) return [];
+  if (Array.isArray(tags)) return tags;
+  try { return JSON.parse(tags); } catch { return []; }
+};
 
 interface UnifiedCustomer {
   id: string;
@@ -323,7 +329,7 @@ const CustomerSegments: React.FC = () => {
         loyaltyTier: l?.tier?.nameAr || l?.tier?.name || "",
         loyaltyPoints: toNumber(l?.currentPoints || 0),
         rating: c.customerRating || "UNKNOWN",
-        tags: c.tags || [],
+        tags: parseTags(c.tags),
         status: c.status,
         totalSpent: q?.totalSpent || 0,
         totalOrders: q?.totalOrders || 0,
