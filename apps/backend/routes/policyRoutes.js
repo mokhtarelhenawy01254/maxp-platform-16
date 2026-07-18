@@ -74,6 +74,7 @@ function mapRegularOrder(order) {
             normalizeText(metadata.productName) ||
             'منتج غير محدد',
           sku:
+            normalizeText(item.product?.sku) ||
             normalizeText(item.productSku) ||
             normalizeText(metadata.sku) ||
             normalizeText(metadata.productSku),
