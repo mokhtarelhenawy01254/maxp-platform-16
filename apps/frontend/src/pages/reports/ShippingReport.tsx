@@ -9,6 +9,7 @@ import {
   ArrowDownTrayIcon,
   CalendarIcon,
   ChartBarIcon,
+  PencilIcon,
 } from "@heroicons/react/24/outline";
 
 interface ShippingReportData {
@@ -45,6 +46,19 @@ const ShippingReport: React.FC = () => {
     endDate: "",
     status: "",
   });
+  const [editModal, setEditModal] = useState<{
+    open: boolean;
+    orderId: string;
+    orderNumber: string;
+    currentCost: number;
+    newCost: string;
+  }>({ open: false, orderId: "", orderNumber: "", currentCost: 0, newCost: "" });
+  const [bulkModal, setBulkModal] = useState<{
+    open: boolean;
+    newCost: string;
+    saving: boolean;
+  }>({ open: false, newCost: "", saving: false });
+  const [savingCost, setSavingCost] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -75,6 +89,42 @@ const ShippingReport: React.FC = () => {
       toast.error(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateSingleCost = async () => {
+    if (!editModal.orderId || !editModal.newCost) return;
+    setSavingCost(true);
+    try {
+      await apiClient.patch("/turbo/reports/shipping/cost", {
+        orderId: editModal.orderId,
+        actualCost: parseFloat(editModal.newCost),
+      });
+      toast.success("تم تحديث التكلفة الفعلية");
+      setEditModal({ ...editModal, open: false, newCost: "" });
+      fetchReport();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "فشل تحديث التكلفة");
+    } finally {
+      setSavingCost(false);
+    }
+  };
+
+  const updateBulkCost = async () => {
+    if (!bulkModal.newCost || reportData.length === 0) return;
+    setBulkModal({ ...bulkModal, saving: true });
+    try {
+      const orderIds = reportData.map((r) => r.orderId);
+      await apiClient.post("/turbo/reports/shipping/bulk-cost", {
+        orderIds,
+        actualCost: parseFloat(bulkModal.newCost),
+      });
+      toast.success(`تم تحديث ${orderIds.length} طلب`);
+      setBulkModal({ open: false, newCost: "", saving: false });
+      fetchReport();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "فشل التحديث الجماعي");
+      setBulkModal({ ...bulkModal, saving: false });
     }
   };
 
@@ -144,13 +194,24 @@ const ShippingReport: React.FC = () => {
               <ChartBarIcon className="h-6 w-6 text-blue-500 ml-2" />
               تقرير الشحن - مقارنة الأسعار
             </h1>
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <ArrowDownTrayIcon className="w-5 h-5 ml-2" />
-              تصدير إلى Excel (CSV)
-            </button>
+            <div className="flex gap-2">
+              {reportData.length > 0 && (
+                <button
+                  onClick={() => setBulkModal({ open: true, newCost: "", saving: false })}
+                  className="flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                >
+                  <PencilIcon className="w-5 h-5 ml-2" />
+                  تعديل جماعي
+                </button>
+              )}
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <ArrowDownTrayIcon className="w-5 h-5 ml-2" />
+                تصدير إلى Excel (CSV)
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
@@ -325,6 +386,83 @@ const ShippingReport: React.FC = () => {
             </>
           )}
 
+          {/* Edit Single Cost Modal */}
+          {editModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+                <h3 className="mb-4 text-lg font-bold">تعديل التكلفة الفعلية</h3>
+                <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                  الطلب: <span className="font-medium text-gray-900 dark:text-gray-100">#{editModal.orderNumber}</span>
+                </p>
+                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                  سعر العميل الحالي: <span className="font-medium">{formatPrice(editModal.currentCost)} EGP</span>
+                </p>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  autoFocus
+                  value={editModal.newCost}
+                  onChange={(e) => setEditModal({ ...editModal, newCost: e.target.value })}
+                  placeholder="أدخل التكلفة الفعلية من شركة الشحن"
+                  className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                />
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setEditModal({ ...editModal, open: false, newCost: "" })}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={updateSingleCost}
+                    disabled={savingCost || !editModal.newCost}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {savingCost ? "جاري الحفظ..." : "حفظ"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Edit Modal */}
+          {bulkModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+                <h3 className="mb-4 text-lg font-bold">تعديل جماعي</h3>
+                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                  تطبيق التكلفة الفعلية على جميع طلبات التقرير الحالي ({reportData.length} طلب)
+                </p>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  autoFocus
+                  value={bulkModal.newCost}
+                  onChange={(e) => setBulkModal({ ...bulkModal, newCost: e.target.value })}
+                  placeholder="أدخل التكلفة الفعلية الموحدة"
+                  className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                />
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setBulkModal({ open: false, newCost: "", saving: false })}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={updateBulkCost}
+                    disabled={bulkModal.saving || !bulkModal.newCost}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {bulkModal.saving ? "جاري الحفظ..." : "تطبيق على الكل"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Report Table */}
           {loading ? (
             <div className="text-center py-12">
@@ -383,15 +521,32 @@ const ShippingReport: React.FC = () => {
                         {row.trackingNumber || "--"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {row.actualCost > 0 ? (
-                          <span className="font-bold text-blue-600">
-                            {formatPrice(row.actualCost)} EGP
-                          </span>
-                        ) : (
-                          <span className="text-gray-500 dark:text-gray-400">
-                            غير متوفر
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {row.actualCost > 0 ? (
+                            <span className="font-bold text-blue-600">
+                              {formatPrice(row.actualCost)} EGP
+                            </span>
+                          ) : (
+                            <span className="text-gray-500 dark:text-gray-400">
+                              غير متوفر
+                            </span>
+                          )}
+                          <button
+                            onClick={() =>
+                              setEditModal({
+                                open: true,
+                                orderId: row.orderId,
+                                orderNumber: row.orderNumber,
+                                currentCost: row.customerCost,
+                                newCost: row.actualCost > 0 ? String(row.actualCost) : "",
+                              })
+                            }
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                            title="تعديل التكلفة الفعلية"
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {formatPrice(row.customerCost)} EGP

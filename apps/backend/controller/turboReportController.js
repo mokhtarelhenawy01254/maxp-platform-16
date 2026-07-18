@@ -160,7 +160,101 @@ const getShippingReport = async (req, res) => {
   }
 };
 
+/**
+ * تحديث التكلفة الفعلية يدوي
+ */
+const updateManualCost = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { orderId, actualCost } = req.body;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, error: 'Company ID is required' });
+    }
+    if (!orderId || actualCost === undefined || actualCost === null || actualCost < 0) {
+      return res.status(400).json({ success: false, error: 'orderId و actualCost مطلوبين' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+
+    if (!order || order.companyId !== companyId) {
+      return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+    }
+
+    let metadata = {};
+    try {
+      if (order.turboMetadata) {
+        metadata = JSON.parse(order.turboMetadata);
+      }
+    } catch (e) { /* ignore */ }
+
+    metadata.actualShippingCost = parseFloat(actualCost);
+    metadata.actualShippingCostUpdatedAt = new Date().toISOString();
+    metadata.actualShippingCostSource = 'manual';
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { turboMetadata: JSON.stringify(metadata) }
+    });
+
+    res.json({ success: true, message: 'تم تحديث التكلفة الفعلية' });
+  } catch (error) {
+    console.error('❌ [TURBO-REPORT] Error updating manual cost:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * تحديث جماعي للتكلفة الفعلية
+ */
+const bulkUpdateManualCost = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { orderIds, actualCost } = req.body;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, error: 'Company ID is required' });
+    }
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0 || actualCost === undefined || actualCost < 0) {
+      return res.status(400).json({ success: false, error: 'orderIds (مصفوفة) و actualCost مطلوبين' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const now = new Date().toISOString();
+
+    const orders = await prisma.order.findMany({
+      where: { id: { in: orderIds }, companyId }
+    });
+
+    for (const order of orders) {
+      let metadata = {};
+      try {
+        if (order.turboMetadata) {
+          metadata = JSON.parse(order.turboMetadata);
+        }
+      } catch (e) { /* ignore */ }
+
+      metadata.actualShippingCost = parseFloat(actualCost);
+      metadata.actualShippingCostUpdatedAt = now;
+      metadata.actualShippingCostSource = 'manual-bulk';
+
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { turboMetadata: JSON.stringify(metadata) }
+      });
+    }
+
+    res.json({ success: true, message: `تم تحديث ${orders.length} طلب` });
+  } catch (error) {
+    console.error('❌ [TURBO-REPORT] Error bulk updating cost:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
-  getShippingReport
+  getShippingReport,
+  updateManualCost,
+  bulkUpdateManualCost
 };
 
