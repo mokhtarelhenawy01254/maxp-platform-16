@@ -195,66 +195,93 @@ function KeyLogsContent() {
 
   return (
     <div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Card className="relative overflow-hidden col-span-2 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20">
-          <CardContent className="p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20 dark:border-blue-500/10 shadow-sm">
+          <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">إجمالي السجلات</p>
-                <p className="text-2xl font-bold mt-1">{total.toLocaleString()}</p>
+                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">إجمالي السجلات</p>
+                <p className="text-3xl font-extrabold mt-2 tracking-tight text-slate-900 dark:text-white">{total.toLocaleString()}</p>
               </div>
-              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Activity className="size-4 text-primary" />
+              <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/20">
+                <Activity className="size-5 text-blue-500" />
               </div>
             </div>
-            <div className="mt-3 h-1 bg-primary/10 rounded-full overflow-hidden">
-              <div className="h-full w-full bg-primary/30 rounded-full animate-pulse" />
+            <div className="mt-4 h-1.5 bg-blue-500/10 rounded-full overflow-hidden">
+              <div className="h-full w-full bg-blue-500/40 rounded-full animate-pulse" />
             </div>
           </CardContent>
         </Card>
-        <Card className="relative overflow-hidden border-green-200/50 dark:border-green-800/30">
-          <CardContent className="p-4">
+
+        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 dark:border-emerald-500/10 shadow-sm">
+          <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">ناجح</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.success}</p>
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ناجح</p>
+                <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2 tracking-tight">
+                  {stats.success.toLocaleString()}
+                  <span className="text-xs font-normal text-emerald-500/70 mr-1.5">
+                    ({total > 0 ? ((stats.success / total) * 100).toFixed(1) : 0}%)
+                  </span>
+                </p>
               </div>
-              <div className="size-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />
+              <div className="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                <CheckCircle2 className="size-5 text-emerald-500" />
               </div>
+            </div>
+            <div className="mt-4 h-1.5 bg-emerald-500/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-emerald-500/50 transition-all duration-500"
+                style={{ width: `${total > 0 ? (stats.success / total) * 100 : 0}%` }}
+              />
             </div>
           </CardContent>
         </Card>
-        <Card className="relative overflow-hidden border-red-200/50 dark:border-red-800/30">
-          <CardContent className="p-4">
+
+        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent border-rose-500/20 dark:border-rose-500/10 shadow-sm">
+          <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">فاشل</p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{stats.failed}</p>
+                <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">فاشل</p>
+                <p className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-2 tracking-tight">
+                  {stats.failed.toLocaleString()}
+                  <span className="text-xs font-normal text-rose-500/70 mr-1.5">
+                    ({total > 0 ? ((stats.failed / total) * 100).toFixed(1) : 0}%)
+                  </span>
+                </p>
               </div>
-              <div className="size-9 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
-                <XCircle className="size-4 text-red-600 dark:text-red-400" />
+              <div className="size-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0 border border-rose-500/20">
+                <XCircle className="size-5 text-rose-500" />
               </div>
+            </div>
+            <div className="mt-4 h-1.5 bg-rose-500/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-rose-500/50 transition-all duration-500"
+                style={{ width: `${total > 0 ? (stats.failed / total) * 100 : 0}%` }}
+              />
             </div>
           </CardContent>
         </Card>
-        <Card className="relative overflow-hidden col-span-2 md:col-span-1 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-200/50 dark:border-amber-800/30">
-          <CardContent className="p-4">
+
+        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/20 dark:border-amber-800/20 shadow-sm">
+          <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">متوسط الزمن</p>
-                <p className="text-2xl font-bold mt-1">{stats.avgLatency} <span className="text-sm font-normal text-muted-foreground">ms</span></p>
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">متوسط الزمن</p>
+                <p className="text-3xl font-extrabold mt-2 tracking-tight text-slate-900 dark:text-white">
+                  {stats.avgLatency.toLocaleString()} <span className="text-sm font-medium text-slate-500 dark:text-slate-400">ms</span>
+                </p>
               </div>
-              <div className="size-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                <Zap className="size-4 text-amber-600 dark:text-amber-400" />
+              <div className="size-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <Zap className="size-5 text-amber-500" />
               </div>
             </div>
-            {stats.avgLatency > 0 && (
-              <div className="mt-3 h-1 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500 transition-all"
-                  style={{ width: `${Math.min(100, stats.avgLatency / 20)}%` }} />
-              </div>
-            )}
+            <div className="mt-4 h-1.5 bg-amber-500/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-green-500 via-amber-400 to-red-500 transition-all duration-500"
+                style={{ width: `${Math.min(100, stats.avgLatency / 20)}%` }}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
