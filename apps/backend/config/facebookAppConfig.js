@@ -5,7 +5,7 @@ const envConfig = require("./environment");
 
 const DEFAULT_FACEBOOK_APP_ID = "762328696481583";
 const DEFAULT_FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
-const FACEBOOK_LOGIN_CONFIG_ID = "1052486687902617";
+const FACEBOOK_LOGIN_CONFIG_ID = "2158986791329815";
 // NOTE: Hardcoded fallback removed — single source of truth is facebook-oauth-config.json (managed via /super-admin/facebook-oauth)
 const FACEBOOK_OAUTH_CONFIG_PATH = path.resolve(
   __dirname,
