@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
 import {
   ArrowDownTrayIcon,
   CalendarIcon,
@@ -70,7 +71,8 @@ const ShippingReport: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error fetching shipping report:", error);
-      alert(error.response?.data?.error || "فشل جلب التقرير");
+      const msg = error.response?.data?.message || error.response?.data?.error || "فشل جلب التقرير";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ const ShippingReport: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
       console.error("Error exporting CSV:", error);
-      alert("فشل تصدير التقرير");
+      toast.error("فشل تصدير التقرير");
     }
   };
 
@@ -222,57 +224,105 @@ const ShippingReport: React.FC = () => {
 
           {/* Statistics */}
           {statistics && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4 dark:bg-blue-950/30">
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  إجمالي الطلبات
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4 dark:bg-blue-950/30">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    إجمالي الطلبات (مع tracking)
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600 mt-1">
+                    {statistics.totalOrders}
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-blue-600 mt-1">
-                  {statistics.totalOrders}
+                <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4 dark:bg-green-950/30">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    إجمالي السعر الفعلي
+                  </div>
+                  <div className="text-2xl font-bold text-green-600 mt-1">
+                    {formatPrice(statistics.totalActual)} EGP
+                  </div>
                 </div>
-              </div>
-              <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4 dark:bg-green-950/30">
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  إجمالي السعر الفعلي
-                </div>
-                <div className="text-2xl font-bold text-green-600 mt-1">
-                  {formatPrice(statistics.totalActual)} EGP
-                </div>
-              </div>
-              <div className="rounded-lg border-l-4 border-gray-500 bg-gray-50 p-4 dark:bg-gray-800">
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  إجمالي سعر العميل
-                </div>
-                <div className="mt-1 text-2xl font-bold text-gray-600 dark:text-gray-200">
-                  {formatPrice(statistics.totalCustomer)} EGP
-                </div>
-              </div>
-              <div
-                className={`p-4 rounded-lg border-l-4 ${
-                  statistics.totalDifference > 0
-                    ? "bg-red-50 border-red-500 dark:bg-red-950/30"
-                    : statistics.totalDifference < 0
-                      ? "bg-green-50 border-green-500 dark:bg-green-950/30"
-                      : "bg-gray-50 border-gray-500 dark:bg-gray-800"
-                }`}
-              >
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  إجمالي الفرق
+                <div className="rounded-lg border-l-4 border-gray-500 bg-gray-50 p-4 dark:bg-gray-800">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    إجمالي سعر العميل
+                  </div>
+                  <div className="mt-1 text-2xl font-bold text-gray-600 dark:text-gray-200">
+                    {formatPrice(statistics.totalCustomer)} EGP
+                  </div>
                 </div>
                 <div
-                  className={`text-2xl font-bold mt-1 ${
+                  className={`p-4 rounded-lg border-l-4 ${
                     statistics.totalDifference > 0
-                      ? "text-red-600"
+                      ? "bg-red-50 border-red-500 dark:bg-red-950/30"
                       : statistics.totalDifference < 0
-                        ? "text-green-600"
-                        : "text-gray-600 dark:text-gray-200"
+                        ? "bg-green-50 border-green-500 dark:bg-green-950/30"
+                        : "bg-gray-50 border-gray-500 dark:bg-gray-800"
                   }`}
                 >
-                  {statistics.totalDifference > 0 ? "+" : ""}
-                  {formatPrice(statistics.totalDifference)} EGP
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    إجمالي الفرق
+                  </div>
+                  <div
+                    className={`text-2xl font-bold mt-1 ${
+                      statistics.totalDifference > 0
+                        ? "text-red-600"
+                        : statistics.totalDifference < 0
+                          ? "text-green-600"
+                          : "text-gray-600 dark:text-gray-200"
+                    }`}
+                  >
+                    {statistics.totalDifference > 0 ? "+" : ""}
+                    {formatPrice(statistics.totalDifference)} EGP
+                  </div>
                 </div>
               </div>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="rounded-lg border-r-4 border-purple-500 bg-purple-50 p-4 dark:bg-purple-950/30">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    متوسط السعر الفعلي
+                  </div>
+                  <div className="text-2xl font-bold text-purple-600 mt-1">
+                    {formatPrice(statistics.avgActual)} EGP
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    إجمالي {statistics.ordersWithCost} طلب بسعر فعلي
+                  </div>
+                </div>
+                <div className="rounded-lg border-r-4 border-orange-500 bg-orange-50 p-4 dark:bg-orange-950/30">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    متوسط سعر العميل
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600 mt-1">
+                    {formatPrice(statistics.avgCustomer)} EGP
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    على {statistics.totalOrders} طلب
+                  </div>
+                </div>
+                <div className="rounded-lg border-r-4 border-cyan-500 bg-cyan-50 p-4 dark:bg-cyan-950/30">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    متوسط الفرق للطلب
+                  </div>
+                  <div
+                    className={`text-2xl font-bold mt-1 ${
+                      statistics.totalDifference > 0
+                        ? "text-red-600"
+                        : statistics.totalDifference < 0
+                          ? "text-green-600"
+                          : "text-gray-600 dark:text-gray-200"
+                    }`}
+                  >
+                    {statistics.totalDifference > 0 ? "+" : ""}
+                    {formatPrice(
+                      statistics.totalOrders > 0
+                        ? statistics.totalDifference / statistics.totalOrders
+                        : 0
+                    )}{" "}
+                    EGP
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Report Table */}

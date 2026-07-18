@@ -38,7 +38,9 @@ const getShippingReport = async (req, res) => {
         where.createdAt.gte = new Date(startDate);
       }
       if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+        const endDateTime = new Date(endDate);
+        endDateTime.setDate(endDateTime.getDate() + 1);
+        where.createdAt.lte = endDateTime;
       }
     }
 
