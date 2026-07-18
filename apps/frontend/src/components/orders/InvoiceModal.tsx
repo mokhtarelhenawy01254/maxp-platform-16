@@ -106,9 +106,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
 
         <style>{`
           @media print {
+            body { margin: 0; padding: 0; background: #fff; }
             body * { visibility: hidden; }
             .print\\:max-w-none, .print\\:max-w-none * { visibility: visible; }
             .print\\:max-w-none { position: absolute; left: 0; top: 0; width: 100%; }
+            @page { margin: 0; size: A5; }
           }
           .invoice-table th {
             font-weight: 600;
