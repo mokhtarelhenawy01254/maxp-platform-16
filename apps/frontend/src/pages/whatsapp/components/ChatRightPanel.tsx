@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 type Tab = 'info' | 'orders' | 'activity';
 
@@ -42,6 +43,7 @@ const ORDER_STATUS_THEME: Record<string, { label: string; color: string }> = {
 };
 
 const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenTasks, onClose }) => {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [avatarError, setAvatarError] = useState(false);
   const [leadCategories, setLeadCategories] = useState<any[]>([]);
@@ -73,7 +75,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
 
   // Sync selected category from contact
   useEffect(() => {
-    setSelectedCategoryId(contact?.leadCategoryId || '');
+    setSelectedCategoryId(contact?.leadCategoryId || 'none');
   }, [contact?.leadCategoryId]);
 
   // Sync tags state when customer changes
@@ -171,9 +173,11 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     setUpdatingCategory(true);
     const prevCategoryId = selectedCategoryId;
     setSelectedCategoryId(categoryId);
+    const actualCategoryId = categoryId === 'none' ? null : categoryId;
     try {
-      await apiClient.put("/whatsapp/contacts/" + contact.id, { leadCategoryId: categoryId || null });
+      await apiClient.put("/whatsapp/contacts/" + contact.id, { leadCategoryId: actualCategoryId });
       toast.success('تم تحديث التصنيف');
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch {
       setSelectedCategoryId(prevCategoryId);
       toast.error('فشل تحديث التصنيف');
@@ -216,7 +220,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     }
   };
 
-  const selectedCategory = selectedCategoryId
+  const selectedCategory = selectedCategoryId && selectedCategoryId !== 'none'
     ? leadCategories.find(c => c.id === selectedCategoryId)
     : null;
 
@@ -341,7 +345,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                           <SelectValue placeholder="اختر التصنيف" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">بدون تصنيف</SelectItem>
+                          <SelectItem value="none">بدون تصنيف</SelectItem>
                           {leadCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               <span className="flex items-center gap-2">

@@ -1,6 +1,13 @@
 # Team Sync Updates
 
 ## 2026-07-18 / 2026-03-09
+- **Customer Classification & Tags Sync Bugs Fix (BUGFIX / COMPLETE)**:
+  1. **Backend `getConversations` projection gap**: Added `leadCategoryId` and `leadCategory` (with `id`, `name`, `color`) to the Prisma `select` block in the conversations API, ensuring classification data flows to the frontend on every page load.
+  2. **`useCustomerProfile` data extraction bug**: Fixed the hook to extract `customerRes.data.data.customer` instead of the entire wrapper object, restoring `tags` visibility.
+  3. **Base UI Select empty value fix**: Replaced `value=""` with `value="none"` sentinel for the "no classification" option. Updated `handleCategoryChange` to map `'none'` back to `null`.
+  4. **Query cache invalidation**: Added `queryClient.invalidateQueries` for the conversations query key after successful classification updates, ensuring the parent `WhatsAppChat` component's sync effect picks up the change.
+  5. **Sync effect coverage**: Extended the `hasConversationStateChange` detection in `WhatsAppChat.tsx` to include `leadCategoryId`, propagating category changes from the query cache to `selectedContact`.
+
 - **AI Key Logs Analysis Page & API Fixes (BUGFIX / COMPLETE)**:
   1. **Global stats computation**: Overhauled `/ai-admin/logs` endpoint (`keys.py`) to query and sum success, failed, and average latency stats across both ORM and raw SQL tables for the filtered query, returning them globally to the frontend.
   2. **Dropdown selection null-checks**: Updated `SuperAdminAIKeyLogs.tsx` select components onValueChange handlers with null-checks (`v || ""`) and casted companies select query response to `any`, resolving all local TypeScript compiler warnings and errors.

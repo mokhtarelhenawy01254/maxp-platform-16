@@ -698,7 +698,8 @@ const WhatsAppChatContent: React.FC = () => {
       syncedContact.isBlocked !== selectedContact.isBlocked ||
       syncedContact.name !== selectedContact.name ||
       syncedContact.pushName !== selectedContact.pushName ||
-      syncedContact.profilePicUrl !== selectedContact.profilePicUrl;
+      syncedContact.profilePicUrl !== selectedContact.profilePicUrl ||
+      syncedContact.leadCategoryId !== selectedContact.leadCategoryId;
 
     if (!hasConversationStateChange) return;
 

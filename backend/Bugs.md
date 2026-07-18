@@ -1,5 +1,22 @@
 # Backend Bugs Log
 
+### [BUG FIX / API & UI] Customer Classification Not Persisting, Tags Invisible, Classification Shows ID
+- **Date**: 2026-07-18
+- **Root Cause**:
+  1. **Classification not persisting on reopen**: The backend `getConversations` endpoint did not include `leadCategoryId` or `leadCategory` in the Prisma `select` projection for `whatsAppContact.findMany`. This meant the conversations API response never contained classification data. When the user reopened a chat, `contact.leadCategoryId` was `undefined`, resetting the local state to empty.
+  2. **Tags always invisible**: The `useCustomerProfile` hook set the customer state to `customerRes.data.data` (the entire response wrapper object containing `customer`, `stats`, `activities`, etc.) instead of `customerRes.data.data.customer` (the actual customer record). This meant `customer.tags` was always `undefined` since `.tags` doesn't exist on the wrapper object.
+  3. **Classification shows raw ID instead of name**: The `Select` component from `@base-ui/react/select` was given `value=""` for the "no category" option. Base UI's Select does not support empty string values correctly, causing the `SelectValue` component to fail matching and fall back to displaying the raw value (the CUID database ID). Additionally, the `WhatsAppChat.tsx` sync effect did not include `leadCategoryId` in its change detection, so classification updates were not propagated from the query cache to the active `selectedContact` state.
+- **Resolution**:
+  1. Added `leadCategoryId: true` and `leadCategory: { select: { id, name, color } }` to the Prisma `select` block in `getConversations`.
+  2. Fixed `useCustomerProfile.ts` to correctly extract `customerRes.data.data.customer` and added `tags` to the `Customer` interface.
+  3. Replaced `value=""` with `value="none"` sentinel in the category `<Select>`, updated `handleCategoryChange` to map `'none'` back to `null`, and added `queryClient.invalidateQueries` after successful category update.
+  4. Added `leadCategoryId` comparison to the `hasConversationStateChange` detection in `WhatsAppChat.tsx` sync effect.
+- **Files Modified**:
+  - `apps/backend/controller/whatsappController.js` (MODIFIED)
+  - `apps/frontend/src/hooks/inbox/useCustomerProfile.ts` (MODIFIED)
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx` (MODIFIED)
+  - `apps/frontend/src/pages/whatsapp/components/ChatRightPanel.tsx` (MODIFIED)
+
 ### [BUG FIX / API & UI] AI Key Logs Filter Mismatch, Global Stats & Pagination Bypass
 - **Date**: 2026-07-18
 - **Root Cause**:

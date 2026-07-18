@@ -856,6 +856,14 @@ async function getConversations(req, res) {
                     profilePicUrl: true,
                     isGroup: true,
                     category: true,
+                    leadCategoryId: true,
+                    leadCategory: {
+                        select: {
+                            id: true,
+                            name: true,
+                            color: true
+                        }
+                    },
                     unreadCount: true,
                     lastMessageAt: true,
                     lastCustomerMessageAt: true,
