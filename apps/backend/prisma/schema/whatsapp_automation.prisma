@@ -26,12 +26,13 @@ model WhatsAppFollowUpFlow {
   companyId   String
   name        String
   isEnabled   Boolean                @default(true)
+  isGeneral   Boolean                @default(false)  // عام: يشتغل لكل العملاء ما لم يخصص لهم تدفق خاص
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   company     Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   steps       WhatsAppFollowUpStep[]
   journeys    CustomerJourney[]
-  categories  LeadCategory[]         // NEW: التصنيفات اللي بتشغل الـ Flow ده
+  categories  LeadCategory[]         // التصنيفات اللي بتشغل الـ Flow ده
 
   @@map("whatsapp_follow_up_flows")
 }

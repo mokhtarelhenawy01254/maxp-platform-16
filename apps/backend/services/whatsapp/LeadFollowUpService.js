@@ -82,6 +82,25 @@ class LeadFollowUpService {
                     await journeyService.enrollFromCategory(companyId, customerId, whatsappContactId, contact.leadCategoryId);
                     return;
                 }
+                // التصنيف ملوش flow مخصص → شوف لو فيه flow عام
+                const generalFlow = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                    where: { companyId, isGeneral: true, isEnabled: true }
+                });
+                if (generalFlow) {
+                    const journeyService = require('./WhatsAppJourneyService');
+                    await journeyService.enrollInGeneralFlow(companyId, customerId, whatsappContactId);
+                    return;
+                }
+            } else {
+                // العميل مالوش تصنيف → شوف لو فيه flow عام
+                const generalFlow = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                    where: { companyId, isGeneral: true, isEnabled: true }
+                });
+                if (generalFlow) {
+                    const journeyService = require('./WhatsAppJourneyService');
+                    await journeyService.enrollInGeneralFlow(companyId, customerId, whatsappContactId);
+                    return;
+                }
             }
 
             const existing = await this.prisma.leadFollowUpEnrollment.findFirst({

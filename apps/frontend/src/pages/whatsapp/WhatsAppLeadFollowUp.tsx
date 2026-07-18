@@ -24,8 +24,10 @@ import { WhatsAppMetricCard, WhatsAppPageShell, WhatsAppSurfaceCard } from "./co
 
 interface Flow {
   id: string; companyId: string; name: string; isEnabled: boolean;
+  isGeneral: boolean;
   _count: { steps: number; journeys: number; categories: number };
   steps?: FlowStep[];
+  categories?: { id: string; name: string; color: string | null }[];
 }
 
 interface FlowStep {
@@ -108,6 +110,8 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
   const [activeTab, setActiveTab] = useState("flows");
   const [monFilter, setMonFilter] = useState({ status: "", flowId: "" });
   const [newFlowName, setNewFlowName] = useState("");
+  const [newFlowScope, setNewFlowScope] = useState<"TARGETED" | "GENERAL">("TARGETED");
+  const [newFlowCategoryIds, setNewFlowCategoryIds] = useState<string[]>([]);
   const [showNewFlow, setShowNewFlow] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
@@ -178,10 +182,16 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
     if (!newFlowName.trim()) return;
     setSaving("create");
     try {
-      const r = await apiClient.post(`${apiBase}/flows`, { name: newFlowName.trim() }, wc());
+      const r = await apiClient.post(`${apiBase}/flows`, {
+        name: newFlowName.trim(),
+        isGeneral: newFlowScope === "GENERAL"
+      }, wc());
       setFlows(prev => [r.data.data, ...prev]);
-      setNewFlowName(""); setShowNewFlow(false);
-    } catch { /* */ } finally { setSaving(null); }
+      setNewFlowName(""); setNewFlowScope("TARGETED"); setNewFlowCategoryIds([]); setShowNewFlow(false);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      if (msg) alert(msg);
+    } finally { setSaving(null); }
   };
 
   const deleteFlow = async (id: string) => {
@@ -357,18 +367,60 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                       }}>
                       <Sparkles className="size-4" /> {tx("flows.presetWelcome")}
                     </Button>
-                    <Dialog open={showNewFlow} onOpenChange={setShowNewFlow}>
+                    <Dialog open={showNewFlow} onOpenChange={(open) => { setShowNewFlow(open); if (!open) { setNewFlowScope("TARGETED"); setNewFlowCategoryIds([]); } }}>
                       <DialogTrigger asChild>
                         <Button className="rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-sm hover:shadow-md">
                           <Plus className="size-4" /> {tx("flows.addNew")}
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="sm:max-w-lg">
                         <DialogHeader><DialogTitle>{tx("flows.addNew")}</DialogTitle></DialogHeader>
-                        <Input value={newFlowName} onChange={(e) => setNewFlowName(e.target.value)}
-                          placeholder={tx("flows.name")} className="mt-2" />
+                        <div className="space-y-4 mt-2">
+                          <div>
+                            <Label className="text-xs text-[color:var(--color-muted-foreground)]">{tx("flows.name")}</Label>
+                            <Input value={newFlowName} onChange={(e) => setNewFlowName(e.target.value)}
+                              placeholder={tx("flows.name")} className="mt-1" />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-[color:var(--color-muted-foreground)]">{tx("flows.scope")}</Label>
+                            <div className="mt-1 flex gap-2">
+                              <Button type="button" variant={newFlowScope === "TARGETED" ? "default" : "outline"} size="sm"
+                                className="rounded-full"
+                                onClick={() => setNewFlowScope("TARGETED")}>
+                                {tx("flows.targeted")}
+                              </Button>
+                              <Button type="button" variant={newFlowScope === "GENERAL" ? "default" : "outline"} size="sm"
+                                className="rounded-full"
+                                onClick={() => setNewFlowScope("GENERAL")}>
+                                {tx("flows.general")}
+                              </Button>
+                            </div>
+                            <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
+                              {newFlowScope === "GENERAL" ? tx("flows.generalDesc") : tx("flows.targetedDesc")}
+                            </p>
+                          </div>
+                          {newFlowScope === "TARGETED" && categories.length > 0 && (
+                            <div>
+                              <Label className="text-xs text-[color:var(--color-muted-foreground)]">{tx("categories.title")}</Label>
+                              <div className="mt-1 max-h-40 space-y-1 overflow-y-auto rounded-xl border border-[color:var(--shell-control-border)] p-2">
+                                {categories.map((cat) => (
+                                  <label key={cat.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)]">
+                                    <input type="checkbox" checked={newFlowCategoryIds.includes(cat.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) setNewFlowCategoryIds(prev => [...prev, cat.id]);
+                                        else setNewFlowCategoryIds(prev => prev.filter(id => id !== cat.id));
+                                      }}
+                                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                                    <span className="inline-block size-3 shrink-0 rounded-full" style={{ backgroundColor: cat.color || "#6366f1" }} />
+                                    <span>{cat.name}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setShowNewFlow(false)}>{tx("actions.cancel")}</Button>
+                          <Button variant="outline" onClick={() => { setShowNewFlow(false); setNewFlowScope("TARGETED"); setNewFlowCategoryIds([]); }}>{tx("actions.cancel")}</Button>
                           <Button onClick={createFlow} disabled={!newFlowName.trim() || saving === "create"}>
                             {saving === "create" ? <Loader2 className="size-3 animate-spin" /> : <Plus className="size-3" />}
                             {tx("flows.addNew")}
@@ -394,10 +446,27 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                             {expandedFlow === flow.id ? <ChevronDown className="size-4 text-primary" /> : <ChevronRight className="size-4 text-primary" />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold">{flow.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">{flow.name}</p>
+                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${flow.isGeneral ? "border-sky-300/70 bg-sky-500/10 text-sky-700" : "border-amber-300/70 bg-amber-500/10 text-amber-700"}`}>
+                                {flow.isGeneral ? tx("flows.general") : tx("flows.targeted")}
+                              </span>
+                            </div>
                             <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {flow._count.steps} {tx("flows.steps")} · {flow._count.journeys} {tx("flows.activeLeads").replace("{{count}}", String(flow._count.journeys))} · {flow._count.categories} {tx("flows.categories")}
+                              {flow._count.steps} {tx("flows.steps")} · {flow._count.journeys} {tx("flows.activeLeads").replace("{{count}}", String(flow._count.journeys))}
                             </p>
+                            {flow.isGeneral ? (
+                              <p className="mt-0.5 text-xs text-sky-600">{tx("flows.generalDesc")}</p>
+                            ) : flow.categories && flow.categories.length > 0 ? (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {flow.categories.map((cat) => (
+                                  <span key={cat.id} className="inline-flex items-center gap-1 rounded-full border border-[color:var(--shell-control-border)] px-2 py-0.5 text-[10px]">
+                                    <span className="inline-block size-2 rounded-full" style={{ backgroundColor: cat.color || "#6366f1" }} />
+                                    {cat.name}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                           <Switch checked={flow.isEnabled} onCheckedChange={() => toggleFlow(flow)}
                             onClick={(e) => e.stopPropagation()} />
@@ -453,6 +522,63 @@ const WhatsAppLeadFollowUp: React.FC<{ companyId?: string }> = ({ companyId }) =
                                 <StepForm flowId={flow.id} step={editingStep.step}
                                   onSave={(s) => saveStep(flow.id, s)}
                                   onCancel={() => setEditingStep(null)} />
+                              )}
+                            </div>
+
+                            {/* Scope & Categories */}
+                            <div className="mb-4 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)] p-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-semibold">{tx("flows.scope")}</h4>
+                                <div className="flex gap-1.5">
+                                  <button onClick={async () => {
+                                    try {
+                                      await apiClient.put(`${apiBase}/flows/${flow.id}`, { isGeneral: false }, wc());
+                                      setFlows(prev => prev.map(f => f.id === flow.id ? { ...f, isGeneral: false } : f));
+                                    } catch { /* */ }
+                                  }}
+                                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${!flow.isGeneral ? "bg-amber-500/15 text-amber-700 border border-amber-300/40" : "border border-[color:var(--shell-control-border)] text-[color:var(--color-muted-foreground)] hover:bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)]"}`}>
+                                    {tx("flows.targeted")}
+                                  </button>
+                                  <button onClick={async () => {
+                                    try {
+                                      await apiClient.put(`${apiBase}/flows/${flow.id}`, { isGeneral: true }, wc());
+                                      setFlows(prev => prev.map(f => f.id === flow.id ? { ...f, isGeneral: true } : f));
+                                    } catch (err: any) {
+                                      const msg = err?.response?.data?.message;
+                                      if (msg) alert(msg);
+                                    }
+                                  }}
+                                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${flow.isGeneral ? "bg-sky-500/15 text-sky-700 border border-sky-300/40" : "border border-[color:var(--shell-control-border)] text-[color:var(--color-muted-foreground)] hover:bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)]"}`}>
+                                    {tx("flows.general")}
+                                  </button>
+                                </div>
+                              </div>
+                              {flow.isGeneral ? (
+                                <p className="mt-2 text-xs text-[color:var(--color-muted-foreground)]">{tx("flows.generalDesc")}</p>
+                              ) : (
+                                <div className="mt-2 space-y-1">
+                                  <p className="text-xs text-[color:var(--color-muted-foreground)]">{tx("flows.targetedDesc")}</p>
+                                  {categories.map((cat) => {
+                                    const isLinked = flow.categories?.some(c => c.id === cat.id) || cat.triggerFlowId === flow.id;
+                                    return (
+                                      <label key={cat.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-sm hover:bg-[color:color-mix(in_srgb,var(--color-muted)_30%,transparent)]">
+                                        <input type="checkbox" checked={!!isLinked}
+                                          onChange={async () => {
+                                            try {
+                                              await apiClient.put(`/whatsapp/lead-categories/${cat.id}`, {
+                                                triggerFlowId: isLinked ? null : flow.id
+                                              }, wc());
+                                              await loadFlows();
+                                              await loadCategories();
+                                            } catch { /* */ }
+                                          }}
+                                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                                        <span className="inline-block size-3 shrink-0 rounded-full" style={{ backgroundColor: cat.color || "#6366f1" }} />
+                                        <span className="flex-1">{cat.name}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
                               )}
                             </div>
 

@@ -13,31 +13,39 @@ class WhatsAppJourneyService {
     /**
      * تسجيل عميل في رحلة من تصنيف (category trigger)
      * بتتسمى لما يتغير تصنيف العميل لتصنيف عنده triggerFlowId
+     * لو التصنيف ملوش flow مخصص, بتدور على flow عام
      */
     async enrollFromCategory(companyId, customerId, whatsappContactId, categoryId) {
         try {
-            const category = await this.prisma.leadCategory.findUnique({
+            const category = categoryId ? await this.prisma.leadCategory.findUnique({
                 where: { id: categoryId },
                 select: { triggerFlowId: true, companyId: true }
-            });
+            }) : null;
 
-            if (!category || !category.triggerFlowId || category.companyId !== companyId) {
-                return;
+            let flow = null;
+
+            // 1. لو التصنيف عنده flow مخصص
+            if (category && category.triggerFlowId && category.companyId === companyId) {
+                flow = await this.prisma.whatsAppFollowUpFlow.findUnique({
+                    where: { id: category.triggerFlowId, isEnabled: true },
+                    include: { steps: { orderBy: { stepOrder: 'asc' } } }
+                });
             }
 
-            const flow = await this.prisma.whatsAppFollowUpFlow.findUnique({
-                where: { id: category.triggerFlowId, isEnabled: true },
-                include: {
-                    steps: { orderBy: { stepOrder: 'asc' } }
-                }
-            });
+            // 2. لو مفيش flow مخصص → دور على flow عام
+            if (!flow) {
+                flow = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                    where: { companyId, isGeneral: true, isEnabled: true },
+                    include: { steps: { orderBy: { stepOrder: 'asc' } } }
+                });
+            }
 
             if (!flow || flow.steps.length === 0) {
-                console.log(`[JOURNEY-CATEGORY] Flow ${category.triggerFlowId} not found or disabled`);
+                console.log(`[JOURNEY-CATEGORY] No suitable flow found for category ${categoryId}`);
                 return;
             }
 
-            // Check no active journey for this contact & flow
+            // Check no active journey for this customer & flow
             const existing = await this.prisma.customerJourney.findFirst({
                 where: { companyId, customerId, flowId: flow.id, status: 'ACTIVE' }
             });
@@ -66,14 +74,21 @@ class WhatsAppJourneyService {
                     currentStep: 0,
                     status: 'ACTIVE',
                     nextSendAt,
-                    logs: `Started from category trigger at ${new Date().toISOString()}`
+                    logs: `Started${flow.isGeneral ? ' from general flow' : ' from category trigger'} at ${new Date().toISOString()}`
                 }
             });
 
-            console.log(`[JOURNEY-CATEGORY] Enrolled customer ${customerId} in flow "${flow.name}" from category`);
+            console.log(`[JOURNEY-CATEGORY] Enrolled customer ${customerId} in flow "${flow.name}" (${flow.isGeneral ? 'general' : 'category-specific'})`);
         } catch (error) {
             console.error('[JOURNEY-CATEGORY-ERROR] Enrollment failed:', error);
         }
+    }
+
+    /**
+     * تسجيل عميل في flow عام (لما ميكونش ليه تصنيف محدد)
+     */
+    async enrollInGeneralFlow(companyId, customerId, whatsappContactId) {
+        return this.enrollFromCategory(companyId, customerId, whatsappContactId, null);
     }
 
     /**

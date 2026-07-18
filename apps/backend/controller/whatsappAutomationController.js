@@ -43,7 +43,8 @@ class WhatsAppAutomationController {
                 include: {
                     _count: {
                         select: { steps: true, journeys: true, categories: true }
-                    }
+                    },
+                    categories: { select: { id: true, name: true, color: true } }
                 },
                 orderBy: { createdAt: 'desc' }
             });
@@ -62,13 +63,24 @@ class WhatsAppAutomationController {
             const companyId = this._getCompanyId(req, res);
             if (!companyId) return;
 
-            const { name } = req.body;
+            const { name, isGeneral } = req.body;
+
+            // Only one general flow allowed per company
+            if (isGeneral) {
+                const existingGeneral = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                    where: { companyId, isGeneral: true }
+                });
+                if (existingGeneral) {
+                    return res.status(400).json({ success: false, message: 'يوجد تدفق عام بالفعل. يمكنك تعديله بدلاً من إنشاء واحد جديد.', code: 'GENERAL_ALREADY_EXISTS' });
+                }
+            }
 
             const flow = await this.prisma.whatsAppFollowUpFlow.create({
                 data: {
                     companyId,
                     name,
-                    isEnabled: true
+                    isEnabled: true,
+                    isGeneral: isGeneral || false
                 }
             });
 
@@ -88,11 +100,27 @@ class WhatsAppAutomationController {
             if (!companyId) return;
 
             const { id } = req.params;
-            const { name, isEnabled } = req.body;
+            const { name, isEnabled, isGeneral } = req.body;
+
+            const data = {};
+            if (name !== undefined) data.name = name;
+            if (isEnabled !== undefined) data.isEnabled = isEnabled;
+            if (isGeneral !== undefined) {
+                // Only one general flow allowed
+                if (isGeneral) {
+                    const existingGeneral = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                        where: { companyId, isGeneral: true, id: { not: id } }
+                    });
+                    if (existingGeneral) {
+                        return res.status(400).json({ success: false, message: 'يوجد تدفق عام بالفعل', code: 'GENERAL_ALREADY_EXISTS' });
+                    }
+                }
+                data.isGeneral = isGeneral;
+            }
 
             const flow = await this.prisma.whatsAppFollowUpFlow.update({
                 where: { id, companyId },
-                data: { name, isEnabled }
+                data
             });
 
             res.json({ success: true, data: flow });
