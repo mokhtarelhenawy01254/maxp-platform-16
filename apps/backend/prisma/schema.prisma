@@ -3425,6 +3425,7 @@ enum AffiliatesCommissionType {
   PERCENTAGE
   MARKUP
   FIXED
+  FIXED_PER_ITEM
 
   @@map("affiliates_commissionType")
 }

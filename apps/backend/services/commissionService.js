@@ -373,9 +373,10 @@ class CommissionService {
           const subtotal = Number(order.subtotal || (Number(order.total) - Number(order.shipping || 0)));
           totalAffiliateProfit = (subtotal * aff.commissionRate) / 100;
         } else if (aff.commissionType === 'FIXED') {
-          // يمكن إضافة منطق للمبلغ الثابت هنا إذا لزم الأمر
-          // مثلاً مبلغ ثابت لكل طلب أو لكل قطعة
-          totalAffiliateProfit = aff.commissionRate; // مؤقتاً مبلغ ثابت للطلب
+          totalAffiliateProfit = aff.commissionRate;
+        } else if (aff.commissionType === 'FIXED_PER_ITEM') {
+          const totalQty = order.orderItems?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) || 0;
+          totalAffiliateProfit = Number(aff.commissionRate) * totalQty;
         }
       }
 

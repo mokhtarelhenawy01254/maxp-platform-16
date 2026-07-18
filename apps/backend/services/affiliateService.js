@@ -1,7 +1,7 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { isProductVisibleToAffiliate } = require('../utils/affiliateProductVisibility');
 
-const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP']);
+const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
 const VALID_AFFILIATE_STATUSES = new Set(['PENDING', 'ACTIVE', 'SUSPENDED']);
 const AFFILIATE_ORDER_TICKET_REASONS = {
   CANCEL_ORDER: {

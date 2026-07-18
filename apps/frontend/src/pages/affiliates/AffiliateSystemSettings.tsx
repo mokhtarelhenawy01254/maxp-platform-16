@@ -18,7 +18,7 @@ interface ApiSuccess<T> {
   recalculatedProducts?: number;
 }
 
-const VALID_COMMISSION_TYPES = ["PERCENTAGE", "MARKUP"] as const;
+const VALID_COMMISSION_TYPES = ["PERCENTAGE", "MARKUP", "FIXED", "FIXED_PER_ITEM"] as const;
 const VALID_PLATFORM_MARGIN_TYPES = ["FIXED", "PERCENTAGE"] as const;
 
 const parseNumberInput = (value: string, fallback: number) => {
@@ -94,6 +94,14 @@ const AffiliateSystemSettings: React.FC = () => {
 
     if (nextSettings.commissionType === "MARKUP" && commissionRate > 1000000) {
       return "قيمة هامش ربح المسوق أكبر من الحد المسموح";
+    }
+
+    if (nextSettings.commissionType === "FIXED" && commissionRate > 1000000) {
+      return "المبلغ الثابت لكل طلب أكبر من الحد المسموح";
+    }
+
+    if (nextSettings.commissionType === "FIXED_PER_ITEM" && commissionRate > 1000000) {
+      return "المبلغ الثابت لكل قطعة أكبر من الحد المسموح";
     }
 
     const platformMarginValue = Number(nextSettings.platformMarginValue);
@@ -622,6 +630,8 @@ const AffiliateSystemSettings: React.FC = () => {
                 >
                   <option value="PERCENTAGE">نسبة مئوية (%)</option>
                   <option value="MARKUP">هامش ربح ثابت</option>
+                  <option value="FIXED">مبلغ ثابت لكل طلب</option>
+                  <option value="FIXED_PER_ITEM">مبلغ ثابت لكل قطعة</option>
                 </select>
               </div>
 

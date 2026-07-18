@@ -9,7 +9,7 @@ router.use(verifyToken.authenticateToken);
 const canManageAffiliateSettings = (userRole) =>
     ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole);
 
-const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP']);
+const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
 const VALID_PLATFORM_MARGIN_TYPES = new Set(['FIXED', 'PERCENTAGE']);
 const AFFILIATE_REQUIRED_APP_SLUGS = [
     'affiliate-pro',
