@@ -539,7 +539,7 @@ async def list_logs(
         logger.warning("public_logs_query_failed", error=str(_pub_exc))
 
     # Move sorting and slicing outside try-except so they ALWAYS execute!
-    rows.sort(key=lambda r: r.created_at, reverse=True)
+    rows.sort(key=lambda r: r.created_at.replace(tzinfo=None) if r.created_at.tzinfo else r.created_at, reverse=True)
     rows = rows[offset:offset + limit]
 
     return LogListResponse(
