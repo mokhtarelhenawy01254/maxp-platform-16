@@ -2816,7 +2816,8 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       where: { companyId: String(companyId), isActive: true },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         email: true,
         role: true
       }
@@ -2838,7 +2839,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
     users.forEach(user => {
       userPerformance[user.id] = {
         userId: user.id,
-        userName: user.name,
+        userName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
         email: user.email,
         role: user.role,
         ordersCreated: 0,
