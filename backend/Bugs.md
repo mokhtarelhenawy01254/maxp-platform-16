@@ -1177,3 +1177,19 @@
   - `apps/frontend/src/components/dashboard/widgets/AppWidgetMini.tsx`
 
 
+### [SECURITY/FIX] WhatsApp Cloud Connect App Secret Protection & Dynamic PIN
+- **Date**: 2026-07-19 / 2026-03-09
+- **Description**: Secured the Meta OAuth credentials from git history, generated random registration PINs, and aligned Graph API versions.
+- **Root Cause**:
+  1. The Facebook App Client Secret (`appSecret`) was stored in clear text inside `apps/backend/data/facebook-oauth-config.json` and committed to the Git repository, presenting a security vulnerability.
+  2. The registration API call for WhatsApp numbers during Embedded Sign-up utilized a hardcoded PIN `'000000'`, which is not secure for production use.
+  3. The Graph API version defaults diverged between the frontend (`v25.0`) and backend (`v22.0`).
+- **Resolution**:
+  1. Replaced sensitive credentials in `facebook-oauth-config.json` with safe placeholders and added the file to `.gitignore` to prevent future check-ins of server configuration values. Provided `facebook-oauth-config.example.json` as a baseline template.
+  2. Modified the `facebookEmbeddedConnect` method in `whatsappController.js` to generate a random 6-digit PIN dynamically for phone registrations, and stored it inside the session record's `metadata` field.
+  3. Updated default `META_GRAPH_VERSION` to `'v25.0'` in `whatsappController.js` to align with the frontend and modern Graph API features.
+- **Files Modified**:
+  - `apps/backend/data/facebook-oauth-config.json`
+  - `apps/backend/data/facebook-oauth-config.example.json`
+  - `apps/backend/controller/whatsappController.js`
+  - `.gitignore`

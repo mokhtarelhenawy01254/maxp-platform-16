@@ -4223,7 +4223,7 @@ async function markStatusViewed(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const facebookAppConfig = require('../config/facebookAppConfig');
-const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v22.0';
+const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v25.0';
 const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
 async function getFacebookConfig(req, res) {
@@ -4486,10 +4486,12 @@ async function facebookEmbeddedConnect(req, res) {
             console.warn('⚠️ Could not subscribe to WABA webhooks:', webhookErr.message);
         }
 
+        const registrationPin = Math.floor(100000 + Math.random() * 900000).toString();
+
         try {
             await axios.post(`${META_GRAPH_BASE}/${phoneNumberId}/register`, {
                 messaging_product: 'whatsapp',
-                pin: '000000'
+                pin: registrationPin
             }, {
                 params: { access_token: longLivedToken },
                 timeout: 15000
@@ -4525,6 +4527,7 @@ async function facebookEmbeddedConnect(req, res) {
                 metaBusinessId: businessId,
                 metaDisplayPhoneNumber: displayPhoneNumber,
                 metaApiVersion: META_GRAPH_VERSION,
+                metadata: JSON.stringify({ registrationPin }),
                 aiEnabled: true,
                 autoReply: false,
                 aiMode: 'suggest',

@@ -119,6 +119,7 @@
 1. **Single Source of Truth Configuration (`facebook-oauth-config.json`)**:
    - Removed hardcoded fallback Facebook app secrets from `facebookAppConfig.js`.
    - Unified config loading to read `appId` and `appSecret` dynamically from `facebook-oauth-config.json` (managed via `/super-admin/facebook-oauth`) with environment variable overrides.
+   - Secured by clearing committed credentials in Git, adding it to `.gitignore`, and providing `facebook-oauth-config.example.json` as a baseline template.
    - Updated `webhookController.js` to verify Meta webhook signatures using the app secret resolved from this unified module fallback.
 
 ### AI Agent Sandbox
