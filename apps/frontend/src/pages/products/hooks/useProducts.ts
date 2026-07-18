@@ -448,7 +448,7 @@ export const useProducts = () => {
         payload.stock = parseInt(editStock, 10);
       }
 
-      if (editSku !== undefined) {
+      if (editSku !== (currentProduct?.sku ?? '')) {
         payload.sku = editSku;
       }
 
