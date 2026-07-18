@@ -567,78 +567,101 @@ class AnalyticsService {
   }
 
   async getOrderBreakdown(companyId, startDate, endDate) {
-    const prisma = getSharedPrismaClient();
-    const where = {
-      companyId,
-      createdAt: { gte: startDate, lte: endDate },
-    };
+    const buildOne = async (cid, start, end) => {
+      const prisma = getSharedPrismaClient();
+      const where = { companyId: cid, createdAt: { gte: start, lte: end } };
 
-    const [regularOrders, guestOrders] = await Promise.all([
-      prisma.order.findMany({
-        where,
-        select: { orderNumber: true, status: true, paymentMethod: true },
-      }),
-      prisma.guestOrder.findMany({
-        where,
-        select: { orderNumber: true, status: true, paymentMethod: true },
-      }),
-    ]);
+      const [statusGroups, paymentGroups, guestOrders, orderNumbers] = await Promise.all([
+        prisma.order.groupBy({
+          by: ['status'],
+          where,
+          _count: { status: true },
+        }),
+        prisma.order.groupBy({
+          by: ['paymentMethod'],
+          where,
+          _count: { paymentMethod: true },
+        }),
+        prisma.guestOrder.findMany({
+          where,
+          select: { orderNumber: true, status: true, paymentMethod: true },
+        }),
+        prisma.order
+          .findMany({ where, select: { orderNumber: true } })
+          .then((rows) => new Set(rows.map((o) => o.orderNumber).filter(Boolean))),
+      ]);
 
-    const regularOrderNumbers = new Set(
-      regularOrders
-        .map((o) => o.orderNumber)
-        .filter(Boolean),
-    );
-    const supplementalGuests = guestOrders.filter(
-      (o) => !o.orderNumber || !regularOrderNumbers.has(o.orderNumber),
-    );
+      const supplementalGuests = guestOrders.filter(
+        (o) => !o.orderNumber || !orderNumbers.has(o.orderNumber),
+      );
 
-    const statusMap = {
-      DELIVERED: 'delivered',
-      PROCESSING: 'processing',
-      PENDING: 'pending',
-      CANCELLED: 'cancelled',
-      REFUNDED: 'refunded',
-      RETURNED: 'returned',
-      PARTIALLY_REFUNDED: 'refunded',
-      PARTIALLY_RETURNED: 'returned',
-      ON_HOLD: 'on-hold',
-      CONFIRMED: 'confirmed',
-      TRASH: 'trash',
-      EXCHANGED: 'exchanged',
-      SCHEDULED: 'scheduled',
-      SHIPPED: 'shipped',
-      READY_TO_SHIP: 'ready_to_ship',
-    };
+      const statusMap = {
+        DELIVERED: 'delivered', PROCESSING: 'processing', PENDING: 'pending',
+        CANCELLED: 'cancelled', REFUNDED: 'refunded', RETURNED: 'returned',
+        PARTIALLY_REFUNDED: 'refunded', PARTIALLY_RETURNED: 'returned',
+        ON_HOLD: 'on-hold', CONFIRMED: 'confirmed', TRASH: 'trash',
+        EXCHANGED: 'exchanged', SCHEDULED: 'scheduled', SHIPPED: 'shipped',
+        READY_TO_SHIP: 'ready_to_ship',
+      };
 
-    const byStatus = {};
-    let codOrders = 0;
-    let prepaidOrders = 0;
+      const byStatus = {};
+      let codOrders = 0;
+      let prepaidOrders = 0;
 
-    const countOrder = (order) => {
-      const raw = typeof order.status === 'string' ? order.status.toUpperCase() : '';
-      const key = statusMap[raw] || raw.toLowerCase() || 'unknown';
-      byStatus[key] = (byStatus[key] || 0) + 1;
-
-      const pm = typeof order.paymentMethod === 'string' ? order.paymentMethod.toUpperCase() : '';
-      if (pm === 'CASH') {
-        codOrders++;
-      } else if (pm) {
-        prepaidOrders++;
+      for (const g of statusGroups) {
+        const raw = String(g.status).toUpperCase();
+        const key = statusMap[raw] || raw.toLowerCase() || 'unknown';
+        byStatus[key] = (byStatus[key] || 0) + g._count.status;
       }
+
+      for (const g of paymentGroups) {
+        const pm = String(g.paymentMethod).toUpperCase();
+        if (pm === 'CASH') codOrders += g._count.paymentMethod;
+        else prepaidOrders += g._count.paymentMethod;
+      }
+
+      for (const o of supplementalGuests) {
+        const raw = String(o.status).toUpperCase();
+        const key = statusMap[raw] || raw.toLowerCase() || 'unknown';
+        byStatus[key] = (byStatus[key] || 0) + 1;
+
+        const pm = String(o.paymentMethod).toUpperCase();
+        if (pm === 'CASH') codOrders++;
+        else if (pm) prepaidOrders++;
+      }
+
+      const totalRegular = statusGroups.reduce((s, g) => s + g._count.status, 0);
+
+      return {
+        totalOrders: totalRegular + supplementalGuests.length,
+        ordersByStatus: byStatus,
+        codOrders,
+        prepaidOrders,
+        cancelledOrders: byStatus['cancelled'] || 0,
+        rejectedOrders: 0,
+      };
     };
 
-    regularOrders.forEach(countOrder);
-    supplementalGuests.forEach(countOrder);
+    const current = await buildOne(companyId, startDate, endDate);
 
-    return {
-      totalOrders: regularOrders.length + supplementalGuests.length,
-      ordersByStatus: byStatus,
-      codOrders,
-      prepaidOrders,
-      cancelledOrders: byStatus['cancelled'] || 0,
-      rejectedOrders: 0,
-    };
+    const periodMs = endDate.getTime() - startDate.getTime();
+    const prevEnd = new Date(startDate.getTime() - 86400000);
+    const prevStart = new Date(prevEnd.getTime() - periodMs);
+
+    if (prevStart < startDate) {
+      const prev = await buildOne(companyId, prevStart, prevEnd);
+      return {
+        ...current,
+        prevPeriod: {
+          totalOrders: prev.totalOrders,
+          codOrders: prev.codOrders,
+          prepaidOrders: prev.prepaidOrders,
+          cancelledOrders: prev.cancelledOrders,
+        },
+      };
+    }
+
+    return { ...current, prevPeriod: null };
   }
 
   async getStoreAnalytics(companyId, startDate, endDate) {
