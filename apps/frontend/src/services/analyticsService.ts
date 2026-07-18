@@ -850,9 +850,9 @@ class AnalyticsService {
     }
   }
 
-  async getCustomerQualityAnalytics(startDate?: string, endDate?: string) {
+  async getCustomerQualityAnalytics(period: string = "30", startDate?: string, endDate?: string) {
     try {
-      const params: AnalyticsQueryParams = {};
+      const params: any = { period };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       const response = await apiClient.get("/analytics/customer-quality", {

@@ -1960,7 +1960,8 @@ const getCustomerQualityAnalytics = async (req, res) => {
       return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, period } = req.query;
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
     const prisma = getSharedPrismaClient();
 
     const customers = await prisma.customer.findMany({
@@ -1969,12 +1970,12 @@ const getCustomerQualityAnalytics = async (req, res) => {
       },
       include: {
         orders: {
-          where: startDate && endDate ? {
+          where: {
             createdAt: {
-              gte: new Date(startDate),
-              lte: new Date(endDate)
+              gte: start,
+              lte: end
             }
-          } : {},
+          },
           select: {
             id: true,
             total: true,
@@ -2037,12 +2038,24 @@ const getCustomerQualityAnalytics = async (req, res) => {
         totalSpent,
         avgOrderValue: completedOrders > 0 ? (totalSpent / completedOrders).toFixed(2) : 0,
         daysSinceLastOrder,
+        lastOrderDate: lastOrderDate ? lastOrderDate.toISOString() : null,
         completionRate: (completionRate * 100).toFixed(2),
         score: Math.min(100, score),
         tier
       };
     }).filter(c => c.totalOrders > 0)
       .sort((a, b) => b.score - a.score);
+
+    const totalCustomers = customerScores.length;
+    const repeatCustomers = customerScores.filter(c => c.totalOrders > 1).length;
+    const newCustomers = customerScores.filter(c => c.totalOrders === 1).length;
+    const repeatRate = totalCustomers > 0 ? parseFloat(((repeatCustomers / totalCustomers) * 100).toFixed(1)) : 0;
+    const totalRevenue = customerScores.reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
+    const totalOrdersCount = customerScores.reduce((sum, c) => sum + c.totalOrders, 0);
+    const averageOrderValue = totalOrdersCount > 0 ? parseFloat((totalRevenue / totalOrdersCount).toFixed(2)) : 0;
+    const customerLifetimeValue = totalCustomers > 0 ? parseFloat((totalRevenue / totalCustomers).toFixed(2)) : 0;
+
+    const vipRevenue = customerScores.filter(c => c.tier === 'VIP').reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
 
     // Segment customers by tier
     const tierCounts = {
@@ -2052,19 +2065,39 @@ const getCustomerQualityAnalytics = async (req, res) => {
       'منخفض': customerScores.filter(c => c.tier === 'منخفض').length
     };
 
-    const totalRevenue = customerScores.reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
-    const vipRevenue = customerScores.filter(c => c.tier === 'VIP').reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
+    const topCustomers = customerScores.slice(0, 100).map(c => ({
+      id: c.customerId,
+      name: c.customerName,
+      email: c.customerPhone,
+      orders: c.totalOrders,
+      totalSpent: c.totalSpent,
+      lastOrderDate: c.lastOrderDate || new Date().toISOString()
+    }));
+
+    const segments = [
+      { segment: 'VIP', count: tierCounts.VIP, revenue: vipRevenue },
+      { segment: 'عالي', count: tierCounts['عالي'], revenue: 0 },
+      { segment: 'متوسط', count: tierCounts['متوسط'], revenue: 0 },
+      { segment: 'منخفض', count: tierCounts['منخفض'], revenue: 0 }
+    ];
 
     res.json({
       success: true,
       data: {
+        totalCustomers,
+        repeatCustomers,
+        newCustomers,
+        repeatRate,
+        averageOrderValue,
+        customerLifetimeValue,
+        topCustomers,
+        segments,
         customers: customerScores.slice(0, 100),
-        totalCustomers: customerScores.length,
         tierCounts,
         totalRevenue,
         vipRevenue,
-        vipRevenuePercentage: totalRevenue > 0 ? ((vipRevenue / totalRevenue) * 100).toFixed(2) : 0,
-        avgCustomerScore: customerScores.length > 0 ? (customerScores.reduce((sum, c) => sum + c.score, 0) / customerScores.length).toFixed(2) : 0
+        vipRevenuePercentage: totalRevenue > 0 ? parseFloat(((vipRevenue / totalRevenue) * 100).toFixed(2)) : 0,
+        avgCustomerScore: customerScores.length > 0 ? parseFloat((customerScores.reduce((sum, c) => sum + c.score, 0) / customerScores.length).toFixed(2)) : 0
       }
     });
   } catch (error) {
