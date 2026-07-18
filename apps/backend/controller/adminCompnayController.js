@@ -1499,6 +1499,26 @@ const deleteCompany = async (req, res) => {
             where: { companyId }
         });
 
+        // Delete hotel data first to avoid FK constraint issues
+        await getSharedPrismaClient().hotelReservationRoom.deleteMany({
+            where: { reservation: { companyId } }
+        });
+        await getSharedPrismaClient().hotelReservation.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelFolioItem.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelRoom.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelRoomType.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelProperty.deleteMany({
+            where: { companyId }
+        });
+
         await getSharedPrismaClient().company.delete({
             where: { id: companyId }
         });

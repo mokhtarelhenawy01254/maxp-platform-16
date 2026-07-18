@@ -141,8 +141,8 @@ model HotelReservationRoom {
   updatedAt      DateTime  @updatedAt
 
   reservation HotelReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-  room        HotelRoom         @relation(fields: [roomId], references: [id])
-  roomType    HotelRoomType     @relation(fields: [roomTypeId], references: [id])
+  room        HotelRoom         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomType    HotelRoomType     @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
 
   @@unique([reservationId, roomId])
   @@index([reservationId])
