@@ -1039,7 +1039,6 @@ export const getSidebarConfig = (
             id: 'hotel',
             title: t('sidebar.hotelModule'),
             icon: BuildingOffice2Icon,
-            hidden: !isAppActive('hotel-app'),
             items: [
                 { to: '/admin/hotel', icon: BuildingOffice2Icon, label: t('sidebar.hotelDashboard') },
             ]

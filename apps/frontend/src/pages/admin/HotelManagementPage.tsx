@@ -109,15 +109,15 @@ export default function HotelManagementPage() {
   };
 
   if (loading) return (
-    <div className="p-8"><div className="animate-pulse space-y-4">
+    <div className="h-full overflow-y-auto"><div className="p-8 animate-pulse space-y-4">
       <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48" />
       <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
     </div></div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
-      <div className="p-6" dir="rtl">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 overflow-y-auto" dir="rtl">
+      <div className="p-6 min-h-0" dir="rtl">
       <h1 className="text-2xl font-bold mb-6">🏨 نظام إدارة الفنادق</h1>
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
 
