@@ -60,12 +60,16 @@ const formatChange = (current: number, prev: number | undefined): string | null 
 };
 
 const PERIODS = [
+  { value: "today", label: "اليوم" },
+  { value: "yesterday", label: "أمس" },
   { value: "7", label: "آخر 7 أيام" },
+  { value: "14", label: "آخر 14 يوم" },
   { value: "30", label: "آخر 30 يوم" },
   { value: "90", label: "آخر 3 شهور" },
   { value: "180", label: "آخر 6 شهور" },
   { value: "365", label: "آخر سنة" },
   { value: "730", label: "آخر سنتين" },
+  { value: "custom", label: "فترة مخصصة" },
 ];
 
 const COMPARISONS = [
@@ -74,11 +78,20 @@ const COMPARISONS = [
   { value: "none", label: "بدون مقارنة" },
 ];
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const daysAgo = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+};
+
 const OrdersAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState("30");
   const [comparisonType, setComparisonType] = useState("previous");
+  const [customStart, setCustomStart] = useState(daysAgo(30));
+  const [customEnd, setCustomEnd] = useState(todayStr());
   const [totalOrders, setTotalOrders] = useState(0);
   const [codOrders, setCodOrders] = useState(0);
   const [prepaidOrders, setPrepaidOrders] = useState(0);
@@ -90,16 +103,21 @@ const OrdersAnalytics: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [period, comparisonType]);
+  }, [period, comparisonType, customStart, customEnd]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      const isCustom = period === "custom";
+      const p = isCustom ? "365" : period;
+      const sd = isCustom ? customStart : undefined;
+      const ed = isCustom ? customEnd : undefined;
+
       const [storeData, dailyRes] = await Promise.all([
-        analyticsService.getStoreAnalytics(period, undefined, undefined, comparisonType),
-        analyticsService.getDailyAnalytics(period),
+        analyticsService.getStoreAnalytics(p, sd, ed, comparisonType),
+        analyticsService.getDailyAnalytics(p, sd, ed),
       ]);
 
       if (storeData.success) {
@@ -242,7 +260,7 @@ const OrdersAnalytics: React.FC = () => {
             تتبع وتحليل حالات الطلبات
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
@@ -254,6 +272,23 @@ const OrdersAnalytics: React.FC = () => {
               </option>
             ))}
           </select>
+          {period === "custom" && (
+            <>
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+              />
+              <span className="text-gray-500">إلى</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+              />
+            </>
+          )}
           <select
             value={comparisonType}
             onChange={(e) => setComparisonType(e.target.value)}
