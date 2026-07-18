@@ -759,7 +759,6 @@ export const getSidebarConfig = (
             icon: UsersIcon,
             items: [
                 { to: '/customers', icon: UsersIcon, label: t('sidebar.customers') },
-                { to: '/leads', icon: UserPlusIcon, label: t('sidebar.leads') },
                 { to: '/customers?status=LEAD', icon: UserPlusIcon, label: t('sidebar.customerStatusLead') },
                 { to: '/customers?status=ACTIVE', icon: CheckCircleIcon, label: t('sidebar.customerStatusActive') },
                 { to: '/customers?status=INACTIVE', icon: ClockIcon, label: t('sidebar.customerStatusInactive') },
