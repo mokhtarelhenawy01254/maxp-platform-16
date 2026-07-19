@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Cog6ToothIcon,
-  CreditCardIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
@@ -101,14 +100,6 @@ const Settings: React.FC = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate("/marketplace")}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/10"
-        >
-          <CreditCardIcon className="h-5 w-5" />
-          إدارة الاشتراك والفواتير
-        </button>
       </div>
 
       <div className="rounded-3xl border border-border bg-card">
