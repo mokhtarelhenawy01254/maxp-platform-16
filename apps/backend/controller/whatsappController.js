@@ -4463,7 +4463,7 @@ async function facebookEmbeddedConnect(req, res) {
             return res.status(400).json({ error: 'Facebook App Secret غير مضبوط. الرجاء ضبطه من لوحة تحكم السوبر أدمن.' });
         }
 
-        const redirectUri = clientRedirectUri || (() => {
+        let redirectUri = clientRedirectUri || (() => {
             const origin = req.get('Origin') || req.get('Referer') || '';
             try {
                 return origin ? new URL(origin).origin : '';
@@ -4471,6 +4471,17 @@ async function facebookEmbeddedConnect(req, res) {
                 return '';
             }
         })();
+
+        if (redirectUri) {
+            try {
+                const parsedUrl = new URL(redirectUri);
+                if (parsedUrl.pathname === '/' && !redirectUri.endsWith('/')) {
+                    redirectUri = redirectUri + '/';
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
 
         console.log('🔗 [facebookEmbeddedConnect] Using redirect_uri for token exchange:', redirectUri);
 

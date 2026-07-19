@@ -277,7 +277,7 @@ const WhatsAppCloudConnect: React.FC = () => {
         const payload: Record<string, unknown> = {
           code,
           sessionName: name,
-          redirectUri: window.location.origin,
+          redirectUri: window.location.origin + "/",
         };
         if (wabaId && phoneNumberId) {
           Object.assign(payload, { wabaId, phoneNumberId, businessId });
