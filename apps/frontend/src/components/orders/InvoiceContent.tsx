@@ -126,6 +126,23 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
   const items = page?.chunkItems ?? (invoice.order?.orderItems || []);
   
+  let governorate = invoice.governorate;
+  let city = invoice.city;
+  
+  if (!governorate || !city) {
+    if (typeof invoice.customerAddress === "string" && invoice.customerAddress.startsWith("{")) {
+       try {
+         const addr = JSON.parse(invoice.customerAddress);
+         if (!governorate) governorate = addr.governorate || addr.state;
+         if (!city) city = addr.city;
+       } catch (e) {}
+    } else if (typeof invoice.customerAddress === "object" && invoice.customerAddress) {
+       const addr = invoice.customerAddress as any;
+       if (!governorate) governorate = addr.governorate || addr.state;
+       if (!city) city = addr.city;
+    }
+  }
+  
   // Format total (e.g. 854.94 جنيه)
   const fm = (a: number) => `${new Intl.NumberFormat("ar-EG").format(a)} جنيه`;
   
@@ -180,7 +197,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
            <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "center" }}>
              {showOrderBarcode && (
-               <InvoiceBarcode value={invoice.order!.orderNumber!} label="رقم الطلب" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+               <InvoiceBarcode value={invoice.order!.orderNumber!} label="كود الاوردر" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
              )}
            </div>
         </div>
@@ -197,11 +214,11 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>المحافظة</div>
-             <div style={valueStyle}>{invoice.governorate || "—"}</div>
+             <div style={valueStyle}>{governorate || "—"}</div>
            </div>
            <div style={{ padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>المدينة</div>
-             <div style={valueStyle}>{invoice.city || "—"}</div>
+             <div style={valueStyle}>{city || "—"}</div>
            </div>
         </div>
 
@@ -259,17 +276,21 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         </div>
 
         {/* Row 7: Shipping Barcode & Total (Footer) */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: compact ? "50px" : "65px", alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.2fr", minHeight: compact ? "50px" : "65px", alignItems: "stretch" }}>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
              {showShipBarcode ? (
-               <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="رقم الشحنة" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+               <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="كود الشحن" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
              ) : (
                <span style={{ color: "#94a3b8" }}>—</span>
              )}
            </div>
+           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>تكلفة الشحن :</div>
+             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700 }}>{fm(parseNumber(invoice.shipping))}</div>
+           </div>
            <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
              <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>المبلغ المطلوب تحصيله :</div>
-             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 800, fontSize: compact ? "16px" : "20px" }}>{fm(totalAmount)}</div>
+             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 900, fontSize: compact ? "16px" : "20px" }}>{fm(totalAmount)}</div>
            </div>
         </div>
       </div>

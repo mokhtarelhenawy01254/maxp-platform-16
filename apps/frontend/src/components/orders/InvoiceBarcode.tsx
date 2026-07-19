@@ -38,11 +38,11 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-0.5" style={{ textAlign: "center", lineHeight: 1 }}>
-      <svg ref={svgRef} style={{ maxWidth: "100%", height: `${height}px` }} />
-      <span style={{ fontSize: compact ? "8px" : "10px", fontWeight: "bold", color: "#374151" }}>
+      <div style={{ fontSize: compact ? "12px" : "15px", fontWeight: 800, textAlign: "center", marginBottom: "2px", color: "#000" }}>
         {label}
-      </span>
-      <span style={{ fontSize: compact ? "8px" : "9px", color: "#6B7280", fontFamily: "monospace" }}>
+      </div>
+      <svg ref={svgRef} style={{ maxWidth: "100%", height: `${height}px` }} />
+      <span style={{ fontSize: compact ? "8px" : "9px", color: "#6B7280", fontFamily: "monospace", marginTop: "2px" }}>
         {value}
       </span>
     </div>
