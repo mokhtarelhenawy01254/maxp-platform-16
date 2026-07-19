@@ -1,14 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import InvoiceContent from "../../components/orders/InvoiceContent";
+import InvoiceContent, { getInvoicePages, type InvoiceData } from "../../components/orders/InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 
 interface Invoice {
   id: string;
   invoiceNumber: string;
-  issueDate: string;
-  dueDate: string | null;
   subtotal: number;
   tax: number;
   shipping: number;
@@ -20,16 +18,11 @@ interface Invoice {
   customerEmail: string | null;
   customerAddress: string | null;
   city: string | null;
-  governorrate: string | null;
   companyName: string;
   companyPhone: string | null;
-  companyEmail: string | null;
-  companyAddress: string | null;
   companyLogo: string | null;
   paymentMethod: string | null;
   paymentStatus: string;
-  notes: string | null;
-  terms: string | null;
   order: {
     orderNumber: string;
     turboTrackingNumber?: string | null;
@@ -38,14 +31,55 @@ interface Invoice {
       productSku?: string | null;
       productColor?: string | null;
       productSize?: string | null;
-      productDetails?: string;
       quantity: number;
       price: number;
       total: number;
-      metadata?: unknown;
-      product?: { sku?: string | null };
     }>;
   };
+}
+
+/** Convert API Invoice to InvoiceData shape */
+function toInvoiceData(inv: Invoice): InvoiceData {
+  return {
+    id: inv.id,
+    invoiceNumber: inv.invoiceNumber,
+    companyName: inv.companyName,
+    companyPhone: inv.companyPhone,
+    companyLogo: inv.companyLogo,
+    customerName: inv.customerName,
+    customerPhone: inv.customerPhone,
+    customerEmail: inv.customerEmail,
+    customerAddress: inv.customerAddress,
+    city: inv.city,
+    paymentMethod: inv.paymentMethod,
+    paymentStatus: inv.paymentStatus,
+    currency: inv.currency,
+    subtotal: inv.subtotal,
+    tax: inv.tax,
+    shipping: inv.shipping,
+    discount: inv.discount,
+    totalAmount: inv.totalAmount,
+    order: {
+      orderNumber: inv.order.orderNumber,
+      turboTrackingNumber: inv.order.turboTrackingNumber,
+      orderItems: inv.order.orderItems?.map((item) => ({
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        productSku: item.productSku,
+        productColor: item.productColor,
+        productSize: item.productSize,
+      })),
+    },
+  };
+}
+
+/** Represents one half-page slot on an A4 sheet */
+interface PageSlot {
+  invoiceData: InvoiceData;
+  page: ReturnType<typeof getInvoicePages>[0];
+  key: string;
 }
 
 const PrintMultipleInvoices: React.FC = () => {
@@ -63,22 +97,17 @@ const PrintMultipleInvoices: React.FC = () => {
         setLoading(false);
         return;
       }
-
       const invoiceIds = ids.split(",");
-      const fetchedInvoices: Invoice[] = [];
-
+      const fetched: Invoice[] = [];
       for (const id of invoiceIds) {
         try {
           const response = await apiClient.get(`/order-invoices/${id}`);
-          if (response.data.success) {
-            fetchedInvoices.push(response.data.data);
-          }
+          if (response.data.success) fetched.push(response.data.data);
         } catch (err) {
           console.error(`Error fetching invoice ${id}:`, err);
         }
       }
-
-      setInvoices(fetchedInvoices);
+      setInvoices(fetched);
       setLoading(false);
     } catch (err: unknown) {
       console.error("Error fetching invoices:", err);
@@ -87,17 +116,32 @@ const PrintMultipleInvoices: React.FC = () => {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    void fetchInvoices();
-  }, [fetchInvoices]);
+  useEffect(() => { void fetchInvoices(); }, [fetchInvoices]);
 
   useEffect(() => {
     if (invoices.length > 0 && !loading) {
-      setTimeout(() => {
-        window.print();
-      }, 1000);
+      setTimeout(() => { window.print(); }, 1000);
     }
   }, [invoices, loading]);
+
+  // Expand every invoice into its page chunks, collect all slots
+  const allSlots: PageSlot[] = useMemo(() => {
+    const slots: PageSlot[] = [];
+    invoices.forEach((inv) => {
+      const data = toInvoiceData(inv);
+      const pages = getInvoicePages(data);
+      pages.forEach((page) => {
+        slots.push({ invoiceData: data, page, key: `${inv.id}-p${page.pageIndex}` });
+      });
+    });
+    return slots;
+  }, [invoices]);
+
+  // Pair slots into A4 sheets (2 per sheet)
+  const a4Sheets: PageSlot[][] = [];
+  for (let i = 0; i < allSlots.length; i += 2) {
+    a4Sheets.push(allSlots.slice(i, i + 2));
+  }
 
   if (loading) {
     return (
@@ -113,17 +157,9 @@ const PrintMultipleInvoices: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 text-xl">{error}</p>
-        </div>
+        <p className="text-red-600 text-xl">{error}</p>
       </div>
     );
-  }
-
-  // Group invoices into pairs (2 per A4 sheet)
-  const pairs: Invoice[][] = [];
-  for (let i = 0; i < invoices.length; i += 2) {
-    pairs.push(invoices.slice(i, i + 2));
   }
 
   return (
@@ -131,9 +167,25 @@ const PrintMultipleInvoices: React.FC = () => {
       <style>{`
         @media print {
           html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
-          .a4-sheet { page-break-after: always; width: 100%; }
+          .a4-sheet {
+            width: 210mm;
+            height: 297mm;
+            page-break-after: always;
+            page-break-inside: avoid;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+          }
           .a4-sheet:last-child { page-break-after: auto; }
-          .invoice-half { height: 50%; overflow: hidden; padding: 3mm 5mm; }
+          .a4-half {
+            width: 100%;
+            height: 148.5mm;
+            overflow: hidden;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+          }
+          .invoice-header, .invoice-totals { page-break-inside: avoid; }
           .no-print { display: none !important; }
           @page { margin: 0; size: A4; }
         }
@@ -151,11 +203,11 @@ const PrintMultipleInvoices: React.FC = () => {
             box-shadow: 0 2px 12px rgba(0,0,0,0.06);
             overflow: hidden;
           }
-          .invoice-half {
-            padding: 10px 14px;
+          .a4-half {
             border-bottom: 1px dashed #cbd5e1;
+            min-height: 148mm;
           }
-          .invoice-half:last-child { border-bottom: none; }
+          .a4-half:last-child { border-bottom: none; }
         }
       `}</style>
 
@@ -164,16 +216,8 @@ const PrintMultipleInvoices: React.FC = () => {
           onClick={() => window.print()}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
             />
           </svg>
@@ -181,46 +225,15 @@ const PrintMultipleInvoices: React.FC = () => {
         </button>
       </div>
 
-      {pairs.map((pair, pageIdx) => (
-        <div key={pageIdx} className="a4-sheet">
-          {pair.map((inv) => (
-            <div key={inv.id} className="invoice-half">
+      {a4Sheets.map((slots, sheetIdx) => (
+        <div key={sheetIdx} className="a4-sheet">
+          {slots.map((slot) => (
+            <div key={slot.key} className="a4-half">
               <InvoiceContent
-                invoice={{
-                  id: inv.id,
-                  invoiceNumber: inv.invoiceNumber,
-                  companyName: inv.companyName,
-                  companyPhone: inv.companyPhone,
-                  companyLogo: inv.companyLogo,
-                  customerName: inv.customerName,
-                  customerPhone: inv.customerPhone,
-                  customerEmail: inv.customerEmail,
-                  customerAddress: inv.customerAddress,
-                  city: inv.city,
-                  paymentMethod: inv.paymentMethod,
-                  paymentStatus: inv.paymentStatus,
-                  currency: inv.currency,
-                  subtotal: inv.subtotal,
-                  tax: inv.tax,
-                  shipping: inv.shipping,
-                  discount: inv.discount,
-                  totalAmount: inv.totalAmount,
-                  order: {
-                    orderNumber: inv.order?.orderNumber,
-                    turboTrackingNumber: inv.order?.turboTrackingNumber,
-                    orderItems: inv.order?.orderItems?.map((item) => ({
-                      productName: item.productName,
-                      quantity: item.quantity,
-                      price: item.price,
-                      total: item.total,
-                      productSku: item.productSku ?? item.product?.sku ?? null,
-                      productColor: item.productColor ?? null,
-                      productSize: item.productSize ?? null,
-                    })),
-                  },
-                }}
+                invoice={slot.invoiceData}
                 settings={settings}
                 compact
+                page={slot.page}
               />
             </div>
           ))}
