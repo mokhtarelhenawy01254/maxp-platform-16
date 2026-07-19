@@ -164,6 +164,8 @@ const OrderInvoice: React.FC<{ orderId?: string; invoiceId?: string }> = ({
   return (
     <div className="invoice-wrapper">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+        
         @media print {
           html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
           .invoice-page { padding: 0 !important; }

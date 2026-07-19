@@ -20,7 +20,7 @@ export const DEFAULT_INVOICE_SETTINGS: InvoicePrintSettings = {
   showOrderItems: true,
   primaryColor: "#0f766e",
   secondaryColor: "#6b7280",
-  fontFamily: '"Segoe UI", Tahoma, Arial, sans-serif',
+  fontFamily: 'Cairo, "Segoe UI", Tahoma, Arial, sans-serif',
   showBarcodeOrderCode: true,
   showBarcodeShippingCode: true,
 };
@@ -138,45 +138,41 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   const hasBarcode = (showOrderBarcode || showShipBarcode);
 
   // shared compact row padding
-  const rp = compact ? "1px 3px" : "2px 6px";
-  const rowFont = compact ? "10px" : "12px";
-  const thFont = compact ? "9px" : "11px";
+  const rp = compact ? "1.5px 4px" : "3px 6px";
+  const rowFont = compact ? "11px" : "13.5px";
+  const thFont = compact ? "10px" : "12px";
   const sep = "1px solid #d1d5db";
 
   return (
-    <div dir="rtl" style={{ fontFamily: s.fontFamily, color: "#0f172a", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: compact ? "1mm 2mm" : "0", boxSizing: "border-box" }}>
+    <div dir="rtl" style={{ fontFamily: s.fontFamily, color: "#0f172a", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: compact ? "1.5mm 2.5mm" : "0", boxSizing: "border-box" }}>
       {/* ── Top block: customer + barcodes side by side ── */}
       {isFirst && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0, borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "1mm" : "4px", marginBottom: compact ? "1mm" : "4px", gap: "3px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0, borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "1mm" : "4px", marginBottom: compact ? "1mm" : "4px", gap: "6px" }}>
           {/* customer info — left side (RTL: right) */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: compact ? "12px" : "0.95rem", marginBottom: "1px", color: s.primaryColor }}>
+            <div style={{ fontWeight: 700, fontSize: compact ? "13px" : "15px", marginBottom: "1.5px", color: s.primaryColor }}>
               {invoice.customerName}
             </div>
             {invoice.customerPhone && (
-              <div style={{ fontWeight: 500, fontSize: compact ? "10px" : "13px", marginBottom: "1px" }}>
+              <div style={{ fontWeight: 500, fontSize: compact ? "11px" : "13.5px", marginBottom: "1.5px" }}>
                 {invoice.customerPhone}
               </div>
             )}
             {addressText && (
-              <div style={{ fontSize: compact ? "9px" : "11px", color: "#374151", lineHeight: "1.3" }}>
+              <div style={{ fontSize: compact ? "10px" : "12.5px", color: "#374151", lineHeight: "1.3" }}>
                 {addressText}
                 {invoice.city ? " - " + invoice.city : ""}
               </div>
             )}
           </div>
           {/* barcodes — right side (RTL: left) */}
-          {compact && hasBarcode && isFirst && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1px", flexShrink: 0 }}>
+          {hasBarcode && isFirst && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0, width: compact ? "110px" : "150px" }}>
               {showOrderBarcode && (
-                <div style={{ transform: "scale(0.33)", transformOrigin: "left top" }}>
-                  <InvoiceBarcode value={invoice.order!.orderNumber!} label="طلب" height={28} width={1} />
-                </div>
+                <InvoiceBarcode value={invoice.order!.orderNumber!} label="طلب" height={compact ? 22 : 32} width={compact ? 1.1 : 1.3} compact={compact} />
               )}
               {showShipBarcode && (
-                <div style={{ transform: "scale(0.33)", transformOrigin: "left top" }}>
-                  <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="شحن" height={28} width={1} />
-                </div>
+                <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="شحن" height={compact ? 22 : 32} width={compact ? 1.1 : 1.3} compact={compact} />
               )}
             </div>
           )}

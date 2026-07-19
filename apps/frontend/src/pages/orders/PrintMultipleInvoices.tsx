@@ -89,6 +89,7 @@ const PrintMultipleInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { settings } = useInvoiceSettings();
+  const [printLayout, setPrintLayout] = useState<"grid" | "single">("grid");
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -120,9 +121,14 @@ const PrintMultipleInvoices: React.FC = () => {
   useEffect(() => { void fetchInvoices(); }, [fetchInvoices]);
   useEffect(() => {
     if (invoices.length > 0 && !loading) {
+      if (invoices.length === 1) {
+        setPrintLayout("single");
+      } else {
+        setPrintLayout("grid");
+      }
       setTimeout(() => {
         printClean();
-      }, 1000);
+      }, 1200);
     }
   }, [invoices, loading]);
   // Expand every invoice into its page chunks, collect all slots
@@ -138,11 +144,18 @@ const PrintMultipleInvoices: React.FC = () => {
     return slots;
   }, [invoices]);
 
-  // Group slots into A4 sheets (4 per sheet)
-  const a4Sheets: PageSlot[][] = [];
-  for (let i = 0; i < allSlots.length; i += 4) {
-    a4Sheets.push(allSlots.slice(i, i + 4));
-  }
+  // Group slots into sheets depending on layout mode (4 per sheet for grid, 1 per sheet for single)
+  const sheets = useMemo(() => {
+    if (printLayout === "single") {
+      return allSlots.map((slot) => [slot]);
+    } else {
+      const grouped: PageSlot[][] = [];
+      for (let i = 0; i < allSlots.length; i += 4) {
+        grouped.push(allSlots.slice(i, i + 4));
+      }
+      return grouped;
+    }
+  }, [allSlots, printLayout]);
 
   if (loading) {
     return (
@@ -166,36 +179,63 @@ const PrintMultipleInvoices: React.FC = () => {
   return (
     <div className="invoice-print-wrapper">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+        
         @media print {
           html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
-          .a4-sheet {
-            width: 210mm;
-            height: 297mm;
-            page-break-after: always;
-            page-break-inside: avoid;
-            padding: 0;
-            margin: 0;
-            overflow: hidden;
-            box-sizing: border-box;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-          }
-          .a4-sheet:last-child { page-break-after: auto; }
-          .a4-cell {
-            width: 105mm;
-            height: 148.5mm;
-            overflow: hidden;
-            box-sizing: border-box;
-            page-break-inside: avoid;
-            border-right: 1px dashed #e2e8f0;
-            border-bottom: 1px dashed #e2e8f0;
-          }
-          .a4-cell:nth-child(even) { border-right: none; }
-          .a4-cell:nth-child(n+3) { border-bottom: none; }
-          .invoice-header, .invoice-totals { page-break-inside: avoid; }
           .no-print { display: none !important; }
-          @page { margin: 0; size: A4; }
+          ${
+            printLayout === "grid"
+              ? `
+                @page { margin: 0; size: A4 portrait; }
+                .a4-sheet {
+                  width: 210mm;
+                  height: 297mm;
+                  page-break-after: always;
+                  page-break-inside: avoid;
+                  padding: 0;
+                  margin: 0;
+                  overflow: hidden;
+                  box-sizing: border-box;
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  grid-template-rows: 1fr 1fr;
+                }
+                .a4-sheet:last-child { page-break-after: auto; }
+                .a4-cell {
+                  width: 105mm;
+                  height: 148.5mm;
+                  overflow: hidden;
+                  box-sizing: border-box;
+                  page-break-inside: avoid;
+                  border-right: 1px dashed #e2e8f0;
+                  border-bottom: 1px dashed #e2e8f0;
+                }
+                .a4-cell:nth-child(even) { border-right: none; }
+                .a4-cell:nth-child(n+3) { border-bottom: none; }
+                `
+              : `
+                @page { margin: 6mm; size: A5 portrait; }
+                .a4-sheet {
+                  width: 100%;
+                  height: auto;
+                  page-break-after: always;
+                  page-break-inside: avoid;
+                  padding: 0;
+                  margin: 0;
+                  display: block;
+                }
+                .a4-sheet:last-child { page-break-after: auto; }
+                .a4-cell {
+                  width: 100%;
+                  height: auto;
+                  overflow: hidden;
+                  box-sizing: border-box;
+                  border: none;
+                }
+                `
+          }
+          .invoice-header, .invoice-totals { page-break-inside: avoid; }
           .invoice-number-text { display: none !important; }
         }
         @media screen {
@@ -204,47 +244,82 @@ const PrintMultipleInvoices: React.FC = () => {
             min-height: 100vh;
             padding: 32px 16px;
           }
-          .a4-sheet {
-            background: #fff;
-            max-width: 210mm;
-            margin: 0 auto 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+          ${
+            printLayout === "grid"
+              ? `
+                .a4-sheet {
+                  background: #fff;
+                  max-width: 210mm;
+                  height: 297mm;
+                  margin: 0 auto 24px;
+                  border-radius: 12px;
+                  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+                  overflow: hidden;
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  grid-template-rows: 1fr 1fr;
+                }
+                .a4-cell {
+                  padding: 10px 12px;
+                  border-right: 1px dashed #cbd5e1;
+                  border-bottom: 1px dashed #cbd5e1;
+                  overflow: hidden;
+                  box-sizing: border-box;
+                }
+                .a4-cell:nth-child(even) { border-right: none; }
+                .a4-cell:nth-child(n+3) { border-bottom: none; }
+                `
+              : `
+                .a4-sheet {
+                  background: #fff;
+                  max-width: 148mm;
+                  margin: 0 auto 24px;
+                  border-radius: 12px;
+                  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+                  overflow: hidden;
+                  padding: 16px;
+                }
+                .a4-cell {
+                  border: none;
+                }
+                `
           }
-          .a4-cell {
-            padding: 8px 10px;
-            border-right: 1px dashed #cbd5e1;
-            border-bottom: 1px dashed #cbd5e1;
-          }
-          .a4-cell:nth-child(even) { border-right: none; }
         }
       `}</style>
 
-      <div className="no-print fixed top-4 right-4 z-50">
+      <div className="no-print fixed top-4 right-4 z-50 flex items-center gap-3 bg-white p-3 rounded-xl shadow-xl border border-gray-200" dir="rtl">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-gray-700">تنسيق الطباعة:</label>
+          <select
+            value={printLayout}
+            onChange={(e) => setPrintLayout(e.target.value as "grid" | "single")}
+            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+          >
+            <option value="grid">توفير ورق (4 فواتير في ورقة A4)</option>
+            <option value="single">فاتورة كاملة (A5 أو حراري)</option>
+          </select>
+        </div>
         <button
           onClick={() => printClean()}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium shadow-md mt-auto h-[38px]"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
             />
           </svg>
-          طباعة جميع الفواتير ({invoices.length})
+          طباعة ({invoices.length})
         </button>
       </div>
 
-      {a4Sheets.map((slots, sheetIdx) => (
+      {sheets.map((slots, sheetIdx) => (
         <div key={sheetIdx} className="a4-sheet">
           {slots.map((slot) => (
             <div key={slot.key} className="a4-cell">
               <InvoiceContent
                 invoice={slot.invoiceData}
                 settings={settings}
-                compact
+                compact={printLayout === "grid"}
                 page={slot.page}
               />
             </div>
