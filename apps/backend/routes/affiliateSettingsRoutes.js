@@ -11,7 +11,7 @@ const canManageAffiliateSettings = (userRole) =>
 
 const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
 const VALID_PLATFORM_MARGIN_TYPES = new Set(['FIXED', 'PERCENTAGE']);
-const VALID_COMMISSION_TRIGGER_STATUSES = new Set(['CONFIRMED', 'DELIVERED', 'PROCESSING', 'SHIPPED', 'PAID']);
+const VALID_COMMISSION_TRIGGER_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED', 'PROCESSING', 'SHIPPED', 'PAID']);
 const AFFILIATE_REQUIRED_APP_SLUGS = [
     'affiliate-pro',
     'order-core',

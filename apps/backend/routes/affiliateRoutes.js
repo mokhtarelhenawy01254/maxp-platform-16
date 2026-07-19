@@ -1253,7 +1253,20 @@ router.post(
         },
       });
 
-      // تُحتسب العمولات لاحقاً عند تأكيد/تسليم الطلب عبر دورة الطلب الأساسية.
+      // تُحتسب العمولات فوراً إذا كان إعداد الشركة يحدد PENDING
+      try {
+        const affSetting = await prisma.affiliateSetting.findUnique({
+          where: { companyId: affiliate.companyId },
+          select: { commissionOnStatus: true },
+        });
+        if (affSetting?.commissionOnStatus === 'PENDING') {
+          const commissionService = require('../services/commissionService');
+          await commissionService.calculateCommissions(order.id);
+          console.log(`✅ [COMMISSION-PENDING] Calculated for order ${order.orderNumber}`);
+        }
+      } catch (calcErr) {
+        console.error(`❌ [COMMISSION-PENDING] Failed for order ${order.orderNumber}:`, calcErr.message);
+      }
 
       // 🚀 Push order to provider(s) if it contains imported products
       internalSyncService

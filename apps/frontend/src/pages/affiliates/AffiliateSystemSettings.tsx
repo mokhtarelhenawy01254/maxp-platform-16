@@ -697,6 +697,7 @@ const AffiliateSystemSettings: React.FC = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
+                  <option value="PENDING">فور إنشاء الطلب (PENDING)</option>
                   <option value="CONFIRMED">تأكيد الطلب (CONFIRMED)</option>
                   <option value="PROCESSING">جاري التجهيز (PROCESSING)</option>
                   <option value="SHIPPED">تم الشحن (SHIPPED)</option>
@@ -705,6 +706,7 @@ const AffiliateSystemSettings: React.FC = () => {
               </div>
               <div className="flex items-center">
                 <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                  {settings.commissionOnStatus === "PENDING" && "⚡ تتحسب العمولة فور إنشاء الطلب — مناسبة للمسوقين الموثوقين."}
                   {settings.commissionOnStatus === "CONFIRMED" && "🟢 تتحسب العمولة فور تأكيد الطلب — مناسبة للطلبات المدفوعة مسبقاً."}
                   {settings.commissionOnStatus === "PROCESSING" && "🔵 تتحسب العمولة عند بدء تجهيز الطلب."}
                   {settings.commissionOnStatus === "SHIPPED" && "📦 تتحسب العمولة عند شحن الطلب."}
