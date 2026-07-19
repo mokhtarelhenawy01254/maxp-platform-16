@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { apiClient } from "../../services/apiClient";
+import { apiClient } from "../services/apiClient";
 import {
   InvoicePrintSettings,
   DEFAULT_INVOICE_SETTINGS,
