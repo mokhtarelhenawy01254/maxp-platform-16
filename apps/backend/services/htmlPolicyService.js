@@ -460,19 +460,21 @@ class HtmlPolicyService {
     }
 
     @media print {
-      body {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
         background: #ffffff;
       }
 
       .page {
         width: 100%;
         min-height: auto;
-        padding: 0;
+        padding: 12mm;
       }
 
       @page {
         size: ${settings.pageSize} ${settings.pageOrientation};
-        margin: 10mm;
+        margin: 0;
       }
     }
   </style>

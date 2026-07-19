@@ -803,6 +803,7 @@ app.use("/api/v1/admin/whatsapp-inbox", adminWhatsAppInboxRoutes);
 app.use("/api/v1/admin/wallet", adminWalletRoutes);
 app.use("/api/v1/admin/payments", paymentRoutes);
 app.use("/api/v1/admin/invoices", invoiceRoutes);
+app.use("/api/v1/admin/order-invoices", require("./routes/adminOrderInvoiceRoutes"));
 app.use("/api/v1/admin/schedulers", schedulerRoutes);
 app.use("/api/v1/admin/self-review", require("./routes/adminSelfReviewRoutes"));
 // Backward-compatible alias for legacy admin tools that still call /api/v1/admin/*
