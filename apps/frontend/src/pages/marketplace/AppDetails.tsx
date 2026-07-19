@@ -373,7 +373,7 @@ export default function AppDetails() {
     <div className="bg-background min-h-screen overflow-x-hidden">
       <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/marketplace')}
           className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-black text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronRight size={18} aria-hidden="true" />
