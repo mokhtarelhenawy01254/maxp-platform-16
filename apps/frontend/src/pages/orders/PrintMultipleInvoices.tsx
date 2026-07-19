@@ -138,10 +138,10 @@ const PrintMultipleInvoices: React.FC = () => {
     return slots;
   }, [invoices]);
 
-  // Pair slots into A4 sheets (2 per sheet)
+  // Group slots into A4 sheets (4 per sheet)
   const a4Sheets: PageSlot[][] = [];
-  for (let i = 0; i < allSlots.length; i += 2) {
-    a4Sheets.push(allSlots.slice(i, i + 2));
+  for (let i = 0; i < allSlots.length; i += 4) {
+    a4Sheets.push(allSlots.slice(i, i + 4));
   }
 
   if (loading) {
@@ -179,9 +179,9 @@ const PrintMultipleInvoices: React.FC = () => {
             box-sizing: border-box;
           }
           .a4-sheet:last-child { page-break-after: auto; }
-          .a4-half {
+          .a4-quarter {
             width: 100%;
-            height: 148.5mm;
+            height: 74.25mm;
             overflow: hidden;
             box-sizing: border-box;
             page-break-inside: avoid;
@@ -205,11 +205,11 @@ const PrintMultipleInvoices: React.FC = () => {
             box-shadow: 0 2px 12px rgba(0,0,0,0.06);
             overflow: hidden;
           }
-          .a4-half {
+          .a4-quarter {
             border-bottom: 1px dashed #cbd5e1;
-            min-height: 148mm;
+            min-height: 74mm;
           }
-          .a4-half:last-child { border-bottom: none; }
+          .a4-quarter:last-child { border-bottom: none; }
         }
       `}</style>
 
@@ -230,7 +230,7 @@ const PrintMultipleInvoices: React.FC = () => {
       {a4Sheets.map((slots, sheetIdx) => (
         <div key={sheetIdx} className="a4-sheet">
           {slots.map((slot) => (
-            <div key={slot.key} className="a4-half">
+            <div key={slot.key} className="a4-quarter">
               <InvoiceContent
                 invoice={slot.invoiceData}
                 settings={settings}
