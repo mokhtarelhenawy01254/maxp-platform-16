@@ -12,7 +12,7 @@
     "chrome-devtools-mcp": {
       "type": "local",
       "command": [
-        "npx",
+        "npx.cmd",
         "-y",
         "chrome-devtools-mcp@latest"
       ],
