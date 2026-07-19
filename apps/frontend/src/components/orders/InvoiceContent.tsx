@@ -196,7 +196,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
 
       {/* ── Products table ── */}
       {s.showOrderItems && (
-        <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+        <div style={{ overflow: "hidden" }}>
           {items.length === 0 ? (
             <p style={{ textAlign: "center", color: "#94a3b8", padding: "4px 0", fontSize: rowFont }}>—</p>
           ) : (
