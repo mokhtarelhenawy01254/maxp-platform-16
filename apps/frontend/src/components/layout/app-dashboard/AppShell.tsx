@@ -121,6 +121,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
     const normalizedCurrent = normalizePathname(location.pathname);
 
     let parentPath: string | null = null;
+    let exactMatch = false;
 
     for (const section of appSections) {
       for (const item of section.items) {
@@ -128,6 +129,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
         const itemPath = normalizePathname(item.to);
 
         if (normalizedCurrent === itemPath) {
+          exactMatch = true;
           parentPath = null;
           break;
         }
@@ -149,7 +151,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
           if (parentPath) break;
         }
       }
-      if (parentPath !== null) break;
+      if (exactMatch || parentPath !== null) break;
     }
 
     if (parentPath) {
