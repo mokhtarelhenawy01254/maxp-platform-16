@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Cog6ToothIcon,
   ShieldCheckIcon,
@@ -60,13 +61,14 @@ const SectionHeader: React.FC<{
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { tab } = useParams<{ tab?: string }>();
+  const { t } = useTranslation();
 
   const tabs: SettingsTab[] = [
-    { id: "profile", name: "الملف الشخصي", component: ProfileSettings },
-    { id: "custom-domain", name: "الدومين المخصص", component: CustomDomainPage },
-    { id: "store", name: "إعدادات المتجر", component: StoreSettingsRedirect },
-    { id: "security", name: "الأمان", component: SecuritySettings },
-    { id: "sidebar", name: "القائمة الجانبية", component: SidebarSettings },
+    { id: "profile", name: t("settings.tabProfile"), component: ProfileSettings },
+    { id: "custom-domain", name: t("settings.tabCustomDomain"), component: CustomDomainPage },
+    { id: "store", name: t("settings.tabStore"), component: StoreSettingsRedirect },
+    { id: "security", name: t("settings.tabSecurity"), component: SecuritySettings },
+    { id: "sidebar", name: t("settings.tabSidebar"), component: SidebarSettings },
   ];
 
   const validTabIds = tabs.map((item) => item.id);
@@ -93,10 +95,10 @@ const Settings: React.FC = () => {
         <div>
           <h1 className="flex items-center text-3xl font-bold text-foreground">
             <Cog6ToothIcon className="mr-3 h-8 w-8 text-primary" />
-            الإعدادات
+            {t("settings.title")}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            إدارة إعدادات الحساب والنظام من مكان واحد.
+            {t("settings.pageDescription")}
           </p>
         </div>
 
@@ -110,6 +112,7 @@ const Settings: React.FC = () => {
 };
 
 const ProfileSettings: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -179,19 +182,19 @@ const ProfileSettings: React.FC = () => {
       if (!response.ok || !payload?.success) {
         setFeedback({
           type: "error",
-          message: payload?.message || "فشل في حفظ البيانات.",
+          message: payload?.message || t("settings.errorSaveFailed"),
         });
         return;
       }
 
       setFeedback({
         type: "success",
-        message: "تم حفظ الملف الشخصي بنجاح.",
+        message: t("settings.successProfileSaved"),
       });
     } catch (error) {
       setFeedback({
         type: "error",
-        message: "حدث خطأ أثناء حفظ الإعدادات.",
+        message: t("settings.errorSaveSettings"),
       });
     } finally {
       setIsSaving(false);
@@ -201,13 +204,13 @@ const ProfileSettings: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 px-6 py-6">
       <SectionHeader
-        title="الملف الشخصي"
-        description="حدّث بياناتك الأساسية التي تظهر على الحساب."
+        title={t("settings.profileSectionTitle")}
+        description={t("settings.profileSectionDescription")}
       />
 
       {feedback && (
         <Alert variant={feedback.type === "success" ? "default" : "destructive"}>
-          <AlertTitle>{feedback.type === "success" ? "تم بنجاح" : "خطأ"}</AlertTitle>
+          <AlertTitle>{feedback.type === "success" ? t("common.success") : t("common.error")}</AlertTitle>
           <AlertDescription>{feedback.message}</AlertDescription>
         </Alert>
       )}
@@ -220,48 +223,48 @@ const ProfileSettings: React.FC = () => {
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="profile-first-name">الاسم الأول</Label>
+              <Label htmlFor="profile-first-name">{t("settings.firstName")}</Label>
               <Input id="profile-first-name" name="firstName" type="text" autoComplete="given-name" value={formData.firstName} onChange={handleFieldChange("firstName")} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="profile-last-name">الاسم الأخير</Label>
+              <Label htmlFor="profile-last-name">{t("settings.lastName")}</Label>
               <Input id="profile-last-name" name="lastName" type="text" autoComplete="family-name" value={formData.lastName} onChange={handleFieldChange("lastName")} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="profile-email">البريد الإلكتروني</Label>
+              <Label htmlFor="profile-email">{t("common.email")}</Label>
               <Input id="profile-email" name="email" type="email" autoComplete="email" value={formData.email} disabled />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="profile-phone">رقم الهاتف</Label>
+              <Label htmlFor="profile-phone">{t("common.phone")}</Label>
               <Input id="profile-phone" name="phone" type="tel" autoComplete="tel" value={formData.phone} onChange={handleFieldChange("phone")} placeholder="+201234567890" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="profile-timezone">المنطقة الزمنية</Label>
+              <Label htmlFor="profile-timezone">{t("settings.timezone")}</Label>
               <Select value={formData.timezone} onValueChange={(value) => setFormData((prev) => ({ ...prev, timezone: value }))}>
                 <SelectTrigger id="profile-timezone">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Africa/Cairo">القاهرة (GMT+2)</SelectItem>
-                  <SelectItem value="Asia/Riyadh">الرياض (GMT+3)</SelectItem>
-                  <SelectItem value="Asia/Dubai">دبي (GMT+4)</SelectItem>
+                  <SelectItem value="Africa/Cairo">{t("settings.cairo")}</SelectItem>
+                  <SelectItem value="Asia/Riyadh">{t("settings.riyadh")}</SelectItem>
+                  <SelectItem value="Asia/Dubai">{t("settings.dubai")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="profile-language">اللغة</Label>
+              <Label htmlFor="profile-language">{t("settings.language")}</Label>
               <Select value={formData.language} onValueChange={(value) => setFormData((prev) => ({ ...prev, language: value }))}>
                 <SelectTrigger id="profile-language">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">العربية</SelectItem>
+                  <SelectItem value="ar">{t("settings.arabic")}</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
@@ -270,7 +273,7 @@ const ProfileSettings: React.FC = () => {
 
           <div className="flex justify-end">
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? "جاري الحفظ..." : "حفظ التغييرات"}
+              {isSaving ? t("settings.saving") : t("settings.saveChanges")}
             </Button>
           </div>
         </form>
@@ -280,6 +283,7 @@ const ProfileSettings: React.FC = () => {
 };
 
 const SecuritySettings: React.FC = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -301,16 +305,16 @@ const SecuritySettings: React.FC = () => {
     const errors: string[] = [];
 
     if (password.length < 6) {
-      errors.push("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
+      errors.push(t("settings.validationMinLength"));
     }
     if (!/[A-Z]/.test(password)) {
-      errors.push("أضف حرفًا كبيرًا واحدًا على الأقل.");
+      errors.push(t("settings.validationUppercase"));
     }
     if (!/[a-z]/.test(password)) {
-      errors.push("أضف حرفًا صغيرًا واحدًا على الأقل.");
+      errors.push(t("settings.validationLowercase"));
     }
     if (!/[0-9]/.test(password)) {
-      errors.push("أضف رقمًا واحدًا على الأقل.");
+      errors.push(t("settings.validationDigit"));
     }
 
     return errors;
@@ -323,7 +327,7 @@ const SecuritySettings: React.FC = () => {
     if (formData.newPassword !== formData.confirmPassword) {
       setFeedback({
         type: "error",
-        message: "كلمتا المرور الجديدتان غير متطابقتين.",
+        message: t("settings.validationPasswordMismatch"),
       });
       return;
     }
@@ -354,7 +358,7 @@ const SecuritySettings: React.FC = () => {
       if (!response.ok || !payload?.success) {
         setFeedback({
           type: "error",
-          message: payload?.message || "فشل في تغيير كلمة المرور.",
+          message: payload?.message || t("settings.errorPasswordChangeFailed"),
         });
         return;
       }
@@ -366,12 +370,12 @@ const SecuritySettings: React.FC = () => {
       });
       setFeedback({
         type: "success",
-        message: "تم تحديث كلمة المرور بنجاح.",
+        message: t("settings.successPasswordUpdated"),
       });
     } catch (error) {
       setFeedback({
         type: "error",
-        message: "حدث خطأ أثناء تغيير كلمة المرور.",
+        message: t("settings.errorPasswordChange"),
       });
     } finally {
       setIsSaving(false);
@@ -379,53 +383,53 @@ const SecuritySettings: React.FC = () => {
   };
 
   const passwordChecks = [
-    { label: "6 أحرف على الأقل", passed: formData.newPassword.length >= 6 },
-    { label: "حرف كبير واحد على الأقل", passed: /[A-Z]/.test(formData.newPassword) },
-    { label: "حرف صغير واحد على الأقل", passed: /[a-z]/.test(formData.newPassword) },
-    { label: "رقم واحد على الأقل", passed: /[0-9]/.test(formData.newPassword) },
+    { label: t("settings.requirementMinLength"), passed: formData.newPassword.length >= 6 },
+    { label: t("settings.requirementUppercase"), passed: /[A-Z]/.test(formData.newPassword) },
+    { label: t("settings.requirementLowercase"), passed: /[a-z]/.test(formData.newPassword) },
+    { label: t("settings.requirementDigit"), passed: /[0-9]/.test(formData.newPassword) },
   ];
 
   return (
     <div className="flex flex-col gap-6 px-6 py-6">
       <SectionHeader
-        title="الأمان"
-        description="غيّر كلمة المرور وراجع معايير الأمان الأساسية."
+        title={t("settings.securitySectionTitle")}
+        description={t("settings.securitySectionDescription")}
       />
 
       <div className="rounded-xl border border-border bg-muted/50 p-4">
         <div className="flex items-start gap-3">
           <ShieldCheckIcon className="mt-0.5 size-5 text-muted-foreground" />
           <p className="text-sm text-foreground">
-            استخدم كلمة مرور قوية وفريدة لحسابك، وغيّرها دوريًا لحماية بيانات الشركة.
+            {t("settings.securityTip")}
           </p>
         </div>
       </div>
 
       {feedback && (
         <Alert variant={feedback.type === "success" ? "default" : "destructive"}>
-          <AlertTitle>{feedback.type === "success" ? "تم بنجاح" : "خطأ"}</AlertTitle>
+          <AlertTitle>{feedback.type === "success" ? t("common.success") : t("common.error")}</AlertTitle>
           <AlertDescription>{feedback.message}</AlertDescription>
         </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="security-current-password">كلمة المرور الحالية</Label>
+          <Label htmlFor="security-current-password">{t("settings.currentPassword")}</Label>
           <Input id="security-current-password" name="currentPassword" type="password" autoComplete="current-password" value={formData.currentPassword} onChange={updateField("currentPassword")} />
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="security-new-password">كلمة المرور الجديدة</Label>
+          <Label htmlFor="security-new-password">{t("settings.newPassword")}</Label>
           <Input id="security-new-password" name="newPassword" type="password" autoComplete="new-password" value={formData.newPassword} onChange={updateField("newPassword")} />
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="security-confirm-password">تأكيد كلمة المرور الجديدة</Label>
+          <Label htmlFor="security-confirm-password">{t("settings.confirmNewPassword")}</Label>
           <Input id="security-confirm-password" name="confirmPassword" type="password" autoComplete="new-password" value={formData.confirmPassword} onChange={updateField("confirmPassword")} />
         </div>
 
         <div className="rounded-xl border border-border bg-muted/50 p-4">
-          <p className="mb-3 text-sm font-semibold text-foreground">متطلبات كلمة المرور</p>
+          <p className="mb-3 text-sm font-semibold text-foreground">{t("settings.passwordRequirements")}</p>
           <div className="flex flex-col gap-2">
             {passwordChecks.map((item) => (
               <div key={item.label} className={cn("flex items-center gap-2 text-sm", item.passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground")}>
@@ -438,7 +442,7 @@ const SecuritySettings: React.FC = () => {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSaving}>
-            {isSaving ? "جاري التحديث..." : "تحديث كلمة المرور"}
+            {isSaving ? t("settings.updating") : t("settings.updatePassword")}
           </Button>
         </div>
       </form>
@@ -448,6 +452,7 @@ const SecuritySettings: React.FC = () => {
 
 
 const StoreSettingsRedirect: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -459,7 +464,7 @@ const StoreSettingsRedirect: React.FC = () => {
       <div className="text-center">
         <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
         <p className="mt-4 text-sm text-muted-foreground">
-          جاري التحويل إلى إعدادات المتجر...
+          {t("settings.redirecting")}
         </p>
       </div>
     </div>
