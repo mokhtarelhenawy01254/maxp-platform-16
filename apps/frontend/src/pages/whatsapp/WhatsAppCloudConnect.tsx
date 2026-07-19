@@ -266,7 +266,6 @@ const WhatsAppCloudConnect: React.FC = () => {
     }
 
     const code = response.authResponse.code;
-    const { wabaId, phoneNumberId, businessId } = embeddedAssetData.current;
     const name = sessionNameRef.current;
 
     setStep("connecting");
@@ -274,15 +273,8 @@ const WhatsAppCloudConnect: React.FC = () => {
     const exchangeCode = async () => {
       try {
         setIsLoading(true);
-        const payload: Record<string, unknown> = {
-          code,
-          sessionName: name,
-          redirectUri: window.location.origin + window.location.pathname,
-        };
-        if (wabaId && phoneNumberId) {
-          Object.assign(payload, { wabaId, phoneNumberId, businessId });
-        }
-        const res = await apiClient.post("/whatsapp/facebook/connect-embedded", payload);
+        const payload: Record<string, unknown> = { code, sessionName: name, redirectUri: buildRedirectUri() };
+        const res = await apiClient.post("/whatsapp/facebook/connect", payload);
         setSessionId(res.data.session.id);
         setStep("success");
       } catch (err: unknown) {
@@ -305,13 +297,11 @@ const WhatsAppCloudConnect: React.FC = () => {
 
     sessionStorage.setItem("wa_cloud_session_name", sessionName);
 
-    if (fbConfig.configId && window.FB && fbSdkReady) {
+    if (window.FB && fbSdkReady) {
       embeddedAssetData.current = {};
       window.FB.login(handleFBLoginCallback, {
-        config_id: fbConfig.configId,
+        scope: FACEBOOK_PERMISSIONS,
         response_type: "code",
-        override_default_response_type: true,
-        extras: { sessionInfoVersion: "3", setup: {} },
       });
       return;
     }
