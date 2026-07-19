@@ -1,5 +1,16 @@
 # Backend Bugs Log
 
+### [BUG FIX / DEPLOY] Deploy Script rsync --delete Wiping facebook-oauth-config.json
+- **Date**: 2026-07-19
+- **Root Cause**:
+  1. **rsync --delete without exclude**: The `deploy-remote.sh` script uses `rsync -a --delete` to sync backend files from the staging tarball to `/var/www/backend2/`. Since `facebook-oauth-config.json` is in `.gitignore` and not tracked in git, it's absent from the tarball. The `--delete` flag causes rsync to remove any file on the server that doesn't exist in the source — including the credentials file managed via Super Admin.
+  2. **Legacy deploy path uses rm -rf**: The fallback deploy path (staging directory without tarball) does `sudo rm -rf /var/www/backend2` before `mv`, which also destroys the config file.
+- **Resolution**:
+  1. **Added rsync exclude**: Added `--exclude data/facebook-oauth-config.json` to the rsync command in the tarball deploy path.
+  2. **Added backup/restore**: In the legacy deploy path, added backup of `facebook-oauth-config.json` before `rm -rf` and restore after `mv`, similar to how `.env` is handled.
+- **Files Modified**:
+  - `scripts/deploy-remote.sh` (MODIFIED)
+
 ### [BUG FIX / API & UI] Facebook Embedded Connect redirect_uri Mismatch (500 Internal Server Error)
 - **Date**: 2026-07-19
 - **Root Cause**:

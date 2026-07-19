@@ -1,6 +1,11 @@
 # Team Sync Updates
 
 ## 2026-07-19 / 2026-03-09
+- **Deploy Script: Preserve facebook-oauth-config.json (BUGFIX / COMPLETE)**:
+  1. **Root Cause**: `deploy-remote.sh` uses `rsync --delete` which deletes server files not present in the git-tracked tarball. Since `facebook-oauth-config.json` is in `.gitignore`, every deploy wiped the Super Admin credentials.
+  2. **Fix (tarball path)**: Added `--exclude data/facebook-oauth-config.json` to the `rsync` command.
+  3. **Fix (legacy path)**: Added backup/restore logic for `facebook-oauth-config.json` before `rm -rf` and after `mv`, mirroring how `.env` is handled.
+
 - **WhatsApp Cloud Connect Security & Dynamic PIN Registration (FEATURE/FIX / COMPLETE)**:
   1. **Secured Credentials**: Cleared production Meta App Client Secret (`appSecret`) and App ID from git-tracked `facebook-oauth-config.json` and replaced them with placeholders. Added the config file to `.gitignore` to prevent developers from accidentally pushing server configurations back to Git, and provided `facebook-oauth-config.example.json` as a baseline template.
   2. **Dynamic Registration PIN**: Upgraded `facebookEmbeddedConnect` in `whatsappController.js` to generate a random 6-digit PIN dynamically for every phone number registration instead of using the insecure hardcoded `'000000'` value.
