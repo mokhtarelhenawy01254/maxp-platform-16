@@ -118,11 +118,7 @@ const formatAddress = (address: unknown): string => {
   return "";
 };
 
-/**
- * Calculate how many half-pages an invoice needs.
- * Uses fixed known element heights to determine items-per-page.
- */
-export const ITEMS_PER_PAGE = 8; // fits in 2×2 grid cell (105×148mm)
+export const ITEMS_PER_PAGE = 7;
 
 export function getInvoicePages(invoice: InvoiceData): InvoicePageInfo[] {
   const allItems = invoice.order?.orderItems || [];
@@ -146,23 +142,15 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
   compact = false,
   page,
 }) => {
-  const s: InvoicePrintSettings = {
-    ...DEFAULT_INVOICE_SETTINGS,
-    ...(partialSettings || {}),
-  };
+  const s: InvoicePrintSettings = { ...DEFAULT_INVOICE_SETTINGS, ...(partialSettings || {}) };
 
   const currency = invoice.currency || "EGP";
   const subtotal = parseNumber(invoice.subtotal);
   const shipping = parseNumber(invoice.shipping);
   const tax = parseNumber(invoice.tax);
   const discount = parseNumber(invoice.discount);
-  const totalAmount =
-    invoice.totalAmount != null
-      ? parseNumber(invoice.totalAmount)
-      : subtotal + shipping + tax - discount;
-  const addressText = invoice.customerAddress
-    ? formatAddress(invoice.customerAddress)
-    : "";
+  const totalAmount = invoice.totalAmount != null ? parseNumber(invoice.totalAmount) : subtotal + shipping + tax - discount;
+  const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
   const allItems = invoice.order?.orderItems || [];
 
   const isPaginated = page != null;
@@ -172,31 +160,19 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
   const isLast = page?.isLast ?? true;
   const items = page?.chunkItems ?? allItems;
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("ar-EG", {
-      style: "currency",
-      currency,
-    }).format(amount);
+  const fm = (amount: number) =>
+    new Intl.NumberFormat("ar-EG", { style: "currency", currency }).format(amount);
 
   const showBarcodeOrderCode = s.showBarcodeOrderCode !== false;
   const showBarcodeShippingCode = s.showBarcodeShippingCode !== false;
+  const sep = "1px solid #d1d5db";
 
-  const thStyle: React.CSSProperties = {
-    color: s.secondaryColor,
-    fontSize: compact ? "10px" : "12px",
-    textTransform: "uppercase",
-    letterSpacing: "0.3px",
-    fontWeight: 600,
-  };
-
-  const rowStyle: React.CSSProperties = {
-    fontSize: compact ? "11px" : "13px",
-  };
+  /** shared row padding */
+  const rp = compact ? "1px 3px" : "2px 6px";
 
   return (
     <div
       dir="rtl"
-      className="invoice-half-page"
       style={{
         fontFamily: s.fontFamily,
         color: "#0f172a",
@@ -204,156 +180,100 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        padding: compact ? "3mm 4mm" : "0",
+        padding: compact ? "1.5mm 3mm" : "0",
         boxSizing: "border-box",
+        fontSize: compact ? "11px" : "14px",
       }}
     >
-      {/* Company Header */}
-      <div
-        className="invoice-header"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingBottom: compact ? "1mm" : "4px",
-          marginBottom: compact ? "1mm" : "6px",
-          borderBottom: `2px solid ${s.primaryColor}`,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 12 }}>
+      {/* ── Header: company + barcode (compact, first page) ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, marginBottom: compact ? "0.5mm" : "4px", borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "0.5mm" : "3px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {s.showCompanyLogo && invoice.companyLogo && (
-            <img
-              src={invoice.companyLogo}
-              alt="شعار الشركة"
-              style={{ height: compact ? "26px" : "40px", width: "auto", objectFit: "contain" }}
-            />
+            <img src={invoice.companyLogo} alt="" style={{ height: compact ? "20px" : "40px", width: "auto", objectFit: "contain" }} />
           )}
-          <h1
-            style={{
-              margin: 0,
-              fontWeight: 800,
-              color: s.primaryColor,
-              fontSize: compact ? "13px" : "1.25rem",
-            }}
-          >
+          <span style={{ fontWeight: 800, color: s.primaryColor, fontSize: compact ? "11px" : "1.1rem" }}>
             {invoice.companyName}
             {isPaginated && !isFirst && (
-              <span style={{ color: s.secondaryColor, fontSize: compact ? "10px" : "12px", fontWeight: 600, marginRight: "6px" }}>
-                - تابع ({pageIndex + 1}/{totalPages})
+              <span style={{ color: s.secondaryColor, fontSize: "9px", fontWeight: 600 }}>
+                {" "}({pageIndex + 1}/{totalPages})
               </span>
             )}
-          </h1>
+          </span>
         </div>
-        <div style={{ textAlign: "left", flexShrink: 0 }}>
-          <p className="invoice-number-text" style={{ margin: 0, fontSize: compact ? "10px" : "12px", fontWeight: 600, color: s.secondaryColor }}>
-            {invoice.invoiceNumber || ""}
-          </p>
-        </div>
+        {/* tiny barcode in header */}
+        {isFirst && compact && showBarcodeOrderCode && invoice.order?.orderNumber && (
+          <div style={{ transform: "scale(0.32)", transformOrigin: "left top", height: "32px", overflow: "hidden" }}>
+            <InvoiceBarcode value={invoice.order.orderNumber} label="" height={30} width={1} />
+          </div>
+        )}
       </div>
 
-      {/* Barcode + Customer — first page only */}
+      {/* ── Customer — priority section ── */}
       {isFirst && (
-        <div style={{ flexShrink: 0, marginBottom: compact ? "1mm" : "4px" }}>
-          {(showBarcodeOrderCode || showBarcodeShippingCode) &&
-            (invoice.order?.orderNumber || invoice.order?.turboTrackingNumber) && (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: compact ? "8px" : "24px",
-                  transform: compact ? "scale(0.45)" : "scale(0.7)",
-                  transformOrigin: "top center",
-                  marginBottom: compact ? "0" : "4px",
-                }}
-              >
-                {showBarcodeOrderCode && invoice.order?.orderNumber && (
-                  <InvoiceBarcode value={invoice.order.orderNumber} label={compact ? "" : "رقم الطلب"} height={35} width={1.2} />
-                )}
-                {showBarcodeShippingCode && invoice.order?.turboTrackingNumber && (
-                  <InvoiceBarcode value={invoice.order.turboTrackingNumber} label={compact ? "" : "كود الشحن"} height={35} width={1.2} />
-                )}
-              </div>
+        <div style={{ flexShrink: 0, marginBottom: compact ? "0.5mm" : "4px", paddingBottom: compact ? "0.5mm" : "3px", borderBottom: sep }}>
+          <div style={{ fontSize: compact ? "13px" : "0.95rem", fontWeight: 700, marginBottom: "1px" }}>
+            {invoice.customerName}
+          </div>
+          <div style={{ lineHeight: "1.35" }}>
+            {invoice.customerPhone && (
+              <span style={{ display: "block", fontWeight: 500, fontSize: compact ? "11px" : "0.85rem" }}>
+                📞 {invoice.customerPhone}
+              </span>
             )}
-          <div>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: compact ? "12px" : "0.9rem" }}>
-              {invoice.customerName}
-            </p>
-            <div style={{ color: "#475569", marginTop: "1px", fontSize: compact ? "10px" : "0.85rem", lineHeight: "1.3" }}>
-              {invoice.customerPhone && <span style={{ display: "block" }}>{invoice.customerPhone}</span>}
-              {addressText && <span style={{ display: "block", maxWidth: compact ? "160px" : "280px" }}>{addressText}</span>}
-              {invoice.city && !addressText && <span style={{ display: "block" }}>{invoice.city}</span>}
-            </div>
+            {addressText && (
+              <span style={{ display: "block", fontSize: compact ? "10px" : "0.8rem", color: "#374151" }}>
+                📍 {addressText}
+              </span>
+            )}
+            {invoice.city && (
+              <span style={{ display: "block", fontSize: compact ? "10px" : "0.8rem", color: "#374151" }}>
+                🏙 {invoice.city}
+              </span>
+            )}
           </div>
         </div>
       )}
 
-      {/* Items Table — scrollable area that clips at fixed height */}
+      {/* ── Products table ── */}
       {s.showOrderItems && (
-        <div
-          className="invoice-items-area"
-          style={{
-            flex: 1,
-            overflow: "hidden",
-            minHeight: 0,
-            marginBottom: compact ? "1mm" : "2px",
-          }}
-        >
+        <div style={{ flex: 1, overflow: "hidden", minHeight: 0, marginBottom: compact ? "0.5mm" : "2px" }}>
           {items.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#94a3b8", padding: compact ? "8px 0" : "16px 0", fontSize: compact ? "11px" : "14px" }}>
-              لا توجد منتجات
-            </p>
+            <p style={{ textAlign: "center", color: "#94a3b8", padding: "4px 0", fontSize: compact ? "10px" : "13px" }}>—</p>
           ) : (
-            <table className="w-full" style={{ borderCollapse: "collapse", width: "100%" }}>
+            <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
               <thead>
-                <tr style={{ background: s.primaryColor + "10", borderBottom: `1.5px solid ${s.primaryColor}40` }}>
-                  <th className="text-right" style={{ ...thStyle, padding: compact ? "2px 4px" : "4px 8px", textAlign: "right" }}>
-                    المنتج
-                  </th>
-                  <th className="text-center" style={{ ...thStyle, padding: compact ? "2px 4px" : "4px 8px", textAlign: "center" }}>
-                    SKU
-                  </th>
-                  <th className="text-center" style={{ ...thStyle, padding: compact ? "2px 4px" : "4px 8px", textAlign: "center" }}>
-                    كم
-                  </th>
-                  <th className="text-left" style={{ ...thStyle, padding: compact ? "2px 4px" : "4px 8px", textAlign: "left" }}>
-                    السعر
-                  </th>
-                  <th className="text-left" style={{ ...thStyle, padding: compact ? "2px 4px" : "4px 8px", textAlign: "left" }}>
-                    الإجمالي
-                  </th>
+                <tr style={{ background: s.primaryColor + "0f", borderBottom: sep }}>
+                  <th style={{ textAlign: "right", width: "38%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: compact ? "9px" : "11px" }}>المنتج</th>
+                  <th style={{ textAlign: "center", width: "14%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: compact ? "9px" : "11px" }}>SKU</th>
+                  <th style={{ textAlign: "center", width: "10%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: compact ? "9px" : "11px" }}>كم</th>
+                  <th style={{ textAlign: "left", width: "18%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: compact ? "9px" : "11px" }}>السعر</th>
+                  <th style={{ textAlign: "left", width: "20%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: compact ? "9px" : "11px" }}>الإجمالي</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item, idx) => (
-                  <tr
-                    key={item.id || idx}
-                    style={{
-                      borderBottom: "1px solid #f1f5f9",
-                      ...rowStyle,
-                    }}
-                  >
-                    <td className="text-right" style={{ padding: compact ? "1px 4px" : "2px 8px", fontWeight: 500, textAlign: "right" }}>
-                      <span style={{ display: "block", lineHeight: "1.3", maxWidth: compact ? "100px" : "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <tr key={item.id || idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ textAlign: "right", padding: rp }}>
+                      <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.25", fontWeight: 500, fontSize: compact ? "10px" : "12px" }}>
                         {item.productName}
                       </span>
                       {(item.productColor || item.productSize) && (
-                        <span style={{ display: "block", color: s.secondaryColor, fontSize: compact ? "9px" : "11px", fontWeight: 400 }}>
+                        <span style={{ display: "block", color: s.secondaryColor, fontSize: compact ? "8px" : "10px" }}>
                           {[item.productColor, item.productSize].filter(Boolean).join(" | ")}
                         </span>
                       )}
                     </td>
-                    <td style={{ textAlign: "center", padding: compact ? "1px 4px" : "2px 8px", fontFamily: "monospace", fontSize: compact ? "9px" : "12px", color: s.secondaryColor }}>
+                    <td style={{ textAlign: "center", padding: rp, fontFamily: "monospace", fontSize: compact ? "8px" : "10px", color: s.secondaryColor }}>
                       {item.productSku || "—"}
                     </td>
-                    <td style={{ textAlign: "center", padding: compact ? "1px 4px" : "2px 8px" }}>
+                    <td style={{ textAlign: "center", padding: rp, fontSize: compact ? "10px" : "12px" }}>
                       {item.quantity}
                     </td>
-                    <td style={{ textAlign: "left", padding: compact ? "1px 4px" : "2px 8px", whiteSpace: "nowrap" }}>
-                      {formatCurrency(parseNumber(item.price))}
+                    <td style={{ textAlign: "left", padding: rp, whiteSpace: "nowrap", fontSize: compact ? "10px" : "12px" }}>
+                      {fm(parseNumber(item.price))}
                     </td>
-                    <td style={{ textAlign: "left", padding: compact ? "1px 4px" : "2px 8px", fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {formatCurrency(getItemTotal(item))}
+                    <td style={{ textAlign: "left", padding: rp, whiteSpace: "nowrap", fontWeight: 600, fontSize: compact ? "10px" : "12px" }}>
+                      {fm(getItemTotal(item))}
                     </td>
                   </tr>
                 ))}
@@ -363,60 +283,16 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
         </div>
       )}
 
-      {/* Totals — last page only */}
+      {/* ── Totals (last page only) ── */}
       {isLast && (
-        <div
-          className="invoice-totals"
-          style={{
-            textAlign: "left",
-            marginRight: "auto",
-            flexShrink: 0,
-            borderTop: compact ? "1px solid #e2e8f0" : "none",
-            paddingTop: compact ? "1mm" : "2px",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", padding: compact ? "1px 0" : "3px 0", fontSize: compact ? "10px" : "0.85rem", gap: "12px" }}>
-            <span style={{ color: s.secondaryColor }}>المجموع الفرعي</span>
-            <span>{formatCurrency(subtotal)}</span>
+        <div style={{ flexShrink: 0, borderTop: sep, paddingTop: compact ? "0.5mm" : "3px", textAlign: "left", marginRight: "auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontWeight: 700, fontSize: compact ? "12px" : "0.95rem" }}>
+            <span>الإجمالي</span>
+            <span>{fm(totalAmount)}</span>
           </div>
-          {discount > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", padding: compact ? "1px 0" : "3px 0", fontSize: compact ? "10px" : "0.85rem", gap: "12px" }}>
-              <span style={{ color: s.secondaryColor }}>الخصم</span>
-              <span style={{ color: "#ef4444" }}>- {formatCurrency(discount)}</span>
-            </div>
-          )}
-          {shipping > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", padding: compact ? "1px 0" : "3px 0", fontSize: compact ? "10px" : "0.85rem", gap: "12px" }}>
-              <span style={{ color: s.secondaryColor }}>الشحن</span>
-              <span>{formatCurrency(shipping)}</span>
-            </div>
-          )}
-          {s.showTaxBreakdown && tax > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", padding: compact ? "1px 0" : "3px 0", fontSize: compact ? "10px" : "0.85rem", gap: "12px" }}>
-              <span style={{ color: s.secondaryColor }}>الضريبة</span>
-              <span>{formatCurrency(tax)}</span>
-            </div>
-          )}
-          <div style={{
-            display: "flex", justifyContent: "space-between",
-            padding: compact ? "2px 0 0" : "8px 0 0",
-            marginTop: compact ? "0" : "4px",
-            borderTop: "1.5px solid #0f172a",
-            fontSize: compact ? "12px" : "1rem", gap: "12px",
-          }}>
-            <span style={{ fontWeight: 700 }}>الإجمالي</span>
-            <span style={{ fontWeight: 700 }}>{formatCurrency(totalAmount)}</span>
-          </div>
-
           {s.showPaymentMethod && invoice.paymentMethod && (
-            <div style={{
-              marginTop: compact ? "1px" : "4px",
-              paddingTop: compact ? "1px" : "4px",
-              borderTop: "1px solid #e2e8f0",
-              fontSize: compact ? "10px" : "0.85rem",
-              color: s.secondaryColor,
-            }}>
-              طريقة الدفع: <span style={{ fontWeight: 500, color: "#334155" }}>{invoice.paymentMethod}</span>
+            <div style={{ fontSize: compact ? "9px" : "11px", color: s.secondaryColor, marginTop: "1px", borderTop: "1px solid #f3f4f6", paddingTop: "1px" }}>
+              {invoice.paymentMethod}
             </div>
           )}
         </div>
