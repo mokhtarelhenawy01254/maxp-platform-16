@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { groupOrderDocumentQuantityOffers } from "../../utils/orderDocumentQuantityOffers";
+import InvoiceContent from "../../components/orders/InvoiceContent";
+import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 
 interface Invoice {
   id: string;
@@ -29,28 +30,30 @@ interface Invoice {
   paymentStatus: string;
   notes: string | null;
   terms: string | null;
-    order: {
-      orderNumber: string;
-      orderItems: Array<{
-        productName: string;
-        productSku?: string;
-        productColor?: string;
-        productSize?: string;
-        productDetails?: string;
-        quantity: number;
-        price: number;
-        total: number;
-        metadata?: unknown;
-        product?: { sku?: string | null };
-      }>;
-    };
-  }
+  order: {
+    orderNumber: string;
+    turboTrackingNumber?: string | null;
+    orderItems: Array<{
+      productName: string;
+      productSku?: string | null;
+      productColor?: string | null;
+      productSize?: string | null;
+      productDetails?: string;
+      quantity: number;
+      price: number;
+      total: number;
+      metadata?: unknown;
+      product?: { sku?: string | null };
+    }>;
+  };
+}
 
 const PrintMultipleInvoices: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { settings } = useInvoiceSettings();
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -96,107 +99,6 @@ const PrintMultipleInvoices: React.FC = () => {
     }
   }, [invoices, loading]);
 
-  const formatCurrency = (amount: number, currency: string = "EGP") => {
-    return new Intl.NumberFormat("ar-EG", {
-      style: "currency",
-      currency: currency,
-    }).format(amount);
-  };
-
-  const renderInvoiceRows = (invoice: Invoice) => {
-    const groupedItems = groupOrderDocumentQuantityOffers(
-      invoice.order.orderItems || [],
-    );
-
-    return [
-      ...groupedItems.groups.flatMap((group) => {
-        const summaryRow = (
-          <tr
-            key={`${invoice.id}-${group.groupId}-summary`}
-            className="border-b border-emerald-200 bg-emerald-50/70"
-          >
-            <td className="text-right py-2 font-bold">
-              <div>عرض كميات: {group.offerLabel}</div>
-              <div className="text-xs font-medium text-gray-600 mt-1">
-                {group.selectedPieces}/{group.offerQuantity || group.selectedPieces} قطع
-                {group.freeShipping ? " • شحن مجاني" : ""}
-              </div>
-            </td>
-            <td className="text-center py-2 font-bold">
-              {group.offerQuantity || group.selectedPieces}
-            </td>
-            <td className="text-right py-2">-</td>
-            <td className="text-right py-2 font-bold">
-              {formatCurrency(group.total, invoice.currency)}
-            </td>
-          </tr>
-        );
-
-        const itemRows = group.items.map(({ item, slotIndex }, itemIndex) => {
-          const code = item.productSku || item.product?.sku;
-          const extraDetails = [
-            item.productColor ? `اللون: ${item.productColor}` : "",
-            item.productSize ? `المقاس: ${item.productSize}` : "",
-            item.productDetails ? item.productDetails : "",
-          ]
-            .filter(Boolean)
-            .join(" | ");
-
-          return (
-            <tr
-              key={`${invoice.id}-${group.groupId}-${itemIndex}`}
-              className="border-b border-gray-300"
-            >
-              <td className="text-right py-2 pr-6">
-                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}${code ? ` (${code})` : ""}`}</div>
-                {extraDetails ? (
-                  <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
-                ) : null}
-              </td>
-              <td className="text-center py-2">{item.quantity}</td>
-              <td className="text-right py-2">
-                {formatCurrency(item.price, invoice.currency)}
-              </td>
-              <td className="text-right py-2">
-                {formatCurrency(item.total, invoice.currency)}
-              </td>
-            </tr>
-          );
-        });
-
-        return [summaryRow, ...itemRows];
-      }),
-      ...groupedItems.singles.map((item, idx) => {
-        const code = item.productSku || item.product?.sku;
-        const extraDetails = [
-          item.productColor ? `اللون: ${item.productColor}` : "",
-          item.productSize ? `المقاس: ${item.productSize}` : "",
-          item.productDetails ? item.productDetails : "",
-        ]
-          .filter(Boolean)
-          .join(" | ");
-
-        return (
-          <tr key={`${invoice.id}-single-${idx}`} className="border-b border-gray-300">
-            <td className="text-right py-2">
-              <div>{`${item.productName}${code ? ` (${code})` : ""}`}</div>
-              {extraDetails ? (
-                <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
-              ) : null}
-            </td>
-            <td className="text-center py-2">{item.quantity}</td>
-            <td className="text-right py-2">
-              {formatCurrency(item.price, invoice.currency)}
-            </td>
-            <td className="text-right py-2">
-              {formatCurrency(item.total, invoice.currency)}
-            </td>
-          </tr>
-        );
-      }),
-    ];
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -218,52 +120,45 @@ const PrintMultipleInvoices: React.FC = () => {
     );
   }
 
+  // Group invoices into pairs (2 per A4 sheet)
+  const pairs: Invoice[][] = [];
+  for (let i = 0; i < invoices.length; i += 2) {
+    pairs.push(invoices.slice(i, i + 2));
+  }
+
   return (
-    <div className="print-container">
+    <div className="invoice-print-wrapper">
       <style>{`
         @media print {
-          body {
-            margin: 0;
-            padding: 0;
-          }
-
-          .invoice-page {
-            page-break-after: always;
-            page-break-inside: avoid;
-            padding: 15mm !important;
-          }
-
-          .invoice-page:last-child {
-            page-break-after: auto;
-          }
-
-          .no-print {
-            display: none !important;
-          }
-
-          @page {
-            margin: 1cm;
-            size: A4;
-          }
+          html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
+          .a4-sheet { page-break-after: always; width: 100%; }
+          .a4-sheet:last-child { page-break-after: auto; }
+          .invoice-half { height: 50%; overflow: hidden; padding: 3mm 5mm; }
+          .no-print { display: none !important; }
+          @page { margin: 0; size: A4; }
         }
-
         @media screen {
-          .print-container {
-            background: #f3f4f6;
-            padding: 20px;
+          .invoice-print-wrapper {
+            background: #f1f5f9;
+            min-height: 100vh;
+            padding: 32px 16px;
           }
-
-          .invoice-page {
-            background: white;
+          .a4-sheet {
+            background: #fff;
             max-width: 210mm;
-            margin: 0 auto 20px;
-            padding: 20mm;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 0 auto 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            overflow: hidden;
           }
+          .invoice-half {
+            padding: 10px 14px;
+            border-bottom: 1px dashed #cbd5e1;
+          }
+          .invoice-half:last-child { border-bottom: none; }
         }
       `}</style>
 
-      {/* زر الطباعة للشاشة فقط */}
       <div className="no-print fixed top-4 right-4 z-50">
         <button
           onClick={() => window.print()}
@@ -286,76 +181,49 @@ const PrintMultipleInvoices: React.FC = () => {
         </button>
       </div>
 
-      {invoices.map((invoice) => (
-        <div key={invoice.id} className="invoice-page" dir="rtl">
-          {/* رأس الفاتورة - اسم الشركة والتاريخ */}
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-right">
-              <p className="text-sm">
-                {new Date(invoice.issueDate).toLocaleDateString("ar-EG", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                })}
-              </p>
+      {pairs.map((pair, pageIdx) => (
+        <div key={pageIdx} className="a4-sheet">
+          {pair.map((inv) => (
+            <div key={inv.id} className="invoice-half">
+              <InvoiceContent
+                invoice={{
+                  id: inv.id,
+                  invoiceNumber: inv.invoiceNumber,
+                  companyName: inv.companyName,
+                  companyPhone: inv.companyPhone,
+                  companyLogo: inv.companyLogo,
+                  customerName: inv.customerName,
+                  customerPhone: inv.customerPhone,
+                  customerEmail: inv.customerEmail,
+                  customerAddress: inv.customerAddress,
+                  city: inv.city,
+                  paymentMethod: inv.paymentMethod,
+                  paymentStatus: inv.paymentStatus,
+                  currency: inv.currency,
+                  subtotal: inv.subtotal,
+                  tax: inv.tax,
+                  shipping: inv.shipping,
+                  discount: inv.discount,
+                  totalAmount: inv.totalAmount,
+                  order: {
+                    orderNumber: inv.order?.orderNumber,
+                    turboTrackingNumber: inv.order?.turboTrackingNumber,
+                    orderItems: inv.order?.orderItems?.map((item) => ({
+                      productName: item.productName,
+                      quantity: item.quantity,
+                      price: item.price,
+                      total: item.total,
+                      productSku: item.productSku ?? item.product?.sku ?? null,
+                      productColor: item.productColor ?? null,
+                      productSize: item.productSize ?? null,
+                    })),
+                  },
+                }}
+                settings={settings}
+                compact
+              />
             </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold mb-1">{invoice.companyName}</h1>
-              <p className="text-sm">{invoice.customerPhone || ""}</p>
-            </div>
-          </div>
-
-          {/* معلومات العميل */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold mb-2 border-b pb-1">
-              معلومات العميل
-            </h3>
-            <p className="text-sm mb-1">{invoice.customerName}</p>
-            <p className="text-sm mb-1">هاتف: {invoice.customerPhone}</p>
-            <p className="text-sm mb-1">
-              العنوان: {invoice.customerAddress || ""}
-            </p>
-            <p className="text-sm">المدينة: {invoice.city || ""}</p>
-          </div>
-
-          {/* جدول المنتجات */}
-          <table className="w-full mb-6 text-sm">
-            <thead>
-              <tr className="border-b-2 border-gray-800">
-                <th className="text-right py-2 font-bold">المنتج</th>
-                <th className="text-center py-2 font-bold">الكمية</th>
-                <th className="text-right py-2 font-bold">السعر</th>
-                <th className="text-right py-2 font-bold">الإجمالي</th>
-              </tr>
-            </thead>
-            <tbody>
-              {renderInvoiceRows(invoice)}
-            </tbody>
-          </table>
-
-          {/* المجاميع */}
-          <div className="text-right text-sm space-y-1">
-            <p>
-              المجموع الفرعي:{" "}
-              <span className="font-bold">
-                {formatCurrency(invoice.subtotal, invoice.currency)}
-              </span>
-            </p>
-            {invoice.shipping > 0 && (
-              <p>
-                الشحن:{" "}
-                <span className="font-bold">
-                  {formatCurrency(invoice.shipping, invoice.currency)}
-                </span>
-              </p>
-            )}
-            <p className="text-base pt-2 border-t border-gray-800">
-              <span className="font-bold">الإجمالي: </span>
-              <span className="font-bold text-lg">
-                {formatCurrency(invoice.totalAmount, invoice.currency)}
-              </span>
-            </p>
-          </div>
+          ))}
         </div>
       ))}
     </div>

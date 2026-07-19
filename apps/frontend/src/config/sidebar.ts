@@ -628,6 +628,7 @@ export const getSidebarConfig = (
                 { to: '/orders/incomplete', icon: ExclamationTriangleIcon, label: t('sidebar.incompleteOrders'), requiredPermissions: ['orders.incomplete.view'] },
                 { to: '/pos', icon: CreditCardIcon, label: t('sidebar.pos'), requiredPermissions: ['orders.pos.view'] },
                 { to: '/orders/invoices', icon: DocumentTextIcon, label: t('sidebar.orderInvoices'), requiredPermissions: ['orders.invoices.view'] },
+                { to: '/settings/order-invoice', icon: CogIcon, label: t('sidebar.orderInvoiceSettings'), requiredPermissions: ['orders.invoices.view'] },
                 { to: '/orders/manual', icon: PencilSquareIcon, label: t('sidebar.manualOrder'), requiredPermissions: ['orders.manual.create'] },
                 { to: '/bulk-search', icon: QueueListIcon, label: t('sidebar.bulkSearch'), requiredPermissions: ['orders.bulk-search.view'] },
                 { to: '/products/reviews', icon: StarIcon, label: t('sidebar.productReviews'), requiredPermissions: ['orders.product-reviews.view'] },

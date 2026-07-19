@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -44,7 +44,28 @@ const SuperAdminInvoices = () => {
     items: [{ description: "", quantity: 1, unitPrice: 0 }], taxRate: 14, discountAmount: 0, notes: "", paymentTerms: "Net 30",
   });
 
+  // ---- Order Invoices State (tab 2) ----
+  const [orderInvoices, setOrderInvoices] = useState([]);
+  const [orderStats, setOrderStats] = useState({});
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderTotalPages, setOrderTotalPages] = useState(1);
+  const [orderViewOpen, setOrderViewOpen] = useState(false);
+  const [selectedOrderInvoice, setSelectedOrderInvoice] = useState(null);
+  const [companies, setCompanies] = useState([]);
+
+  const [orderFilters, setOrderFilters] = useState({
+    search: "", paymentStatus: "", companyId: "", dateFrom: "", dateTo: "",
+  });
+
   useEffect(() => { fetchInvoices(); }, [page, filters]);
+
+  useEffect(() => {
+    if (activeTab === 2) {
+      fetchOrderInvoices();
+      if (companies.length === 0) fetchCompanies();
+    }
+  }, [activeTab, orderPage, orderFilters]);
 
   const fetchInvoices = async () => {
     try {
@@ -55,6 +76,46 @@ const SuperAdminInvoices = () => {
       if (data.success) { setInvoices(data.data.invoices); setStats(data.data.stats); setTotalPages(data.data.pagination.pages); }
       else setError(data.message || "خطأ في جلب البيانات");
     } catch (error) { setError("خطأ في الاتصال بالخادم"); } finally { setLoading(false); }
+  };
+
+  const fetchOrderInvoices = async () => {
+    try {
+      setOrderLoading(true);
+      setError("");
+      const params = new URLSearchParams({
+        page: orderPage.toString(), limit: "10",
+        ...(orderFilters.search && { search: orderFilters.search }),
+        ...(orderFilters.paymentStatus && { paymentStatus: orderFilters.paymentStatus }),
+        ...(orderFilters.companyId && { companyId: orderFilters.companyId }),
+        ...(orderFilters.dateFrom && { dateFrom: orderFilters.dateFrom }),
+        ...(orderFilters.dateTo && { dateTo: orderFilters.dateTo }),
+      });
+      const response = await fetch(buildApiUrl(`admin/order-invoices?${params}`), {
+        headers: getAuthHeaders({ "Content-Type": "application/json" })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setOrderInvoices(data.data.invoices);
+        setOrderStats(data.data.stats);
+        setOrderTotalPages(data.data.pagination.pages);
+      } else {
+        setError(data.message || "خطأ في جلب فواتير الطلبات");
+      }
+    } catch (e) {
+      setError("خطأ في الاتصال بالخادم");
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch(buildApiUrl("admin/order-invoices/companies/list"), {
+        headers: getAuthHeaders({ "Content-Type": "application/json" })
+      });
+      const data = await response.json();
+      if (data.success) setCompanies(data.data);
+    } catch (e) { /* silent */ }
   };
 
   const getStatusColor = (status) => {
@@ -72,30 +133,73 @@ const SuperAdminInvoices = () => {
     return texts[type] || type;
   };
 
-  const formatPrice = (price, currency = "EGP") => new Intl.NumberFormat("ar-EG", { style: "currency", currency }).format(price);
-  const formatDate = (dateString) => new Date(dateString).toLocaleDateString("ar-EG");
+  const getOrderPaymentStatusText = (status) => {
+    const texts = {
+      PAID: "مدفوعة", COMPLETED: "مدفوعة", PENDING: "قيد الانتظار",
+      CANCELLED: "ملغية", REFUNDED: "مستردة", PARTIALLY_PAID: "مدفوعة جزئياً",
+      FAILED: "فشل الدفع",
+    };
+    return texts[String(status || "").toUpperCase()] || status || "غير محدد";
+  };
+
+  const getOrderPaymentStatusVariant = (status) => {
+    const s = String(status || "").toUpperCase();
+    if (s === "PAID" || s === "COMPLETED") return "default";
+    if (s === "PENDING") return "secondary";
+    if (s === "CANCELLED" || s === "FAILED") return "destructive";
+    if (s === "REFUNDED" || s === "PARTIALLY_PAID") return "outline";
+    return "secondary";
+  };
+
+  const formatPrice = (price, currency = "EGP") => {
+    const num = Number(price || 0);
+    return new Intl.NumberFormat("ar-EG", { style: "currency", currency }).format(num);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleDateString("ar-EG");
+  };
 
   const handleFilterChange = (field, value) => { setFilters(prev => ({ ...prev, [field]: value })); setPage(1); };
+  const handleOrderFilterChange = (field, value) => { setOrderFilters(prev => ({ ...prev, [field]: value })); setOrderPage(1); };
 
-  if (loading && invoices.length === 0) return <div className="flex justify-center items-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
+  const viewOrderInvoice = async (invoice) => {
+    try {
+      const response = await fetch(buildApiUrl(`admin/order-invoices/${invoice.id}`), {
+        headers: getAuthHeaders({ "Content-Type": "application/json" })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSelectedOrderInvoice(data.data);
+        setOrderViewOpen(true);
+      }
+    } catch (e) { /* silent */ }
+  };
+
+  if (activeTab !== 2 && loading && invoices.length === 0) {
+    return <div className="flex justify-center items-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
+  }
 
   return (
     <div className="p-3">
       <div className="flex justify-between items-center mb-3">
-        <h1 className="text-2xl font-bold">إدارة الفواتير</h1>
-        <Button onClick={() => setCreateDialogOpen(true)}>فاتورة جديدة</Button>
+        <h1 className="text-2xl font-bold">النظام المركزي للفواتير</h1>
+        {activeTab === 0 && <Button onClick={() => setCreateDialogOpen(true)}>فاتورة جديدة</Button>}
       </div>
 
       {error && <Alert variant="destructive" className="mb-3"><AlertDescription>{error}</AlertDescription></Alert>}
 
       <div className="border-b mb-3">
         <div className="flex gap-0">
-          {["الفواتير", "الإحصائيات"].map((tab, i) => (
-            <button key={tab} onClick={() => setActiveTab(i)} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === i ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{tab}</button>
+          {["فواتير المنصة", "الإحصائيات", "فواتير الطلبات"].map((tab, i) => (
+            <button key={tab} onClick={() => { setActiveTab(i); setError(""); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === i ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{tab}</button>
           ))}
         </div>
       </div>
 
+      {/* ============ TAB 0: Platform Invoices ============ */}
       {activeTab === 0 && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
@@ -165,16 +269,136 @@ const SuperAdminInvoices = () => {
                     <TableCell>{formatPrice(invoice.totalAmount, invoice.currency)}</TableCell>
                     <TableCell>{formatDate(invoice.issueDate)}</TableCell>
                     <TableCell>{formatDate(invoice.dueDate)}</TableCell>
-                    <TableCell><div className="flex gap-1"><Button variant="ghost" size="icon" onClick={() => { setSelectedInvoice(invoice); setViewDialogOpen(true); }}>عرض</Button></div></TableCell>
+                    <TableCell><Button variant="ghost" size="sm" onClick={() => { setSelectedInvoice(invoice); setViewDialogOpen(true); }}>عرض</Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            {totalPages > 1 && <div className="flex justify-center p-2">صفحة {page} من {totalPages}</div>}
+            {totalPages > 1 && <div className="flex justify-center p-2 gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+              <span className="py-1 text-sm">صفحة {page} من {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+            </div>}
           </div>
         </>
       )}
 
+      {/* ============ TAB 1: Statistics ============ */}
+      {activeTab === 1 && (
+        <div className="p-4 text-center text-muted-foreground">
+          <p>الإحصائيات المتقدمة قيد التطوير</p>
+        </div>
+      )}
+
+      {/* ============ TAB 2: Order Invoices ============ */}
+      {activeTab === 2 && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+            {[
+              { label: "إجمالي فواتير الطلبات", value: orderStats.total || 0, color: "" },
+              { label: "مدفوعة", value: (orderStats.byPaymentStatus?.PAID?.count || 0) + (orderStats.byPaymentStatus?.COMPLETED?.count || 0), color: "text-green-600" },
+              { label: "قيد الانتظار", value: orderStats.byPaymentStatus?.PENDING?.count || 0, color: "text-amber-600" },
+              { label: "ملغية", value: orderStats.byPaymentStatus?.CANCELLED?.count || 0, color: "text-red-600" },
+              { label: "إجمالي الإيرادات", value: formatPrice(orderStats.totalRevenue || 0), color: "text-primary" },
+            ].map((card, i) => (
+              <div key={i} className="rounded-xl border bg-card text-card-foreground p-4">
+                <p className="text-sm text-muted-foreground">{card.label}</p>
+                <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-xl border bg-card mb-3 p-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <Input placeholder="بحث (رقم فاتورة / عميل / شركة)" value={orderFilters.search} onChange={e => handleOrderFilterChange("search", e.target.value)} />
+              <Select value={orderFilters.companyId} onValueChange={v => handleOrderFilterChange("companyId", v)}>
+                <SelectTrigger><SelectValue placeholder="الشركة" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">كل الشركات</SelectItem>
+                  {companies.map(c => (
+                    <SelectItem key={c.companyId} value={c.companyId}>{c.companyName} ({c.invoiceCount})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={orderFilters.paymentStatus} onValueChange={v => handleOrderFilterChange("paymentStatus", v)}>
+                <SelectTrigger><SelectValue placeholder="حالة الدفع" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">الكل</SelectItem>
+                  <SelectItem value="PAID">مدفوعة</SelectItem>
+                  <SelectItem value="COMPLETED">مدفوعة</SelectItem>
+                  <SelectItem value="PENDING">قيد الانتظار</SelectItem>
+                  <SelectItem value="CANCELLED">ملغية</SelectItem>
+                  <SelectItem value="REFUNDED">مستردة</SelectItem>
+                  <SelectItem value="PARTIALLY_PAID">مدفوعة جزئياً</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input type="date" value={orderFilters.dateFrom} onChange={e => handleOrderFilterChange("dateFrom", e.target.value)} />
+              <Input type="date" value={orderFilters.dateTo} onChange={e => handleOrderFilterChange("dateTo", e.target.value)} />
+            </div>
+          </div>
+
+          {orderLoading ? (
+            <div className="flex justify-center items-center min-h-[300px]"><LoadingSpinner size="lg" /></div>
+          ) : (
+            <div className="rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>رقم الفاتورة</TableHead>
+                    <TableHead>الشركة</TableHead>
+                    <TableHead>العميل</TableHead>
+                    <TableHead>حالة الدفع</TableHead>
+                    <TableHead>المبلغ</TableHead>
+                    <TableHead>تاريخ الإصدار</TableHead>
+                    <TableHead>الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orderInvoices.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد فواتير طلبات</TableCell>
+                    </TableRow>
+                  ) : (
+                    orderInvoices.map(inv => (
+                      <TableRow key={inv.id}>
+                        <TableCell className="font-medium font-mono text-sm">{inv.invoiceNumber}</TableCell>
+                        <TableCell><span className="font-medium">{inv.companyName}</span></TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{inv.customerName}</p>
+                            {inv.customerPhone && <p className="text-xs text-muted-foreground">{inv.customerPhone}</p>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getOrderPaymentStatusVariant(inv.paymentStatus)}>
+                            {getOrderPaymentStatusText(inv.paymentStatus)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-semibold">{formatPrice(inv.totalAmount, inv.currency)}</TableCell>
+                        <TableCell>{formatDate(inv.issueDate)}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => viewOrderInvoice(inv)}>عرض</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+              {orderTotalPages > 1 && (
+                <div className="flex justify-center p-2 gap-2">
+                  <Button variant="outline" size="sm" disabled={orderPage <= 1} onClick={() => setOrderPage(p => p - 1)}>السابق</Button>
+                  <span className="py-1 text-sm">صفحة {orderPage} من {orderTotalPages}</span>
+                  <Button variant="outline" size="sm" disabled={orderPage >= orderTotalPages} onClick={() => setOrderPage(p => p + 1)}>التالي</Button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ============ DIALOGS ============ */}
+
+      {/* Create Invoice Dialog (Platform) */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>إنشاء فاتورة جديدة</DialogTitle></DialogHeader>
@@ -201,6 +425,7 @@ const SuperAdminInvoices = () => {
         </DialogContent>
       </Dialog>
 
+      {/* View Platform Invoice Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>تفاصيل الفاتورة</DialogTitle></DialogHeader>
@@ -213,6 +438,105 @@ const SuperAdminInvoices = () => {
             </div>
           )}
           <DialogFooter><Button variant="outline" onClick={() => setViewDialogOpen(false)}>إغلاق</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Order Invoice Dialog */}
+      <Dialog open={orderViewOpen} onOpenChange={setOrderViewOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>تفاصيل فاتورة الطلب</DialogTitle></DialogHeader>
+          {selectedOrderInvoice && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div><p className="text-sm text-muted-foreground">رقم الفاتورة</p><p className="font-mono font-medium">{selectedOrderInvoice.invoiceNumber}</p></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الشركة</p>
+                  <p className="font-medium">{selectedOrderInvoice.companyName}</p>
+                  {selectedOrderInvoice.companyPhone && <p className="text-xs text-muted-foreground">{selectedOrderInvoice.companyPhone}</p>}
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">العميل</p>
+                  <p className="font-medium">{selectedOrderInvoice.customerName}</p>
+                  {selectedOrderInvoice.customerPhone && <p className="text-xs text-muted-foreground">{selectedOrderInvoice.customerPhone}</p>}
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">حالة الدفع</p>
+                  <Badge variant={getOrderPaymentStatusVariant(selectedOrderInvoice.paymentStatus)}>
+                    {getOrderPaymentStatusText(selectedOrderInvoice.paymentStatus)}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">طريقة الدفع</p>
+                  <p className="font-medium">{selectedOrderInvoice.paymentMethod || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">رقم الطلب</p>
+                  <p className="font-medium font-mono">{selectedOrderInvoice.order?.orderNumber || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">تاريخ الإصدار</p>
+                  <p className="font-medium">{formatDate(selectedOrderInvoice.issueDate)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">المجموع الفرعي</p>
+                  <p className="font-medium">{formatPrice(selectedOrderInvoice.subtotal, selectedOrderInvoice.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الشحن</p>
+                  <p className="font-medium">{formatPrice(selectedOrderInvoice.shipping, selectedOrderInvoice.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الضريبة</p>
+                  <p className="font-medium">{formatPrice(selectedOrderInvoice.tax, selectedOrderInvoice.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الخصم</p>
+                  <p className="font-medium">{formatPrice(selectedOrderInvoice.discount, selectedOrderInvoice.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الإجمالي</p>
+                  <p className="text-lg font-bold text-primary">{formatPrice(selectedOrderInvoice.totalAmount, selectedOrderInvoice.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">مرات الطباعة</p>
+                  <p className="font-medium">{selectedOrderInvoice.printCount || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">مرات الإرسال</p>
+                  <p className="font-medium">{selectedOrderInvoice.emailCount || 0}</p>
+                </div>
+              </div>
+
+              {selectedOrderInvoice.order?.orderItems?.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">منتجات الطلب</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>المنتج</TableHead>
+                        <TableHead className="text-center">SKU</TableHead>
+                        <TableHead className="text-center">الكمية</TableHead>
+                        <TableHead className="text-left">السعر</TableHead>
+                        <TableHead className="text-left">الإجمالي</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedOrderInvoice.order.orderItems.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{item.productName}</TableCell>
+                          <TableCell className="text-center text-sm text-muted-foreground">{item.productSku || "—"}</TableCell>
+                          <TableCell className="text-center">{item.quantity}</TableCell>
+                          <TableCell className="text-left">{formatPrice(item.price)}</TableCell>
+                          <TableCell className="text-left font-semibold">{formatPrice(item.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" onClick={() => setOrderViewOpen(false)}>إغلاق</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

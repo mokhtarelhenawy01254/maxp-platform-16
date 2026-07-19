@@ -1,71 +1,19 @@
 import React from "react";
 import { XMarkIcon, PrinterIcon } from "@heroicons/react/24/outline";
-import InvoiceBarcode from "./InvoiceBarcode";
+import InvoiceContent from "./InvoiceContent";
+import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 
 interface InvoiceModalProps {
-  invoice: any;
+  invoice: Record<string, unknown>;
   onClose: () => void;
 }
 
 const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
-  const formatCurrency = (amount: number, currency: string = "EGP") => {
-    return new Intl.NumberFormat("ar-EG", {
-      style: "currency",
-      currency: currency,
-    }).format(amount);
-  };
-
-  const getPaymentStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      PAID: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      PENDING: "bg-amber-50 text-amber-700 border-amber-200",
-      CANCELLED: "bg-red-50 text-red-700 border-red-200",
-      REFUNDED: "bg-slate-50 text-slate-700 border-slate-200",
-      PARTIALLY_PAID: "bg-amber-50 text-amber-700 border-amber-200",
-    };
-    const labels: Record<string, string> = {
-      PAID: "مدفوعة",
-      PENDING: "قيد الانتظار",
-      CANCELLED: "ملغاة",
-      REFUNDED: "مستردة",
-      PARTIALLY_PAID: "مدفوعة جزئياً",
-    };
-    return {
-      className: styles[status] || "bg-slate-50 text-slate-700 border-slate-200",
-      label: labels[status] || status,
-    };
-  };
+  const { settings } = useInvoiceSettings();
 
   const handlePrint = () => {
     window.print();
   };
-
-  const formatAddress = (address: any): string => {
-    if (!address) return "";
-    if (typeof address === "string") {
-      if (address.startsWith("{")) {
-        try {
-          const parsed = JSON.parse(address);
-          return formatAddress(parsed);
-        } catch (e) {
-          return address;
-        }
-      }
-      return address;
-    }
-    if (typeof address === "object") {
-      const parts = [];
-      if (address.address) parts.push(address.address);
-      if (address.area) parts.push(address.area);
-      if (address.city) parts.push(address.city);
-      if (address.governorate) parts.push(address.governorate);
-      if (address.country) parts.push(address.country);
-      return parts.filter(Boolean).join(", ") || "";
-    }
-    return "";
-  };
-
-  const statusBadge = getPaymentStatusBadge(invoice.paymentStatus);
 
   return (
     <div
@@ -81,10 +29,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
         dir="rtl"
       >
         <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600 sm:hidden print:hidden" />
-        {/* Header - للشاشة فقط */}
+
+        {/* Header bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur print:hidden dark:border-slate-700 dark:bg-slate-900/95 sm:px-6">
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">
-            فاتورة #{invoice.invoiceNumber}
+            فاتورة #{invoice.invoiceNumber as string}
           </h2>
           <div className="flex gap-2">
             <button
@@ -106,121 +55,48 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
 
         <style>{`
           @media print {
-            body { margin: 0; padding: 0; background: #fff; }
+            html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
             body * { visibility: hidden; }
             .print\\:max-w-none, .print\\:max-w-none * { visibility: visible; }
             .print\\:max-w-none { position: absolute; left: 0; top: 0; width: 100%; }
             @page { margin: 0; size: A5; }
           }
-          .invoice-table th {
-            font-weight: 600;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
-            padding: 5px 10px;
-            border-bottom: 1.5px solid #e2e8f0;
-          }
-          .invoice-table td {
-            padding: 4px 10px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 14px;
-          }
-          .invoice-table tr:last-child td {
-            border-bottom: none;
-          }
         `}</style>
 
-        {/* محتوى الفاتورة */}
         <div className="p-3 print:p-2">
-          {/* الهيدر - سوان */}
-          <div className="mb-2">
-            <h1 className="text-lg font-bold text-slate-900">{invoice.companyName}</h1>
-          </div>
-
-          {/* الباركود - فوق */}
-          {(invoice.order?.orderNumber || invoice.order?.turboTrackingNumber) && (
-            <div className="mb-2">
-              <div className="flex justify-center gap-6" style={{ transform: "scale(0.7)", transformOrigin: "center" }}>
-                {invoice.order.orderNumber && (
-                  <InvoiceBarcode value={invoice.order.orderNumber} label="رقم الطلب" />
-                )}
-                {invoice.order.turboTrackingNumber && (
-                  <InvoiceBarcode value={invoice.order.turboTrackingNumber} label="كود الشحن" />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* العميل */}
-          <div className="mb-2">
-            <p className="text-sm font-semibold text-slate-900">{invoice.customerName}</p>
-            <div className="text-sm text-slate-600 space-y-0.5 mt-0.5">
-              {invoice.customerPhone && <p>{invoice.customerPhone}</p>}
-              {invoice.customerEmail && <p>{invoice.customerEmail}</p>}
-              <p className="max-w-xs">{formatAddress(invoice.customerAddress)}</p>
-              {invoice.city && <p>{invoice.city}</p>}
-            </div>
-          </div>
-
-          {/* جدول المنتجات */}
-          <div className="mb-1">
-            <table className="w-full invoice-table">
-              <thead>
-                <tr>
-                  <th className="text-right">المنتج</th>
-                  <th className="text-center">SKU</th>
-                  <th className="text-center">الكمية</th>
-                  <th className="text-left">السعر</th>
-                  <th className="text-left">الإجمالي</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.order?.orderItems?.map((item: any, idx: number) => (
-                  <tr key={idx}>
-                    <td className="text-right font-medium text-slate-900">{item.productName}</td>
-                    <td className="text-center font-mono text-sm text-slate-500">{item.productSku || "—"}</td>
-                    <td className="text-center text-slate-700">{item.quantity}</td>
-                    <td className="text-left text-slate-700">{formatCurrency(item.price, invoice.currency)}</td>
-                    <td className="text-left font-semibold text-slate-900">{formatCurrency(item.total, invoice.currency)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* المجاميع */}
-          <div className="mb-1">
-            <div className="mr-auto text-left">
-              <div className="space-y-0.5">
-                <div className="flex justify-between text-sm py-0.5">
-                  <span className="text-slate-500">المجموع الفرعي</span>
-                  <span className="text-slate-700">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
-                </div>
-                {invoice.discount > 0 && (
-                  <div className="flex justify-between text-sm py-0.5">
-                    <span className="text-slate-500">الخصم</span>
-                    <span className="text-red-500">- {formatCurrency(invoice.discount, invoice.currency)}</span>
-                  </div>
-                )}
-                {invoice.shipping > 0 && (
-                  <div className="flex justify-between text-sm py-0.5">
-                    <span className="text-slate-500">الشحن</span>
-                    <span className="text-slate-700">{formatCurrency(invoice.shipping, invoice.currency)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between py-1 mt-0.5" style={{ borderTop: "1.5px solid #0f172a" }}>
-                  <span className="text-sm font-bold text-slate-900">الإجمالي</span>
-                  <span className="text-base font-bold text-slate-900">{formatCurrency(invoice.totalAmount, invoice.currency)}</span>
-                </div>
-              </div>
-              {invoice.paymentMethod && (
-                <div className="mt-1 pt-1" style={{ borderTop: "1px solid #e2e8f0" }}>
-                  <p className="text-sm text-slate-500">طريقة الدفع: <span className="font-medium text-slate-700">{invoice.paymentMethod}</span></p>
-                </div>
-              )}
-            </div>
-          </div>
+          <InvoiceContent
+            invoice={{
+              companyName: invoice.companyName as string,
+              companyPhone: invoice.companyPhone as string | null,
+              companyLogo: invoice.companyLogo as string | null,
+              customerName: invoice.customerName as string,
+              customerPhone: invoice.customerPhone as string | null,
+              customerEmail: invoice.customerEmail as string | null,
+              customerAddress: invoice.customerAddress as string | null,
+              city: invoice.city as string | null,
+              paymentMethod: invoice.paymentMethod as string | null,
+              paymentStatus: invoice.paymentStatus as string,
+              currency: invoice.currency as string,
+              subtotal: invoice.subtotal as number,
+              tax: invoice.tax as number,
+              shipping: invoice.shipping as number,
+              discount: invoice.discount as number,
+              totalAmount: invoice.totalAmount as number,
+              invoiceNumber: invoice.invoiceNumber as string,
+              order: {
+                orderNumber: invoice.order?.orderNumber as string,
+                turboTrackingNumber: invoice.order?.turboTrackingNumber as string | null,
+                orderItems: invoice.order?.orderItems as Array<{
+                  productName: string;
+                  quantity: number;
+                  price: number;
+                  total: number;
+                  productSku?: string;
+                }>,
+              },
+            }}
+            settings={settings}
+          />
         </div>
       </div>
     </div>
