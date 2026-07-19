@@ -4480,16 +4480,34 @@ async function facebookEmbeddedConnect(req, res) {
         console.log('🔗 [facebookEmbeddedConnect] Using redirect_uri for token exchange:', redirectUri);
 
         const axios = require('axios');
+        let tokenResponse;
 
-        const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
-            params: {
-                client_id: config.appId,
-                redirect_uri: redirectUri,
-                client_secret: config.appSecret,
-                code
-            },
-            timeout: 15000
-        });
+        try {
+            console.log('🔑 [facebookEmbeddedConnect] Attempting token exchange without redirect_uri...');
+            tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+                params: {
+                    client_id: config.appId,
+                    client_secret: config.appSecret,
+                    code
+                },
+                timeout: 15000
+            });
+            console.log('✅ [facebookEmbeddedConnect] Token exchange succeeded without redirect_uri');
+        } catch (exchangeErr) {
+            console.warn('⚠️ [facebookEmbeddedConnect] Exchange without redirect_uri failed:', exchangeErr.response?.data || exchangeErr.message);
+            console.log('🔄 [facebookEmbeddedConnect] Retrying token exchange with redirect_uri:', redirectUri);
+            
+            tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+                params: {
+                    client_id: config.appId,
+                    redirect_uri: redirectUri,
+                    client_secret: config.appSecret,
+                    code
+                },
+                timeout: 15000
+            });
+            console.log('✅ [facebookEmbeddedConnect] Token exchange succeeded with redirect_uri');
+        }
 
         const shortLivedToken = tokenResponse.data?.access_token;
         if (!shortLivedToken) {

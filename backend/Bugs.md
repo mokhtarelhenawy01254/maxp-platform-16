@@ -15,10 +15,10 @@
 - **Date**: 2026-07-19
 - **Root Cause**:
   1. **Hardcoded Empty redirect_uri**: In the `facebookEmbeddedConnect` backend controller, the `redirect_uri` for code exchange was hardcoded as `''` (empty string).
-  2. **SDK Redirect Mismatch**: When the frontend utilizes the Facebook JavaScript SDK's `FB.login` method with `response_type: "code"`, the SDK automatically assigns the current page URL (e.g. `https://maxp.online/whatsapp/cloud-connect`) as the `redirect_uri` in the OAuth dialog request. Because the backend attempted to exchange the code using an empty string `redirect_uri` or domain-only origin strings (like `https://maxp.online`), Meta rejected it with: `"Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request"`.
+  2. **SDK Redirect Mismatch**: When the frontend utilizes the Facebook JavaScript SDK's `FB.login` method with `response_type: "code"`, the SDK automatically manages the OAuth flow. If the backend tries to exchange the code with a specific redirect URI (like `https://maxp.online/whatsapp/cloud-connect` or `https://maxp.online/`), Meta often rejects it with: `"Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request"` because the SDK did not pass an explicit redirect URI in the dialog.
 - **Resolution**:
-  1. **Accept clientRedirectUri & Referer Path Fallback**: Modified `facebookEmbeddedConnect` in `whatsappController.js` to accept `redirectUri` from the request payload. If omitted, it falls back to parsing the `Referer` header's full origin + pathname (avoiding query parameters/hashes), matching the exact page where the SDK was run.
-  2. **Frontend Payload Update**: Updated frontend `WhatsAppCloudConnect.tsx` callback method `handleFBLoginCallback` to send `redirectUri: window.location.origin + window.location.pathname` inside the payload.
+  1. **Dual-Attempt Self-Healing Exchange**: Modified `facebookEmbeddedConnect` in `whatsappController.js` to first attempt the OAuth code exchange **without** the `redirect_uri` parameter (which is standard for Facebook SDK flows and eliminates mismatch errors entirely). If that fails, it catches the error and retries the exchange **with** the `redirect_uri` parameter (falling back to Referer path or client payload).
+  2. **Frontend Payload Update**: Kept frontend payload sending `redirectUri: window.location.origin + window.location.pathname` inside the payload as a fallback.
 - **Files Modified**:
   - `apps/backend/controller/whatsappController.js` (MODIFIED)
   - `apps/frontend/src/pages/whatsapp/WhatsAppCloudConnect.tsx` (MODIFIED)
