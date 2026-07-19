@@ -9,6 +9,7 @@
   "print": "Print",
   "revenueVolume": "Revenue & Volume",
   "aov": "Avg Order Value (AOV)",
+  "piecesPerOrder": "Pieces Per Order",
   "ordersPerDay": "Daily Orders Placed",
   "confirmationRate": "Confirmation Rate",
   "deliveryRate": "Delivery Rate",

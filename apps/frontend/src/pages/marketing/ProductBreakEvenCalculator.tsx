@@ -21,6 +21,7 @@ const sym = (code: string) => CURRENCY_SYMBOLS[code] || code;
 interface Inputs {
   aov: number; confirmationRate: number; deliveryRate: number;
   cogs: number; packingFees: number; shippingFees: number; rtoFees: number;
+  piecesPerOrder: number;
 }
 
 interface Results {
@@ -37,6 +38,7 @@ type WhatIfAction = "delivery80" | "cogs90" | "rtoCut20";
 const DEFAULTS: Inputs = {
   aov: 900, confirmationRate: 85, deliveryRate: 75,
   cogs: 350, packingFees: 25, shippingFees: 80, rtoFees: 60,
+  piecesPerOrder: 1,
 };
 
 const STORAGE_KEY = "maxp_product_bev_saved";
@@ -44,14 +46,14 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
 const fmt1 = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function compute(inputs: Inputs): Results {
-  const { aov, confirmationRate, deliveryRate, cogs, packingFees, shippingFees, rtoFees } = inputs;
+  const { aov, confirmationRate, deliveryRate, cogs, packingFees, shippingFees, rtoFees, piecesPerOrder } = inputs;
   const cr = confirmationRate / 100, dr = deliveryRate / 100;
   const confirmed = 100 * cr;
   const delivered = confirmed * dr;
   const rto = confirmed - delivered;
   const revenue = delivered * aov;
-  const costPerDelivered = cogs + packingFees + shippingFees;
-  const costPerRTO = packingFees + rtoFees;
+  const costPerDelivered = (cogs + packingFees) * piecesPerOrder + shippingFees;
+  const costPerRTO = packingFees * piecesPerOrder + rtoFees;
   const deliveredCost = delivered * costPerDelivered;
   const rtoCost = rto * costPerRTO;
   const operatingProfit = revenue - deliveredCost - rtoCost;
@@ -233,6 +235,7 @@ export default function ProductBreakEvenCalculator() {
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Card title={T("orderFlow")} icon={<CurrencyDollarIcon className="w-5 h-5 text-green-500" />}>
               <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
+              <SliderInput label={T("piecesPerOrder")} value={inputs.piecesPerOrder} min={1} max={20} step={1} onChange={set("piecesPerOrder")} />
               <SliderInput currencySymbol={sym(currency)} label={T("confirmationRate")} value={inputs.confirmationRate} min={30} max={100} step={5} isPercent onChange={set("confirmationRate")} />
               <SliderInput currencySymbol={sym(currency)} label={T("deliveryRate")} value={inputs.deliveryRate} min={20} max={100} step={5} isPercent onChange={set("deliveryRate")} />
               <div className="pt-2 text-xs text-gray-500 flex justify-between">

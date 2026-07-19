@@ -6,6 +6,7 @@
   "scenarioDefault": "سيناريو",
   "orderFlow": "📥 تدفق الطلبات",
   "aov": "متوسط قيمة الطلب (AOV)",
+  "piecesPerOrder": "عدد القطع في الطلب",
   "confirmationRate": "نسبة التأكيد",
   "deliveryRate": "نسبة التوصيل (من المؤكد)",
   "costStructure": "💸 هيكل التكاليف",

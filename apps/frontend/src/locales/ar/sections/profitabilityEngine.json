@@ -9,6 +9,7 @@
   "print": "طباعة",
   "revenueVolume": "الإيرادات والحجم",
   "aov": "متوسط قيمة الطلب",
+  "piecesPerOrder": "عدد القطع في الطلب",
   "ordersPerDay": "الطلبات اليومية",
   "confirmationRate": "معدل التأكيد",
   "deliveryRate": "معدل التوصيل",

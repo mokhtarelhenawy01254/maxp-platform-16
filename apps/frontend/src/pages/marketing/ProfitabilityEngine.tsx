@@ -23,7 +23,7 @@ const sym = (code: string) => CURRENCY_SYMBOLS[code] || code;
 interface Inputs {
   aov: number; ordersPerDay: number; confirmationRate: number; deliveryRate: number;
   cogs: number; packingFees: number; shippingFees: number; rtoFees: number;
-  fixedCosts: number; cpp: number;
+  fixedCosts: number; cpp: number; piecesPerOrder: number;
 }
 
 interface Results {
@@ -40,24 +40,24 @@ interface SavedScenario { id: string; name: string; inputs: Inputs; currency: st
 type WhatIfField = "aov" | "cpp" | "deliveryRate" | "ordersPerDay";
 
 const PRESETS: Record<string, Inputs> = {
-  Conservative: { aov: 700, ordersPerDay: 30, confirmationRate: 65, deliveryRate: 75, cogs: 300, packingFees: 30, shippingFees: 70, rtoFees: 45, fixedCosts: 100000, cpp: 150 },
-  Balanced: { aov: 900, ordersPerDay: 50, confirmationRate: 70, deliveryRate: 80, cogs: 350, packingFees: 35, shippingFees: 80, rtoFees: 50, fixedCosts: 150000, cpp: 200 },
-  Aggressive: { aov: 1200, ordersPerDay: 100, confirmationRate: 75, deliveryRate: 85, cogs: 400, packingFees: 40, shippingFees: 90, rtoFees: 55, fixedCosts: 250000, cpp: 250 },
+  Conservative: { aov: 700, ordersPerDay: 30, confirmationRate: 65, deliveryRate: 75, cogs: 300, packingFees: 30, shippingFees: 70, rtoFees: 45, fixedCosts: 100000, cpp: 150, piecesPerOrder: 1 },
+  Balanced: { aov: 900, ordersPerDay: 50, confirmationRate: 70, deliveryRate: 80, cogs: 350, packingFees: 35, shippingFees: 80, rtoFees: 50, fixedCosts: 150000, cpp: 200, piecesPerOrder: 1 },
+  Aggressive: { aov: 1200, ordersPerDay: 100, confirmationRate: 75, deliveryRate: 85, cogs: 400, packingFees: 40, shippingFees: 90, rtoFees: 55, fixedCosts: 250000, cpp: 250, piecesPerOrder: 1 },
 };
 
 const STORAGE_KEY = "maxp_profitability_saved";
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
 function computeProfitability(inputs: Inputs): Results {
-  const { aov, ordersPerDay, confirmationRate, deliveryRate, cogs, packingFees, shippingFees, rtoFees, fixedCosts, cpp } = inputs;
+  const { aov, ordersPerDay, confirmationRate, deliveryRate, cogs, packingFees, shippingFees, rtoFees, fixedCosts, cpp, piecesPerOrder } = inputs;
   const cr = confirmationRate / 100, dr = deliveryRate / 100;
   const monthlyOrdersPlaced = ordersPerDay * 30;
   const ordersConfirmed = monthlyOrdersPlaced * cr;
   const ordersDelivered = ordersConfirmed * dr;
   const ordersRTO = ordersConfirmed - ordersDelivered;
   const revenue = ordersDelivered * aov;
-  const costPerDelivered = cogs + packingFees + shippingFees;
-  const rtoUnitCost = packingFees + rtoFees;
+  const costPerDelivered = (cogs + packingFees) * piecesPerOrder + shippingFees;
+  const rtoUnitCost = packingFees * piecesPerOrder + rtoFees;
   const variableCostDelivered = ordersDelivered * costPerDelivered;
   const variableCostRTO = ordersRTO * rtoUnitCost;
   const totalVariableCost = variableCostDelivered + variableCostRTO;
@@ -352,6 +352,7 @@ export default function ProfitabilityEngine() {
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Card title={T("revenueVolume")} icon={<CurrencyDollarIcon className="w-5 h-5 text-green-500" />}>
               <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
+              <SliderInput label={T("piecesPerOrder")} value={inputs.piecesPerOrder} min={1} max={20} step={1} onChange={set("piecesPerOrder")} />
               <SliderInput currencySymbol={sym(currency)} label={T("ordersPerDay")} value={inputs.ordersPerDay} min={1} max={500} step={1} onChange={set("ordersPerDay")} />
               <SliderInput currencySymbol={sym(currency)} label={T("confirmationRate")} value={inputs.confirmationRate} min={0} max={100} step={5} isPercent onChange={set("confirmationRate")} />
               <SliderInput currencySymbol={sym(currency)} label={T("deliveryRate")} value={inputs.deliveryRate} min={0} max={100} step={5} isPercent onChange={set("deliveryRate")} />
@@ -370,8 +371,8 @@ export default function ProfitabilityEngine() {
               <SliderInput currencySymbol={sym(currency)} label={T("shippingFees")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
               <SliderInput currencySymbol={sym(currency)} label={T("rtoFees")} value={inputs.rtoFees} min={0} max={300} step={10} onChange={set("rtoFees")} />
               <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded p-2"><span className="text-gray-500">{T("costPerDelivered")}</span><div className="font-semibold text-gray-900 dark:text-gray-100">{fmtCurr(inputs.cogs + inputs.packingFees + inputs.shippingFees)}</div></div>
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded p-2"><span className="text-gray-500">{T("rtoUnitCost")}</span><div className="font-semibold text-red-500">{fmtCurr(inputs.packingFees + inputs.rtoFees)}</div></div>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded p-2"><span className="text-gray-500">{T("costPerDelivered")}</span><div className="font-semibold text-gray-900 dark:text-gray-100">{fmtCurr((inputs.cogs + inputs.packingFees) * inputs.piecesPerOrder + inputs.shippingFees)}</div></div>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded p-2"><span className="text-gray-500">{T("rtoUnitCost")}</span><div className="font-semibold text-red-500">{fmtCurr(inputs.packingFees * inputs.piecesPerOrder + inputs.rtoFees)}</div></div>
               </div>
             </Card>
 
