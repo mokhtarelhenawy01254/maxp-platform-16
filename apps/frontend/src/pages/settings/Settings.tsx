@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   Cog6ToothIcon,
   CreditCardIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
 import { getApiUrl } from "../../config/environment";
