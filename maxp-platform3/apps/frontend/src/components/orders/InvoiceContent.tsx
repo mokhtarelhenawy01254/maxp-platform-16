@@ -1,5 +1,4 @@
 import React from "react";
-import InvoiceBarcode from "./InvoiceBarcode";
 
 export interface InvoicePrintSettings {
   showCompanyLogo: boolean;
@@ -185,35 +184,25 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
         fontSize: compact ? "11px" : "14px",
       }}
     >
-      {/* ── Header: company + barcode (compact, first page) ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, marginBottom: compact ? "0.5mm" : "4px", borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "0.5mm" : "3px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          {s.showCompanyLogo && invoice.companyLogo && (
-            <img src={invoice.companyLogo} alt="" style={{ height: compact ? "20px" : "40px", width: "auto", objectFit: "contain" }} />
-          )}
-          <span style={{ fontWeight: 800, color: s.primaryColor, fontSize: compact ? "11px" : "1.1rem" }}>
-            {invoice.companyName}
-            {isPaginated && !isFirst && (
-              <span style={{ color: s.secondaryColor, fontSize: "9px", fontWeight: 600 }}>
-                {" "}({pageIndex + 1}/{totalPages})
-              </span>
+      {/* ── Header: compact line only ── */}
+      <div style={{ flexShrink: 0, marginBottom: compact ? "0.5mm" : "4px", borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "0.5mm" : "3px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {!compact && (
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            {s.showCompanyLogo && invoice.companyLogo && (
+              <img src={invoice.companyLogo} alt="" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
             )}
-          </span>
-        </div>
-        {/* barcodes in header - separated */}
-        {isFirst && compact && (showBarcodeOrderCode || showBarcodeShippingCode) && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px", flexShrink: 0 }}>
-            {showBarcodeOrderCode && invoice.order?.orderNumber && (
-              <div style={{ transform: "scale(0.3)", transformOrigin: "right top" }}>
-                <InvoiceBarcode value={invoice.order.orderNumber} label="طلب" height={28} width={1} />
-              </div>
-            )}
-            {showBarcodeShippingCode && invoice.order?.turboTrackingNumber && (
-              <div style={{ transform: "scale(0.3)", transformOrigin: "right top" }}>
-                <InvoiceBarcode value={invoice.order.turboTrackingNumber} label="شحن" height={28} width={1} />
-              </div>
-            )}
+            <span style={{ fontWeight: 800, color: s.primaryColor, fontSize: "1.1rem" }}>
+              {invoice.companyName}
+            </span>
           </div>
+        )}
+        {compact && (
+          <span style={{ fontSize: "4px", color: "#d1d5db" }}></span>
+        )}
+        {isPaginated && !isFirst && (
+          <span style={{ color: s.secondaryColor, fontSize: compact ? "9px" : "12px", fontWeight: 600 }}>
+            تابع ({pageIndex + 1}/{totalPages})
+          </span>
         )}
       </div>
 
