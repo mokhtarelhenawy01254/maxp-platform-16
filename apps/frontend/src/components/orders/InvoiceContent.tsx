@@ -171,18 +171,11 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
       }}>
         
         {/* Row 1: Header (Logo + Barcodes) */}
-        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px", minHeight: compact ? "55px" : "75px" }}>
-           {/* Right side: Logo/Company */}
-           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flex: 1 }}>
-             {invoice.companyLogo ? (
-               <img src={invoice.companyLogo} alt={invoice.companyName} style={{ maxHeight: compact ? "35px" : "50px", maxWidth: "140px", objectFit: "contain" }} />
-             ) : (
-               <h2 style={{ margin: 0, fontSize: compact ? "16px" : "20px", fontWeight: 800, color: "#000", textAlign: "right" }}>{invoice.companyName}</h2>
-             )}
-           </div>
-           
-           {/* Left side: Barcodes */}
-           <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "flex-start", flex: 2 }}>
+        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "center", alignItems: "center", padding: "8px", minHeight: compact ? "55px" : "75px", gap: "24px", flexWrap: "wrap" }}>
+           {invoice.companyLogo && (
+             <img src={invoice.companyLogo} alt="" style={{ maxHeight: compact ? "35px" : "50px", maxWidth: "140px", objectFit: "contain" }} />
+           )}
+           <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "center" }}>
              {showOrderBarcode && (
                <InvoiceBarcode value={invoice.order!.orderNumber!} label="رقم الطلب" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
              )}
