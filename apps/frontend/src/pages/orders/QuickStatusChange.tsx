@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../../i18n";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import orderWorkflowService, { OrderStatusDefinition } from "../../services/orderWorkflowService";
@@ -24,36 +23,36 @@ const ORDER_STATUSES = [
   "READY", "QUALITY_CHECK", "PACKAGED", "ON_HOLD_PREP", "PARTIALLY_DELIVERED",
 ];
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  CONFIRMED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  SCHEDULED: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  READY_FOR_PROCESSING: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400",
-  PROCESSING: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  SHIPPED: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  DUPLICATE_ORDER: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  REFUNDED: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400",
-  RETURNED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  PARTIALLY_RETURNED: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  EXCHANGED: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400",
-  PARTIALLY_REFUNDED: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400",
-  WOO_TAGHEZ: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-  DRAFT: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-  TRASH: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  READY_TO_SHIP: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  ON_HOLD: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  NOT_SHIPPED: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-  OUT_FOR_DELIVERY: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  LOST: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  PENDING_PREPARATION: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  PREPARING: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  READY: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  QUALITY_CHECK: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  PACKAGED: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400",
-  ON_HOLD_PREP: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  PARTIALLY_DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+const STATUS_CONFIG: Record<string, { labelAr: string; color: string }> = {
+  PENDING: { labelAr: "معلق", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  CONFIRMED: { labelAr: "مؤكد", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
+  SCHEDULED: { labelAr: "مجدول", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400" },
+  READY_FOR_PROCESSING: { labelAr: "جاهز للمعالجة", color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400" },
+  PROCESSING: { labelAr: "قيد المعالجة", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
+  SHIPPED: { labelAr: "تم الشحن", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
+  DELIVERED: { labelAr: "تم التسليم", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+  CANCELLED: { labelAr: "ملغي", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+  DUPLICATE_ORDER: { labelAr: "طلب مكرر", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
+  REFUNDED: { labelAr: "تم الاسترداد", color: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400" },
+  RETURNED: { labelAr: "مرتجع", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+  PARTIALLY_RETURNED: { labelAr: "مرتجع جزئي", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
+  EXCHANGED: { labelAr: "مستبدل", color: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400" },
+  PARTIALLY_REFUNDED: { labelAr: "مسترجع جزئي", color: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400" },
+  WOO_TAGHEZ: { labelAr: "Woo Taghez", color: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400" },
+  DRAFT: { labelAr: "مسودة", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
+  TRASH: { labelAr: "محذوف", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+  READY_TO_SHIP: { labelAr: "جاهز للشحن", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+  ON_HOLD: { labelAr: "معلق", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  NOT_SHIPPED: { labelAr: "لم يتم الشحن", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
+  OUT_FOR_DELIVERY: { labelAr: "خرج للتسليم", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
+  LOST: { labelAr: "مفقود", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+  PENDING_PREPARATION: { labelAr: "بانتظار التجهيز", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  PREPARING: { labelAr: "قيد التجهيز", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
+  READY: { labelAr: "جاهز", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+  QUALITY_CHECK: { labelAr: "فحص الجودة", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400" },
+  PACKAGED: { labelAr: "تم التعبئة", color: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400" },
+  ON_HOLD_PREP: { labelAr: "تجهيز معلق", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  PARTIALLY_DELIVERED: { labelAr: "تسليم جزئي", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
 };
 
 interface OrderData {
@@ -75,11 +74,13 @@ interface ChangeLogEntry {
 }
 
 const StatusBadge: React.FC<{ status: string; label?: string }> = ({ status, label }) => {
-  const { t } = useTranslation();
-  const color = STATUS_COLORS[status] || "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+  const config = STATUS_CONFIG[status] || {
+    labelAr: label || status,
+    color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+  };
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>
-      {label || t(`quickStatus.statuses.${status}`, status)}
+    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      {label || config.labelAr}
     </span>
   );
 };
@@ -149,7 +150,7 @@ const QuickStatusChange: React.FC = () => {
             orderNumber: order.orderNumber,
             oldStatus: order.status,
             newStatus: "",
-            changedAt: new Date().toLocaleString(i18n.language === "ar" ? "ar-EG" : "en-US"),
+            changedAt: new Date().toLocaleString("ar-EG"),
           };
           return [newEntry, ...prev];
         });
@@ -189,7 +190,7 @@ const QuickStatusChange: React.FC = () => {
       if (axiosError.response?.status === 404) {
         setSearchError(t("quickStatus.orderNotFound", { code }));
       } else if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-        setSearchError(t("quickStatus.sessionExpired"));
+        setSearchError("انتهت صلاحية الجلسة — يرجى تسجيل الدخول مجدداً.");
       } else {
         console.error("Search error:", error);
         setSearchError(t("quickStatus.searchError"));
@@ -298,7 +299,7 @@ const QuickStatusChange: React.FC = () => {
                 value={orderCode}
                 onChange={(e) => setOrderCode(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={t("quickStatus.searchPlaceholder")}
+                placeholder="ابحث برقم الأوردر أو الكود..."
                 className="w-full px-6 py-5 pr-14 text-2xl border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors tracking-wider font-mono"
                 disabled={searchLoading}
               />
@@ -414,7 +415,7 @@ const QuickStatusChange: React.FC = () => {
                     {t("quickStatus.total")}
                   </p>
                   <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    {Number(currentOrder.total).toFixed(2)} {currentOrder.currency || t("quickStatus.currency")}
+                    {Number(currentOrder.total).toFixed(2)} {currentOrder.currency || "ج.م"}
                   </span>
                 </div>
               )}
@@ -434,7 +435,7 @@ const QuickStatusChange: React.FC = () => {
               onClick={() => setChangeLog([])}
               className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
             >
-              {t("quickStatus.clearLog")}
+              مسح السجل
             </button>
           </div>
           <div className="overflow-x-auto">
