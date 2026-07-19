@@ -11,15 +11,15 @@ const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 type Scenario = "conservative" | "balanced" | "aggressive";
 
 interface Inputs {
-  fixedCosts: number; aov: number; cogs: number; packingFees: number;
+  fixedCosts: number; aov: number; piecesPerOrder: number; cogs: number; packingFees: number;
   shippingFees: number; rtoFees: number; cpp: number;
   confirmationRate: number; deliveryRate: number; ordersPerDay: number;
 }
 
 const SCENARIOS: Record<Scenario, Inputs> = {
-  conservative: { fixedCosts: 80000, aov: 500, cogs: 250, packingFees: 30, shippingFees: 80, rtoFees: 70, cpp: 250, confirmationRate: 60, deliveryRate: 60, ordersPerDay: 30 },
-  balanced: { fixedCosts: 120000, aov: 900, cogs: 350, packingFees: 25, shippingFees: 80, rtoFees: 60, cpp: 200, confirmationRate: 80, deliveryRate: 75, ordersPerDay: 50 },
-  aggressive: { fixedCosts: 200000, aov: 1500, cogs: 500, packingFees: 20, shippingFees: 60, rtoFees: 50, cpp: 150, confirmationRate: 85, deliveryRate: 85, ordersPerDay: 100 },
+  conservative: { fixedCosts: 80000, aov: 500, piecesPerOrder: 1, cogs: 250, packingFees: 30, shippingFees: 80, rtoFees: 70, cpp: 250, confirmationRate: 60, deliveryRate: 60, ordersPerDay: 30 },
+  balanced: { fixedCosts: 120000, aov: 900, piecesPerOrder: 1, cogs: 350, packingFees: 25, shippingFees: 80, rtoFees: 60, cpp: 200, confirmationRate: 80, deliveryRate: 75, ordersPerDay: 50 },
+  aggressive: { fixedCosts: 200000, aov: 1500, piecesPerOrder: 1, cogs: 500, packingFees: 20, shippingFees: 60, rtoFees: 50, cpp: 150, confirmationRate: 85, deliveryRate: 85, ordersPerDay: 100 },
 };
 
 const STORAGE_KEY = "maxp_break_even_saved";
@@ -31,11 +31,11 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
 const fmt1 = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function compute(inputs: Inputs) {
-  const { fixedCosts, aov, cogs, packingFees, shippingFees, rtoFees, cpp, confirmationRate, deliveryRate, ordersPerDay } = inputs;
+  const { fixedCosts, aov, piecesPerOrder, cogs, packingFees, shippingFees, rtoFees, cpp, confirmationRate, deliveryRate, ordersPerDay } = inputs;
   const cr = confirmationRate / 100, dr = deliveryRate / 100;
   const effectiveDr = cr * dr;
-  const costPerDelivered = cogs + packingFees + shippingFees;
-  const rtoCostPerFail = packingFees + rtoFees;
+  const costPerDelivered = (cogs + packingFees) * piecesPerOrder + shippingFees;
+  const rtoCostPerFail = packingFees * piecesPerOrder + rtoFees;
   const per100 = 100, confirmed = per100 * cr, delivered = confirmed * dr, rto = confirmed - delivered;
   const revenue = delivered * aov;
   const totalDeliveredCost = delivered * costPerDelivered;
@@ -160,6 +160,7 @@ export default function ProjectBreakEvenCalculator() {
           </Card>
           <Card title={T("revenueCosts")} icon={<CurrencyDollarIcon className="w-5 h-5 text-green-500" />}>
             <Slider label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
+            <Slider label={T("piecesPerOrder")} value={inputs.piecesPerOrder} min={1} max={20} step={1} onChange={set("piecesPerOrder")} />
             <Slider label={T("cogs")} value={inputs.cogs} min={0} max={3000} step={10} onChange={set("cogs")} />
             <Slider label={T("packing")} value={inputs.packingFees} min={0} max={200} step={5} onChange={set("packingFees")} />
             <Slider label={T("shipping")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
@@ -264,6 +265,7 @@ export default function ProjectBreakEvenCalculator() {
                   {[
                     [T("fixedCosts"), `${fmt(inputs.fixedCosts)} ${s}`],
                     [T("aov"), `${fmt(inputs.aov)} ${s}`],
+                    [T("piecesPerOrder"), `${fmt(inputs.piecesPerOrder)}`],
                     [T("cpp"), `${fmt(inputs.cpp)} ${s}`],
                     [T("confirmRate"), `${inputs.confirmationRate}%`],
                     [T("deliveryRate"), `${inputs.deliveryRate}%`],
@@ -382,6 +384,7 @@ export default function ProjectBreakEvenCalculator() {
                   {[
                     [T("fixedCosts"), `${fmt(inputs.fixedCosts)} ${s}`],
                     ["AOV", `${fmt(inputs.aov)} ${s}`],
+                    [T("piecesPerOrder"), `${fmt(inputs.piecesPerOrder)}`],
                     ["CPP", `${fmt(inputs.cpp)} ${s}`],
                     [T("confirmRate"), `${inputs.confirmationRate}%`],
                     [T("deliveryRate"), `${inputs.deliveryRate}%`],
