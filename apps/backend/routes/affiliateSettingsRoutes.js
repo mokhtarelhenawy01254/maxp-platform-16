@@ -11,6 +11,7 @@ const canManageAffiliateSettings = (userRole) =>
 
 const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
 const VALID_PLATFORM_MARGIN_TYPES = new Set(['FIXED', 'PERCENTAGE']);
+const VALID_COMMISSION_TRIGGER_STATUSES = new Set(['CONFIRMED', 'DELIVERED', 'PROCESSING', 'SHIPPED', 'PAID']);
 const AFFILIATE_REQUIRED_APP_SLUGS = [
     'affiliate-pro',
     'order-core',
@@ -182,7 +183,8 @@ router.put('/', async (req, res) => {
             identityDocumentLabel,
             payoutSlaDays,
             platformMarginType,
-            platformMarginValue
+            platformMarginValue,
+            commissionOnStatus
         } = req.body;
 
         if (!companyId) {
@@ -213,8 +215,13 @@ router.put('/', async (req, res) => {
             max: 365,
             label: 'مدة الكوكيز',
         });
+        const normalizedCommissionOnStatus = normalizeEnum(
+            commissionOnStatus,
+            VALID_COMMISSION_TRIGGER_STATUSES,
+            'CONFIRMED',
+            'حالة احتساب العمولة',
+        );
         const parsedPlatformMarginValue = parseBoundedNumber(platformMarginValue, {
-            fallback: 0,
             min: 0,
             max: normalizedPlatformMarginType === 'PERCENTAGE' ? 1000 : 1000000,
             label: 'قيمة ربح المنصة',
@@ -286,7 +293,8 @@ router.put('/', async (req, res) => {
                 identityDocumentLabel: normalizedIdentityDocumentLabel,
                 payoutSlaDays: parsedPayoutSlaDays,
                 platformMarginType: normalizedPlatformMarginType,
-                platformMarginValue: parsedPlatformMarginValue
+                platformMarginValue: parsedPlatformMarginValue,
+                commissionOnStatus: normalizedCommissionOnStatus
             },
             create: {
                 companyId,
@@ -305,7 +313,8 @@ router.put('/', async (req, res) => {
                 identityDocumentLabel: normalizedIdentityDocumentLabel,
                 payoutSlaDays: parsedPayoutSlaDays,
                 platformMarginType: normalizedPlatformMarginType,
-                platformMarginValue: parsedPlatformMarginValue
+                platformMarginValue: parsedPlatformMarginValue,
+                commissionOnStatus: normalizedCommissionOnStatus
             }
         });
 

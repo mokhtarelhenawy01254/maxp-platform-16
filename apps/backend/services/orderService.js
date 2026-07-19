@@ -1110,19 +1110,28 @@ class OrderService {
             const dropshippingService = require('./dropshippingService');
             const prisma = this.getPrisma();
 
-            const existingCommissions = await prisma.commission.findMany({
-              where: { orderId: order.id },
+            // قراءة الإعداد: في أي حالة تتحسب العمولة
+            const affSetting = await prisma.affiliateSetting.findUnique({
+              where: { companyId: order.companyId },
+              select: { commissionOnStatus: true },
             });
-            const hasActiveCommissions = existingCommissions.some(
-              (commission) => commission.status !== 'CANCELLED',
-            );
+            const triggerStatus = affSetting?.commissionOnStatus || 'CONFIRMED';
 
-            if (!hasActiveCommissions) {
-              if (order.isDropshipped || order.orderItems?.some(item => item.product?.isDropshipped)) {
-                await dropshippingService.routeOrderToMerchant(order.id);
+            if (status === triggerStatus) {
+              const existingCommissions = await prisma.commission.findMany({
+                where: { orderId: order.id },
+              });
+              const hasActiveCommissions = existingCommissions.some(
+                (commission) => commission.status !== 'CANCELLED',
+              );
+
+              if (!hasActiveCommissions) {
+                if (order.isDropshipped || order.orderItems?.some(item => item.product?.isDropshipped)) {
+                  await dropshippingService.routeOrderToMerchant(order.id);
+                }
+                await commissionService.calculateCommissions(order.id);
+                console.log(`✅ [COMMISSION-BG] Calculated for order ${orderNumber}`);
               }
-              await commissionService.calculateCommissions(order.id);
-              console.log(`✅ [COMMISSION-BG] Calculated for order ${orderNumber}`);
             }
           }
 
