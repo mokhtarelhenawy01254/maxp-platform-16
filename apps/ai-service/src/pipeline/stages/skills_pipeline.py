@@ -162,9 +162,18 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             followup_messages = await _build_followup_messages(ctx, provider_response, executed)
             try:
                 final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+                if final_response.tool_calls:
+                    extra_results = await asyncio.gather(*[_execute_one(tc) for tc in final_response.tool_calls])
+                    executed.extend(extra_results)
+                    for item in extra_results:
+                        if item["status"] == "success":
+                            ctx.tool_evidence.append({"tool": item["tool"], "result": item["result"]})
+                    followup_messages = await _build_followup_messages(ctx, final_response, extra_results)
+                    final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
                 if not final_response.text:
                     logger.warning("skills_pipeline_followup_empty_retrying")
-                    final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="auto")
+                    text_messages = _strip_tool_messages(followup_messages, executed)
+                    final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice=None)
                 ctx.final_reply = final_response.text or _format_tool_results(executed)
                 ctx.llm_response = final_response.text or ""
             except Exception as e:
@@ -357,6 +366,10 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         tool_choice = None
 
     temperature = 1.0 if provider == "OLLAMA" else 0.3
+
+    # Persist assembled messages for downstream stages (self-review judge context)
+    ctx.messages = list(messages)
+
     return await client.generate(
         messages=messages,
         tools=tool_dicts,
@@ -382,7 +395,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         )
 
     # Build tool definitions so DeepSeek can understand tool_call history
-    tool_dicts = tools or _build_tool_dicts(ctx)
+    tool_dicts = _build_tool_dicts(ctx) if tools is None else tools
 
     # If message has images but current model doesn't support vision, switch to Gemini
     has_images = any(
@@ -428,16 +441,34 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 def _build_tool_dicts(ctx: PipelineContext) -> list[dict]:
     from src.skills.registry import get_skill_registry
     registry = get_skill_registry()
-    tool_dicts = []
+    
+    skills = []
+    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+        for skill_name in ctx.agent.allowed_skills:
+            skill = registry.resolve(skill_name)
+            if skill:
+                skills.append(skill)
+                
+    tool_dicts = [s.to_openai_tool() for s in skills]
+    skill_names = {s.name.lower() for s in skills}
+    
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
     for tool_name in allowed:
         tname = tool_name.lower()
-        tool = registry.resolve(tname)
-        if tool:
-            tool_dicts.append(
-                tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
-                else {"type": "function", "function": {"name": tool.name, "description": getattr(tool, 'description', ''), "parameters": {"type": "object", "properties": {}}}}
-            )
+        if tname not in skill_names:
+            tool = registry.resolve(tname)
+            if tool:
+                tool_dicts.append(
+                    tool.to_json_schema_spec() if hasattr(tool, 'to_json_schema_spec')
+                    else {
+                        "type": "function",
+                        "function": {
+                            "name": tool.name,
+                            "description": getattr(tool, 'description', ''),
+                            "parameters": {"type": "object", "properties": {}}
+                        }
+                    }
+                )
     return tool_dicts
 
 
@@ -502,31 +533,10 @@ def _format_tool_results(executed: list[dict]) -> str:
                     parts.append(f"بيانات العميل: {cust.get('name') or cust.get('customerName')}")
             elif name == "booking_info":
                 handled = True
-                out = []
-                branches = result.get("branches") or []
-                services = result.get("services") or []
-                for b in branches:
-                    line = b.get("name", "")
-                    addr = b.get("address", "")
-                    phone = b.get("phone", "")
-                    male = b.get("male_days") or []
-                    female = b.get("female_days") or []
-                    if addr:
-                        line += f" - {addr}"
-                    if phone:
-                        line += f" - تلفون: {phone}"
-                    days = []
-                    if male:
-                        days.append(f"رجال: {', '.join(male)}")
-                    if female:
-                        days.append(f"سيدات: {', '.join(female)}")
-                    if days:
-                        line += f" ({'; '.join(days)})"
-                    out.append(line)
-                svc_names = [s.get("name", "") for s in services[:5] if s.get("name")]
-                if svc_names:
-                    out.append(f"الخدمات: {', '.join(svc_names)}")
-                parts.append("\n".join(out) if out else f"تم استرجاع معلومات المركز ({result.get('total_branches', 0)} فروع).")
+                branch_count = result.get('total_branches', 0) or len(result.get('branches') or [])
+                svc_count = len(result.get('services') or [])
+                doc_count = len(result.get('doctors') or [])
+                parts.append(f"المركز لديه {branch_count} فرع{' و' if svc_count or doc_count else ''}{f' {svc_count} خدمة' if svc_count else ''}{f' و {doc_count} دكتور' if doc_count else ''}.")
             elif name == "booking_reserve_skill":
                 handled = True
                 err = result.get("error", "")
@@ -593,7 +603,7 @@ async def _build_followup_messages(
     """Build messages for the follow-up LLM call after tool execution."""
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
     base_prompt = ctx.system_prompt or agent_instructions or _default_system_prompt()
-    system_prompt = f"{base_prompt}\n\nاكتب رداً طبيعياً ومباشراً للعميل بالعامية المصرية بناءً على نتائج الأدوات أعلاه. لا تكرر التحية. لا تخبر العميل أنك استخدمت أدوات."
+    system_prompt = f"{base_prompt}\n\nاكتب رداً طبيعياً ومباشراً للعميل بالعامية المصرية. استخدم نتائج الأدوات أعلاه للرد. إذا كانت النتائج لا تحتوي على المعلومات المطلوبة بالكامل، رد بما هو متاح واسأل باستكمال الباقي."
 
     # Inject SKILL.md instructions (same as primary _llm_call)
     if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
@@ -660,6 +670,29 @@ async def _build_followup_messages(
             )
 
     return messages
+
+
+def _strip_tool_messages(messages: list[dict], executed: list[dict]) -> list[dict]:
+    """Remove tool_calls from assistant msgs and convert tool role msgs to system for APIs without tool support."""
+    result = [m for m in messages if m["role"] != "tool"]
+    for m in result:
+        m.pop("tool_calls", None)
+    tool_summaries = []
+    for item in executed:
+        tool_name = item.get("tool", "")
+        status = item.get("status", "")
+        result_data = item.get("result", {})
+        if tool_name == "booking_info" and isinstance(result_data, dict):
+            branches = len(result_data.get("branches", []))
+            services = len(result_data.get("services", []))
+            doctors = len(result_data.get("doctors", []))
+            tool_summaries.append(f"[{tool_name}: {branches} فرع, {services} خدمة, {doctors} دكتور]")
+        else:
+            tool_summaries.append(f"[{tool_name}: {'نجاح' if status == 'success' else 'فشل'}]")
+    if tool_summaries:
+        summary = "نتائج الأدوات:\n" + "\n".join(tool_summaries)
+        result.append({"role": "system", "content": summary})
+    return result
 
 
 def _inject_image_to_product_search(arguments: dict, attachments: list[dict]) -> None:

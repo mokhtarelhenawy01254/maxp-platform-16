@@ -1,0 +1,11 @@
+{
+  "id": "social-image-generation",
+  "displayName": "Social Image Generation",
+  "version": "1.0.0",
+  "description": "Generate social media images using AI image models with various styles, aspect ratios, and reference images.",
+  "allowedTools": [
+    "generate_social_image"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 1
+}

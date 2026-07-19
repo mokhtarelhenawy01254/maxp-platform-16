@@ -1,0 +1,185 @@
+[
+  {
+    "id": "inventory_color_read_executes",
+    "channel": "facebook",
+    "message": "Do you have black shoes in stock?",
+    "available_tools": ["inventory_check", "product_search"],
+    "classifier": {
+      "intent": "inventory",
+      "confidence": 0.88,
+      "confidenceLevel": "high",
+      "slots": {"productName": "shoes", "productColor": "black"},
+      "missingSlots": ["productSize", "quantity"],
+      "toolEligibility": "needs_clarification"
+    },
+    "expected_intent": "inventory",
+    "expected_decision": "execute_tool",
+    "expected_primary_tool": "inventory_check",
+    "expected_execution": "read",
+    "expected_params": {"product_name_or_sku": "shoes", "product_color": "black"}
+  },
+  {
+    "id": "product_browse_executes_search",
+    "channel": "facebook",
+    "message": "Show me your sneakers.",
+    "available_tools": ["product_search", "inventory_check"],
+    "classifier": {
+      "intent": "products",
+      "confidence": 0.84,
+      "confidenceLevel": "high",
+      "slots": {"productName": "sneakers"},
+      "missingSlots": [],
+      "toolEligibility": "allowed"
+    },
+    "expected_intent": "products",
+    "expected_decision": "execute_tool",
+    "expected_primary_tool": "product_search",
+    "expected_execution": "read",
+    "expected_params": {"query": "sneakers"}
+  },
+  {
+    "id": "shipping_rate_requires_destination",
+    "channel": "facebook",
+    "message": "How much is shipping?",
+    "available_tools": ["shipping_rates"],
+    "classifier": {
+      "intent": "shipping.rates",
+      "confidence": 0.86,
+      "confidenceLevel": "high",
+      "slots": {},
+      "missingSlots": ["governorate"],
+      "toolEligibility": "needs_clarification"
+    },
+    "expected_intent": "shipping.rates",
+    "expected_decision": "ask_followup",
+    "expected_primary_tool": "shipping_rates",
+    "expected_execution": "none",
+    "expected_blocked_reason": "NEEDS_CLARIFICATION"
+  },
+  {
+    "id": "shipping_rate_with_city_executes",
+    "channel": "facebook",
+    "message": "How much is shipping to Cairo?",
+    "available_tools": ["shipping_rates"],
+    "classifier": {
+      "intent": "shipping.rates",
+      "confidence": 0.91,
+      "confidenceLevel": "high",
+      "slots": {"governorate": "Cairo"},
+      "missingSlots": [],
+      "toolEligibility": "allowed"
+    },
+    "expected_intent": "shipping.rates",
+    "expected_decision": "execute_tool",
+    "expected_primary_tool": "shipping_rates",
+    "expected_execution": "read",
+    "expected_params": {"governorate": "Cairo"}
+  },
+  {
+    "id": "order_lookup_executes",
+    "channel": "facebook",
+    "message": "Where is order ORD-123?",
+    "available_tools": ["order_lookup"],
+    "classifier": {
+      "intent": "orders",
+      "confidence": 0.93,
+      "confidenceLevel": "high",
+      "slots": {"orderNumber": "ORD-123"},
+      "missingSlots": [],
+      "toolEligibility": "allowed"
+    },
+    "expected_intent": "orders",
+    "expected_decision": "execute_tool",
+    "expected_primary_tool": "order_lookup",
+    "expected_execution": "read",
+    "expected_params": {"order_number": "ORD-123"}
+  },
+  {
+    "id": "draft_order_missing_phone_blocks",
+    "channel": "facebook",
+    "message": "Create a draft order for Ahmed for black shoes.",
+    "available_tools": ["order_create_draft", "product_search", "customer_info"],
+    "classifier": {
+      "intent": "orders.create_draft",
+      "confidence": 0.92,
+      "confidenceLevel": "high",
+      "slots": {"productName": "black shoes", "customerName": "Ahmed"},
+      "missingSlots": ["customerPhone"],
+      "toolEligibility": "needs_clarification"
+    },
+    "expected_intent": "orders.create_draft",
+    "expected_decision": "ask_followup",
+    "expected_primary_tool": "order_create_draft",
+    "expected_execution": "none",
+    "expected_blocked_reason": "NEEDS_CLARIFICATION"
+  },
+  {
+    "id": "draft_order_complete_awaits_approval_tool",
+    "channel": "facebook",
+    "message": "Create draft order for Ahmed, 01001111111, black shoes, quantity 2, price 1000, Cairo.",
+    "available_tools": ["order_create_draft", "product_search", "customer_info"],
+    "classifier": {
+      "intent": "orders.create_draft",
+      "confidence": 0.94,
+      "confidenceLevel": "high",
+      "slots": {
+        "customerName": "Ahmed",
+        "customerPhone": "01001111111",
+        "productName": "black shoes",
+        "productPrice": 1000,
+        "quantity": 2,
+        "city": "Cairo"
+      },
+      "missingSlots": [],
+      "toolEligibility": "allowed"
+    },
+    "expected_intent": "orders.create_draft",
+    "expected_decision": "execute_tool",
+    "expected_primary_tool": "order_create_draft",
+    "expected_execution": "action",
+    "expected_params": {
+      "customer_name": "Ahmed",
+      "customer_phone": "01001111111",
+      "product_name": "black shoes",
+      "quantity": "2",
+      "total": "1000",
+      "city": "Cairo"
+    }
+  },
+  {
+    "id": "refund_handoff_executes_action",
+    "channel": "facebook",
+    "message": "I want a refund for a damaged item.",
+    "available_tools": ["agent_handoff_to", "order_lookup", "customer_info"],
+    "classifier": {
+      "intent": "support.refund",
+      "confidence": 0.9,
+      "confidenceLevel": "high",
+      "slots": {"refundReason": "damaged item"},
+      "missingSlots": [],
+      "toolEligibility": "allowed"
+    },
+    "expected_intent": "support.refund",
+    "expected_decision": "delegate",
+    "expected_primary_tool": "agent_handoff_to",
+    "expected_execution": "action"
+  },
+  {
+    "id": "general_chat_no_tool",
+    "channel": "facebook",
+    "message": "Thanks, that helps.",
+    "available_tools": ["inventory_check", "product_search"],
+    "classifier": {
+      "intent": "general.chat",
+      "confidence": 0.78,
+      "confidenceLevel": "medium",
+      "slots": {},
+      "missingSlots": [],
+      "toolEligibility": "allowed"
+    },
+    "expected_intent": "general.chat",
+    "expected_decision": "answer",
+    "expected_primary_tool": null,
+    "expected_execution": "none"
+  }
+]

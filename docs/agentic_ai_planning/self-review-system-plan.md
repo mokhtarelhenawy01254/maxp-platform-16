@@ -307,48 +307,46 @@
   - Lazy loading مع `React.lazy`
 - **Validation**: فتح الرابط من الـ sidebar
 
-## Sprint 5: Polish & Deploy
+## Sprint 5: Final Verification & Migration
 
-**Goal**: اختبار متكامل + نشر + مراقبة.
+**Goal**: تطبيق الـ DB migration + اختبارات التحقق النهائية.
 
-**Demo/Validation**:
-- End-to-end flow: رسالة → self-review → log → dashboard
-- Performance metrics
-- All edge cases tested
+### Task 5.1: Run DB Migration
 
-### Task 5.1: اختبار End-to-End
+```bash
+psql -d yourdb -f apps/ai-service/migrations/001_self_review_log.sql
+```
 
-- **Description**: اختبار manual للـ flow الكامل
-- **Checklist**:
-  - إرسال رسالة عادية → approved في DB
-  - إرسال رسالة تخالف قوانين التاجر → corrected أو escalated في DB
-  - التحقق من الـ dashboard يعرض البيانات
-  - Export CSV يعمل
-  - الفلاتر تشتغل
-- **Dependencies**: Sprint 4 completes
-- **Acceptance Criteria**: All checklist items pass
+Creates `ai.self_review_log` table with indexes on company_id, created_at, status.
 
-### Task 5.2: نشر (Deploy)
+### Task 5.2: Verify Backend
 
-- **Description**: commit + push + deploy
-- **Steps**:
-  1. `git add` ملفات ai-service (validate_reply.py, db/models, db/repo, api/admin)
-  2. `git add` ملفات frontend (page, service, i18n, route, sidebar)
-  3. Commit و push
-  4. مراقبة الـ PM2 logs بعد الـ deploy
-  5. مراقبة الـ self-review logs عبر dashboard
-- **Dependencies**: Task 5.1
-- **Acceptance Criteria**: AI service يعيد التشغيل بنجاح
+```bash
+cd apps/ai-service
+python -m pytest tests/pipeline/ --ignore=tests/pipeline/test_registry_integration.py -q
+# Expected: 26 passed, 1 pre-existing failure
+```
 
-### Task 5.3: مراقبة (Monitoring)
+### Task 5.3: Deploy (when ready)
 
-- **Description**: متابعة الـ self-review performance بعد النشر
-- **Checklist**:
-  - PM2 logs خالية من الأخطاء
-  - الـ review latency < 500ms في المتوسط
-  - لو ظهرت مشاكل، fail-open يحمي العميل
-- **Dependencies**: Task 5.2
-- **Acceptance Criteria**: أسبوع من التشغيل المستقر
+```bash
+git add apps/ai-service/src/pipeline/stages/validate_reply.py
+git add apps/ai-service/src/db/models/review_log.py
+git add apps/ai-service/src/db/models/__init__.py
+git add apps/ai-service/src/db/repo/review_log_repo.py
+git add apps/ai-service/src/api/admin/self_review.py
+git add apps/ai-service/src/api/admin/__init__.py
+git add apps/ai-service/migrations/001_self_review_log.sql
+git add apps/frontend/src/pages/super-admin/SuperAdminSelfReviewLogs.tsx
+git add apps/frontend/src/services/selfReviewService.ts
+git add apps/frontend/src/locales/ar/sections/superAdmin.json
+git add apps/frontend/src/locales/en/sections/superAdmin.json
+git add apps/frontend/src/components/layout/SuperAdminSidebar.tsx
+git add apps/frontend/src/App.tsx
+git commit -m "feat: LLM-as-Judge self-review system with full dashboard"
+git push
+# مراقبة PM2 logs بعد النشر
+```
 
 ## Testing Strategy
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import Integer, String
@@ -30,5 +30,5 @@ class ReviewLog(Base):
     verdict_raw: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     metadata_: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=datetime.now, index=True
+        TIMESTAMP(timezone=True), nullable=False, default=lambda: datetime.now(UTC), index=True
     )

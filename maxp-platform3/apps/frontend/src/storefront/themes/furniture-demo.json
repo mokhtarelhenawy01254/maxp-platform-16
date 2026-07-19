@@ -1,0 +1,166 @@
+{
+  "id": "furniture-demo",
+  "name": "LUXURE",
+  "tokens": {
+    "colors": {
+      "primary": "35 77% 37%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 10%",
+      "secondaryForeground": "0 0% 100%",
+      "accent": "35 77% 37%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 99%",
+      "foreground": "0 0% 10%",
+      "muted": "0 0% 96%",
+      "mutedForeground": "0 0% 45%",
+      "border": "0 0% 90%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 10%",
+      "ring": "35 77% 37%"
+    },
+    "typography": {
+      "headingFont": "Cinzel, Cairo, serif",
+      "bodyFont": "Montserrat, Cairo, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.1rem",
+      "buttonRadius": "0rem"
+    },
+    "productCard": {
+      "borderRadius": "0rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 20px 40px -15px rgba(0,0,0,0.1)",
+      "surfaceOpacity": "1"
+    }
+  },
+  "header": {
+    "brandName": "LUXURE",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المجموعات", "to": "/shop" },
+      { "label": "عن الدار", "to": "/about" }
+    ]
+  },
+  "footer": {
+    "description": "أثاث وديكور بإحساس فاخر، تفاصيل تشجع على الحسم، وصور تخلّي العميل يتخيل القطعة في بيته بسهولة.",
+    "socialLinks": {
+      "instagram": "https://instagram.com/luxure",
+      "facebook": "https://facebook.com/luxure",
+      "whatsapp": "https://wa.me/2019999"
+    },
+    "navigation": [
+      {
+        "title": "روابط سريعة",
+        "links": [
+          { "label": "عن الدار", "to": "/about" },
+          { "label": "المجموعات الكاملة", "to": "/shop" },
+          { "label": "سياسة الشحن", "to": "/shipping" },
+          { "label": "الاستبدال والاسترجاع", "to": "/returns" }
+        ]
+      }
+    ],
+    "copyrightText": "© ٢٠٢٤ LUXURE للدار والأثاث. جميع الحقوق محفوظة."
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "قطعة تغيّر شكل البيت من أول نظرة",
+            "subtitle": "أثاث يدوي وتشطيبات راقية ومسارات واضحة للمعاينة والطلب بدل عرض ساكت.",
+            "backgroundImage": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=2000",
+            "buttonText": "شوف المجموعة"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "ابدأ من الركنة الأقرب لبيتك",
+            "collections": [
+              { "title": "غرف الجلوس", "subtitle": "راحة تشد العين", "image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600" },
+              { "title": "طاولات الطعام", "subtitle": "سفرة تلم الناس", "image": "https://images.unsplash.com/photo-1617806118233-f8e137453f9c?auto=format&fit=crop&w=600" },
+              { "title": "إكسسوارات الدار", "subtitle": "تفاصيل تكمل البيت", "image": "https://images.unsplash.com/photo-1534073828943-f801091bb18c?auto=format&fit=crop&w=600" }
+            ]
+          }
+        },
+        {
+          "type": "story-parallax",
+          "settings": {
+            "title": "حرفية تتشاف قبل ما تتشرح",
+            "content": "كل قطعة معمولة عشان تعيش وتبان قيمتها من الخامة والتشطيب والتفاصيل. إحساس البيت الفخم هنا مش كلام، لكنه باين في كل زاوية وكل لمسة.",
+            "image": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=2000",
+            "badge": "شغلنا"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "luxury-card",
+          "settings": {
+            "title": "قطع تحسم الديكور",
+            "subtitle": "اختيارات ترفع شكل البيت وتسهّل قرار الشراء.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "newsletter",
+          "settings": {
+            "title": "خد الجديد قبل غيرك",
+            "description": "تنبيهات بالكولكشنات الجديدة والعروض الخاصة والمواعيد المحدودة للتركيب."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "stack",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "كل مجموعات LUXURE",
+            "searchPlaceholder": "ابحث عن كنبة أو ترابيزة أو قطعة ديكور",
+            "clearButtonText": "تصفير"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "luxury-card",
+          "settings": {
+            "title": "المجموعة الكاملة",
+            "limit": 24
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "grid" },
+        { "type": "product-info", "variant": "accordion" },
+        { "type": "related-products", "variant": "luxury-card", "settings": { "title": "قطع متناغمة", "limit": 4 } }
+      ]
+    },
+    "cart": {
+      "sections": ["cart-items", "order-summary"]
+    },
+    "checkout": {
+      "sections": ["checkout-form", "payment"]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم استلام الطلب بنجاح",
+            "description": "طلبك اتسجل، وفريقنا هيتواصل معاك لتأكيد المقاس والتوصيل والتركيب في أقرب وقت.",
+            "continueShoppingText": "العودة للمجموعات"
+          }
+        }
+      ]
+    }
+  }
+}

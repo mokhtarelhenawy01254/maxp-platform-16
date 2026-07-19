@@ -31,6 +31,13 @@ function normalizeWhatsAppContactIdentity(remoteJid) {
         };
     }
 
+    if (jid.endsWith('@newsletter')) {
+        return {
+            normalizedJid: jid,
+            phoneNumber: buildFallbackPhoneNumber('newsletter', jid)
+        };
+    }
+
     const bareJid = getBareJid(jid);
     let cleaned = bareJid.replace(/\D/g, '');
 

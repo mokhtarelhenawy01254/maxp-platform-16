@@ -1,0 +1,12 @@
+{
+  "id": "booking-upsell-packages",
+  "displayName": "Booking Upsell Packages",
+  "version": "1.0.0",
+  "description": "Suggest session packages dynamically to patients during therapy and session bookings to maximize sales.",
+  "allowedTools": [
+    "booking_info",
+    "booking_packages"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 2
+}

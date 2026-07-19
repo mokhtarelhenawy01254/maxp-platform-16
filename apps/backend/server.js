@@ -804,6 +804,7 @@ app.use("/api/v1/admin/wallet", adminWalletRoutes);
 app.use("/api/v1/admin/payments", paymentRoutes);
 app.use("/api/v1/admin/invoices", invoiceRoutes);
 app.use("/api/v1/admin/schedulers", schedulerRoutes);
+app.use("/api/v1/admin/self-review", require("./routes/adminSelfReviewRoutes"));
 // Backward-compatible alias for legacy admin tools that still call /api/v1/admin/*
 app.use("/api/v1/admin", systemManagementRoutes);
 app.use("/api/v1/system", systemManagementRoutes);

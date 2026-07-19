@@ -290,7 +290,7 @@ class WhatsAppInboxService {
     const conversation = await prisma.conversation.findUnique({
       where: { id: conversationId },
       include: {
-        customer: { select: { id: true, phone: true } },
+        customer: { select: { id: true, phone: true, facebookId: true, instagramId: true } },
         messages: {
           orderBy: { createdAt: 'asc' }
         }
@@ -338,15 +338,17 @@ class WhatsAppInboxService {
       });
       const activeAgents = agentsRes.data || [];
       
-      // Look for active agent with "whatsapp" in channels
-      const whatsappAgent = activeAgents.find(a => 
+      // Match agent by conversation channel (whatsapp, facebook, instagram, telegram)
+      const channelType = (conversation.channel || 'WHATSAPP').toLowerCase();
+      const channelAgent = activeAgents.find(a => 
         a.status === 'ACTIVE' && 
-        (a.channels || []).some(ch => ch.toLowerCase() === 'whatsapp')
+        (a.channels || []).some(ch => ch.toLowerCase() === channelType)
       );
       
-      if (whatsappAgent) {
-        agentId = whatsappAgent.id;
+      if (channelAgent) {
+        agentId = channelAgent.id;
       } else if (activeAgents.length > 0) {
+        // Fallback: any active agent
         const active = activeAgents.find(a => a.status === 'ACTIVE');
         if (active) agentId = active.id;
       }
@@ -378,22 +380,118 @@ class WhatsAppInboxService {
       console.warn('[whatsappInboxService] No active WhatsApp agent found. Skipping auto-guardrail creation.');
     }
 
-    // 7. Send the corrected reply to the customer via WhatsApp
+    // 7. Send the corrected reply to the customer via the appropriate channel
     let messageSent = false;
-    const sessionId = getSessionIdFromMetadata(conversation.metadata);
+    const channel = (conversation.channel || 'WHATSAPP').toUpperCase();
 
-    if (sessionId) {
-      try {
-        await sendText(sessionId, conversation.customer.phone, correction, {
-          senderId: userId,
-          companyId
-        });
-        messageSent = true;
-      } catch (sendErr) {
-        console.warn('[whatsappInboxService] WhatsApp send failed (correction saved anyway):', sendErr.message);
+    if (channel === 'WHATSAPP') {
+      const sessionId = getSessionIdFromMetadata(conversation.metadata);
+      if (sessionId) {
+        try {
+          await sendText(sessionId, conversation.customer.phone, correction, {
+            senderId: userId,
+            companyId
+          });
+          messageSent = true;
+        } catch (sendErr) {
+          console.warn('[correctMessage] WhatsApp send failed (correction saved anyway):', sendErr.message);
+        }
+      } else {
+        console.warn('[correctMessage] No WhatsApp session ID. Correction saved but message not sent.');
       }
-    } else {
-      console.warn('[whatsappInboxService] No session ID found in metadata. Correction saved but message not sent.');
+    } else if (channel === 'FACEBOOK') {
+      try {
+        let metadata = safeJsonParse(conversation.metadata, {});
+        let actualPageId = metadata.pageId || null;
+        let pageAccessToken = metadata.pageAccessToken || null;
+
+        if (!pageAccessToken && actualPageId) {
+          const { getPageToken } = require('../controller/conversation/conversationShared');
+          const pageTokenData = await getPageToken(actualPageId);
+          pageAccessToken = pageTokenData?.pageAccessToken || null;
+        }
+
+        if (!pageAccessToken) {
+          const facebookPage = await prisma.facebookPage.findFirst({
+            where: { companyId, status: 'connected' }
+          });
+          if (facebookPage) {
+            actualPageId = facebookPage.pageId;
+            pageAccessToken = facebookPage.pageAccessToken;
+          }
+        }
+
+        if (pageAccessToken && conversation.customer?.facebookId) {
+          const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
+          await sendProductionFacebookMessage(
+            conversation.customer.facebookId,
+            correction,
+            'TEXT',
+            actualPageId,
+            pageAccessToken
+          );
+          messageSent = true;
+        } else {
+          console.warn('[correctMessage] Missing Facebook credentials or customer facebookId.');
+        }
+      } catch (fbErr) {
+        console.warn('[correctMessage] Facebook send failed (correction saved anyway):', fbErr.message);
+      }
+    } else if (channel === 'INSTAGRAM') {
+      try {
+        const igPage = await prisma.facebookPage.findFirst({
+          where: { companyId, instagramAccountId: { not: null } },
+          select: { pageAccessToken: true, instagramAccountId: true }
+        });
+        if (igPage?.pageAccessToken && igPage?.instagramAccountId && conversation.customer?.instagramId) {
+          const axios = require('axios');
+          const IG_API = `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`;
+          await axios.post(IG_API, {
+            recipient: { id: conversation.customer.instagramId },
+            message: { text: correction }
+          }, {
+            headers: { Authorization: `Bearer ${igPage.pageAccessToken}` }
+          });
+          messageSent = true;
+        } else {
+          console.warn('[correctMessage] Missing Instagram credentials or customer instagramId.');
+        }
+      } catch (igErr) {
+        console.warn('[correctMessage] Instagram send failed (correction saved anyway):', igErr.message);
+      }
+    } else if (channel === 'TELEGRAM') {
+      try {
+        let meta = safeJsonParse(conversation.metadata, {});
+        if (meta.isUserbot && meta.userbotConfigId) {
+          const telegramUserbotService = require('./TelegramUserbotService');
+          await telegramUserbotService.sendUserbotReply(conversationId, correction);
+        } else {
+          const telegramBotService = require('./TelegramBotService');
+          await telegramBotService.sendReply(conversationId, correction);
+        }
+        messageSent = true;
+      } catch (tgErr) {
+        console.warn('[correctMessage] Telegram send failed (correction saved anyway):', tgErr.message);
+      }
+    }
+
+    // For non-WhatsApp channels, save the corrected message to the database
+    // (WhatsApp messages are auto-saved via the webhook/message handler pipeline)
+    if (channel !== 'WHATSAPP') {
+      try {
+        await prisma.message.create({
+          data: {
+            conversationId,
+            senderId: userId,
+            type: 'TEXT',
+            content: correction,
+            isFromCustomer: false,
+            isRead: true
+          }
+        });
+      } catch (dbErr) {
+        console.error('[correctMessage] Failed to save corrected message to DB:', dbErr.message);
+      }
     }
 
     // 8. Update conversation status

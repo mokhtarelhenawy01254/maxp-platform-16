@@ -2,16 +2,16 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   TruckIcon, CurrencyDollarIcon, ExclamationTriangleIcon,
-  CheckCircleIcon, SparklesIcon,
+  CheckCircleIcon, SparklesIcon, InformationCircleIcon,
   PlusCircleIcon, TrashIcon, ArrowTrendingUpIcon,
   ChartBarIcon, ScaleIcon,
 } from "@heroicons/react/24/outline";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
 const CURRENCY_SYMBOLS: Record<string, string> = { EGP: "ج.م", SAR: "ر.س", USD: "$" };
 const sym = (code: string) => CURRENCY_SYMBOLS[code] || code;
-const fmt = (n: number) => Math.round(n).toLocaleString();
 const MAX_COURIERS = 5;
 const MIN_COURIERS = 2;
 
@@ -56,32 +56,6 @@ const defaultCourier = (label: string): CourierInput => ({
   codPct: 1.5,
 });
 
-const Slider: React.FC<{
-  label: string; value: number; min: number; max: number;
-  step?: number; onChange: (v: number) => void;
-  isPercent?: boolean; suffix?: string; currency: string;
-}> = ({ label, value, min, max, step = 1, onChange, isPercent, suffix, currency }) => (
-  <div className="space-y-1">
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-700 dark:text-gray-300">{label}</span>
-      <span className="flex items-center gap-1">
-        <input type="number" value={value}
-          onChange={(e) => onChange(Math.min(max, Math.max(min, parseFloat(e.target.value) || 0)))}
-          min={min} max={max} step={step}
-          className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-        <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : suffix || sym(currency)}</span>
-      </span>
-    </div>
-    <input type="range" min={min} max={max} step={step} value={value}
-      onChange={(e) => onChange(parseFloat(e.target.value))}
-      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-    <div className="flex justify-between text-xs text-gray-400">
-      <span>{fmt(min)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-      <span>{fmt(max)}{isPercent ? "%" : ` ${sym(currency)}`}</span>
-    </div>
-  </div>
-);
-
 export default function ShippingOptimizer() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
@@ -95,8 +69,9 @@ export default function ShippingOptimizer() {
 
   const conversionRate = CURRENCY_RATES[currency] || 1;
   const fmtCurr = useCallback((v: number) => `${(v * conversionRate).toLocaleString("en-US", { maximumFractionDigits: 0 })} ${sym(currency)}`, [conversionRate, currency]);
+  const fmt = (n: number) => Math.round(n).toLocaleString();
 
-  const T = useCallback((k: string, vars?: Record<string, string | number>) => {
+  const T = useCallback((k: string, vars?: Record<string, string | number | string>) => {
     const key = `shippingOptimizer.${k}`;
     return vars ? t(key, vars as any) : t(key);
   }, [t]);
@@ -113,26 +88,24 @@ export default function ShippingOptimizer() {
     return results.reduce((a, b) => (a.total > b.total ? a : b));
   }, [results]);
 
-  const updateCourier = useCallback((idx: number, field: keyof CourierInput, value: number) => {
+  const updateCourier = (idx: number, field: keyof CourierInput, value: number) => {
     setCouriers((prev) => prev.map((c, i) => (i === idx ? { ...c, [field]: value } : c)));
-  }, []);
+  };
 
-  const addCourier = useCallback(() => {
-    setCouriers((prev) => {
-      if (prev.length >= MAX_COURIERS) return prev;
-      const nextLabel = String.fromCharCode(65 + prev.length);
-      return [...prev, defaultCourier(nextLabel)];
-    });
-  }, []);
+  const addCourier = () => {
+    if (couriers.length >= MAX_COURIERS) return;
+    const nextLabel = String.fromCharCode(65 + couriers.length);
+    setCouriers((prev) => [...prev, defaultCourier(nextLabel)]);
+  };
 
-  const removeCourier = useCallback((idx: number) => {
-    setCouriers((prev) => {
-      if (prev.length <= MIN_COURIERS) return prev;
-      return prev.filter((_, i) => i !== idx);
-    });
-  }, []);
+  const removeCourier = (idx: number) => {
+    if (couriers.length <= MIN_COURIERS) return;
+    setCouriers((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const sortedResults = useMemo(() => [...results].sort((a, b) => a.total - b.total), [results]);
+
+  const maxTotal = Math.max(...results.map((r) => r.total), 1);
 
   const chartData = useMemo(() => {
     return results.map((r) => {
@@ -155,7 +128,7 @@ export default function ShippingOptimizer() {
       M.push({
         type: "success",
         title: T("profitableChoice", { courier: `${T("courier")} ${best.name}` }),
-        msg: T("profitableChoiceDesc", { amount: fmtCurr(savings), worst: `${T("courier")} ${worst.name}`, yearly: fmtCurr(savings * 12), diff: fmtCurr(worst.costPerDelivered - best.costPerDelivered) }),
+        msg: T("profitableChoiceDesc", { amount: fmtCurr(savings), worst: `${T("courier")} ${worst.name}`, yearly: fmtCurr(savings * 12), diff: fmtCurr(best.costPerDelivered - worst.costPerDelivered) }),
       });
     }
 
@@ -189,7 +162,7 @@ export default function ShippingOptimizer() {
     }
 
     return M;
-  }, [results, best, worst, T, fmtCurr]);
+  }, [results, best, worst, T, fmtCurr, fmt]);
 
   const recommendations = useMemo(() => {
     const R: { icon: React.ReactNode; title: string; desc: string }[] = [];
@@ -264,8 +237,8 @@ export default function ShippingOptimizer() {
               <h2 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 text-sm sm:text-base">
                 <CurrencyDollarIcon className="w-5 h-5 text-blue-500" /> {T("storeSettings")}
               </h2>
-              <Slider label={T("aov")} value={aov} min={100} max={10000} step={100} onChange={setAov} currency={currency} />
-              <Slider label={T("ordersPerMonth")} value={orders} min={10} max={10000} step={10} onChange={setOrders} suffix=" orders" currency={currency} />
+              <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={aov} min={100} max={10000} step={100} onChange={(e) => setAov(parseFloat(e.target.value))} />
+              <SliderInput currencySymbol={sym(currency)} label={T("ordersPerMonth")} value={orders} min={10} max={10000} step={10} onChange={(e) => setOrders(parseFloat(e.target.value))} suffix=" orders" />
             </div>
 
             {/* Couriers */}
@@ -291,11 +264,11 @@ export default function ShippingOptimizer() {
                       </button>
                     )}
                   </div>
-                  <Slider label={T("deliveryCost")} value={c.deliveryCost} min={0} max={500} step={5} onChange={(v) => updateCourier(idx, "deliveryCost", v)} currency={currency} />
-                  <Slider label={T("rtoCost")} value={c.rtoCost} min={0} max={500} step={5} onChange={(v) => updateCourier(idx, "rtoCost", v)} currency={currency} />
-                  <Slider label={T("deliveryRate")} value={c.deliveryRate} min={30} max={100} step={1} isPercent onChange={(v) => updateCourier(idx, "deliveryRate", v)} currency={currency} />
-                  <Slider label={T("extraFees")} value={c.extraFees} min={0} max={200} step={5} onChange={(v) => updateCourier(idx, "extraFees", v)} currency={currency} />
-                  <Slider label={T("codCommission")} value={c.codPct} min={0} max={10} step={0.5} isPercent onChange={(v) => updateCourier(idx, "codPct", v)} currency={currency} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("deliveryCost")} value={c.deliveryCost} min={0} max={500} step={5} onChange={(e) => updateCourier(idx, "deliveryCost", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("rtoCost")} value={c.rtoCost} min={0} max={500} step={5} onChange={(e) => updateCourier(idx, "rtoCost", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("deliveryRate")} value={c.deliveryRate} min={30} max={100} step={1} isPercent onChange={(e) => updateCourier(idx, "deliveryRate", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("extraFees")} value={c.extraFees} min={0} max={200} step={5} onChange={(e) => updateCourier(idx, "extraFees", parseFloat(e.target.value))} />
+                  <SliderInput currencySymbol={sym(currency)} label={T("codCommission")} value={c.codPct} min={0} max={10} step={0.5} isPercent onChange={(e) => updateCourier(idx, "codPct", parseFloat(e.target.value))} />
                 </div>
               ))}
             </div>
@@ -450,10 +423,6 @@ export default function ShippingOptimizer() {
               )}
             </details>
 
-            {/* Footer */}
-            <div className="text-center text-xs text-gray-400 dark:text-gray-600">
-              {T("footer")}
-            </div>
           </div>
         </div>
       </div>

@@ -23,6 +23,7 @@ interface Bundle {
   price: number;
   discount: number;
   isActive: boolean;
+  isInstalled?: boolean;
   monthlyPrice: number;
   yearlyPrice?: number;
   trialDays?: number;
@@ -286,32 +287,41 @@ export default function BundleDetails() {
                 </div>
               </div>
 
-              <button
-                onClick={handleSubscribe}
-                disabled={activating}
-                className="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {activating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white dark:border-gray-900 border-t-transparent"></div>
-                    جاري التفعيل...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={18} />
-                    ابدأ الفترة التجريبية
-                  </>
-                )}
-              </button>
+              {bundle.isInstalled ? (
+                <div className="w-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2">
+                  <Package size={18} />
+                  الباقة مفعلة — استمتع بالخدمة
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSubscribe}
+                    disabled={activating}
+                    className="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {activating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white dark:border-gray-900 border-t-transparent"></div>
+                        جاري التفعيل...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={18} />
+                        ابدأ الفترة التجريبية
+                      </>
+                    )}
+                  </button>
 
-              <button
-                onClick={handleSubscribe}
-                disabled={activating}
-                className="w-full mt-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                <CreditCard size={16} />
-                اشترك وادفع الآن — ٩٩٩ ج.م/شهر
-              </button>
+                  <button
+                    onClick={handleSubscribe}
+                    disabled={activating}
+                    className="w-full mt-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    <CreditCard size={16} />
+                    اشترك وادفع الآن — ٩٩٩ ج.م/شهر
+                  </button>
+                </>
+              )}
 
               <button className="w-full mt-2 bg-transparent border-0 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 font-medium py-2 rounded-xl transition-all duration-200 text-xs">
                 طلب عرض توضيحي

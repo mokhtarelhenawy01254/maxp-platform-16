@@ -1,0 +1,114 @@
+- generic [ref=e7]:
+  - generic [ref=e10]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - link "P" [ref=e15] [cursor=pointer]:
+          - /url: /company-dashboard
+          - generic "PEARL EG" [ref=e16]: P
+        - generic [ref=e17]:
+          - button "Inbox" [ref=e18] [cursor=pointer]:
+            - img [ref=e20]
+            - generic [ref=e22]: Inbox
+          - button "فريق الايجنت" [ref=e23] [cursor=pointer]:
+            - img [ref=e25]
+            - generic [ref=e27]: فريق الايجنت
+          - button "واتساب" [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+            - generic [ref=e32]: واتساب
+          - button "حسابي" [ref=e33] [cursor=pointer]:
+            - img [ref=e35]
+            - generic [ref=e37]: حسابي
+          - button "إدارة شركاتي" [ref=e38] [cursor=pointer]:
+            - img [ref=e40]
+            - generic [ref=e42]: إدارة شركاتي
+          - button "التطبيقات" [ref=e43] [cursor=pointer]:
+            - img [ref=e45]
+            - generic [ref=e47]: التطبيقات
+          - button "الإعدادات" [ref=e48] [cursor=pointer]:
+            - img [ref=e50]
+            - generic [ref=e53]: الإعدادات
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - link "P PEARL EG فريق الايجنت" [ref=e57] [cursor=pointer]:
+            - /url: /company-dashboard
+            - generic [ref=e58]: P
+            - generic [ref=e59]:
+              - heading "PEARL EG" [level=2] [ref=e60]
+              - paragraph [ref=e61]: فريق الايجنت
+          - button "طي القائمة" [ref=e62] [cursor=pointer]:
+            - img [ref=e63]
+        - generic [ref=e65]:
+          - generic [ref=e66]: البحث داخل القائمة
+          - img
+          - textbox "البحث داخل القائمة" [ref=e67]:
+            - /placeholder: البحث
+        - generic [ref=e68]:
+          - link "ملفات الوكلاء" [ref=e70] [cursor=pointer]:
+            - /url: /admin/agent-profiles
+            - img [ref=e72]
+            - generic [ref=e74]: ملفات الوكلاء
+          - link "كتالوج المنتجات (البوت)" [ref=e76] [cursor=pointer]:
+            - /url: /admin/ai-catalog
+            - img [ref=e78]
+            - generic [ref=e80]: كتالوج المنتجات (البوت)
+          - link "استفسارات المعرفة" [ref=e82] [cursor=pointer]:
+            - /url: /admin/ai-knowledge-questions
+            - img [ref=e84]
+            - generic [ref=e86]: استفسارات المعرفة
+          - link "تجربة الوكلاء" [ref=e88] [cursor=pointer]:
+            - /url: /admin/ai-hub?tab=sandbox
+            - img [ref=e90]
+            - generic [ref=e92]: تجربة الوكلاء
+          - link "الأسئلة الشائعة" [ref=e94] [cursor=pointer]:
+            - /url: /admin/faqs
+            - img [ref=e96]
+            - generic [ref=e98]: الأسئلة الشائعة
+          - link "السياسات" [ref=e100] [cursor=pointer]:
+            - /url: /admin/policies
+            - img [ref=e102]
+            - generic [ref=e104]: السياسات
+          - link "توجيه القنوات" [ref=e106] [cursor=pointer]:
+            - /url: /admin/ai-hub?tab=routing
+            - img [ref=e108]
+            - generic [ref=e110]: توجيه القنوات
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - button "تبديل للوضع الليلي" [ref=e116] [cursor=pointer]:
+              - img
+            - button "Change language" [ref=e118] [cursor=pointer]:
+              - generic [ref=e119]: ar
+            - button "الإشعارات" [ref=e121] [cursor=pointer]:
+              - img [ref=e122]
+              - generic [ref=e124]: "15"
+            - link "header.support" [ref=e125] [cursor=pointer]:
+              - /url: /support
+              - img [ref=e126]
+          - button "الملف الشخصي مس" [ref=e130]:
+            - generic [ref=e131]: مس
+            - generic [ref=e132]:
+              - generic [ref=e133]: محمد
+              - generic [ref=e134]: OWNER
+            - img [ref=e135]
+      - main [ref=e137]:
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - img [ref=e142]
+              - heading "استفسارات المعرفة" [level=1] [ref=e145]
+            - button "تحديث" [ref=e146]:
+              - img
+              - text: تحديث
+          - generic [ref=e147]:
+            - button "معلقة" [ref=e148]:
+              - img [ref=e149]
+              - text: معلقة
+            - button "تمت الإجابة" [active] [ref=e152]:
+              - img [ref=e153]
+              - text: تمت الإجابة
+          - generic [ref=e156]:
+            - img [ref=e162]
+            - paragraph [ref=e165]: لا توجد استفسارات تمت الإجابة عليها
+            - paragraph
+  - region "Notifications alt+T"

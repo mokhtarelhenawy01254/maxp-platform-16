@@ -1,0 +1,224 @@
+{
+  "time": {
+    "now": "الآن",
+    "minutesAgo": "منذ {minutes} دقيقة",
+    "hoursAgo": "منذ {hours} ساعة",
+    "daysAgo": "منذ {days} يوم"
+  },
+  "editor": {
+    "emptyContent": "لا يوجد محتوى",
+    "linesWords": "{lines} سطر، {words} كلمة",
+    "edit": "تحرير",
+    "preview": "معاينة",
+    "collapse": "طي",
+    "expand": "توسيع",
+    "placeholder": "اكتب محتوى الهوية هنا..."
+  },
+  "skillCard": {
+    "tools": "الأدوات",
+    "noTools": "لا توجد أدوات"
+  },
+  "metadata": {
+    "title": "بيانات تعريفية",
+    "noDepartment": "لا يوجد قسم",
+    "department": "القسم",
+    "unspecified": "غير محدد",
+    "level": "المستوى",
+    "manager": "المدير",
+    "none": "لا يوجد",
+    "createdBy": "تم الإنشاء بواسطة",
+    "system": "النظام"
+  },
+  "tabs": {
+    "soul": "الهوية",
+    "agents": "الوكلاء",
+    "toolsMd": "الأدوات (MD)",
+    "tools": "الأدوات",
+    "skillsJson": "المهارات (JSON)",
+    "settings": "الإعدادات",
+    "advanced": "متقدم",
+    "advancedFile": "الملف المتقدم"
+  },
+  "help": {
+    "model": "يحدد قوة المحرك الذكي للمساعد. الموديلات الأقوى تفهم أدق لكنها أبطأ",
+    "tools": "الصلاحيات التي تمكن المساعد من تنفيذ مهام محددة"
+  },
+  "sidebar": {
+    "title": "فريق الايجنت",
+    "addTitle": "إضافة مساعد",
+    "search": "بحث",
+    "noResults": "لا توجد نتائج",
+    "unsavedConfirm": "لديك تغييرات غير محفوظة. هل تريد المتابعة؟"
+  },
+  "icon": {
+    "label": "أيقونة"
+  },
+  "header": {
+    "status": {
+      "active": "نشط",
+      "paused": "متوقف",
+      "active_toggle": "تفعيل",
+      "paused_toggle": "إيقاف"
+    },
+    "deleteTitle": "حذف",
+    "noSelection": "لم يتم تحديد مساعد",
+    "chatWithManager": "محادثة",
+    "saved": "تم الحفظ",
+    "model": "الموديل",
+    "modelPlaceholder": "اختر الموديل",
+    "noModels": "لا توجد موديلات متاحة",
+    "current": "الحالي",
+    "discard": "تجاهل",
+    "saving": "جارٍ الحفظ...",
+    "save": "حفظ",
+    "refresh": "تحديث قائمة الوكلاء"
+  },
+  "channel": {
+    "facebook": "فيسبوك",
+    "whatsapp": "واتساب",
+    "dashboard": "لوحة التحكم"
+  },
+  "create": {
+    "title": "إنشاء وكيل جديد",
+    "template": "قالب",
+    "loadingTemplates": "جارٍ تحميل القوالب...",
+    "custom": "مخصص",
+    "toolsCount": "{n} أداة · {m} مهارة",
+    "identity": "الهوية",
+    "name": "الاسم",
+    "namePlaceholder": "أدخل اسم الوكيل",
+    "description": "الوصف",
+    "descPlaceholder": "وصف الوكيل",
+    "model": "الموديل",
+    "modelPlaceholder": "اختر الموديل",
+    "noModel": "بدون موديل",
+    "namePreview": "اسم الوكيل",
+    "descPreview": "وصف مختصر",
+    "cancel": "إلغاء",
+    "creating": "جارٍ الإنشاء...",
+    "submit": "إنشاء"
+  },
+  "delete": {
+    "title": "حذف الوكيل",
+    "confirm": "هل أنت متأكد؟",
+    "irreversible": "لا يمكن التراجع عن هذا الإجراء.",
+    "cancel": "إلغاء",
+    "deleting": "جارٍ الحذف...",
+    "confirmButton": "حذف"
+  },
+  "toast": {
+    "invalidSkillsJson": "مهارات JSON غير صالحة",
+    "saveSuccess": "تم الحفظ بنجاح",
+    "saveFailed": "فشل الحفظ",
+    "createSuccess": "تم الإنشاء بنجاح",
+    "createFailed": "فشل الإنشاء",
+    "deleteSuccess": "تم الحذف بنجاح",
+    "deleteFailed": "فشل الحذف"
+  },
+  "empty": {
+    "title": "لا يوجد مساعدين بعد",
+    "desc": "ابدأ بإنشاء مساعد ذكي لمساعدتك في إدارة مهام متجرك",
+    "chatCta": "تجربة المحادثة"
+  },
+  "settings": {
+    "basicInfo": "معلومات أساسية",
+    "behavior": "السلوك",
+    "agentName": "اسم المساعد",
+    "agentNamePlaceholder": "أدخل اسم المساعد",
+    "description": "الوصف",
+    "descriptionPlaceholder": "وصف مختصر للمساعد ودوره",
+    "purpose": "ماذا يفعل هذا المساعد؟",
+    "purposePlaceholder": "مثال: يساعدني في إدارة طلبات الفيسبوك والرد على العملاء",
+    "purposeHint": "صف بكلماتك البسيطة إيه المطلوب من المساعد يعمله",
+    "channels": "القنوات المتاحة",
+    "channelsDesc": "القنوات التي يعمل عليها هذا المساعد",
+    "autonomy": "مستوى الاستقلالية",
+    "autonomyDesc": "تحدد مدى قدرة المساعد على التصرف بدون الرجوع إليك",
+    "suggest": "يقترح فقط",
+    "suggestDesc": "يقترح إجراءات وينتظر موافقتك",
+    "approval": "يستأذن أولاً",
+    "approvalDesc": "ينفذ المهام البسيطة ويستأذن في المهام المهمة",
+    "auto": "يعمل تلقائياً",
+    "autoDesc": "ينفذ كل المهام في حدود صلاحياته",
+    "status": "حالة المساعد",
+    "active": "نشط",
+    "paused": "متوقف",
+    "persona": "شخصية الوكيل",
+    "personaHint": "صف الشخصية اللي هيتكلم بيها الوكيل مع العملاء",
+    "personaPlaceholder": "مثال: ودود، محترف، سريع في الرد",
+    "goal": "الهدف الرئيسي",
+    "goalHint": "إيه أكتر حاجة المساعد دي مطلوب منه يحققها؟",
+    "goalPlaceholder": "مثال: يساعد العملاء في اختيار المنتجات وإتمام الطلبات",
+    "tone": "نبرة الكلام",
+    "toneHint": "اختار النبرة المناسبة لطبيعة المتجر والعملاء",
+    "toneFriendly": "ودود",
+    "toneFormal": "رسمي",
+    "toneConcise": "مختصر",
+    "toneDetailed": "مفصل",
+    "tasks": "المهام الأساسية",
+    "tasksHint": "اكتب المهام اللي الوكيل يقدر يساعد فيها",
+    "tasksPlaceholder": "مثال: الرد على الأسئلة، البحث عن المنتجات، إنشاء الطلبات",
+    "boundaries": "الحدود",
+    "boundariesHint": "حدد الحاجات اللي الوكيل مينفعش يعملها",
+    "boundariesPlaceholder": "مثال: لا يعدل الأسعار، لا يلغي الطلبات بدون موافقة",
+    "language": "لغة الرد",
+    "languageHint": "اختار اللغة الافتراضية للردود",
+    "languageAuto": "تلقائي",
+    "languageAr": "العربية",
+    "languageEn": "English",
+    "welcome": "رسالة الترحيب",
+    "welcomeHint": "رسالة افتتاحية اختيارية تظهر للعميل في بداية المحادثة",
+    "welcomePlaceholder": "مثال: أهلاً بيك! أنا مساعدك الشخصي، إزاي أقدر أساعدك؟",
+    "escalation": "عند عدم معرفة الإجابة",
+    "escalationHint": "إيه اللي المساعد يعمله لما ميعرفش يرد؟",
+    "customPrompt": "إضافة تعليمات مخصصة",
+    "customPromptPlaceholder": "مثال: لا تستخدم المصطلحات الإنجليزية، خاطب العميل باسمه الأول...",
+    "customPromptHint": "حقل حر لأي إضافات خارج القوالب الجاهزة"
+  },
+  "autonomy": {
+    "auto": "تلقائي",
+    "approval": "موافقة",
+    "blocked": "محظور"
+  },
+  "tools": {
+    "title": "الأدوات",
+    "add": "إضافة",
+    "enableAll": "تفعيل الكل",
+    "disableAll": "تعطيل الكل",
+    "search": "بحث",
+    "empty": "لا توجد أدوات",
+    "readOnly": "قراءة",
+    "write": "كتابة",
+    "addDialogTitle": "إضافة أدوات",
+    "addSearch": "بحث في الأدوات..."
+  },
+  "skills": {
+    "title": "المهارات",
+    "add": "إضافة",
+    "enableAll": "تفعيل الكل",
+    "disableAll": "تعطيل الكل",
+    "search": "بحث",
+    "empty": "لا توجد مهارات",
+    "addDialogTitle": "إضافة مهارات",
+    "addSearch": "بحث في المهارات..."
+  },
+  "googleSheets": {
+    "title": "جداول بيانات Google",
+    "desc": "ربط جداول بيانات Google",
+    "productsLabel": "المنتجات",
+    "ordersLabel": "الطلبات",
+    "helpTitle": "تعليمات",
+    "helpStep1": "الخطوة 1: افتح مستند Google Sheets",
+    "helpStep2": "الخطوة 2: انسخ الرابط",
+    "helpStep3": "الخطوة 3: الصق الرابط هنا",
+    "helpStep4": "الخطوة 4: اختر الصفحة"
+  },
+  "archive": {
+    "title": "أرشفة الوكيل",
+    "confirm": "هل أنت متأكد من أرشفة <strong>{{name}}</strong>؟",
+    "note": "الوكيل سيُحذف من القائمة النشطة لكن بياناته تبقى محفوظة.",
+    "cancel": "إلغاء",
+    "archiving": "جارٍ الأرشفة...",
+    "confirmButton": "أرشفة"
+  }
+}

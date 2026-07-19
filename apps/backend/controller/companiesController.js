@@ -1134,7 +1134,11 @@ const getCompanyUsers = async (req, res) => {
             ? { createdAt: sortOrder }
             : sortBy === "role"
               ? { role: sortOrder }
-              : { user: { [sortBy]: sortOrder } },
+              : sortBy === "name"
+                ? { user: { firstName: sortOrder } }
+                : sortBy === "firstName" || sortBy === "lastName" || sortBy === "email" || sortBy === "isActive"
+                  ? { user: { [sortBy]: sortOrder } }
+                  : { createdAt: sortOrder },
       }),
       getSharedPrismaClient().userCompany.count({
         where: {

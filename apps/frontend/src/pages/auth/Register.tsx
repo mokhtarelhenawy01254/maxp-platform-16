@@ -328,26 +328,30 @@ const Register: React.FC = () => {
       const token = localStorage.getItem("accessToken");
 
       if (action === "free" && source && SOURCE_TO_BUNDLE[source] && token) {
-        fetch(`${getApiUrl()}/platform-subscription/lp-activate`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ bundleSlug: SOURCE_TO_BUNDLE[source] }),
-        }).then(r => r.json()).then(d => {
-          navigate(d.success ? "/admin/ai-hub?tab=sandbox" : (redirectParam || postAuthDest || NEW_ACCOUNT_DESTINATION), { replace: true });
-        }).catch(() => {
+        try {
+          const res = await fetch(`${getApiUrl()}/platform-subscription/lp-activate`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ bundleSlug: SOURCE_TO_BUNDLE[source] }),
+          });
+          const data = await res.json();
+          navigate(data.success ? "/admin/ai-hub?tab=sandbox" : (redirectParam || postAuthDest || NEW_ACCOUNT_DESTINATION), { replace: true });
+        } catch {
           navigate(postAuthDest || NEW_ACCOUNT_DESTINATION, { replace: true });
-        });
+        }
       } else if (action === "paid" && source && SOURCE_TO_BUNDLE[source] && token) {
-        fetch(`${getApiUrl()}/platform-subscription/lp-checkout`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ bundleSlug: SOURCE_TO_BUNDLE[source] }),
-        }).then(r => r.json()).then(d => {
-          if (d.success && d.data?.sessionUrl) window.location.href = d.data.sessionUrl;
+        try {
+          const res = await fetch(`${getApiUrl()}/platform-subscription/lp-checkout`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ bundleSlug: SOURCE_TO_BUNDLE[source] }),
+          });
+          const data = await res.json();
+          if (data.success && data.data?.sessionUrl) window.location.href = data.data.sessionUrl;
           else navigate(postAuthDest || NEW_ACCOUNT_DESTINATION, { replace: true });
-        }).catch(() => {
+        } catch {
           navigate(postAuthDest || NEW_ACCOUNT_DESTINATION, { replace: true });
-        });
+        }
       } else {
         const isValidRedirect = redirectParam && redirectParam !== "/" && !redirectParam.startsWith("/lp/");
         const sourceRedirect = source === "ai-inbox" ? "/marketplace/bundle/ai-inbox-bundle" : null;

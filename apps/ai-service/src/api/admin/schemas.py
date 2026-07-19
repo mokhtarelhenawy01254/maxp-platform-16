@@ -134,6 +134,7 @@ class LogEntry(BaseModel):
     model: str | None
     latency_ms: int | None
     error: str | None
+    response: str | None = None
     company_id: str | None
     created_at: datetime
 

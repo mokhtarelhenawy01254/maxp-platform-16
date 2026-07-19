@@ -1,0 +1,38 @@
+model EasyOrdersSettings {
+  id                  String    @id @default(cuid())
+  companyId           String    @unique
+  apiKey              String
+  syncEnabled         Boolean   @default(false)
+  syncInterval        Int       @default(15)
+  statusMapping       String?   // JSON mapping of Easy Order status names to local status codes
+  lastSyncAt          DateTime?
+  lastSyncStatus      String?   @default("never")
+  lastSyncMessage     String?
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  company             Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("easy_orders_settings")
+}
+
+model EasyOrdersSyncLog {
+  id            String    @id @default(cuid())
+  companyId     String
+  syncType      String    @default("orders")
+  status        String
+  totalItems    Int       @default(0)
+  successCount  Int       @default(0)
+  failedCount   Int       @default(0)
+  skippedCount  Int       @default(0)
+  errorMessage  String?
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  duration      Int?
+  triggeredBy   String?
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([startedAt])
+  @@map("easy_orders_sync_logs")
+}

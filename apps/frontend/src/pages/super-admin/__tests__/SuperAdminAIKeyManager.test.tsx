@@ -7,18 +7,21 @@ import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router-dom";
 import SuperAdminAIKeyManager from "../SuperAdminAIKeyManager";
 
-const { mockUseAiProviders, mockUseAiKeys, mockUseCreateKey, mockUseToggleKeyStatus, mockUseDeleteKey, mockUseTestKey } = vi.hoisted(() => ({
+const { mockUseAiProviders, mockUseAiKeys, mockUseAiDashboard, mockUseCreateKey, mockUseToggleKeyStatus, mockUseDeleteKey, mockUseTestKey, mockUseUpdateKey } = vi.hoisted(() => ({
   mockUseAiProviders: vi.fn(),
   mockUseAiKeys: vi.fn(),
+  mockUseAiDashboard: vi.fn(),
   mockUseCreateKey: vi.fn(),
   mockUseToggleKeyStatus: vi.fn(),
   mockUseDeleteKey: vi.fn(),
   mockUseTestKey: vi.fn(),
+  mockUseUpdateKey: vi.fn(),
 }));
 
 vi.mock("../../../hooks/useAiAdminData", () => ({
   useAiProviders: mockUseAiProviders,
   useAiKeys: mockUseAiKeys,
+  useAiDashboard: mockUseAiDashboard,
 }));
 
 vi.mock("../../../hooks/useKeyMutations", () => ({
@@ -26,6 +29,7 @@ vi.mock("../../../hooks/useKeyMutations", () => ({
   useToggleKeyStatus: mockUseToggleKeyStatus,
   useDeleteKey: mockUseDeleteKey,
   useTestKey: mockUseTestKey,
+  useUpdateKey: mockUseUpdateKey,
 }));
 
 vi.mock("@tanstack/react-query", () => ({
@@ -80,10 +84,15 @@ function mockDataState(providers = mockProviders, keys = mockKeys) {
     error: null,
   });
   mockUseAiKeys.mockReturnValue({ data: keys, isLoading: false, error: null });
+  mockUseAiDashboard.mockReturnValue({
+    data: { total_keys: 2, active_keys: 1, keys_by_provider: {}, keys_by_company: {}, requests_today: 0, failures_today: 0, last_24h_success_rate: 1 },
+    isLoading: false,
+  });
   mockUseCreateKey.mockReturnValue(buildMockMutation());
   mockUseToggleKeyStatus.mockReturnValue(buildMockMutation());
   mockUseDeleteKey.mockReturnValue(buildMockMutation());
   mockUseTestKey.mockReturnValue(buildMockMutation());
+  mockUseUpdateKey.mockReturnValue(buildMockMutation());
 }
 
 describe("SuperAdminAIKeyManager", () => {
@@ -117,10 +126,15 @@ describe("SuperAdminAIKeyManager", () => {
       isLoading: true,
       error: null,
     });
+    mockUseAiDashboard.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
     mockUseCreateKey.mockReturnValue(buildMockMutation());
     mockUseToggleKeyStatus.mockReturnValue(buildMockMutation());
     mockUseDeleteKey.mockReturnValue(buildMockMutation());
     mockUseTestKey.mockReturnValue(buildMockMutation());
+    mockUseUpdateKey.mockReturnValue(buildMockMutation());
 
     renderPage();
 

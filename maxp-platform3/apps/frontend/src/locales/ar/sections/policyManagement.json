@@ -1,0 +1,55 @@
+{
+  "title": "إدارة السياسات",
+  "addNew": "إضافة سياسة جديدة",
+  "loadError": "فشل تحميل السياسات",
+  "saveError": "فشل حفظ السياسة",
+  "deleteError": "فشل حذف السياسة",
+  "statusError": "فشل تحديث حالة السياسة",
+  "updateSuccess": "تم تحديث السياسة بنجاح",
+  "createSuccess": "تم إضافة السياسة بنجاح",
+  "deleteSuccess": "تم حذف السياسة بنجاح",
+  "toggleSuccess": "تم {status} السياسة بنجاح",
+  "confirmDelete": "هل أنت متأكد من حذف هذه السياسة؟",
+  "editTitle": "تعديل السياسة",
+  "columns": {
+    "title": "العنوان",
+    "category": "الفئة",
+    "effectiveDate": "تاريخ السريان",
+    "expiryDate": "تاريخ الانتهاء",
+    "status": "الحالة",
+    "version": "الإصدار",
+    "actions": "الإجراءات"
+  },
+  "label": {
+    "title": "العنوان",
+    "content": "المحتوى",
+    "category": "الفئة",
+    "tags": "الوسوم (مفصولة بفواصل)",
+    "tagsPlaceholder": "شحن, إرجاع, ضمان",
+    "effectiveAt": "تاريخ السريان",
+    "expiresAt": "تاريخ الانتهاء (اختياري)",
+    "active": "نشط"
+  },
+  "category": {
+    "general": "عام",
+    "shipping": "الشحن",
+    "return": "الإرجاع",
+    "refund": "الاسترداد",
+    "privacy": "الخصوصية",
+    "terms": "الشروط والأحكام"
+  },
+  "status": {
+    "expired": "منتهية",
+    "upcoming": "قادمة",
+    "noExpiry": "بدون انتهاء",
+    "active": "نشط",
+    "inactive": "معطل"
+  },
+  "view": {
+    "title": "إغلاق",
+    "category": "الفئة",
+    "version": "الإصدار",
+    "effectiveDate": "تاريخ السريان",
+    "expiryDate": "تاريخ الانتهاء"
+  }
+}

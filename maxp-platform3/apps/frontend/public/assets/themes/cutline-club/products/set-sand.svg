@@ -1,0 +1,21 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="1000" fill="#E7D4BD"/>
+<rect x="40" y="40" width="720" height="920" rx="44" fill="#F4EDE2"/>
+<rect x="78" y="78" width="92" height="844" rx="24" fill="#111A2F"/>
+<rect x="598" y="120" width="126" height="126" rx="30" fill="#FF7A1A"/>
+<text x="204" y="148" fill="#111A2F" font-size="26" font-family="Segoe UI, sans-serif" font-weight="700">CUTLINE CLUB</text>
+<rect x="250" y="214" width="138" height="212" rx="34" fill="#C59A72"/>
+<rect x="200" y="244" width="56" height="190" rx="24" fill="#C59A72"/>
+<rect x="382" y="244" width="56" height="190" rx="24" fill="#C59A72"/>
+<rect x="282" y="194" width="74" height="48" rx="18" fill="#C59A72"/>
+<rect x="312" y="252" width="14" height="122" rx="7" fill="#111A2F" fill-opacity="0.24"/>
+<circle cx="319" cy="292" r="5" fill="#111A2F" fill-opacity="0.3"/>
+<circle cx="319" cy="328" r="5" fill="#111A2F" fill-opacity="0.3"/>
+<circle cx="319" cy="364" r="5" fill="#111A2F" fill-opacity="0.3"/>
+<rect x="414" y="470" width="92" height="330" rx="28" fill="#111A2F"/>
+<rect x="514" y="470" width="92" height="330" rx="28" fill="#111A2F"/>
+<rect x="404" y="434" width="212" height="52" rx="24" fill="#111A2F"/>
+<rect x="204" y="774" width="432" height="90" rx="28" fill="#111A2F"/>
+<text x="234" y="816" fill="#F4EDE2" font-size="42" font-family="Segoe UI, sans-serif" font-weight="700">SAND LOOK</text>
+<text x="234" y="848" fill="#F4EDE2" fill-opacity="0.76" font-size="22" font-family="Segoe UI, sans-serif">SET BUILDER / EASY START</text>
+</svg>

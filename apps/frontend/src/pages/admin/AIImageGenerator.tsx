@@ -595,6 +595,7 @@ const AIImageGenerator: React.FC = () => {
   const [gallerySearch, setGallerySearch] = useState<string>("");
   const [lastParams, setLastParams] = useState<{
     prompt: string;
+    model?: string;
     aspectRatio: string;
     style?: string;
     quality?: number;
@@ -608,6 +609,8 @@ const AIImageGenerator: React.FC = () => {
   } | null>(null);
 
   const [verticalLocked, setVerticalLocked] = useState(false);
+  const [tierConfig, setTierConfig] = useState<{ currentTier: string; tiers: Record<string, { displayName: string; description: string }>; enabled: boolean; dailyUsage: number; dailyLimit: number } | null>(null);
+  const [tierConfigLoading, setTierConfigLoading] = useState(true);
 
   const vertical = form.vertical || "general";
   const vc = VERTICAL_CONFIG[vertical];
@@ -658,6 +661,15 @@ const AIImageGenerator: React.FC = () => {
       .catch(() => {})
       .finally(() => setBrandKitLoading(false));
     fetchGallery();
+    apiClient
+      .get<{ success: boolean; data: { available: boolean; currentTier: string; tiers: Record<string, { displayName: string; description: string }>; enabled: boolean; dailyUsage: number; dailyLimit: number } }>("/ai-image/tier-config")
+      .then((res) => {
+        if (res.data?.success && res.data.data.available) {
+          setTierConfig(res.data.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setTierConfigLoading(false));
   }, []);
 
   useEffect(() => {
@@ -1038,7 +1050,8 @@ const AIImageGenerator: React.FC = () => {
           lastParams.style,
           lastParams.quality,
           lastParams.productImage,
-          lastParams.referenceImage
+          lastParams.referenceImage,
+          lastParams.model
         ),
       100
     );
@@ -1050,13 +1063,14 @@ const AIImageGenerator: React.FC = () => {
     style?: string,
     quality?: number,
     productImage?: string,
-    referenceImage?: string
+    referenceImage?: string,
+    model?: string
   ) => {
     setLoading(true);
     try {
       const res = await apiClient.post<GenerateResponse>(
         "/ai-image/generate",
-        { prompt, aspectRatio, style, quality, productImage, referenceImage },
+        { prompt, model, aspectRatio, style, quality, productImage, referenceImage },
         { timeout: 120000 }
       );
       if (res.data?.data?.imageUrl) {
@@ -1783,6 +1797,26 @@ const AIImageGenerator: React.FC = () => {
               {/* Section 4: Advanced specifications */}
               {activeSection === "output" && (
                 <div className="space-y-4">
+                  {tierConfig && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-500">مستوى الجودة</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold text-white ${tierConfig.currentTier === 'fast' ? 'bg-green-500' : tierConfig.currentTier === 'balanced' ? 'bg-blue-500' : 'bg-purple-500'}`}>
+                          {tierConfig.tiers[tierConfig.currentTier]?.displayName || tierConfig.currentTier}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">{tierConfig.tiers[tierConfig.currentTier]?.description}</p>
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>اليوم: {tierConfig.dailyUsage} / {tierConfig.dailyLimit}</span>
+                        <span className={tierConfig.dailyUsage >= tierConfig.dailyLimit ? 'text-red-500 font-semibold' : ''}>
+                          {tierConfig.dailyLimit - tierConfig.dailyUsage} متبقي
+                        </span>
+                      </div>
+                      {/* ponytail: tier selector — super admin sets per-company tier, add company-level self-service selector when requested */}
+                    </div>
+                  )}
+                  {tierConfigLoading && <div className="text-xs text-slate-400 py-2">جاري تحميل الإعدادات...</div>}
+
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 items-end">
                     <div>
                       <Label className="mb-2 block text-xs font-semibold text-slate-500">صيغة الصورة</Label>

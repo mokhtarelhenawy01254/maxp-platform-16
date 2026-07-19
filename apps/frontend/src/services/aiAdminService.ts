@@ -1,5 +1,5 @@
 import { apiClient } from "./apiClient";
-import type { AiKey, AiKeyLog, AiProvider, CreateAiKeyPayload, AiTestResult } from "../types/ai-admin";
+import type { AiKey, AiKeyLog, AiProvider, CreateAiKeyPayload, AiTestResult, DashboardStats, GlobalConfig, AiKeyUpdatePayload } from "../types/ai-admin";
 
 export const aiAdminService = {
   getProviders: async (): Promise<AiProvider[]> => {
@@ -50,6 +50,46 @@ export const aiAdminService = {
       provider,
       api_key: apiKey,
     });
+    return response.data;
+  },
+
+  getDashboard: async (): Promise<DashboardStats> => {
+    const response = await apiClient.get<DashboardStats>("/ai-admin/dashboard");
+    return response.data;
+  },
+
+  batchTestKeys: async (keyIds: string[]): Promise<Record<string, AiTestResult>> => {
+    const results: Record<string, AiTestResult> = {};
+    await Promise.allSettled(
+      keyIds.map(async (id) => {
+        try {
+          const r = await aiAdminService.testKeyById(id);
+          results[id] = r;
+        } catch (err: any) {
+          results[id] = { error: err?.message || "فشل الاختبار" };
+        }
+      }),
+    );
+    return results;
+  },
+
+  updateKey: async (id: string, payload: AiKeyUpdatePayload): Promise<AiKey> => {
+    const response = await apiClient.patch<AiKey>(`/ai-admin/keys/${encodeURIComponent(id)}`, payload);
+    return response.data;
+  },
+
+  getGlobalConfig: async (): Promise<GlobalConfig> => {
+    const response = await apiClient.get<GlobalConfig>("/ai-admin/config");
+    return response.data;
+  },
+
+  updateGlobalConfig: async (payload: Partial<GlobalConfig>): Promise<GlobalConfig> => {
+    const response = await apiClient.patch<GlobalConfig>("/ai-admin/config", payload);
+    return response.data;
+  },
+
+  setProviderPriority: async (providers: string[]): Promise<GlobalConfig> => {
+    const response = await apiClient.post<GlobalConfig>("/ai-admin/provider-priority", { providers });
     return response.data;
   },
 };

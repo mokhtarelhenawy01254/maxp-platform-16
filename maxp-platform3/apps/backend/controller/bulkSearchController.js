@@ -1,0 +1,219 @@
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+/**
+ * Bulk Search Controller
+ * البحث الجماعي عن الطلبات باستخدام أكواد الطلبات أو أرقام التليفونات
+ */
+
+const bulkSearchOrders = async (req, res) => {
+    try {
+        const { searchType, values } = req.body;
+        const companyId = req.user?.companyId;
+
+        // Validation
+        if (!companyId) {
+            return res.status(403).json({
+                success: false,
+                error: 'Company ID is required'
+            });
+        }
+
+        if (!searchType || !values || !Array.isArray(values)) {
+            return res.status(400).json({
+                success: false,
+                error: 'searchType and values array are required'
+            });
+        }
+
+        if (values.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Values array cannot be empty'
+            });
+        }
+
+        if (values.length > 100) {
+            return res.status(400).json({
+                success: false,
+                error: 'Maximum 100 values allowed per search'
+            });
+        }
+
+        // تنظيف القيم
+        const cleanedValues = values
+            .map(v => String(v).trim())
+            .filter(v => v.length > 0);
+
+        if (cleanedValues.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No valid values provided after cleaning'
+            });
+        }
+
+        const prisma = getSharedPrismaClient();
+        let orders = [];
+        let searchField = '';
+
+        // تحديد نوع البحث
+        if (searchType === 'orderNumber') {
+            searchField = 'orderNumber';
+
+            // بناء استعلام مرن: كل قيمة تبحث بـ exact match أو endsWith أو contains
+            // هذا يحل مشكلة البحث بـ "1793047" بينما الـ DB فيه "ORD-1793047"
+            const orderNumberConditions = cleanedValues.map(v => ({
+                OR: [
+                    { orderNumber: v },                          // exact match
+                    { orderNumber: { endsWith: `-${v}` } },     // مثال: ORD-1793047
+                    { orderNumber: { endsWith: v } },            // يغطي أي suffix
+                    { orderNumber: { contains: v } },            // fallback عام
+                ]
+            }));
+
+            orders = await prisma.order.findMany({
+                where: {
+                    companyId: companyId,
+                    OR: orderNumberConditions
+                },
+                include: {
+                    customer: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            phone: true
+                        }
+                    },
+                    orderItems: {
+                        include: {
+                            product: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    sku: true
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+
+        } else if (searchType === 'phone') {
+            searchField = 'phone';
+            // البحث المحسّن: استعلام واحد بدلاً من اثنين
+            orders = await prisma.order.findMany({
+                where: {
+                    companyId: companyId,
+                    customer: {
+                        phone: {
+                            in: cleanedValues
+                        }
+                    }
+                },
+                include: {
+                    customer: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            phone: true
+                        }
+                    },
+                    orderItems: {
+                        include: {
+                            product: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    sku: true
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+        } else {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid searchType. Must be "orderNumber" or "phone"'
+            });
+        }
+
+        // تحديد القيم الموجودة والمفقودة
+        let foundInputValues = []; // القيم التي أدخلها المستخدم وتم إيجادها
+        let uniqueMatches = 0;
+
+        if (searchType === 'orderNumber') {
+            const dbOrderNumbers = orders.map(o => o.orderNumber);
+
+            // لكل قيمة أدخلها المستخدم، نتحقق هل طابقت أي orderNumber في النتائج
+            foundInputValues = cleanedValues.filter(searchVal =>
+                dbOrderNumbers.some(dbNum =>
+                    dbNum === searchVal ||              // exact match
+                    dbNum.endsWith(`-${searchVal}`) || // مثال: ORD-1793047
+                    dbNum.endsWith(searchVal) ||
+                    dbNum.includes(searchVal)          // fallback
+                )
+            );
+            uniqueMatches = foundInputValues.length;
+        } else if (searchType === 'phone') {
+            // استخراج أرقام التليفونات الفريدة من النتائج
+            const uniquePhones = [...new Set(orders.map(o => o.customer?.phone).filter(Boolean))];
+            foundInputValues = uniquePhones;
+            uniqueMatches = uniquePhones.length;
+        }
+
+        const notFoundValues = cleanedValues.filter(v => !foundInputValues.includes(v));
+
+
+        // إحصائيات محسّنة
+        const stats = {
+            total: cleanedValues.length,
+            found: uniqueMatches,
+            notFound: notFoundValues.length,
+            ordersCount: orders.length,
+            // إضافة معلومات إضافية للوضوح
+            searchType: searchType,
+            note: searchType === 'phone' ? 'found = unique phone numbers, ordersCount = total orders' : 'found = unique order numbers'
+        };
+
+        // تحويل الحقول الرقمية من string إلى number (Prisma Decimal)
+        const transformedOrders = orders.map(order => ({
+            ...order,
+            total: Number(order.total) || 0,
+            subtotal: order.subtotal ? Number(order.subtotal) || 0 : undefined,
+            shipping: order.shipping ? Number(order.shipping) || 0 : undefined,
+            discount: order.discount ? Number(order.discount) || 0 : undefined,
+            tax: order.tax ? Number(order.tax) || 0 : undefined,
+        }));
+
+        res.json({
+            success: true,
+            data: {
+                orders: transformedOrders,
+                notFoundValues: notFoundValues,
+                stats: stats,
+                searchType: searchType
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error in bulkSearchOrders:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to perform bulk search'
+        });
+    }
+};
+
+module.exports = {
+    bulkSearchOrders
+};

@@ -1696,6 +1696,8 @@ exports.getBundleDetails = async (req, res) => {
     const { slug } = req.params;
     const catalogSource = getMarketplaceCatalogSource();
 
+    const companyId = req.user?.companyId;
+
     if (catalogSource !== 'db') {
       const bundleResult = await marketplaceCatalogService.getBundleBySlug(slug, {
         onlyActive: true
@@ -1718,50 +1720,67 @@ exports.getBundleDetails = async (req, res) => {
         price: toSafeNumber(bundleResult.monthlyPrice, 0)
       };
 
-      if (catalogSource === 'hybrid') {
-        const appSlugs = Array.from(new Set((bundle.apps || []).map((app) => app.slug).filter(Boolean)));
+      let appSlugs = Array.from(new Set((bundle.apps || []).map((app) => app.slug).filter(Boolean)));
 
-        if (appSlugs.length > 0) {
-          const dbApps = await executeWithRetry(async () => {
-            return await getSharedPrismaClient().marketplaceApp.findMany({
-              where: {
-                slug: { in: appSlugs },
-                isActive: true,
-                isPublic: true,
-                category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
-              },
-              select: {
-                id: true,
-                slug: true,
-                name: true,
-                description: true,
-                monthlyPrice: true,
-                logo: true
-              }
-            });
+      if (catalogSource === 'hybrid' && appSlugs.length > 0) {
+        const dbApps = await executeWithRetry(async () => {
+          return await getSharedPrismaClient().marketplaceApp.findMany({
+            where: {
+              slug: { in: appSlugs },
+              isActive: true,
+              isPublic: true,
+              category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
+            },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              description: true,
+              monthlyPrice: true,
+              logo: true
+            }
           });
+        });
 
-          const dbBySlug = new Map(dbApps.map((app) => [app.slug, app]));
-          const mergedApps = (bundle.apps || [])
-            .filter((app) => !isLegacyTemplateCategory(app.category))
-            .map((app) => {
-            const dbApp = dbBySlug.get(app.slug);
-            if (!dbApp) return app;
-            return {
-              ...app,
-              id: dbApp.id,
-              name: dbApp.name || app.name,
-              description: dbApp.description || app.description,
-              monthlyPrice: toSafeNumber(dbApp.monthlyPrice, toSafeNumber(app.monthlyPrice, 0)),
-              logo: dbApp.logo || app.logo || null
-            };
-          });
-
-          bundle = {
-            ...bundle,
-            apps: mergedApps,
-            appIds: mergedApps.map((app) => app.id)
+        const dbBySlug = new Map(dbApps.map((app) => [app.slug, app]));
+        const mergedApps = (bundle.apps || [])
+          .filter((app) => !isLegacyTemplateCategory(app.category))
+          .map((app) => {
+          const dbApp = dbBySlug.get(app.slug);
+          if (!dbApp) return app;
+          return {
+            ...app,
+            id: dbApp.id,
+            name: dbApp.name || app.name,
+            description: dbApp.description || app.description,
+            monthlyPrice: toSafeNumber(dbApp.monthlyPrice, toSafeNumber(app.monthlyPrice, 0)),
+            logo: dbApp.logo || app.logo || null
           };
+        });
+
+        bundle = {
+          ...bundle,
+          apps: mergedApps,
+          appIds: mergedApps.map((app) => app.id)
+        };
+      }
+
+      if (companyId && appSlugs.length > 0) {
+        try {
+          const prisma = getSharedPrismaClient();
+          const companyApps = await prisma.companyApp.findMany({
+            where: {
+              companyId,
+              app: { slug: { in: appSlugs } },
+              status: { in: ['ACTIVE', 'TRIAL'] }
+            },
+            select: { appId: true, app: { select: { slug: true } } }
+          });
+          const installedSlugs = new Set(companyApps.map((ca) => ca.app.slug));
+          const allInstalled = appSlugs.every((s) => installedSlugs.has(s));
+          bundle = { ...bundle, isInstalled: allInstalled };
+        } catch (e) {
+          console.warn('[BUNDLE-DETAILS] Failed to check activation:', e.message);
         }
       }
 
@@ -1771,7 +1790,7 @@ exports.getBundleDetails = async (req, res) => {
       });
     }
 
-    const bundle = await executeWithRetry(async () => {
+    let bundle = await executeWithRetry(async () => {
       const dbBundle = await getSharedPrismaClient().appBundle.findFirst({
         where: { slug, isActive: true }
       });
@@ -1826,6 +1845,25 @@ exports.getBundleDetails = async (req, res) => {
         success: false,
         message: 'Bundle not found'
       });
+    }
+
+    if (companyId && bundle.apps?.length > 0) {
+      try {
+        const prisma = getSharedPrismaClient();
+        const appSlugs = bundle.apps.map((a) => a.slug).filter(Boolean);
+        const companyApps = await prisma.companyApp.findMany({
+          where: {
+            companyId,
+            app: { slug: { in: appSlugs } },
+            status: { in: ['ACTIVE', 'TRIAL'] }
+          },
+          select: { appId: true, app: { select: { slug: true } } }
+        });
+        const installedSlugs = new Set(companyApps.map((ca) => ca.app.slug));
+        bundle = { ...bundle, isInstalled: appSlugs.every((s) => installedSlugs.has(s)) };
+      } catch (e) {
+        console.warn('[BUNDLE-DETAILS] Failed to check activation:', e.message);
+      }
     }
 
     return res.json({

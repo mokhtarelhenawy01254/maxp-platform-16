@@ -1,9 +1,11 @@
 import { useMemo, useReducer } from "react";
+import type { PageSize } from "./constants";
 import type {
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   StageFilter,
   StockFilter,
+  ItemCountFilter,
 } from "./types";
 
 interface PreparationQueueUiState {
@@ -13,8 +15,11 @@ interface PreparationQueueUiState {
   shortageReasonFilter: ShortageReasonFilter;
   shortageFollowUpFilter: ShortageFollowUpFilter;
   shortageOwnerFilter: string;
+  productFilter: string;
+  itemCountFilter: ItemCountFilter;
   search: string;
   page: number;
+  pageSize: PageSize;
   selectedOrders: string[];
   statusSelections: Record<string, string>;
   bulkStatus: string;
@@ -28,7 +33,10 @@ type PreparationQueueUiAction =
   | { type: "set_shortage_reason_filter"; value: ShortageReasonFilter }
   | { type: "set_shortage_follow_up_filter"; value: ShortageFollowUpFilter }
   | { type: "set_shortage_owner_filter"; value: string }
+  | { type: "set_product_filter"; value: string }
+  | { type: "set_item_count_filter"; value: ItemCountFilter }
   | { type: "set_search"; value: string }
+  | { type: "set_page_size"; value: PageSize }
   | { type: "reset_page" }
   | { type: "clamp_page"; totalPages: number }
   | { type: "go_to_previous_page" }
@@ -48,8 +56,11 @@ const initialState: PreparationQueueUiState = {
   shortageReasonFilter: "all",
   shortageFollowUpFilter: "all",
   shortageOwnerFilter: "",
+  productFilter: "",
+  itemCountFilter: "all",
   search: "",
   page: 1,
+  pageSize: 12,
   selectedOrders: [],
   statusSelections: {},
   bulkStatus: "",
@@ -87,8 +98,14 @@ const preparationQueueUiReducer = (
       return withPageReset(state, { shortageFollowUpFilter: action.value });
     case "set_shortage_owner_filter":
       return withPageReset(state, { shortageOwnerFilter: action.value });
+    case "set_product_filter":
+      return withPageReset(state, { productFilter: action.value });
+    case "set_item_count_filter":
+      return withPageReset(state, { itemCountFilter: action.value });
     case "set_search":
       return withPageReset(state, { search: action.value });
+    case "set_page_size":
+      return withPageReset(state, { pageSize: action.value });
     case "reset_page":
       return {
         ...state,
@@ -105,9 +122,10 @@ const preparationQueueUiReducer = (
         page: Math.max(1, state.page - 1),
       };
     case "go_to_next_page":
+      if (state.page >= action.totalPages) return state;
       return {
         ...state,
-        page: Math.min(Math.max(1, action.totalPages), state.page + 1),
+        page: state.page + 1,
       };
     case "retain_selected_orders": {
       const visibleSet = new Set(action.visibleOrderNumbers);
@@ -184,7 +202,13 @@ export const usePreparationQueueUiState = () => {
         dispatch({ type: "set_shortage_follow_up_filter", value }),
       setShortageOwnerFilter: (value: string) =>
         dispatch({ type: "set_shortage_owner_filter", value }),
+      setProductFilter: (value: string) =>
+        dispatch({ type: "set_product_filter", value }),
+      setItemCountFilter: (value: ItemCountFilter) =>
+        dispatch({ type: "set_item_count_filter", value }),
       setSearch: (value: string) => dispatch({ type: "set_search", value }),
+      setPageSize: (value: PageSize) =>
+        dispatch({ type: "set_page_size", value }),
       clampPage: (totalPages: number) =>
         dispatch({ type: "clamp_page", totalPages }),
       goToPreviousPage: () => dispatch({ type: "go_to_previous_page" }),

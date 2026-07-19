@@ -12,17 +12,11 @@ import {
   ClockIcon,
   PhoneIcon,
   EnvelopeIcon,
-
-
-  ChevronUpIcon,
   CheckIcon,
   LinkIcon,
   BellSnoozeIcon,
   PencilSquareIcon,
   ShoppingCartIcon,
-  ChartBarSquareIcon,
-  PhotoIcon,
-  BookOpenIcon,
   ArrowUturnLeftIcon,
   HeartIcon,
   ArrowTopRightOnSquareIcon,
@@ -45,7 +39,6 @@ import ForwardModal from "../../components/facebook-inbox/Modals/ForwardModal";
 import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
 import type { ConversationStatus } from "../../types/inbox.types";
 import PostsManagement from "../comments/PostsManagement";
-import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
 import AssignmentDropdown from "../../components/facebook-inbox/AssignmentDropdown/AssignmentDropdown";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -94,6 +87,8 @@ interface UnifiedMessage {
   sender: string;
   senderAvatar?: string | null;
   interactiveData: any;
+  isStarred?: boolean;
+  isAIResponse?: boolean;
 }
 
 interface CustomerProfile {
@@ -133,6 +128,22 @@ interface Attachment {
   type: string;
 }
 
+// ponytail: API response envelope — backend wraps everything in { success, data, ... }
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string | { code: string; message: string };
+  message?: string;
+  pagination?: { totalPages: number; page?: number; total?: number };
+  counts?: PlatformCounts;
+}
+
+interface UploadResponse {
+  success?: boolean;
+  filePath?: string;
+  fullUrl?: string;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🎨 Platform styling
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -146,56 +157,14 @@ const platformStyles: Record<string, { label: string; icon: string }> = {
   test: { label: "Test Platform", icon: "🧪" },
 };
 
-// Custom brand and helper icons for the platforms dropdown
-const FacebookIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
-  </svg>
-);
-
-const InstagramIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-  </svg>
-);
-
-const WhatsAppIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-  </svg>
-);
-
-const TelegramIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-1-.65-.35-1 .22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.35-.49.97-.74 3.79-1.65 6.32-2.74 7.59-3.27 3.61-1.5 4.35-1.76 4.84-1.77.11 0 .35.03.5.16.13.12.17.28.19.39.02.1.02.2.01.3z"/>
-  </svg>
-);
-
-const GlobeIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <line x1="2" y1="12" x2="22" y2="12"></line>
-    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-  </svg>
-);
-
-const FlaskIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 3h12"></path>
-    <path d="M12 3v15"></path>
-    <path d="M9 12h6"></path>
-    <path d="M18 19c0 1-1 2-2 2H8c-1 0-2-1-2-2 0-.8.4-1.6 1-2l5-6.5V3h4v5.5l5 6.5c.6.4 1 1.2 1 2z"></path>
-  </svg>
-);
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🏗️ Main Component
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const UnifiedInbox: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t: rawT, i18n } = useTranslation();
+  // ponytail: react-i18next v12 returns DefaultTFuncReturn, cast to string for aria-label/props
+  const t = rawT as ((key: string, opts?: any) => string);
   const isRtl = i18n.dir() === "rtl";
 
   // State
@@ -206,14 +175,7 @@ const UnifiedInbox: React.FC = () => {
   const [customerProfile, setCustomerProfile] =
     useState<CustomerProfile | null>(null);
   const [profileActiveTab, setProfileActiveTab] = useState<"timeline" | "orders" | "info">("timeline");
-  const [counts, setCounts] = useState<PlatformCounts>({
-    all: 0,
-    facebook: 0,
-    instagram: 0,
-    whatsapp: 0,
-    telegram: 0,
-    unreplied: 0,
-  });
+  // ponytail: counts fetched from API but not yet displayed in UI — wire up when needed
 
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -228,7 +190,6 @@ const UnifiedInbox: React.FC = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'followUp'>('all');
   const [activeTab, setActiveTab] = useState("all");
-  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [showProfilePanel, setShowProfilePanel] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
@@ -253,24 +214,27 @@ const UnifiedInbox: React.FC = () => {
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [replyToMsg, setReplyToMsg] = useState<UnifiedMessage | null>(null);
 
+  // ── AI Correction state ──
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [correctionText, setCorrectionText] = useState("");
+  const [savingCorrection, setSavingCorrection] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
   const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketHandlerRef = useRef<((message: any) => void) | null>(null);
   const newConvHandlerRef = useRef<((conversation: any) => void) | null>(null);
   const waSocketHandlerRef = useRef<((payload: any) => void) | null>(null);
-  const waSentHandlerRef = useRef<((payload: any) => void) | null>(null);
+  // ponytail: AbortControllers prevent race conditions when switching conversations rapidly
+  const messagesAbortRef = useRef<AbortController | null>(null);
+  const profileAbortRef = useRef<AbortController | null>(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowPlatformDropdown(false);
-      }
       if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
         setShowActionsMenu(false);
       }
@@ -283,17 +247,6 @@ const UnifiedInbox: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const getPlatformFilterLabel = () => {
-    if (selectedPlatforms.length === 0) return t("unifiedInbox.filters.allPlatforms");
-    
-    if (selectedPlatforms.length === 1) {
-      return t(`unifiedInbox.platforms.${selectedPlatforms[0]}`);
-    }
-    
-    const firstLabel = t(`unifiedInbox.platforms.${selectedPlatforms[0]}`);
-    return `${firstLabel} + ${selectedPlatforms.length - 1}`;
-  };
 
   // ──────────────────────────────────────────────────────────
   // 📡 Data Fetching
@@ -322,13 +275,13 @@ const UnifiedInbox: React.FC = () => {
       params.set("limit", "50");
       params.set("page", String(targetPage));
 
-      const response = await apiClient.get(
+      const response = await apiClient.get<ApiResponse<UnifiedConversation[]>>(
         `/api/v1/unified-inbox/conversations?${params.toString()}`,
       );
 
       if (response.data?.success) {
         const newData = response.data.data || [];
-        const pagination = response.data.pagination || {};
+        const pagination = response.data.pagination || { totalPages: 0 };
         const hasNext = pagination.totalPages > targetPage;
 
         setHasMore(hasNext);
@@ -345,7 +298,7 @@ const UnifiedInbox: React.FC = () => {
         }
 
         if (response.data.counts) {
-          setCounts(response.data.counts);
+          // ponytail: counts available but not displayed yet
         }
       }
     } catch (error) {
@@ -473,7 +426,7 @@ const UnifiedInbox: React.FC = () => {
     if (!selectedConversation) return;
     try {
       await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/messages/${msgId}/star`);
-      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: m.status } : m));
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, isStarred: !m.isStarred } : m));
     } catch (err) {
       console.error("Error starring message:", err);
     }
@@ -528,6 +481,11 @@ const UnifiedInbox: React.FC = () => {
   }, [selectedConvIds, selectedConversation, clearSelection]);
 
   const loadMessages = useCallback(async (conv: UnifiedConversation) => {
+    // Abort previous in-flight request to avoid race when switching conversations
+    messagesAbortRef.current?.abort();
+    const ac = new AbortController();
+    messagesAbortRef.current = ac;
+
     try {
       setLoadingMessages(true);
       const params = new URLSearchParams();
@@ -536,44 +494,55 @@ const UnifiedInbox: React.FC = () => {
         params.set("sessionId", conv.metadata["sessionId"]);
       if (conv.metadata?.["jid"]) params.set("jid", conv.metadata["jid"]);
 
-      const realId = conv.id.startsWith("wa_") ? conv.id : conv.id;
-      const response = await apiClient.get(
-        `/api/v1/unified-inbox/conversations/${realId}/messages?${params.toString()}`,
+      const response = await apiClient.get<ApiResponse<UnifiedMessage[]>>(
+        `/api/v1/unified-inbox/conversations/${conv.id}/messages?${params.toString()}`,
+        { signal: ac.signal },
       );
 
       if (response.data?.success) {
         setMessages(response.data.data || []);
         setTimeout(() => scrollToBottom(), 100);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (ac.signal.aborted) return; // superseded by a newer request
       console.error("❌ Error loading messages:", error);
     } finally {
-      setLoadingMessages(false);
+      if (messagesAbortRef.current === ac) {
+        setLoadingMessages(false);
+      }
     }
   }, []);
 
   const loadCustomerProfile = useCallback(async (customerId: string) => {
+    profileAbortRef.current?.abort();
+    const ac = new AbortController();
+    profileAbortRef.current = ac;
+
     try {
       setLoadingProfile(true);
-      const response = await apiClient.get(
+      const response = await apiClient.get<ApiResponse<CustomerProfile>>(
         `/api/v1/unified-inbox/customer/${customerId}`,
+        { signal: ac.signal },
       );
       if (response.data?.success) {
-        setCustomerProfile(response.data.data);
+        setCustomerProfile(response.data.data ?? null);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (ac.signal.aborted) return;
       console.error("❌ Error loading customer:", error);
       setCustomerProfile(null);
     } finally {
-      setLoadingProfile(false);
+      if (profileAbortRef.current === ac) {
+        setLoadingProfile(false);
+      }
     }
   }, []);
 
   const loadQuickReplies = useCallback(async () => {
     try {
       const [qrResponse, textsResponse] = await Promise.all([
-        apiClient.get("/api/v1/unified-inbox/quick-replies").catch(() => null),
-        apiClient.get("/user/text-gallery").catch(() => null)
+        apiClient.get<ApiResponse<any[]>>("/api/v1/unified-inbox/quick-replies").catch(() => null),
+        apiClient.get<{ texts: any[] }>("/user/text-gallery").catch(() => null)
       ]);
 
       let combined: any[] = [];
@@ -625,6 +594,26 @@ const UnifiedInbox: React.FC = () => {
     [loadMessages, loadCustomerProfile],
   );
 
+  // ── AI Correction ──
+  const submitCorrection = async (msgId: string) => {
+    if (!correctionText.trim() || !selectedConversation) return;
+    setSavingCorrection(true);
+    try {
+      await apiClient.post<ApiResponse>(
+        `/api/v1/unified-inbox/conversations/${selectedConversation.id}/messages/${msgId}/correct`,
+        { correction: correctionText.trim() }
+      );
+      setEditingMessageId(null);
+      setCorrectionText("");
+      // Reload messages
+      loadMessages(selectedConversation);
+    } catch (error: any) {
+      alert(error.response?.data?.error || error.message || "فشل إرسال التصحيح");
+    } finally {
+      setSavingCorrection(false);
+    }
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -645,7 +634,7 @@ const UnifiedInbox: React.FC = () => {
       formData.append("file", file);
 
       try {
-        const response = await apiClient.post("/api/v1/upload", formData, {
+        const response = await apiClient.post<UploadResponse>("/api/v1/upload", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -695,24 +684,27 @@ const UnifiedInbox: React.FC = () => {
       const payloads: any[] = [];
 
       if (hasText) {
+        const firstAtt = attachments[0];
         const firstPayload: any = {
           content: newMessage.trim(),
           platform: selectedConversation.platform,
         };
-        if (attachments.length > 0) {
-          firstPayload.type = attachments[0].type;
-          firstPayload.mediaUrl = attachments[0].url;
-          firstPayload.mediaFileName = attachments[0].name;
+        if (firstAtt) {
+          firstPayload.type = firstAtt.type;
+          firstPayload.mediaUrl = firstAtt.url;
+          firstPayload.mediaFileName = firstAtt.name;
         }
         payloads.push(firstPayload);
 
         for (let i = 1; i < attachments.length; i++) {
+          const att = attachments[i];
+          if (!att) continue;
           payloads.push({
             content: "",
             platform: selectedConversation.platform,
-            type: attachments[i].type,
-            mediaUrl: attachments[i].url,
-            mediaFileName: attachments[i].name,
+            type: att.type,
+            mediaUrl: att.url,
+            mediaFileName: att.name,
           });
         }
       } else {
@@ -743,7 +735,7 @@ const UnifiedInbox: React.FC = () => {
         }
 
         const realId = selectedConversation.id;
-        const response = await apiClient.post(
+        const response = await apiClient.post<ApiResponse<UnifiedMessage>>(
           `/api/v1/unified-inbox/conversations/${realId}/messages`,
           body,
         );
@@ -815,21 +807,22 @@ const UnifiedInbox: React.FC = () => {
     }
   }, [selectedConversation]);
 
-  const handleAssign = useCallback(async (userId: string | null) => {
+  const handleAssign = useCallback(async (userId: string | null, name?: string | null) => {
     if (!selectedConversation) return;
     try {
       await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
         assignedTo: userId,
       });
+      const assignee = userId ? { id: userId, name: name || "", avatar: null } : null;
       setConversations(prev =>
         prev.map(c =>
           c.id === selectedConversation.id
-            ? { ...c, assignedTo: userId ? { id: userId, name: "", avatar: null } : null }
+            ? { ...c, assignedTo: assignee }
             : c
         )
       );
       setSelectedConversation(prev =>
-        prev ? { ...prev, assignedTo: userId ? { id: userId, name: "", avatar: null } : null } : null
+        prev ? { ...prev, assignedTo: assignee } : null
       );
     } catch (err) {
       console.error("Error assigning conversation:", err);
@@ -902,6 +895,15 @@ const UnifiedInbox: React.FC = () => {
     }, 400);
   };
 
+  // Clear pending search timeout and abort in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      messagesAbortRef.current?.abort();
+      profileAbortRef.current?.abort();
+    };
+  }, []);
+
   const handleQuickReplySelect = (reply: any) => {
     setNewMessage((prev) => prev ? prev + "\n" + (reply.content || "") : (reply.content || ""));
     
@@ -928,14 +930,15 @@ const UnifiedInbox: React.FC = () => {
 
   // Warn before closing if there's unsent message
   useEffect(() => {
-    if (!newMessage.trim()) return;
+    const hasUnsent = newMessage.trim().length > 0;
+    if (!hasUnsent) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [newMessage]);
+  }, [newMessage.trim().length > 0]);
 
   useEffect(() => {
     socketService.connect();
@@ -975,7 +978,7 @@ const UnifiedInbox: React.FC = () => {
     socketService.onNewConversation(newConvHandler);
 
     const findWaConv = (convs: UnifiedConversation[], sessionId: string, remoteJid: string) =>
-      convs.find(c => c.platform === 'whatsapp' && c.metadata?.sessionId === sessionId && c.metadata?.jid === remoteJid);
+      convs.find(c => c.platform === 'whatsapp' && c.metadata?.["sessionId"] === sessionId && c.metadata?.["jid"] === remoteJid);
 
     const waHandler = (payload: any) => {
       const { sessionId, message } = payload;
@@ -998,8 +1001,8 @@ const UnifiedInbox: React.FC = () => {
       });
 
       if (selectedConversation?.platform === 'whatsapp' &&
-          selectedConversation.metadata?.sessionId === sessionId &&
-          selectedConversation.metadata?.jid === message.remoteJid) {
+          selectedConversation.metadata?.["sessionId"] === sessionId &&
+          selectedConversation.metadata?.["jid"] === message.remoteJid) {
         setMessages((prev) => {
           if (prev.some(m => m.messageId === message.messageId || m.id === message.id)) return prev;
           return [...prev, {
@@ -1024,12 +1027,9 @@ const UnifiedInbox: React.FC = () => {
       }
     };
 
-    const waSentHandler = (payload: any) => waHandler(payload);
-
     waSocketHandlerRef.current = waHandler;
-    waSentHandlerRef.current = waSentHandler;
     socketService.on("whatsapp:message:new", waHandler);
-    socketService.on("whatsapp:message:sent", waSentHandler);
+    socketService.on("whatsapp:message:sent", waHandler);
 
     return () => {
       if (socketHandlerRef.current) {
@@ -1042,11 +1042,8 @@ const UnifiedInbox: React.FC = () => {
       }
       if (waSocketHandlerRef.current) {
         socketService.off("whatsapp:message:new", waSocketHandlerRef.current);
+        socketService.off("whatsapp:message:sent", waSocketHandlerRef.current);
         waSocketHandlerRef.current = null;
-      }
-      if (waSentHandlerRef.current) {
-        socketService.off("whatsapp:message:sent", waSentHandlerRef.current);
-        waSentHandlerRef.current = null;
       }
     };
   }, [selectedConversation]);
@@ -1184,7 +1181,8 @@ const UnifiedInbox: React.FC = () => {
       <div className="flex-1 overflow-hidden relative flex flex-col">
         {isCommentsActive ? (
           <div className="absolute inset-0 overflow-hidden bg-slate-50 p-2">
-            <PostsManagement embedded defaultPlatform={activeTab === 'fb-comments' ? 'facebook' : 'instagram'} />
+            {/* ponytail: PostsManagement.jsx infers defaultPlatform as null from its default value */}
+            <PostsManagement embedded defaultPlatform={(activeTab === 'fb-comments' ? 'facebook' : 'instagram') as any} />
           </div>
         ) : (
           <div className={`business-inbox-shell w-full ${selectedConversation ? 'business-inbox-shell--conversation-active' : ''}`}>
@@ -1908,7 +1906,7 @@ const UnifiedInbox: React.FC = () => {
                               {(() => {
                                 if (msg.mediaUrl) return null;
                                 if (!msg.content || !msg.content.startsWith("http")) return null;
-                                const url = msg.content.split(/[\s\n]/)[0];
+                                const url = msg.content.split(/[\s\n]/)[0] || "";
                                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(url) || url.includes("fbcdn") || url.includes("cdninstagram");
                                 const isVideo = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(url);
                                 const isAudio = /\.(mp3|wav|ogg|aac|m4a|opus)(\?|$)/i.test(url);
@@ -1953,7 +1951,7 @@ const UnifiedInbox: React.FC = () => {
                               })()}
 
                               {/* Text content (hide if it's a media URL shown above) */}
-                              {msg.content && !(msg.content.startsWith("http") && (msg.content.includes("fbcdn") || msg.content.includes("cdninstagram") || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(msg.content.split(/[\s\n]/)[0]))) && (
+                              {msg.content && !(msg.content.startsWith("http") && (msg.content.includes("fbcdn") || msg.content.includes("cdninstagram") || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(msg.content.split(/[\s\n]/)[0] || ""))) && (
                                 <p
                                   className="text-sm leading-relaxed whitespace-pre-wrap"
                                   style={{
@@ -1997,7 +1995,62 @@ const UnifiedInbox: React.FC = () => {
                                   </span>
                                 )}
                               </div>
+
+                              {/* AI message badge + correction button */}
+                              {!msg.isFromCustomer && (msg.isAIResponse || !msg.sender || msg.sender === 'ai') && (
+                                <div className="mt-2 pt-1.5 flex justify-between items-center text-[10px]" style={{ borderTop: '1px solid rgba(225, 238, 250, 0.2)' }}>
+                                  <span style={{ color: 'rgba(225, 238, 250, 0.7)' }}>🤖 رد تلقائي من الوكيل</span>
+                                  {editingMessageId !== msg.id && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingMessageId(msg.id);
+                                        setCorrectionText(msg.content || '');
+                                      }}
+                                      className="hover:underline font-medium cursor-pointer"
+                                      style={{ color: 'white' }}
+                                    >
+                                      ✏️ تصحيح الرد
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
+
+                            {/* Correction textarea (shown below the bubble) */}
+                            {editingMessageId === msg.id && (
+                              <div className={`flex ${msg.isFromCustomer ? 'justify-start' : 'justify-end'}`}>
+                                <div className="max-w-[75%] rounded-xl p-3 space-y-2" style={{ background: 'var(--color-muted)', border: '1px solid var(--business-card-border)' }}>
+                                  <div className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>تصحيح رد الوكيل:</div>
+                                  <textarea
+                                    value={correctionText}
+                                    onChange={(e) => setCorrectionText(e.target.value)}
+                                    className="w-full min-h-[60px] p-2 text-sm rounded border outline-none resize-none"
+                                    style={{ background: 'var(--color-background)', color: 'var(--color-foreground)', borderColor: 'var(--business-card-border)' }}
+                                    placeholder="اكتب الرد الصحيح للعميل هنا لتعليم الوكيل وتصحيح الخطأ..."
+                                  />
+                                  <div className="flex justify-end gap-2 text-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => { setEditingMessageId(null); setCorrectionText(''); }}
+                                      className="px-3 py-1.5 rounded font-medium"
+                                      style={{ background: 'var(--color-secondary)', color: 'var(--color-secondary-foreground)' }}
+                                    >
+                                      إلغاء
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => submitCorrection(msg.id)}
+                                      disabled={savingCorrection || !correctionText.trim()}
+                                      className="px-3 py-1.5 rounded font-medium disabled:opacity-50"
+                                      style={{ background: 'var(--color-primary)', color: 'white' }}
+                                    >
+                                      {savingCorrection ? 'جاري الحفظ...' : 'حفظ وتصحيح'}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </React.Fragment>
                       );
@@ -2365,8 +2418,8 @@ const UnifiedInbox: React.FC = () => {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* COLUMN 3 ΓÇö Customer Profile Panel */}
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+        {/* COLUMN 3 - Customer Profile Panel */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
         {showProfilePanel && selectedConversation && (
           <div className="business-inbox-column business-inbox-column--profile overflow-y-auto">
             {/* Profile Header */}
@@ -2436,7 +2489,7 @@ const UnifiedInbox: React.FC = () => {
               <div className="mt-2 grid gap-1.5" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
                 <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
                   <StatusDropdown
-                    currentStatus={selectedConversation.status}
+                    currentStatus={selectedConversation.status as ConversationStatus}
                     onStatusChange={handleStatusChange}
                     disabled={loadingProfile}
                   />
@@ -2444,7 +2497,7 @@ const UnifiedInbox: React.FC = () => {
                 <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
                   <AssignmentDropdown
                     currentAssignee={selectedConversation.assignedTo?.id || null}
-                    currentAssigneeName={selectedConversation.assignedTo?.name || null}
+                    currentAssigneeName={selectedConversation.assignedTo?.name || undefined}
                     onAssign={handleAssign}
                     disabled={loadingProfile}
                   />
@@ -2460,7 +2513,7 @@ const UnifiedInbox: React.FC = () => {
                     background: "color-mix(in srgb, var(--color-primary) 10%, var(--color-background))",
                     borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
                   }}
-                  title={t("unifiedInbox.markUnread", { defaultValue: "╪¬╪¡╪»┘è╪» ┘â╪║┘è╪▒ ┘à┘é╪▒┘ê╪í" })}
+                  title={t("unifiedInbox.markUnread")}
                 >
                   <EnvelopeIcon className="w-5 h-5 shrink-0" />
                 </button>
@@ -2472,7 +2525,7 @@ const UnifiedInbox: React.FC = () => {
                     background: "color-mix(in srgb, var(--business-warning) 10%, var(--color-background))",
                     borderColor: "color-mix(in srgb, var(--business-warning) 20%, transparent)",
                   }}
-                  title={t("unifiedInbox.archive", { defaultValue: "╪ú╪▒╪┤┘ü╪⌐" })}
+                  title={t("unifiedInbox.archive")}
                 >
                   <ArchiveBoxIcon className="w-5 h-5 shrink-0" />
                 </button>
@@ -2484,7 +2537,7 @@ const UnifiedInbox: React.FC = () => {
                     background: "color-mix(in srgb, var(--business-danger) 10%, var(--color-background))",
                     borderColor: "color-mix(in srgb, var(--business-danger) 20%, transparent)",
                   }}
-                  title={t("unifiedInbox.block", { defaultValue: "╪¡╪╕╪▒" })}
+                  title={t("unifiedInbox.block")}
                 >
                   <NoSymbolIcon className="w-5 h-5 shrink-0" />
                 </button>
@@ -2940,7 +2993,7 @@ const UnifiedInbox: React.FC = () => {
       isOpen={showForwardModal}
       onClose={() => { setShowForwardModal(false); setForwardMessage(null); }}
       onForward={handleForwardMessage}
-      conversations={[]}
+      conversations={conversations}
     />
     </>
   );

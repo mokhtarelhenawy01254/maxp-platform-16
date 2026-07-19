@@ -93,7 +93,7 @@ const PreparationOrderCard = ({
 
   return (
     <article
-      className={`overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:border-gray-300 ${
+      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md hover:border-gray-300 ${
         shortageFollowUpVisual?.cardClass || "border-gray-200"
       }`}
     >
@@ -107,7 +107,7 @@ const PreparationOrderCard = ({
           onToggleSelection={onToggleSelection}
         />
 
-      <div className="space-y-4 p-5">
+      <div className="space-y-2.5 p-3">
         <PreparationOrderItemsList
           order={order}
           selectedWarehouseId={selectedWarehouseId}

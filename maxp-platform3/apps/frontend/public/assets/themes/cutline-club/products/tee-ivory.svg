@@ -1,0 +1,11 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="1000" fill="#111A2F"/>
+<rect x="40" y="40" width="720" height="920" rx="44" fill="#1B2540"/>
+<rect x="94" y="84" width="612" height="118" rx="30" fill="#FF7A1A"/>
+<text x="126" y="156" fill="#111A2F" font-size="28" font-family="Segoe UI, sans-serif" font-weight="800">CUTLINE / BASE LAYER</text>
+<path d="M274 248L334 214H466L526 248L586 290L542 382H502V660C502 682 484 700 462 700H338C316 700 298 682 298 660V382H258L214 290L274 248Z" fill="#F4EDE2"/>
+<path d="M368 214C370 184 430 184 432 214H368Z" fill="#E7D4BD"/>
+<rect x="254" y="760" width="294" height="90" rx="28" fill="#F4EDE2" fill-opacity="0.12"/>
+<text x="284" y="804" fill="#F4EDE2" font-size="40" font-family="Segoe UI, sans-serif" font-weight="700">LINE BOX TEE</text>
+<text x="284" y="836" fill="#F4EDE2" fill-opacity="0.76" font-size="22" font-family="Segoe UI, sans-serif">CLEAN BASE / IVORY</text>
+</svg>

@@ -1,0 +1,11 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="800" height="1000" fill="#F7F2E8"/>
+<rect x="44" y="44" width="712" height="912" rx="44" fill="#22312D"/>
+<rect x="608" y="80" width="98" height="840" rx="24" fill="#6F8E79"/>
+<rect x="250" y="228" width="108" height="520" rx="32" fill="#384642"/>
+<rect x="374" y="228" width="108" height="520" rx="32" fill="#384642"/>
+<rect x="236" y="196" width="260" height="50" rx="20" fill="#384642"/>
+<rect x="130" y="768" width="446" height="98" rx="28" fill="#F7F2E8" fill-opacity="0.1"/>
+<text x="162" y="812" fill="#F7F2E8" font-size="42" font-family="Segoe UI, sans-serif" font-weight="700">COMMUTE TROUSER</text>
+<text x="162" y="846" fill="#D2C7B7" font-size="22" font-family="Segoe UI, sans-serif">INK / ROTATION CORE</text>
+</svg>

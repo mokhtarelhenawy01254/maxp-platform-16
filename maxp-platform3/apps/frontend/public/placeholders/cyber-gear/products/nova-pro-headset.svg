@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="680" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06111E"/>
+      <stop offset="1" stop-color="#12081E"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="220" y1="170" x2="585" y2="612" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#61F3FF"/>
+      <stop offset="1" stop-color="#A94DFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" rx="48" fill="url(#bg)"/>
+  <circle cx="400" cy="400" r="240" stroke="url(#ring)" stroke-width="18" opacity=".2"/>
+  <path d="M286 355C286 292 337 241 400 241C463 241 514 292 514 355V466H472V355C472 315 440 283 400 283C360 283 328 315 328 355V466H286V355Z" fill="#61F3FF"/>
+  <rect x="240" y="430" width="122" height="146" rx="42" fill="#0C243C" stroke="#61F3FF" stroke-width="12"/>
+  <rect x="438" y="430" width="122" height="146" rx="42" fill="#170E2F" stroke="#A94DFF" stroke-width="12"/>
+  <path d="M356 605H444" stroke="#61F3FF" stroke-width="10" stroke-linecap="round" opacity=".8"/>
+  <text x="400" y="674" fill="#E7F7FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" text-anchor="middle">NOVA PRO HEADSET</text>
+</svg>

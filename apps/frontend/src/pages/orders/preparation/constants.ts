@@ -7,6 +7,8 @@ import type {
 
 export const FETCH_LIMIT = 200;
 export const PAGE_SIZE = 12;
+export const PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
+export type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
 export const DEFAULT_PREPARATION_QUEUE_SETTINGS: PreparationQueueSettings = {
   enabled: true,

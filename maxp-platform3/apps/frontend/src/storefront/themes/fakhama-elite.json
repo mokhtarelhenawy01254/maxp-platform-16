@@ -1,0 +1,238 @@
+{
+  "id": "fakhama-elite",
+  "name": "Fakhama Elite",
+  "tokens": {
+    "colors": {
+      "primary": "354 86% 45%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "210 10% 23%",
+      "secondaryForeground": "0 0% 100%",
+      "accent": "45 100% 50%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "210 10% 10%",
+      "muted": "210 10% 96%",
+      "mutedForeground": "210 10% 45%",
+      "border": "210 10% 89%",
+      "card": "0 0% 100%",
+      "cardForeground": "210 10% 10%",
+      "ring": "354 86% 45%"
+    },
+    "typography": {
+      "headingFont": "Playfair Display, Cairo, serif",
+      "bodyFont": "Outfit, Cairo, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1px",
+      "buttonRadius": "0px"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 22px 60px -38px rgba(0, 0, 0, 0.28)",
+      "hoverShadow": "0 30px 70px -34px rgba(0, 0, 0, 0.34)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "header": {
+    "brandName": "Fakhama Elite",
+    "showSearch": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المجموعات", "to": "/shop" },
+      { "label": "وصل حديثاً", "to": "/shop?sort=newest" },
+      { "label": "من نحن", "to": "/about" }
+    ]
+  },
+  "footer": {
+    "description": "فخورون بتقديم أرقى الأحذية النسائية المصنوعة في مصر بأعلى معايير الجودة العالمية منذ عام ٢٠١٠.",
+    "socialLinks": {
+      "instagram": "https://instagram.com/fakhama",
+      "facebook": "https://facebook.com/fakhama",
+      "whatsapp": "https://wa.me/2019999"
+    },
+    "navigation": [
+      {
+        "title": "روابط سريعة",
+        "links": [
+          { "label": "من نحن", "to": "/about" },
+          { "label": "المجموعات", "to": "/shop" },
+          { "label": "سياسة الشحن", "to": "/shipping" },
+          { "label": "الاستبدال والاسترجاع", "to": "/returns" }
+        ]
+      },
+      {
+        "title": "التصنيفات",
+        "links": [
+          { "label": "أحذية كعب عالي", "to": "/shop?category=heels" },
+          { "label": "أحذية فلات", "to": "/shop?category=flats" },
+          { "label": "أحذية رياضية عصرية", "to": "/shop?category=sneakers" },
+          { "label": "بوت شتوي", "to": "/shop?category=boots" }
+        ]
+      }
+    ],
+    "copyrightText": "© ٢٠٢٦ متجر فخامة للأحذية. جميع الحقوق محفوظة."
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "فخامة تمشي بيك من أول خطوة",
+            "subtitle": "جلد طبيعي، شغل متقن، وموديلات تخلي القرار أسهل بين الشغل والخروجات والمناسبات.",
+            "backgroundImage": "/fakhama_hero_luxury_heels_1774501228599.png",
+            "buttonText": "اكتشفي التشكيلة"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "ابدئي من المناسبة",
+            "collections": [
+              { "title": "أحذية كعب", "subtitle": "سهرة ومناسبة", "image": "/products/fakhama/fakhama_cat_heels_1774501290116.png" },
+              { "title": "أحذية رياضية", "subtitle": "يوم طويل براحة", "image": "/products/fakhama/fakhama_cat_sneakers_1774501352288.png" },
+              { "title": "بوت", "subtitle": "شتا شيك", "image": "/products/fakhama/fakhama_cat_boots_1774501319384.png" },
+              { "title": "أحذية فلات", "subtitle": "أناقة سهلة", "image": "/products/fakhama/fakhama_cat_flats_lux_1774501704721.png" }
+            ]
+          }
+        },
+        {
+          "type": "story-parallax",
+          "settings": {
+            "title": "شغل يدوي يبان من أول لبسة",
+            "content": "كل زوج بيمر بمراحل تصنيع دقيقة عشان يطلع بشكله الموزون وراحته الواضحة من أول مرة. الخامة والتشطيب هنا بيبيعوا نفسهم من أول نظرة.",
+            "image": "/products/fakhama/fakhama_cat_flats_lux_1774501704721.png",
+            "badge": "حرفية مصرية"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "لماذا تتسوقين معنا؟",
+            "message": "نحن نؤمن أن الحذاء ليس مجرد إكسسوار، بل هو رفيقك في كل نجاح.",
+            "saleLabel": "جودة مصرية عالمية",
+            "shippingLabel": "شحن سريع وآمن",
+            "returnLabel": "تبديل سهل",
+            "ctaText": "اعرفي المزيد"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "luxury-card",
+          "settings": {
+            "title": "الأكثر مبيعاً",
+            "subtitle": "تصاميمنا المفضلة لدى عميلاتنا هذا الشهر",
+            "limit": 4
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "settings": {
+            "title": "إليكِ الإلهام",
+            "description": "إطلالات منتقاة بعناية تعكس رقي المرأة العربية العصرية.",
+            "images": [
+              "/products/fakhama/fakhama_cat_heels_1774501290116.png",
+              "/products/fakhama/fakhama_cat_sneakers_1774501352288.png"
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "settings": {
+            "title": "انضمي لنادي \"فخامة\"",
+            "description": "اشتركي في بريدنا لتكوني أول من يعرف عن المجموعات الجديدة والعروض الحصرية، واحصلي على خصم ١٠٪ على طلبك القادم."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "stack",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "title": "التشكيلة الكاملة من فخامة",
+            "subtitle": "تصفّح أهدأ وصور أوضح عشان توصلي للموديل المناسب من غير لف كثير.",
+            "ctaText": "ابدئي التصفح",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "وصل حديثاً",
+            "secondaryCtaLink": "/shop?sortBy=createdAt&sortOrder=desc",
+            "backgroundImage": "/products/fakhama/fakhama_cat_heels_1774501290116.png"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "تحكم سريع في المجموعة",
+            "subtitle": "ابحثي داخل المجموعات، غيّري الترتيب، وانتقلي للتصنيف المطلوب بدون مغادرة المعروض الحالي.",
+            "searchPlaceholder": "ابحثي عن الموديل أو التصنيف",
+            "resultsLabel": "قطعة متاحة",
+            "clearButtonText": "تصفير التصفية",
+            "stickyLabel": "فخامة",
+            "chipLimit": 6
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "luxury-card",
+          "settings": {
+            "title": "المجموعة الكاملة",
+            "limit": 12
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تنبيهات فخامة",
+            "subtitle": "كوني أول من يعرف عن الإصدارات الجديدة والعروض الخاصة قبل نفاد المقاسات."
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "grid" },
+        { "type": "product-info", "variant": "accordion" },
+        { "type": "conversion-stack", "variant": "editorial" },
+        { "type": "related-products", "variant": "luxury-card", "settings": { "title": "اختيارات مشابهة", "limit": 4 } },
+        "reviews"
+      ]
+    },
+    "cart": {
+      "sections": [
+        { "type": "cart-items" },
+        { "type": "order-summary" }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        { "type": "checkout-form" },
+        { "type": "payment" }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تأكيد طلبك بنجاح!",
+            "description": "شكراً لثقتك بمتجر فخامة. سيتم تجهيز طلبك بعناية وشحنه في أقرب وقت.",
+            "continueShoppingText": "العودة للمتجر",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "تحتاجين مساعدة؟ تواصلي معنا"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": ["member-registration"]
+    }
+  }
+}

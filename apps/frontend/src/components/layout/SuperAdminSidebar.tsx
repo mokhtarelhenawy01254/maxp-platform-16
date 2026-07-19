@@ -49,6 +49,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
   ]},
   { title: t("superAdmin.evaluation.aiModels"), icon: <Brain className="size-5" />, items: [
     { text: "استهلاك الشركات", icon: <BarChart3 className="size-4" />, path: "/super-admin/ai-consumption" },
+    { text: t("superAdmin.selfReview.sidebar"), icon: <Activity className="size-4" />, path: "/super-admin/self-review" },
     { text: "AI Keys (New)", icon: <Key className="size-4" />, path: "/super-admin/ai-key-manager" },
     { text: "سجل المفاتيح", icon: <History className="size-4" />, path: "/super-admin/ai-key-logs" },
     { text: "AI Playground", icon: <Play className="size-4" />, path: "/super-admin/ai-playground" },
@@ -59,6 +60,7 @@ export const getMenuGroups = (t: (key: string) => string) => [
     { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/admin/ai-hub?tab=tools" },
     { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/admin/ai-hub?tab=rag" },
     { text: "محادثات AI", icon: <MessageSquare className="size-4" />, path: "/super-admin/ai-chat" },
+    { text: "مولد الصور AI", icon: <Image className="size-4" />, path: "/super-admin/ai-image-generator-settings" },
   ]},
   { title: t("superAdmin.sidebar.monitoring"), icon: <Activity className="size-5" />, items: [
     { text: t("superAdmin.sidebar.queueMonitor"), icon: <Activity className="size-5" />, path: "/super-admin/queue-monitor" },

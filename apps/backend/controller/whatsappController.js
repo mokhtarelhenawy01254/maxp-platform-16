@@ -2099,17 +2099,26 @@ async function deleteChat(req, res) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
-        });
-
-        if (!session) {
-            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        const targetSessionId = sessionId && sessionId !== 'all' ? sessionId : null;
+        let session = null;
+        if (targetSessionId) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: targetSessionId, companyId }
+            });
         }
+        if (!session) {
+            session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId },
+                orderBy: { lastConnectedAt: 'desc' }
+            });
+        }
+        if (!session) {
+            return res.status(404).json({ error: 'لا توجد جلسة متاحة' });
+        }
+        const resolvedSessionId = session.id;
 
-        // Delete from Baileys (Clear chat)
-        const activeSession = WhatsAppManager.getSession(targetSessionId);
+        // Delete from Baileys (Clear chat) — best-effort
+        const activeSession = WhatsAppManager.getSession(resolvedSessionId);
         if (activeSession?.status === 'connected') {
             try {
                 await activeSession.sock.chatModify({
@@ -2127,11 +2136,11 @@ async function deleteChat(req, res) {
 
         // Delete from DB
         await getSharedPrismaClient().whatsAppMessage.deleteMany({
-            where: { sessionId: targetSessionId, remoteJid: jid }
+            where: { sessionId: resolvedSessionId, remoteJid: jid }
         });
 
         await getSharedPrismaClient().whatsAppContact.deleteMany({
-            where: { sessionId: targetSessionId, jid }
+            where: { sessionId: resolvedSessionId, jid }
         });
 
         res.json({ success: true });
@@ -2478,6 +2487,8 @@ async function updateProfile(req, res) {
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
+const validateGroupJid = (jid) => typeof jid === 'string' && jid.endsWith('@g.us');
+
 /**
  * إنشاء مجموعة
  * POST /api/whatsapp/groups
@@ -2521,6 +2532,9 @@ async function getGroupMetadata(req, res) {
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2551,6 +2565,9 @@ async function updateGroupSubject(req, res) {
 
         if (!sessionId || !jid || !subject) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -2583,6 +2600,12 @@ async function updateGroupDescription(req, res) {
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
+        if (typeof description !== 'string') {
+            return res.status(400).json({ error: 'الوصف مطلوب' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2614,6 +2637,16 @@ async function updateGroupSettings(req, res) {
         if (!sessionId || !jid || !setting) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
+
+        const baileysSetting =
+            setting === 'announce'
+                ? (value ? 'announcement' : 'not_announcement')
+                : setting === 'restrict'
+                    ? (value ? 'locked' : 'unlocked')
+                    : setting;
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2624,7 +2657,7 @@ async function updateGroupSettings(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.updateGroupSettings(targetSessionId, jid, setting, value);
+        await WhatsAppManager.updateGroupSettings(targetSessionId, jid, baileysSetting);
         res.json({ success: true });
     } catch (error) {
         console.error('❌ Error updating group settings:', error);
@@ -2645,6 +2678,9 @@ async function updateGroupParticipants(req, res) {
         if (!sessionId || !jid || !action || !participants) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2655,7 +2691,7 @@ async function updateGroupParticipants(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.updateGroupParticipants(targetSessionId, jid, action, participants);
+        await WhatsAppManager.updateGroupParticipants(targetSessionId, jid, participants, action);
         res.json({ success: true });
     } catch (error) {
         console.error('❌ Error updating group participants:', error);
@@ -2675,6 +2711,9 @@ async function leaveGroup(req, res) {
 
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -2707,6 +2746,9 @@ async function getGroupInviteCode(req, res) {
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
         const session = await getSharedPrismaClient().whatsAppSession.findFirst({
@@ -2737,6 +2779,9 @@ async function revokeGroupInviteCode(req, res) {
 
         if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -3265,10 +3310,15 @@ async function groupFetchAllParticipating(req, res) {
 async function groupToggleEphemeral(req, res) {
     try {
         const { companyId } = req.user;
-        const { sessionId, jid, ephemeral } = req.body;
+        const { jid } = req.params;
+        const { sessionId, ephemeral, duration } = req.body;
 
-        if (!sessionId || !jid || typeof ephemeral !== 'boolean') {
+        const ephemeralValue = ephemeral !== undefined ? ephemeral : duration;
+        if (!sessionId || !jid || typeof ephemeralValue !== 'number') {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -3280,7 +3330,7 @@ async function groupToggleEphemeral(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const result = await WhatsAppManager.groupToggleEphemeral(targetSessionId, jid, ephemeral);
+        const result = await WhatsAppManager.groupToggleEphemeral(targetSessionId, jid, ephemeralValue);
         res.json({ success: true, result });
     } catch (error) {
         console.error('❌ Error toggling group ephemeral:', error);
@@ -3289,12 +3339,21 @@ async function groupToggleEphemeral(req, res) {
 }
 
 async function groupUpdatePicture(req, res) {
+    const filePath = req.file?.path;
     try {
         const { companyId } = req.user;
-        const { sessionId, jid, picture } = req.body;
+        const { jid } = req.params;
+        const { sessionId } = req.body;
 
-        if (!sessionId || !jid || !picture) {
+        if (!sessionId || !jid) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+        if (!validateGroupJid(jid)) {
+            return res.status(400).json({ error: 'معرف المجموعة غير صالح' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'صورة المجموعة مطلوبة' });
         }
 
         const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
@@ -3306,11 +3365,16 @@ async function groupUpdatePicture(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        const result = await WhatsAppManager.groupUpdatePicture(targetSessionId, jid, picture);
+        const pictureBuffer = fs.readFileSync(filePath);
+        const result = await WhatsAppManager.groupUpdatePicture(targetSessionId, jid, pictureBuffer);
         res.json({ success: true, result });
     } catch (error) {
         console.error('❌ Error updating group picture:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء تحديث صورة المجموعة' });
+    } finally {
+        if (filePath) {
+            try { fs.unlinkSync(filePath); } catch (e) { /* ignore temp cleanup */ }
+        }
     }
 }
 
@@ -3712,6 +3776,103 @@ async function getDebugSessions(req, res) {
     }
 }
 
+/**
+ * تصحيح رد الوكيل الآلي من صفحة الواتساب المباشرة
+ * POST /api/whatsapp/messages/:whatsappMessageId/correct
+ * يحل مشكلة عدم وجود conversationId في صفحة /whatsapp/chat
+ * عن طريق الربط بين whatsAppMessage → unified Message → correctMessage service
+ */
+async function correctAIMessage(req, res) {
+    try {
+        const { whatsappMessageId } = req.params;
+        const { sessionId, correction } = req.body;
+        const { companyId, id: userId, role } = req.user;
+
+        if (!correction || !sessionId) {
+            return res.status(400).json({ error: 'correction and sessionId are required' });
+        }
+
+        const prisma = getSharedPrismaClient();
+
+        // 1. Find the WhatsApp message by its unique messageId
+        const waMessage = await prisma.whatsAppMessage.findUnique({
+            where: { messageId: whatsappMessageId }
+        });
+
+        if (!waMessage) {
+            return res.status(404).json({ error: 'WhatsApp message not found' });
+        }
+
+        if (!waMessage.isAIResponse) {
+            return res.status(400).json({ error: 'Can only correct AI-generated messages' });
+        }
+
+        // 2. Resolve the customer phone from remoteJid
+        const phoneNumber = waMessage.remoteJid.split('@')[0].replace(/\D/g, '');
+        const customer = await prisma.customer.findFirst({
+            where: {
+                companyId,
+                phone: { contains: phoneNumber.slice(-10) }
+            }
+        });
+
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found for this conversation' });
+        }
+
+        // 3. Find the unified Conversation for this customer
+        const conversation = await prisma.conversation.findFirst({
+            where: {
+                companyId,
+                customerId: customer.id,
+                channel: 'whatsapp'
+            },
+            orderBy: { updatedAt: 'desc' }
+        });
+
+        if (!conversation) {
+            return res.status(404).json({ error: 'Unified conversation not found' });
+        }
+
+        // 4. Find the corresponding unified Message by content + timestamp proximity
+        const tsWindow = 30000; // 30 seconds tolerance
+        const waTimestamp = new Date(waMessage.timestamp);
+        const unifiedMessage = await prisma.message.findFirst({
+            where: {
+                conversationId: conversation.id,
+                isFromCustomer: false,
+                content: waMessage.content || '',
+                createdAt: {
+                    gte: new Date(waTimestamp.getTime() - tsWindow),
+                    lte: new Date(waTimestamp.getTime() + tsWindow)
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!unifiedMessage) {
+            return res.status(404).json({ error: 'Unified message record not found' });
+        }
+
+        // 5. Delegate to the existing correctMessage service
+        const whatsappInboxService = require('../services/whatsappInboxService');
+        const result = await whatsappInboxService.correctMessage(
+            conversation.id,
+            unifiedMessage.id,
+            companyId,
+            userId,
+            role,
+            correction
+        );
+
+        res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        console.error('[WhatsAppController] correctAIMessage error:', error.message);
+        const statusCode = error.message?.includes('locked') ? 403 : 500;
+        res.status(statusCode).json({ error: error.message || 'Failed to correct message' });
+    }
+}
+
 module.exports = {
     // Sessions
     createSession,
@@ -3767,6 +3928,7 @@ module.exports = {
     editMessage,
     deleteMessage,
     forwardMessage,
+    correctAIMessage,
 
     // Chat Management
     archiveChat,
@@ -3847,7 +4009,11 @@ module.exports = {
     // Status Updates
     getStatuses,
     postStatus,
-    markStatusViewed
+    markStatusViewed,
+
+    // Facebook Embedded Sign-Up
+    getFacebookConfig,
+    facebookConnect
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3981,6 +4147,194 @@ async function markStatusViewed(req, res) {
     } catch (error) {
         console.error('❌ Error marking status:', error);
         res.status(500).json({ error: 'حدث خطأ' });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔗 Facebook Embedded Sign-Up (WhatsApp Cloud Connect)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const facebookAppConfig = require('../config/facebookAppConfig');
+const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v22.0';
+const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
+
+async function getFacebookConfig(req, res) {
+    try {
+        const config = facebookAppConfig.getFacebookOAuthConfig();
+        const envConfig = require('../config/environment');
+        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+
+        if (!config.appId || facebookAppConfig.isPlaceholderFacebookCredential(config.appId)) {
+            return res.status(200).json({
+                appId: config.appId,
+                redirectUri,
+                configured: false
+            });
+        }
+
+        res.json({
+            appId: config.appId,
+            redirectUri,
+            configured: true
+        });
+    } catch (error) {
+        console.error('❌ Error getting Facebook config:', error);
+        res.status(500).json({ error: 'فشل تحميل إعدادات Facebook' });
+    }
+}
+
+async function facebookConnect(req, res) {
+    try {
+        const { code, state, sessionName } = req.body;
+        const { companyId } = req.user;
+
+        if (!code) {
+            return res.status(400).json({ error: 'Authorization code مطلوب' });
+        }
+
+        const config = facebookAppConfig.getFacebookOAuthConfig();
+        const envConfig = require('../config/environment');
+        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+
+        if (!config.appSecret) {
+            return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });
+        }
+
+        // Step 1: Exchange auth code for access token
+        const axios = require('axios');
+        const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+            params: {
+                client_id: config.appId,
+                redirect_uri: redirectUri,
+                client_secret: config.appSecret,
+                code
+            },
+            timeout: 15000
+        });
+
+        const shortLivedToken = tokenResponse.data?.access_token;
+        if (!shortLivedToken) {
+            return res.status(400).json({ error: 'فشل الحصول على رمز الوصول من Facebook' });
+        }
+
+        // Step 2: Exchange for long-lived token
+        const longTokenResponse = await axios.get(`${META_GRAPH_BASE}/oauth/access_token`, {
+            params: {
+                grant_type: 'fb_exchange_token',
+                client_id: config.appId,
+                client_secret: config.appSecret,
+                fb_exchange_token: shortLivedToken
+            },
+            timeout: 15000
+        });
+
+        const longLivedToken = longTokenResponse.data?.access_token || shortLivedToken;
+        const tokenExpiresAt = longTokenResponse.data?.expires_in
+            ? new Date(Date.now() + longTokenResponse.data.expires_in * 1000)
+            : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // default 60 days
+
+        // Step 3: Get user's businesses
+        const meResponse = await axios.get(`${META_GRAPH_BASE}/me/businesses`, {
+            params: { access_token: longLivedToken },
+            timeout: 15000
+        });
+
+        const businesses = meResponse.data?.data || [];
+        let businessId = null;
+
+        if (businesses.length === 0) {
+            return res.status(400).json({
+                error: 'لا يوجد Business Manager مرتبط بحسابك. الرجاء إنشاء واحد من business.facebook.com أولاً.'
+            });
+        }
+
+        businessId = businesses[0].id;
+
+        // Step 4: Get or create WABA
+        let wabaId = null;
+        let phoneNumberId = null;
+        let displayPhoneNumber = null;
+
+        try {
+            const wabaResponse = await axios.get(`${META_GRAPH_BASE}/${businessId}/client_whatsapp_business_accounts`, {
+                params: { access_token: longLivedToken },
+                timeout: 15000
+            });
+
+            const existingWABAs = wabaResponse.data?.data || [];
+            if (existingWABAs.length > 0) {
+                wabaId = existingWABAs[0].id;
+            }
+        } catch (wabaErr) {
+            console.warn('⚠️ No existing WABA found, attempting to create one...');
+        }
+
+        // Step 5: Get phone numbers from WABA if available
+        let metaPhoneNumberId = null;
+        let metaDisplayPhone = null;
+
+        if (wabaId) {
+            try {
+                const phoneResponse = await axios.get(`${META_GRAPH_BASE}/${wabaId}/phone_numbers`, {
+                    params: { access_token: longLivedToken },
+                    timeout: 15000
+                });
+
+                const phoneNumbers = phoneResponse.data?.data || [];
+                if (phoneNumbers.length > 0) {
+                    const activePhone = phoneNumbers.find(p => p.code_verification_status === 'VERIFIED')
+                        || phoneNumbers[0];
+                    metaPhoneNumberId = activePhone.id;
+                    metaDisplayPhone = activePhone.display_phone_number;
+                }
+            } catch (phoneErr) {
+                console.warn('⚠️ Could not fetch phone numbers:', phoneErr.message);
+            }
+        }
+
+        // Step 6: Create WhatsAppSession in DB
+        const session = await getSharedPrismaClient().whatsAppSession.create({
+            data: {
+                companyId,
+                name: sessionName || `WhatsApp Cloud (${metaDisplayPhone || 'Connecting...'})`,
+                provider: 'META_CLOUD',
+                status: 'CONNECTED',
+                metaAccessToken: longLivedToken,
+                metaTokenExpiresAt: tokenExpiresAt,
+                metaWabaId: wabaId,
+                metaPhoneNumberId: metaPhoneNumberId,
+                metaBusinessId: businessId,
+                metaDisplayPhoneNumber: metaDisplayPhone,
+                metaApiVersion: META_GRAPH_VERSION,
+                aiEnabled: true,
+                autoReply: false,
+                aiMode: 'suggest',
+                loadBalanceWeight: 1,
+                updatedAt: new Date()
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            session: {
+                id: session.id,
+                name: session.name,
+                provider: session.provider,
+                status: session.status,
+                phoneNumber: metaDisplayPhone,
+                metaDisplayPhoneNumber: metaDisplayPhone,
+                metaPhoneNumberId: metaPhoneNumberId,
+                metaWabaId: wabaId,
+                createdAt: session.createdAt
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Facebook Connect Error:', error.response?.data || error.message);
+        const errorMsg = error.response?.data?.error?.message
+            || error.response?.data?.error?.error_user_msg
+            || 'فشل الاتصال بحساب Facebook. الرجاء التحقق من الإعدادات والمحاولة مرة أخرى.';
+        res.status(500).json({ error: errorMsg });
     }
 }
 

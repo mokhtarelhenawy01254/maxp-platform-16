@@ -1,0 +1,185 @@
+{
+  "id": "iron-forge",
+  "name": "Iron Forge",
+  "tokens": {
+    "colors": {
+      "primary": "65 100% 50%",
+      "primaryForeground": "0 0% 5%",
+      "secondary": "0 0% 14%",
+      "secondaryForeground": "65 100% 50%",
+      "accent": "0 85% 55%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 6%",
+      "foreground": "0 0% 95%",
+      "muted": "0 0% 12%",
+      "mutedForeground": "0 0% 55%",
+      "border": "0 0% 18%",
+      "card": "0 0% 10%",
+      "cardForeground": "0 0% 95%",
+      "ring": "65 100% 50%"
+    },
+    "typography": {
+      "headingFont": "\"Oswald\", \"Cairo\", sans-serif",
+      "bodyFont": "\"Barlow\", \"Cairo\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.25rem",
+      "buttonRadius": "0.25rem"
+    },
+    "productCard": {
+      "borderRadius": "0.375rem",
+      "boxShadow": "0 8px 32px -12px rgba(180, 255, 0, 0.08)",
+      "hoverShadow": "0 16px 48px -16px rgba(180, 255, 0, 0.15)",
+      "badgeRadius": "0.25rem",
+      "buttonRadius": "0.25rem",
+      "surfaceOpacity": "0.95"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Iron Forge",
+    "description": "معدات رياضية، أوزان، وملابس فيتنس — حوّل بيتك لجيم كامل مع ضمان سنة وتقسيط."
+  },
+  "header": {
+    "brandName": "IRON FORGE 💪",
+    "showSearch": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المتجر", "to": "/shop" },
+      { "label": "الأقسام", "to": "/collections" },
+      { "label": "العروض", "to": "/sale" }
+    ]
+  },
+  "footer": {
+    "description": "Iron Forge — وجهتك لمعدات الفيتنس والملابس الرياضية بجودة احترافية وأسعار مناسبة.",
+    "copyrightText": "© 2026 Iron Forge. All rights reserved.",
+    "socialLinks": { "facebook": "https://facebook.com", "instagram": "https://instagram.com" },
+    "navigation": [
+      { "title": "المتجر", "links": [{ "label": "كل المنتجات", "to": "/shop" }, { "label": "الأقسام", "to": "/collections" }, { "label": "العروض", "to": "/sale" }] },
+      { "title": "الدعم", "links": [{ "label": "الشحن", "to": "/shipping" }, { "label": "الاستبدال", "to": "/returns" }, { "label": "اتصل بنا", "to": "/contact" }] }
+    ],
+    "legalLinks": [{ "label": "الخصوصية", "to": "/privacy" }, { "label": "الشروط", "to": "/terms" }]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "💪 عرض محدود",
+            "message": "خصم 15% على كل معدات الهوم جيم + تركيب مجاني داخل القاهرة والجيزة.",
+            "saleLabel": "خصم 15%",
+            "shippingLabel": "تركيب مجاني",
+            "returnLabel": "ضمان سنة",
+            "ctaText": "شاهد العروض",
+            "ctaLink": "/sale"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "neon-dark",
+          "settings": {
+            "eyebrow": "IRON FORGE",
+            "title": "حوّل بيتك لجيم كامل",
+            "subtitle": "أوزان حرة، أجهزة كارديو، ملابس رياضية، ومكملات — كل اللي تحتاجه لتتمرن بقوة من البيت.",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهد العروض",
+            "secondaryCtaLink": "/sale"
+          }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "ليه Iron Forge؟",
+            "subtitle": "",
+            "items": [
+              { "icon": "shield", "title": "ضمان سنة كاملة", "description": "ضمان رسمي على كل المعدات والأجهزة." },
+              { "icon": "grid", "title": "تركيب مجاني", "description": "فريق تركيب متخصص داخل القاهرة والجيزة." },
+              { "icon": "target", "title": "شحن مؤمّن", "description": "شحن ثقيل آمن مع تتبع كامل." },
+              { "icon": "search", "title": "تقسيط حتى 12 شهر", "description": "اشترِ دلوقتي وقسّط بدون فوائد." }
+            ]
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "badge": "اختار هدفك",
+            "title": "إيه الهدف اللي بتتمرن عليه؟",
+            "subtitle": "كل هدف ليه المعدات والمنتجات المناسبة — اختار وابدأ.",
+            "items": [
+              { "eyebrow": "قوة", "title": "بناء عضل", "subtitle": "أوزان حرة، بار، ودمبلز.", "link": "/shop?sort=popular", "tone": "primary", "chip": "الأكثر طلباً" },
+              { "eyebrow": "لياقة", "title": "كارديو وحرق", "subtitle": "تريد ميل، دراجة، وحبال قفز.", "link": "/collections", "tone": "accent", "chip": "كارديو" },
+              { "eyebrow": "مرونة", "title": "يوجا واسترتش", "subtitle": "مات يوجا، فوم رولر، وأحزمة.", "link": "/shop?sort=newest", "tone": "emerald", "chip": "يوجا" },
+              { "eyebrow": "ستايل", "title": "ملابس رياضية", "subtitle": "تيشرتات، شورتات، وأحذية تمرين.", "link": "/sale", "tone": "slate", "chip": "ملابس" }
+            ]
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "fast-nav-grid",
+          "settings": {
+            "title": "الأقسام الرئيسية",
+            "subtitle": "",
+            "limit": 4,
+            "collections": [
+              { "title": "أوزان حرة", "subtitle": "دمبلز، بار، وأقراص حديد.", "link": "/shop?sort=popular" },
+              { "title": "أجهزة", "subtitle": "تريد ميل، مالتي جيم، ودراجات.", "link": "/collections" },
+              { "title": "ملابس", "subtitle": "ملابس رياضية بجودة عالية.", "link": "/shop?sort=newest" },
+              { "title": "مكملات", "subtitle": "بروتين، كرياتين، وفيتامينات.", "link": "/sale" }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "compact",
+          "settings": { "title": "الأكثر طلباً 🔥", "limit": 8 }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تمارين أسبوعية + عروض حصرية",
+            "subtitle": "برنامج تمرين مجاني كل أسبوع + كوبونات خصم حصرية.",
+            "buttonText": "سجل دلوقتي",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        { "type": "hero-banner", "variant": "neon-dark", "settings": { "eyebrow": "المتجر", "title": "كل معدات الفيتنس في مكان واحد", "subtitle": "فلتر بالقسم أو السعر أو النوع.", "ctaText": "ابدأ التصفح", "ctaLink": "/shop" } },
+        { "type": "shop-command-bar", "variant": "marketplace-dense", "settings": { "searchPlaceholder": "ابحث (مثال: دمبلز 10 كيلو)", "allCategoriesLabel": "كل الأقسام", "resultsLabel": "منتج", "clearButtonText": "مسح", "chipLimit": 7 } },
+        "filters-sidebar",
+        { "type": "product-grid", "variant": "compact", "settings": { "title": "كل المنتجات", "limit": 16 } }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "grid" },
+        { "type": "product-info", "variant": "specs-grid", "settings": { "descriptionTitle": "المواصفات", "shippingTitle": "الشحن والتركيب", "shippingText": "شحن ثقيل مؤمن + تركيب مجاني داخل القاهرة.", "guaranteesTitle": "ضمانات IRON FORGE", "guaranteeStyle": "grid", "guaranteeItems": "ضمان سنة|على كل المعدات والأجهزة.\nتركيب مجاني|داخل القاهرة والجيزة.\nتقسيط|حتى 12 شهر بدون فوائد." } },
+        { "type": "conversion-stack", "variant": "balanced" },
+        { "type": "bought-together", "variant": "compact", "settings": { "title": "كمّل الجيم", "subtitle": "إضافات ومكملات.", "limit": 3 } },
+        { "type": "related-products", "variant": "compact", "settings": { "title": "منتجات مشابهة", "limit": 4 } },
+        { "type": "reviews", "variant": "compact", "settings": { "title": "تجارب المتدربين", "verifiedLabel": "مشتري موثق", "reviewLimit": 4 } }
+      ]
+    },
+    "cart": {
+      "sections": [
+        { "type": "cart-items", "variant": "compact", "settings": { "title": "سلة التمرين 💪", "continueShoppingText": "تابع التسوق" } },
+        { "type": "order-summary", "variant": "highlighted", "settings": { "title": "ملخص الطلب", "checkoutButtonText": "إتمام الطلب", "showTrustRow": true, "showFreeShippingProgress": true } }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        { "type": "promo-strip", "settings": { "badge": "شراء آمن", "message": "ضمان سنة + تركيب مجاني + تقسيط بدون فوائد.", "saleLabel": "ضمان", "shippingLabel": "تركيب مجاني" } },
+        { "type": "checkout-form", "variant": "split", "settings": { "contactTitle": "بياناتك", "shippingTitle": "عنوان التوصيل" } },
+        { "type": "payment", "variant": "cards", "settings": { "title": "طريقة الدفع", "confirmOrderText": "تأكيد الطلب", "codLabel": "دفع عند الاستلام", "cardLabel": "بطاقة بنكية", "walletLabel": "محفظة إلكترونية" } }
+      ]
+    }
+  }
+}
+

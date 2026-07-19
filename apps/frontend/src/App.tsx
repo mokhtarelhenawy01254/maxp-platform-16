@@ -12,6 +12,7 @@ import {
 import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
+import { RoleProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
 const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
@@ -103,6 +104,15 @@ const ShippingOptimizer = React.lazy(
 );
 const MonthlyPnLDashboard = React.lazy(
   () => import("./pages/marketing/MonthlyPnLDashboard"),
+);
+const CLVCalculator = React.lazy(
+  () => import("./pages/marketing/CLVCalculator"),
+);
+const UpsellPlanner = React.lazy(
+  () => import("./pages/marketing/UpsellPlanner"),
+);
+const RefundRateCalculator = React.lazy(
+  () => import("./pages/marketing/RefundRateCalculator"),
 );
 const FacebookInbox = React.lazy(
   () => import("./pages/facebook-inbox/FacebookInbox"),
@@ -333,9 +343,6 @@ const StorefrontClaritySettings = React.lazy(
 );
 const TurboSettings = React.lazy(
   () => import("./pages/settings/TurboSettings"),
-);
-const BostaSettings = React.lazy(
-  () => import("./pages/settings/BostaSettings"),
 );
 const TurboTicketDetails = React.lazy(
   () => import("./pages/settings/TicketDetails"),
@@ -655,7 +662,6 @@ const Tasks = React.lazy(() => import("./pages/tasks/Tasks"));
 const TasksDashboard = React.lazy(() => import("./pages/tasks/Dashboard"));
 const KanbanBoard = React.lazy(() => import("./pages/tasks/KanbanBoard"));
 const TurboRecords = React.lazy(() => import("./pages/orders/TurboRecords"));
-const BostaRecords = React.lazy(() => import("./pages/orders/BostaRecords"));
 const BulkOrders = React.lazy(() => import("./pages/orders/BulkOrders"));
 const TaskDetails = React.lazy(() => import("./pages/tasks/TaskDetails"));
 const TaskNotifications = React.lazy(
@@ -768,6 +774,9 @@ const SuperAdminCompaniesReports = React.lazy(
 const SuperAdminCompanyDetails = React.lazy(
   () => import("./pages/super-admin/SuperAdminCompanyDetails"),
 );
+const SuperAdminSelfReviewLogs = React.lazy(
+  () => import("./pages/super-admin/SuperAdminSelfReviewLogs"),
+);
 const SuperAdminFollowUp = React.lazy(
   () => import("./pages/SuperAdminFollowUp"),
 );
@@ -802,6 +811,7 @@ const SuperAdminWhatsAppCompanyNotifications = React.lazy(
 const SuperAdminWhatsAppLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppLogs"),
 );
+
 const SuperAdminWhatsAppAutomations = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppAutomations"),
 );
@@ -829,6 +839,9 @@ const SuperAdminAIKeyLogs = React.lazy(
 const SuperAdminAIChatPage = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIChatPage"),
 );
+const SuperAdminAIHubLayout = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIHubLayout"),
+);
 const SkillDetailPage = React.lazy(
   () => import("./pages/super-admin/SkillDetailPage"),
 );
@@ -850,6 +863,9 @@ const SuperAdminVisualSearchLogs = React.lazy(
 );
 const SuperAdminSupportSettings = React.lazy(
   () => import("./pages/super-admin/SuperAdminSupportSettings"),
+);
+const SuperAdminAIImageGeneratorSettings = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIImageGeneratorSettings"),
 );
 // Merchant AI Pages
 const AIHubLayout = React.lazy(
@@ -887,15 +903,6 @@ const BrandIdentitySettings = React.lazy(
 );
 const EducationFunnelPage = React.lazy(
   () => import("./pages/admin/EducationFunnelPage"),
-);
-const ServiceManagementPage = React.lazy(
-  () => import("./pages/admin/ServiceManagementPage"),
-);
-const ServiceOrdersPage = React.lazy(
-  () => import("./pages/admin/ServiceOrdersPage"),
-);
-const ServiceRequestForm = React.lazy(
-  () => import("./pages/ServiceRequestForm"),
 );
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
@@ -1152,9 +1159,11 @@ const WhatsAppTemplateBroadcast = React.lazy(
 const WhatsAppLeadFollowUp = React.lazy(
   () => import("./pages/whatsapp/WhatsAppLeadFollowUp"),
 );
-
-const WhatsAppEmployeeAnalytics = React.lazy(
-  () => import("./pages/whatsapp/WhatsAppEmployeeAnalytics"),
+const WhatsAppCloudConnect = React.lazy(() =>
+  import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppCloudConnect })),
+);
+const WhatsAppEmployeeAnalytics = React.lazy(() =>
+  import("./pages/whatsapp/WhatsAppEmployeeAnalytics"),
 );
 
 // HR Module
@@ -2001,6 +2010,16 @@ const AppContent = () => {
               }
             />
             <Route
+              path="/super-admin/self-review"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminSelfReviewLogs />
+                  </React.Suspense>
+                </Layout>
+              }
+            />
+            <Route
               path="/super-admin/visual-search-logs"
               element={
                 <Layout fullWidth>
@@ -2013,9 +2032,19 @@ const AppContent = () => {
             <Route
               path="/super-admin/support-settings"
               element={
-                <Layout>
+                <Layout fullWidth>
                   <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
                     <SuperAdminSupportSettings />
+                  </React.Suspense>
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-image-generator-settings"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminAIImageGeneratorSettings />
                   </React.Suspense>
                 </Layout>
               }
@@ -2057,7 +2086,15 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/admin/ai-hub/skills/:skillId"
+              path="/super-admin/ai-hub"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIHubLayout />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-hub/skills/:skillId"
               element={
                 <Layout fullWidth>
                   <SkillDetailPage />
@@ -2425,7 +2462,9 @@ const AppContent = () => {
                   path="/company-dashboard"
                   element={
                     <Layout>
-                      <MainDashboardPage />
+                      <RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']}>
+                        <MainDashboardPage />
+                      </RoleProtectedRoute>
                     </Layout>
                   }
                 />
@@ -2688,6 +2727,30 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <MonthlyPnLDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/clv-calculator"
+                  element={
+                    <Layout>
+                      <CLVCalculator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/upsell-planner"
+                  element={
+                    <Layout>
+                      <UpsellPlanner />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tools/refund-rate"
+                  element={
+                    <Layout>
+                      <RefundRateCalculator />
                     </Layout>
                   }
                 />
@@ -3885,14 +3948,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <TurboRecords />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/orders/bosta-records"
-                  element={
-                    <Layout>
-                      <BostaRecords />
                     </Layout>
                   }
                 />
@@ -5291,14 +5346,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/settings/bosta"
-                  element={
-                    <Layout>
-                      <BostaSettings />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/settings/turbo/ticket/:ticketId"
                   element={
                     <Layout>
@@ -5567,6 +5614,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <WhatsAppLeadFollowUp />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/cloud-connect"
+                  element={
+                    <Layout>
+                      <WhatsAppCloudConnect />
                     </Layout>
                   }
                 />
@@ -6500,30 +6555,6 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <BookingManagementPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/admin/services"
-                  element={
-                    <Layout fullWidth>
-                      <ServiceManagementPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/admin/service-orders"
-                  element={
-                    <Layout fullWidth>
-                      <ServiceOrdersPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/request-service"
-                  element={
-                    <Layout fullWidth>
-                      <ServiceRequestForm />
                     </Layout>
                   }
                 />

@@ -1,10 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { toast } from "sonner";
 import {
+  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -14,17 +16,15 @@ import { printPreparationSlip } from "../../utils/printPreparationSlip";
 import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   FALLBACK_STATUS_LABELS,
+  PAGE_SIZE_OPTIONS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
+  type PageSize,
 } from "./preparation/constants";
 import {
   getApiErrorMessage,
   buildShortageHoldDetails,
   getEffectivePreparationStatus,
-  getNextStatus,
-  getQuickActionLabel,
-  getShortageFollowUpState,
-  getShortageFollowUpVisual,
   mergePlainObjects,
   normalizeStage,
   parseMaybeJsonObject,
@@ -43,8 +43,7 @@ import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
 import { usePreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
 import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
-import PreparationOrderCard from "./preparation/components/PreparationOrderCard";
-import PreparationPageHeader from "./preparation/components/PreparationPageHeader";
+import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
 import PreparationStats from "./preparation/components/PreparationStats";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 
@@ -60,10 +59,14 @@ const PreparationQueue: React.FC = () => {
   const { state: uiState, actions: uiActions } = usePreparationQueueUiState();
   const isMerchantUser = user?.role === "MERCHANT";
 
+  const deferredSearch = useDeferredValue(uiState.search);
+
   const {
     orders,
     setOrders,
     inventory,
+    inventoryLoading,
+    ensureInventory,
     warehouses,
     statusConfigs,
     preparationSettings,
@@ -71,18 +74,20 @@ const PreparationQueue: React.FC = () => {
     summary,
     shortageOwnerOptions: serverShortageOwnerOptions,
     loading,
-    refreshing,
     fetchInventory,
     fetchAll,
   } = usePreparationQueueData({
     page: uiState.page,
+    pageSize: uiState.pageSize,
     activeStage: uiState.activeStage,
     selectedWarehouseId: uiState.selectedWarehouseId,
     stockFilter: uiState.stockFilter,
     shortageReasonFilter: uiState.shortageReasonFilter,
     shortageFollowUpFilter: uiState.shortageFollowUpFilter,
     shortageOwnerFilter: uiState.shortageOwnerFilter,
-    search: uiState.search,
+    productFilter: uiState.productFilter,
+    itemCountFilter: uiState.itemCountFilter,
+    search: deferredSearch,
   });
   const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -93,6 +98,8 @@ const PreparationQueue: React.FC = () => {
     Record<string, ShortageHoldDetails>
   >({});
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
   );
@@ -107,6 +114,8 @@ const PreparationQueue: React.FC = () => {
     shortageReasonFilter,
     shortageFollowUpFilter,
     shortageOwnerFilter,
+    productFilter,
+    itemCountFilter,
     search,
     selectedOrders,
     statusSelections,
@@ -118,6 +127,12 @@ const PreparationQueue: React.FC = () => {
       uiActions.applyDefaultWarehouse(preparationSettings.defaultWarehouseId);
     }
   }, [preparationSettings.defaultWarehouseId, uiActions]);
+
+  useEffect(() => {
+    if (orders.length > 0 && inventory.length === 0 && !inventoryLoading) {
+      ensureInventory();
+    }
+  }, [orders.length, inventory.length, inventoryLoading, ensureInventory]);
 
   useEffect(() => {
     setShortageHoldDrafts((previous) => {
@@ -247,22 +262,21 @@ const PreparationQueue: React.FC = () => {
 
         const itemInsights: ItemInsight[] = order.items.map((item) => {
           const summary = inventorySummaryByProduct.get(String(item.productId || ""));
-          const scopedWarehouses = selectedWarehouseId
-            ? summary?.warehouses.filter(
-                (warehouse) => warehouse.warehouseId === selectedWarehouseId,
-              ) || []
-            : summary?.warehouses || [];
-
-          const availableInScope = scopedWarehouses.reduce(
-            (sum, warehouse) => sum + warehouse.available,
-            0,
-          );
-          const reservedInScope = scopedWarehouses.reduce(
-            (sum, warehouse) => sum + warehouse.reserved,
-            0,
-          );
+          let availableInScope = 0;
+          let reservedInScope = 0;
+          let bestWarehouseName: string | null = null;
+          let warehouseCount = 0;
+          if (summary?.warehouses) {
+            for (const w of summary.warehouses) {
+              if (!selectedWarehouseId || w.warehouseId === selectedWarehouseId) {
+                availableInScope += w.available;
+                reservedInScope += w.reserved;
+                if (!bestWarehouseName) bestWarehouseName = w.warehouseName;
+                warehouseCount++;
+              }
+            }
+          }
           const quantityNumber = Math.max(1, toNumber(item.quantity));
-          const bestWarehouseName = scopedWarehouses[0]?.warehouseName || null;
           const metadataProductName =
             typeof item.metadata === "object" &&
             item.metadata &&
@@ -279,7 +293,7 @@ const PreparationQueue: React.FC = () => {
             reservedInScope,
             shortage: Math.max(0, quantityNumber - availableInScope),
             bestWarehouseName,
-            warehouseCount: scopedWarehouses.length,
+            warehouseCount,
           };
         });
 
@@ -361,11 +375,11 @@ const PreparationQueue: React.FC = () => {
         shortageReasonFilter,
         shortageFollowUpFilter,
         shortageOwnerFilter.trim().toLowerCase(),
-        search.trim().toLowerCase(),
+        deferredSearch.trim().toLowerCase(),
       ].join("|"),
     [
       activeStage,
-      search,
+      deferredSearch,
       selectedWarehouseId,
       shortageFollowUpFilter,
       shortageOwnerFilter,
@@ -842,34 +856,34 @@ const PreparationQueue: React.FC = () => {
     uiActions.selectVisibleOrders(visibleIds);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-14 w-14 rounded-full border-4 border-amber-200 border-t-amber-500 animate-spin" />
-          <p className="mt-4 text-sm text-gray-500">
-            جاري تحميل قائمة تجهيز الطلبات...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <PreparationPageHeader
-        refreshing={refreshing}
-        onRefresh={() => void fetchAll(true)}
-      />
-
-      <PreparationStats
-        searchedOrdersCount={searchedOrdersCount}
-        readyCount={readyCount}
-        shortageCount={shortageCount}
-        readyToShipCount={readyToShipCount}
-        shortageHoldCount={shortageHoldCount}
-        overdueShortageFollowUpCount={overdueShortageFollowUpCount}
-      />
+    <div className="space-y-3">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setShowStats((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          <span>الإحصائيات</span>
+          <ChevronDownIcon
+            className={`h-4 w-4 text-gray-400 transition-transform ${
+              showStats ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {showStats && (
+          <div className="border-t border-gray-100 px-4 pb-4 pt-3">
+            <PreparationStats
+              searchedOrdersCount={searchedOrdersCount}
+              readyCount={readyCount}
+              shortageCount={shortageCount}
+              readyToShipCount={readyToShipCount}
+              shortageHoldCount={shortageHoldCount}
+              overdueShortageFollowUpCount={overdueShortageFollowUpCount}
+            />
+          </div>
+        )}
+      </div>
 
       {isMerchantUser ? (
         <MerchantOperationsSummary
@@ -879,61 +893,66 @@ const PreparationQueue: React.FC = () => {
       ) : null}
 
       {!preparationSettings.enabled ? (
-        <section className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-            <div>
-              <h2 className="font-semibold text-amber-900">
-                صفحة التجهيز معطلة من الإعدادات
-              </h2>
-              <p className="mt-1 text-sm text-amber-800">
-                التبويب ما زال ظاهرًا للإدارة، لكن الإعدادات الحالية تشير إلى أن
-                workflow التجهيز متوقف. يمكنك إعادة تفعيله من إعدادات الطلبات ثم
-                تبويب تجهيز الطلبات.
-              </p>
-            </div>
-          </div>
-        </section>
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-700" />
+          <span className="font-semibold">صفحة التجهيز معطلة</span>
+          <span className="text-amber-700">— يمكن إعادة تفعيلها من إعدادات الطلبات.</span>
+        </div>
       ) : null}
 
       {allOverdueShortageFollowUpCount > 0 ? (
-        <section className="rounded-3xl border border-orange-200 bg-orange-50 px-5 py-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-orange-700" />
-            <div>
-              <h2 className="font-semibold text-orange-900">
-                توجد طلبات مؤجلة تجاوزت موعد المتابعة
-              </h2>
-              <p className="mt-1 text-sm text-orange-800">
-                يوجد حاليًا {allOverdueShortageFollowUpCount} طلب في `مؤجل للعجز`
-                مرّ عليه تاريخ المتابعة. استخدم فلتر السبب أو المسؤول للوصول
-                السريع لها ومراجعتها.
-              </p>
-            </div>
-          </div>
-        </section>
+        <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm text-orange-900">
+          <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700" />
+          <span className="font-semibold">{allOverdueShortageFollowUpCount} طلب تجاوز موعد المتابعة</span>
+          <span className="text-orange-700">— استخدم فلتر السبب أو المسؤول للوصول السريع.</span>
+        </div>
       ) : null}
 
-      <PreparationFilters
-        activeStage={activeStage}
-        stageCounts={stageCounts}
-        visibleOrdersCount={visibleOrdersCount}
-        search={search}
-        selectedWarehouseId={selectedWarehouseId}
-        stockFilter={stockFilter}
-        shortageReasonFilter={shortageReasonFilter}
-        shortageOwnerFilter={shortageOwnerFilter}
-        shortageOwnerOptions={shortageOwnerOptions}
-        shortageFollowUpFilter={shortageFollowUpFilter}
-        warehouses={warehouses}
-        onActiveStageChange={uiActions.setActiveStage}
-        onSearchChange={uiActions.setSearch}
-        onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
-        onStockFilterChange={uiActions.setStockFilter}
-        onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
-        onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
-        onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
-      />
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setShowFilters((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          <span className="flex items-center gap-2">
+            <FunnelIcon className="h-4 w-4 text-gray-400" />
+            فلترة التجهيز
+          </span>
+          <ChevronDownIcon
+            className={`h-4 w-4 text-gray-400 transition-transform ${
+              showFilters ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {showFilters && (
+          <div className="border-t border-gray-100">
+            <PreparationFilters
+              activeStage={activeStage}
+              stageCounts={stageCounts}
+              visibleOrdersCount={visibleOrdersCount}
+              search={search}
+              selectedWarehouseId={selectedWarehouseId}
+              stockFilter={stockFilter}
+              shortageReasonFilter={shortageReasonFilter}
+              shortageOwnerFilter={shortageOwnerFilter}
+              shortageOwnerOptions={shortageOwnerOptions}
+              shortageFollowUpFilter={shortageFollowUpFilter}
+              productFilter={productFilter}
+              itemCountFilter={itemCountFilter}
+              warehouses={warehouses}
+              onActiveStageChange={uiActions.setActiveStage}
+              onSearchChange={uiActions.setSearch}
+              onSelectedWarehouseChange={uiActions.setSelectedWarehouse}
+              onStockFilterChange={uiActions.setStockFilter}
+              onShortageReasonFilterChange={uiActions.setShortageReasonFilter}
+              onShortageOwnerFilterChange={uiActions.setShortageOwnerFilter}
+              onShortageFollowUpFilterChange={uiActions.setShortageFollowUpFilter}
+              onProductFilterChange={uiActions.setProductFilter}
+              onItemCountFilterChange={uiActions.setItemCountFilter}
+            />
+          </div>
+        )}
+      </div>
 
       <PreparationBulkActions
         selectedOrdersCount={selectedOrders.length}
@@ -948,30 +967,44 @@ const PreparationQueue: React.FC = () => {
         onClear={uiActions.clearBulkControls}
       />
 
-      <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              قائمة التنفيذ اليومي
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              الطلبات المعروضة هنا مرتبة بحسب الفلاتر الحالية، ويمكن فتح الطلب
-              أو تحريك مرحلته مباشرة من البطاقة.
-            </p>
-          </div>
-
-          <label className="inline-flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+      <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
             <input
               type="checkbox"
               checked={allVisibleSelected}
               onChange={toggleSelectAllVisible}
-              className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
             />
-            تحديد كل الطلبات في الصفحة الحالية
+            تحديد الكل
           </label>
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">قائمة التنفيذ</span>
+          {inventoryLoading && (
+            <div className="mr-auto flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700">
+              <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+              جاري التحقق من المتاح
+            </div>
+          )}
+          {!inventoryLoading && loading && (
+            <div className="mr-auto h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+          )}
         </div>
 
-        {paginatedOrders.length === 0 ? (
+        {loading ? (
+          <div className="space-y-0">
+            {[1, 2, 3, 4, 5].map((row) => (
+              <div
+                key={row}
+                className="flex animate-pulse items-center gap-3 border-b border-gray-100 px-4 py-3"
+              >
+                <div className="h-4 w-4 rounded bg-gray-200" />
+                <div className="h-4 w-16 rounded bg-gray-200" />
+                <div className="h-4 w-24 rounded bg-gray-200" />
+                <div className="mr-auto h-4 w-20 rounded bg-gray-200" />
+              </div>
+            ))}
+          </div>
+        ) : paginatedOrders.length === 0 ? (
           <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center">
             <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300" />
             <h3 className="mt-4 text-lg font-semibold text-gray-900">
@@ -983,120 +1016,90 @@ const PreparationQueue: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="mt-5 grid grid-cols-1 gap-5 2xl:grid-cols-2">
-            {paginatedOrders.map((order) => {
-              const shortageHoldDetails =
-                shortageHoldDrafts[order.orderNumber] ||
-                buildShortageHoldDetails(order.metadata);
-              const shortageFollowUpVisual =
-                getShortageFollowUpVisual(
-                  getShortageFollowUpState(
-                    shortageHoldDetails.followUpDate,
-                    order.stage,
-                  ),
-                );
-              const nextStatus = getNextStatus(
-                order.stage,
-                preparationSettings.handoffStatus,
-                preparationSettings.startingStatus,
-              );
-              const currentStageStatus =
-                order.stage === "WAITING"
-                  ? preparationSettings.startingStatus
-                  : order.stage === "PREPARING"
-                    ? "PREPARING"
-                    : order.stage === "QUALITY_CHECK"
-                      ? "QUALITY_CHECK"
-                      : order.stage === "PACKAGED"
-                        ? "PACKAGED"
-                        : order.stage === "STOCK_SHORTAGE"
-                          ? SHORTAGE_HOLD_STATUS
-                          : preparationSettings.handoffStatus;
-              const defaultTargetStatus = nextStatus || currentStageStatus;
-              const currentSelection =
-                statusSelections[order.orderNumber] || defaultTargetStatus;
-              const actionLabel =
-                statusSelections[order.orderNumber] &&
-                statusSelections[order.orderNumber] !== defaultTargetStatus
-                  ? "تطبيق المرحلة المختارة"
-                  : getQuickActionLabel(order.stage);
-              const qcCompleted = isQcComplete(order.orderNumber);
-              const rowBusy =
-                rowUpdatingId === order.orderNumber ||
-                shortageSavingOrderId === order.orderNumber;
-              const hasShortageContext =
-                order.missingItemsCount > 0 || order.stage === "STOCK_SHORTAGE";
-
-              return (
-                <PreparationOrderCard
-                  key={order.orderNumber}
-                  order={order}
-                  selected={selectedSet.has(order.orderNumber)}
-                  statusOptions={statusOptions}
-                  statusLabelMap={statusLabelMap}
-                  currentSelection={currentSelection}
-                  actionLabel={actionLabel}
-                  qcCompleted={qcCompleted}
-                  rowBusy={rowBusy}
-                  hasShortageContext={hasShortageContext}
-                  selectedWarehouseId={selectedWarehouseId}
-                  enabledQcChecks={enabledQcChecks}
-                  qcChecklist={qcChecklistState[order.orderNumber]}
-                  shortageHoldDetails={shortageHoldDetails}
-                  shortageFollowUpVisual={shortageFollowUpVisual}
-                  transferingItemKey={transferingItemKey}
-                  printingOrderNumber={printingOrderNumber}
-                  preparationSettings={preparationSettings}
-                  formatPrice={formatPrice}
-                  formatDate={formatDate}
-                  onToggleSelection={toggleOrderSelection}
-                  onQuickTransfer={(orderNumber, item) =>
-                    void handleQuickTransfer(orderNumber, item)
-                  }
-                  onShortageFieldChange={handleShortageFieldChange}
-                  onSaveShortageHoldDetails={saveShortageHoldDetails}
-                  onQcCheckToggle={handleQcCheckToggle}
-                  onStatusSelectionChange={uiActions.setStatusSelection}
-                  onSingleStatusUpdate={(orderNumber, nextStatus) =>
-                    void handleSingleStatusUpdate(orderNumber, nextStatus)
-                  }
-                  onMarkAsShortageHold={(orderNumber) =>
-                    void handleMarkAsShortageHold(orderNumber)
-                  }
-                  onReleaseShortageHold={(orderNumber) =>
-                    void handleReleaseShortageHold(orderNumber)
-                  }
-                  onPrintPreparationSlip={(orderNumber) =>
-                    void handlePrintPreparationSlip(orderNumber)
-                  }
-                />
-              );
-            })}
+          <div className="mt-3">
+            <PreparationOrdersTable
+              orders={paginatedOrders}
+              statusSelections={statusSelections}
+              statusOptions={statusOptions}
+              statusLabelMap={statusLabelMap}
+              selectedSet={selectedSet}
+              rowUpdatingId={rowUpdatingId}
+              shortageSavingOrderId={shortageSavingOrderId}
+              selectedWarehouseId={selectedWarehouseId}
+              enabledQcChecks={enabledQcChecks}
+              qcChecklistState={qcChecklistState}
+              shortageHoldDrafts={shortageHoldDrafts}
+              transferingItemKey={transferingItemKey}
+              printingOrderNumber={printingOrderNumber}
+              preparationSettings={preparationSettings}
+              formatPrice={formatPrice}
+              formatDate={formatDate}
+              onToggleSelection={toggleOrderSelection}
+              onQuickTransfer={(orderNumber, item) =>
+                void handleQuickTransfer(orderNumber, item)
+              }
+              onShortageFieldChange={handleShortageFieldChange}
+              onSaveShortageHoldDetails={saveShortageHoldDetails}
+              onQcCheckToggle={handleQcCheckToggle}
+              onStatusSelectionChange={uiActions.setStatusSelection}
+              onSingleStatusUpdate={(orderNumber, nextStatus) =>
+                void handleSingleStatusUpdate(orderNumber, nextStatus)
+              }
+              onMarkAsShortageHold={(orderNumber) =>
+                void handleMarkAsShortageHold(orderNumber)
+              }
+              onReleaseShortageHold={(orderNumber) =>
+                void handleReleaseShortageHold(orderNumber)
+              }
+              onPrintPreparationSlip={(orderNumber) =>
+                void handlePrintPreparationSlip(orderNumber)
+              }
+            />
           </div>
         )}
 
-        <div className="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-4 lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-sm text-gray-500">
-            صفحة {pagination.page} من {totalPages} • إجمالي {visibleOrdersCount} طلب
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs text-gray-400">
+              صفحة {pagination.page} من {totalPages} • {visibleOrdersCount} طلب
+            </p>
 
-          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-xs text-gray-400">
+              عرض
+              <select
+                value={uiState.pageSize}
+                onChange={(e) =>
+                  uiActions.setPageSize(Number(e.target.value) as PageSize)
+                }
+                className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-amber-400"
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              لكل صفحة
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
               onClick={uiActions.goToPreviousPage}
               disabled={pagination.page === 1}
-              className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronRightIcon className="h-4 w-4" />
+              <ChevronRightIcon className="h-3.5 w-3.5" />
               السابق
             </button>
 
             <button
               onClick={() => uiActions.goToNextPage(totalPages)}
               disabled={pagination.page === totalPages}
-              className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               التالي
-              <ChevronLeftIcon className="h-4 w-4" />
+              <ChevronLeftIcon className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

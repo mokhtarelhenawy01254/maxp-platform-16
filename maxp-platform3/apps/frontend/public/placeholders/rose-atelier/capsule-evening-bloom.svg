@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="96" x2="870" y2="1210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8F8"/>
+      <stop offset="1" stop-color="#E7CBD0"/>
+    </linearGradient>
+    <linearGradient id="dress" x1="386" y1="254" x2="640" y2="1140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9B7C0"/>
+      <stop offset="1" stop-color="#A66B79"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="1300" rx="64" fill="url(#bg)"/>
+  <circle cx="210" cy="182" r="146" fill="#FFF0F2" opacity="0.76"/>
+  <circle cx="828" cy="1050" r="112" fill="#F2D7DD" opacity="0.62"/>
+  <rect x="204" y="144" width="592" height="1040" rx="296" fill="#FFFDFD" opacity="0.56"/>
+  <circle cx="500" cy="294" r="86" fill="#6C4850"/>
+  <path d="M390 420C446 398 554 398 610 420C682 448 736 516 746 602C754 678 724 758 648 858C592 930 570 1014 576 1136H424C430 1014 408 930 352 858C276 758 246 678 254 602C264 516 318 448 390 420Z" fill="url(#dress)"/>
+  <path d="M338 760C450 706 556 704 666 760" stroke="#F7E5E8" stroke-width="24" stroke-linecap="round" opacity="0.84"/>
+  <path d="M378 942C456 914 544 914 622 942" stroke="#D8B0B8" stroke-width="12" stroke-linecap="round" opacity="0.62"/>
+  <circle cx="780" cy="296" r="30" fill="#D3A2AE" opacity="0.7"/>
+  <circle cx="836" cy="338" r="18" fill="#C18895" opacity="0.68"/>
+  <circle cx="744" cy="356" r="16" fill="#E5C2CA" opacity="0.88"/>
+</svg>

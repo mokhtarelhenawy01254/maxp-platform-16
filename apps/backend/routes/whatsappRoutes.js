@@ -254,6 +254,9 @@ router.get('/conversations/:jid/messages', verifyToken.authenticateToken, checkA
 // إرسال رسالة نصية
 router.post('/messages/send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendMessage);
 
+// تصحيح رد الوكيل الآلي
+router.post('/messages/:whatsappMessageId/correct', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.correctAIMessage);
+
 // إرسال وسائط
 router.post('/messages/send-media', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.sendMedia);
 
@@ -427,6 +430,9 @@ router.put('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-
 // إنشاء مجموعة
 router.post('/groups', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.createGroup);
 
+// جلب جميع المجموعات (يجب أن يسبق /groups/:jid لتجنب shadowing)
+router.get('/groups/all', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupFetchAllParticipating);
+
 // جلب بيانات مجموعة
 router.get('/groups/:jid', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getGroupMetadata);
 
@@ -498,20 +504,6 @@ router.post('/chats/clear', verifyToken.authenticateToken, checkAppAccess('whats
 
 // Migration endpoint
 router.post('/migrate-auth', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.migrateAuthToDatabase);
-
-router.put('/groups/:jid/description', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateGroupDescription);
-
-// تحديث إعدادات المجموعة
-router.put('/groups/:jid/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.updateGroupSettings);
-
-// مغادرة المجموعة
-router.post('/groups/:jid/leave', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.leaveGroup);
-
-// الحصول على رابط الدعوة
-router.get('/groups/:jid/invite-code', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getGroupInviteCode);
-
-// إلغاء رابط الدعوة
-router.post('/groups/:jid/revoke-invite', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.revokeGroupInviteCode);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔒 الخصوصية والحظر
@@ -617,14 +609,11 @@ router.post('/privacy/settings', verifyToken.authenticateToken, checkAppAccess('
 // 👥 ميزات المجموعات المتقدمة
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// جلب جميع المجموعات
-router.get('/groups/all', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupFetchAllParticipating);
-
 // تفعيل/تعطيل الرسائل المؤقتة
 router.post('/groups/:jid/ephemeral', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupToggleEphemeral);
 
 // تحديث صورة المجموعة
-router.post('/groups/:jid/picture', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupUpdatePicture);
+router.post('/groups/:jid/picture', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), upload.single('image'), whatsappController.groupUpdatePicture);
 
 // قبول دعوة للمجموعة
 router.post('/groups/invite/accept', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.groupInviteAccept);
@@ -673,6 +662,16 @@ router.get('/products', verifyToken.authenticateToken, checkAppAccess('whatsapp-
 
 // جلب السلة
 router.get('/cart', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getCart);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔗 Facebook Embedded Sign-Up
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// جلب إعدادات Facebook (App ID, Redirect URI)
+router.get('/facebook/config', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.getFacebookConfig);
+
+// استلام كود OAuth من Facebook وإنشاء جلسة واتساب
+router.post('/facebook/connect', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), whatsappController.facebookConnect);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 قوالب الرسائل

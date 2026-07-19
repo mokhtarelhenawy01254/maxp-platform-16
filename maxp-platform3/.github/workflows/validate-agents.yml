@@ -1,0 +1,32 @@
+name: Validate Agent Skills
+
+on:
+  pull_request:
+    paths:
+      - "apps/backend/agents/**"
+      - "apps/ai-service/skills/**"
+      - "apps/ai-service/src/tools/definitions/**"
+  push:
+    branches: [main]
+    paths:
+      - "apps/backend/agents/**"
+      - "apps/ai-service/skills/**"
+      - "apps/ai-service/src/tools/definitions/**"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Agent-Skill Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Validate Agent Skills
+        run: node scripts/validate-agent-skills.js

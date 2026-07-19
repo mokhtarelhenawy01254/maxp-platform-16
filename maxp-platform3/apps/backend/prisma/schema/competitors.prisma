@@ -1,0 +1,153 @@
+model Competitor {
+  id              String               @id @default(cuid())
+  name            String
+  slug            String
+  url             String?
+  platform        String               @default("manual")
+  logo            String?
+  description     String?
+  notes           String?
+  activityType    String?
+  location        String?
+  targetMarket    String?
+  foundedYear     Int?
+  employeeCount   String?
+  strengths       String?              @db.Text
+  weaknesses      String?              @db.Text
+  isActive        Boolean              @default(true)
+  status          String               @default("NEW")
+  metadata        Json?
+  companyId       String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  founderName     String?
+  founderLink      String?
+  country         String?
+  city            String?
+  monthlyPrice    Decimal?             @db.Decimal(10, 2)
+  yearlyPrice     Decimal?             @db.Decimal(10, 2)
+  pricingNotes    String?              @db.Text
+  trafficSource   String?
+
+  company         Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products        CompetitorProduct[]
+  ads             CompetitorAd[]
+  reports         CompetitorReport[]
+  socialProfiles  CompetitorSocialProfile[]
+  amazonData      CompetitorAmazonData[]
+  googleBusiness  CompetitorGoogleBusiness[]
+  techStack       CompetitorTechStack[]
+  shopifyStores   CompetitorShopifyStore[]
+  adCampaigns     CompetitorAdCampaign[]
+  adIntelligence  CompetitorAdIntelligence[]
+  features        CompetitorFeature[]
+  devRecommendations CompetitorDevRecommendation[]
+  mediaNotes      CompetitorMediaNote[]
+  comparisons     CompetitorComparison[]
+  devIdeas        CompetitorDevIdea[]
+  activityImages  CompetitorActivityImage[]
+  featureImages   CompetitorFeatureImage[]
+
+  @@unique([companyId, slug])
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@index([companyId, status])
+  @@map("competitors")
+}
+
+model CompetitorProduct {
+  id              String               @id @default(cuid())
+  name            String
+  slug            String?
+  price           Decimal?             @db.Decimal(10, 2)
+  comparePrice    Decimal?             @db.Decimal(10, 2)
+  currency        String               @default("EGP")
+  image           String?
+  url             String?
+  sku             String?
+  barcode         String?
+  isAvailable     Boolean              @default(true)
+  category        String?
+  description     String?
+  metadata        Json?
+  firstSeen       DateTime             @default(now())
+  lastSeen        DateTime             @default(now())
+  competitorId    String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  competitor      Competitor           @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  priceHistory    CompetitorPriceHistory[]
+
+  @@index([competitorId])
+  @@index([competitorId, sku])
+  @@index([competitorId, isAvailable])
+  @@index([competitorId, lastSeen])
+  @@map("competitor_products")
+}
+
+model CompetitorPriceHistory {
+  id              String               @id @default(cuid())
+  price           Decimal              @db.Decimal(10, 2)
+  currency        String               @default("EGP")
+  recordedAt      DateTime             @default(now())
+  notes           String?
+  productId       String
+  createdAt       DateTime             @default(now())
+
+  product         CompetitorProduct    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([productId, recordedAt])
+  @@map("competitor_price_history")
+}
+
+model CompetitorAd {
+  id              String               @id @default(cuid())
+  platform        String               @default("facebook")
+  adId            String?
+  creativeUrl     String?
+  copy            String?
+  headline        String?
+  cta             String?
+  destinationUrl  String?
+  status          String               @default("active")
+  firstSeen       DateTime             @default(now())
+  lastSeen        DateTime             @default(now())
+  metadata        Json?
+  competitorId    String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  competitor      Competitor           @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@index([competitorId])
+  @@index([competitorId, platform])
+  @@index([competitorId, status])
+  @@map("competitor_ads")
+}
+
+model CompetitorReport {
+  id              String               @id @default(cuid())
+  type            String               @default("weekly")
+  title           String
+  summary         String               @db.Text
+  insights        Json?
+  data            Json?
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  generatedAt     DateTime             @default(now())
+  competitorId    String
+  companyId       String
+  createdAt       DateTime             @default(now())
+
+  competitor      Competitor           @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  company         Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([competitorId])
+  @@index([companyId])
+  @@index([companyId, type])
+  @@index([companyId, generatedAt(sort: Desc)])
+  @@map("competitor_reports")
+}

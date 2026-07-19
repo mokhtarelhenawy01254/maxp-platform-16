@@ -19,3 +19,6 @@ export { default as TopProductsPanel } from "./TopProductsPanel";
 export { default as FinancialSquare } from "./FinancialSquare";
 export { default as DashboardSkeleton } from "./DashboardSkeleton";
 export { default as RevenueTrendChart } from "./RevenueTrendChart";
+export { InsightsPanel } from "./InsightsPanel";
+export { OnboardingChecklist } from "./OnboardingChecklist";
+export { DashboardExportMenu } from "./DashboardExportMenu";

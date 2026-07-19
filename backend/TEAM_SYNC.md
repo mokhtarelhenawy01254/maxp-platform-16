@@ -1,5 +1,48 @@
 # Team Sync Updates
 
+## 2026-07-12 / 2026-03-09
+- **AI Service Self-Review Judge — Conversation History Context Fix (BUGFIX / CRITICAL)**: Fixed a bug where the self-review judge was operating without conversation history. Updated `_llm_call` in `skills_pipeline.py` to persist the assembled messages array (containing DB-backed conversation history and customer message) to `ctx.messages`. This ensures downstream stages (like the self-review judge) can access the full context of prior turns.
+- **AI Service Active Polishing & Refinement Layer (FEATURE / COMPLETE)**: Overhauled the self-review judge pipeline in `validate_reply.py` to act as an active editor/polishing layer rather than a strict gatekeeper:
+  1. Restructured the review judge prompt and guidelines to explicitly distinguish between harmful factual hallucinations (fake services, prices, doctors, branches) and natural human-like conversational initiative (paying cash, invoice retrieval, friendly greetings, apologies).
+  2. Upgraded the judge JSON schema to output `need_polish` and `polished_reply` fields alongside the approved status.
+  3. Modified `_self_review` logic to use the `polished_reply` directly when available, bypassing the redundant, slow, and dry fallback correction call to the main model (saving up to 30s of response latency).
+  4. Reduced the maximum output retries (`MAX_OUTPUT_RETRIES`) from 2 to 1 to bound latency and prevent timeouts under heavy load.
+  5. Enhanced `_correct_output` with persona-preserving instructions and guidelines from `create-premium-human-agent` to ensure fallback replies remain warm, natural, and human-like.
+- **AI Service Self-Review Judge — Blind Context Overhaul (BUGFIX / CRITICAL)**: Major rewrite of the LLM-as-Judge self-review system in `validate_reply.py`:
+  1. The judge now receives the agent's system prompt (first 2000 chars including persona, soul, and core instructions) via `_extract_agent_identity()`.
+  2. The judge now receives the last 5 conversation turns via `_extract_conversation_context()` to understand context.
+  3. The judge now receives the agent's template type and channel for tone/style evaluation.
+  4. Tool evidence limits increased (500→1500 chars/value, 10→15 keys) to prevent data loss in rich responses.
+  5. The review prompt was restructured into a 6-criteria rubric with explicit bias toward approval (reject only on clear factual errors, not style preferences).
+- **AI Service Follow-up Request Tool Resolution & Thinking Mode Fix (BUGFIX / CRITICAL)**: Resolved DeepSeek follow-up API validation errors (400 Bad Request) after tool execution:
+  1. Updated the follow-up tool definitions builder (`_build_tool_dicts`) in the AI Service pipeline (`skills_pipeline.py`) to resolve and include schemas from `allowed_skills` alongside `allowed_tools`.
+  2. Set the follow-up call's default `tool_choice` to `"none"` in `_raw_llm_call`, allowing client.py to omit the `tools` and `tool_choice` parameters entirely for plain text generation. This prevents "Thinking mode does not support this tool_choice" errors when the chat history contains DeepSeek-R1 reasoning content.
+- **AI Service Self-Review Context Retention & Guardrail Rule Refinement (BUGFIX / CRITICAL)**: Fixed the self-review/judge pipeline to prevent context loss and over-constraining the agent:
+  1. Updated `_correct_output` in `validate_reply.py` to summarize and inject active tool execution results (`evidence_text`) into the correction prompt. This ensures that the rewriting model has full visibility of the database data (like services and prices) and prevents context-free hallucinations.
+  2. Corrected the fallback match logic in `get_relevant_rules` (`merchant_rules.py`) to return an empty list `[]` instead of returning the first 5 active rules indiscriminately when there are no semantic or keyword matches. This stops unrelated business rules from polluting the agent's prompt on every single message.
+- **AI Agent Self-Review Life Cycle & Model Selector Mismatch (BUGFIX / CRITICAL)**: Resolved a critical database model query mismatch in the AI self-review logs:
+  1. Fixed the API `set_review_model` and `validate_reply.py` pipeline stage to query `Agent.id` instead of the non-existent `Agent.agent_id` property, stopping silent SQL failures and enabling proper guardrails checks.
+  2. Implemented flexible JSON block parsing via `_try_parse_json_object` in the pipeline validation stage, resolving crashes when the model responds with Markdown-wrapped JSON.
+  3. Increased evidence summarization limits to up to 10 keys, 500 characters per value, and 2000 characters for list/raw results, preserving tool execution context.
+  4. Updated the Super Admin model selector override interface to dynamically fetch options from the backend `settingsData` object instead of using hardcoded lists.
+  5. Corrected the LTR/RTL pagination control chevron arrow direction in the Arabic logs viewer dashboard.
+- **WhatsApp Direct Chat AI Correction Bridge (FEATURE / COMPLETE)**: Added AI correction capabilities directly into the direct WhatsApp chat page (`/whatsapp/chat` workspace):
+  1. Built a bridge endpoint `POST /api/whatsapp/messages/:whatsappMessageId/correct` that resolves native WhatsApp message ID to unified conversation and message records using proximity matching and customer identification.
+  2. Implemented inline correction UI in `MessageBubble.tsx` (the one under `pages/whatsapp/components/` used by the direct WhatsApp workspace) allowing users to correct AI replies, which dynamically triggers learning for the AI agent.
+- **AI Correction Button Visibility Fix (BUGFIX / CRITICAL)**: Fixed a 3-layer cascading bug that prevented the "✏️ تصحيح الرد" button from appearing on ANY inbox page (Unified, Facebook, Instagram, WhatsApp):
+  1. Backend `sender` field returned `'agent'` instead of `'ai'` for AI-generated messages — frontend condition `sender === 'ai'` never matched.
+  2. `agentInboxFacebookService.buildMessagePreview()` omitted `senderId`, `metadata`, and `isAIResponse` fields from serialized messages.
+  3. Frontend `useInboxConversations` hook defaulted `senderId` to `"unknown"` (truthy) for AI messages — `!message.senderId` evaluated to `false`.
+  4. Added `message.isAIResponse` as a third detection path in `MessageBubble.tsx` for maximum resilience.
+- **Multi-Platform AI Correction (`correction_auto` Generalization) (FEATURE / COMPLETE)**: Extended the WhatsApp-only `correction_auto` feature to work across ALL inbox channels (Facebook, Instagram, Telegram, and Unified Inbox):
+  1. Generalized `correctMessage()` in `whatsappInboxService.js` with multi-platform delivery: WhatsApp (via `sendText`), Facebook (via `sendProductionFacebookMessage`), Instagram (via Graph API), and Telegram (via `TelegramBotService` / `TelegramUserbotService`).
+  2. Agent lookup now matches `conversation.channel` dynamically instead of hardcoded 'whatsapp'.
+  3. Added `POST /conversations/:conversationId/messages/:messageId/correct` route in `unifiedInboxRoutes.js` with `conversationAccessGuard` middleware.
+  4. Built inline correction UI in `UnifiedInbox.tsx` — AI messages show "🤖 رد تلقائي من الوكيل" badge with "✏️ تصحيح الرد" button.
+  5. Built self-contained correction UI in `MessageBubble.tsx` (shared component) — used by both `FacebookInbox.tsx` and `InstagramInbox.tsx` with `onCorrect` callback for message reload.
+  6. For non-WhatsApp channels, corrected messages are saved to DB via `prisma.message.create` (WhatsApp auto-saves via webhook).
+  7. All channel failures are gracefully degraded: correction is saved even if platform delivery fails.
+
 ## 2026-07-11 / 2026-03-09
 - **Inbox AI Message Auto-Correction Feature (`correction_auto`) (FEATURE / COMPLETE)**: Implemented a live correction flow in the WhatsApp Inbox enabling supervisors to correct wrong AI responses on-the-fly:
   1. Added `POST /conversations/:conversationId/messages/:messageId/correct` endpoint in Express backend with `conversationAccessGuard` and `inbox.send` permission.

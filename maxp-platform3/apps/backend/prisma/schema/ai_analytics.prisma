@@ -1,0 +1,644 @@
+model AiAnalytic {
+  id                    String   @id @default(cuid())
+  date                  DateTime @db.Date
+  totalMessages         Int      @default(0)
+  aiResponses           Int      @default(0)
+  humanHandoffs         Int      @default(0)
+  avgResponseTime       Float?
+  avgConfidence         Float?
+  topIntents            String?
+  sentimentDistribution String?
+  createdAt             DateTime @default(now())
+
+  @@index([date])
+  @@map("ai_analytics")
+}
+
+model AiInteraction {
+  id                        String    @id @default(cuid())
+  companyId                 String
+  customerId                String?
+  userMessage               String
+  aiResponse                String
+  intent                    String?
+  sentiment                 String?
+  confidence                Float?
+  requiresHumanIntervention Boolean   @default(false)
+  metadata                  String?
+  createdAt                 DateTime  @default(now())
+  modelUsed                 String?
+  responseTime              Int?
+  tokensUsed                Int?
+  keyId                     String?
+  keyName                   String?
+  company                   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer                  Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([keyName])
+  @@index([modelUsed])
+  @@map("ai_interactions")
+}
+
+model AiKey {
+  id                String          @id @default(cuid())
+  name              String
+  provider          AiKeysProvider  @default(GOOGLE)
+  apiKey            String          @unique
+  baseUrl           String?
+  isActive          Boolean         @default(true)
+  companyId         String?
+  keyType           AiKeysKeyType   @default(CENTRAL)
+  usage             String
+  currentUsage      Int             @default(0)
+  maxRequestsPerDay Int             @default(1500)
+  priority          Int             @default(1)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime @updatedAt
+  company           Company?        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  aiModelConfigs    AiModelConfig[]
+
+  @@index([companyId])
+  @@index([provider, isActive])
+  @@map("ai_keys")
+}
+
+model AiModelConfig {
+  id        String   @id @default(cuid())
+  keyId     String
+  modelName String
+  isEnabled Boolean  @default(true)
+  priority  Int      @default(1)
+  usage     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+  aiKey     AiKey    @relation(fields: [keyId], references: [id], onDelete: Cascade)
+
+  @@unique([keyId, modelName])
+  @@index([keyId])
+  @@map("ai_model_configs")
+}
+
+model AiNotification {
+  id        String    @id @default(cuid())
+  companyId String
+  type      String
+  severity  String    @default("medium")
+  title     String
+  message   String
+  metadata  String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([isRead])
+  @@map("ai_notifications")
+}
+
+model AiSetting {
+  id                         String   @id @default(cuid())
+  companyId                  String   @unique
+  promptTemplate             String?
+  autoReplyEnabled           Boolean  @default(false)
+  confidenceThreshold        Float    @default(0.7)
+  escalationRules            String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  autoCreateOrders           Boolean  @default(false)
+  autoSuggestProducts        Boolean  @default(true)
+  defaultProductId           String?
+  includeImages              Boolean  @default(true)
+  maxSuggestions             Int      @default(3)
+  modelSettings              String?
+  responsePrompt             String?
+  memorySettings             String?
+  useAdvancedTools           Boolean  @default(false)
+  writeToolScopes            String?  @db.Text
+  humanApprovalRequiredForWrite Boolean @default(true)
+  workingHours               String?
+  workingHoursEnabled        Boolean  @default(true)
+  maxRepliesPerCustomer      Int      @default(5)
+  multimodalEnabled          Boolean  @default(true)
+  ragEnabled                 Boolean  @default(true)
+  qualityEvaluationEnabled   Boolean  @default(true)
+  queueSettings              String?
+  aiMaxTokens                Int?     @default(2048)
+  aiResponseStyle            String?  @default("balanced")
+  aiTemperature              Float?   @default(0.7)
+  aiTopK                     Int?     @default(40)
+  aiTopP                     Float?   @default(0.9)
+  enableDiversityCheck       Boolean  @default(true)
+  enableEmotionalResponse    Boolean  @default(true)
+  enableLongTermMemory       Boolean  @default(false)
+  enableLowQualityAlerts     Boolean  @default(true)
+  enableSmartSuggestions     Boolean  @default(false)
+  enableToneAdaptation       Boolean  @default(true)
+  maxMessagesPerConversation Int?     @default(50)
+  memoryRetentionDays        Int?     @default(30)
+  minQualityScore            Float?   @default(70)
+  replyMode                  String   @default("all")
+  autoCleanup                Boolean  @default(true)
+  compressionEnabled         Boolean  @default(false)
+  maxConversationsPerUser    Int?     @default(100)
+  responseRules              String?
+  disableDefaultTemplates    Boolean  @default(false)
+  enableFailover             Boolean  @default(true)
+  useModernAgent             Boolean  @default(false)
+  negativeKeywords           String?  @db.Text
+  autoFilterEnabled          Boolean  @default(false)
+  negativeCommentAction      String   @default("hide")
+  company                    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("ai_settings")
+}
+
+// AgentDefinition model removed — 2026 refactor
+
+// CompanyAgent model removed — 2026 refactor
+
+// AgentDepartment model removed — 2026 refactor
+
+model LearningData {
+  id             String   @id @default(cuid())
+  companyId      String
+  customerId     String?
+  conversationId String?
+  type           String
+  data           String?
+  userMessage    String?
+  aiResponse     String?
+  intent         String?
+  sentiment      String?
+  processingTime Int?
+  ragDataUsed    Boolean  @default(false)
+  memoryUsed     Boolean  @default(false)
+  model          String?
+  confidence     Float?
+  outcome        String?
+  feedback       String?
+  insights       String?
+  metadata       String?
+  createdAt      DateTime @default(now())
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([confidence])
+  @@index([createdAt])
+  @@index([intent])
+  @@index([type])
+  @@map("learning_data")
+}
+
+model LearningSettings {
+  id                    String   @id @default(cuid())
+  companyId             String   @unique
+  enabled               Boolean  @default(true)
+  learningSpeed         String   @default("medium")
+  autoApplyImprovements Boolean  @default(false)
+  dataRetentionDays     Int      @default(90)
+  minimumSampleSize     Int      @default(50)
+  confidenceThreshold   Float    @default(0.8)
+  settings              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("learning_settings")
+}
+
+model SearchAnalytic {
+  id            String   @id @default(cuid())
+  companyId     String
+  customerId    String?
+  query         String
+  intent        String?
+  resultsCount  Int      @default(0)
+  wasSuccessful Boolean  @default(true)
+  responseTime  Int?
+  metadata      String?
+  createdAt     DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([companyId])
+  @@index([intent])
+  @@index([wasSuccessful])
+  @@map("search_analytics")
+}
+
+model AiFailureLog {
+  id             String   @id @default(cuid())
+  companyId      String
+  conversationId String?
+  customerId     String?
+  errorType      String   @db.VarChar(100)
+  errorMessage   String?
+  context        String?
+  createdAt      DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([errorType])
+  @@map("ai_failure_logs")
+}
+
+model AiProviderLog {
+  id             String   @id @default(cuid())
+  provider       String
+  keyId          String?
+  keyName        String?
+  companyId      String?
+  conversationId String?
+  customerId     String?
+  scope          String   @default("runtime")
+  action         String
+  status         String
+  latencyMs      Int?
+  model          String?
+  message        String?  @db.Text
+  metadata       String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([provider, createdAt])
+  @@index([keyId, createdAt])
+  @@index([companyId, createdAt])
+  @@index([action, createdAt])
+  @@index([status, createdAt])
+  @@map("ai_provider_logs")
+}
+
+model AiResponseEvaluation {
+  id                   String                  @id @default(cuid())
+  companyId            String
+  conversationId        String?
+  customerId            String?
+  userMessageId         String?
+  aiMessageId           String?
+  channel               String?
+  agentMode             String                  @default("CORE")
+  provider              String?
+  model                 String?
+  status                String                  @default("PASS")
+  score                 Float                   @default(1)
+  issueTypes            String?
+  issues                String?                 @db.Text
+  evidence              String?                 @db.Text
+  userMessage           String?                 @db.Text
+  aiResponse            String?                 @db.Text
+  metadata              String?                 @db.Text
+  evaluatedAt           DateTime                @default(now())
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  company               Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  correctionQueueItems  AiCorrectionQueueItem[]
+
+  @@index([companyId])
+  @@index([companyId, status, createdAt])
+  @@index([conversationId])
+  @@index([aiMessageId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_response_evaluations")
+}
+
+model AiCorrectionQueueItem {
+  id                  String                @id @default(cuid())
+  companyId           String
+  evaluationId        String?
+  conversationId      String?
+  customerId          String?
+  status              String                @default("PENDING")
+  issueType           String
+  severity            String                @default("medium")
+  title               String
+  suggestedAction     String                @db.Text
+  suggestedRule       String?               @db.Text
+  suggestedFewShot    String?               @db.Text
+  userMessage         String?               @db.Text
+  aiResponse          String?               @db.Text
+  reviewerNote        String?               @db.Text
+  reviewedByUserId    String?
+  reviewedAt          DateTime?
+  appliedArtifactType String?
+  appliedArtifactId   String?
+  metadata            String?               @db.Text
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  evaluation          AiResponseEvaluation? @relation(fields: [evaluationId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([companyId, status, createdAt])
+  @@index([evaluationId])
+  @@index([issueType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_correction_queue")
+}
+
+model AIChatMessage {
+  id               String        @id @default(cuid())
+  sessionId        String
+  role             String
+  content          String
+  isError          Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  ai_chat_sessions AIChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model AIChatSession {
+  id               String          @id @default(cuid())
+  userId           String
+  title            String?
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime @updatedAt
+  ai_chat_messages AIChatMessage[]
+  dev_team_member  DevTeamMember   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AiTraceStep {
+  id        String   @id @default(cuid())
+  traceId   String
+  stepType  String
+  latencyMs Int
+  input     String
+  output    String
+  metadata  String?
+  order     Int
+  createdAt DateTime @default(now())
+  trace     AiTrace  @relation(fields: [traceId], references: [id], onDelete: Cascade)
+
+  @@index([traceId])
+  @@index([createdAt])
+  @@map("ai_trace_steps")
+}
+
+model AiTrace {
+  id        String        @id @default(cuid())
+  companyId String
+  query     String
+  timestamp DateTime      @default(now())
+  latencyMs Int?
+  metadata  String?
+  createdAt DateTime      @default(now())
+  steps     AiTraceStep[]
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@map("ai_traces")
+}
+
+model AiRuntimeLedger {
+  id             String   @id @default(cuid())
+  companyId      String
+  idempotencyKey String   @unique
+  channel        String
+  status         String   @default("RUNNING")
+  traceId        String?
+  conversationId String?
+  customerId     String?
+  userMessageId  String?
+  outputMessageId String?
+  lockedAt       DateTime @default(now())
+  completedAt    DateTime?
+  expiresAt      DateTime?
+  metadata       String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, status, createdAt])
+  @@index([conversationId])
+  @@index([expiresAt])
+  @@index([traceId])
+  @@map("ai_runtime_ledger")
+}
+
+model AiRuntimeQueueJob {
+  id             String    @id @default(cuid())
+  companyId      String
+  queueKey       String    @unique
+  channel        String
+  status         String    @default("PENDING")
+  priority       Int       @default(0)
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3)
+  lockedAt       DateTime?
+  lockToken      String?
+  lockExpiresAt  DateTime?
+  availableAt    DateTime  @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+  lastError      String?   @db.Text
+  inputSnapshot  String    @db.Text
+  resultSnapshot String?   @db.Text
+  metadata       String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([status, availableAt, priority, createdAt])
+  @@index([companyId, status, createdAt])
+  @@index([lockExpiresAt])
+  @@map("ai_runtime_queue_jobs")
+}
+
+model AiDeliveryOutbox {
+  id                String    @id @default(cuid())
+  companyId         String
+  outboxKey         String    @unique
+  channel           String
+  status            String    @default("PENDING")
+  messageType       String    @default("TEXT")
+  recipientId       String?
+  pageId            String?
+  conversationId    String?
+  customerId        String?
+  messageId         String?
+  facebookMessageId String?
+  attempts          Int       @default(0)
+  maxAttempts       Int       @default(3)
+  lockedAt          DateTime?
+  lockToken         String?
+  lockExpiresAt     DateTime?
+  availableAt       DateTime  @default(now())
+  deliveredAt       DateTime?
+  lastError         String?   @db.Text
+  payload           String    @db.Text
+  resultSnapshot    String?   @db.Text
+  metadata          String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([status, availableAt, createdAt])
+  @@index([companyId, status, createdAt])
+  @@index([conversationId])
+  @@index([messageId])
+  @@index([lockExpiresAt])
+  @@map("ai_delivery_outbox")
+}
+
+model AiToolApprovalRequest {
+  id               String   @id @default(cuid())
+  companyId        String
+  requestKey       String   @unique
+  toolName         String
+  status           String   @default("PENDING")
+  channel          String
+  source           String
+  sideEffects      String   @default("write")
+  approvalMode     String   @default("required")
+  reason           String?
+  conversationId   String?
+  customerId       String?
+  traceId          String?
+  idempotencyKey   String?
+  requestedByType  String   @default("ai_runtime")
+  requestedByUserId String?
+  reviewedByUserId String?
+  reviewedAt       DateTime?
+  executionStatus  String?
+  executionStartedAt DateTime?
+  executedAt       DateTime?
+  executedByUserId String?
+  executionTraceId String?
+  expiresAt        DateTime?
+  inputSnapshot    String?  @db.Text
+  previewSnapshot  String?  @db.Text
+  executionResultSnapshot String? @db.Text
+  metadata         String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, status, createdAt])
+  @@index([companyId, executionStatus, createdAt])
+  @@index([conversationId])
+  @@index([traceId])
+  @@index([toolName, status])
+  @@map("ai_tool_approval_requests")
+}
+
+model DailyAnalytic {
+  id                 String   @id @default(cuid())
+  companyId          String
+  date               DateTime @db.Date
+  totalVisits        Int      @default(0)
+  uniqueVisitors     Int      @default(0)
+  totalProductViews  Int      @default(0)
+  totalAddToCarts    Int      @default(0)
+  totalCheckouts     Int      @default(0)
+  totalPurchases     Int      @default(0)
+  totalRevenue       Decimal  @default(0) @db.Decimal(12, 2)
+  conversionRate     Decimal  @default(0) @db.Decimal(5, 2)
+  avgOrderValue      Decimal  @default(0) @db.Decimal(10, 2)
+  bounceRate         Decimal  @default(0) @db.Decimal(5, 2)
+  avgSessionDuration Int      @default(0)
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date])
+  @@index([companyId, date])
+  @@map("daily_analytics")
+}
+
+model ProductAnalytic {
+  id              String   @id @default(cuid())
+  productId       String
+  companyId       String
+  date            DateTime @db.Date
+  views           Int      @default(0)
+  uniqueViews     Int      @default(0)
+  addToCarts      Int      @default(0)
+  purchases       Int      @default(0)
+  revenue         Decimal  @default(0) @db.Decimal(10, 2)
+  conversionRate  Decimal  @default(0) @db.Decimal(5, 2)
+  avgViewDuration Int      @default(0)
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, productId, date])
+  @@index([companyId, date])
+  @@index([productId, companyId])
+  @@map("product_analytics")
+}
+
+model AiModelLimit {
+  id           String   @id @default(cuid())
+  modelName    String   @unique
+  rpm          Int      @default(15)
+  rph          Int      @default(1000)
+  rpd          Int      @default(1500)
+  tpm          Int      @default(1000000)
+  maxTokens    Int      @default(8192)
+  isDeprecated Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([modelName])
+  @@index([isDeprecated])
+  @@map("ai_model_limits")
+}
+
+// ── Agentic AI Task Persistence (Phase 3) ─────────────────────────────────
+model AiAgentTask {
+  id            String   @id @default(cuid())
+  companyId     String
+  agentId       String
+  title         String
+  description   String?  @db.Text
+  status        String   @default("PENDING") // PENDING | CHECKED_OUT | IN_PROGRESS | COMPLETED | FAILED | APPROVAL_REQUIRED
+  priority      String   @default("medium")
+  dagPlan       Json?    // Serialized DAG plan for multi-step goals
+  checkpoint    Json?    // Resumable execution state
+  checkedOutBy  String?
+  checkedOutAt  DateTime?
+  completedAt   DateTime?
+  createdBy     String?
+  parentTaskId  String?
+  traceId       String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  runs          AiAgentRun[]
+
+  @@index([companyId, status])
+  @@index([companyId, agentId])
+  @@index([companyId, checkedOutBy])
+  @@index([parentTaskId])
+  @@map("ai_agent_tasks")
+}
+
+model AiAgentRun {
+  id           String   @id @default(cuid())
+  taskId       String
+  companyId    String
+  agentId      String
+  stepName     String?
+  stepIndex    Int      @default(0)
+  status       String   // SUCCESS | FAILED | RETRY
+  output       Json?
+  error        String?  @db.Text
+  costTokens   Int?
+  latencyMs    Int?
+  modelUsed    String?
+  providerUsed String?
+  createdAt    DateTime @default(now())
+
+  task         AiAgentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, agentId])
+  @@index([taskId])
+  @@index([createdAt])
+  @@map("ai_agent_runs")
+}

@@ -1220,4 +1220,11 @@ router.put("/support-settings", async (req, res) => {
   }
 });
 
+// 🖼️ AI Image Generator Settings
+const superAdminAIImageGeneratorController = require('../controller/superAdminAIImageGeneratorController');
+router.get('/ai-image-generator-settings', superAdminAIImageGeneratorController.getConfig);
+router.put('/ai-image-generator-settings', superAdminAIImageGeneratorController.updateConfig);
+router.get('/ai-image-generator-settings/companies', superAdminAIImageGeneratorController.listCompanies);
+router.put('/ai-image-generator-settings/companies/:companyId', superAdminAIImageGeneratorController.updateCompanyOverride);
+
 module.exports = router;

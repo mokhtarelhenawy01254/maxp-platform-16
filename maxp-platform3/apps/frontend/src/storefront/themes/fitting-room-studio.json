@@ -1,0 +1,620 @@
+{
+  "id": "fitting-room-studio",
+  "name": "Fitting Room Studio",
+  "description": "A mobile-app inspired fashion storefront for denim, basics, and quick outfit decisions, with a shopping bag and checkout flow shaped like the reference screen.",
+  "direction": "ltr",
+  "tokens": {
+    "colors": {
+      "primary": "24 6% 17%",
+      "primaryForeground": "30 40% 98%",
+      "secondary": "28 38% 93%",
+      "secondaryForeground": "24 6% 17%",
+      "accent": "168 30% 69%",
+      "accentForeground": "24 6% 17%",
+      "background": "28 43% 95%",
+      "foreground": "24 6% 17%",
+      "muted": "30 20% 90%",
+      "mutedForeground": "24 7% 46%",
+      "border": "28 22% 84%",
+      "card": "0 0% 100%",
+      "cardForeground": "24 6% 17%",
+      "ring": "24 6% 17%"
+    },
+    "typography": {
+      "headingFont": "\"Raleway\", \"Segoe UI\", sans-serif",
+      "bodyFont": "\"Raleway\", \"Segoe UI\", sans-serif",
+      "baseSize": "16px",
+      "direction": "ltr"
+    },
+    "shape": {
+      "borderRadius": "1.45rem",
+      "buttonRadius": "1rem"
+    },
+    "productCard": {
+      "borderRadius": "1.25rem",
+      "boxShadow": "0 22px 54px -38px rgba(42, 38, 35, 0.18)",
+      "hoverShadow": "0 30px 70px -38px rgba(42, 38, 35, 0.24)",
+      "badgeRadius": "999px",
+      "buttonRadius": "1rem",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Fitting Room Studio",
+    "description": "Mobile-app fashion storefront with quick outfit discovery, soft fitting-room visuals, and a shopping bag checkout flow inspired by native commerce apps."
+  },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1600",
+    "colors": ["24 6% 17%", "28 43% 95%", "168 30% 69%"]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "Fitting Room",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      { "label": "New In", "to": "/shop?sortBy=createdAt&sortOrder=desc" },
+      { "label": "Denim", "to": "/shop?category=denim" },
+      { "label": "Tops", "to": "/shop?category=tops" },
+      { "label": "Sets", "to": "/shop?category=sets" },
+      { "label": "Sale", "to": "/sale" }
+    ],
+    "actions": [
+      { "label": "Open bag", "to": "/cart", "style": "primary" }
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "A fashion storefront built around fast fit decisions: clear product photos, easy color and size confidence, and a shopping bag that feels like a native app.",
+    "copyrightText": "© 2026 Fitting Room Studio. All rights reserved.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "Shop",
+        "links": [
+          { "label": "All products", "to": "/shop" },
+          { "label": "Denim edits", "to": "/shop?category=denim" },
+          { "label": "Cotton basics", "to": "/shop?category=tops" },
+          { "label": "Outfit sets", "to": "/shop?category=sets" }
+        ]
+      },
+      {
+        "title": "Support",
+        "links": [
+          { "label": "Size guide", "to": "/size-guide" },
+          { "label": "Shipping", "to": "/shipping" },
+          { "label": "Returns", "to": "/returns" },
+          { "label": "Contact", "to": "/contact" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "Privacy policy", "to": "/privacy" },
+      { "label": "Terms", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "layoutHint": "stack",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "pastel-category-lane",
+          "settings": {
+            "title": "Start with the fitting moment",
+            "subtitle": "Choose the route first: denim, cotton, layers, or ready sets. The store opens like a wardrobe app, not a long shelf.",
+            "limit": 4,
+            "ctaText": "Shop all",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "Denim base",
+                "subtitle": "Jackets, shorts, and jeans that anchor the look.",
+                "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=denim"
+              },
+              {
+                "title": "Cotton layer",
+                "subtitle": "T-shirts and soft tops for everyday movement.",
+                "image": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=tops"
+              },
+              {
+                "title": "Weekend set",
+                "subtitle": "Two-piece outfits that close the decision faster.",
+                "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=sets"
+              },
+              {
+                "title": "Soft accessories",
+                "subtitle": "Small finishing pieces for a complete basket.",
+                "image": "https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=accessories"
+              }
+            ]
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "fashion-billboard",
+          "settings": {
+            "eyebrow": "Mobile-first fashion edit",
+            "title": "Build the outfit, then open the bag",
+            "subtitle": "A softer app-style storefront for quick denim, cotton, and layer decisions with the cart always feeling one tap away.",
+            "ctaText": "Shop the edit",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "View bag style",
+            "secondaryCtaLink": "/cart",
+            "backgroundImage": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+            "panelTitle": "Jean jacket",
+            "panelSubtitle": "Color, size, and bag review stay close to the product.",
+            "panelMetricValue": "$109.00"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "quick-view-fashion-grid",
+          "settings": {
+            "eyebrow": "Picked for the first bag",
+            "title": "Soft launch pieces",
+            "limit": 8,
+            "ctaText": "View all",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "vela-fashion-mosaic",
+          "settings": {
+            "badge": "Bag builders",
+            "title": "Small routes that raise basket value",
+            "cards": [
+              {
+                "title": "Denim-on-denim capsule",
+                "subtitle": "Jacket, shorts, and light cotton in one direction.",
+                "link": "/shop?category=denim",
+                "image": "https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&q=80&w=1400"
+              },
+              {
+                "title": "Cotton refresh",
+                "subtitle": "Basics that add one more item without slowing checkout.",
+                "link": "/shop?category=tops",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1400"
+              },
+              {
+                "title": "One-look sets",
+                "subtitle": "Pre-styled pieces for shoppers who want fewer tabs.",
+                "link": "/shop?category=sets",
+                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1400"
+              }
+            ]
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "stack",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "soft-sort-bar",
+          "settings": {
+            "title": "Shop the fitting rail",
+            "subtitle": "Search, sort, and jump between the same compact routes used on the home screen.",
+            "searchPlaceholder": "Search denim, cotton, or jacket",
+            "resultsLabel": "pieces",
+            "clearButtonText": "Clear",
+            "stickyLabel": "Sort"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "pastel-category-lane",
+          "settings": {
+            "title": "Quick rails",
+            "subtitle": "Shortcuts keep the catalog feeling like a fashion app instead of a warehouse.",
+            "limit": 4,
+            "collections": [
+              { "title": "Jackets", "subtitle": "Layer first", "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=900", "link": "/shop?category=jackets" },
+              { "title": "T-shirts", "subtitle": "Soft basics", "image": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=900", "link": "/shop?category=tops" },
+              { "title": "Dresses", "subtitle": "One-piece edit", "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=900", "link": "/shop?category=dresses" },
+              { "title": "Sale", "subtitle": "Fast decisions", "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=900", "link": "/sale" }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "quick-view-fashion-grid",
+          "settings": {
+            "title": "All fitting-room picks",
+            "limit": 18,
+            "productsFoundLabel": "pieces found",
+            "emptyStateTitle": "No pieces found",
+            "emptyStateDescription": "Try a different rail or clear the current filters.",
+            "clearButtonText": "View all"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "trust",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "mirror-carousel"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "addToCartText": "Add to cart",
+            "buyNowText": "Buy now",
+            "descriptionTitle": "Product details",
+            "shippingTitle": "Shipping and returns",
+            "shippingText": "Shipping is calculated at checkout after the destination is selected. Keep size and color notes visible before placing the order.",
+            "sizeGuideInteraction": "modal",
+            "sizeGuideModalTitle": "Size guide",
+            "sizeGuideText": "Size guide",
+            "fitNote": "If you are between sizes, check the fabric note before choosing.",
+            "showGuarantees": true,
+            "guaranteesTitle": "Fit confidence",
+            "guaranteesSubtitle": "The PDP is tuned for fast bag decisions without hiding the fit details.",
+            "guaranteeItems": [
+              {
+                "title": "Color stays visible",
+                "description": "Swatches and photos stay close to the add-to-cart action."
+              },
+              {
+                "title": "Size review before bag",
+                "description": "Use the guide and attributes before moving to the shopping bag."
+              },
+              {
+                "title": "Fast bag review",
+                "description": "The cart repeats the item image, size, quantity, and total in one compact app card."
+              }
+            ]
+          }
+        },
+        {
+          "type": "quantity-offers",
+          "variant": "selection-rail",
+          "settings": {
+            "title": "Build the bag",
+            "subtitle": "Add one or two pieces from the same look before checkout.",
+            "placement": "inline-buybox",
+            "decisionMode": "primary",
+            "continueToFormLabel": "Review bag"
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "pairing-rail",
+          "settings": {
+            "title": "Complete the fitting room",
+            "subtitle": "Small additions that naturally sit beside the current piece.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "Fit notes",
+            "subtitle": "Short buyer notes for color, sizing, and fabric confidence.",
+            "reviewLimit": 4,
+            "mobileReviewLimit": 2
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "closet-pairings",
+          "settings": {
+            "title": "Similar fitting-room picks",
+            "subtitle": "Pieces close enough to compare before checkout.",
+            "limit": 4,
+            "mobileLimit": 2
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "stack",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary",
+          "settings": {
+            "title": "Shopping Bag",
+            "showLineItems": true,
+            "lineItemsEditable": true,
+            "showCouponField": true,
+            "couponPlaceholder": "Promo Code",
+            "couponButtonText": "Apply",
+            "checkoutButtonText": "Proceed to Checkout",
+            "subtotalLabel": "Sub Total",
+            "shippingLabel": "Shipping",
+            "shippingValueText": "$4.00",
+            "totalLabel": "Bag Total",
+            "shippingHelpText": "",
+            "showFreeShippingProgress": false,
+            "showTrustRow": false,
+            "showAssuranceCard": false,
+            "showNextSteps": false
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "checkout": {
+      "layoutHint": "stack",
+      "pageGoal": "conversion",
+      "settings": {
+        "injectCartItems": false
+      },
+      "sections": [
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary",
+          "settings": {
+            "title": "Checkout Bag",
+            "showLineItems": true,
+            "lineItemsEditable": true,
+            "showCouponField": true,
+            "couponPlaceholder": "Promo Code",
+            "couponButtonText": "Apply",
+            "hideCheckoutButton": true,
+            "subtotalLabel": "Sub Total",
+            "shippingLabel": "Shipping",
+            "shippingValueText": "$4.00",
+            "totalLabel": "Bag Total",
+            "shippingHelpText": "",
+            "showFreeShippingProgress": false,
+            "showTrustRow": false,
+            "showAssuranceCard": false,
+            "showNextSteps": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "fitting-room-checkout",
+          "settings": {
+            "contactTitle": "Contact details",
+            "contactDescription": "Keep the form short so the app-style checkout stays quick.",
+            "shippingTitle": "Shipping address",
+            "shippingDescription": "Choose the destination and add the full address before confirming.",
+            "notesTitle": "Order note",
+            "notesDescription": "Optional fit, color, or delivery notes.",
+            "notesOptionalLabel": "Optional",
+            "fullNameLabel": "Full name",
+            "fullNamePlaceholder": "Your name",
+            "emailLabel": "Email",
+            "emailPlaceholder": "you@example.com",
+            "phoneLabel": "Phone",
+            "phonePlaceholder": "01xxxxxxxxx",
+            "addressLabel": "Address",
+            "addressPlaceholder": "Street, building, floor",
+            "cityLabel": "City",
+            "cityPlaceholder": "City",
+            "governorateLabel": "Governorate",
+            "governoratePlaceholder": "Select governorate",
+            "notesPlaceholder": "Any size or delivery note?",
+            "autoDetectHint": "We can suggest the governorate from your city or address.",
+            "autoDetectSuccessText": "Governorate suggested. You can still change it."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "minimal",
+          "settings": {
+            "title": "Confirm order",
+            "subtitle": "Choose how to pay and place the order from the same compact flow.",
+            "summaryTitle": "Quick summary",
+            "summaryDescription": "Totals update after governorate selection.",
+            "confirmOrderText": "Place order",
+            "securityText": "Secure checkout",
+            "codLabel": "Cash on delivery",
+            "cardLabel": "Card",
+            "walletLabel": "Wallet",
+            "showSummaryCard": false,
+            "showAssuranceCard": false,
+            "showNextSteps": false
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "layoutHint": "stack",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "Quick markdowns",
+            "message": "Soft basics and denim pieces with visible savings and a shorter route to the bag.",
+            "saleLabel": "Up to 30% off",
+            "shippingLabel": "Checkout-ready",
+            "returnLabel": "Fit notes visible",
+            "ctaText": "Back to shop",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "quick-view-fashion-grid",
+          "settings": {
+            "title": "Current sale picks",
+            "limit": 18,
+            "saleOnly": true,
+            "clearButtonText": "View all products"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Shipping",
+            "title": "Shipping",
+            "subtitle": "Delivery details stay simple before checkout.",
+            "body": "Most orders are prepared within 24 to 48 business hours. Shipping is finalized after the customer selects a destination during checkout.\n\nThe shopping bag keeps the estimate visible while the final fee is calculated in the checkout flow.",
+            "detailsTitle": "Quick details",
+            "details": "Preparation|24 to 48 business hours\nDestination|Calculated by governorate\nSupport|Order updates after confirmation",
+            "ctaText": "Back to shop",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Returns",
+            "title": "Returns and exchanges",
+            "subtitle": "Fit confidence before and after the order.",
+            "body": "Customers can request an exchange or return according to the store policy as long as the product remains in its original condition.\n\nThe theme keeps size and color details visible before checkout to reduce avoidable returns.",
+            "detailsTitle": "Usually needed",
+            "details": "Order number|Required for follow-up\nProduct condition|Original packaging and unused item\nFit note|Mention the needed size or exchange reason",
+            "ctaText": "Open size guide",
+            "ctaLink": "/size-guide"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Support",
+            "title": "Contact us",
+            "subtitle": "For size, shipping, and order follow-up questions.",
+            "body": "Send the order number, phone number, and any fit notes so support can help quickly.\n\nFor product questions before ordering, share the product name and the size or color you are considering.",
+            "detailsTitle": "Channels",
+            "details": "WhatsApp|Fast order support\nEmail|Formal follow-up\nWorking hours|Sunday to Thursday",
+            "ctaText": "Start shopping",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Privacy",
+            "title": "Privacy policy",
+            "subtitle": "How order data is used.",
+            "body": "Customer data is used to process the order, arrange delivery, and provide support after purchase.\n\nThe store should only use checkout information for operational and service-related needs unless a customer explicitly opts into additional communication.",
+            "detailsTitle": "Data used",
+            "details": "Contact|Name, phone, and optional email\nDelivery|Address and governorate\nOrder|Products, quantities, and payment method",
+            "ctaText": "Back home",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Terms",
+            "title": "Terms",
+            "subtitle": "Core buying conditions.",
+            "body": "Order confirmation depends on product availability and correct customer information. Payment, shipping, and support policies apply according to the active store settings.\n\nOperational details may be updated while keeping the purchase flow clear and fair.",
+            "detailsTitle": "Includes",
+            "details": "Availability|Confirmed before fulfillment\nPayment|Based on the selected method\nSupport|Follow-up through the official channels",
+            "ctaText": "Read shipping",
+            "ctaLink": "/shipping"
+          }
+        }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "badge": "Fit guide",
+            "title": "Size guide",
+            "subtitle": "Use size notes before placing items in the bag.",
+            "note": "If a product uses stretch fabric, check the product-specific note before choosing.",
+            "guideRows": "default|XS|32|2|80-84\ndefault|S|34|4|84-88\ndefault|M|36|6|88-92\ndefault|L|38|8|92-96\ndefault|XL|40|10|96-102"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks",
+          "settings": {
+            "title": "Order confirmed",
+            "description": "The fitting-room order was received. We will review availability, shipping details, and any fit notes before fulfillment.",
+            "continueShoppingText": "Back to shop",
+            "orderNumberPrefix": "Order number:",
+            "supportText": "Need an edit? Contact support via",
+            "statusLabel": "Reviewing",
+            "showTimeline": true,
+            "showTrackOrder": true,
+            "showReorder": true,
+            "showRecommended": true,
+            "recommendedTitle": "Add one more fitting-room piece",
+            "recommendedSubtitle": "Small extras that pair with the current order.",
+            "recommendedBadge": "Post-order picks",
+            "recommendedLimit": 3
+          }
+        }
+      ]
+    }
+  }
+}

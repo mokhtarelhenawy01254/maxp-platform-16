@@ -1,0 +1,16 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" rx="32" fill="#FFF7E9"/>
+  <circle cx="648" cy="123" r="92" fill="#0E63FF" fill-opacity="0.08"/>
+  <rect x="70" y="72" width="660" height="456" rx="30" fill="#FFB21D"/>
+  <rect x="102" y="108" width="160" height="28" rx="14" fill="#0F172A"/>
+  <rect x="102" y="165" width="252" height="20" rx="10" fill="#7B4F00"/>
+  <rect x="102" y="197" width="312" height="20" rx="10" fill="#8C5E05"/>
+  <rect x="106" y="266" width="286" height="214" rx="30" fill="#FFF4DE"/>
+  <rect x="408" y="266" width="286" height="214" rx="30" fill="#FFFFFF"/>
+  <circle cx="249" cy="369" r="70" fill="#0F172A"/>
+  <text x="249" y="389" fill="#FFFFFF" font-family="IBM Plex Sans Arabic, Arial, sans-serif" font-size="58" font-weight="900" text-anchor="middle">%</text>
+  <rect x="448" y="313" width="130" height="18" rx="9" fill="#0F172A"/>
+  <rect x="448" y="343" width="180" height="18" rx="9" fill="#67758D"/>
+  <rect x="448" y="393" width="174" height="54" rx="20" fill="#0E63FF"/>
+  <text x="104" y="505" fill="#0F172A" font-family="IBM Plex Sans Arabic, Arial, sans-serif" font-size="30" font-weight="900">DEAL RADAR</text>
+</svg>

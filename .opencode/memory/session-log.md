@@ -1,3 +1,92 @@
+# Session Log — 2026-07-12 — GitHub Repo Migration + Deploy Fix
+
+## What Happened
+1. **GitHub quota full** — Old repo `elhenawym124-ops/maxp-platform` at quota. Created new repo `elhenawym124-ops/maxp-platform3`. Changed origin remote, pushed main (~668MB, succeeded at 10min timeout).
+2. **Team updates pulled** — Added remote to old repo `mokhtar1983/maxp-platform-1`, pulled 2 new commits (WhatsApp Cloud OAuth + orders performance). Merged via ff, committed local changes, pushed all. Cleaned remotes.
+3. **Secrets not migrated** — Deploy workflow failed with `SERVER_HOST missing`. Old repo had secrets but new repo didn't.
+4. **SSH key generation** — Generated new ED25519 key. **Bug:** PowerShell `ssh-keygen -N "passphrase"` passes literal quotes as part of passphrase. Re-ran without `-N` (interactive prompt impossible in CI shell) → used `-N \"\"` with escaped quotes.
+5. **Secrets set via CLI** — Used `gh secret set` for SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, SERVER_PORT.
+6. **Server SSH key added** — Used sshpass to SSH to root@153.92.223.119, appended public key to `~/.ssh/authorized_keys`.
+7. **Deploy triggered** — Workflow succeeded ✅ (backend health check on port 3007).
+
+## Key Lessons
+- PowerShell `ssh-keygen -N "value"` includes the literal double-quote characters in the passphrase. Use `-N 'value'` (single quotes) or no `-N` flag.
+- GitHub secrets are NOT copied when you create a new repo (even by same user in same org).
+- Must generate fresh SSH deploy key for new repo and register public key on server.
+- `gh secret set` CLI works well for setting secrets from pipeline/agent.
+
+## Key Files
+- No code files modified — purely infra/git operations.
+
+## New Repo
+- URL: https://github.com/elhenawym124-ops/maxp-platform3
+- Remote: origin
+
+---
+
+# Session Log — 2026-07-12 — Self-Review System (LLM-as-Judge) Full Stack
+
+## What Happened
+1. **Sprint 1 (Self-Review Engine)**: Added LLM-as-Judge quality review to `validate_reply.py` — `_get_flash_review_client`, `_self_review`, `_summarize_evidence`. Flash model checks merchant rules compliance, factual accuracy vs tool evidence, tone/language, hallucinations. Fail-open on errors.
+2. **Sprint 2 (Review Log DB)**: Created `ReviewLog` model (`ai.self_review_log`) + `ReviewLogRepo` with CRUD and aggregation queries. Integrated DB logging into `_self_review` at every exit point. Migration SQL in `migrations/001_self_review_log.sql`.
+3. **Sprint 3 (REST API)**: 4 endpoints in `api/admin/self_review.py` — `GET /admin/self-review/logs`, `GET /admin/self-review/stats`, `GET /admin/self-review/logs/export` (CSV), `PATCH /admin/self-review/agents/{agent_id}/review-model`.
+4. **Sprint 4 (Dashboard UI)**: Full super-admin page at `/super-admin/self-review` — stats cards, Model Control Card (agent + model selector), filter bar, violations breakdown, agent summary table, log table with pagination, CSV export. Arabic/English i18n. Lazy route + sidebar.
+5. **Per-agent review model**: `Agent.config.reviewModel` JSONB field. PATCH endpoint updates it. Engine reads it first. Dashboard has dropdown for it.
+6. **Verification**: 26/26 pipeline tests pass (same 1 pre-existing failure in test_followup_empty_falls_back_to_tool_results).
+
+## Key Files
+- `apps/ai-service/src/pipeline/stages/validate_reply.py` [MODIFIED — self-review engine + DB logging]
+- `apps/ai-service/src/db/models/review_log.py` [NEW]
+- `apps/ai-service/src/db/models/__init__.py` [MODIFIED — ReviewLog import]
+- `apps/ai-service/src/db/repo/review_log_repo.py` [NEW]
+- `apps/ai-service/src/api/admin/self_review.py` [NEW]
+- `apps/ai-service/src/api/admin/__init__.py` [MODIFIED — register router]
+- `apps/ai-service/migrations/001_self_review_log.sql` [NEW]
+- `apps/frontend/src/pages/super-admin/SuperAdminSelfReviewLogs.tsx` [NEW]
+- `apps/frontend/src/services/selfReviewService.ts` [NEW]
+- `apps/frontend/src/locales/{ar,en}/sections/superAdmin.json` [MODIFIED — i18n]
+- `apps/frontend/src/App.tsx` [MODIFIED — lazy route]
+- `apps/frontend/src/components/layout/SuperAdminSidebar.tsx` [MODIFIED — sidebar link]
+- `docs/agentic_ai_planning/self-review-system-plan.md` [MODIFIED — updated file listing + Sprint 5]
+
+## Remaining
+- Apply migration: `psql -d yourdb -f apps/ai-service/migrations/001_self_review_log.sql`
+- Monitor PM2 logs after deploy for latency (target: <500ms avg)
+
+---
+=======
+# Session Log — 2026-07-11 — WhatsApp Cloud Embedded Sign-Up (Facebook OAuth)
+
+## What Happened
+1. **Goal**: Build WhatsApp Cloud Embedded Sign-Up feature — one-click Facebook OAuth to connect WhatsApp Business API.
+2. **Frontend**: Created `WhatsAppCloudConnect.tsx` with 3-step wizard (intro → connecting → success/error), Facebook login button, session name input, method comparison card, callback handling from URL params, and unconfigured warning alert.
+3. **Routing**: Added lazy import + route `/whatsapp/cloud-connect` in `App.tsx`, sidebar menu item with `GlobeAltIcon`, i18n keys in Arabic/English.
+4. **Backend Routes**: `GET /facebook/config` → returns `{ appId, redirectUri, configured }`, `POST /facebook/connect` → exchanges OAuth code → long-lived token → queries WABA/phone numbers → creates `WhatsAppSession` in DB.
+5. **Controller**: `getFacebookConfig` computes redirect URI from `FRONTEND_URL` env, `facebookConnect` calls Graph API v25.0 (from `META_GRAPH_API_VERSION` env var) for token exchange, business lookup, WABA query, and DB insert.
+6. **Environment**: Created `apps/backend/.env` and `apps/frontend/.env` with Facebook App credentials, `FRONTEND_URL`, `META_GRAPH_API_VERSION`.
+7. **OAuth Config**: Created `data/facebook-oauth-config.json` with permissions and webhook settings.
+8. **Validation**: Verified all Prisma fields exist (metaPhoneNumberId, metaWabaId, metaBusinessId, metaAccessToken, metaApiVersion, META_CLOUD enum). Verified route mounting in server.js line 681. Verified redirect URI construction uses `envConfig.frontendUrl`.
+
+## Key Files Modified / Created
+- `apps/frontend/src/pages/whatsapp/WhatsAppCloudConnect.tsx` [NEW]
+- `apps/frontend/src/pages/whatsapp/index.ts`
+- `apps/frontend/src/App.tsx`
+- `apps/frontend/src/config/sidebar.ts`
+- `apps/frontend/src/locales/*/sections/sidebar.json`
+- `apps/backend/controller/whatsappController.js`
+- `apps/backend/routes/whatsappRoutes.js`
+- `apps/backend/data/facebook-oauth-config.json` [NEW]
+- `apps/backend/.env` [NEW]
+- `apps/frontend/.env` [NEW]
+
+## Still Needed (user action)
+- Set real `FACEBOOK_APP_SECRET` in `apps/backend/.env`
+- Register redirect URI `http://localhost:3001/whatsapp/cloud-connect` in Facebook App settings
+- Enable `business_management`, `whatsapp_business_messaging`, `whatsapp_business_management` Advanced Access
+
+---
+
+>>>>>>> 581942ce (feat: WhatsApp Cloud Embedded Sign-Up (Facebook OAuth))
 # Session Log — 2026-07-10 — Merchant Agent Guardrails & Dynamic Learning System
 
 ## What Happened

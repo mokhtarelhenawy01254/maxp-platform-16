@@ -1,0 +1,2 @@
+ALTER TABLE "affiliate_settings"
+ADD COLUMN IF NOT EXISTS "payoutSlaDays" INTEGER NOT NULL DEFAULT 3;

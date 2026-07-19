@@ -1605,6 +1605,12 @@ const getPostsByPageId = async (req, res) => {
     const companyId = user.companyId;
     const { pageId } = req.params;
 
+    // Get the page access token for Graph API calls
+    const pageRecord = await getSharedPrismaClient().facebookPage.findUnique({
+      where: { pageId },
+      select: { pageAccessToken: true }
+    });
+
     const posts = await getSharedPrismaClient().facebookComment.groupBy({
       by: ['postId'],
       where: { companyId, pageId },
@@ -1621,9 +1627,47 @@ const getPostsByPageId = async (req, res) => {
       const totalComments = comments.length;
       const respondedComments = comments.filter(c => c.respondedAt !== null).length;
 
+      // --- Fetch post message & picture ---
+      // 1) Try local FacebookPost table first (fast, no API call)
+      let postMessage = null;
+      let pictureUrl = null;
+      const localPost = await getSharedPrismaClient().facebookPost.findUnique({
+        where: { postId: post.postId },
+        select: { message: true, mediaUrl: true }
+      });
+
+      if (localPost) {
+        postMessage = localPost.message || null;
+        pictureUrl = localPost.mediaUrl || null;
+      }
+
+      // 2) If no picture locally and we have a token, fetch from Facebook Graph API
+      if (!pictureUrl && pageRecord?.pageAccessToken) {
+        try {
+          const graphUrl = `https://graph.facebook.com/v19.0/${post.postId}?fields=full_picture,message&access_token=${pageRecord.pageAccessToken}`;
+          const graphRes = await fetch(graphUrl);
+          if (graphRes.ok) {
+            const graphData = await graphRes.json();
+            pictureUrl = graphData.full_picture || null;
+            if (!postMessage) postMessage = graphData.message || null;
+          }
+        } catch (apiErr) {
+          // Silently ignore — Graph API errors should not break the response
+          console.warn(`⚠️ Could not fetch picture for post ${post.postId}:`, apiErr.message);
+        }
+      }
+
+      // 3) Final fallback: use oldest comment message as post context
+      if (!postMessage && comments.length > 0) {
+        postMessage = comments[comments.length - 1].message;
+      }
+
       postDetails.push({
         postId: post.postId,
         pageId,
+        message: postMessage,
+        pictureUrl,
+        responseMethod: comments.length > 0 ? (comments[0].response ? 'fixed' : 'manual') : 'manual',
         totalComments,
         respondedComments,
         pendingComments: totalComments - respondedComments,
@@ -1640,6 +1684,7 @@ const getPostsByPageId = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
 // NEW: Automated Filter Settings
 async function getGlobalFilterSettings(req, res) {

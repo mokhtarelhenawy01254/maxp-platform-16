@@ -17,7 +17,7 @@ interface TeamMember {
 interface AssignmentDropdownProps {
   currentAssignee: string | null;
   currentAssigneeName?: string;
-  onAssign: (userId: string | null) => void;
+  onAssign: (userId: string | null, name?: string | null) => void;
   disabled?: boolean;
 }
 
@@ -34,7 +34,7 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
-        const response = await apiClient.get("/tasks/company-users");
+        const response = await apiClient.get<{ success: boolean; data: any[] }>("/tasks/company-users");
         if (response.data?.success && response.data?.data) {
           const users = response.data.data.map((user: any) => ({
             id: user.id,
@@ -56,8 +56,8 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
     fetchTeamMembers();
   }, []);
 
-  const handleSelect = (userId: string | null) => {
-    onAssign(userId);
+  const handleSelect = (userId: string | null, name?: string | null) => {
+    onAssign(userId, name);
     setIsOpen(false);
   };
 
@@ -143,7 +143,7 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
                 <button
                   type="button"
                   key={member.id}
-                  onClick={() => handleSelect(member.id)}
+                  onClick={() => handleSelect(member.id, `${member.firstName} ${member.lastName}`)}
                   className="business-dropdown-option"
                   data-active={currentAssignee === member.id}
                 >

@@ -15,6 +15,36 @@ const ALLOWED_MODELS = [
   "openai/gpt-5.4-image-2",
   "x-ai/grok-imagine-image-quality",
 ];
+const CONFIG_SYSTEM_NAME = "ai_image_generator_config";
+
+async function getImageGeneratorConfig(prisma) {
+  const setting = await prisma.systemSettings.findUnique({
+    where: { systemName: CONFIG_SYSTEM_NAME },
+  });
+  if (!setting?.config) return null;
+  return typeof setting.config === "string" ? JSON.parse(setting.config) : setting.config;
+}
+
+function resolveTierConfig(config, companyId) {
+  const companyOverride = config.companies?.[companyId];
+  if (companyOverride && companyOverride.enabled === false) return { enabled: false };
+  const enabled = companyOverride?.enabled !== false;
+  const tierKey = companyOverride?.tier || config.defaultTier || "balanced";
+  const tier = config.tiers?.[tierKey];
+  const maxDaily = companyOverride?.maxRequestsPerDay || config.defaultMaxRequestsPerDay || 50;
+  return { enabled, tierKey, tier, maxDaily };
+}
+
+async function getDailyUsage(prisma, companyId) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int as count FROM public.ai_provider_logs
+     WHERE "companyId" = $1 AND scope = 'image_generation' AND "createdAt" >= $2`,
+    companyId, today
+  );
+  return rows?.[0]?.count || 0;
+}
 
 function getPrisma() {
   return getSharedPrismaClient();
@@ -23,25 +53,64 @@ function getPrisma() {
 async function getOpenRouterKey() {
   const prisma = getPrisma();
   const rows = await prisma.$queryRawUnsafe(
-    `SELECT "apiKey" FROM public.ai_keys WHERE provider = 'OPENROUTER' AND "isActive" = true ORDER BY priority ASC LIMIT 1`
+    `SELECT id, "apiKey", name FROM public.ai_keys WHERE provider = 'OPENROUTER' AND "isActive" = true ORDER BY priority ASC LIMIT 1`
   );
-  if (rows?.length) return rows[0].apiKey;
+  if (rows?.length) return { apiKey: rows[0].apiKey, keyId: rows[0].id, keyName: rows[0].name };
   throw new Error("OPENROUTER_API_KEY not found in ai_keys table");
+}
+
+async function writeProviderLog({ companyId, keyId, keyName, action, status, latencyMs, model, message }) {
+  try {
+    const prisma = getPrisma();
+    const id = crypto.randomUUID();
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO public.ai_provider_logs (id, provider, "keyId", "keyName", "companyId", scope, action, status, "latencyMs", model, message, "createdAt")
+       VALUES ($1, 'OPENROUTER', $2, $3, $4, 'image_generation', $5, $6, $7, $8, $9, NOW())`,
+      id, keyId || null, keyName || null, companyId || null,
+      action, status,
+      latencyMs != null ? Math.round(latencyMs) : null,
+      model || null,
+      message || null
+    );
+  } catch (e) {
+    console.error("❌ [AI-IMAGE] Failed to write log:", e.message);
+  }
 }
 
 exports.generateImage = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const { prompt, model = "google/gemini-3.1-flash-image", aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage } = req.body;
+    let { prompt, model, aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage } = req.body;
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ success: false, message: "الصورة مطلوب" });
     }
+
+    const prisma = getPrisma();
+    if (companyId) {
+      const config = await getImageGeneratorConfig(prisma);
+      if (config) {
+        const tierCfg = resolveTierConfig(config, companyId);
+        if (!tierCfg.enabled) {
+          return res.status(403).json({ success: false, message: "مولد الصور غير مفعل لشركتك. تواصل مع الدعم الفني." });
+        }
+        if (tierCfg.maxDaily > 0) {
+          const usage = await getDailyUsage(prisma, companyId);
+          if (usage >= tierCfg.maxDaily) {
+            return res.status(429).json({ success: false, message: `لقد تجاوزت الحد اليومي المسموح (${tierCfg.maxDaily} صورة). حاول مرة أخرى غداً.` });
+          }
+        }
+        model = model || (tierCfg.tier?.model);
+      }
+    }
+    model = model || "google/gemini-3.1-flash-image";
+
     if (!ALLOWED_MODELS.includes(model)) {
       return res.status(400).json({ success: false, message: "موديل غير مدعوم" });
     }
 
-    const apiKey = await getOpenRouterKey();
+    const { apiKey, keyId, keyName } = await getOpenRouterKey();
+    const startTime = Date.now();
 
     const systemPrompt = [
       "You are a professional social media image designer. Your ONLY output MUST be a valid image. NEVER return text descriptions.",
@@ -141,8 +210,19 @@ exports.generateImage = async (req, res) => {
       if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
     }
 
+    const latencyMs = Date.now() - startTime;
+    const usedModel = result?.model || model;
+
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: imageUrl ? 'generation_success' : 'generation_success',
+      status: 'success',
+      latencyMs,
+      model: usedModel,
+    });
+
     if (!imageUrl) {
-      return res.status(200).json({ success: true, data: { imageUrl: "", model: result?.model || model, usage: result?.usage || null } });
+      return res.status(200).json({ success: true, data: { imageUrl: "", model: usedModel, usage: result?.usage || null } });
     }
 
     if (imageUrl.startsWith("data:")) {
@@ -159,7 +239,7 @@ exports.generateImage = async (req, res) => {
           platform: req.body.structured?.platform || "",
           aspectRatio: req.body.structured?.aspectRatio || aspectRatio,
           purpose: req.body.structured?.campaign?.purpose || "",
-          model: result.model || model,
+          model: usedModel,
         };
         fs.writeFileSync(path.join(absoluteDir, `${filename}.meta.json`), JSON.stringify(meta));
       } catch {}
@@ -170,24 +250,136 @@ exports.generateImage = async (req, res) => {
       success: true,
       data: {
         imageUrl,
-        model: result.model || model,
+        model: usedModel,
         usage: result.usage || null,
       },
     });
   } catch (error) {
+    const elapsed = typeof startTime === 'number' ? Date.now() - startTime : 0;
     const status = error.response?.status || 500;
     const detail = error.response?.data?.error?.message || error.message;
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: 'generation_failed',
+      status: 'failed',
+      latencyMs: elapsed,
+      model: req.body?.model || ALLOWED_MODELS[0],
+      message: detail,
+    });
     return res.status(status).json({ success: false, message: detail });
   }
 };
 
 exports.getModelConfig = async (req, res) => {
   try {
-    const template = await aiServiceAdminClient.getAgentTemplate("social-media-image-agent");
-    const model = template?.model_policy?.default || ALLOWED_MODELS[0];
-    res.json({ success: true, data: { model, allowedModels: ALLOWED_MODELS } });
+    const companyId = req.user?.companyId;
+    const prisma = getPrisma();
+    const config = await getImageGeneratorConfig(prisma);
+    const savedModel = null;
+
+    if (!config) {
+      let templateModel = null;
+      try {
+        const template = await aiServiceAdminClient.getAgentTemplate("social-media-image-agent");
+        templateModel = template?.model_policy?.default;
+      } catch {}
+      const model = templateModel || ALLOWED_MODELS[0];
+      return res.json({ success: true, data: { model, allowedModels: ALLOWED_MODELS, tiers: null } });
+    }
+
+    const tierCfg = resolveTierConfig(config, companyId);
+    const usage = companyId ? await getDailyUsage(prisma, companyId) : 0;
+
+    const tiers = {};
+    for (const [key, t] of Object.entries(config.tiers || {})) {
+      tiers[key] = { displayName: t.displayName, description: t.description };
+    }
+
+    const model = tierCfg.enabled ? (savedModel || tierCfg.tier?.model || ALLOWED_MODELS[0]) : null;
+
+    res.json({
+      success: true,
+      data: {
+        model,
+        allowedModels: ALLOWED_MODELS,
+        tiers,
+        currentTier: tierCfg.tierKey,
+        enabled: tierCfg.enabled,
+        dailyUsage: usage,
+        dailyLimit: tierCfg.maxDaily,
+      },
+    });
   } catch {
-    res.json({ success: true, data: { model: ALLOWED_MODELS[0], allowedModels: ALLOWED_MODELS } });
+    res.json({ success: true, data: { model: ALLOWED_MODELS[0], allowedModels: ALLOWED_MODELS, tiers: null } });
+  }
+};
+
+exports.getTierConfig = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const prisma = getPrisma();
+    const config = await getImageGeneratorConfig(prisma);
+
+    if (!config) {
+      return res.json({ success: true, data: { available: false } });
+    }
+
+    const tierCfg = resolveTierConfig(config, companyId);
+    const usage = companyId ? await getDailyUsage(prisma, companyId) : 0;
+
+    const tiers = {};
+    for (const [key, t] of Object.entries(config.tiers || {})) {
+      tiers[key] = { displayName: t.displayName, description: t.description };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        available: true,
+        enabled: tierCfg.enabled,
+        currentTier: tierCfg.tierKey,
+        tiers,
+        dailyUsage: usage,
+        dailyLimit: tierCfg.maxDaily,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.saveModelConfig = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: "companyId مطلوب" });
+    }
+    const { model } = req.body;
+    if (!model || !ALLOWED_MODELS.includes(model)) {
+      return res.status(400).json({ success: false, message: "موديل غير مدعوم" });
+    }
+
+    const prisma = getPrisma();
+    const existing = await prisma.aiSetting.findUnique({
+      where: { companyId },
+      select: { modelSettings: true },
+    });
+
+    let modelSettings = {};
+    if (existing?.modelSettings) {
+      try { modelSettings = JSON.parse(existing.modelSettings); } catch { modelSettings = {}; }
+    }
+    modelSettings.imageModel = model;
+
+    await prisma.aiSetting.upsert({
+      where: { companyId },
+      update: { modelSettings: JSON.stringify(modelSettings) },
+      create: { companyId, modelSettings: JSON.stringify(modelSettings) },
+    });
+
+    res.json({ success: true, data: { model } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -242,7 +434,8 @@ exports.generateCaption = async (req, res) => {
       return res.status(400).json({ success: false, message: "البيانات المنظمة مطلوبة" });
     }
 
-    const apiKey = await getOpenRouterKey();
+    const { apiKey, keyId, keyName } = await getOpenRouterKey();
+    const startTime = Date.now();
 
     const system = [
       "You are a social media copywriter for Arabic brands.",
@@ -308,11 +501,28 @@ exports.generateCaption = async (req, res) => {
         : [],
     };
 
+    const latencyMs = Date.now() - startTime;
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: 'generation_success',
+      status: 'success',
+      latencyMs,
+      model: "google/gemini-3.1-flash-lite-001",
+    });
+
     return res.json({ success: true, data: result });
   } catch (error) {
+    const elapsed = typeof startTime === 'number' ? Date.now() - startTime : 0;
     const status = error.response?.status || 500;
     const detail = error.response?.data?.error?.message || error.message;
-    console.error("❌ [AI-CAPTION] Error:", detail);
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: 'generation_failed',
+      status: 'failed',
+      latencyMs: elapsed,
+      model: "google/gemini-3.1-flash-lite-001",
+      message: detail,
+    });
     return res.status(status).json({ success: false, message: detail });
   }
 };

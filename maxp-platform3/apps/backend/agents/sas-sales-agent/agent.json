@@ -1,0 +1,69 @@
+{
+  "slug": "sas-sales-agent",
+  "name": "وكيل مبيعات فيسبوك والكتالوج الذكي",
+  "role": "SAS_SALES",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile",
+    "allowModelFallback": true
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "friendly",
+    "formality": "casual"
+  },
+  "guardrails": {
+    "requireDraftOrders": true,
+    "singleQuestionPerTurn": true,
+    "input": [
+      "sensitive_data",
+      "prompt_injection"
+    ],
+    "output": [
+      "tool_name_exposure",
+      "arabic_language"
+    ]
+  },
+  "allowedTools": [
+    "product.search",
+    "inventory.check",
+    "order.create_draft",
+    "order.lookup",
+    "shipping.rates",
+    "facebook.reply",
+    "agent.handoff"
+  ],
+  "allowedSkills": [
+    "catalog-search",
+    "order-support",
+    "handoff-to-human"
+  ],
+  "channels": [
+    "facebook",
+    "messenger"
+  ],
+  "humanApproval": {
+    "mode": "ON_WRITE",
+    "requiredTools": [
+      "order.create_draft",
+      "order.create_confirmed"
+    ],
+    "approvalCode": true,
+    "merchantChannels": [
+      "DASHBOARD",
+      "WHATSAPP"
+    ]
+  },
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 10
+  }
+}

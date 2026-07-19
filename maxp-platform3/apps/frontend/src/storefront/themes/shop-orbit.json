@@ -1,0 +1,500 @@
+{
+  "id": "shop-orbit",
+  "name": "Shop Orbit",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "226 100% 58%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "210 38% 96%",
+      "secondaryForeground": "219 48% 10%",
+      "accent": "171 78% 40%",
+      "accentForeground": "0 0% 100%",
+      "background": "210 33% 96%",
+      "foreground": "219 48% 10%",
+      "muted": "210 24% 92%",
+      "mutedForeground": "216 16% 42%",
+      "border": "211 28% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "219 48% 10%",
+      "ring": "226 100% 58%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", \"Geist\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 14px 36px -30px rgba(19, 18, 17, 0.22)",
+      "hoverShadow": "0 18px 44px -28px rgba(19, 18, 17, 0.28)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Shop Orbit",
+    "description": "واجهة متجر عربية حديثة تركز على اكتشاف أسرع للمنتجات، تصفح مريح، ورسائل ثقة تقرّب قرار الشراء."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/modern-minimal/preview.svg",
+    "colors": [
+      "0 0% 10%",
+      "40 18% 95%",
+      "32 34% 89%"
+    ]
+  },
+  "header": {
+    "brandName": "بيتك اليوم",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "التصنيفات",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "تواصل معنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "description": "اختيارات يومية، خصومات متجددة، وشحن واضح على المنتجات الأكثر طلبًا.",
+    "copyrightText": "© 2026 جميع الحقوق محفوظة.",
+    "socialLinks": {},
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "جميع المنتجات",
+            "to": "/shop"
+          },
+          {
+            "label": "التصنيفات",
+            "to": "/collections"
+          },
+          {
+            "label": "العروض الحالية",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "الدعم",
+        "links": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال والاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "تواصل معنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "ابدأ من التصنيف المناسب",
+            "subtitle": "هيكل واضح يساعد العميل أن يصل للمنتج الأنسب بدل التشتت بين العناصر.",
+            "limit": 4,
+            "ctaText": "كل التصنيفات",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "أفضل اختيارات هذا الأسبوع",
+            "limit": 8
+          }
+        },
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "اختيارات الأسبوع",
+            "message": "تخفيضات أسبوعية وشحن سريع داخل مصر على التشكيلات الأكثر طلبًا.",
+            "saleLabel": "حتى 25% خصم",
+            "shippingLabel": "شحن خلال 48 ساعة",
+            "returnLabel": "استبدال سريع",
+            "ctaText": "ابدئي من المتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "title": "تسوّق أسرع من أول لفة",
+            "subtitle": "واجهة مرتبة للبحث والتصفية والعروض الواضحة، تخلي الوصول للمنتج المناسب أسهل من أول زيارة.",
+            "ctaText": "تسوق الآن",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهدي العروض",
+            "secondaryCtaLink": "/sale"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "العروض قبل الجميع",
+            "subtitle": "اشترك لتصلك التخفيضات والإصدارات الجديدة قبل نفاد المقاسات.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "اكتبي بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "منتجات مختارة بعناية",
+            "limit": 12
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "settings": {
+            "badge": "ثقة المتجر",
+            "title": "مساحة جانبية تخدم القرار الشرائي",
+            "subtitle": "بطاقات ثقة ورسائل سريعة وعرض موسمي في مكان ثابت أثناء التصفح.",
+            "spotlightTitle": "خصومات محدودة على اختيارات هذا الأسبوع",
+            "spotlightText": "حوّل المساحة الجانبية إلى أداة بيع حقيقية بدل فراغ بصري بجانب الشبكة.",
+            "ctaText": "اذهب إلى العروض",
+            "ctaLink": "/sale",
+            "trustItems": "شحن سريع|داخل مصر خلال 48 ساعة على المنتجات الجاهزة.\nاستبدال أوضح|رسائل ثقة تقلل تردد العميل قبل الطلب.\nتجربة عربية|واجهة منظمة للبحث والتصفية والشراء.",
+            "highlights": "اكتشاف أسرع|أوضح\nرسائل ثقة|ثابتة\nرحلة تصفح|مرتبة"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تابع الجديد أولًا",
+            "subtitle": "تنبيهات سريعة بأحدث المنتجات والعروض."
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "رحلة اكتشاف أسرع داخل المتجر",
+            "subtitle": "ابدأ بالبحث أو التصنيف أو الترتيب، ثم انتقل مباشرة إلى المنتج المناسب.",
+            "searchPlaceholder": "ابحث عن المنتج أو الفئة",
+            "resultsLabel": "نتيجة متاحة",
+            "clearButtonText": "تصفير الفلاتر",
+            "stickyLabel": "أدوات التصفح",
+            "chipLimit": 7
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "related-products",
+          "variant": "standard",
+          "settings": {
+            "title": "قد يعجبك أيضًا",
+            "limit": 4
+          }
+        },
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion"
+        },
+        {
+          "type": "reviews",
+          "variant": "compact"
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "راجع طلبك قبل الإتمام",
+            "subtitle": "تأكد من الكميات والمنتجات ثم انتقل لبيانات الشحن والدفع.",
+            "continueShoppingText": "العودة إلى المتجر"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "minimal",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "الإجمالي ورسوم الشحن ورسائل الثقة في مكان واحد.",
+            "showTrustRow": true,
+            "showFreeShippingProgress": true
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة الطلب",
+            "subtitle": "هذه آخر خطوة قبل تأكيد البيانات والدفع."
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "compact",
+          "settings": {
+            "contactDescription": "اكتب بياناتك مرة واحدة وسنكمل تجهيز الطلب مباشرة.",
+            "shippingDescription": "رسوم ومدة الشحن تظهر بوضوح قبل تأكيد الطلب.",
+            "notesDescription": "اكتب أقرب علامة مميزة أو أي ملاحظة تساعد المندوب."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "minimal",
+          "settings": {
+            "title": "اختر طريقة الدفع المناسبة",
+            "subtitle": "الدفع عند الاستلام أو أونلاين حسب المتاح لطلبك.",
+            "summaryDescription": "الإجمالي النهائي، الشحن، وطريقة الدفع أمامك بوضوح.",
+            "securityText": "الدفع محمي ومشفّر بالكامل"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تأكيد طلبك بنجاح",
+            "description": "بدأ تجهيز طلبك الآن، وستصلك تحديثات الشحن بمجرد خروجه للتوصيل.",
+            "continueShoppingText": "العودة إلى المتجر",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "تحتاج مساعدة؟ تواصل معنا",
+            "showTimeline": true,
+            "showTrackOrder": true,
+            "showRecommended": true
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "مجموعات منظمة للقرار الأسرع",
+            "subtitle": "تقسيمات واضحة تجعل المتجر أكثر قابلية للاستكشاف بدل العرض العشوائي.",
+            "limit": 6
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "ابدأ من الأكثر مبيعًا",
+            "limit": 12
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض سريعة",
+            "message": "منتجات وعروض سريعة لمدة محدودة مع شحن واستبدال واضح.",
+            "saleLabel": "خصومات محدودة",
+            "shippingLabel": "شحن سريع",
+            "returnLabel": "شراء آمن",
+            "ctaText": "ارجع للمتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "العروض الحالية",
+            "limit": 12,
+            "saleOnly": true
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "كل ما تحتاج معرفته قبل تأكيد الطلب.",
+            "body": "نجهز معظم الطلبات خلال 24 إلى 48 ساعة عمل، وتظهر رسوم الشحن قبل تأكيد الطلب حسب المحافظة.\n\nبمجرد خروج الطلب للتوصيل ستصلك متابعة بحالة الشحنة، ويمكنك التواصل معنا في أي وقت إذا احتجت تعديلًا أو متابعة إضافية.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "مدة التجهيز|من 24 إلى 48 ساعة عمل\nمناطق التغطية|حسب شركة الشحن والمحافظة\nتأكيد الطلب|قد يتم التواصل لتأكيد البيانات قبل الشحن",
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "سياسة الاستبدال والاسترجاع",
+            "subtitle": "راجِع الشروط الأساسية قبل طلب الاستبدال أو الاسترجاع.",
+            "body": "إذا وصلتك القطعة غير مناسبة يمكنك طلب الاستبدال أو الاسترجاع خلال المدة المحددة، بشرط بقاء المنتج بحالته الأصلية وملحقاته كاملة.\n\nهدفنا أن تكون الخطوات واضحة وسريعة من وقت استلام الطلب وحتى ما بعد البيع.",
+            "detailsTitle": "أهم البنود",
+            "details": "المدة|حسب سياسة المتجر الحالية\nالحالة المقبولة|المنتج بحالته الأصلية دون استخدام يخرجه عن الوصف\nطريقة الطلب|التواصل عبر قنوات الدعم المعتمدة",
+            "ctaText": "تواصل معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الدعم",
+            "title": "تواصل معنا",
+            "subtitle": "نرد على استفسارات الطلبات والشحن وما بعد البيع خلال أوقات العمل.",
+            "body": "فريقنا جاهز للرد على استفسارات الطلبات، متابعة الشحن، والاستبدال والاسترجاع عبر القنوات المتاحة.\n\nإذا كان لديك رقم طلب، أرسله لنا مع الاستفسار لنقدر نتابع معك بشكل أسرع.",
+            "detailsTitle": "قنوات التواصل",
+            "details": "واتساب|للطلبات والاستفسارات السريعة\nالبريد الإلكتروني|للمتابعة الرسمية والشكاوى\nأوقات الدعم|من الأحد إلى الخميس من 10 ص إلى 6 م",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "نوضح لك كيف نتعامل مع بياناتك أثناء الطلب والمتابعة.",
+            "body": "نستخدم بياناتك فقط لتنفيذ الطلب، متابعة التوصيل، والتواصل معك عند الحاجة بخصوص الشحن أو خدمة ما بعد البيع.\n\nلا يتم استخدام بياناتك خارج أغراض تشغيل المتجر والخدمة المرتبطة بطلبك إلا وفق ما تسمح به السياسة المعلنة.",
+            "detailsTitle": "ما الذي نجمعه",
+            "details": "بيانات التواصل|الاسم ورقم الهاتف والبريد عند الحاجة\nبيانات الطلب|العنوان وتفاصيل المنتجات المرتبطة بالشراء\nالغرض|تنفيذ الطلب والتوصيل وخدمة ما بعد البيع",
+            "ctaText": "العودة للرئيسية",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط",
+            "title": "الشروط والأحكام",
+            "subtitle": "باستخدامك للمتجر فأنت توافق على سياسات الشراء والدفع والشحن المعروضة هنا.",
+            "body": "تأكيد الطلب يرتبط بتوفر المنتج وصحة البيانات المدخلة، كما تطبق وسيلة الدفع المختارة وما يرتبط بها من تحقق أو رسوم عند الحاجة.\n\nقد يتم تحديث بعض التفاصيل التشغيلية مع بقاء حقوق العميل والنقاط الأساسية واضحة داخل المتجر.",
+            "detailsTitle": "يشمل ذلك",
+            "details": "الطلبات|تأكيد الطلب مرتبط بصحة البيانات وتوفر المنتج\nالدفع|تطبق طريقة الدفع المختارة وما يرتبط بها من تحقق أو رسوم\nالخدمة|يجوز تحديث التفاصيل التشغيلية بما لا يخل بحقوق العميل النظامية",
+            "ctaText": "سياسة الشحن",
+            "ctaLink": "/shipping"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        "member-registration"
+      ]
+    }
+  }
+}

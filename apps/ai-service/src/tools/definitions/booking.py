@@ -66,14 +66,14 @@ async def booking_status(input_data: StatusInput) -> dict[str, Any]:
 
 booking_info_tool = FunctionTool(
     name="booking_info",
-    description="استرجاع كافة معلومات المركز الطبي (مثل الفروع مع landmarkImage/صورة, الخدمات, الأطباء, الأسعار, أيام العمل للرجال والنساء).",
+    description="معلومات عامة عن المركز (العنوان, الفروع, الخدمات, الأطباء, الأسعار, أوقات العمل). استخدمها فقط إذا سأل العميل عن معلومات عامة. لا تستخدمها للتحقق من توفر مواعيد — استخدم booking_slots لذلك.",
     func=booking_info,
     input_model=InfoInput,
 )
 
 booking_slots_tool = FunctionTool(
     name="booking_slots",
-    description="استعلام وعرض مواعيد الحجز المتاحة لفرع المركز الطبي في تاريخ معين وبناءً على نوع المريض (MALE/FEMALE).",
+    description="التحقق من مواعيد الحجز المتاحة في تاريخ معين. استخدم هذه الأداة عندما يريد العميل حجز موعد أو الاستفسار عن المواعيد المتاحة. تمرر تلقائياً company_id والتاريخ ونوع المريض.",
     func=booking_slots,
     input_model=SlotsInput,
 )

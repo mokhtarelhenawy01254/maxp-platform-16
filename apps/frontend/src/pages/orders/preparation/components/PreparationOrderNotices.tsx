@@ -14,46 +14,35 @@ const PreparationOrderNotices = ({
   shortageFollowUpVisual,
 }: PreparationOrderNoticesProps) => {
   return (
-    <>
+    <div className="space-y-1.5">
       {order.notes ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <span className="font-semibold">ملاحظات:</span> {order.notes}
+        <div className="flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <span className="font-semibold shrink-0">ملاحظات:</span>
+          <span>{order.notes}</span>
         </div>
       ) : null}
 
       {!order.isReady ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-          <div className="flex items-start gap-2">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              هذا الطلب يحتاج مراجعة مخزون أو تحويل من مخزن آخر قبل إكمال
-              التجهيز.
-            </p>
-          </div>
+        <div className="flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+          <span>يحتاج مراجعة مخزون أو تحويل من مخزن آخر قبل إكمال التجهيز.</span>
         </div>
       ) : null}
 
       {order.stage === "STOCK_SHORTAGE" ? (
-        <div className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-          <div className="flex items-start gap-2">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              هذا الطلب موجود حاليًا في قائمة المؤجل بسبب العجز، ولن يدخل
-              التشغيل اليومي حتى يتم إرجاعه للتجهيز.
-            </p>
-          </div>
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+          <span>طلب مؤجل بسبب العجز — لن يدخل التشغيل اليومي حتى إرجاعه للتجهيز.</span>
         </div>
       ) : null}
 
       {shortageFollowUpVisual ? (
-        <div className={shortageFollowUpVisual.alertClass}>
-          <div className="flex items-start gap-2">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>{shortageFollowUpVisual.alertText}</p>
-          </div>
+        <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs ${shortageFollowUpVisual.alertClass}`}>
+          <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+          <span>{shortageFollowUpVisual.alertText}</span>
         </div>
       ) : null}
-    </>
+    </div>
   );
 };
 

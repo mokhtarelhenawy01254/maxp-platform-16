@@ -1,0 +1,117 @@
+
+model OrderWorkflowConfig {
+  id                        String   @id @default(cuid())
+  companyId                 String   @unique
+  enabled                   Boolean  @default(false)
+  enforceTransitions        Boolean  @default(true)
+  requireApprovalByDefault  Boolean  @default(false)
+  allowOverride             Boolean  @default(true)
+  overrideRoles             String   @default("[\"OWNER\",\"SUPER_ADMIN\"]")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  company                   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("order_workflow_configs")
+}
+
+model OrderStatusDefinition {
+  id                    String   @id @default(cuid())
+  companyId             String
+  name                  String
+  code                  String   // internal_code
+  color                 String   @default("#6B7280") // display_color
+  isTerminal            Boolean  @default(false)
+  lockAfterEntry        Boolean  @default(false)
+  requiresApprovalToExit Boolean  @default(false)
+  sortOrder             Int      @default(0)
+  description           String?
+  notifyCustomer        Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  fromTransitions       OrderWorkflowTransition[] @relation("FromStatus")
+  toTransitions         OrderWorkflowTransition[] @relation("ToStatus")
+  requestFromTransitions OrderStatusChangeRequest[] @relation("ReqFromStatus")
+  requestToTransitions   OrderStatusChangeRequest[] @relation("ReqToStatus")
+  auditFromEntries      OrderWorkflowAuditLog[]    @relation("AuditFromStatus")
+  auditToEntries        OrderWorkflowAuditLog[]    @relation("AuditToStatus")
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("order_status_definitions")
+}
+
+model OrderWorkflowTransition {
+  id               String   @id @default(cuid())
+  companyId        String
+  fromStatusId     String?
+  toStatusId       String
+  allowedRoles     String   // multi-select stored as JSON string
+  requiresApproval Boolean  @default(false)
+  allowOverride    Boolean  @default(true)
+  restrictBackward Boolean  @default(false)
+  priority         Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fromStatus       OrderStatusDefinition? @relation("FromStatus", fields: [fromStatusId], references: [id], onDelete: Cascade)
+  toStatus         OrderStatusDefinition @relation("ToStatus", fields: [toStatusId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([fromStatusId])
+  @@index([toStatusId])
+  @@map("order_workflow_transitions")
+}
+
+model OrderStatusChangeRequest {
+  id           String   @id @default(cuid())
+  companyId    String
+  orderId      String
+  requestedBy  String
+  fromStatusId String?
+  toStatusId   String
+  reason       String?
+  status       String   @default("pending") // pending / approved / rejected
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  metadata     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requestor    User     @relation("RequestedBy", fields: [requestedBy], references: [id])
+  reviewer     User?    @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+  fromStatus   OrderStatusDefinition? @relation("ReqFromStatus", fields: [fromStatusId], references: [id])
+  toStatus     OrderStatusDefinition @relation("ReqToStatus", fields: [toStatusId], references: [id])
+
+  @@index([companyId])
+  @@index([orderId])
+  @@index([status])
+  @@map("order_status_change_requests")
+}
+
+model OrderWorkflowAuditLog {
+  id           String   @id @default(cuid())
+  companyId    String
+  orderId      String
+  fromStatusId String?
+  toStatusId   String
+  changedBy    String
+  changeType   String   // normal / approval / override
+  reason       String?
+  approvedBy   String?
+  metadata     String?
+  createdAt    DateTime @default(now())
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user         User     @relation("AuditChangedBy", fields: [changedBy], references: [id])
+  approver     User?    @relation("AuditApprovedBy", fields: [approvedBy], references: [id])
+  fromStatus   OrderStatusDefinition? @relation("AuditFromStatus", fields: [fromStatusId], references: [id])
+  toStatus     OrderStatusDefinition @relation("AuditToStatus", fields: [toStatusId], references: [id])
+
+  @@index([companyId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("order_workflow_audit_logs")
+}

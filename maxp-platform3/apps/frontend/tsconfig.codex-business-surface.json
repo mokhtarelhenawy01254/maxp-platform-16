@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/components/business/BusinessSurface.tsx",
+    "src/components/business/BusinessFilters.tsx",
+    "src/components/business/BusinessMetrics.tsx",
+    "src/pages/CompanyDashboard.tsx",
+    "src/pages/CompanyDashboard.jsx",
+    "src/pages/admin/OrderInvoices.tsx",
+    "src/components/ui/tooltip.tsx",
+    "src/components/ui/sheet.tsx",
+    "src/components/ui/card.tsx"
+  ]
+}

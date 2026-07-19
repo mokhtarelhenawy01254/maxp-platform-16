@@ -1,6 +1,6 @@
 const { getSharedPrismaClient, initializeSharedDatabase, executeWithRetry } = require('../services/sharedDatabase');
 const { fromZonedTime } = require('date-fns-tz');
-const { startOfDay, endOfDay, subDays } = require('date-fns');
+const { startOfDay, endOfDay, subDays, differenceInCalendarDays } = require('date-fns');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const { encrypt, decrypt } = require('../utils/encryption');
@@ -128,6 +128,19 @@ const companyDashboardOverview = async (req, res) => {
             }
         };
 
+        // ponytail: previous period = same length before `start`. One extra query batch, no caching layer needed yet.
+        const periodDays = Math.max(differenceInCalendarDays(end, start), 1);
+        const prevStart = subDays(start, periodDays);
+        const prevEnd = subDays(start, 1);
+        const prevOrdersWhereClause = {
+            companyId,
+            createdAt: { gte: prevStart, lte: prevEnd }
+        };
+        const prevTrackedOrdersWhereClause = {
+            ...prevOrdersWhereClause,
+            status: { notIn: DASHBOARD_EXCLUDED_ORDER_STATUSES }
+        };
+
         const [
             newUsersCount,
             newCustomersCount,
@@ -142,7 +155,11 @@ const companyDashboardOverview = async (req, res) => {
             lowStockCount,
             outOfStockCount,
             newOrdersCount,
-            viewedOrdersCount
+            viewedOrdersCount,
+            prevTrackedOrdersCount,
+            prevOrderItems,
+            prevStoreVisits,
+            prevNewCustomersCount
         ] = await Promise.all([
             withDashboardFallback('newUsersCount', () => getSharedPrismaClient().user.count({
                 where: {
@@ -243,6 +260,33 @@ const companyDashboardOverview = async (req, res) => {
                     where: { companyId, isViewed: true }
                 })
             ]).then(([orderCount, guestCount]) => orderCount + guestCount), 0),
+            withDashboardFallback('prevTrackedOrdersCount', () => getSharedPrismaClient().order.count({
+                where: prevTrackedOrdersWhereClause
+            }), 0),
+            withDashboardFallback('prevOrderItems', () => getSharedPrismaClient().orderItem.findMany({
+                where: {
+                    order: {
+                        is: prevTrackedOrdersWhereClause
+                    }
+                },
+                select: {
+                    quantity: true,
+                    total: true,
+                    product: { select: { cost: true } }
+                }
+            }), []),
+            withDashboardFallback('prevStoreVisits', () => getSharedPrismaClient().storeVisit.count({
+                where: {
+                    companyId,
+                    visitedAt: { gte: prevStart, lte: prevEnd }
+                }
+            }), 0),
+            withDashboardFallback('prevNewCustomersCount', () => getSharedPrismaClient().customer.count({
+                where: {
+                    companyId,
+                    createdAt: { gte: prevStart, lte: prevEnd }
+                }
+            }), 0),
         ]);
 
         const safeTrackedOrdersCount = trackedOrdersCount ?? totalOrdersCount;
@@ -290,6 +334,25 @@ const companyDashboardOverview = async (req, res) => {
         const topProducts = Object.values(productMap)
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, 5);
+
+        // Previous period summary for delta comparison
+        let prevRevenue = 0;
+        prevOrderItems.forEach(item => {
+            prevRevenue += parseFloat(item.total || 0);
+        });
+        const prevItemsCount = prevOrderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const prevConversionRate = (prevStoreVisits > 0 && prevTrackedOrdersCount > 0)
+            ? parseFloat(((prevTrackedOrdersCount / prevStoreVisits) * 100).toFixed(2))
+            : 0;
+        const previousPeriod = {
+            trackedOrders: prevTrackedOrdersCount,
+            revenue: prevRevenue,
+            items: prevItemsCount,
+            visits: prevStoreVisits,
+            newCustomers: prevNewCustomersCount,
+            conversionRate: prevConversionRate,
+            aov: prevTrackedOrdersCount > 0 ? (prevRevenue / prevTrackedOrdersCount) : 0
+        };
 
         const visitsAvailable = totalStoreVisits > 0;
         const conversionRate = visitsAvailable
@@ -367,7 +430,8 @@ const companyDashboardOverview = async (req, res) => {
                 totalItems: itemsCount,
                 piecesPerOrder
             },
-            topProducts
+            topProducts,
+            previousPeriod
         };
 
         res.json({

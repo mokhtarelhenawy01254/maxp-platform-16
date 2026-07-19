@@ -11,6 +11,7 @@ export type StageKey =
 
 export type StageFilter = "ALL" | StageKey;
 export type StockFilter = "all" | "ready" | "shortage";
+export type ItemCountFilter = "all" | "single" | "multiple";
 export type StageCounts = Record<StageFilter, number>;
 
 export interface SimpleOrderItem {

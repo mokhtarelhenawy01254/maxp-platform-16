@@ -506,13 +506,15 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               className="business-shell-language-switcher"
             />
             <NotificationDropdown className="business-shell-notification-slot" />
-            <Link
-              to="/support"
+            <a
+              href={`https://wa.me/${import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER || "201123087745"}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="business-icon-button"
-              title={t("header.support") || "الدعم الفني"}
+              title={t("header.whatsapp") || "الدعم عبر واتساب"}
             >
               <ChatBubbleLeftRightIcon className="h-5 w-5" />
-            </Link>
+            </a>
             <PageExplanations />
             
             {isSuperAdmin && (

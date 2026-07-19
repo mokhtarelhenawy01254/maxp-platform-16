@@ -10,6 +10,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
 } from "recharts";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 const CURRENCY_RATES: Record<string, number> = { EGP: 1, SAR: 0.12, USD: 0.02 };
@@ -125,26 +126,6 @@ export default function MonthlyPnLDashboard() {
     ].map((d) => ({ ...d, pct: max > 0 ? Math.min(100, (d.value / max) * 100) : 0 }));
   }, [r, T]);
 
-  const Slider: React.FC<{ label: string; icon: React.ReactNode; value: number; min: number; max: number; step?: number; onChange: React.ChangeEventHandler }> =
-    ({ label, icon, value, min, max, step = 1000, onChange }) => (
-      <div className="space-y-1">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1.5">{icon}{label}</span>
-          <span className="flex items-center gap-1">
-            <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
-              className="w-24 sm:w-28 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-            <span className="font-semibold text-gray-900 dark:text-gray-100 text-xs">{sym(currency)}</span>
-          </span>
-        </div>
-        <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-          className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>{fmt(min)}</span>
-          <span>{fmt(max)}</span>
-        </div>
-      </div>
-    );
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-4 sm:py-6 px-3 sm:px-4" dir={i18n.dir()}>
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
@@ -212,18 +193,18 @@ export default function MonthlyPnLDashboard() {
           {/* Input Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Card title={T("revenueTitle")} icon={<CurrencyDollarIcon className="w-5 h-5 text-green-500" />}>
-              <Slider label={T("monthlyRevenue")} icon={<BanknotesIcon className="w-4 h-4 text-green-500" />} value={inputs.revenue} min={10_000} max={2_000_000} step={10_000} onChange={set("revenue")} />
-              <Slider label={T("cogs")} icon={<Cog6ToothIcon className="w-4 h-4 text-gray-500" />} value={inputs.cogs} min={1_000} max={1_000_000} step={5_000} onChange={set("cogs")} />
-              <Slider label={T("shipping")} icon={<TruckIcon className="w-4 h-4 text-gray-500" />} value={inputs.shipping} min={500} max={200_000} step={1_000} onChange={set("shipping")} />
-              <Slider label={T("adSpend")} icon={<MegaphoneIcon className="w-4 h-4 text-blue-500" />} value={inputs.adSpend} min={1_000} max={500_000} step={5_000} onChange={set("adSpend")} />
-              <Slider label={T("platformFees")} icon={<GlobeAltIcon className="w-4 h-4 text-gray-500" />} value={inputs.platformFees} min={500} max={100_000} step={1_000} onChange={set("platformFees")} />
-              <Slider label={T("otherVariable")} icon={<SquaresPlusIcon className="w-4 h-4 text-gray-500" />} value={inputs.otherVariable} min={0} max={100_000} step={1_000} onChange={set("otherVariable")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("monthlyRevenue")} icon={<BanknotesIcon className="w-4 h-4 text-green-500" />} value={inputs.revenue} min={10_000} max={2_000_000} step={10_000} onChange={set("revenue")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("cogs")} icon={<Cog6ToothIcon className="w-4 h-4 text-gray-500" />} value={inputs.cogs} min={1_000} max={1_000_000} step={5_000} onChange={set("cogs")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("shipping")} icon={<TruckIcon className="w-4 h-4 text-gray-500" />} value={inputs.shipping} min={500} max={200_000} step={1_000} onChange={set("shipping")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("adSpend")} icon={<MegaphoneIcon className="w-4 h-4 text-blue-500" />} value={inputs.adSpend} min={1_000} max={500_000} step={5_000} onChange={set("adSpend")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("platformFees")} icon={<GlobeAltIcon className="w-4 h-4 text-gray-500" />} value={inputs.platformFees} min={500} max={100_000} step={1_000} onChange={set("platformFees")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("otherVariable")} icon={<SquaresPlusIcon className="w-4 h-4 text-gray-500" />} value={inputs.otherVariable} min={0} max={100_000} step={1_000} onChange={set("otherVariable")} />
             </Card>
 
             <Card title={T("fixedCosts")} icon={<HomeModernIcon className="w-5 h-5 text-purple-500" />}>
-              <Slider label={T("salaries")} icon={<UserGroupIcon className="w-4 h-4 text-gray-500" />} value={inputs.salaries} min={1_000} max={500_000} step={5_000} onChange={set("salaries")} />
-              <Slider label={T("rent")} icon={<HomeModernIcon className="w-4 h-4 text-gray-500" />} value={inputs.rent} min={500} max={200_000} step={1_000} onChange={set("rent")} />
-              <Slider label={T("otherFixed")} icon={<SquaresPlusIcon className="w-4 h-4 text-gray-500" />} value={inputs.otherFixed} min={0} max={200_000} step={1_000} onChange={set("otherFixed")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("salaries")} icon={<UserGroupIcon className="w-4 h-4 text-gray-500" />} value={inputs.salaries} min={1_000} max={500_000} step={5_000} onChange={set("salaries")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("rent")} icon={<HomeModernIcon className="w-4 h-4 text-gray-500" />} value={inputs.rent} min={500} max={200_000} step={1_000} onChange={set("rent")} />
+              <SliderInput currencySymbol={sym(currency)} label={T("otherFixed")} icon={<SquaresPlusIcon className="w-4 h-4 text-gray-500" />} value={inputs.otherFixed} min={0} max={200_000} step={1_000} onChange={set("otherFixed")} />
             </Card>
           </div>
 
@@ -344,8 +325,6 @@ export default function MonthlyPnLDashboard() {
               </div>
             </details>
 
-            {/* Footer */}
-            <div className="text-center text-xs text-gray-400 dark:text-gray-600">{T("footer")}</div>
           </div>
         </div>
       </div>

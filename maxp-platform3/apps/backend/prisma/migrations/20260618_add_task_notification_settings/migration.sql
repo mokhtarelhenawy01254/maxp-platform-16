@@ -1,0 +1,14 @@
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskCreatedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskUpdatedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskStatusChangedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskCommentedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskAttachmentAddedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskDeletedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskWatcherAddedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskExecutionCheckEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskDeadlineReminderEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskOverdueEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskSubtaskCreatedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskChecklistItemCompletedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "whatsapp_notification_settings" ADD COLUMN IF NOT EXISTS "taskTimeEntryAddedEnabled" BOOLEAN NOT NULL DEFAULT true;

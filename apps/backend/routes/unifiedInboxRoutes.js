@@ -7,7 +7,10 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
+const { conversationAccessGuard } = require('../middleware/numberAccessGuard');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const unifiedInboxController = require('../controller/unifiedInboxController');
+const whatsappInboxController = require('../controller/whatsappInboxController');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 المحادثات
@@ -46,6 +49,18 @@ router.delete('/conversations/:id',
     verifyToken.authenticateToken,
     checkAppAccess('unified-inbox'),
     unifiedInboxController.deleteUnifiedConversation
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ✏️ تصحيح رد الوكيل AI (يعمل على جميع المنصات)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Correct an AI-generated message (works for all platforms)
+router.post('/conversations/:conversationId/messages/:messageId/correct',
+    verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
+    conversationAccessGuard,
+    whatsappInboxController.correctMessage
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════

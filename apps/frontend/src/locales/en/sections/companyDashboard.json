@@ -1,5 +1,6 @@
 {
   "title": "Dashboard",
+  "welcome": "Welcome, {{name}}",
   "status": {
     "active": "Active",
     "inactive": "Inactive"
@@ -22,6 +23,7 @@
     "yesterday": "Yesterday",
     "last7Days": "Last 7 days",
     "last30Days": "Last 30 days",
+    "last90Days": "Last 90 days",
     "thisMonth": "This month",
     "lastMonth": "Last month",
     "custom": "Custom range"
@@ -64,9 +66,31 @@
   "sections": {
     "financials": "Financials",
     "growth": "Growth",
-    "operations": "Operations"
+    "operations": "Operations",
+    "inventoryAlerts": "Inventory Alerts",
+    "insights": "Smart Insights"
+  },
+  "insights": {
+    "revenueTrend": "Revenue is {{delta}} vs the previous period ({{current}}).",
+    "lowConversion": "Conversion rate is {{rate}}% — below 2%. Review your checkout and product pages.",
+    "highConversion": "Strong performance: conversion rate is {{rate}}% — above industry average.",
+    "highCancellation": "Cancellation rate is {{rate}}% — above 15%. Investigate order issues or product expectations.",
+    "outOfStock": "{{count}} products are out of stock. Restock to avoid lost sales.",
+    "lowStock": "{{count}} products are running low on stock. Plan restocking soon.",
+    "openOrders": "{{count}} open orders need attention.",
+    "productConcentration": "{{product}} accounts for {{pct}}% of items sold — consider diversifying or restocking.",
+    "newCustomers": "{{count}} new customers joined this period.",
+    "newCustomersGrowth": "New customers up {{delta}} ({{count}} this period)."
+  },
+  "inventory": {
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock"
   },
   "metrics": {
+    "totalOrders": "Total Orders",
+    "confirmedOrders": "Confirmed Orders",
+    "cancelledOrders": "Cancelled Orders",
+    "returnedOrders": "Returned Orders",
     "totalCustomers": "Total Customers",
     "totalCustomersSubtitle": "Total number of registered customers",
     "newCustomers": "New Customers",
@@ -130,6 +154,20 @@
     "openOrdersFollowUp": "Need follow-up in the orders workspace",
     "noOpenOrders": "No open orders in this period",
     "openOrdersAction": "Open orders"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "orders": "Orders",
+    "products": "Products",
+    "customers": "Customers",
+    "whatsapp": "WhatsApp",
+    "inbox": "Inbox",
+    "aiAgent": "AI Agent",
+    "connections": "Connections",
+    "analytics": "Analytics",
+    "marketing": "Marketing",
+    "storefront": "Storefront",
+    "settings": "Settings"
   },
   "quickStart": {
     "title": "Quick start guide",
@@ -211,5 +249,20 @@
   "loading": {
     "title": "Loading dashboard",
     "summary": "Fetching latest company data..."
+  },
+  "live": {
+    "label": "Live",
+    "connected": "Live updates connected",
+    "disconnected": "Live updates paused",
+    "viewAll": "View all",
+    "newEvent": "New activity"
+  },
+  "export": {
+    "label": "Export",
+    "csv": "Export CSV",
+    "excel": "Export Excel",
+    "pdf": "Export PDF",
+    "metric": "Metric",
+    "value": "Value"
   }
 }

@@ -107,7 +107,7 @@ const parseMessage = (msg: any): Message => {
   return {
     id: msg.id,
     content: msg.content,
-    senderId: msg.sender?.id || msg.senderId || "unknown",
+    senderId: msg.senderId === 'ai' || msg.isAIResponse || (!msg.isFromCustomer && !msg.senderId) ? 'ai' : (msg.sender?.id || msg.senderId || "unknown"),
     senderName,
     timestamp: safeDate(msg.timestamp || msg.createdAt),
     type: msgType,
@@ -119,6 +119,7 @@ const parseMessage = (msg: any): Message => {
     fileSize: msg.fileSize,
     metadata: md,
     attachments: attachments,
+    isAIResponse: msg.isAIResponse || (!msg.isFromCustomer && !msg.senderId) || false,
   };
 };
 

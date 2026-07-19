@@ -1,0 +1,42 @@
+{
+  "id": "catalog-search",
+  "displayName": "Catalog Search & Product Discovery",
+  "version": "2.0.0",
+  "description": "Search the store catalog by name, keyword, image, size, color, or category. Use when: customer asks about products, wants recommendations, checks prices/availability, asks what's in stock, sends a product photo for visual matching, or references a previously shown product. Validates product existence, stock levels, and active offers before any order commitment.",
+  "triggerPhrases": [
+    "عايز أشوف المنتجات",
+    "عندكوا ايه",
+    "ابعتلي الكتالوج",
+    "أسعاركم كام",
+    "عايز حاجة زي دي",
+    "في مقاس",
+    "في لون",
+    "المنتج ده متوفر",
+    "عندكم عروض",
+    "كود خصم",
+    "ابعتلي صور",
+    "عايز أعرف السعر",
+    "ايه الجديد عندكم",
+    "الأكثر مبيعاً",
+    "show me products",
+    "what do you have",
+    "catalog",
+    "browse",
+    "is this available",
+    "do you have size"
+  ],
+  "allowedTools": [
+    "product_search",
+    "inventory_check",
+    "offers_list_active",
+    "coupon_validate",
+    "product_top_selling",
+    "category_list"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 6,
+  "successCriteria": {
+    "primary": "customer_shown_relevant_products",
+    "secondary": "customer_proceeds_to_order"
+  }
+}

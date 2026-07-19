@@ -1,0 +1,153 @@
+{
+  "id": "opulence",
+  "name": "Opulence",
+  "tokens": {
+    "colors": {
+      "primary": "42 75% 55%",
+      "primaryForeground": "0 0% 3%",
+      "secondary": "0 0% 8%",
+      "secondaryForeground": "42 75% 55%",
+      "accent": "42 60% 45%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 4%",
+      "foreground": "40 20% 92%",
+      "muted": "0 0% 10%",
+      "mutedForeground": "40 8% 55%",
+      "border": "0 0% 15%",
+      "card": "0 0% 7%",
+      "cardForeground": "40 20% 92%",
+      "ring": "42 75% 55%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "bodyFont": "\"Montserrat\", \"Cairo\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0",
+      "buttonRadius": "0"
+    },
+    "productCard": {
+      "borderRadius": "0",
+      "boxShadow": "0 12px 40px -16px rgba(200, 160, 50, 0.1)",
+      "hoverShadow": "0 20px 56px -20px rgba(200, 160, 50, 0.18)",
+      "badgeRadius": "0",
+      "buttonRadius": "0",
+      "surfaceOpacity": "0.95"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Opulence",
+    "description": "مجوهرات وساعات فاخرة — تصاميم حصرية، شهادات أصالة، وتغليف هدايا فاخر مع توصيل مؤمّن."
+  },
+  "header": {
+    "brandName": "OPULENCE",
+    "showSearch": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المجموعات", "to": "/shop" },
+      { "label": "التشكيلات", "to": "/collections" },
+      { "label": "حصري", "to": "/sale" }
+    ]
+  },
+  "footer": {
+    "description": "OPULENCE — أرقى المجوهرات والساعات مع شهادة أصالة وتغليف فاخر لكل قطعة.",
+    "copyrightText": "© 2026 OPULENCE. All rights reserved.",
+    "socialLinks": { "instagram": "https://instagram.com" },
+    "navigation": [
+      { "title": "المجموعات", "links": [{ "label": "كل القطع", "to": "/shop" }, { "label": "التشكيلات", "to": "/collections" }] },
+      { "title": "الخدمة", "links": [{ "label": "التوصيل المؤمّن", "to": "/shipping" }, { "label": "الاستبدال", "to": "/returns" }, { "label": "تواصل معنا", "to": "/contact" }] }
+    ],
+    "legalLinks": [{ "label": "الخصوصية", "to": "/privacy" }, { "label": "الشروط", "to": "/terms" }]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "luxury-minimal",
+          "settings": {
+            "title": "الأناقة في التفاصيل",
+            "subtitle": "مجوهرات وساعات مصنوعة بحرفية عالية — كل قطعة ليها قصة وشهادة أصالة.",
+            "ctaText": "اكتشف المجموعة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "التشكيلات الحصرية",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "settings": {
+            "badge": "تشكيلات",
+            "title": "قطع تحكي قصص",
+            "subtitle": "كل تشكيلة مستوحاة من عالم مختلف — اكتشف اللي يعبر عنك.",
+            "limit": 4,
+            "ctaText": "شاهد الكل",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "luxury-card",
+          "settings": { "title": "القطع المميزة", "limit": 6 }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "لماذا OPULENCE؟",
+            "subtitle": "",
+            "items": [
+              { "icon": "shield", "title": "شهادة أصالة", "description": "كل قطعة بشهادة أصالة موثقة." },
+              { "icon": "target", "title": "تغليف فاخر", "description": "باكيدجينج أنيق يليق بالهدية." },
+              { "icon": "grid", "title": "توصيل مؤمّن", "description": "شحن بتأمين كامل على القيمة." },
+              { "icon": "search", "title": "استشارة مجانية", "description": "خبراء يساعدوك في اختيار القطعة المناسبة." }
+            ]
+          }
+        },
+        { "type": "story-parallax" },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "كوني أول من يعرف",
+            "subtitle": "تشكيلات جديدة وقطع حصرية لأعضاء OPULENCE فقط.",
+            "buttonText": "انضمي",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "sections": [
+        { "type": "hero-banner", "variant": "luxury-minimal", "settings": { "title": "المجموعة الكاملة", "subtitle": "تصفح كل القطع حسب النوع أو المناسبة.", "ctaText": "ابدأ الاكتشاف", "ctaLink": "/shop" } },
+        { "type": "shop-command-bar", "variant": "minimal-toolbar", "settings": { "searchPlaceholder": "ابحث (مثال: خاتم ألماس)", "allCategoriesLabel": "الكل", "resultsLabel": "قطعة", "clearButtonText": "مسح", "chipLimit": 5 } },
+        "filters-sidebar",
+        { "type": "product-grid", "variant": "luxury-card", "settings": { "title": "كل القطع", "limit": 9 } }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "masonry" },
+        { "type": "product-info", "variant": "bento-specs", "settings": { "descriptionTitle": "تفاصيل القطعة", "shippingTitle": "التوصيل المؤمّن", "shippingText": "شحن مؤمّن بالكامل على قيمة القطعة. التوصيل خلال 3-5 أيام عمل.", "guaranteesTitle": "ضمانات OPULENCE", "guaranteeStyle": "grid", "guaranteeItems": "أصالة موثقة|شهادة أصالة مع كل قطعة.\nتغليف هدايا|باكيدجينج فاخر جاهز.\nتأمين شامل|تأمين كامل أثناء الشحن." } },
+        { "type": "conversion-stack", "variant": "editorial" },
+        { "type": "related-products", "variant": "compact", "settings": { "title": "قد يعجبك أيضاً", "limit": 3 } },
+        { "type": "reviews", "variant": "compact", "settings": { "title": "آراء العملاء", "verifiedLabel": "عميل VIP", "reviewLimit": 3 } }
+      ]
+    },
+    "cart": {
+      "sections": [
+        { "type": "cart-items", "variant": "compact", "settings": { "title": "الاختيارات المميزة", "continueShoppingText": "العودة للمجموعة" } },
+        { "type": "order-summary", "variant": "highlighted", "settings": { "title": "ملخص الطلب", "checkoutButtonText": "إتمام الطلب", "secureCheckoutText": "دفع آمن ومشفّر", "showTrustRow": true } }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        { "type": "promo-strip", "settings": { "badge": "OPULENCE VIP", "message": "تأمين شامل + تغليف فاخر + شهادة أصالة مع كل طلب.", "saleLabel": "مؤمّن", "shippingLabel": "تغليف هدايا" } },
+        { "type": "checkout-form", "variant": "split", "settings": { "contactTitle": "بياناتك", "shippingTitle": "عنوان التوصيل", "notesTitle": "ملاحظات", "notesDescription": "أي تعليمات خاصة بالتغليف أو التوصيل." } },
+        { "type": "payment", "variant": "cards", "settings": { "title": "طريقة الدفع", "confirmOrderText": "تأكيد الطلب", "codLabel": "دفع عند الاستلام", "cardLabel": "بطاقة بنكية", "walletLabel": "تحويل بنكي" } }
+      ]
+    }
+  }
+}
+

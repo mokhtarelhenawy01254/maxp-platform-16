@@ -1301,9 +1301,11 @@ const WhatsAppChatContent: React.FC = () => {
     if (!window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
 
     try {
-      await api.delete(`/whatsapp/messages/${selectedMessageForMenu.messageId}`, {
-        data: {
-          sessionId: selectedSession,
+      await api.post('/whatsapp/messages/delete', {
+        sessionId: selectedSession,
+        to: selectedMessageForMenu.remoteJid,
+        key: {
+          id: selectedMessageForMenu.messageId,
           remoteJid: selectedMessageForMenu.remoteJid,
           fromMe: selectedMessageForMenu.fromMe
         }
@@ -1810,10 +1812,9 @@ const WhatsAppChatContent: React.FC = () => {
   const handleToggleEphemeral = async (duration: number) => {
     if (!selectedSession || !selectedContact?.isGroup) return;
     try {
-      await api.post('/whatsapp/groups/ephemeral', {
+      await api.post(`/whatsapp/groups/${selectedContact.jid}/ephemeral`, {
         sessionId: selectedSession,
-        groupId: selectedContact.jid,
-        duration // 0 = off, 86400 = 24h, 604800 = 7 days, 7776000 = 90 days
+        ephemeral: duration // 0 = off, 86400 = 24h, 604800 = 7 days, 7776000 = 90 days
       });
       toast.success('تم تحديث إعدادات الرسائل المؤقتة');
     } catch (error) {
@@ -1826,9 +1827,8 @@ const WhatsAppChatContent: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('sessionId', selectedSession);
-      formData.append('groupId', selectedContact.jid);
       formData.append('image', file);
-      await api.post('/whatsapp/groups/picture', formData, {
+      await api.post(`/whatsapp/groups/${selectedContact.jid}/picture`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('تم تحديث صورة المجموعة');

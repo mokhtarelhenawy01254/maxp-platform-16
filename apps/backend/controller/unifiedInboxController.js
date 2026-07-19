@@ -492,8 +492,8 @@ async function getStandardConversationMessages(req, res, companyId, id, skip, ta
                 mediaType: attachments[0]?.type || metadata.attachmentType || null,
                 mediaFileName: attachments[0]?.name || null,
                 quotedMessage: null,
-                isAIResponse: metadata.isAIResponse || false,
-                sender: msg.isFromCustomer ? 'customer' : (msg.user ? `${msg.user.firstName} ${msg.user.lastName}`.trim() : 'agent'),
+                isAIResponse: metadata.isAIResponse || (!msg.isFromCustomer && !msg.senderId) || false,
+                sender: msg.isFromCustomer ? 'customer' : (msg.senderId && msg.user ? `${msg.user.firstName} ${msg.user.lastName}`.trim() : (metadata.isAIResponse || !msg.senderId ? 'ai' : 'agent')),
                 senderAvatar: msg.user?.avatar || null,
                 interactiveData: null
             };
@@ -595,7 +595,7 @@ const getConversationMessages = async (req, res) => {
                     content: msg.quotedContent
                 } : null,
                 isAIResponse: msg.isAIResponse,
-                sender: msg.fromMe ? 'agent' : (msg.participant || 'customer'),
+                sender: msg.fromMe ? (msg.isAIResponse ? 'ai' : 'agent') : (msg.participant || 'customer'),
                 interactiveData: msg.interactiveData ? tryParseJSON(msg.interactiveData) : null
             })).reverse(); // Reverse to show oldest first
 

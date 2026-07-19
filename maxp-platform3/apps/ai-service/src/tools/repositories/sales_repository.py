@@ -1,0 +1,96 @@
+from __future__ import annotations
+
+from typing import Any
+
+from sqlalchemy import text
+
+from src.tools.repositories.base import BaseRepository
+from src.tools.definitions._helpers import period_start_date
+
+
+class SalesRepository(BaseRepository):
+
+    async def get_revenue_summary(
+        self, company_id: str, period: str = "month"
+    ) -> dict[str, Any]:
+        start_date = period_start_date(period)
+        sql = text("""
+            SELECT
+              COUNT(*)::int AS total_orders,
+              COUNT(*) FILTER (WHERE status = 'DELIVERED' OR paymentStatus = 'COMPLETED')::int AS paid_count,
+              COALESCE(SUM(total) FILTER (WHERE status = 'DELIVERED' OR paymentStatus = 'COMPLETED'), 0) AS paid_revenue,
+              COALESCE(AVG(total) FILTER (WHERE status = 'DELIVERED' OR paymentStatus = 'COMPLETED'), 0) AS avg_value
+            FROM orders
+            WHERE "companyId" = :cid AND "createdAt" >= :start
+        """)
+        row = await self._session.execute(sql, {"cid": company_id, "start": start_date})
+        first = row.first()
+        agg = dict(first._mapping) if first else {}
+
+        status_sql = text("""
+            SELECT status, COUNT(*)::int AS cnt
+            FROM orders
+            WHERE "companyId" = :cid AND "createdAt" >= :start
+            GROUP BY status
+        """)
+        status_rows = await self._session.execute(status_sql, {"cid": company_id, "start": start_date})
+        by_status = {}
+        for r in status_rows:
+            by_status[r.status.lower() if r.status else "unknown"] = r.cnt
+
+        return {
+            "period": period,
+            "revenue": str(agg.get("paid_revenue", 0)),
+            "ordersCount": agg.get("paid_count", 0),
+            "avgOrderValue": str(agg.get("avg_value", 0)),
+            "totalOrders": agg.get("total_orders", 0),
+            "byStatus": by_status,
+        }
+
+    async def get_company_snapshot(self, company_id: str) -> dict[str, Any]:
+        today_start = period_start_date("today")
+
+        today_row = await self._session.execute(text("""
+            SELECT
+              COUNT(*)::int AS total,
+              COALESCE(SUM(total) FILTER (WHERE status = 'DELIVERED' OR paymentStatus = 'COMPLETED'), 0) AS revenue,
+              COUNT(*) FILTER (WHERE status = 'PENDING')::int AS pending,
+              COUNT(*) FILTER (WHERE status = 'CONFIRMED')::int AS confirmed,
+              COUNT(*) FILTER (WHERE status = 'SHIPPED')::int AS shipped,
+              COUNT(*) FILTER (WHERE status = 'DELIVERED')::int AS delivered,
+              COUNT(*) FILTER (WHERE status = 'CANCELLED')::int AS cancelled
+            FROM orders
+            WHERE "companyId" = :cid AND "createdAt" >= :start
+        """), {"cid": company_id, "start": today_start})
+        first = today_row.first()
+        today = dict(first._mapping) if first else {}
+
+        pending_row = await self._session.execute(text("""
+            SELECT COUNT(*)::int AS cnt
+            FROM orders
+            WHERE "companyId" = :cid AND status = 'PENDING'
+        """), {"cid": company_id})
+        pending_total = pending_row.first().cnt if pending_row.first() else 0
+
+        low_stock_row = await self._session.execute(text("""
+            SELECT COUNT(*)::int AS cnt
+            FROM products
+            WHERE "companyId" = :cid
+              AND "deletedAt" IS NULL
+              AND "isActive" = TRUE
+              AND "trackInventory" = TRUE
+              AND stock <= 5
+        """), {"cid": company_id})
+        low_stock_cnt = low_stock_row.first().cnt if low_stock_row.first() else 0
+
+        return {
+            "todayOrders": today.get("total", 0),
+            "pendingOrders": pending_total,
+            "lowStockCount": low_stock_cnt,
+            "todayRevenue": str(today.get("revenue", 0)),
+            "todayPending": today.get("pending", 0),
+            "todayConfirmed": today.get("confirmed", 0),
+            "todayShipped": today.get("shipped", 0),
+            "todayDelivered": today.get("delivered", 0),
+            "todayCancelled": today.get("cancelled", 0),
+        }

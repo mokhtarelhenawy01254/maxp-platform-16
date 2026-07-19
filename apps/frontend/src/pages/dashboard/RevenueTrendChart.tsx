@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -6,9 +6,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Brush,
 } from "recharts";
 import DeferredResponsiveContainer from "../../components/ui/DeferredResponsiveContainer";
 import type { RevenueHistoryPoint } from "./types";
+
+type ChartView = "revenue" | "orders";
 
 type RevenueTrendChartProps = {
   data: RevenueHistoryPoint[];
@@ -27,6 +30,9 @@ export default function RevenueTrendChart({
   emptyLabel,
   formatRevenue,
 }: RevenueTrendChartProps) {
+  const [view, setView] = useState<ChartView>("revenue");
+  const hasOrders = data.some((d) => d.orders !== undefined);
+
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
     return data;
@@ -43,15 +49,46 @@ export default function RevenueTrendChart({
     );
   }
 
+  const activeKey = view === "revenue" ? "revenue" : "orders";
+  const activeColor = view === "revenue" ? "var(--color-success)" : "var(--color-primary)";
+  const activeLabel = view === "revenue" ? revenueLabel : ordersLabel;
+  const showBrush = chartData.length > 30;
+
   return (
     <>
-      <h3 className="text-base font-semibold text-foreground mb-4">{title}</h3>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        {hasOrders && (
+          <div className="inline-flex rounded-lg border border-border/50 overflow-hidden text-xs">
+            {(["revenue", "orders"] as ChartView[]).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={
+                  "px-3 py-1.5 font-medium transition-colors " +
+                  (view === v
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground hover:text-foreground")
+                }
+                aria-pressed={view === v}
+              >
+                {v === "revenue" ? revenueLabel : ordersLabel}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="h-[280px]">
         <DeferredResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
             <XAxis dataKey="date" className="text-xs text-gray-500 dark:text-gray-400" tickMargin={8} />
-            <YAxis className="text-xs text-gray-500 dark:text-gray-400" tickFormatter={(v: number) => formatRevenue(v)} tickMargin={8} />
+            <YAxis
+              className="text-xs text-gray-500 dark:text-gray-400"
+              tickFormatter={(v: number) => (view === "revenue" ? formatRevenue(v) : v.toLocaleString())}
+              tickMargin={8}
+            />
             <Tooltip
               contentStyle={{
                 borderRadius: "8px",
@@ -64,9 +101,23 @@ export default function RevenueTrendChart({
                 name,
               ]}
             />
-            <Area type="monotone" dataKey="revenue" stroke="var(--color-success)" fill="var(--color-success)" fillOpacity={0.15} name={revenueLabel} strokeWidth={2} />
-            {chartData.some((d) => d.orders !== undefined) && (
-              <Area type="monotone" dataKey="orders" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.1} name={ordersLabel} strokeWidth={2} />
+            <Area
+              type="monotone"
+              dataKey={activeKey}
+              stroke={activeColor}
+              fill={activeColor}
+              fillOpacity={0.15}
+              name={activeLabel}
+              strokeWidth={2}
+            />
+            {showBrush && (
+              <Brush
+                dataKey="date"
+                height={20}
+                stroke={activeColor}
+                travellerWidth={8}
+                fill="color-mix(in srgb, var(--color-border) 20%, transparent)"
+              />
             )}
           </AreaChart>
         </DeferredResponsiveContainer>

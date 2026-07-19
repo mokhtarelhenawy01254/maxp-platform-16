@@ -1,0 +1,69 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1000" fill="#F7F1E8"/>
+  <rect width="1600" height="1000" fill="url(#grid)" opacity="0.34"/>
+  <rect x="0" y="0" width="1600" height="24" fill="#CFFB27"/>
+
+  <rect x="96" y="98" width="432" height="804" fill="#171412"/>
+  <rect x="96" y="98" width="18" height="804" fill="#CFFB27"/>
+  <rect x="564" y="98" width="940" height="556" fill="#FBF7F0" stroke="#171412" stroke-width="4"/>
+  <rect x="564" y="686" width="298" height="216" fill="#FBF7F0" stroke="#171412" stroke-width="4"/>
+  <rect x="890" y="686" width="298" height="216" fill="#E6DDD0" stroke="#171412" stroke-width="4"/>
+  <rect x="1216" y="686" width="288" height="216" fill="#FBF7F0" stroke="#171412" stroke-width="4"/>
+
+  <rect x="612" y="142" width="840" height="54" fill="#FBF7F0" stroke="#171412" stroke-width="4"/>
+  <circle cx="652" cy="169" r="10" fill="#CFFB27"/>
+  <text x="680" y="179" fill="#5A5248" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="5">NIGHT DROP / WEEK 05</text>
+  <rect x="612" y="226" width="566" height="390" fill="#E4D8C7"/>
+  <rect x="644" y="256" width="244" height="328" fill="#B48B69"/>
+  <rect x="904" y="256" width="242" height="328" fill="#383128"/>
+
+  <rect x="1212" y="226" width="240" height="144" fill="#171412"/>
+  <rect x="1212" y="398" width="240" height="102" fill="#CFFB27" stroke="#171412" stroke-width="4"/>
+  <rect x="1188" y="530" width="250" height="88" fill="#FBF7F0" stroke="#171412" stroke-width="4" transform="rotate(-4 1188 530)"/>
+  <rect x="1208" y="554" width="248" height="88" fill="#171412" stroke="#171412" stroke-width="4" transform="rotate(3 1208 554)"/>
+
+  <rect x="120" y="138" width="136" height="46" fill="#CFFB27" stroke="#171412" stroke-width="3" transform="rotate(3 120 138)"/>
+  <text x="146" y="169" fill="#171412" font-family="Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="3">POSTER MODE</text>
+
+  <text x="152" y="252" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="6">UTILITY RAIL / THURSDAY CLUB</text>
+  <text x="152" y="390" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="106" font-weight="800" letter-spacing="-4">CUTLINE</text>
+  <text x="152" y="486" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="106" font-weight="800" letter-spacing="-4">CLUB</text>
+  <text x="152" y="572" fill="#D8CCBC" font-family="Arial, sans-serif" font-size="34" font-weight="500">Street utility meets youth-club poster energy.</text>
+  <text x="152" y="654" fill="#CFFB27" font-family="Arial, sans-serif" font-size="24" font-weight="800" letter-spacing="4">05 / WEEK</text>
+
+  <rect x="152" y="712" width="118" height="38" fill="#2B2722"/>
+  <rect x="284" y="712" width="156" height="38" fill="#2B2722"/>
+  <rect x="454" y="712" width="132" height="38" fill="#2B2722"/>
+  <text x="176" y="738" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="3">NIGHT DROP</text>
+  <text x="310" y="738" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="3">CITY CORE</text>
+  <text x="482" y="738" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="3">BUILD THE LOOK</text>
+
+  <text x="1250" y="282" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="4">RELEASE CODE</text>
+  <text x="1250" y="338" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="52" font-weight="800">05 / WEEK</text>
+  <text x="1248" y="444" fill="#171412" font-family="Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="4">STICKER SET</text>
+  <text x="1248" y="482" fill="#171412" font-family="Arial, sans-serif" font-size="34" font-weight="800">بوسترات حيّة</text>
+  <text x="1226" y="586" fill="#171412" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="4">POSTER 01</text>
+  <text x="1226" y="624" fill="#171412" font-family="Arial, sans-serif" font-size="30" font-weight="800">الرف الليلي</text>
+  <text x="1250" y="636" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="4">SET 02</text>
+  <text x="1250" y="674" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="30" font-weight="800">القاعدة اليومية</text>
+
+  <rect x="740" y="248" width="154" height="42" fill="#CFFB27" stroke="#171412" stroke-width="3" transform="rotate(-6 740 248)"/>
+  <rect x="1112" y="520" width="152" height="42" fill="#FBF7F0" stroke="#171412" stroke-width="3" transform="rotate(4 1112 520)"/>
+  <rect x="1038" y="300" width="148" height="42" fill="#171412" stroke="#FBF7F0" stroke-width="2" transform="rotate(5 1038 300)"/>
+  <text x="772" y="275" fill="#171412" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="3" transform="rotate(-6 772 275)">NIGHT DROP</text>
+  <text x="1136" y="548" fill="#171412" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="3" transform="rotate(4 1136 548)">WEEK 05</text>
+  <text x="1064" y="327" fill="#F7F1E8" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="3" transform="rotate(5 1064 327)">CITY CORE</text>
+
+  <text x="616" y="742" fill="#5A5248" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="4">CURRENT RAIL</text>
+  <text x="616" y="798" fill="#171412" font-family="Arial, sans-serif" font-size="44" font-weight="800">قائمة أسرع</text>
+  <text x="940" y="742" fill="#5A5248" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="4">POSTER LOGIC</text>
+  <text x="940" y="798" fill="#171412" font-family="Arial, sans-serif" font-size="44" font-weight="800">لوك أوضح</text>
+  <text x="1248" y="742" fill="#5A5248" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="4">RETURN WINDOW</text>
+  <text x="1248" y="798" fill="#171412" font-family="Arial, sans-serif" font-size="44" font-weight="800">14 يوم</text>
+
+  <defs>
+    <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse">
+      <path d="M34 0H0V34" stroke="#D1C4B3" stroke-width="1"/>
+    </pattern>
+  </defs>
+</svg>

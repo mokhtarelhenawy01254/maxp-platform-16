@@ -1,0 +1,190 @@
+- generic [ref=e7]:
+  - generic [ref=e10]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - link "P" [ref=e15] [cursor=pointer]:
+          - /url: /company-dashboard
+          - generic "PEARL EG" [ref=e16]: P
+        - generic [ref=e17]:
+          - button "Inbox" [ref=e18] [cursor=pointer]:
+            - img [ref=e20]
+            - generic [ref=e22]: Inbox
+          - button "فريق الايجنت" [ref=e23] [cursor=pointer]:
+            - img [ref=e25]
+            - generic [ref=e27]: فريق الايجنت
+          - button "واتساب" [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+            - generic [ref=e32]: واتساب
+          - button "حسابي" [ref=e33] [cursor=pointer]:
+            - img [ref=e35]
+            - generic [ref=e37]: حسابي
+          - button "إدارة شركاتي" [ref=e38] [cursor=pointer]:
+            - img [ref=e40]
+            - generic [ref=e42]: إدارة شركاتي
+          - button "التطبيقات" [ref=e43] [cursor=pointer]:
+            - img [ref=e45]
+            - generic [ref=e47]: التطبيقات
+          - button "الإعدادات" [ref=e48] [cursor=pointer]:
+            - img [ref=e50]
+            - generic [ref=e53]: الإعدادات
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - link "P PEARL EG فريق الايجنت" [ref=e57] [cursor=pointer]:
+            - /url: /company-dashboard
+            - generic [ref=e58]: P
+            - generic [ref=e59]:
+              - heading "PEARL EG" [level=2] [ref=e60]
+              - paragraph [ref=e61]: فريق الايجنت
+          - button "طي القائمة" [ref=e62] [cursor=pointer]:
+            - img [ref=e63]
+        - generic [ref=e65]:
+          - generic [ref=e66]: البحث داخل القائمة
+          - img
+          - textbox "البحث داخل القائمة" [ref=e67]:
+            - /placeholder: البحث
+        - generic [ref=e68]:
+          - link "ملفات الوكلاء" [ref=e251] [cursor=pointer]:
+            - /url: /admin/agent-profiles
+            - img [ref=e253]
+            - generic [ref=e255]: ملفات الوكلاء
+          - link "كتالوج المنتجات (البوت)" [ref=e256] [cursor=pointer]:
+            - /url: /admin/ai-catalog
+            - img [ref=e258]
+            - generic [ref=e260]: كتالوج المنتجات (البوت)
+          - link "استفسارات المعرفة" [ref=e261] [cursor=pointer]:
+            - /url: /admin/ai-knowledge-questions
+            - img [ref=e263]
+            - generic [ref=e265]: استفسارات المعرفة
+          - link "تجربة الوكلاء" [ref=e266] [cursor=pointer]:
+            - /url: /admin/ai-hub?tab=sandbox
+            - img [ref=e268]
+            - generic [ref=e270]: تجربة الوكلاء
+          - link "الأسئلة الشائعة" [ref=e271] [cursor=pointer]:
+            - /url: /admin/faqs
+            - img [ref=e273]
+            - generic [ref=e275]: الأسئلة الشائعة
+          - link "السياسات" [ref=e276] [cursor=pointer]:
+            - /url: /admin/policies
+            - img [ref=e278]
+            - generic [ref=e280]: السياسات
+          - link "توجيه القنوات" [ref=e281] [cursor=pointer]:
+            - /url: /admin/ai-hub?tab=routing
+            - img [ref=e283]
+            - generic [ref=e285]: توجيه القنوات
+    - generic [ref=e111]:
+      - banner [ref=e112]:
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - button "تبديل للوضع الليلي" [ref=e116] [cursor=pointer]:
+              - img
+            - button "Change language" [ref=e118] [cursor=pointer]:
+              - generic [ref=e119]: ar
+            - button "الإشعارات" [ref=e121] [cursor=pointer]:
+              - img [ref=e122]
+              - generic [ref=e124]: "15"
+            - link "header.support" [ref=e125] [cursor=pointer]:
+              - /url: /support
+              - img [ref=e126]
+          - button "الملف الشخصي مس" [ref=e130]:
+            - generic [ref=e131]: مس
+            - generic [ref=e132]:
+              - generic [ref=e133]: محمد
+              - generic [ref=e134]: OWNER
+            - img [ref=e135]
+      - main [ref=e137]:
+        - generic [ref=e286]:
+          - complementary [ref=e287]:
+            - generic [ref=e288]:
+              - img [ref=e289]
+              - heading "فريق المساعدين" [level=2] [ref=e292]
+              - generic [ref=e293]: "1"
+              - button "إضافة مساعد" [ref=e294]:
+                - img [ref=e295]
+            - generic [ref=e297]:
+              - img
+              - textbox "بحث" [ref=e299]
+            - button "🤖 عباس محمود سعيد" [ref=e301]:
+              - generic [ref=e302]: 🤖
+              - paragraph [ref=e305]: عباس محمود سعيد
+          - main [ref=e307]:
+            - generic [ref=e308]:
+              - generic [ref=e309]:
+                - button "فريق المساعدين" [ref=e310]:
+                  - img [ref=e311]
+                - generic [ref=e312]: "1"
+                - button "محادثة" [ref=e313]:
+                  - img [ref=e314]
+                - button "تحديث قائمة الوكلاء" [ref=e316]:
+                  - img [ref=e317]
+                - button "إضافة مساعد" [ref=e322]:
+                  - img [ref=e323]
+              - generic [ref=e324]:
+                - generic [ref=e325]:
+                  - generic [ref=e326]: 🤖
+                  - generic [ref=e327]:
+                    - generic [ref=e328]:
+                      - heading "عباس محمود سعيد" [level=1] [ref=e329]
+                      - generic [ref=e331]: نشط
+                    - paragraph [ref=e332]: SALES_REP
+                  - generic [ref=e333]:
+                    - generic [ref=e334]:
+                      - switch [checked] [ref=e335]
+                      - checkbox [checked] [ref=e336]
+                      - generic [ref=e337]: تفعيل
+                    - generic [ref=e338]: sales-rep-agent
+                    - button "حذف" [ref=e339]:
+                      - img [ref=e340]
+                - generic [ref=e343]:
+                  - button "تحديث قائمة الوكلاء" [ref=e344]:
+                    - img
+                  - button "تم الحفظ" [disabled]:
+                    - img
+                    - text: تم الحفظ
+            - generic [ref=e346]:
+              - generic [ref=e347]:
+                - generic [ref=e348]:
+                  - generic [ref=e349]: اسم المساعد
+                  - paragraph [ref=e350]: عباس محمود سعيد
+                - generic [ref=e351]:
+                  - generic [ref=e352]: شخصية الوكيل
+                  - paragraph [ref=e353]: مختصر ورسمي
+                  - paragraph [ref=e354]: صف الشخصية اللي هيتكلم بيها الوكيل مع العملاء
+                - generic [ref=e355]:
+                  - generic [ref=e356]: الهدف الرئيسي
+                  - paragraph [ref=e357]: —
+                  - paragraph [ref=e358]: إيه أكتر حاجة المساعد دي مطلوب منه يحققها؟
+                - separator [ref=e359]
+                - generic [ref=e360]:
+                  - generic [ref=e361]: نبرة الكلام
+                  - paragraph [ref=e362]: ودود
+                  - paragraph [ref=e363]: اختار النبرة المناسبة لطبيعة المتجر والعملاء
+                - generic [ref=e364]:
+                  - generic [ref=e365]: لغة الرد
+                  - paragraph [ref=e366]: تلقائي
+                  - paragraph [ref=e367]: اختار اللغة الافتراضية للردود
+                - separator [ref=e368]
+                - generic [ref=e369]:
+                  - generic [ref=e370]: المهام الأساسية
+                  - paragraph [ref=e371]: —
+                  - paragraph [ref=e372]: اكتب المهام اللي الوكيل يقدر يساعد فيها
+                - generic [ref=e373]:
+                  - generic [ref=e374]: الحدود
+                  - paragraph [ref=e375]: —
+                  - paragraph [ref=e376]: حدد الحاجات اللي الوكيل مينفعش يعملها
+                - generic [ref=e377]:
+                  - generic [ref=e378]: رسالة الترحيب
+                  - paragraph [ref=e379]: —
+                  - paragraph [ref=e380]: رسالة افتتاحية اختيارية تظهر للعميل في بداية المحادثة
+                - generic [ref=e381]:
+                  - generic [ref=e382]: عند عدم معرفة الإجابة
+                  - paragraph [ref=e383]: يسألني عبر لوحة التحكم
+                  - paragraph [ref=e384]: إيه اللي المساعد يعمله لما ميعرفش يرد؟
+                - generic [ref=e385]:
+                  - generic [ref=e386]: إضافة تعليمات مخصصة
+                  - paragraph [ref=e387]: اتكلم بالعامية المصرية عايز تتعامل بطريقه اللي قدامك ميعرفش انك ذكاء صناعي وكمان تان انك انسان عادي اتعامل كمودريتور وخدمة عملاء ,انك واخد من الفريق
+                  - paragraph [ref=e388]: حقل حر لأي إضافات خارج القوالب الجاهزة
+              - separator [ref=e389]
+              - button "تعديل" [ref=e391]:
+                - img
+                - text: تعديل
+  - region "Notifications alt+T"

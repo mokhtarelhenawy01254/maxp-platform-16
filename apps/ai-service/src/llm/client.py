@@ -257,18 +257,21 @@ class LLMClient:
                         )
 
             _latency_ms = int((time.monotonic() - _t0) * 1000)
+            meta: dict = {"parser": parser_key}
+            if response.usage:
+                meta["tokens"] = response.usage
+            if response.text:
+                meta["response"] = response.text[:5000]
             await self._write_provider_log(
                 action="generation_success",
                 status="success",
                 latency_ms=_latency_ms,
-                metadata={
-                    "tokens": response.usage,
-                    "parser": parser_key,
-                } if response.usage else {"parser": parser_key},
+                metadata=meta,
             )
             return response
         except Exception as exc:
             _latency_ms = int((time.monotonic() - _t0) * 1000)
+            logger.error("generation_failed_details", error=str(exc), exc_info=True)
             await self._write_provider_log(
                 action="generation_failed",
                 status="failed",
@@ -375,11 +378,13 @@ class LLMClient:
             extra_params["response_format"] = self._build_response_format(output_schema)
 
         tool_choice = options.get("tool_choice")
-        if openai_tools and tool_choice != "none":
+        if openai_tools:
             extra_params["tools"] = openai_tools
             extra_params["tool_choice"] = tool_choice if tool_choice is not None else "auto"
             if self.provider == "DEEPSEEK":
                 extra_params["parallel_tool_calls"] = False
+
+        logger.info("openai_compat_request", model=self.model, messages=body_messages, extra_params=extra_params)
 
         response = await client.chat.completions.create(
             model=self.model,

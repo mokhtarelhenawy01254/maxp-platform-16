@@ -71,7 +71,6 @@ import {
     GlobeAltIcon,
     GiftIcon,
     HeartIcon,
-    DocumentPlusIcon,
 } from '@heroicons/react/24/outline';
 
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
@@ -193,7 +192,7 @@ const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId:
         return true; 
     }
     
-    if (sectionId === 'settings') return true;
+    if (sectionId === 'settings' || sectionId === 'my-account') return true;
 
     const reqPerms = DOMAIN_PERMISSIONS[sectionId];
     if (reqPerms && reqPerms.length > 0) {
@@ -419,8 +418,6 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders') },
                     { to: '/orders/manual', icon: PencilSquareIcon, label: t('sidebar.manualOrder') },
-                    { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords') },
-                    { to: '/orders/bosta-records', icon: TruckIcon, label: t('sidebar.bostaRecords') },
                     { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
                 ],
             },
@@ -555,11 +552,12 @@ export const getSidebarConfig = (
                 },
                 { to: '/whatsapp-inbox', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
                 { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
+                { to: '/whatsapp/cloud-connect', icon: GlobeAltIcon, label: t('sidebar.whatsappCloudConnect') },
+                { to: '/whatsapp/employee-analytics', icon: ChartBarIcon, label: t('sidebar.whatsappEmployeeAnalytics') },
                 { to: '/whatsapp/meta-templates', icon: GlobeAltIcon, label: t('sidebar.whatsappMetaTemplates') },
                 { to: '/whatsapp/template-broadcast', icon: MegaphoneIcon, label: t('sidebar.whatsappTemplateBroadcast') },
                 { to: '/whatsapp/lead-followup', icon: BoltIcon, label: t('sidebar.whatsappLeadFollowup') },
                 { to: '/whatsapp/customer-journey', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.whatsappCustomerJourney') },
-                { to: '/whatsapp/employee-analytics', icon: ChartBarIcon, label: t('sidebar.whatsappEmployeeAnalytics') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business')
@@ -603,9 +601,7 @@ export const getSidebarConfig = (
                 { to: '/settings/orders', icon: CogIcon, label: t('sidebar.ordersSettings') },
                 { to: '/settings/customer-blocks', icon: ShieldExclamationIcon, label: t('sidebar.customerBlockSettings') },
                 { to: '/settings/turbo', icon: RocketLaunchIcon, label: t('sidebar.turboSettings') },
-                { to: '/settings/bosta', icon: RocketLaunchIcon, label: t('sidebar.bostaSettings') },
                 { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords') },
-                { to: '/orders/bosta-records', icon: TruckIcon, label: t('sidebar.bostaRecords') },
                 { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets') },
                 { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies') },
                 { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews') },
@@ -854,6 +850,9 @@ export const getSidebarConfig = (
                 { to: '/tools/discount-impact', icon: TagIcon, label: t('sidebar.discountImpact') },
                 { to: '/tools/shipping-optimizer', icon: TruckIcon, label: t('sidebar.shippingOptimizer') },
                 { to: '/tools/monthly-pnl', icon: ChartBarIcon, label: t('sidebar.monthlyPnL') },
+                { to: '/tools/clv-calculator', icon: UserGroupIcon, label: t('sidebar.clvCalculator') },
+                { to: '/tools/upsell-planner', icon: ArrowTrendingUpIcon, label: t('sidebar.upsellPlanner') },
+                { to: '/tools/refund-rate', icon: ShieldExclamationIcon, label: t('sidebar.refundRateCalculator') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])
@@ -980,19 +979,6 @@ export const getSidebarConfig = (
                 { to: '/admin/booking/branches', icon: BuildingOffice2Icon, label: t('sidebar.bookingBranches') },
                 { to: '/admin/booking/doctors', icon: UserGroupIcon, label: t('sidebar.bookingDoctors') },
                 { to: '/admin/booking/services', icon: WrenchScrewdriverIcon, label: t('sidebar.bookingServices') },
-            ]
-        },
-
-        // 7️⃣.7️⃣ طلبات الخدمات
-        {
-            id: 'services',
-            title: t('sidebar.services'),
-            icon: WrenchScrewdriverIcon,
-            hidden: !isAppActive('service-request-app'),
-            items: [
-                { to: '/admin/services', icon: WrenchScrewdriverIcon, label: t('sidebar.services') },
-                { to: '/admin/service-orders', icon: ClipboardDocumentListIcon, label: t('sidebar.serviceOrders') },
-                { to: '/request-service', icon: DocumentPlusIcon, label: t('sidebar.newServiceRequest') },
             ]
         },
 

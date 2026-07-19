@@ -1,0 +1,701 @@
+{
+  "id": "cairo-stride",
+  "name": "Cairo Stride",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "24 26% 16%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "35 30% 93%",
+      "secondaryForeground": "24 20% 14%",
+      "accent": "31 86% 50%",
+      "accentForeground": "0 0% 100%",
+      "background": "34 30% 97%",
+      "foreground": "24 16% 11%",
+      "muted": "32 18% 90%",
+      "mutedForeground": "24 10% 36%",
+      "border": "30 16% 82%",
+      "card": "0 0% 100%",
+      "cardForeground": "24 16% 11%",
+      "ring": "31 86% 50%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", \"Cairo\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 18px 42px -28px rgba(31, 24, 18, 0.18)",
+      "hoverShadow": "0 28px 56px -24px rgba(31, 24, 18, 0.26)",
+      "badgeRadius": "999px",
+      "buttonRadius": "0.85rem",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Cairo Stride",
+    "description": "واجهة أحذية رجالي موجهة للجمهور المصري مع اكتشاف أسرع للموديلات، مقاسات أوضح، وشحن واستبدال ظاهرين من أول نظرة."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/modern-minimal/preview.svg",
+    "colors": [
+      "0 0% 10%",
+      "40 18% 95%",
+      "32 34% 89%"
+    ]
+  },
+  "header": {
+    "brandName": "Cairo Stride",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "الأحذية",
+        "to": "/shop"
+      },
+      {
+        "label": "التشكيلات",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "تواصل معنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "description": "سنيكرز يومي، لوفر عملي، وكلاسيك هادئ للشغل والمشاوير مع شحن واضح واستبدال مقاس أسهل.",
+    "copyrightText": "© 2026 جميع الحقوق محفوظة.",
+    "socialLinks": {},
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل الأحذية",
+            "to": "/shop"
+          },
+          {
+            "label": "التشكيلات",
+            "to": "/collections"
+          },
+          {
+            "label": "العروض الحالية",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "الدعم",
+        "links": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال والاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "تواصل معنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "اختيارات الأسبوع",
+            "message": "خصومات أسبوعية على السنيكرز والكاجوال مع شحن سريع واستبدال أوضح داخل مصر.",
+            "saleLabel": "حتى 20% خصم",
+            "shippingLabel": "شحن خلال 48 ساعة",
+            "returnLabel": "استبدال سهل",
+            "ctaText": "ادخل المتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "Cairo Stride",
+            "title": "خطوة ثابتة لكل يوم",
+            "subtitle": "أحذية رجالي بسِمت واضح للسوق المصري: موديلات يومية وكاجوال وكلاسيك مع تجربة شراء أسرع وثقة أكبر قبل الطلب.",
+            "ctaText": "تسوق الآن",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهد العروض",
+            "secondaryCtaLink": "/sale",
+            "backgroundImage": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1400",
+            "panelImage": "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&q=80&w=900",
+            "highlights": [
+              {
+                "label": "شحن داخل مصر",
+                "value": "سريع وواضح"
+              },
+              {
+                "label": "مقاسات أقرب",
+                "value": "حيرة أقل"
+              },
+              {
+                "label": "ستايل رجالي",
+                "value": "عملي ونضيف"
+              }
+            ],
+            "floatingCards": [
+              {
+                "eyebrow": "اختيارات جاهزة",
+                "title": "سنيكرز يومي",
+                "description": "موديلات مريحة للحركة والشغل والخروج اليومي.",
+                "tone": "primary",
+                "position": "top-left"
+              },
+              {
+                "eyebrow": "مقاس مضمون",
+                "title": "مقاسات أوضح",
+                "description": "دليل سريع يقلل التردد قبل ما تضيف للسلة.",
+                "tone": "accent",
+                "position": "bottom-left"
+              }
+            ],
+            "profileChip": {
+              "label": "ستايل رجالي مصري",
+              "value": "عملي + واضح + مريح"
+            },
+            "panelEyebrow": "منتج اليوم",
+            "panelTitle": "موديلات تمشي في الشغل والخروجات",
+            "panelSubtitle": "كاجوال وكلاسيك وسنيكرز بتوازن بين الشكل والراحة وبتخلي القرار أسهل.",
+            "panelMetricLabel": "الأكثر طلبًا",
+            "panelMetricValue": "موديلات يومية",
+            "panelNote": "شحن سريع داخل مصر + استبدال أوضح",
+            "panelCtaText": "استكشف التشكيلة",
+            "panelCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "اختار حسب استخدامك",
+            "subtitle": "قسم الموديلات حسب الشغل والخروجات واليومي عشان القرار يبقى أسرع.",
+            "limit": 4,
+            "ctaText": "كل التصنيفات",
+            "ctaLink": "/collections",
+            "collections": "سنيكرز يومي|موديلات مريحة للحركة والجامعة والشغل الخفيف.|https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=900|/shop?category=sneakers\nكاجوال عملي|اختيارات مناسبة للمشاوير اليومية والخروجات السريعة.|https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=900|/shop?category=casual\nكلاسيك هادي|موديلات أرتب للمكتب والمناسبات والشغل الرسمي.|https://images.unsplash.com/photo-1608667508764-33cf0726b13a?auto=format&fit=crop&q=80&w=900|/shop?category=formal\nراحة طوال اليوم|اختيارات تركّز على الراحة والثبات وسهولة اللبس.|https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&q=80&w=900|/shop?sortBy=createdAt&sortOrder=desc"
+          }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "ليه Cairo Stride مناسب للعميل المصري؟",
+            "subtitle": "نخلي قرار الشراء أسهل بمعلومات واضحة ومهمة فعلًا بدل بلوكات شكلية مالهاش لازمة.",
+            "items": [
+              {
+                "icon": "shield",
+                "title": "ثقة قبل الدفع",
+                "description": "استبدال أوضح ومعلومات عملية قبل ما العميل يحسم الطلب."
+              },
+              {
+                "icon": "truck",
+                "title": "شحن واضح",
+                "description": "رسائل مباشرة عن التوصيل داخل مصر والمدة المتوقعة."
+              },
+              {
+                "icon": "grid",
+                "title": "مقاسات أقرب",
+                "description": "دليل سريع يساعد على تقليل الحيرة واختيار المقاس المناسب."
+              },
+              {
+                "icon": "target",
+                "title": "تصفح أسرع",
+                "description": "تقسيم عملي بين السنيكرز والكاجوال والكلاسيك عشان القرار يبقى أسهل."
+              }
+            ]
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "badge": "اختيارات سريعة",
+            "title": "3 مداخل سريعة للشراء",
+            "subtitle": "بلوك بصري أقوى يوجّه العميل لأسرع طريقة يناسبه يكتشف بها المنتج.",
+            "cards": [
+              {
+                "label": "اليومي",
+                "title": "موديلات تمشي مع الشغل والخروجات",
+                "subtitle": "اختيارات عملية مريحة تناسب الحركة اليومية بدون تعقيد.",
+                "ctaText": "اذهب لليومي",
+                "link": "/shop?category=casual",
+                "tone": "primary",
+                "stat": "راحة أسرع"
+              },
+              {
+                "label": "السنيكرز",
+                "title": "ستايل أخف بإحساس شبابي أنضف",
+                "subtitle": "موديلات مناسبة للجامعة والخروج والحركة الكتير طوال اليوم.",
+                "ctaText": "شاهد السنيكرز",
+                "link": "/shop?category=sneakers",
+                "tone": "accent",
+                "stat": "الأكثر طلبًا"
+              },
+              {
+                "label": "الكلاسيك",
+                "title": "اختيارات أهدى للمناسبات والشغل",
+                "subtitle": "تشكيلة محسوبة للعميل اللي عايز شكل أرتب بدون مبالغة.",
+                "ctaText": "اذهب للكلاسيك",
+                "link": "/shop?category=formal",
+                "tone": "slate",
+                "stat": "شكل أشيك"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "الأكثر طلبًا هذا الأسبوع",
+            "subtitle": "منتجات عليها إقبال أعلى وتناسب ذوق الشراء السريع.",
+            "limit": 8
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "وصلات جديدة أول بأول",
+            "subtitle": "اشترك عشان توصلك العروض والموديلات الجديدة قبل نفاد المقاسات الشعبية.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "دور أسرع على الموديل المناسب",
+            "subtitle": "ابحث أو فلتر أو رتب حسب السعر والأحدث قبل ما تدخل على المنتج.",
+            "searchPlaceholder": "ابحث عن موديل أو نوع الحذاء",
+            "resultsLabel": "منتج متاح",
+            "clearButtonText": "مسح التصفية",
+            "stickyLabel": "أدوات التصفح",
+            "chipLimit": 6
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "كل الأحذية الرجالي",
+            "subtitle": "شبكة أوضح للمقارنة بين الموديلات والمقاسات والاستخدام اليومي.",
+            "limit": 12
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "settings": {
+            "badge": "ثقة قبل الشراء",
+            "title": "معلومات تريحك قبل القرار",
+            "subtitle": "رسائل سريعة عن المقاسات والشحن والاستبدال بدون ما نعطل تصفح المنتجات.",
+            "spotlightTitle": "موديلات مناسبة للشغل والخروجات اليومية",
+            "spotlightText": "بدل التشتت، ركز على الاستخدام الأقرب لك: يومي، كاجوال، أو كلاسيك.",
+            "ctaText": "اذهب للعروض",
+            "ctaLink": "/sale",
+            "trustItems": "شحن واضح|توصيل سريع داخل مصر على أغلب الموديلات الجاهزة.\nاستبدال أسهل|رسالة ثقة تقلل الحيرة قبل تأكيد الطلب.\nمقاس أقرب|دليل بسيط يساعدك تختار رقمك بسرعة.",
+            "highlights": "اختيارات كاجوال|يومي\nخط كلاسيك|أرتب\nمقاس مصري|أوضح"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "وصلك الجديد؟",
+            "subtitle": "تنبيهات سريعة بالموديلات والعروض الجديدة."
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "addToCartText": "أضف للسلة",
+            "descriptionTitle": "تفاصيل المنتج",
+            "shippingTitle": "الشحن والاستبدال",
+            "shippingText": "شحن سريع داخل مصر مع توضيح أسهل لسياسة الاستبدال قبل الدفع.",
+            "guaranteesTitle": "ليه تختار Cairo Stride؟",
+            "sizeGuideText": "افتح دليل المقاسات",
+            "sizeGuideLink": "/size-guide",
+            "fitNote": "لو بتلبس مقاسين أو بتحب راحة أوسع في الموديلات اليومية، اختار المقاس الأكبر غالبًا."
+          }
+        },
+        {
+          "type": "size-guide",
+          "variant": "compact",
+          "settings": {
+            "badge": "مساعد المقاس",
+            "title": "اختار المقاس بثقة",
+            "subtitle": "جدول سريع ونصيحة مباشرة قبل إتمام الطلب.",
+            "note": "لو القدم عريضة أو بين مقاسين، اختار الأكبر غالبًا.",
+            "guideRows": "default|40|7|8|25.5\ndefault|41|8|9|26.2\ndefault|42|9|10|26.9\ndefault|43|10|11|27.6\ndefault|44|11|12|28.3\ndefault|45|12|13|29.0\ncategory:formal|40|7|8|25.3\ncategory:formal|41|8|9|26.0\ncategory:formal|42|9|10|26.7\ncategory:formal|43|10|11|27.4\ncategory:formal|44|11|12|28.1\ncategory:formal|45|12|13|28.8",
+            "guideOverrides": "default|دليل المقاسات السريع|اختيار واضح قبل ما تضيف المنتج للسلة.|لو بين مقاسين اختار الأكبر.\ncategory:formal|مقاسات الكلاسيك|الموديلات الكلاسيك غالبًا تكون أضيق قليلًا من الأمام.|لو بتحب راحة أكثر اختار الأكبر."
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "editorial"
+        },
+        {
+          "type": "bought-together",
+          "variant": "stacked",
+          "settings": {
+            "title": "يُشترى معه كثيرًا",
+            "subtitle": "اختيارات تساعدك تكمل الطلب بشكل عملي.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "standard",
+          "settings": {
+            "title": "موديلات مشابهة",
+            "subtitle": "بدائل قريبة لو عايز نفس الإحساس بس ستايل مختلف.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "آراء العملاء",
+            "subtitle": "تقييمات تساعدك تحسم قبل الطلب."
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "سلة التسوق",
+            "emptyText": "لسه ما اخترتش منتجات.",
+            "continueShoppingText": "كمل التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "ملخص الطلب"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        "cart-items",
+        {
+          "type": "checkout-form"
+        },
+        {
+          "type": "payment"
+        },
+        {
+          "type": "order-summary"
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تأكيد طلبك",
+            "description": "شكرًا لطلبك من Cairo Stride. بنجهزه الآن وهنوافيك بتحديثات الشحن.",
+            "continueShoppingText": "ارجع للمتجر",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لو محتاج مساعدة تواصل معنا عبر"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "تسوق حسب نوع الحذاء",
+            "subtitle": "ابدأ من السنيكرز أو الكاجوال أو الكلاسيك عشان توصل للموديل الأقرب لاحتياجك.",
+            "limit": 6
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "compact",
+          "settings": {
+            "title": "الأقرب لذوقك",
+            "limit": 12
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض محدودة",
+            "message": "عروض محدودة على موديلات مختارة مع شحن أسرع داخل مصر.",
+            "saleLabel": "خصومات واضحة",
+            "shippingLabel": "توصيل سريع",
+            "returnLabel": "استبدال أسهل",
+            "ctaText": "ارجع للمتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "badge": "عروض محدودة",
+            "title": "عروض محسوبة للحسم الأسرع",
+            "subtitle": "رتبنا التخفيضات حول نوع الاستخدام والقيمة بدل عرضها بشكل مسطح.",
+            "cards": [
+              {
+                "label": "يومي",
+                "title": "موديلات سريعة الحركة بسعر أوفر",
+                "subtitle": "اختيارات عملية للبس اليومي والخروجات الخفيفة.",
+                "ctaText": "شاهد اليومي",
+                "link": "/sale?category=casual",
+                "tone": "accent",
+                "stat": "خصم واضح"
+              },
+              {
+                "label": "شغل",
+                "title": "كلاسيك مناسب للمكتب والمشاوير الرسمية",
+                "subtitle": "موديلات أهدى بإحساس مرتب وسعر أحسن من المعتاد.",
+                "ctaText": "شاهد الكلاسيك",
+                "link": "/sale?category=formal",
+                "tone": "primary",
+                "stat": "وفر الآن"
+              },
+              {
+                "label": "سنيكرز",
+                "title": "موديلات شبابية عليها طلب أعلى",
+                "subtitle": "اختيارات أقرب لذوق الشباب بسعر منافس لفترة محدودة.",
+                "ctaText": "شاهد السنيكرز",
+                "link": "/sale?category=sneakers",
+                "tone": "slate",
+                "stat": "لفترة محدودة"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "compact",
+          "settings": {
+            "title": "العروض الحالية",
+            "limit": 12,
+            "saleOnly": true
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "كل ما تحتاج معرفته قبل تأكيد الطلب.",
+            "body": "نجهز معظم الطلبات خلال 24 إلى 48 ساعة عمل، وتظهر رسوم الشحن قبل تأكيد الطلب حسب المحافظة.\n\nبمجرد خروج الطلب للتوصيل ستصلك متابعة بحالة الشحنة، ويمكنك التواصل معنا في أي وقت إذا احتجت تعديلًا أو متابعة إضافية.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "مدة التجهيز|من 24 إلى 48 ساعة عمل\nمناطق التغطية|حسب شركة الشحن والمحافظة\nتأكيد الطلب|قد يتم التواصل لتأكيد البيانات قبل الشحن",
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "سياسة الاستبدال والاسترجاع",
+            "subtitle": "راجِع الشروط الأساسية قبل طلب الاستبدال أو الاسترجاع.",
+            "body": "إذا وصلك الحذاء والمقاس غير مناسب يمكنك طلب استبدال المقاس أو الاسترجاع خلال المدة المحددة، بشرط بقاء الحذاء بحالته الأصلية وعدم استخدامه خارج التجربة المنزلية.\n\nهدفنا أن تكون خطوات المقاس واضحة وسريعة من وقت الاستلام وحتى ما بعد البيع.",
+            "detailsTitle": "أهم البنود",
+            "details": "المدة|حسب سياسة المتجر الحالية\nالحالة المقبولة|الحذاء بحالته الأصلية وعلبته وملحقاته كاملة\nطريقة الطلب|التواصل عبر قنوات الدعم المعتمدة مع رقم الطلب والمقاس المطلوب",
+            "ctaText": "تواصل معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الدعم",
+            "title": "تواصل معنا",
+            "subtitle": "نرد على استفسارات الطلبات والشحن وما بعد البيع خلال أوقات العمل.",
+            "body": "فريقنا جاهز للرد على استفسارات الطلبات، متابعة الشحن، ومساعدة المقاسات والاستبدال عبر القنوات المتاحة.\n\nإذا كان لديك رقم طلب أو تحتاج مساعدة في اختيار المقاس، أرسله لنا مع الاستفسار لنقدر نتابع معك بشكل أسرع.",
+            "detailsTitle": "قنوات التواصل",
+            "details": "واتساب|للطلبات السريعة واستفسارات المقاسات\nالبريد الإلكتروني|للمتابعة الرسمية والشكاوى\nأوقات الدعم|من الأحد إلى الخميس من 10 ص إلى 6 م",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "نوضح لك كيف نتعامل مع بياناتك أثناء الطلب والمتابعة.",
+            "body": "نستخدم بياناتك فقط لتنفيذ الطلب، متابعة التوصيل، والتواصل معك عند الحاجة بخصوص الشحن أو خدمة ما بعد البيع.\n\nلا يتم استخدام بياناتك خارج أغراض تشغيل المتجر والخدمة المرتبطة بطلبك إلا وفق ما تسمح به السياسة المعلنة.",
+            "detailsTitle": "ما الذي نجمعه",
+            "details": "بيانات التواصل|الاسم ورقم الهاتف والبريد عند الحاجة\nبيانات الطلب|العنوان وتفاصيل المنتجات المرتبطة بالشراء\nالغرض|تنفيذ الطلب والتوصيل وخدمة ما بعد البيع",
+            "ctaText": "العودة للرئيسية",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط",
+            "title": "الشروط والأحكام",
+            "subtitle": "باستخدامك للمتجر فأنت توافق على سياسات الشراء والدفع والشحن المعروضة هنا.",
+            "body": "تأكيد الطلب يرتبط بتوفر المنتج وصحة البيانات المدخلة، كما تطبق وسيلة الدفع المختارة وما يرتبط بها من تحقق أو رسوم عند الحاجة.\n\nقد يتم تحديث بعض التفاصيل التشغيلية مع بقاء حقوق العميل والنقاط الأساسية واضحة داخل المتجر.",
+            "detailsTitle": "يشمل ذلك",
+            "details": "الطلبات|تأكيد الطلب مرتبط بصحة البيانات وتوفر المنتج\nالدفع|تطبق طريقة الدفع المختارة وما يرتبط بها من تحقق أو رسوم\nالخدمة|يجوز تحديث التفاصيل التشغيلية بما لا يخل بحقوق العميل النظامية",
+            "ctaText": "سياسة الشحن",
+            "ctaLink": "/shipping"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        "member-registration"
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "badge": "دليل المقاس",
+            "title": "دليل مقاسات الأحذية الرجالي",
+            "subtitle": "مرجع واضح لاختيار المقاس الأنسب قبل الشراء.",
+            "note": "لو القدم عريضة أو بين مقاسين، اختار الأكبر غالبًا.",
+            "guideRows": "default|40|7|8|25.5\ndefault|41|8|9|26.2\ndefault|42|9|10|26.9\ndefault|43|10|11|27.6\ndefault|44|11|12|28.3\ndefault|45|12|13|29.0"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    }
+  }
+}

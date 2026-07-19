@@ -7744,6 +7744,7 @@ model WhatsAppContact {
   pushName        String?
   profilePicUrl   String?
   isGroup         Boolean         @default(false)
+  isNewsletter    Boolean         @default(false)
   isBlocked       Boolean         @default(false)
   customerId      String?
   category        String?         @default("LEAD")

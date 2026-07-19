@@ -3,6 +3,13 @@ import { toast } from "sonner";
 import { FetchedStatus, Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";
 
+const STATUS_TYPE_LABELS: Record<string, { label: string; name: string }> = {
+  order: { label: "طلب", name: "حالات الطلبات" },
+  payment: { label: "دفع", name: "حالات الدفع" },
+  shipping: { label: "شحن", name: "حالات الشحن" },
+  preparation: { label: "تجهيز", name: "حالات التجهيز" },
+};
+
 export const useWooCommerceStatus = (
   settings: Settings | null,
   settingsForm: any,
@@ -12,18 +19,28 @@ export const useWooCommerceStatus = (
   const [fetchingStatuses, setFetchingStatuses] = useState(false);
   const [statusSearch, setStatusSearch] = useState("");
 
-  // Hardcoded fallback statuses while loading from API
   const [localStatuses, setLocalStatuses] = useState<
-    { value: string; label: string }[]
+    { value: string; label: string; color?: string }[]
   >([
-    { value: "PENDING", label: "معلق (Pending)" },
-    { value: "CONFIRMED", label: "مؤكد (Confirmed)" },
-    { value: "PROCESSING", label: "قيد التجهيز (Processing)" },
-    { value: "SHIPPED", label: "تم الشحن (Shipped)" },
-    { value: "DELIVERED", label: "تم التوصيل (Delivered)" },
-    { value: "CANCELLED", label: "ملغي (Cancelled)" },
-    { value: "REFUNDED", label: "مسترجع (Refunded)" },
+    { value: "PENDING", label: "معلق (Pending)", color: "#F59E0B" },
+    { value: "CONFIRMED", label: "مؤكد (Confirmed)", color: "#3B82F6" },
+    { value: "PROCESSING", label: "قيد التجهيز (Processing)", color: "#8B5CF6" },
+    { value: "SHIPPED", label: "تم الشحن (Shipped)", color: "#06B6D4" },
+    { value: "DELIVERED", label: "تم التوصيل (Delivered)", color: "#10B981" },
+    { value: "CANCELLED", label: "ملغي (Cancelled)", color: "#EF4444" },
+    { value: "REFUNDED", label: "مسترجع (Refunded)", color: "#6B7280" },
   ]);
+
+  const [localStatusesByType, setLocalStatusesByType] = useState<
+    Record<string, { value: string; label: string; color?: string }[]>
+  >({
+    order: [],
+    payment: [],
+    shipping: [],
+    preparation: [],
+  });
+
+  const [statusColors, setStatusColors] = useState<Record<string, string>>({});
   const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
     tokenManager.createAuthHeaders(additionalHeaders);
 
@@ -49,34 +66,50 @@ export const useWooCommerceStatus = (
         ),
       );
 
-      let allLocalStatuses: { value: string; label: string }[] = [];
-      const typeLabels: Record<string, string> = {
-        order: "طلب",
-        payment: "دفع",
-        shipping: "شحن",
-        preparation: "تجهيز",
+      const allLocalStatuses: { value: string; label: string; color?: string }[] = [];
+      const grouped: Record<string, { value: string; label: string; color?: string }[]> = {
+        order: [],
+        payment: [],
+        shipping: [],
+        preparation: [],
       };
+      const colors: Record<string, string> = {};
+      const seenCodes = new Set<string>();
 
       responses.forEach((res, index) => {
         if (res.success && res.data) {
           const type = types[index];
-          const typeLabel = typeLabels[type] || type;
+          if (!type) return;
+          const typeInfo = STATUS_TYPE_LABELS[type];
+          if (!typeInfo) return;
 
-          const mapped = res.data.map((s: any) => ({
-            value: s.code,
-            label: `[${typeLabel}] ${s.name} (${s.nameEn || s.code})`,
-          }));
-          allLocalStatuses = [...allLocalStatuses, ...mapped];
+          res.data.forEach((s: any) => {
+            const code = s.code;
+            const item = {
+              value: code,
+              label: `${s.name} (${s.nameEn || code})`,
+              color: s.color || undefined,
+            };
+
+            grouped[type]?.push(item);
+
+            if (code && s.color && !colors[code]) {
+              colors[code] = s.color;
+            }
+
+            if (!seenCodes.has(code)) {
+              seenCodes.add(code);
+              allLocalStatuses.push(item);
+            }
+          });
         }
       });
 
       if (allLocalStatuses.length > 0) {
-        // Remove duplicates if any status code exists in multiple types
-        const uniqueStatuses = Array.from(
-          new Map(allLocalStatuses.map((s) => [s.value, s])).values(),
-        );
-        setLocalStatuses(uniqueStatuses);
+        setLocalStatuses(allLocalStatuses);
       }
+      setLocalStatusesByType(grouped);
+      setStatusColors(colors);
     } catch (error) {
       console.error("Error fetching local statuses:", error);
     }
@@ -175,6 +208,8 @@ export const useWooCommerceStatus = (
     wooStatuses,
     fetchingStatuses,
     localStatuses,
+    localStatusesByType,
+    statusColors,
     statusSearch,
     setStatusSearch,
     fetchLocalStatuses,

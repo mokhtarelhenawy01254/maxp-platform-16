@@ -5,6 +5,7 @@ import {
   ExclamationTriangleIcon, InformationCircleIcon, ArrowTrendingUpIcon,
   BookmarkIcon as SaveIcon, TrashIcon, DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import SliderInput from "@/components/common/SliderInput";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
 
@@ -94,26 +95,6 @@ export default function ProjectBreakEvenCalculator() {
 
   const T = (k: string) => t(`projectBreakEven.${k}`);
 
-  const Slider: React.FC<{ label: string; value: number; min: number; max: number; step?: number; onChange: React.ChangeEventHandler; isPercent?: boolean }> =
-    ({ label, value, min, max, step = 1, onChange, isPercent }) => (
-      <div className="space-y-1">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-700 dark:text-gray-300">{label}</span>
-          <span className="flex items-center gap-1">
-            <input type="number" value={value} onChange={onChange} min={min} max={max} step={step}
-              className="w-20 sm:w-24 text-right font-semibold text-gray-900 dark:text-gray-100 bg-transparent border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{isPercent ? "%" : s}</span>
-          </span>
-        </div>
-        <input type="range" min={min} max={max} step={step} value={value} onChange={onChange}
-          className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>{fmt(min)}{isPercent ? "%" : ` ${s}`}</span>
-          <span>{fmt(max)}{isPercent ? "%" : ` ${s}`}</span>
-        </div>
-      </div>
-    );
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-4 sm:py-6 px-3 sm:px-4" dir={i18n.dir()}>
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
@@ -156,21 +137,21 @@ export default function ProjectBreakEvenCalculator() {
         {/* Input sliders */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <Card title={T("fixedCosts")} icon={<BuildingOfficeIcon className="w-5 h-5 text-gray-500" />}>
-            <Slider label={T("fixedCostsHint")} value={inputs.fixedCosts} min={0} max={500000} step={1000} onChange={set("fixedCosts")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("fixedCostsHint")} value={inputs.fixedCosts} min={0} max={500000} step={1000} onChange={set("fixedCosts")} />
           </Card>
           <Card title={T("revenueCosts")} icon={<CurrencyDollarIcon className="w-5 h-5 text-green-500" />}>
-            <Slider label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
-            <Slider label={T("piecesPerOrder")} value={inputs.piecesPerOrder} min={1} max={20} step={1} onChange={set("piecesPerOrder")} />
-            <Slider label={T("cogs")} value={inputs.cogs} min={0} max={3000} step={10} onChange={set("cogs")} />
-            <Slider label={T("packing")} value={inputs.packingFees} min={0} max={200} step={5} onChange={set("packingFees")} />
-            <Slider label={T("shipping")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
-            <Slider label={T("rtoFee")} value={inputs.rtoFees} min={0} max={300} step={10} onChange={set("rtoFees")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("piecesPerOrder")} value={inputs.piecesPerOrder} min={1} max={20} step={1} onChange={set("piecesPerOrder")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("cogs")} value={inputs.cogs} min={0} max={3000} step={10} onChange={set("cogs")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("packing")} value={inputs.packingFees} min={0} max={200} step={5} onChange={set("packingFees")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("shipping")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("rtoFee")} value={inputs.rtoFees} min={0} max={300} step={10} onChange={set("rtoFees")} />
           </Card>
           <Card title={T("marketing")} icon={<ChartBarIcon className="w-5 h-5 text-purple-500" />}>
-            <Slider label={T("cpp")} value={inputs.cpp} min={0} max={1000} step={10} onChange={set("cpp")} />
-            <Slider label={T("confirmRate")} value={inputs.confirmationRate} min={0} max={100} step={5} isPercent onChange={set("confirmationRate")} />
-            <Slider label={T("deliveryRate")} value={inputs.deliveryRate} min={0} max={100} step={5} isPercent onChange={set("deliveryRate")} />
-            <Slider label={T("ordersPerDay")} value={inputs.ordersPerDay} min={1} max={500} step={1} onChange={set("ordersPerDay")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("cpp")} value={inputs.cpp} min={0} max={1000} step={10} onChange={set("cpp")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("confirmRate")} value={inputs.confirmationRate} min={0} max={100} step={5} isPercent onChange={set("confirmationRate")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("deliveryRate")} value={inputs.deliveryRate} min={0} max={100} step={5} isPercent onChange={set("deliveryRate")} />
+            <SliderInput currencySymbol={sym(currency)} label={T("ordersPerDay")} value={inputs.ordersPerDay} min={1} max={500} step={1} onChange={set("ordersPerDay")} />
           </Card>
         </div>
 
@@ -414,11 +395,6 @@ export default function ProjectBreakEvenCalculator() {
               </table>
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-xs text-gray-400 dark:text-gray-600">
-          {T("footer")} <a href="https://tools.e-cart.academy/project-break-even" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">eCart Project Break-Even</a>
         </div>
       </div>
     </div>

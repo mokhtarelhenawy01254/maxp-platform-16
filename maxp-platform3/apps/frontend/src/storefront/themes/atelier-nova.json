@@ -1,0 +1,778 @@
+{
+  "id": "atelier-nova",
+  "name": "Atelier Nova",
+  "description": "بوتيك نسائي أقرب إلى غاليري هادئ: دفعات صغيرة، صور أهدأ، ومسارات شراء واضحة للقطع المحدودة بدل الرفوف العامة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "18 10% 15%",
+      "primaryForeground": "36 34% 97%",
+      "secondary": "32 25% 92%",
+      "secondaryForeground": "18 10% 15%",
+      "accent": "20 32% 52%",
+      "accentForeground": "36 34% 97%",
+      "background": "34 30% 96%",
+      "foreground": "18 12% 16%",
+      "muted": "30 17% 88%",
+      "mutedForeground": "24 10% 39%",
+      "border": "30 14% 79%",
+      "card": "36 40% 98%",
+      "cardForeground": "18 12% 16%",
+      "ring": "20 32% 52%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"IBM Plex Sans Arabic\", serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.2rem",
+      "buttonRadius": "0.5rem"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 24px 60px -42px rgba(44, 34, 28, 0.18)",
+      "hoverShadow": "0 32px 72px -38px rgba(44, 34, 28, 0.24)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Atelier Nova",
+    "description": "بوتيك نسائي هادئ للدفعات المحدودة: فساتين وطبقات وإكسسوارات بصور أقرب للغاليري ومسار شراء أكثر وضوحًا."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/atelier-nova/preview.png",
+    "colors": ["18 10% 15%", "34 30% 96%", "20 32% 52%"]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "Atelier Nova",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "دفعات محدودة تصل أولًا عبر النشرة الخاصة.",
+    "announcementLinkText": "الشحن",
+    "announcementLinkTo": "/shipping",
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المجموعات", "to": "/collections" },
+      { "label": "المتجر", "to": "/shop" },
+      {
+        "label": "وصل حديثًا",
+        "to": "/shop?sortBy=createdAt&sortOrder=desc"
+      },
+      { "label": "الشحن", "to": "/shipping" }
+    ],
+    "actions": [
+      {
+        "label": "ادخلي الدفعة الحالية",
+        "to": "/shop",
+        "style": "primary"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "فساتين وقطع منفصلة وطبقات خفيفة داخل تجربة أقرب إلى الغاليري: هادئة في العرض، واضحة في القرار، ومناسبة للدفعات المحدودة.",
+    "copyrightText": "© 2026 Atelier Nova. جميع الحقوق محفوظة.",
+    "contactRows": [
+      {
+        "label": "واتساب الطلب",
+        "value": "+20 100 000 0000",
+        "href": "https://wa.me/201000000000"
+      },
+      {
+        "label": "بريد Atelier",
+        "value": "hello@ateliernova.co",
+        "href": "mailto:hello@ateliernova.co"
+      }
+    ],
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "pinterest": "https://pinterest.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          { "label": "كل القطع", "to": "/shop" },
+          { "label": "المجموعات", "to": "/collections" },
+          { "label": "الدفعة الحالية", "to": "/shop?search=دفعة" }
+        ]
+      },
+      {
+        "title": "الخدمة",
+        "links": [
+          { "label": "الشحن والتوصيل", "to": "/shipping" },
+          { "label": "الاستبدال والاسترجاع", "to": "/returns" },
+          { "label": "تواصل معنا", "to": "/contact" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "سياسة الخصوصية", "to": "/privacy" },
+      { "label": "الشروط والأحكام", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "style-ledger",
+          "settings": {
+            "eyebrow": "دفعة Atelier Nova",
+            "title": "قطع محدودة\nبهدوء غاليري",
+            "subtitle": "هنا لا تبدأين من رف مزدحم. تبدأين من دفعة منسقة، تقرأ القماش والصورة والحركة أولًا، ثم تقرّبك من القرار المناسب بدون صخب.",
+            "ctaText": "استكشفي المجموعة",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "ادخلي المتجر",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1400",
+            "panelEyebrow": "قراءة أسرع",
+            "panelTitle": "ابدئي من الإيقاع لا من كثرة الخيارات",
+            "panelSubtitle": "فساتين هادئة، طبقات قصيرة، وإكسسوارات صغيرة تكمل بعضها داخل نفس الدفعة.",
+            "panelMetricLabel": "شخصية الثيم",
+            "panelMetricValue": "هادئ + تحريري",
+            "panelNote": "كل بطاقة تعطي المنتج مساحة أعلى بدل الازدحام البصري.",
+            "highlights": [
+              { "label": "الدفعات", "value": "محدودة" },
+              { "label": "الهدف", "value": "قرار أهدأ" },
+              { "label": "الشحن", "value": "داخل مصر" }
+            ],
+            "floatingCards": [
+              {
+                "badge": "على الرف الآن",
+                "title": "فستان وطبقة خفيفة",
+                "value": "مشهد كامل",
+                "description": "اقتراحات تقفل اللوك من قطعتين أو ثلاث بدل قائمة طويلة من البدائل."
+              },
+              {
+                "badge": "بعد القطعة",
+                "title": "إكسسوار صغير",
+                "value": "لمسة أخيرة",
+                "description": "الترشيحات تبقى قريبة من نفس المزاج البصري بدل فتح اتجاه جديد بالكامل."
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "مسارات Atelier Nova",
+            "subtitle": "ابدئي من نوع القطعة التي تريدين بناءها داخل اللوك، ثم اتركي المجموعة تكمل بقية التفاصيل.",
+            "limit": 4,
+            "ctaText": "شاهدي كل المسارات",
+            "ctaLink": "/collections",
+            "collections": [
+              {
+                "title": "فساتين الخط الهادئ",
+                "subtitle": "قصّات ميدي وانسياب نظيف يصلح للنهار والمساء الخفيف.",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=dresses"
+              },
+              {
+                "title": "القطع المنفصلة",
+                "subtitle": "بلوزات وبناطيل تبني اللوك على مراحل بدون فوضى.",
+                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=separates"
+              },
+              {
+                "title": "الطبقات القصيرة",
+                "subtitle": "جاكيتات خفيفة تحافظ على هدوء القطعة الأساسية بدل أن تزاحمها.",
+                "image": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=layers"
+              },
+              {
+                "title": "الإكسسوارات الهادئة",
+                "subtitle": "شنطة وسكارف وتفاصيل تكمل المشهد من دون مبالغة.",
+                "image": "https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=accessories"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "editorial-card",
+          "settings": {
+            "title": "أقرب القطع إلى دفعة هذا الأسبوع",
+            "subtitle": "منتجات مختارة لتُقرأ بوضوح: الصورة، القصة، وما الذي يكمل القطعة مباشرة بعدها.",
+            "limit": 8,
+            "includeProductIds": [
+              "atelier-nova-midi-flow-dress",
+              "atelier-nova-drape-blouse",
+              "atelier-nova-courtyard-set",
+              "atelier-nova-arc-hobo-bag"
+            ]
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "واجهة هادئة لكن مقصودة",
+            "subtitle": "المسار هنا يشرح القطعة ويقترح ما يكملها ويُبقي الثقة قريبة من قرار الشراء.",
+            "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1200",
+            "imageAlt": "جلسة أزياء هادئة",
+            "items": [
+              {
+                "icon": "image",
+                "title": "صور من زوايا أوضح",
+                "description": "أربع لقطات على الأقل لكل قطعة حتى يكون تقدير الحركة واللون أقرب للواقع."
+              },
+              {
+                "icon": "clipboard",
+                "title": "تفاصيل تحريرية",
+                "description": "ملاحظات على القصة، المقاس، والعناية بدل وصف عام متكرر."
+              },
+              {
+                "icon": "grid",
+                "title": "ترشيحات من نفس الدفعة",
+                "description": "الاقتراحات لا تقطع المزاج البصري ولا تفتح رفًا جديدًا بالكامل."
+              },
+              {
+                "icon": "shield",
+                "title": "ثقة أوضح",
+                "description": "الشحن والتبديل والعناية تظهر بجانب قرار الإضافة للسلة مباشرة."
+              }
+            ]
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "title": "ملاحظات Atelier Nova",
+            "subtitle": "قصص تنسيق قصيرة تشرح لماذا تعمل هذه الدفعة معًا بدل أن تبقى بطاقات معزولة.",
+            "items": [
+              {
+                "title": "كيف يشتغل الفستان الهادئ مع طبقة قصيرة بدل بليزر كامل",
+                "meta": "قراءة الدفعة",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections",
+                "excerpt": "عندما تكون القطعة الأساسية كافية بصريًا، يصبح دور الطبقة حماية الإيقاع لا تغييره."
+              },
+              {
+                "title": "لماذا نعرض البلوزة والبنطال معًا داخل نفس المسار",
+                "meta": "بناء اللوك",
+                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop?category=separates",
+                "excerpt": "القرار يصبح أسرع عندما تعرفين القطعة التالية المنطقية بدل الدوران بين عشرات الشبكات."
+              },
+              {
+                "title": "الإكسسوار الصغير الذي لا يسرق الهدوء من القطعة الأساسية",
+                "meta": "اللمسة الأخيرة",
+                "image": "https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop?category=accessories",
+                "excerpt": "الشنطة أو السكارف هنا ليسا عنصرين منفصلين، بل استكمال بصري محسوب للمشهد نفسه."
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "ادخلي نشرة الدفعات المحدودة",
+            "subtitle": "اشتركي لتصلك الدفعات الصغيرة وعودة المقاسات قبل أن تتحول القطعة إلى انتظار.",
+            "buttonText": "أخبريني أولًا",
+            "placeholder": "اكتبي بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar",
+          "settings": {
+            "title": "تسوّق Atelier Nova بهدوء",
+            "subtitle": "ابحثي باسم القطعة أو افتحي المسار المناسب، ثم اتركي الشبكة تقرأ لك ما يستحق الظهور أولًا.",
+            "searchPlaceholder": "ابحثي عن فستان، بلوزة، طقم، جاكيت، أو إكسسوار",
+            "allCategoriesLabel": "كل القطع",
+            "resultsLabel": "قطعة",
+            "clearButtonText": "مسح الفلاتر",
+            "stickyLabel": "دليل الدفعة",
+            "chipLimit": 6
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "badge": "تصفية Atelier Nova",
+            "title": "خففي الرف حسب ما تريدين",
+            "subtitle": "ابدئي بالقسم أو الميزانية، ثم اتركي الشبكة توضح القطع الأقرب لنفس المزاج.",
+            "showSearch": false,
+            "showSort": false,
+            "showCategories": true,
+            "showPriceFilter": true,
+            "categoryStyle": "dropdown",
+            "allProductsLabel": "كل القطع",
+            "clearButtonText": "امسحي الاختيارات",
+            "showMobileLabel": "أدوات الرف",
+            "hideMobileLabel": "إخفاء الأدوات",
+            "mobileTitle": "دليل التصفية",
+            "mobileSubtitle": "اختاري القسم والسعر ثم ارجعي مباشرة إلى القطع بدون دوران زائد.",
+            "mobileApplyText": "اعرضي القطع",
+            "mobileResetText": "امسحي الاختيارات"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "boutique-shelf",
+          "settings": {
+            "title": "كل القطع",
+            "subtitle": "شبكة أهدأ تضع الصورة والقصّة والمكمّل المقترح قبل أي ضوضاء بيعية إضافية.",
+            "limit": 12,
+            "clearButtonText": "كل القطع"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "ما الذي يبقى قريبًا أثناء التصفح؟",
+            "subtitle": "الثقة والخدمة والاقتراحات المرتبطة تبقى موجودة، لكن بدون قضبان وعجلات بيع مزعجة.",
+            "image": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80",
+            "imageAlt": "تفصيل قماش وجاكيت",
+            "items": [
+              {
+                "icon": "shield",
+                "title": "سياسة أوضح",
+                "description": "الشحن والتبديل والخصوصية مرئية من المتجر حتى صفحة الطلب."
+              },
+              {
+                "icon": "target",
+                "title": "قراءة أسرع",
+                "description": "القسم والسعر واللقطات يساعدون على الحسم بدل الاستنزاف البصري."
+              },
+              {
+                "icon": "star",
+                "title": "نفس الإيقاع",
+                "description": "الترشيحات تبقى قريبة من روح القطعة الحالية بدل إدخال مفاجآت غير منطقية."
+              },
+              {
+                "icon": "truck",
+                "title": "تجهيز محسوب",
+                "description": "الدفعات محدودة، لذلك وضوح التوفر والمقاس والعناية جزء من القرار نفسه."
+              }
+            ]
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "style-ledger",
+          "settings": {
+            "eyebrow": "دفتر Atelier Nova",
+            "title": "المجموعة الحالية\nكقصة كاملة",
+            "subtitle": "هذه الصفحة لا تجمع أقسامًا فقط، بل تشرح كيف تتجاور الفساتين والقطع المنفصلة والطبقات والإكسسوارات داخل نفس الجو العام.",
+            "ctaText": "ادخلي المتجر",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "الشحن",
+            "secondaryCtaLink": "/shipping",
+            "backgroundImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80",
+            "panelImage": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80",
+            "panelEyebrow": "المسار",
+            "panelTitle": "من الفستان إلى اللمسة الأخيرة",
+            "panelSubtitle": "كل مجموعة هنا مهيأة لتقودك إلى القطعة التالية الطبيعية، لا إلى رف جديد مشتت.",
+            "panelMetricLabel": "منطق العرض",
+            "panelMetricValue": "دفعات مترابطة",
+            "panelNote": "كل مدخل يقرّبك من القطعة التالية المنطقية بدل فتح مسار جديد مشتت.",
+            "highlights": [
+              { "label": "الفكرة", "value": "مجموعة لا رف" },
+              { "label": "النتيجة", "value": "قرار أهدأ" },
+              { "label": "الإيقاع", "value": "محدود وواضح" }
+            ]
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "أربعة مداخل للمجموعة",
+            "subtitle": "كل مدخل يشرح ما الذي يبدأ اللوك ثم ما الذي يكمله في الخطوة التالية.",
+            "limit": 4,
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "خط الفساتين",
+                "subtitle": "الفستان كقطعة أولى تكفي وحدها أو تتكامل مع جاكيت قصير وإكسسوار صغير.",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop?category=dresses"
+              },
+              {
+                "title": "القطع المنفصلة",
+                "subtitle": "بلوزة، بنطال، ثم طبقة خفيفة إذا احتجت اللوك إلى إغلاق أنظف.",
+                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop?category=separates"
+              },
+              {
+                "title": "الأطقم المحدودة",
+                "subtitle": "حلول جاهزة للشراء السريع، لكنها ما زالت تقرأ كقطع راقية لا كعروض متسرعة.",
+                "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop?category=sets"
+              },
+              {
+                "title": "الإكسسوارات الختامية",
+                "subtitle": "عناصر قليلة لكنها مصممة لتكمل اللوك بصريًا لا لتنافسه.",
+                "image": "https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop?category=accessories"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "boutique-shelf",
+          "settings": {
+            "title": "من الدفعة الحالية",
+            "subtitle": "مختارات من كل مسار حتى ترَي المجموعة ككل قبل الانتقال إلى تفاصيل القطعة.",
+            "limit": 12
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "editorial-card",
+          "settings": {
+            "title": "قطع تشرح المجموعة",
+            "subtitle": "منتجات محورية تكشف كيف يبدأ اللوك وكيف يُغلق داخل نفس الدفعة.",
+            "limit": 8,
+            "includeProductIds": [
+              "atelier-nova-midi-flow-dress",
+              "atelier-nova-drape-blouse",
+              "atelier-nova-cropped-jacket",
+              "atelier-nova-arc-hobo-bag"
+            ]
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "mirror-carousel"
+        },
+        {
+          "type": "product-info",
+          "variant": "style-ledger",
+          "settings": {
+            "shippingTitle": "قبل الشحن",
+            "shippingText": "نراجع التوفر والمقاس المختار ونجهز القطعة برسالة أوضح حول الشحن والاستبدال حتى يبقى القرار مطمئنًا حتى بعد الإضافة للسلة.",
+            "guaranteesTitle": "ما الذي نوضحه هنا؟",
+            "guaranteesSubtitle": "تفاصيل القصة، المقاس، والخدمة تبقى قريبة من الصورة لا في أسفل الصفحة فقط.",
+            "guaranteeItems": [
+              {
+                "title": "أربع زوايا أساسية",
+                "description": "لقطات أمامية، حركة، قرب خامة، وصورة تكمل قراءة اللون الفعلي."
+              },
+              {
+                "title": "ملاحظات مقاس وعناية",
+                "description": "كل قطعة تحمل fit note وcare note بدل وصف عام لا يساعد على الحسم."
+              },
+              {
+                "title": "تبديل أوضح",
+                "description": "إذا احتجتِ تغيير المقاس تبقى الخطوات أقرب وأسهل من داخل نفس المسار."
+              }
+            ]
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "seamless"
+        },
+        {
+          "type": "bought-together",
+          "variant": "pairing-rail",
+          "settings": {
+            "title": "يكتمل معها",
+            "subtitle": "اقتراحات من نفس الدفعة تساعد على إغلاق اللوك من غير مغادرة نفس الإيقاع.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "editorial",
+          "settings": {
+            "title": "قطع قريبة",
+            "subtitle": "بدائل وتحركات صغيرة داخل نفس اللغة البصرية.",
+            "limit": 4,
+            "mobileLimit": 2
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "ملاحظات العميلات",
+            "subtitle": "مراجعات قصيرة وواضحة تساعد على قراءة القماش والمقاس والحركة قبل الحسم."
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "سلة Atelier Nova",
+            "subtitle": "راجعي القطع المختارة وتناسقها قبل الانتقال إلى العنوان والدفع.",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "خلاصة هادئة للسلة والشحن وما بعد التأكيد.",
+            "headerBadge": "قبل الدفع",
+            "couponPlaceholder": "كود الخصم إن وجد",
+            "couponButtonText": "تطبيق الكود",
+            "checkoutButtonText": "الانتقال إلى الدفع",
+            "assuranceTitle": "يشملك مع الطلب",
+            "assuranceItems": [
+              "تغليف مرتب يحافظ على القطعة أثناء الوصول",
+              "مراجعة المقاس أو الملاحظة قبل التجهيز عند الحاجة",
+              "متابعة واضحة حتى الاستلام"
+            ],
+            "nextStepsTitle": "بعد الضغط على المتابعة",
+            "nextSteps": [
+              "نراجع القطع والعنوان قبل التجهيز",
+              "نثبت الشحن حسب المحافظة",
+              "نرسل متابعة حتى الاستلام"
+            ],
+            "secureCheckoutText": "الدفع آمن وبياناتك محفوظة",
+            "returnsText": "تبديل أوضح على القطع المؤهلة"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "مراجعة القطع",
+            "subtitle": "راجعي القطعة والمقاس والكمية قبل إدخال العنوان وطريقة الدفع."
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "soft-flow",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "نطلب أقل قدر ممكن من البيانات حتى نثبت الطلب ونتابع الشحن.",
+            "shippingTitle": "عنوان التوصيل",
+            "shippingDescription": "المحافظة والعنوان مهمان لإظهار الشحن النهائي والتوقيت المتوقع.",
+            "notesTitle": "ملاحظات على الطلب",
+            "notesDescription": "مثلاً: أفضل توقيت للتواصل أو ملاحظة تخص المقاس.",
+            "fullNamePlaceholder": "مثال: ندى سامح",
+            "emailPlaceholder": "you@example.com",
+            "notesPlaceholder": "أي ملاحظة حول المقاس أو العنوان أو توقيت الاستلام"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "boutique-payment",
+          "settings": {
+            "title": "طريقة الدفع",
+            "subtitle": "اختاري الطريقة الأنسب، ثم نراجع الطلب مرة أخيرة قبل التنفيذ.",
+            "assuranceBadge": "قبل التأكيد",
+            "assuranceTitle": "نراجع الطلب والعنوان والشحن النهائي خطوة بخطوة قبل التجهيز.",
+            "assuranceItems": [
+              "مراجعة المقاس والعنوان قبل الشحن",
+              "تثبيت رسوم الشحن حسب المحافظة",
+              "إرسال تحديثات أوضح حتى الاستلام"
+            ],
+            "postConfirmStepsTitle": "بعد تأكيد الطلب",
+            "postConfirmSteps": [
+              "يصلك رقم الطلب فورًا",
+              "نراجع التوفر والتجهيز",
+              "نرسل لك تحديث المتابعة حتى التسليم"
+            ],
+            "confirmOrderText": "تأكيد الطلب",
+            "securityText": "بياناتك محفوظة والمراجعة النهائية تتم قبل التنفيذ"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "ملخص الدفع",
+            "subtitle": "الخلاصة أمامك أثناء إدخال العنوان واختيار طريقة الدفع.",
+            "headerBadge": "خلاصة الطلب",
+            "hideCheckoutButton": true,
+            "showCouponField": false,
+            "assuranceTitle": "يشملك مع الطلب",
+            "assuranceItems": [
+              "الشحن يظهر بعد اختيار المحافظة",
+              "مراجعة أخيرة قبل الإرسال",
+              "تواصل أسهل إذا احتجت تعديلًا"
+            ],
+            "nextStepsTitle": "بعد الضغط على التأكيد",
+            "nextSteps": [
+              "يصل رقم الطلب فورًا",
+              "نراجع الشحن والتجهيز",
+              "نرسل لك المتابعة حتى التسليم"
+            ],
+            "secureCheckoutText": "بياناتك محفوظة",
+            "returnsText": "دعم هادئ بعد الطلب"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "تفاصيل واضحة قبل تأكيد الطلب.",
+            "body": "نجهز أغلب الطلبات خلال 24 إلى 48 ساعة عمل، وتظهر رسوم الشحن النهائية بعد إدخال المحافظة والعنوان داخل صفحة الدفع.\n\nإذا كانت القطعة ضمن دفعة محدودة سنوضح حالة التوفر والتجهيز قبل خروج الطلب للتوصيل.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "مدة التجهيز|من 24 إلى 48 ساعة عمل\nالمتابعة|رسالة حالة بعد الشحن\nنطاق التوصيل|داخل مصر",
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "سياسة واضحة تحترم طبيعة القطع المحدودة.",
+            "body": "يمكن طلب الاستبدال أو الاسترجاع خلال المدة المعلنة بشرط بقاء المنتج بحالته الأصلية وعدم استخدامه خارج التجربة المنزلية.\n\nنحاول دائمًا تقليل الحاجة إلى الإرجاع عبر صور أوضح وملاحظات مقاس وعناية أقرب لقرار الشراء نفسه.",
+            "detailsTitle": "يشمل ذلك",
+            "details": "المدة|بحسب السياسة الحالية\nالحالة|المنتج بحالته الأصلية\nبدء الطلب|التواصل معنا برقم الطلب",
+            "ctaText": "تواصلي معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الدعم",
+            "title": "تواصلي معنا",
+            "subtitle": "لأسئلة المقاسات والطلبات وما بعد البيع.",
+            "body": "فريق Atelier Nova يرد على استفسارات الشحن والمقاسات والطلبات خلال أوقات العمل.\n\nإذا كان لديك رقم طلب أو سؤال عن مقاس قطعة من الدفعة الحالية فأرسليه معنا حتى نتابع بسرعة أكبر.",
+            "detailsTitle": "قنوات التواصل",
+            "details": "واتساب|للطلبات السريعة والمتابعة\nالبريد|للاستفسارات الرسمية\nالدعم|من الأحد إلى الخميس من 10 ص إلى 6 م",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "كيف نتعامل مع بياناتك أثناء التصفح والطلب.",
+            "body": "نستخدم بياناتك فقط لتنفيذ الطلب، متابعة الشحن، والتواصل معك حول خدمة ما بعد البيع أو تحديثات الطلب.\n\nلا نشارك بياناتك خارج أغراض تشغيل المتجر والخدمة المرتبطة بطلبك إلا وفق ما تسمح به السياسة المعلنة.",
+            "detailsTitle": "ملخص سريع",
+            "details": "بيانات التواصل|الاسم والهاتف والبريد عند الحاجة\nبيانات الطلب|العنوان والمنتجات المرتبطة بالشراء\nالغرض|تنفيذ الطلب والمتابعة وخدمة ما بعد البيع",
+            "ctaText": "العودة للرئيسية",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط",
+            "title": "الشروط والأحكام",
+            "subtitle": "النقاط الأساسية المرتبطة بالشراء والدفع والشحن.",
+            "body": "تأكيد الطلب يرتبط بتوفر المنتج وصحة البيانات المدخلة، كما تطبق طريقة الدفع المختارة وما يرتبط بها من تحقق أو رسوم عند الحاجة.\n\nقد يتم تحديث بعض التفاصيل التشغيلية مع بقاء حقوق العميل والنقاط الأساسية واضحة داخل المتجر.",
+            "detailsTitle": "يشمل ذلك",
+            "details": "الطلبات|مرتبطة بصحة البيانات وتوفر المنتج\nالدفع|بحسب الوسيلة المختارة وما يتبعها\nالتشغيل|يجوز تحديث التفاصيل التشغيلية بما لا يخل بحقوق العميل",
+            "ctaText": "سياسة الشحن",
+            "ctaLink": "/shipping"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks",
+          "settings": {
+            "title": "ثبت طلبك من Atelier Nova",
+            "description": "نراجع المقاس والعنوان بهدوء قبل التجهيز، ثم نرسل لك تحديثات أوضح حتى يصل الطلب بالصيغة التي تتوقعينها.",
+            "continueShoppingText": "شاهدي بقية المجموعة",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "إذا احتجتِ تعديلًا على المقاس أو العنوان تواصلي معنا عبر"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": ["member-registration"]
+    }
+  }
+}

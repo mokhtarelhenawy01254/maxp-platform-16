@@ -1,0 +1,29 @@
+name: 'Setup SSH Key'
+description: 'Setup SSH key for MaxP server deployment'
+inputs:
+  host:
+    description: 'Server hostname'
+    required: true
+  port:
+    description: 'SSH port'
+    required: false
+    default: '22'
+  key:
+    description: 'SSH private key content'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Install SSH key
+      shell: bash
+      env:
+        SSH_KEY: ${{ inputs.key }}
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/maxp_deploy_key
+        chmod 600 ~/.ssh/maxp_deploy_key
+
+    - name: Accept host key
+      shell: bash
+      run: |
+        ssh-keyscan -p '${{ inputs.port }}' -H '${{ inputs.host }}' >> ~/.ssh/known_hosts 2>/dev/null || true
