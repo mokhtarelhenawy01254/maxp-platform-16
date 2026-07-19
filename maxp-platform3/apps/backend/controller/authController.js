@@ -738,6 +738,21 @@ const login = async (req, res) => {
 
     await ensureUserCompanySlugs(user);
 
+    // Resolve custom roles from Role table when roleRef relation didn't populate
+    for (const uc of user.userCompanies || []) {
+      if (!uc.roleRef && uc.roleId) {
+        try {
+          const resolved = await getSharedPrismaClient().role.findUnique({
+            where: { id: uc.roleId },
+            select: { key: true, name: true }
+          });
+          if (resolved) uc.roleRef = resolved;
+        } catch (e) {
+          console.warn('[AUTH] Failed to resolve role for userCompany:', e.message?.substring(0, 100));
+        }
+      }
+    }
+
     // Build companies list for the response (same as /auth/me)
     const companiesMap = new Map();
     let currentActiveRole = user.role;
@@ -973,6 +988,21 @@ const me = async (req, res) => {
     }
 
     await ensureUserCompanySlugs(user);
+
+    // Resolve custom roles from Role table when roleRef relation didn't populate
+    for (const uc of user.userCompanies || []) {
+      if (!uc.roleRef && uc.roleId) {
+        try {
+          const resolved = await getSharedPrismaClient().role.findUnique({
+            where: { id: uc.roleId },
+            select: { key: true, name: true }
+          });
+          if (resolved) uc.roleRef = resolved;
+        } catch (e) {
+          console.warn('[AUTH-ME] Failed to resolve role for userCompany:', e.message?.substring(0, 100));
+        }
+      }
+    }
 
     // Build companies list for the response
     const companiesMap = new Map();

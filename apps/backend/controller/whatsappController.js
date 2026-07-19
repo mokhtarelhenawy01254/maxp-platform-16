@@ -856,6 +856,14 @@ async function getConversations(req, res) {
                     profilePicUrl: true,
                     isGroup: true,
                     category: true,
+                    leadCategoryId: true,
+                    leadCategory: {
+                        select: {
+                            id: true,
+                            name: true,
+                            color: true
+                        }
+                    },
                     unreadCount: true,
                     lastMessageAt: true,
                     lastCustomerMessageAt: true,
@@ -866,7 +874,23 @@ async function getConversations(req, res) {
                         select: { name: true, phoneNumber: true }
                     },
                     customer: {
-                        select: { firstName: true, lastName: true, status: true }
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            status: true,
+                            conversations: {
+                                where: {
+                                    channel: 'WHATSAPP',
+                                    status: { in: ['ACTIVE', 'PENDING'] }
+                                },
+                                select: {
+                                    id: true,
+                                    aiEnabled: true
+                                },
+                                take: 1
+                            }
+                        }
                     }
                 }
             }),
@@ -1293,26 +1317,28 @@ async function updateContact(req, res) {
     try {
         const { companyId } = req.user;
         const { id } = req.params;
-        const { name, category, tags, notes, customerId, isArchived, isPinned, isMuted } = req.body;
+        const { name, category, leadCategoryId, tags, notes, customerId, isArchived, isPinned, isMuted } = req.body;
 
         // التحقق من الملكية
         const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
             where: { id },
             include: {
-                whatsapp_sessions: { select: { companyId: true } }
+                whatsAppSession: { select: { companyId: true } }
             }
         });
 
-        if (!contact || contact.whatsapp_sessions.companyId !== companyId) {
+        if (!contact || contact.whatsAppSession.companyId !== companyId) {
             return res.status(404).json({ error: 'جهة الاتصال غير موجودة' });
         }
 
+        const newLeadCategoryId = leadCategoryId || null;
         const updatedContact = await getSharedPrismaClient().whatsAppContact.update({
             where: { id },
             data: {
                 name,
                 category,
-                tags: tags ? JSON.stringify(tags) : undefined,
+                leadCategoryId: newLeadCategoryId,
+                tags: Array.isArray(tags) ? JSON.stringify(tags) : undefined,
                 notes,
                 customerId,
                 isArchived,
@@ -1320,6 +1346,32 @@ async function updateContact(req, res) {
                 isMuted
             }
         });
+
+        // Sync tags to Customer model if linked
+        if (Array.isArray(tags) && updatedContact.customerId) {
+            const tagsStr = JSON.stringify(tags);
+            if (contact.tags !== tagsStr) {
+                await getSharedPrismaClient().customer.update({
+                    where: { id: updatedContact.customerId },
+                    data: { tags: tagsStr }
+                }).catch(err => console.error('❌ Failed to sync tags to customer:', err));
+            }
+        }
+
+        // Cancel old journey + enroll in new category-based journey
+        if (newLeadCategoryId && newLeadCategoryId !== contact.leadCategoryId && updatedContact.customerId) {
+            try {
+                const WhatsAppJourneyService = require('../services/whatsapp/WhatsAppJourneyService');
+                await WhatsAppJourneyService.reEnrollFromCategory(
+                    companyId,
+                    updatedContact.customerId,
+                    id,
+                    newLeadCategoryId
+                );
+            } catch (err) {
+                console.error('❌ Journey re-enrollment failed:', err);
+            }
+        }
 
         res.json({ success: true, contact: updatedContact });
     } catch (error) {
@@ -1342,11 +1394,11 @@ async function linkCustomer(req, res) {
         const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
             where: { id },
             include: {
-                whatsapp_sessions: { select: { companyId: true } }
+                whatsAppSession: { select: { companyId: true } }
             }
         });
 
-        if (!contact || contact.whatsapp_sessions.companyId !== companyId) {
+        if (!contact || contact.whatsAppSession.companyId !== companyId) {
             return res.status(404).json({ error: 'جهة الاتصال غير موجودة' });
         }
 
@@ -1364,6 +1416,21 @@ async function linkCustomer(req, res) {
             data: { customerId },
             include: { customer: true }
         });
+
+        // Enroll in journey if contact has a category with trigger flow
+        if (contact.leadCategoryId && updatedContact.customerId) {
+            try {
+                const WhatsAppJourneyService = require('../services/whatsapp/WhatsAppJourneyService');
+                await WhatsAppJourneyService.enrollFromCategory(
+                    companyId,
+                    updatedContact.customerId,
+                    id,
+                    contact.leadCategoryId
+                );
+            } catch (err) {
+                console.error('❌ Journey enrollment on linkCustomer failed:', err);
+            }
+        }
 
         res.json({ success: true, contact: updatedContact });
     } catch (error) {
@@ -4013,7 +4080,8 @@ module.exports = {
 
     // Facebook Embedded Sign-Up
     getFacebookConfig,
-    facebookConnect
+    facebookConnect,
+    facebookEmbeddedConnect
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4155,37 +4223,45 @@ async function markStatusViewed(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const facebookAppConfig = require('../config/facebookAppConfig');
-const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v22.0';
+const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v25.0';
 const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
 async function getFacebookConfig(req, res) {
     try {
         const config = facebookAppConfig.getFacebookOAuthConfig();
-        const envConfig = require('../config/environment');
-        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+        const origin = req.get('Origin') || req.get('Referer') || '';
+        const frontendUrl = origin
+            ? new URL(origin).origin
+            : require('../config/environment').frontendUrl;
+        const redirectUri = new URL('/whatsapp/cloud-connect', `${frontendUrl}/`).toString();
 
-        if (!config.appId || facebookAppConfig.isPlaceholderFacebookCredential(config.appId)) {
+        const appId = config.whatsappAppId || config.appId;
+        const configId = config.whatsappConfigId || config.configId;
+
+        if (!appId || facebookAppConfig.isPlaceholderFacebookCredential(appId)) {
             return res.status(200).json({
-                appId: config.appId,
+                appId,
                 redirectUri,
+                configId,
                 configured: false
             });
         }
 
         res.json({
-            appId: config.appId,
+            appId,
             redirectUri,
+            configId,
             configured: true
         });
     } catch (error) {
-        console.error('❌ Error getting Facebook config:', error);
+        console.error('❌ Error getting Facebook config:', error.message);
         res.status(500).json({ error: 'فشل تحميل إعدادات Facebook' });
     }
 }
 
 async function facebookConnect(req, res) {
     try {
-        const { code, state, sessionName } = req.body;
+        const { code, state, sessionName, redirectUri: clientRedirectUri } = req.body;
         const { companyId } = req.user;
 
         if (!code) {
@@ -4193,10 +4269,18 @@ async function facebookConnect(req, res) {
         }
 
         const config = facebookAppConfig.getFacebookOAuthConfig();
-        const envConfig = require('../config/environment');
-        const redirectUri = new URL('/whatsapp/cloud-connect', `${envConfig.frontendUrl}/`).toString();
+        const appId = config.whatsappAppId || config.appId;
+        const appSecret = config.whatsappAppSecret || config.appSecret;
 
-        if (!config.appSecret) {
+        const redirectUri = clientRedirectUri || (() => {
+            const origin = req.get('Origin') || req.get('Referer') || '';
+            const frontendUrl = origin
+                ? new URL(origin).origin
+                : require('../config/environment').frontendUrl;
+            return new URL('/whatsapp/cloud-connect', `${frontendUrl}/`).toString();
+        })();
+
+        if (!appSecret) {
             return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });
         }
 
@@ -4204,9 +4288,9 @@ async function facebookConnect(req, res) {
         const axios = require('axios');
         const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
             params: {
-                client_id: config.appId,
+                client_id: appId,
                 redirect_uri: redirectUri,
-                client_secret: config.appSecret,
+                client_secret: appSecret,
                 code
             },
             timeout: 15000
@@ -4217,12 +4301,11 @@ async function facebookConnect(req, res) {
             return res.status(400).json({ error: 'فشل الحصول على رمز الوصول من Facebook' });
         }
 
-        // Step 2: Exchange for long-lived token
         const longTokenResponse = await axios.get(`${META_GRAPH_BASE}/oauth/access_token`, {
             params: {
                 grant_type: 'fb_exchange_token',
-                client_id: config.appId,
-                client_secret: config.appSecret,
+                client_id: appId,
+                client_secret: appSecret,
                 fb_exchange_token: shortLivedToken
             },
             timeout: 15000
@@ -4292,6 +4375,18 @@ async function facebookConnect(req, res) {
             }
         }
 
+        // Step 5.5: Subscribe to WABA webhooks
+        if (wabaId) {
+            try {
+                await axios.post(`${META_GRAPH_BASE}/${wabaId}/subscribed_apps`, null, {
+                    params: { access_token: longLivedToken },
+                    timeout: 15000
+                });
+            } catch (webhookErr) {
+                console.warn('⚠️ Could not subscribe to WABA webhooks:', webhookErr.message);
+            }
+        }
+
         // Step 6: Create WhatsAppSession in DB
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
@@ -4334,6 +4429,251 @@ async function facebookConnect(req, res) {
         const errorMsg = error.response?.data?.error?.message
             || error.response?.data?.error?.error_user_msg
             || 'فشل الاتصال بحساب Facebook. الرجاء التحقق من الإعدادات والمحاولة مرة أخرى.';
+        res.status(500).json({ error: errorMsg });
+    }
+}
+
+async function facebookEmbeddedConnect(req, res) {
+    try {
+        let { wabaId, phoneNumberId, businessId, code, sessionName, redirectUri: clientRedirectUri } = req.body;
+        const { companyId } = req.user;
+
+        console.log('📲 [facebookEmbeddedConnect] Request received:', {
+            hasCode: !!code,
+            hasWabaId: !!wabaId,
+            hasPhoneNumberId: !!phoneNumberId,
+            hasBusinessId: !!businessId,
+            sessionName: sessionName || '(not provided)',
+            companyId,
+            clientRedirectUri
+        });
+
+        if (!code) {
+            console.warn('⚠️ [facebookEmbeddedConnect] Missing authorization code');
+            return res.status(400).json({
+                error: 'Authorization code مطلوب'
+            });
+        }
+
+        const config = facebookAppConfig.getFacebookOAuthConfig();
+        const appId = config.whatsappAppId || config.appId;
+        const appSecret = config.whatsappAppSecret || config.appSecret;
+        const configId = config.whatsappConfigId || config.configId;
+
+        console.log('🔧 [facebookEmbeddedConnect] Facebook config:', {
+            appId: appId ? `${appId.substring(0, 6)}...` : '(empty)',
+            hasAppSecret: !!appSecret,
+            appSecretLength: appSecret?.length || 0,
+            configId: configId || '(none)'
+        });
+
+        if (!appSecret) {
+            console.error('❌ [facebookEmbeddedConnect] Facebook App Secret is not configured! Please set it via /super-admin/facebook-oauth or FACEBOOK_APP_SECRET env var.');
+            return res.status(400).json({ error: 'Facebook App Secret غير مضبوط. الرجاء ضبطه من لوحة تحكم السوبر أدمن.' });
+        }
+
+        let redirectUri = clientRedirectUri || (() => {
+            const referer = req.get('Referer') || '';
+            const origin = req.get('Origin') || '';
+            try {
+                if (referer) {
+                    const parsed = new URL(referer);
+                    return parsed.origin + parsed.pathname;
+                }
+                return origin ? new URL(origin).origin + '/' : '';
+            } catch (err) {
+                return '';
+            }
+        })();
+
+        console.log('🔗 [facebookEmbeddedConnect] Using redirect_uri for token exchange:', redirectUri);
+
+        const axios = require('axios');
+        let tokenResponse;
+
+        try {
+            console.log('🔑 [facebookEmbeddedConnect] Attempting token exchange without redirect_uri...');
+            tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+                params: {
+                    client_id: appId,
+                    client_secret: appSecret,
+                    code
+                },
+                timeout: 15000
+            });
+            console.log('✅ [facebookEmbeddedConnect] Token exchange succeeded without redirect_uri');
+        } catch (exchangeErr) {
+            console.warn('⚠️ [facebookEmbeddedConnect] Exchange without redirect_uri failed:', exchangeErr.response?.data || exchangeErr.message);
+            console.log('🔄 [facebookEmbeddedConnect] Retrying token exchange with redirect_uri:', redirectUri);
+            
+            tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
+                params: {
+                    client_id: appId,
+                    redirect_uri: redirectUri,
+                    client_secret: appSecret,
+                    code
+                },
+                timeout: 15000
+            });
+            console.log('✅ [facebookEmbeddedConnect] Token exchange succeeded with redirect_uri');
+        }
+
+        const shortLivedToken = tokenResponse.data?.access_token;
+        if (!shortLivedToken) {
+            return res.status(400).json({ error: 'فشل الحصول على رمز الوصول من Facebook' });
+        }
+
+        const longTokenResponse = await axios.get(`${META_GRAPH_BASE}/oauth/access_token`, {
+            params: {
+                grant_type: 'fb_exchange_token',
+                client_id: appId,
+                client_secret: appSecret,
+                fb_exchange_token: shortLivedToken
+            },
+            timeout: 15000
+        });
+
+        const longLivedToken = longTokenResponse.data?.access_token || shortLivedToken;
+        const tokenExpiresAt = longTokenResponse.data?.expires_in
+            ? new Date(Date.now() + longTokenResponse.data.expires_in * 1000)
+            : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
+        // Step 2.5: Auto-discover missing asset IDs if not passed by frontend
+        if (!businessId || !wabaId || !phoneNumberId) {
+            console.log('ℹ️ [facebookEmbeddedConnect] Missing asset IDs. Starting auto-discovery...');
+            if (!businessId) {
+                try {
+                    const meResponse = await axios.get(`${META_GRAPH_BASE}/me/businesses`, {
+                        params: { access_token: longLivedToken },
+                        timeout: 15000
+                    });
+                    const businesses = meResponse.data?.data || [];
+                    if (businesses.length > 0) {
+                        businessId = businesses[0].id;
+                    }
+                } catch (bizErr) {
+                    console.warn('⚠️ Could not fetch businesses:', bizErr.message);
+                }
+            }
+
+            if (businessId && !wabaId) {
+                try {
+                    const wabaResponse = await axios.get(`${META_GRAPH_BASE}/${businessId}/client_whatsapp_business_accounts`, {
+                        params: { access_token: longLivedToken },
+                        timeout: 15000
+                    });
+                    const existingWABAs = wabaResponse.data?.data || [];
+                    if (existingWABAs.length > 0) {
+                        wabaId = existingWABAs[0].id;
+                    }
+                } catch (wabaErr) {
+                    console.warn('⚠️ Could not fetch WABAs:', wabaErr.message);
+                }
+            }
+
+            if (wabaId && !phoneNumberId) {
+                try {
+                    const phoneResponse = await axios.get(`${META_GRAPH_BASE}/${wabaId}/phone_numbers`, {
+                        params: { access_token: longLivedToken },
+                        timeout: 15000
+                    });
+                    const phoneNumbers = phoneResponse.data?.data || [];
+                    if (phoneNumbers.length > 0) {
+                        const activePhone = phoneNumbers.find(p => p.code_verification_status === 'VERIFIED')
+                            || phoneNumbers[0];
+                        phoneNumberId = activePhone.id;
+                    }
+                } catch (phoneErr) {
+                    console.warn('⚠️ Could not fetch phone numbers:', phoneErr.message);
+                }
+            }
+        }
+
+        if (!wabaId || !phoneNumberId || !businessId) {
+            return res.status(400).json({
+                error: 'تعذر تحديد حساب الأعمال أو حساب الواتساب السحابي تلقائياً. الرجاء التحقق من الصلاحيات الممنوحة للتطبيق.'
+            });
+        }
+
+        try {
+            await axios.post(`${META_GRAPH_BASE}/${wabaId}/subscribed_apps`, null, {
+                params: { access_token: longLivedToken },
+                timeout: 15000
+            });
+        } catch (webhookErr) {
+            console.warn('⚠️ Could not subscribe to WABA webhooks:', webhookErr.message);
+        }
+
+        const registrationPin = Math.floor(100000 + Math.random() * 900000).toString();
+
+        try {
+            await axios.post(`${META_GRAPH_BASE}/${phoneNumberId}/register`, {
+                messaging_product: 'whatsapp',
+                pin: registrationPin
+            }, {
+                params: { access_token: longLivedToken },
+                timeout: 15000
+            });
+        } catch (regErr) {
+            console.warn('⚠️ Could not register phone number (may already be registered):', regErr.message);
+        }
+
+        let displayPhoneNumber = null;
+        try {
+            const phoneInfo = await axios.get(`${META_GRAPH_BASE}/${phoneNumberId}`, {
+                params: {
+                    access_token: longLivedToken,
+                    fields: 'display_phone_number,verified_name'
+                },
+                timeout: 15000
+            });
+            displayPhoneNumber = phoneInfo.data?.display_phone_number || null;
+        } catch (phoneErr) {
+            console.warn('⚠️ Could not fetch phone number details:', phoneErr.message);
+        }
+
+        const session = await getSharedPrismaClient().whatsAppSession.create({
+            data: {
+                companyId,
+                name: sessionName || `WhatsApp Cloud (${displayPhoneNumber || phoneNumberId})`,
+                provider: 'META_CLOUD',
+                status: 'CONNECTED',
+                metaAccessToken: longLivedToken,
+                metaTokenExpiresAt: tokenExpiresAt,
+                metaWabaId: wabaId,
+                metaPhoneNumberId: phoneNumberId,
+                metaBusinessId: businessId,
+                metaDisplayPhoneNumber: displayPhoneNumber,
+                metaApiVersion: META_GRAPH_VERSION,
+                metadata: JSON.stringify({ registrationPin }),
+                aiEnabled: true,
+                autoReply: false,
+                aiMode: 'suggest',
+                loadBalanceWeight: 1,
+                updatedAt: new Date()
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            session: {
+                id: session.id,
+                name: session.name,
+                provider: session.provider,
+                status: session.status,
+                phoneNumber: displayPhoneNumber,
+                metaDisplayPhoneNumber: displayPhoneNumber,
+                metaPhoneNumberId: phoneNumberId,
+                metaWabaId: wabaId,
+                createdAt: session.createdAt
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Facebook Embedded Connect Error:', error.response?.data || error.message);
+        const errorMsg = error.response?.data?.error?.message
+            || error.response?.data?.error?.error_user_msg
+            || 'فشل ربط واتساب السحابي. الرجاء التحقق من الإعدادات والمحاولة مرة أخرى.';
         res.status(500).json({ error: errorMsg });
     }
 }

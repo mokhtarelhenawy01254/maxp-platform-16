@@ -1670,7 +1670,8 @@
     "stats": {
       "title": "إحصائيات سريعة",
       "products": "المنتجات",
-      "orders": "الطلبات"
+      "orders": "الطلبات",
+      "activeApps": "التطبيقات النشطة"
     },
     "activity": {
       "title": "النشاط الأخير (7 أيام)",
@@ -1694,7 +1695,8 @@
       "growth": "النمو",
       "operations": "العمليات",
       "inventoryAlerts": "تنبيهات المخزون",
-      "insights": "رؤى ذكية"
+      "insights": "رؤى ذكية",
+      "alerts": "التنبيهات"
     },
     "insights": {
       "revenueTrend": "الإيرادات {{delta}} مقارنة بالفترة السابقة ({{current}}).",
@@ -1709,8 +1711,8 @@
       "newCustomersGrowth": "العملاء الجدد ارتفعوا {{delta}} ({{count}} هذه الفترة)."
     },
     "inventory": {
-      "lowStock": "مخزون منخفض",
-      "outOfStock": "منتجات نافذة"
+      "outOfStockCount": "{{count}} منتج نفذ من المخزون",
+      "lowStockCount": "{{count}} منتج أوشك على النفاد"
     },
     "metrics": {
       "totalOrders": "إجمالي الطلبات",
@@ -1889,6 +1891,121 @@
       "pdf": "تصدير PDF",
       "metric": "المؤشر",
       "value": "القيمة"
+    },
+    "alerts": {
+      "openOrders": "{{count}} طلب معلق"
+    },
+    "widgets": {
+      "sectionTitle": "التطبيقات النشطة",
+      "active": "نشط",
+      "moreModules": "المزيد من التطبيقات",
+      "viewAll": "عرض الكل",
+      "customize": "تخصيص",
+      "noData": "لا توجد بيانات متاحة",
+      "status": {
+        "active": "نشط",
+        "warning": "تحتاج متابعة",
+        "error": "خطأ",
+        "inactive": "غير نشط"
+      },
+      "ecommerce": {
+        "title": "المتجر",
+        "orders": "الطلبات",
+        "revenue": "الإيرادات",
+        "customers": "العملاء"
+      },
+      "whatsapp": {
+        "title": "واتساب",
+        "conversations": "المحادثات",
+        "new": "الجديدة",
+        "connected": "متصل"
+      },
+      "ai": {
+        "title": "الذكاء الاصطناعي",
+        "interactions": "التفاعلات",
+        "sessions": "الجلسات"
+      },
+      "crm": {
+        "title": "العملاء",
+        "customers": "العملاء",
+        "new": "الجدد"
+      },
+      "hr": {
+        "title": "الموارد البشرية",
+        "employees": "الموظفين",
+        "present": "الحاضرون اليوم",
+        "onLeave": "في إجازة"
+      },
+      "marketing": {
+        "title": "التسويق والإعلانات",
+        "campaigns": "الحملات",
+        "active": "النشطة"
+      },
+      "analytics": {
+        "title": "التحليلات",
+        "visits": "الزيارات",
+        "conversion": "نسبة التحويل"
+      },
+      "products": {
+        "title": "المنتجات",
+        "total": "الإجمالي",
+        "lowStock": "ناقص"
+      },
+      "medical": {
+        "title": "النظام الطبي",
+        "appointments": "المواعيد"
+      },
+      "education": {
+        "title": "النظام التعليمي",
+        "students": "الطلاب",
+        "sessions": "الجلسات"
+      },
+      "hotel": {
+        "title": "نظام الفنادق",
+        "checkedIn": "مسجل الدخول",
+        "occupied": "مشغول",
+        "available": "متاح"
+      },
+      "booking": {
+        "title": "الحجوزات",
+        "appointments": "المواعيد"
+      },
+      "procurement": {
+        "title": "المشتريات",
+        "pending": "طلبات معلقة",
+        "suppliers": "الموردين"
+      },
+      "wholesale": {
+        "title": "الجملة",
+        "customers": "العملاء"
+      },
+      "affiliate": {
+        "title": "الأفلييت",
+        "active": "النشطاء",
+        "pending": "المعلقة"
+      },
+      "partners": {
+        "title": "الشركاء"
+      },
+      "competitors": {
+        "title": "المنافسين",
+        "tracked": "المراقَبون"
+      },
+      "tasks": {
+        "title": "المهام",
+        "open": "المفتوحة",
+        "completed": "المكتملة"
+      },
+      "notifications": {
+        "title": "الإشعارات"
+      },
+      "forms": {
+        "title": "نماذج التسجيل"
+      },
+      "telegram": {
+        "title": "تيليجرام",
+        "groups": "المجموعات"
+      }
     }
   },
   "companyLinks": {
@@ -2780,12 +2897,33 @@
     "tagsLabel": "العلامات",
     "noTags": "لا توجد علامات مسجلة",
     "addTagPlaceholder": "إضافة علامة جديدة...",
+    "filterByTag": "تصفية بالوسم",
+    "allTags": "جميع الوسوم",
+    "tagCriteria": "تصفية بالوسم (Tag)",
+    "selectTag": "اختر وسم",
+    "filterByTagPlaceholder": "اختر أو اكتب وسم...",
     "noOrders": "لا توجد مسجل طلبات",
     "noConversations": "لا توجد محادثات سابقة",
     "notesPlaceholder": "اكتب الملاحظة هنا...",
     "noNotes": "لا توجد ملاحظات سابقة",
     "noActivities": "لا توجد سجل للأنشطة",
-    "deleteConfirmTitle": "تأكيد الحذف النهائي"
+    "deleteConfirmTitle": "تأكيد الحذف النهائي",
+    "import": {
+      "title": "استيراد عملاء",
+      "clickOrDrag": "اضغط هنا أو اسحب الملف لرفعه",
+      "requiredColumns": "الملفات المدعومة: Excel (.xlsx, .xls) أو CSV (.csv)",
+      "foundCount": "تم العثور على {{count}} عميل",
+      "success": "تم استيراد {{count}} عميل بنجاح",
+      "importing": "جاري الاستيراد...",
+      "importButton": "استيراد {{count}} عميل",
+      "noValidData": "لم يتم العثور على بيانات صالحة",
+      "readError": "حدث خطأ أثناء قراءة الملف أو تحليل البيانات",
+      "downloadTemplate": "تحميل نموذج CSV",
+      "tabFile": "استيراد من ملف (Excel / CSV)",
+      "tabPaste": "لصق مباشر للبيانات",
+      "pastePlaceholder": "انسخ الصفوف والأعمدة من ملف Excel أو اكتبها هنا بالفاصلة...\nالاسم,الهاتف,البريد الإلكتروني,الحالة\nمحمد أحمد,01012345678,mohamed@example.com,LEAD",
+      "parseButton": "معاينة وتحليل البيانات"
+    }
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -3575,6 +3713,8 @@
     "activatingNow": "جاري التفعيل...",
     "allActivated": "جميع الأدوات مثبتة بالفعل!",
     "confirmBulkActivate": "هل أنت متأكد من تفعيل {{count}} أداة دفعة واحدة؟",
+    "bulkActivateTitle": "تفعيل {{count}} أداة دفعة واحدة",
+    "bulkActivateConfirm": "سيتم تفعيل {{count}} أداة معًا. قد يستغرق هذا بعض الوقت، ولا يمكن التراجع.",
     "activatingProgress": "جاري تفعيل {{name}}… {{progress}}%",
     "activatedSuccess": "تم تفعيل {{count}} أداة بنجاح!",
     "activatedWithErrors": "تم تفعيل {{count}} أداة، وفشل {{fail}}",
@@ -3612,7 +3752,14 @@
     "clearSearch": "مسح البحث",
     "loadMore": "عرض المزيد ({{remaining}})",
     "viewAll": "عرض الكل",
-    "allLoaded": "تم عرض جميع التطبيقات"
+    "allLoaded": "تم عرض جميع التطبيقات",
+    "emptyHint": "جرّب تغيير الفلاتر أو تصفح فئة أخرى.",
+    "clearFilters": "مسح الفلاتر",
+    "browseAll": "تصفح كل الأدوات",
+    "features": "الميزات",
+    "moreFeatures": "+{{count}} ميزات أخرى",
+    "requires": "يتطلب",
+    "trialDays": "تجربة {{count}} يوم"
   },
   "monthlyPnL": {
     "title": "القوائم المالية الشهرية (P&L)",
@@ -5662,6 +5809,7 @@
     "affiliateCreateOrder": "طلب جديد للعميل",
     "referrals": "الإحالات",
     "affiliateSettings": "إعدادات النظام",
+    "affiliateProductVisibility": "إدارة ظهور المنتجات للمسوقين",
     "alertSettings": "إعدادات التنبيهات",
     "analyticsSection": "التقارير والتحليلات",
     "appointments": "المواعيد والتقويم",
@@ -5700,6 +5848,7 @@
     "categoryAnalytics": "تحليلات المصنفات",
     "ceoAgentChat": "محادثة CEO Agent",
     "codPerformance": "أداء الدفع عند الاستلام",
+    "todayOps": "عمليات اليوم",
     "cancellationAnalytics": "تحليل الإلغاءات",
     "commissions": "العمولات",
     "companiesDashboard": "لوحة تحكم الشركات",
@@ -5726,6 +5875,7 @@
     "customerAnalytics": "تحليلات العملاء",
     "customerLoyalty": "ولاء العملاء",
     "customerPointsCenter": "مركز نقاط العملاء",
+    "customerSegments": "مركز التقسيم",
     "customers": "العملاء",
     "customersBirthday": "عيد ميلاد العملاء",
     "customersOccasions": "مناسبات العملاء",
@@ -5791,6 +5941,8 @@
     "educationSessions": "الحصص",
     "educationCalendar": "التقويم",
     "educationFunnel": "الإشعارات والفانل",
+    "hotelModule": "نظام الفنادق",
+    "hotelDashboard": "إدارة الفنادق",
     "mainSection": "الرئيسية",
     "manualOrder": "إنشاء طلب يدوي",
     "marketingLinks": "روابط التسويق",
@@ -6081,6 +6233,7 @@
     "whatsappSection": "واتساب",
     "whatsappSettings": "إعدادات واتساب",
     "whatsappCloudConnect": "ربط سحابي",
+    "whatsappEmployeeAnalytics": "تحليل أداء الموظفين",
     "whatsappTemplates": "القوالب",
     "whatsappTemplatesOrders": "قوالب الطلبات",
     "whatsappTemplatesHR": "قوالب الـ HR",
@@ -7791,65 +7944,114 @@
     "title": "متابعة العملاء المحتملين",
     "subtitle": "متابعة تلقائية للعملاء المحتملين الذين يراسلونك على واتساب",
     "tabs": {
-      "settings": "الإعدادات",
-      "monitoring": "الاشتراكات النشطة"
+      "flows": "تدفقات المتابعة",
+      "monitoring": "الاشتراكات"
     },
     "stats": {
       "activeEnrollments": "العملاء النشطون",
       "totalSent": "إجمالي الرسائل المرسلة",
       "replyRate": "نسبة الرد",
       "replyRateHint": "{{replied}} رد من {{total}} رسالة",
-      "completionRate": "نسبة الإكمال"
+      "completionRate": "نسبة الإكمال",
+      "totalEnrollments": "إجمالي المسجلين"
     },
-    "stepEditor": {
-      "title": "خطوات المتابعة",
-      "description": "تسلسل الرسائل التلقائية التي سترسل للعميل المحتمل",
-      "stepLabel": "الخطوة {{current}}",
-      "hours": "ساعة",
-      "addStep": "إضافة خطوة",
-      "noSteps": "لم يتم إعداد أي خطوات متابعة بعد",
-      "content": "محتوى الرسالة",
-      "variables": "المتغيرات المتاحة"
+    "flows": {
+      "title": "تدفقات المتابعة",
+      "addNew": "إنشاء تدفق جديد",
+      "edit": "تعديل التدفق",
+      "empty": "لا توجد تدفقات متابعة بعد",
+      "emptyDesc": "أنشئ تدفقك الأول للمتابعة التلقائية مع العملاء المحتملين الجدد.",
+      "name": "اسم التدفق",
+      "steps": "الخطوات",
+      "status": "الحالة",
+      "enabled": "مفعل",
+      "disabled": "معطل",
+      "categories": "التصنيفات",
+      "noCategory": "بدون تصنيف",
+      "activeLeads": "{{count}} نشط",
+      "deleteConfirm": "حذف هذا التدفق؟ سيتم إيقافه لجميع العملاء المسجلين.",
+      "presetWelcome": "رحلة ترحيبية ٢٤ س",
+      "scope": "نطاق الاستهداف",
+      "general": "عام",
+      "targeted": "مخصص",
+      "generalDesc": "يشتغل مع كل العملاء ما لم يخصص لهم تدفق خاص",
+      "targetedDesc": "يشتغل بس مع العملاء اللي في التصنيفات المختارة"
     },
     "steps": {
-      "content": "محتوى الرسالة",
-      "variables": "المتغيرات المتاحة"
+      "title": "الخطوات",
+      "add": "إضافة خطوة",
+      "edit": "تعديل الخطوة",
+      "deleteConfirm": "حذف هذه الخطوة؟",
+      "delay": "التأخير",
+      "hour": "ساعة",
+      "hours": "ساعات",
+      "day": "يوم",
+      "days": "أيام",
+      "unit": "الوحدة",
+      "content": "الرسالة",
+      "variables": "استخدم {firstName}, {lastName}, {customerName}",
+      "preview": "معاينة",
+      "noSteps": "لا توجد خطوات بعد — أضف خطوتك الأولى"
     },
     "businessHours": {
       "title": "ساعات العمل",
-      "description": "حدد الأوقات التي يُسمح فيها بإرسال رسائل المتابعة",
-      "startHour": "بداية ساعات العمل",
-      "endHour": "نهاية ساعات العمل",
+      "description": "تقييد إرسال رسائل المتابعة بساعات محددة",
+      "startHour": "البداية",
+      "endHour": "النهاية",
       "timezone": "المنطقة الزمنية",
       "anyTime": "في أي وقت"
+    },
+    "categories": {
+      "title": "ربط التصنيفات",
+      "description": "ربط التدفقات بتصنيفات العملاء ليتم تسجيلهم تلقائيًا في التدفق المناسب",
+      "noCategories": "لا توجد تصنيفات بعد",
+      "autoFollowUp": "متابعة تلقائية",
+      "linkedFlow": "التدفق المرتبط",
+      "none": "بدون",
+      "performanceTitle": "أداء التصنيفات",
+      "performanceDesc": "معدلات التسجيل والرد لكل تصنيف",
+      "total": "العدد",
+      "enrolled": "مسجل",
+      "completed": "مكتمل",
+      "replied": "رد",
+      "replyRate": "معدل الرد"
+    },
+    "monitoring": {
+      "customer": "العميل",
+      "flow": "التدفق",
+      "currentStep": "الخطوة",
+      "nextMessage": "الرسالة القادمة",
+      "status": "الحالة",
+      "lastSent": "آخر إرسال",
+      "notStarted": "قيد الانتظار",
+      "completed": "مكتمل",
+      "active": "نشط",
+      "cancelled": "ملغي",
+      "failed": "فشل",
+      "inactive": "غير نشط",
+      "details": "التفاصيل",
+      "step": "الخطوة {{current}} من {{total}}",
+      "empty": "لا يوجد مسجلين بعد",
+      "allStatuses": "جميع الحالات",
+      "allFlows": "جميع التدفقات",
+      "cancel": "إلغاء"
+    },
+    "actions": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "delete": "حذف",
+      "creating": "جارٍ الإنشاء...",
+      "saving": "جارٍ الحفظ..."
+    },
+    "status": {
+      "active": "مفعل",
+      "paused": "متوقف"
     },
     "hints": {
       "title": "نصائح ذكية",
       "tip1": "أرسل المتابعة الأولى خلال 24 ساعة بينما المحادثة لا تزال حديثة.",
       "tip2": "اسأل عن احتياجاتهم أو اعرض المساعدة لبدء محادثة.",
       "tip3": "استخدم {firstName} لتخصيص الرسالة."
-    },
-    "enrollments": {
-      "cancel": "إلغاء",
-      "allStatuses": "جميع الحالات",
-      "empty": "لا يوجد عملاء مسجلين في المتابعة"
-    },
-    "monitoring": {
-      "customer": "العميل",
-      "status": "الحالة",
-      "currentStep": "الخطوة الحالية",
-      "nextMessage": "الرسالة القادمة",
-      "lastSent": "آخر إرسال",
-      "active": "نشط",
-      "completed": "مكتمل",
-      "cancelled": "ملغي"
-    },
-    "actions": {
-      "save": "حفظ"
-    },
-    "status": {
-      "active": "مفعل",
-      "paused": "متوقف"
     }
   },
   "whatsappNotifications": {

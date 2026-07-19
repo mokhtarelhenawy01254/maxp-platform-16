@@ -277,6 +277,21 @@ async def init_registry_from_db(session_factory) -> None:
                     )
 
                     _agent_config_json = db_agent.config or {}
+                    persona = dict(db_agent.persona or {})
+                    # ponytail: if persona is empty but template_slug exists, load from template
+                    if not persona.get("soulInstructions") and db_agent.template_slug:
+                        try:
+                            from src.agents.loader import get_template
+                            template = await get_template(db_agent.template_slug, session)
+                            if template:
+                                persona = {
+                                    "soulInstructions": template.instructions_soul or "",
+                                    "personaInstructions": template.instructions_persona or "",
+                                    "agentInstructions": template.instructions_agents or "",
+                                    "toolsInstructions": template.instructions_tools or "",
+                                }
+                        except Exception:
+                            pass
                     config = BaseAgentConfig(
                         id=db_agent.id,
                         name=db_agent.name,
@@ -286,12 +301,12 @@ async def init_registry_from_db(session_factory) -> None:
                         allowed_channels=channels,
                         model=await _resolve_agent_model(db_agent, session),
                         allowed_skills=list(db_agent.allowed_skills or []),
-                        persona=db_agent.persona or {},
+                        persona=persona,
                         instructions={
-                            "soul": (db_agent.persona or {}).get("soulInstructions") or db_agent.soul or "",
-                            "persona": (db_agent.persona or {}).get("personaInstructions") or "",
-                            "agents": (db_agent.persona or {}).get("agentInstructions") or "",
-                            "tools": (db_agent.persona or {}).get("toolsInstructions") or "",
+                            "soul": persona.get("soulInstructions", ""),
+                            "persona": persona.get("personaInstructions", ""),
+                            "agents": persona.get("agentInstructions", ""),
+                            "tools": persona.get("toolsInstructions", ""),
                         },
                         policies={
                             "model_policy": db_agent.model_policy or {},

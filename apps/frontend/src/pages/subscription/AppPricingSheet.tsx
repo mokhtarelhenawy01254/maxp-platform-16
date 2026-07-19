@@ -458,7 +458,7 @@ export default function AppPricingSheet() {
   return (
     <div className="bg-transparent pb-12">
       {user?.role === "SUPER_ADMIN" && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 flex justify-end gap-2">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 flex justify-end gap-2">
           <Button
             className="flex items-center gap-2 font-semibold font-cairo bg-indigo-600 hover:bg-indigo-700 text-white"
             onClick={() => handleOpenDialog()}
@@ -469,7 +469,7 @@ export default function AppPricingSheet() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
         {/* KPI Cards (Modernized with Glassmorphism & Gradients) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.01)] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-1">

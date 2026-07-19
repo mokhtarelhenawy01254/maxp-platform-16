@@ -60,7 +60,9 @@ const updateSettings = async (req, res) => {
       'pdfOrientation',
       'primaryColor',
       'secondaryColor',
-      'fontFamily'
+      'fontFamily',
+      'showBarcodeOrderCode',
+      'showBarcodeShippingCode'
     ];
 
     const filteredData = {};

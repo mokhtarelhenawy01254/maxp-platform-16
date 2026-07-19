@@ -299,7 +299,7 @@ const EditPromotion: React.FC = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-7xl mx-auto space-y-8" dir="rtl">
+    <div className="p-6 w-full max-w-6xl 2xl:max-w-7xl mx-auto space-y-8" dir="rtl">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

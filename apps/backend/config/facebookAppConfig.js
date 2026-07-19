@@ -5,7 +5,8 @@ const envConfig = require("./environment");
 
 const DEFAULT_FACEBOOK_APP_ID = "762328696481583";
 const DEFAULT_FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
-const FALLBACK_FACEBOOK_APP_SECRET = "9ef40d290082e1d2455ac38646f2b379";
+const FACEBOOK_LOGIN_CONFIG_ID = "2158986791329815";
+// NOTE: Hardcoded fallback removed — single source of truth is facebook-oauth-config.json (managed via /super-admin/facebook-oauth)
 const FACEBOOK_OAUTH_CONFIG_PATH = path.resolve(
   __dirname,
   "../data/facebook-oauth-config.json",
@@ -69,6 +70,9 @@ const saveFacebookOAuthConfig = (config) => {
     appId: normalizeCredential(config?.appId),
     appSecret: normalizeCredential(config?.appSecret),
     redirectUri: normalizeCredential(config?.redirectUri),
+    whatsappAppId: normalizeCredential(config?.whatsappAppId),
+    whatsappAppSecret: normalizeCredential(config?.whatsappAppSecret),
+    whatsappConfigId: normalizeCredential(config?.whatsappConfigId),
     updatedAt: new Date().toISOString(),
   };
 
@@ -82,24 +86,19 @@ const saveFacebookOAuthConfig = (config) => {
   return payload;
 };
 
-const getFacebookOAuthConfig = (env = process.env) => {
+const getFacebookOAuthConfig = () => {
   const stored = getStoredFacebookOAuthConfig() || {};
 
   return {
-    appId: chooseCredential(
-      stored.appId,
-      env.FACEBOOK_APP_ID,
-      DEFAULT_FACEBOOK_APP_ID,
-    ),
-    appSecret: chooseCredential(
-      stored.appSecret,
-      env.FACEBOOK_APP_SECRET,
-      DEFAULT_FACEBOOK_APP_SECRET,
-      FALLBACK_FACEBOOK_APP_SECRET,
-    ),
+    appId: chooseCredential(stored.appId),
+    appSecret: chooseCredential(stored.appSecret),
     redirectUri:
       normalizeCredential(stored.redirectUri) ||
       buildFacebookBackendCallbackUrl("page"),
+    configId: normalizeCredential(stored.configId || FACEBOOK_LOGIN_CONFIG_ID),
+    whatsappAppId: chooseCredential(stored.whatsappAppId),
+    whatsappAppSecret: chooseCredential(stored.whatsappAppSecret),
+    whatsappConfigId: normalizeCredential(stored.whatsappConfigId),
   };
 };
 
@@ -108,14 +107,19 @@ const getFacebookRedirectUri = (type = "page") =>
     ? buildFacebookBackendCallbackUrl("pixel")
     : getFacebookOAuthConfig().redirectUri;
 
-const getFacebookAppSecret = (env = process.env) =>
-  getFacebookOAuthConfig(env).appSecret;
+const getFacebookAppSecret = () =>
+  getFacebookOAuthConfig().appSecret;
+
+const getFacebookConfigId = () =>
+  getFacebookOAuthConfig().configId;
 
 module.exports = {
   DEFAULT_FACEBOOK_APP_ID,
   FACEBOOK_OAUTH_CONFIG_PATH,
+  FACEBOOK_LOGIN_CONFIG_ID,
   buildFacebookBackendCallbackUrl,
   getFacebookAppSecret,
+  getFacebookConfigId,
   getFacebookOAuthConfig,
   getFacebookRedirectUri,
   getStoredFacebookOAuthConfig,

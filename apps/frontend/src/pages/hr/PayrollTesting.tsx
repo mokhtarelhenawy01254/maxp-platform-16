@@ -605,7 +605,7 @@ const PayrollTesting: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0 flex-1 overflow-hidden">
-            <ScrollArea className="h-[calc(100vh-300px)]">
+            <ScrollArea className="h-[calc(100dvh-300px)]">
               {loadingEmployees ? (
                 <div className="p-4 text-center">
                   <div className="animate-spin h-8 w-8 border-2 border-indigo-600 rounded-full border-t-transparent mx-auto"></div>
@@ -739,7 +739,7 @@ const PayrollTesting: React.FC = () => {
                 </TabsList>
 
                 <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-300px)]">
+                  <ScrollArea className="h-[calc(100dvh-300px)]">
                     <div className="p-6">
                       <TabsContent value="employee" className="mt-0 space-y-6">
                         <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 p-4 rounded-xl flex items-start gap-4 mb-6">
@@ -2340,7 +2340,7 @@ const PayrollTesting: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0 flex-1 overflow-hidden">
-              <ScrollArea className="h-[calc(100vh-300px)]">
+              <ScrollArea className="h-[calc(100dvh-300px)]">
                 {payrollResult ? (
                   <div className="p-4 space-y-6">
                     <div className="space-y-4">

@@ -212,80 +212,81 @@ const updateFacebookComment = async (req, res) => {
       });
     }
 
-    // Update comment response
-    const updatedComment = await getSharedPrismaClient().facebookComment.update({
-      where: { id: id },
-      data: {
-        response: response,
-        respondedAt: response ? new Date() : null
-      }
-    });
-
-    // NEW: Send the response to Facebook Messenger
-    if (response && response.trim() !== '') {
-      try {
-        // Import required functions
-        const { sendFacebookCommentReply, getPageToken } = require('../utils/allFunctions');
-        const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
-
-        // Get page access token
-        let pageData = null;
-        if (existingComment.pageId) {
-          pageData = await getPageToken(existingComment.pageId);
-        }
-
-        // Send the response to Facebook comment
-        let commentReplySuccess = true;
-        if (pageData && pageData.pageAccessToken) {
-          commentReplySuccess = await sendFacebookCommentReply(
-            existingComment.commentId,
-            response,
-            pageData.pageAccessToken
-          );
-
-          if (!commentReplySuccess) {
-            console.warn(`[MANUAL-REPLY] Failed to send manual response to Facebook for comment ${existingComment.commentId}`);
-          } else {
-            console.log(`[MANUAL-REPLY] Successfully sent manual response to Facebook for comment ${existingComment.commentId}`);
-          }
-        } else {
-          console.warn(`[MANUAL-REPLY] No page access token found for comment ${existingComment.commentId}`);
-          commentReplySuccess = false;
-        }
-
-        // NEW: Also send the response to Facebook Messenger
-        let messengerSuccess = false;
-        if (existingComment.senderId) {
-          const messengerResult = await sendCommentReplyToMessenger(existingComment, response, pageData);
-          messengerSuccess = messengerResult.messengerSuccess;
-        }
-
-        // Return response with detailed success information
-        return res.json({
-          success: true,
-          message: 'Comment updated successfully',
-          data: updatedComment,
-          facebookCommentReplySuccess: commentReplySuccess,
-          facebookMessengerSuccess: messengerSuccess
-        });
-      } catch (replyError) {
-        console.error(`[MANUAL-REPLY] Error sending manual response:`, replyError);
-        return res.json({
-          success: true,
-          message: 'Comment updated successfully, but error occurred while sending to Facebook',
-          data: updatedComment,
-          facebookSendSuccess: false,
-          facebookError: replyError.message
-        });
-      }
+    // Don't update DB yet - send to Facebook first, then persist only on success
+    if (!response || response.trim() === '') {
+      const clearedComment = await getSharedPrismaClient().facebookComment.update({
+        where: { id: id },
+        data: { response: null, respondedAt: null }
+      });
+      return res.json({
+        success: true,
+        message: 'Comment response cleared',
+        data: clearedComment
+      });
     }
 
-    res.json({
-      success: true,
-      message: 'Comment updated successfully',
-      data: updatedComment,
-      facebookSendSuccess: true
-    });
+    try {
+      const { sendFacebookCommentReply, getPageToken } = require('../utils/allFunctions');
+      const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
+
+      let pageData = null;
+      if (existingComment.pageId) {
+        pageData = await getPageToken(existingComment.pageId);
+      }
+
+      let commentReplySuccess = true;
+      if (pageData && pageData.pageAccessToken) {
+        commentReplySuccess = await sendFacebookCommentReply(
+          existingComment.commentId,
+          response,
+          pageData.pageAccessToken
+        );
+
+        if (!commentReplySuccess) {
+          console.warn(`[MANUAL-REPLY] Failed to send response to Facebook for comment ${existingComment.commentId}`);
+          return res.status(502).json({
+            success: false,
+            error: 'Failed to send response to Facebook. Token may be expired.',
+            facebookSendSuccess: false
+          });
+        }
+        console.log(`[MANUAL-REPLY] Successfully sent response to Facebook for comment ${existingComment.commentId}`);
+      } else {
+        console.warn(`[MANUAL-REPLY] No page access token found for comment ${existingComment.commentId}`);
+        return res.status(502).json({
+          success: false,
+          error: 'No Facebook page access token available. Please reconnect your Facebook page.',
+          facebookSendSuccess: false
+        });
+      }
+
+      let messengerSuccess = false;
+      if (existingComment.senderId) {
+        const messengerResult = await sendCommentReplyToMessenger(existingComment, response, pageData);
+        messengerSuccess = messengerResult.messengerSuccess;
+      }
+
+      const updatedComment = await getSharedPrismaClient().facebookComment.update({
+        where: { id: id },
+        data: { response, respondedAt: new Date() }
+      });
+
+      return res.json({
+        success: true,
+        message: 'Comment updated successfully',
+        data: updatedComment,
+        facebookCommentReplySuccess: true,
+        facebookMessengerSuccess: messengerSuccess
+      });
+    } catch (replyError) {
+      console.error(`[MANUAL-REPLY] Error sending manual response:`, replyError);
+      return res.status(502).json({
+        success: false,
+        message: 'Failed to send response to Facebook',
+        facebookSendSuccess: false,
+        facebookError: replyError.message
+      });
+    }
   } catch (error) {
     console.error(' Error updating Facebook comment:', error);
     res.status(500).json({
@@ -887,11 +888,21 @@ const setPostResponseMethod = async (req, res) => {
     const { responseMethod, commentMessages, fixedMessengerMessage } = req.body; // responseMethod: 'fixed', 'manual'
 
     // Validate response method
-    if (!['fixed', 'manual'].includes(responseMethod)) {
+    if (!['fixed', 'manual', 'ai'].includes(responseMethod)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid response method. Must be fixed or manual'
+        error: 'Invalid response method'
       });
+    }
+
+    if (responseMethod === 'ai') {
+      const { aiPrompt } = req.body;
+      if (!aiPrompt || typeof aiPrompt !== 'string' || aiPrompt.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          error: 'AI prompt is required when response method is AI'
+        });
+      }
     }
 
     // If fixed method, ensure commentMessages is provided
@@ -922,7 +933,7 @@ const setPostResponseMethod = async (req, res) => {
             responseMethod: responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? req.body.aiPrompt : null,
             updatedAt: new Date()
           },
           create: {
@@ -931,7 +942,7 @@ const setPostResponseMethod = async (req, res) => {
             responseMethod: responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? req.body.aiPrompt : null,
             updatedAt: new Date()
           }
         });
@@ -949,7 +960,7 @@ const setPostResponseMethod = async (req, res) => {
         responseMethod: responseMethod,
         commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
         fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-        [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+        [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? req.body.aiPrompt : null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -1098,13 +1109,20 @@ const applyPostResponseMethod = async (req, res) => {
     // Process each comment based on the response method
     for (const comment of pendingComments) {
       if (postSettings.responseMethod === 'fixed') {
-        // Send fixed message
         if (postSettings.fixedMessage) {
           await sendFixedResponse(comment, postSettings.fixedMessage);
           processedComments++;
         }
+      } else if (postSettings.responseMethod === 'ai') {
+        const aiPrompt = postSettings.aiPrompt || postSettings[LEGACY_RESPONSE_PROMPT_FIELD];
+        if (aiPrompt) {
+          const aiReply = await sendAiResponse(comment, aiPrompt);
+          if (aiReply) {
+            await sendFixedResponse(comment, aiReply);
+            processedComments++;
+          }
+        }
       }
-      // For 'manual' method, we don't do anything automatically
     }
 
     res.json({
@@ -1290,6 +1308,32 @@ async function sendFixedResponse(comment, fixedMessage) {
   }
 }
 
+async function sendAiResponse(comment, aiPrompt) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn(`⚠️ [AI-REPLY] OPENAI_API_KEY not set, falling back to prompt as message for comment ${comment.id}`);
+    return aiPrompt;
+  }
+  try {
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: aiPrompt },
+        { role: 'user', content: `رد على هذا التعليق: "${comment.message}"` }
+      ],
+      max_tokens: 300,
+      temperature: 0.7,
+    }, {
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      timeout: 15000,
+    });
+    return response.data?.choices?.[0]?.message?.content?.trim() || aiPrompt;
+  } catch (error) {
+    console.error(`❌ [AI-REPLY] Error generating AI response for comment ${comment.id}:`, error?.response?.data || error.message);
+    return aiPrompt;
+  }
+}
+
 // NEW: Function to send comment reply to Facebook Messenger
 async function sendCommentReplyToMessenger(comment, responseText, pageData) {
   try {
@@ -1446,15 +1490,21 @@ const setPageResponseMethod = async (req, res) => {
 
     const companyId = user.companyId;
     const { pageId } = req.params;
-    const { responseMethod, commentMessages, fixedMessengerMessage } = req.body;
+    const { responseMethod = 'manual', commentMessages, fixedMessengerMessage, delayReply, aiPrompt } = req.body;
 
-    if (!['fixed', 'manual'].includes(responseMethod)) {
+    if (!['fixed', 'manual', 'ai'].includes(responseMethod)) {
       return res.status(400).json({ success: false, error: 'Invalid response method' });
     }
 
     if (responseMethod === 'fixed') {
       if (!commentMessages || (Array.isArray(commentMessages) && commentMessages.length === 0) || (typeof commentMessages === 'string' && commentMessages.trim() === '')) {
         return res.status(400).json({ success: false, error: 'At least one comment message is required' });
+      }
+    }
+
+    if (responseMethod === 'ai') {
+      if (!aiPrompt || typeof aiPrompt !== 'string' || aiPrompt.trim() === '') {
+        return res.status(400).json({ success: false, error: 'AI prompt is required' });
       }
     }
 
@@ -1469,7 +1519,8 @@ const setPageResponseMethod = async (req, res) => {
             responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+            delayReply: typeof delayReply === 'boolean' ? delayReply : undefined,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? aiPrompt : null,
             updatedAt: new Date()
           },
           create: {
@@ -1478,7 +1529,8 @@ const setPageResponseMethod = async (req, res) => {
             responseMethod,
             commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
             fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-            [LEGACY_RESPONSE_PROMPT_FIELD]: null
+            delayReply: typeof delayReply === 'boolean' ? delayReply : false,
+            [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? aiPrompt : null
           }
         });
       } else {
@@ -1493,7 +1545,8 @@ const setPageResponseMethod = async (req, res) => {
         responseMethod,
         commentMessages: responseMethod === 'fixed' ? (Array.isArray(commentMessages) ? JSON.stringify(commentMessages) : commentMessages) : null,
         fixedMessengerMessage: responseMethod === 'fixed' ? fixedMessengerMessage : null,
-        [LEGACY_RESPONSE_PROMPT_FIELD]: null,
+        delayReply: typeof delayReply === 'boolean' ? delayReply : false,
+        [LEGACY_RESPONSE_PROMPT_FIELD]: responseMethod === 'ai' ? aiPrompt : null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -1605,68 +1658,83 @@ const getPostsByPageId = async (req, res) => {
     const companyId = user.companyId;
     const { pageId } = req.params;
 
-    // Get the page access token for Graph API calls
-    const pageRecord = await getSharedPrismaClient().facebookPage.findUnique({
-      where: { pageId },
-      select: { pageAccessToken: true }
+    const { page = 1, limit = 500, search = '' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    // Get actual posts from facebook_posts table (only real posts, no pseudo-posts from comments)
+    let postWhereClause = { companyId, pageId };
+    if (search) {
+      postWhereClause.message = { contains: search };
+    }
+
+    let localPosts = await getSharedPrismaClient().facebookPost.findMany({
+      where: postWhereClause,
+      select: { postId: true, message: true, mediaUrl: true, postedAt: true },
+      orderBy: { postedAt: 'desc' },
+      take,
+      skip
     });
 
-    const posts = await getSharedPrismaClient().facebookComment.groupBy({
-      by: ['postId'],
-      where: { companyId, pageId },
-      orderBy: { _max: { createdTime: 'desc' } }
-    });
-
-    const postDetails = [];
-    for (const post of posts) {
-      const comments = await getSharedPrismaClient().facebookComment.findMany({
-        where: { postId: post.postId, companyId },
-        orderBy: { createdTime: 'desc' }
+    if (localPosts.length === 0) {
+      const commentGroups = await getSharedPrismaClient().facebookComment.groupBy({
+        by: ['postId'],
+        where: { companyId, pageId },
+        _min: { createdTime: true },
+        _count: { id: true },
       });
 
+      if (commentGroups.length > 0) {
+        localPosts = commentGroups.map(g => ({
+          postId: g.postId,
+          message: null,
+          mediaUrl: null,
+          postedAt: g._min.createdTime,
+        }));
+      } else {
+        return res.json({ success: true, data: [] });
+      }
+    }
+
+    const postIds = localPosts.map(p => p.postId);
+
+    // Get ALL comments for all posts in ONE bulk query (no N+1 loop)
+    const allComments = await getSharedPrismaClient().facebookComment.findMany({
+      where: { postId: { in: postIds }, companyId },
+      select: {
+        id: true,
+        postId: true,
+        respondedAt: true,
+        createdTime: true,
+        message: true,
+        senderName: true,
+        senderId: true,
+        response: true
+      },
+      orderBy: { createdTime: 'desc' }
+    });
+
+    // Build lookup maps for O(1) access
+    const localPostMap = new Map(localPosts.map(p => [p.postId, p]));
+    const commentsByPost = new Map();
+    for (const comment of allComments) {
+      if (!commentsByPost.has(comment.postId)) {
+        commentsByPost.set(comment.postId, []);
+      }
+      commentsByPost.get(comment.postId).push(comment);
+    }
+
+    // Build final response — no extra queries, no HTTP calls per post
+    const postDetails = localPosts.map(post => {
+      const comments = commentsByPost.get(post.postId) || [];
       const totalComments = comments.length;
       const respondedComments = comments.filter(c => c.respondedAt !== null).length;
 
-      // --- Fetch post message & picture ---
-      // 1) Try local FacebookPost table first (fast, no API call)
-      let postMessage = null;
-      let pictureUrl = null;
-      const localPost = await getSharedPrismaClient().facebookPost.findUnique({
-        where: { postId: post.postId },
-        select: { message: true, mediaUrl: true }
-      });
-
-      if (localPost) {
-        postMessage = localPost.message || null;
-        pictureUrl = localPost.mediaUrl || null;
-      }
-
-      // 2) If no picture locally and we have a token, fetch from Facebook Graph API
-      if (!pictureUrl && pageRecord?.pageAccessToken) {
-        try {
-          const graphUrl = `https://graph.facebook.com/v19.0/${post.postId}?fields=full_picture,message&access_token=${pageRecord.pageAccessToken}`;
-          const graphRes = await fetch(graphUrl);
-          if (graphRes.ok) {
-            const graphData = await graphRes.json();
-            pictureUrl = graphData.full_picture || null;
-            if (!postMessage) postMessage = graphData.message || null;
-          }
-        } catch (apiErr) {
-          // Silently ignore — Graph API errors should not break the response
-          console.warn(`⚠️ Could not fetch picture for post ${post.postId}:`, apiErr.message);
-        }
-      }
-
-      // 3) Final fallback: use oldest comment message as post context
-      if (!postMessage && comments.length > 0) {
-        postMessage = comments[comments.length - 1].message;
-      }
-
-      postDetails.push({
+      return {
         postId: post.postId,
         pageId,
-        message: postMessage,
-        pictureUrl,
+        message: post.message,
+        pictureUrl: post.mediaUrl,
         responseMethod: comments.length > 0 ? (comments[0].response ? 'fixed' : 'manual') : 'manual',
         totalComments,
         respondedComments,
@@ -1675,12 +1743,12 @@ const getPostsByPageId = async (req, res) => {
         latestComment: comments[0] || null,
         firstCommentTime: comments.length > 0 ? comments[comments.length - 1].createdTime : null,
         lastCommentTime: comments.length > 0 ? comments[0].createdTime : null
-      });
-    }
+      };
+    });
 
     res.json({ success: true, data: postDetails });
   } catch (error) {
-    console.error('❌ Error fetching posts by page ID:', error);
+    console.error('\u274c Error fetching posts by page ID:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

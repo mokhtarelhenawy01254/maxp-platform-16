@@ -113,6 +113,7 @@ model AffiliateSetting {
   updatedAt           DateTime @updatedAt
   platformMarginType  String   @default("FIXED")
   platformMarginValue Float    @default(0)
+  commissionOnStatus  String   @default("CONFIRMED")
   company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("affiliate_settings")

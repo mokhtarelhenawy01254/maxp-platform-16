@@ -10,6 +10,7 @@ import type {
   PreparationQueueSettings,
   SimpleOrder,
   SimpleOrderItem,
+  SimpleOrderShipment,
   StatusConfig,
   WarehouseOption,
   MerchantFulfillmentView,
@@ -61,6 +62,13 @@ const normalizeMerchantFulfillment = (
   };
 };
 
+const normalizeShipment = (shipment: Record<string, unknown>): SimpleOrderShipment => ({
+  trackingNumber: String(shipment.trackingNumber || "") || null,
+  externalShipmentId: String(shipment.externalShipmentId || "") || null,
+  status: String(shipment.status || "PENDING"),
+  carrierType: String(shipment.carrierType || "MANUAL"),
+});
+
 export const normalizeSimpleOrder = (order: ApiOrderResponse): SimpleOrder => {
   const metadata = parseMaybeJsonObject(order.metadata);
 
@@ -81,6 +89,10 @@ export const normalizeSimpleOrder = (order: ApiOrderResponse): SimpleOrder => {
     metadata,
     merchantFulfillment: normalizeMerchantFulfillment(metadata),
     items: Array.isArray(order.items) ? order.items.map(normalizeOrderItem) : [],
+    turboTrackingNumber: String(order.turboTrackingNumber || "") || null,
+    turboShipmentId: String(order.turboShipmentId || "") || null,
+    turboShipmentStatus: String(order.turboShipmentStatus || "") || null,
+    shipments: Array.isArray(order.shipments) ? order.shipments.map(normalizeShipment) : [],
   };
 };
 

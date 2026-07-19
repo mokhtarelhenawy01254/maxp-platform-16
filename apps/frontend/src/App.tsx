@@ -12,7 +12,7 @@ import {
 import AppProviders from "./providers/AppProviders";
 
 import PerformanceOptimizer from "./components/PerformanceOptimizer";
-import { RoleProtectedRoute } from "./components/protection/CompanyProtectedRoute";
+import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
 const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
@@ -187,11 +187,11 @@ const AffiliateCustomers = React.lazy(
 const AffiliateReferrals = React.lazy(
   () => import("./pages/affiliates/AffiliateReferrals"),
 );
-const AffiliateMarketplace = React.lazy(
-  () => import("./pages/affiliates/AffiliateMarketplace"),
-);
 const AffiliateProducts = React.lazy(
   () => import("./pages/affiliates/AffiliateProducts"),
+);
+const AffiliateProductsVisibility = React.lazy(
+  () => import("./pages/affiliates/AffiliateProductsVisibility"),
 );
 const MerchantsList = React.lazy(
   () => import("./pages/merchants/MerchantsList"),
@@ -632,6 +632,9 @@ const ConversionRateAnalytics = React.lazy(
 const TeamPerformanceAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/TeamPerformanceAnalytics"),
 );
+const TodayOps = React.lazy(
+  () => import("./pages/Analytics/orders/TodayOps"),
+);
 const AbandonedCartAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/AbandonedCartAnalytics"),
 );
@@ -858,6 +861,9 @@ const SuperAdminProductEmbeddings = React.lazy(
 const SuperAdminAIConsumption = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIConsumption"),
 );
+const SuperAdminCompanyActivity = React.lazy(
+  () => import("./pages/super-admin/SuperAdminCompanyActivity"),
+);
 const SuperAdminVisualSearchLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminVisualSearchLogs"),
 );
@@ -903,6 +909,9 @@ const BrandIdentitySettings = React.lazy(
 );
 const EducationFunnelPage = React.lazy(
   () => import("./pages/admin/EducationFunnelPage"),
+);
+const HotelManagementPage = React.lazy(
+  () => import("./pages/admin/HotelManagementPage"),
 );
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
@@ -1333,6 +1342,9 @@ const LoyaltyAnalytics = React.lazy(
 const CustomerPointsCenter = React.lazy(
   () => import("./pages/customers/CustomerPointsCenter"),
 );
+const CustomerSegments = React.lazy(
+  () => import("./pages/customers/CustomerSegments"),
+);
 const RecruitmentDashboard = React.lazy(
   () => import("./pages/hr/recruitment/RecruitmentDashboard"),
 );
@@ -1384,6 +1396,7 @@ if (typeof window !== "undefined") {
   const p = (window as unknown as Record<string, Record<string, () => Promise<unknown>>>).__MAXP_ROUTE_PREFETCH__ = {};
 
   p["/customers"] = () => import("./pages/customers/CustomerList");
+  p["/customers/segments"] = () => import("./pages/customers/CustomerSegments");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
@@ -1824,7 +1837,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/whatsapp/companies/:companyId/inbox"
+              path="/super-admin/whatsapp/companies/:companyId/routing"
               element={
                 <Layout fullWidth>
                   <SuperAdminWhatsAppCompanyInbox />
@@ -1832,7 +1845,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/whatsapp/companies/:companyId/inbox/:sessionId"
+              path="/super-admin/whatsapp/companies/:companyId/routing/:sessionId"
               element={
                 <Layout fullWidth>
                   <SuperAdminWhatsAppCompanyInbox />
@@ -1864,6 +1877,16 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminFollowUp />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/company-activity"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <SuperAdminCompanyActivity />
+                  </React.Suspense>
                 </Layout>
               }
             />
@@ -2573,17 +2596,21 @@ const AppContent = () => {
                 <Route
                   path="/customers"
                   element={
-                    <Layout>
-                      <CustomerList />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerList />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/new"
                   element={
-                    <Layout>
-                      <CustomerCreate />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerCreate />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
@@ -2597,41 +2624,51 @@ const AppContent = () => {
                 <Route
                   path="/customers/whatsapp-notify"
                   element={
-                    <Layout>
-                      <CustomerWhatsAppNotify />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/birthday-whatsapp-notify"
                   element={
-                    <Layout>
-                      <CustomerBirthdayWhatsAppNotify />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerBirthdayWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/occasions-notify"
                   element={
-                    <Layout>
-                      <CustomerOccasionsWhatsAppNotify />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerOccasionsWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/:id"
                   element={
-                    <Layout>
-                      <CustomerDetails />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerDetails />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/customers/:id/edit"
                   element={
-                    <Layout>
-                      <CustomerEdit />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <CustomerEdit />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
@@ -2795,7 +2832,7 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/whatsapp-inbox"
+                  path="/whatsapp/routing"
                   element={
                     <Layout fullWidth>
                       <InboxPage />
@@ -2803,7 +2840,7 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/whatsapp-inbox/:sessionId"
+                  path="/whatsapp/routing/:sessionId"
                   element={
                     <Layout fullWidth>
                       <InboxPage />
@@ -2840,7 +2877,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/settings/inbox"
-                  element={<Navigate to="/whatsapp-inbox" replace />}
+                  element={<Navigate to="/whatsapp/routing" replace />}
                 />
                 <Route
                   path="/coupons"
@@ -3513,65 +3550,81 @@ const AppContent = () => {
                 <Route
                   path="/products"
                   element={
-                    <Layout>
-                      <Products />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <Products />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/trash"
                   element={
-                    <Layout>
-                      <ProductsTrash />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ProductsTrash />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/new"
                   element={
-                    <Layout>
-                      <ProductNewFinal />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.create', 'products.view']}>
+                      <Layout>
+                        <ProductNewFinal />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/reviews"
                   element={
-                    <Layout>
-                      <ProductReviewsSimple />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['orders.product-reviews.view', 'products.view']}>
+                      <Layout>
+                        <ProductReviewsSimple />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/import-easy-orders"
                   element={
-                    <Layout>
-                      <EasyOrdersImport />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <EasyOrdersImport />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/import-woocommerce"
                   element={
-                    <Layout>
-                      <WooCommerceImport />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <WooCommerceImport />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/:id"
                   element={
-                    <Layout>
-                      <ProductStoreRedirect />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ProductStoreRedirect />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 <Route
                   path="/products/:id/edit"
                   element={
-                    <Layout>
-                      <ProductNewFinal />
-                    </Layout>
+                    <PermissionProtectedRoute requiredPermissions={['products.edit', 'products.view']}>
+                      <Layout>
+                        <ProductNewFinal />
+                      </Layout>
+                    </PermissionProtectedRoute>
                   }
                 />
                 {/* Platform Integrations */}
@@ -3793,14 +3846,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/affiliates/marketplace"
-                  element={
-                    <Layout>
-                      <AffiliateMarketplace />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/affiliates/products"
                   element={
                     <Layout>
@@ -3813,6 +3858,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AffiliateCommission />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/products/visibility"
+                  element={
+                    <Layout>
+                      <AffiliateProductsVisibility />
                     </Layout>
                   }
                 />
@@ -4328,6 +4381,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CODPerformanceAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/today-ops"
+                  element={
+                    <Layout>
+                      <TodayOps />
                     </Layout>
                   }
                 />
@@ -5978,6 +6039,14 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                <Route
+                  path="/customers/segments"
+                  element={
+                    <Layout>
+                      <CustomerSegments />
+                    </Layout>
+                  }
+                />
                 {/* <Route path="/customers/loyalty" element={<Layout><CustomerLoyalty /></Layout>} /> */}
                 <Route
                   path="/hr/warnings"
@@ -6615,6 +6684,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <EducationManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/hotel/*"
+                  element={
+                    <Layout fullWidth>
+                      <HotelManagementPage />
                     </Layout>
                   }
                 />

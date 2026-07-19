@@ -443,6 +443,11 @@ class TelegramBotService {
                             } catch(e) { /* continue if parsing fails */ }
                         }
 
+                        if (conversation && conversation.aiEnabled === false) {
+                            console.log('🤖 [TG-AI-AUTOREPLY] AI auto-reply disabled for conversation');
+                            return;
+                        }
+
                         const result = await aiSdkClient.sendChatMessage({
                             companyId,
                             customerId: customer.id,
@@ -470,6 +475,21 @@ class TelegramBotService {
                             const bot = this.bots.get(configId);
                             if (bot) {
                                 await bot.telegram.sendMessage(telegramId, replyText);
+                                // Save AI reply to public.messages for conversation continuity
+                                try {
+                                    const { getSharedPrismaClient } = require('./sharedDatabase');
+                                    await getSharedPrismaClient().message.create({
+                                        data: {
+                                            conversationId: conversation.id,
+                                            content: replyText,
+                                            type: 'TEXT',
+                                            isFromCustomer: false,
+                                            metadata: JSON.stringify({ platform: 'telegram', source: 'ai_reply' }),
+                                        },
+                                    });
+                                } catch (e) {
+                                    console.error('❌ [TG-AI-AUTOREPLY] Failed to save AI reply to DB:', e.message);
+                                }
                                 console.log(`✅ [TG-AI-AUTOREPLY] AI reply sent to Telegram user ${telegramId}`);
                             }
                         }

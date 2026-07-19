@@ -3,6 +3,7 @@ const router = express.Router();
 const customerController = require('../controller/customerController');
 const customerWhatsAppController = require('../controller/customerWhatsAppController');
 const verifyToken = require("../utils/verifyToken")
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 
 // ──────────────────────────────────────────────────
 // 📢 WhatsApp Notifications (Smart Bulk)
@@ -39,44 +40,51 @@ router.post('/whatsapp-notify/send', verifyToken.authenticateToken, customerWhat
 // ──────────────────────────────────────────────────
 // 👤 Customer CRUD
 // ──────────────────────────────────────────────────
-router.get('/', verifyToken.authenticateToken, customerController.getAllCustomer);
-router.post('/', verifyToken.authenticateToken, customerController.createCustomer); // ✅ إنشاء عميل جديد
-router.get('/search', verifyToken.authenticateToken, customerController.searchCustomers); // ✅ بحث متقدم
-router.get('/export', verifyToken.authenticateToken, customerController.exportCustomers); // ✅ تصدير CSV/JSON
+router.get('/', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getAllCustomer);
+router.post('/', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.createCustomer); // ✅ إنشاء عميل جديد
+router.get('/search', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.searchCustomers); // ✅ بحث متقدم
+router.get('/export', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.exportCustomers); // ✅ تصدير CSV/JSON
 
-router.post('/import', verifyToken.authenticateToken, customerController.importCustomersFromCSV); // 📥 Import customers
+router.post('/import', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.importCustomersFromCSV); // 📥 Import customers
 
 // 🔒 Delete routes now secured
-router.delete('/cus', verifyToken.authenticateToken, customerController.deleteAllCustomers);
-router.delete('/con', verifyToken.authenticateToken, customerController.deleteAllConversations);
+router.delete('/cus', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteAllCustomers);
+router.delete('/con', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteAllConversations);
 
 // 🚫 Routes for blocking customers on Facebook pages
-router.post('/block', verifyToken.authenticateToken, customerController.blockCustomerOnPage);
-router.post('/unblock', verifyToken.authenticateToken, customerController.unblockCustomerOnPage);
-router.get('/blocked/:pageId', verifyToken.authenticateToken, customerController.getBlockedCustomersOnPage);
-router.get('/block-status', verifyToken.authenticateToken, customerController.checkCustomerBlockStatus);
+router.post('/block', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.blockCustomerOnPage);
+router.post('/unblock', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.unblockCustomerOnPage);
+router.get('/blocked/:pageId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getBlockedCustomersOnPage);
+router.get('/block-status', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.checkCustomerBlockStatus);
+
+// 🏷️ جلب الوسوم الفريدة (لازم يكون قبل /:customerId)
+router.get('/tags/distinct', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getDistinctTags);
+
+// 🏷️ إدارة الوسوم (إعادة تسمية / حذف عبر جميع العملاء)
+router.put('/tags/rename', verifyToken.authenticateToken, requireDbPermission('customers.update'), customerController.renameTag);
+router.delete('/tags/:tagName', verifyToken.authenticateToken, requireDbPermission('customers.update'), customerController.deleteTag);
 
 // تفاصيل العميل
-router.get('/:customerId', verifyToken.authenticateToken, customerController.getCustomerDetails);
+router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerDetails);
 
 // جلب طلبات العميل
-router.get('/:customerId/orders', verifyToken.authenticateToken, customerController.getCustomerOrders);
+router.get('/:customerId/orders', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerOrders);
 
 // سجل نشاطات العميل
-router.get('/:customerId/activity', verifyToken.authenticateToken, customerController.getCustomerActivity);
+router.get('/:customerId/activity', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerActivity);
 
 // 📝 ملاحظات العميل
-router.get('/:customerId/notes', verifyToken.authenticateToken, customerController.getCustomerNotes);
-router.post('/:customerId/notes', verifyToken.authenticateToken, customerController.addCustomerNote);
-router.delete('/notes/:noteId', verifyToken.authenticateToken, customerController.deleteCustomerNote);
+router.get('/:customerId/notes', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerNotes);
+router.post('/:customerId/notes', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.addCustomerNote);
+router.delete('/notes/:noteId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteCustomerNote);
 
 // 🗑️ حذف عميل محدد
-router.delete('/:customerId', verifyToken.authenticateToken, customerController.deleteCustomer);
+router.delete('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.deleteCustomer);
 
 // 🏷️ تحديث علامات العميل
-router.put('/:customerId/tags', verifyToken.authenticateToken, customerController.updateCustomerTags);
+router.put('/:customerId/tags', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.updateCustomerTags);
 
 // ✏️ تحديث بيانات العميل
-router.put('/:customerId', verifyToken.authenticateToken, customerController.updateCustomer);
+router.put('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.updateCustomer);
 
 module.exports = router;

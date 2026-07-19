@@ -33,11 +33,20 @@ const PERMISSIONS = {
   'notes.view.all': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'tags.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
 
+  // Products
+  'products.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR', 'AFFILIATE'],
+  'products.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'products.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'products.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
   // Customers
   'customers.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'customers.view.all': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'customers.view.team': ['TEAM_LEADER'],
   'customers.view.own': ['MODERATOR'],
+  'customers.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'customers.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'customers.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
 
   // Settings
   'settings.read': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
@@ -75,6 +84,117 @@ const PERMISSIONS = {
   'bulkOrders.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'bulkOrders.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'bulkOrders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — main
+  'orders.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'orders.status.change': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.assign': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.bulk.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.invoice.print': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Orders — Incomplete Orders section
+  'orders.incomplete.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.incomplete.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.incomplete.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Orders — Preparation Queue section
+  'orders.preparation.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.preparation.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Agent Workspace / Confirmation Queue section
+  'orders.workspace.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.confirmation.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.confirmation.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Quick Status Change section
+  'orders.quickstatus.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.quickstatus.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Turbo Records section
+  'orders.turbo.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.turbo.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Bosta Records section
+  'orders.bosta.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.bosta.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Stats section
+  'orders.stats.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Orders — Automation
+  'orders.automation.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.automation.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Invoices section
+  'orders.invoices.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.invoices.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.invoices.print': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Orders — Manual Order
+  'orders.manual.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Orders — Status Summary Report
+  'orders.status-summary.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Orders — Returns
+  'orders.returns.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.returns.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.returns.approve': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Shipping Companies
+  'orders.shipping.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.shipping.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Turbo Tickets
+  'orders.tickets.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.tickets.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.tickets.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Bulk Search
+  'orders.bulk-search.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Orders — POS (Point of Sale)
+  'orders.pos.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.pos.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Order Settings
+  'orders.settings.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.settings.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Customer Blocks
+  'orders.customer-blocks.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.customer-blocks.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Turbo Settings
+  'orders.turbo-settings.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.turbo-settings.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Return Settings
+  'orders.return-settings.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.return-settings.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Cancellation Reasons
+  'orders.cancellation-reasons.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.cancellation-reasons.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Platform Integrations
+  'orders.integrations.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.integrations.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Order Workflow
+  'orders.workflow.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.workflow.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Orders — Product Reviews
+  'orders.product-reviews.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Orders — WhatsApp Order Notifications
+  'orders.whatsapp-notifications.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'orders.whatsapp-notifications.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 };
 
 const {

@@ -400,6 +400,128 @@ router.get("/companies/quick-list", async (req, res) => {
   }
 });
 
+// 📊 Company Activity — active vs dormant vs dead
+router.get("/company-activity", checkPermission("canViewReports"), async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const days = parseInt(req.query.days) || 30;
+    const statusFilter = req.query.status || "all";
+
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+
+    const [companies, userLastLogin, recentOrders, recentConvs, recentAiLogs, waSessions] = await Promise.all([
+      prisma.company.findMany({
+        select: {
+          id: true, name: true, email: true, phone: true, isActive: true, createdAt: true,
+          _count: { select: { users: true, customers: true } },
+          platformSubscription: { select: { status: true, plan: true, trialEndDate: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.user.groupBy({
+        by: ["companyId"], _max: { lastLoginAt: true },
+        where: { companyId: { not: null } },
+      }),
+      prisma.order.groupBy({
+        by: ["companyId"], _count: { id: true },
+        where: { createdAt: { gte: dateThreshold } },
+      }),
+      prisma.conversation.groupBy({
+        by: ["companyId"], _count: { id: true },
+        where: { lastMessageAt: { gte: dateThreshold } },
+      }),
+      prisma.aiProviderLog.groupBy({
+        by: ["companyId"], _count: { id: true },
+        where: { createdAt: { gte: dateThreshold }, companyId: { not: null } },
+      }),
+      prisma.whatsAppSession.findMany({
+        select: { companyId: true },
+        where: { status: "CONNECTED" },
+      }),
+    ]);
+
+    const loginMap = {};
+    for (const u of userLastLogin) { if (u.companyId) loginMap[u.companyId] = u._max.lastLoginAt; }
+    const orderMap = {};
+    for (const o of recentOrders) orderMap[o.companyId] = o._count.id;
+    const convMap = {};
+    for (const c of recentConvs) convMap[c.companyId] = c._count.id;
+    const aiMap = {};
+    for (const a of recentAiLogs) { if (a.companyId) aiMap[a.companyId] = a._count.id; }
+    const waSet = new Set(waSessions.map(w => w.companyId));
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const result = companies.map(c => {
+      const lastLogin = loginMap[c.id] || null;
+      const userCount = c._count.users;
+      const customerCount = c._count.customers;
+      const recentOrderCount = orderMap[c.id] || 0;
+      const recentConvCount = convMap[c.id] || 0;
+      const recentAiCount = aiMap[c.id] || 0;
+      const hasWhatsApp = waSet.has(c.id);
+      const subStatus = c.platformSubscription?.status || "NONE";
+      const isActive = c.isActive;
+
+      const dates = [lastLogin].filter(Boolean);
+      const lastActivity = dates.length > 0
+        ? dates.reduce((a, b) => a > b ? a : b)
+        : null;
+
+      const hasRecentLogin = lastLogin && lastLogin >= sevenDaysAgo;
+      const hasRecentActivity = recentOrderCount > 0 || recentConvCount > 0 || recentAiCount > 0;
+      const hasAnyUsers = userCount > 0;
+      const hasAnyCustomers = customerCount > 0;
+
+      let status;
+      if (hasRecentLogin || hasRecentActivity || (hasWhatsApp && (hasAnyCustomers || hasAnyUsers))) {
+        status = "active";
+      } else if (hasAnyUsers || hasAnyCustomers || subStatus !== "NONE" || isActive) {
+        status = "dormant";
+      } else {
+        status = "dead";
+      }
+
+      const daysSinceCreation = Math.floor((now - c.createdAt) / (24 * 60 * 60 * 1000));
+      const daysSinceLastActivity = lastActivity
+        ? Math.floor((now - lastActivity) / (24 * 60 * 60 * 1000))
+        : daysSinceCreation;
+
+      return {
+        id: c.id, name: c.name, email: c.email, phone: c.phone,
+        isActive: c.isActive, createdAt: c.createdAt, daysSinceCreation, status,
+        metrics: {
+          users: userCount, customers: customerCount,
+          recentOrders: recentOrderCount, recentConversations: recentConvCount,
+          recentAiInteractions: recentAiCount, hasWhatsApp,
+        },
+        lastLogin, lastActivity, daysSinceLastActivity,
+        subscription: { status: subStatus, plan: c.platformSubscription?.plan || null },
+      };
+    });
+
+    let filtered = result;
+    if (statusFilter !== "all") filtered = result.filter(c => c.status === statusFilter);
+
+    const total = result.length;
+    const active = result.filter(c => c.status === "active").length;
+    const dormant = result.filter(c => c.status === "dormant").length;
+    const dead = result.filter(c => c.status === "dead").length;
+
+    res.json({
+      success: true,
+      summary: { total, active, dormant, dead },
+      companies: filtered,
+    });
+  } catch (error) {
+    console.error("[SA] company-activity error:", error.message);
+    res.status(500).json({ success: false, error: "فشل تحميل بيانات نشاط الشركات" });
+  }
+});
+
 // 🤖 AI Agent Templates — now managed by ai-service (AgentTemplate table)
 // 2026 refactor: agent_definitions table is deprecated; templates live in ai.agent_templates
 // These routes proxy to the ai-service admin API.

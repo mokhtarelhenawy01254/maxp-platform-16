@@ -1,5 +1,19 @@
 # Architectural & Design Decisions
 
+## 2026-07-14 — Hotel Booking Module: Appointment-Based Booking Is Not Reusable for Hotels
+- **Context:** MaxP already had a medical booking system (`BookingBranch`, `Appointment`, 30-min time slots). The client asked for a hotel booking system (rooms, multi-night stays, extra services).
+- **Decision:** Build a dedicated hotel module (`hotel.prisma`) instead of extending the medical booking models.
+- **Rationale:** The medical system is appointment/slot-based, single-resource per appointment, and has no concept of inventory-by-date, multi-night stays, room statuses, or a folio. Reusing it would force the wrong abstractions and make future features (OTA sync, rate plans, housekeeping) harder. The hotel module can still reuse existing `Company` and `Customer` models and the AI agent infrastructure.
+- **Rejected:** Extending `Appointment`/`BookingBranch` to represent room nights, which would have required overloading every core field.
+
+## 2026-07-14 — Hotel Module: Keep Modals as Top-Level Components
+- **Context:** `HotelManagementPage.tsx` originally contained a `renderModal()` function that used hooks conditionally, causing React Rules-of-Hooks errors.
+- **Decision:** Extracted every modal (`PropertyModal`, `RoomTypeModal`, `RoomModal`, `ReservationModal`, `FolioModal`, `RateModal`) into its own file under `pages/admin/hotel/`.
+- **Rationale:** Top-level components guarantee valid hook order, make each modal independently testable, and keep the parent page focused on tab/state management. A shared `Modal.tsx` wrapper avoids duplication.
+- **Rejected:** Patching the original nested `renderModal()` with guards — still violates hook rules and is fragile.
+
+# Architectural & Design Decisions
+
 ## 2026-07-10 — Gemini Embedding 2 for similarity search
 - **Context:** Need to generate embedding vectors for merchant rules to calculate semantic similarity against customer messages.
 - **Decision:** Selected Gemini Embedding 2 as the primary embedding model, resolving via `episodic_memory_service.generate_embedding_async()`.

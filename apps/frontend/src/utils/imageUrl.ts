@@ -19,6 +19,7 @@ const PROXYABLE_REMOTE_IMAGE_PATTERNS = [
   /^https:\/\/lh3\.googleusercontent\.com\/aida-public\//i,
   /^https:\/\/(?:www\.)?mokhtarelhenawy\.online\//i,
   /^https?:\/\/[^/]+\/wp-content\/uploads\//i,
+  /^https:\/\/pps\.whatsapp\.net\//i,
 ] as const;
 
 interface OptimizedUploadImageOptions {
@@ -308,9 +309,13 @@ export const getImageUrl = (
       trimmedPath.startsWith(envConfig.backendUrl) ||
       (currentHost ? trimmedPath.includes(currentHost) : false);
 
-    // الصور الخارجية عبر https تعمل مباشرة داخل <img> بدون الحاجة لبروكسي.
-    // هذا يتجنب كسر روابط CDN الحديثة التي لا تنتهي بامتداد ملف واضح.
+    // الصور الخارجية عبر https: إذا كانت من CDNs معروفة (مثل fbcdn) نمررها عبر البروكسي
+    // لتجنب أخطاء 403 من مانع الروابط المباشرة. باقي المواقع الخارجية تمر مباشرة.
     if (!isInternalUrl && trimmedPath.startsWith("https://")) {
+      // التحقق من أن الرابط يحتاج بروكسي (fbcdn, fbsbx, إلخ)
+      if (shouldProxyRemoteImageUrl(trimmedPath)) {
+        return buildProxyImageUrl(trimmedPath);
+      }
       return trimmedPath;
     }
 

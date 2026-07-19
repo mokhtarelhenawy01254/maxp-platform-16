@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useDebounce } from "../../hooks/useDebounce";
+import { toast } from "sonner";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import CommentService from "../../services/commentService";
 import {
@@ -20,6 +24,8 @@ import {
 const UnifiedCommentsManagement = () => {
   const { postId: urlPostId } = useParams();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const dateFt = useMemo(() => new Intl.DateTimeFormat(i18n.language), [i18n.language]);
   const [posts, setPosts] = useState([]);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +43,31 @@ const UnifiedCommentsManagement = () => {
     totalPages: 1,
     totalCount: 0,
   });
+  const [replyCommentId, setReplyCommentId] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [searchInput, setSearchInput] = useState(filters.search);
+  const debouncedSearch = useDebounce(searchInput, 300);
+  const [confirmState, setConfirmState] = useState(null);
+  const executeDelete = useCallback((commentId) => {
+    CommentService.deleteFacebookComment(commentId).then((result) => {
+      if (result.success && activePostId) fetchComments(activePostId);
+    }).catch((error) => {
+      console.error("Error deleting comment:", error);
+      toast.error("فشل حذف التعليق");
+    });
+  }, [activePostId]);
+  const executeBulkDelete = useCallback(() => {
+    CommentService.bulkDeleteFacebookComments(selectedComments).then((result) => {
+      if (result.success) {
+        if (activePostId) fetchComments(activePostId);
+        setSelectedComments([]);
+        toast.success("تم حذف التعليقات بنجاح");
+      }
+    }).catch((error) => {
+      console.error("Error deleting comments:", error);
+      toast.error("حدث خطأ أثناء حذف التعليقات: " + error.message);
+    });
+  }, [selectedComments, activePostId]);
 
   // Fetch posts
   const fetchPosts = async () => {
@@ -49,6 +80,7 @@ const UnifiedCommentsManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
+      toast.error("فشل تحميل المنشورات");
     } finally {
       setLoading(false);
     }
@@ -66,6 +98,7 @@ const UnifiedCommentsManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
+      toast.error("فشل تحميل التعليقات");
     } finally {
       setLoading(false);
     }
@@ -99,7 +132,7 @@ const UnifiedCommentsManagement = () => {
 
   const handleUpdateResponse = async (commentId, response) => {
     if (!response || !response.trim()) {
-      alert("الرجاء إدخال رد قبل الحفظ.");
+      toast.warning("الرجاء إدخال رد قبل الحفظ.");
       return;
     }
 
@@ -109,31 +142,22 @@ const UnifiedCommentsManagement = () => {
         response,
       );
       if (result.success) {
-        // Refresh comments
         if (activePostId) {
           fetchComments(activePostId);
         }
-        alert("تم حفظ الرد وإرساله إلى فيسبوك بنجاح!");
+        toast.success("تم حفظ الرد وإرساله إلى فيسبوك بنجاح!");
       }
     } catch (error) {
-      alert("خطأ في تحديث رد التعليق: " + error.message);
+      toast.error("خطأ في تحديث رد التعليق: " + error.message);
     }
   };
 
-  const handleDeleteComment = async (commentId) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا التعليق؟")) {
-      try {
-        const result = await CommentService.deleteFacebookComment(commentId);
-        if (result.success) {
-          // Refresh comments
-          if (activePostId) {
-            fetchComments(activePostId);
-          }
-        }
-      } catch (error) {
-        console.error("Error deleting comment:", error);
-      }
-    }
+  const handleDeleteComment = (commentId) => {
+    setConfirmState({
+      title: "تأكيد الحذف",
+      content: "هل أنت متأكد من حذف هذا التعليق؟",
+      onConfirm: () => executeDelete(commentId),
+    });
   };
 
   const handleViewComments = (postId) => {
@@ -150,33 +174,18 @@ const UnifiedCommentsManagement = () => {
     window.history.pushState({}, "", "/unified-comments");
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedComments.length === 0) {
-      alert("الرجاء اختيار تعليقات لحذفها");
+      toast.warning("الرجاء اختيار تعليقات لحذفها");
       return;
     }
 
-    if (
-      window.confirm(`هل أنت متأكد من حذف ${selectedComments.length} تعليق؟`)
-    ) {
-      try {
-        const result =
-          await CommentService.bulkDeleteFacebookComments(selectedComments);
-        if (result.success) {
-          // Refresh comments
-          if (activePostId) {
-            fetchComments(activePostId);
-          }
-          // Clear selection
-          setSelectedComments([]);
-          alert("تم حذف التعليقات بنجاح");
-        }
-      } catch (error) {
-        console.error("Error deleting comments:", error);
-        alert("حدث خطأ أثناء حذف التعليقات: " + error.message);
-      }
-    }
+    setConfirmState({
+      title: "تأكيد الحذف الجماعي",
+      content: `هل أنت متأكد من حذف ${selectedComments.length} تعليق؟`,
+      confirmColor: "error",
+      onConfirm: () => executeBulkDelete(),
+    });
   };
 
   // Handle select/deselect comment
@@ -235,9 +244,25 @@ const UnifiedCommentsManagement = () => {
     }
   }, [filters, activePostId]);
 
+  useEffect(() => {
+    if (debouncedSearch !== filters.search) {
+      setFilters((prev) => ({ ...prev, search: debouncedSearch }));
+    }
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    const handlePop = () => {
+      const match = window.location.pathname.match(/^\/unified-comments\/(.+)/);
+      setActivePostId(match ? match[1] : null);
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
+
   // If we're viewing comments for a specific post
   if (activePostId) {
     return (
+      <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 md:p-8">
         <div className="w-full">
           {/* Header */}
@@ -403,7 +428,7 @@ const UnifiedCommentsManagement = () => {
                     <div
                       key={comment.id}
                       className="p-6 hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-indigo-50/30 dark:hover:bg-gray-700/50 transition-all duration-300 border-r-4 border-transparent hover:border-blue-500 animate-fade-in"
-                      style={{ animationDelay: `${index * 0.05}s` }}
+                      style={{ animationDelay: `${Math.min(index, 20) * 0.05}s` }}
                     >
                       <div className="flex justify-between">
                         <div className="flex items-start gap-3">
@@ -427,11 +452,9 @@ const UnifiedCommentsManagement = () => {
                                 {comment.senderId}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-500 mt-1">
-                              {new Date(comment.createdTime).toLocaleString(
-                                "ar-EG",
-                              )}
-                            </p>
+                              <p className="text-sm text-slate-500 mt-1">
+                                {dateFt.format(new Date(comment.createdTime))}
+                              </p>
                           </div>
                         </div>
                         <div>
@@ -449,7 +472,7 @@ const UnifiedCommentsManagement = () => {
                         </div>
                       </div>
 
-                      <div className="mt-4 ml-13">
+                      <div className="mt-4 mr-3">
                         <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-600">
                           <p className="text-slate-800 dark:text-gray-100 leading-relaxed">
                             {comment.message}
@@ -466,9 +489,7 @@ const UnifiedCommentsManagement = () => {
                                 </p>
                                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-3 font-semibold">
                                   ✓ تم الرد في:{" "}
-                                  {new Date(comment.respondedAt).toLocaleString(
-                                    "ar-EG",
-                                  )}
+                                  {dateFt.format(new Date(comment.respondedAt))}
                                 </p>
                               </div>
                             </div>
@@ -478,16 +499,19 @@ const UnifiedCommentsManagement = () => {
                         <div className="mt-4 flex flex-wrap gap-3">
                           {!comment.respondedAt && (
                             <button
-                              onClick={() => {
-                                const response = prompt("اكتب ردك هنا:");
-                                if (response !== null) {
-                                  handleUpdateResponse(comment.id, response);
-                                }
-                              }}
+                              onClick={() =>
+                                setReplyCommentId(
+                                  replyCommentId === comment.id
+                                    ? null
+                                    : comment.id,
+                                )
+                              }
                               className="group inline-flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 font-semibold"
                             >
                               <Edit3 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                              رد على التعليق
+                              {replyCommentId === comment.id
+                                ? "إلغاء"
+                                : "رد على التعليق"}
                             </button>
                           )}
                           <button
@@ -498,6 +522,38 @@ const UnifiedCommentsManagement = () => {
                             حذف
                           </button>
                         </div>
+                        {replyCommentId === comment.id && (
+                          <div className="mt-3">
+                            <textarea
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder="اكتب ردك هنا..."
+                              className="w-full px-4 py-3 border-2 border-blue-200 dark:border-blue-700 rounded-xl text-right bg-white dark:bg-gray-700 text-sm"
+                              rows={2}
+                            />
+                            <div className="flex gap-2 mt-2 justify-end">
+                              <button
+                                onClick={() => {
+                                  setReplyCommentId(null);
+                                  setReplyText("");
+                                }}
+                                className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-600 rounded-xl font-semibold"
+                              >
+                                إلغاء
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleUpdateResponse(comment.id, replyText);
+                                  setReplyCommentId(null);
+                                  setReplyText("");
+                                }}
+                                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl font-semibold"
+                              >
+                                إرسال
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -507,6 +563,17 @@ const UnifiedCommentsManagement = () => {
           </div>
         </div>
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open={true}
+          title={confirmState.title}
+          content={confirmState.content}
+          confirmColor={confirmState.confirmColor || "primary"}
+          onConfirm={() => { confirmState.onConfirm(); setConfirmState(null); }}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
+    </>
     );
   }
 
@@ -569,8 +636,8 @@ const UnifiedCommentsManagement = () => {
                   type="text"
                   className="w-full pr-12 pl-4 py-3.5 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-600 border-2 border-slate-200 dark:border-gray-600 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all text-right font-medium shadow-sm"
                   placeholder="ابحث هنا..."
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange("search", e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                 />
               </div>
             </div>
@@ -697,9 +764,9 @@ const UnifiedCommentsManagement = () => {
                               {post.postId.substring(0, 10)}...
                             </div>
                             <div className="text-xs text-slate-500 mt-1">
-                              {new Date(
+                              {dateFt.format(new Date(
                                 post.firstCommentTime,
-                              ).toLocaleDateString("ar-EG")}
+                              ))}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -893,41 +960,18 @@ const UnifiedCommentsManagement = () => {
           )}
         </div>
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open={true}
+          title={confirmState.title}
+          content={confirmState.content}
+          confirmColor={confirmState.confirmColor || "primary"}
+          onConfirm={() => { confirmState.onConfirm(); setConfirmState(null); }}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
     </div>
   );
 };
 
 export default UnifiedCommentsManagement;
-
-// Add custom CSS animations
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes bounce-subtle {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-2px);
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-
-  .animate-bounce-subtle {
-    animation: bounce-subtle 2s ease-in-out infinite;
-  }
-`;
-document.head.appendChild(style);

@@ -56,10 +56,31 @@
   "tagsLabel": "Tags",
   "noTags": "No tags",
   "addTagPlaceholder": "Add a new tag...",
+  "filterByTag": "Filter by tag",
+  "allTags": "All tags",
+  "tagCriteria": "Filter by Tag",
+  "selectTag": "Select tag",
+  "filterByTagPlaceholder": "Select or type a tag...",
   "noOrders": "No orders yet",
   "noConversations": "No conversations yet",
   "notesPlaceholder": "Type your note here...",
   "noNotes": "No prior notes",
   "noActivities": "No activity history",
-  "deleteConfirmTitle": "Confirm Deletion"
+  "deleteConfirmTitle": "Confirm Deletion",
+  "import": {
+    "title": "Import Customers",
+    "clickOrDrag": "Click here or drag a file to upload",
+    "requiredColumns": "Supported formats: Excel (.xlsx, .xls) or CSV (.csv)",
+    "foundCount": "Found {{count}} customer(s)",
+    "success": "Successfully imported {{count}} customer(s)",
+    "importing": "Importing...",
+    "importButton": "Import {{count}} customer(s)",
+    "noValidData": "No valid data found",
+    "readError": "Error reading the file or parsing data",
+    "downloadTemplate": "Download CSV Template",
+    "tabFile": "Import from File (Excel / CSV)",
+    "tabPaste": "Paste Direct Data",
+    "pastePlaceholder": "Copy rows and columns from Excel and paste them here...\nName,Phone,Email,Status\nJohn Doe,01012345678,john@example.com,LEAD",
+    "parseButton": "Preview and Parse Data"
+  }
 }

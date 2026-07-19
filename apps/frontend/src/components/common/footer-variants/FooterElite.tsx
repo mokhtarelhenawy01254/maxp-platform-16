@@ -26,7 +26,7 @@ const FooterElite: React.FC<FooterEliteProps> = ({
 
   return (
     <footer className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#030712] text-right mt-auto">
-      <div className="max-w-7xl mx-auto px-4 py-16 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-16 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12">
         <div className="col-span-2 lg:col-span-2 space-y-6">
           <Link to={withStorefrontCompany("/", companyId)} className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">
             {companyDisplayName.split(' ').slice(0, -1).join(' ')} <span className="text-indigo-600">{companyDisplayName.split(' ').slice(-1)}</span>
@@ -81,7 +81,7 @@ const FooterElite: React.FC<FooterEliteProps> = ({
       
       {settings.showCopyright && (
         <div className="border-t border-slate-100 dark:border-slate-800 py-8 bg-white dark:bg-[#030712]">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
               {settings.copyrightText?.replace("{year}", year) || `© ${year} ${companyDisplayName} • ALL RIGHTS RESERVED`}
             </p>

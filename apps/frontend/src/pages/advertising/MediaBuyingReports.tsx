@@ -380,7 +380,7 @@ const MediaBuyingReports: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-white sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5">
+      <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-5">
         <FacebookAdsModuleNav />
         <FacebookAdsAccountContextPanel context={accountContext} compact />
 

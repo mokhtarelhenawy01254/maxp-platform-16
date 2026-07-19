@@ -35,6 +35,7 @@ interface Customer {
   avatar: string | null;
   city: string | null;
   country: string | null;
+  tags?: string | string[];
 }
 
 export const useCustomerProfile = () => {
@@ -66,7 +67,7 @@ export const useCustomerProfile = () => {
 
         setOrders(ordersRes.data.data || []);
         if (customerRes.data.success) {
-          setCustomer(customerRes.data.data);
+          setCustomer(customerRes.data.data.customer);
         }
 
         // Map backend activity format to frontend interface

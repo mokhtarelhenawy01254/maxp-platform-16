@@ -78,6 +78,7 @@ from src.agents._internals import (
     _StreamEmitter,
     _TemplateAdapter,
 )
+from src.pipeline.hooks import AgentHook
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
 
@@ -129,6 +130,8 @@ class BaseAgentConfig:
 
     config: dict[str, Any] = field(default_factory=dict)
 
+    hooks: list[AgentHook] = field(default_factory=list)
+
 
 # ---------------------------------------------------------------------------
 # BaseAgent
@@ -175,6 +178,7 @@ class BaseAgent:
         self._instructions = config.instructions or {}
         self.output_schema = config.output_schema
 
+        self.hooks: list[AgentHook] = list(config.hooks or [])
         self.handoffs: list[dict[str, Any]] = list(config.handoffs or [])
         self.input_guardrails: list[BaseGuardrail] = list(config.input_guardrails or [])
         self.output_guardrails: list[BaseGuardrail] = list(config.output_guardrails or [])
@@ -233,7 +237,7 @@ class BaseAgent:
             role=overrides.get("role") or profile.role,
             company_id=company_id,
             allowed_tools=overrides.get("allowed_tools") or profile.allowed_tools,
-            tool_choice=(overrides.get("config") or {}).get("toolChoice") or overrides.get("tool_choice") or profile.tool_choice,
+            tool_choice=overrides.get("tool_choice") or profile.tool_choice,
             allowed_skills=overrides.get("allowed_skills") or profile.allowed_skills,
             template_slug=template_slug,
             version=profile.version,
@@ -266,6 +270,9 @@ class BaseAgent:
             handoffs=overrides.get("handoffs") or profile.handoffs,
             config=overrides.get("config") or {},
         )
+        # Load agent-specific hooks based on template slug
+        config.hooks = _load_hooks_for_template(template_slug)
+
         return cls(config)
 
     # ------------------------------------------------------------------
@@ -483,19 +490,12 @@ class BaseAgent:
             # This enables the "skills-first" pattern: the agent discovers tools via load_skill()
             # while the gateway still authorizes only what the skills declare.
             if self.allowed_skills:
-                import json as _json
-                from src.skills.integration import get_skill_tool_names
+                from src.skills.integration import get_skill_allowed_tools, get_skill_tool_names
                 allowed: set[str] = set()
                 for _skill_id in self.allowed_skills:
-                    _skill_json = _SKILLS_ROOT / _skill_id / "skill.json"
-                    if _skill_json.exists():
-                        try:
-                            _skill_data = _json.loads(_skill_json.read_text(encoding="utf-8"))
-                            for _t in _skill_data.get("allowedTools", _skill_data.get("tools", [])):
-                                allowed.add(str(_t).lower().replace(".", "_"))
-                                allowed.add(str(_t).lower())
-                        except Exception:
-                            pass
+                    for _t in get_skill_allowed_tools(_skill_id):
+                        allowed.add(str(_t).lower().replace(".", "_"))
+                        allowed.add(str(_t).lower())
                 for _st in get_skill_tool_names():
                     allowed.add(_st.lower())
                 for _bt in base_set:
@@ -522,19 +522,13 @@ class BaseAgent:
 
         allowed = {name.lower() for name in self.allowed_tools}
 
-        # Derive tools from skill.json allowedTools for each allowed skill
+        # Derive tools from skill manifests for each allowed skill
         if self.allowed_skills:
-            import json as _json
+            from src.skills.integration import get_skill_allowed_tools
             for _skill_id in self.allowed_skills:
-                _skill_json = _SKILLS_ROOT / _skill_id / "skill.json"
-                if _skill_json.exists():
-                    try:
-                        _skill_data = _json.loads(_skill_json.read_text(encoding="utf-8"))
-                        for _t in _skill_data.get("allowedTools", _skill_data.get("tools", [])):
-                            allowed.add(str(_t).lower().replace(".", "_"))
-                            allowed.add(str(_t).lower())
-                    except Exception:
-                        pass
+                for _t in get_skill_allowed_tools(_skill_id):
+                    allowed.add(str(_t).lower().replace(".", "_"))
+                    allowed.add(str(_t).lower())
 
         # Include skill meta-tools (load_skill, read_skill_resource)
         if self.allowed_skills:
@@ -729,19 +723,12 @@ class BaseAgent:
     def get_tools(self) -> list[str]:
         if self.allowed_tools:
             return sorted(self.allowed_tools)
-        # Derive from skills when no explicit tools configured
         if self.allowed_skills:
-            import json as _json
+            from src.skills.integration import get_skill_allowed_tools
             derived: set[str] = set()
             for _skill_id in self.allowed_skills:
-                _skill_json = _SKILLS_ROOT / _skill_id / "skill.json"
-                if _skill_json.exists():
-                    try:
-                        _data = _json.loads(_skill_json.read_text(encoding="utf-8"))
-                        for _t in _data.get("allowedTools", _data.get("tools", [])):
-                            derived.add(str(_t).lower().replace(".", "_"))
-                    except Exception:
-                        pass
+                for _t in get_skill_allowed_tools(_skill_id):
+                    derived.add(str(_t).lower().replace(".", "_"))
             if derived:
                 return sorted(derived)
         return sorted(self.allowed_tools)
@@ -1386,3 +1373,20 @@ def _sdk_response_text(response: Any) -> str:
     if value is not None and not _is_mock_value(value):
         return str(value)
     return ""
+
+def _load_hooks_for_template(template_slug: str | None) -> list:
+    """Load pipeline hooks."""
+    from src.pipeline.hooks import AgentHook, AttachmentHook
+
+    hooks: list[AgentHook] = []
+
+    # Default hooks (run for every agent)
+    hooks.append(AttachmentHook())
+
+    # Template-specific hooks
+    if template_slug == "hotel-agent":
+        from src.agents.hooks.hotel_hook import HotelEnforcementHook
+
+        hooks.append(HotelEnforcementHook())
+
+    return hooks

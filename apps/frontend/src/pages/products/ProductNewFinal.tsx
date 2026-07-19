@@ -644,9 +644,12 @@ export const ProductNewFinal: React.FC = () => {
           commissionType: product.commissionType || "PERCENTAGE",
           allowAffiliateMarkup: product.allowAffiliateMarkup || false,
           affiliateVisibility: normalizeAffiliateVisibility(
-            parsedMetadata.affiliateVisibility,
+            product.affiliateVisibility || parsedMetadata.affiliateVisibility,
           ),
           affiliateVisibleAffiliateIds: normalizeAffiliateVisibilityIds(
+            product.affiliateVisibleAffiliateIds
+              ? (() => { try { return JSON.parse(product.affiliateVisibleAffiliateIds); } catch { return []; } })()
+              : undefined,
             parsedMetadata.affiliateVisibleAffiliateIds,
             parsedMetadata.visibleAffiliateIds,
             parsedMetadata.allowedAffiliateIds,
@@ -1270,7 +1273,7 @@ export const ProductNewFinal: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-12">
       {/* Top Navigation Bar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 max-w-6xl 2xl:max-w-7xl mx-auto">
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
             <Link
               to="/products"
@@ -1428,7 +1431,7 @@ export const ProductNewFinal: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Error / Success Messages */}
         {error && (
           <div className="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r-md">

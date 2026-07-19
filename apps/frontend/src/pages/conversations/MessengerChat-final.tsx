@@ -258,6 +258,25 @@ const MessengerChat: React.FC = () => {
     }
   };
 
+  const handleToggleAi = async () => {
+    if (!selectedConversation) return;
+    const newStatus = selectedConversation.aiEnabled === false;
+    try {
+      await apiService.updateConversation(selectedConversation.id, {
+        aiEnabled: newStatus,
+      });
+      setSelectedConversation(prev => prev ? { ...prev, aiEnabled: newStatus } : null);
+      setConversations(prev => prev.map(c => {
+        if (c.id === selectedConversation.id) {
+          return { ...c, aiEnabled: newStatus };
+        }
+        return c;
+      }));
+    } catch (error) {
+      console.error("Failed to toggle AI status:", error);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
@@ -596,6 +615,17 @@ const MessengerChat: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-2 space-x-reverse">
+                <button
+                  onClick={handleToggleAi}
+                  className={`p-2 rounded-full transition-colors ${
+                    selectedConversation.aiEnabled !== false
+                      ? "text-blue-600 hover:text-blue-800 bg-blue-50"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                  title={selectedConversation.aiEnabled !== false ? "إيقاف الرد الآلي" : "تشغيل الرد الآلي"}
+                >
+                  <span className="text-base font-bold">🤖</span>
+                </button>
                 <button
                   onClick={() => setShowCustomerProfile(true)}
                   className="p-2 text-gray-400 hover:text-gray-600"

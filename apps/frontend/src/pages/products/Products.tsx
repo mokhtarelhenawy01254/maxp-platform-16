@@ -53,6 +53,7 @@ const Products: React.FC = () => {
     editingProduct,
     editPrice,
     editStock,
+    editSku,
     filters,
     hasActiveFilters,
     categories,
@@ -75,6 +76,7 @@ const Products: React.FC = () => {
     cancelQuickEdit,
     setEditPrice,
     setEditStock,
+    setEditSku,
     saveQuickEdit,
     handleDuplicate,
     workflowLoadingId,
@@ -302,8 +304,10 @@ const Products: React.FC = () => {
           editingProductId={editingProduct}
           editPrice={editPrice}
           editStock={editStock}
+          editSku={editSku}
           onEditPriceChange={setEditPrice}
           onEditStockChange={setEditStock}
+          onEditSkuChange={setEditSku}
           onSaveQuickEdit={onSaveQuickEdit}
           onCancelQuickEdit={cancelQuickEdit}
           onStartQuickEdit={startQuickEdit}

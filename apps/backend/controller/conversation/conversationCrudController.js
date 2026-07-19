@@ -492,7 +492,7 @@ const getConversation = async (req, res) => {
 const updateConversation = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, assignedTo, priority, tab } = req.body;
+        const { status, assignedTo, priority, tab, aiEnabled } = req.body;
         const companyId = req.user?.companyId;
 
         if (!companyId) {
@@ -526,6 +526,11 @@ const updateConversation = async (req, res) => {
         // Update priority
         if (priority !== undefined) {
             updateData.priority = priority ? 2 : 1; // 2 = high, 1 = normal
+        }
+
+        // Update AI enabled status
+        if (aiEnabled !== undefined) {
+            updateData.aiEnabled = Boolean(aiEnabled);
         }
 
         // Update metadata if tab is provided

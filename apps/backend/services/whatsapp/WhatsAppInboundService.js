@@ -62,7 +62,6 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
     totalMessages: 1,
     unreadCount: isOutgoing ? 0 : 1,
     isGroup: normalizedJid?.endsWith('@g.us') || false,
-    isNewsletter: normalizedJid?.endsWith('@newsletter') || false,
     whatsAppSession: {
       connect: { id: sessionId }
     },
@@ -196,6 +195,23 @@ async function saveIncomingMessage(payload) {
     }
   });
 
+  // Track broadcast campaign replies
+  const phone = normalizedJid.split('@')[0];
+  if (phone) {
+    const prisma = getSharedPrismaClient();
+    prisma.broadcastRecipient.updateMany({
+      where: {
+        OR: [
+          { customerPhone: phone },
+          { customerPhone: `+${phone}` }
+        ],
+        repliedAt: null,
+        sentAt: { not: null }
+      },
+      data: { repliedAt: new Date() }
+    }).catch(() => {});
+  }
+
   try {
     const settings = await executeWithRetry(async () => {
       return await getSharedPrismaClient().whatsAppSettings.findUnique({
@@ -324,6 +340,17 @@ async function saveIncomingMessage(payload) {
             console.warn('⚠️ [WA-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);
           }
 
+          if (first.conversationId) {
+            const conversation = await prisma.conversation.findUnique({
+              where: { id: first.conversationId },
+              select: { aiEnabled: true }
+            });
+            if (conversation && conversation.aiEnabled === false) {
+              console.log(`🟡 [WA-DEBOUNCE] AI auto-reply disabled for conversation ${first.conversationId}`);
+              return;
+            }
+          }
+
           const result = await aiSdkClient.sendChatMessage({
             companyId: first.companyId,
             customerId: first.customerId,
@@ -353,6 +380,18 @@ async function saveIncomingMessage(payload) {
             await WhatsAppMessageHandler.sendText(first.sessionId, first.normalizedJid, replyText, {
               isAIResponse: true,
             });
+            // Save AI reply to public.messages for conversation continuity
+            if (first.conversationId) {
+              getSharedPrismaClient().message.create({
+                data: {
+                  conversationId: first.conversationId,
+                  content: replyText,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  metadata: JSON.stringify({ platform: 'whatsapp', source: 'ai_reply' }),
+                },
+              }).catch(e => console.error('[WA-AI] Failed to save AI reply to DB:', e.message));
+            }
           }
           const attachments = result.response_attachments || result.responseAttachments;
           console.log(`[WA-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
@@ -393,6 +432,24 @@ async function saveIncomingMessage(payload) {
           // Lead replied after receiving a follow-up → mark as replied
           const LeadFollowUpService = require('./LeadFollowUpService');
           await LeadFollowUpService.markReplied(contact.id);
+          // Auto-promote category on reply
+          if (contact.leadCategoryId) {
+            try {
+              const cat = await prisma.leadCategory.findUnique({
+                where: { id: contact.leadCategoryId },
+                select: { autoPromoteCategoryId: true }
+              });
+              if (cat?.autoPromoteCategoryId) {
+                await prisma.whatsAppContact.update({
+                  where: { id: contact.id },
+                  data: { leadCategoryId: cat.autoPromoteCategoryId }
+                });
+                console.log(`[LEAD-FOLLOWUP] Auto-promoted contact ${contact.id} to category ${cat.autoPromoteCategoryId}`);
+              }
+            } catch (e) {
+              console.error('[LEAD-FOLLOWUP] Auto-promotion failed:', e.message);
+            }
+          }
         }
       } catch (e) {
         console.error('[LEAD-FOLLOWUP] Error enrolling lead:', e.message);
@@ -432,6 +489,40 @@ async function updateMessageStatus(companyId, messageId, status) {
       updatedAt: new Date()
     }
   });
+
+  // Update BroadcastRecipient tracking fields when status callbacks arrive
+  const updateBroadcastCampaignCount = async (recipientMessageId, field) => {
+    const recipient = await prisma.broadcastRecipient.findFirst({
+      where: { messageId: recipientMessageId },
+      select: { campaignId: true }
+    });
+    if (recipient) {
+      await prisma.broadcastCampaign.update({
+        where: { id: recipient.campaignId },
+        data: { [field]: { increment: 1 } }
+      }).catch(() => {});
+    }
+  };
+
+  if (status === 'DELIVERED') {
+    const { count } = await prisma.broadcastRecipient.updateMany({
+      where: { messageId, deliveredAt: null },
+      data: { deliveredAt: new Date() }
+    });
+    if (count > 0) updateBroadcastCampaignCount(messageId, 'deliveredCount');
+  } else if (status === 'READ') {
+    const { count } = await prisma.broadcastRecipient.updateMany({
+      where: { messageId, openedAt: null },
+      data: { openedAt: new Date() }
+    });
+    if (count > 0) updateBroadcastCampaignCount(messageId, 'openedCount');
+  } else if (status === 'FAILED') {
+    const { count } = await prisma.broadcastRecipient.updateMany({
+      where: { messageId, status: { not: 'failed' } },
+      data: { status: 'failed', failureReason: 'Delivery failed' }
+    });
+    if (count > 0) updateBroadcastCampaignCount(messageId, 'failedCount');
+  }
 
   const io = getIO();
   for (const message of messagesToUpdate) {

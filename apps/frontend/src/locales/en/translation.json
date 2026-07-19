@@ -1668,7 +1668,8 @@
     "stats": {
       "title": "Quick Stats",
       "products": "Products",
-      "orders": "Orders"
+      "orders": "Orders",
+      "activeApps": "Active Apps"
     },
     "activity": {
       "title": "Recent Activity (7 days)",
@@ -1692,7 +1693,8 @@
       "growth": "Growth",
       "operations": "Operations",
       "inventoryAlerts": "Inventory Alerts",
-      "insights": "Smart Insights"
+      "insights": "Smart Insights",
+      "alerts": "Alerts"
     },
     "insights": {
       "revenueTrend": "Revenue is {{delta}} vs the previous period ({{current}}).",
@@ -1707,8 +1709,8 @@
       "newCustomersGrowth": "New customers up {{delta}} ({{count}} this period)."
     },
     "inventory": {
-      "lowStock": "Low Stock",
-      "outOfStock": "Out of Stock"
+      "outOfStockCount": "{{count}} out of stock",
+      "lowStockCount": "{{count}} low on stock"
     },
     "metrics": {
       "totalOrders": "Total Orders",
@@ -1887,6 +1889,121 @@
       "pdf": "Export PDF",
       "metric": "Metric",
       "value": "Value"
+    },
+    "alerts": {
+      "openOrders": "{{count}} open orders"
+    },
+    "widgets": {
+      "sectionTitle": "Active Apps",
+      "active": "active",
+      "moreModules": "More Apps",
+      "viewAll": "View All",
+      "customize": "Customize",
+      "noData": "No data available",
+      "status": {
+        "active": "Active",
+        "warning": "Needs Attention",
+        "error": "Error",
+        "inactive": "Inactive"
+      },
+      "ecommerce": {
+        "title": "Store",
+        "orders": "Orders",
+        "revenue": "Revenue",
+        "customers": "Customers"
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "conversations": "Conversations",
+        "new": "New",
+        "connected": "Connected"
+      },
+      "ai": {
+        "title": "AI Assistant",
+        "interactions": "Interactions",
+        "sessions": "Sessions"
+      },
+      "crm": {
+        "title": "Customers",
+        "customers": "Customers",
+        "new": "New"
+      },
+      "hr": {
+        "title": "HR Management",
+        "employees": "Employees",
+        "present": "Present Today",
+        "onLeave": "On Leave"
+      },
+      "marketing": {
+        "title": "Marketing & Ads",
+        "campaigns": "Campaigns",
+        "active": "Active"
+      },
+      "analytics": {
+        "title": "Analytics",
+        "visits": "Visits",
+        "conversion": "Conversion"
+      },
+      "products": {
+        "title": "Products",
+        "total": "Total",
+        "lowStock": "Low Stock"
+      },
+      "medical": {
+        "title": "Medical System",
+        "appointments": "Appointments"
+      },
+      "education": {
+        "title": "Education System",
+        "students": "Students",
+        "sessions": "Sessions"
+      },
+      "hotel": {
+        "title": "Hotel Management",
+        "checkedIn": "Checked In",
+        "occupied": "Occupied",
+        "available": "Available"
+      },
+      "booking": {
+        "title": "Appointments",
+        "appointments": "Appointments"
+      },
+      "procurement": {
+        "title": "Procurement",
+        "pending": "Pending Orders",
+        "suppliers": "Suppliers"
+      },
+      "wholesale": {
+        "title": "Wholesale",
+        "customers": "Customers"
+      },
+      "affiliate": {
+        "title": "Affiliates",
+        "active": "Active",
+        "pending": "Pending"
+      },
+      "partners": {
+        "title": "Partners"
+      },
+      "competitors": {
+        "title": "Competitors",
+        "tracked": "Tracked"
+      },
+      "tasks": {
+        "title": "Tasks",
+        "open": "Open",
+        "completed": "Completed"
+      },
+      "notifications": {
+        "title": "Notifications"
+      },
+      "forms": {
+        "title": "Forms"
+      },
+      "telegram": {
+        "title": "Telegram",
+        "groups": "Groups"
+      }
     }
   },
   "companyLinks": {
@@ -2778,12 +2895,33 @@
     "tagsLabel": "Tags",
     "noTags": "No tags",
     "addTagPlaceholder": "Add a new tag...",
+    "filterByTag": "Filter by tag",
+    "allTags": "All tags",
+    "tagCriteria": "Filter by Tag",
+    "selectTag": "Select tag",
+    "filterByTagPlaceholder": "Select or type a tag...",
     "noOrders": "No orders yet",
     "noConversations": "No conversations yet",
     "notesPlaceholder": "Type your note here...",
     "noNotes": "No prior notes",
     "noActivities": "No activity history",
-    "deleteConfirmTitle": "Confirm Deletion"
+    "deleteConfirmTitle": "Confirm Deletion",
+    "import": {
+      "title": "Import Customers",
+      "clickOrDrag": "Click here or drag a file to upload",
+      "requiredColumns": "Supported formats: Excel (.xlsx, .xls) or CSV (.csv)",
+      "foundCount": "Found {{count}} customer(s)",
+      "success": "Successfully imported {{count}} customer(s)",
+      "importing": "Importing...",
+      "importButton": "Import {{count}} customer(s)",
+      "noValidData": "No valid data found",
+      "readError": "Error reading the file or parsing data",
+      "downloadTemplate": "Download CSV Template",
+      "tabFile": "Import from File (Excel / CSV)",
+      "tabPaste": "Paste Direct Data",
+      "pastePlaceholder": "Copy rows and columns from Excel and paste them here...\nName,Phone,Email,Status\nJohn Doe,01012345678,john@example.com,LEAD",
+      "parseButton": "Preview and Parse Data"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -3573,6 +3711,8 @@
     "activatingNow": "Activating...",
     "allActivated": "All tools are already activated!",
     "confirmBulkActivate": "Are you sure you want to activate {{count}} tools at once?",
+    "bulkActivateTitle": "Activate {{count}} tools at once",
+    "bulkActivateConfirm": "{{count}} tools will be activated together. This may take a while and cannot be undone.",
     "activatingProgress": "Activating {{name}}… {{progress}}%",
     "activatedSuccess": "Activated {{count}} tools successfully!",
     "activatedWithErrors": "Activated {{count}} tools, {{fail}} failed",
@@ -3610,7 +3750,14 @@
     "clearSearch": "Clear search",
     "loadMore": "Load more ({{remaining}})",
     "viewAll": "View All",
-    "allLoaded": "All apps loaded"
+    "allLoaded": "All apps loaded",
+    "emptyHint": "Try changing the filters or browsing another category.",
+    "clearFilters": "Clear filters",
+    "browseAll": "Browse all tools",
+    "features": "Features",
+    "moreFeatures": "+{{count}} more features",
+    "requires": "Requires",
+    "trialDays": "{{count}}-day trial"
   },
   "monthlyPnL": {
     "title": "Monthly P&L Dashboard",
@@ -5601,6 +5748,7 @@
     "affiliateCreateOrder": "New Customer Order",
     "referrals": "Referrals",
     "affiliateSettings": "Affiliate Settings",
+    "affiliateProductVisibility": "Product Visibility for Affiliates",
     "alertSettings": "Alert Settings",
     "analyticsSection": "Reports & Analytics",
     "appointments": "Appointments & Calendar",
@@ -5639,6 +5787,7 @@
     "categoryAnalytics": "Category Analytics",
     "ceoAgentChat": "CEO Agent Chat",
     "codPerformance": "COD Performance",
+    "todayOps": "Today Operations",
     "cancellationAnalytics": "Cancellation Analytics",
     "commissions": "Commissions",
     "companiesDashboard": "Companies Dashboard",
@@ -5665,6 +5814,7 @@
     "customerAnalytics": "Customer Analytics",
     "customerLoyalty": "Customer Loyalty",
     "customerPointsCenter": "Customer Points Center",
+    "customerSegments": "Segmentation Hub",
     "customers": "Customers",
     "customersBirthday": "Customers Birthdays",
     "customersOccasions": "Customer Occasions",
@@ -5730,6 +5880,8 @@
     "educationSessions": "Sessions",
     "educationCalendar": "Calendar",
     "educationFunnel": "Notifications & Funnel",
+    "hotelModule": "Hotel System",
+    "hotelDashboard": "Hotel Management",
     "mainSection": "Main",
     "manualOrder": "Create Manual Order",
     "marketingLinks": "Marketing Links",
@@ -6019,6 +6171,7 @@
     "whatsappSection": "WhatsApp",
     "whatsappSettings": "WhatsApp Settings",
     "whatsappCloudConnect": "Cloud Connect",
+    "whatsappEmployeeAnalytics": "Employee Analytics",
     "whatsappTemplates": "Templates",
     "whatsappTemplatesOrders": "Orders Templates",
     "whatsappTemplatesHR": "HR Templates",
@@ -7719,67 +7872,116 @@
   },
   "whatsappLeadFollowup": {
     "title": "Lead Follow-up",
-    "subtitle": "Automatically follow up with new leads who message you on WhatsApp",
+    "subtitle": "Automatically follow up with leads who message you on WhatsApp",
     "tabs": {
-      "settings": "Settings",
-      "monitoring": "Enrollments"
+      "flows": "Follow-up Flows",
+      "monitoring": "Lead Enrollments"
     },
     "stats": {
       "activeEnrollments": "Active Leads",
-      "totalSent": "Messages Sent",
+      "totalSent": "Total Messages Sent",
       "replyRate": "Reply Rate",
       "replyRateHint": "{{replied}} replies from {{total}} sent",
-      "completionRate": "Completion Rate"
+      "completionRate": "Completion Rate",
+      "totalEnrollments": "Total Enrolled"
     },
-    "stepEditor": {
-      "title": "Follow-up Steps",
-      "description": "Sequence of automated messages sent to the lead",
-      "stepLabel": "Step {{current}}",
-      "hours": "hours",
-      "addStep": "Add Step",
-      "noSteps": "No follow-up steps configured yet",
-      "content": "Message Content",
-      "variables": "Available Variables"
+    "flows": {
+      "title": "Follow-up Flows",
+      "addNew": "Create New Flow",
+      "edit": "Edit Flow",
+      "empty": "No follow-up flows yet",
+      "emptyDesc": "Create your first flow to automatically follow up with new leads who send a WhatsApp message.",
+      "name": "Flow Name",
+      "steps": "Steps",
+      "status": "Status",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "categories": "Categories",
+      "noCategory": "No category linked",
+      "activeLeads": "{{count}} Active",
+      "deleteConfirm": "Delete this flow? It will stop for all enrolled leads.",
+      "presetWelcome": "24h Welcome Flow",
+      "scope": "Targeting Scope",
+      "general": "General",
+      "targeted": "Targeted",
+      "generalDesc": "Applies to all customers unless they have a category-specific flow",
+      "targetedDesc": "Applies only to customers in selected categories"
     },
     "steps": {
-      "content": "Message Content",
-      "variables": "Available Variables"
+      "title": "Steps",
+      "add": "Add Step",
+      "edit": "Edit Step",
+      "deleteConfirm": "Delete this step?",
+      "delay": "Delay",
+      "hour": "hour",
+      "hours": "hours",
+      "day": "day",
+      "days": "days",
+      "unit": "Unit",
+      "content": "Message",
+      "variables": "Use {firstName}, {lastName}, {customerName}",
+      "preview": "Preview",
+      "noSteps": "No steps yet — add your first message step"
     },
     "businessHours": {
       "title": "Business Hours",
-      "description": "Restrict follow-up messages to specific hours",
-      "startHour": "Start Hour",
-      "endHour": "End Hour",
+      "description": "Restrict all follow-up messages to specific hours",
+      "startHour": "Start",
+      "endHour": "End",
       "timezone": "Timezone",
       "anyTime": "Any Time"
+    },
+    "categories": {
+      "title": "Category Binding",
+      "description": "Assign flows to lead categories so leads automatically enter the right flow",
+      "noCategories": "No lead categories defined yet",
+      "autoFollowUp": "Auto follow-up",
+      "linkedFlow": "Linked flow",
+      "none": "None",
+      "performanceTitle": "Category Performance",
+      "performanceDesc": "Enrollment and reply rates per category",
+      "total": "Total",
+      "enrolled": "Enrolled",
+      "completed": "Completed",
+      "replied": "Replied",
+      "replyRate": "Reply Rate"
+    },
+    "monitoring": {
+      "customer": "Customer",
+      "flow": "Flow",
+      "currentStep": "Step",
+      "nextMessage": "Next Message",
+      "status": "Status",
+      "lastSent": "Last Sent",
+      "notStarted": "Pending",
+      "completed": "Completed",
+      "active": "Active",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "inactive": "Inactive",
+      "details": "Details",
+      "step": "Step {{current}} of {{total}}",
+      "empty": "No enrollments yet",
+      "allStatuses": "All Statuses",
+      "allFlows": "All Flows",
+      "cancel": "Cancel"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "creating": "Creating...",
+      "saving": "Saving..."
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused"
     },
     "hints": {
       "title": "Smart Tips",
       "tip1": "Send first follow-up within 24 hours while the conversation is fresh.",
       "tip2": "Ask about their needs or offer help to start a conversation.",
       "tip3": "Use {firstName} to personalize the message."
-    },
-    "enrollments": {
-      "cancel": "Cancel",
-      "allStatuses": "All Statuses",
-      "empty": "No enrolled leads yet"
-    },
-    "monitoring": {
-      "customer": "Customer",
-      "status": "Status",
-      "currentStep": "Current Step",
-      "nextMessage": "Next Message",
-      "lastSent": "Last Sent",
-      "active": "Active",
-      "completed": "Completed",
-      "cancelled": "Cancelled"
-    },
-    "actions": {
-      "save": "Save"
-    },
-    "status": {
-      "active": "Active",
-      "paused": "Paused"
     }
   },
   "whatsappNotifications": {

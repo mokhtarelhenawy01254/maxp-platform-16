@@ -2,6 +2,22 @@
 
 > Domain-specific bug tracker for WhatsApp sessions, notifications, Telegram, and campaigns.
 
+### [FIX] WhatsApp Dead Socket Recovery & Pre-Send Connection Validation
+
+- **Date**: 2026-07-13
+- **Description**: Messages sent on unofficial WhatsApp connections could end up as "Waiting for this message..." (pending decrypt payload) because the backend attempted transmission on dead or closed TCP connections while the in-memory session status was still labeled "connected".
+- **Root Cause**:
+    1. **Lack of readyState verification**: The `isSendableBaileysSession()` validation checked only the memory session status and function presence but did not verify the WebSocket's `readyState` (which could be `0` (CONNECTING), `2` (CLOSING), or `3` (CLOSED)).
+    2. **Bypassed validation**: Media sending and utility functions (such as `sendImage`, `sendButtons`, etc.) completely bypassed the readiness checks of `getSendableBaileysSession` and directly accessed `WhatsAppManager.getSession()`, missing any connection state checks.
+- **Resolution**:
+    1. **Public readyState utility**: Exported `getSocketReadyState` publicly from `WhatsAppManager.js` to allow external service modules to query connection states.
+    2. **Integrated readyState checking**: Updated `isSendableBaileysSession()` and `getBaileysSessionReadinessReason()` in `WhatsAppMessageHandler.js` to query the socket's `readyState`. Any status other than `1` (OPEN) marks the session as unsendable.
+    3. **Standardized session retrieval**: Refactored all media, list, catalog, template, and button-sending handlers in `WhatsAppMessageHandler.js` to fetch sessions through `getSendableBaileysSession()` rather than directly referencing the cache.
+    4. **Automatic send retry**: Implemented active retry inside `sendText()`. If the first transmission attempt fails due to a dead socket, it catches the error, calls `reconnectSession` with `forceRestart: true` to recreate the connection, waits for connectivity, and retries once.
+- **Files Modified**:
+    - `apps/backend/services/whatsapp/WhatsAppManager.js`
+    - `apps/backend/services/whatsapp/WhatsAppMessageHandler.js`
+
 ### [FIX] WhatsApp Meta Template Creation Returns 400 Error
 
 - **Date**: 2026-07-04

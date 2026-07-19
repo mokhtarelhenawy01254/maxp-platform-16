@@ -7,6 +7,7 @@ import NotificationDropdown from "./notifications/NotificationDropdown";
 import OrderNotificationBell from "./notifications/OrderNotificationBell";
 import LanguageSwitcher from "./common/LanguageSwitcher";
 import { envConfig } from "../config/environment";
+import { CompanyLogo } from "./ui/CompanyLogo";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -226,14 +227,12 @@ const Header: React.FC = () => {
           <div className="flex items-center">
             {/* Logo */}
             <Link to="/company-dashboard" className="flex items-center">
-              {/* Company Logo */}
-              {user?.company?.logo ? (
-                <img
-                  src={`${envConfig.backendUrl}${user.company.logo}`}
-                  alt={user?.company?.name}
-                  className="h-10 w-10 rounded-lg object-cover shadow-sm border border-gray-200 dark:border-gray-600"
-                />
-              ) : (
+              <CompanyLogo
+                src={user?.company?.logo}
+                alt={user?.company?.name}
+                className="h-10 w-10 rounded-lg object-cover shadow-sm border border-gray-200 dark:border-gray-600"
+                companyName={user?.company?.name}
+              >
                 <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <svg
                     className="h-5 w-5 text-white"
@@ -249,7 +248,7 @@ const Header: React.FC = () => {
                     />
                   </svg>
                 </div>
-              )}
+              </CompanyLogo>
               <div className="mr-3">
                 <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {user?.company?.name || t("header.platformName")}

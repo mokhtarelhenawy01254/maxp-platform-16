@@ -205,7 +205,7 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
   }
 
   return (
-    <div dir="rtl" className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6">
+    <div dir="rtl" className="min-h-[calc(100dvh-64px)] bg-background p-4 md:p-6">
       <AdminPageHeader
         title={i18n.t("agentTools.title")}
         subtitle={i18n.t("agentTools.subtitle")}

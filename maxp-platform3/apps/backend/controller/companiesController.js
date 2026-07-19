@@ -16,6 +16,18 @@ const {
   generateUniqueCompanySlug,
   ensureCompanySlug,
 } = require("../utils/companySlug");
+// Role name mapping for display (fallback when roleRef relation is not available)
+// ponytail: keep in sync with BUILT_IN_ROLES in seedPermissions.js
+const ROLE_DISPLAY_NAMES = {
+  OWNER: 'مالك الشركة',
+  SUPER_ADMIN: 'مدير النظام',
+  COMPANY_ADMIN: 'مدير الشركة',
+  MANAGER: 'مدير',
+  AGENT: 'موظف',
+  AFFILIATE: 'مسوق',
+};
+const getRoleDisplayName = (roleKey) => ROLE_DISPLAY_NAMES[roleKey] || roleKey;
+
 const CURRENT_COMPANY_SELECT = {
   id: true,
   name: true,
@@ -1129,16 +1141,15 @@ const getCompanyUsers = async (req, res) => {
             select: { id: true, key: true, name: true },
           },
         },
-        orderBy:
-          sortBy === "createdAt"
-            ? { createdAt: sortOrder }
-            : sortBy === "role"
-              ? { role: sortOrder }
-              : sortBy === "name"
-                ? { user: { firstName: sortOrder } }
-                : sortBy === "firstName" || sortBy === "lastName" || sortBy === "email" || sortBy === "isActive"
-                  ? { user: { [sortBy]: sortOrder } }
-                  : { createdAt: sortOrder },
+        orderBy: (() => {
+          const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
+          const validSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'isActive'];
+          if (sortBy === 'createdAt') return { createdAt: safeSortOrder };
+          if (sortBy === 'role') return { role: safeSortOrder };
+          if (sortBy === 'name') return { user: { firstName: safeSortOrder } };
+          if (validSortFields.includes(sortBy)) return { user: { [sortBy]: safeSortOrder } };
+          return { createdAt: safeSortOrder };
+        })(),
       }),
       getSharedPrismaClient().userCompany.count({
         where: {
@@ -1160,16 +1171,21 @@ const getCompanyUsers = async (req, res) => {
           (uc) => !uc.user.employeeNumber,
         );
         // Recalculate total count for NO_EMPLOYEE case
-        const countQuery = {
-          ...userCompanyWhere,
-          user: {
-            ...userSearchWhere,
-            employeeNumber: null,
-          },
-        };
-        actualTotalCount = await getSharedPrismaClient().userCompany.count({
-          where: countQuery,
-        });
+        try {
+          const countQuery = {
+            ...userCompanyWhere,
+            user: {
+              ...userSearchWhere,
+              employeeNumber: null,
+            },
+          };
+          actualTotalCount = await getSharedPrismaClient().userCompany.count({
+            where: countQuery,
+          });
+        } catch (countError) {
+          console.warn("⚠️ [GET-USERS] Error counting NO_EMPLOYEE, using filtered count:", countError.message);
+          actualTotalCount = filteredUserCompanies.length;
+        }
       } else {
         // Filter for users with Employee data and specific contractType
         // Note: status is not in User model, so we filter by contractType or isActive
@@ -1227,7 +1243,7 @@ const getCompanyUsers = async (req, res) => {
       avatar: uc.user.avatar,
       role: uc.role,
       roleId: uc.roleId,
-      roleName: uc.roleRef?.name || null,
+      roleName: uc.roleRef?.name || (uc.role ? getRoleDisplayName(uc.role) : null),
       isActive: uc.isActive, // isActive from UserCompany table
       isEmailVerified: uc.user.isEmailVerified,
       lastLoginAt: uc.user.lastLoginAt,
@@ -1269,11 +1285,16 @@ const getCompanyUsers = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Error fetching company users:", error);
+    console.error("❌ [GET-USERS] Error:", error.message);
+    console.error("❌ [GET-USERS] Stack:", error.stack);
+    console.error("❌ [GET-USERS] CompanyId:", companyId);
+    console.error("❌ [GET-USERS] Query:", JSON.stringify({ page, limit, search, role, isActive, employeeStatus, sortBy, sortOrder }));
+    if (error.code) console.error("❌ [GET-USERS] Prisma Code:", error.code);
+    if (error.meta) console.error("❌ [GET-USERS] Prisma Meta:", JSON.stringify(error.meta));
     res.status(500).json({
       success: false,
       message: "فشل في جلب المستخدمين",
-      error: error.message,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 };
@@ -1344,6 +1365,7 @@ const getSingleUser = async (req, res) => {
             },
           },
         },
+        roleRef: { select: { name: true } },
       },
     });
 
@@ -1365,6 +1387,8 @@ const getSingleUser = async (req, res) => {
       phone: userCompany.user.phone,
       avatar: userCompany.user.avatar,
       role: userCompany.role,
+      roleId: userCompany.roleId || null,
+      roleName: userCompany.roleRef?.name || (userCompany.role ? getRoleDisplayName(userCompany.role) : null),
       isActive: userCompany.isActive,
       isEmailVerified: userCompany.user.isEmailVerified,
       lastLoginAt: userCompany.user.lastLoginAt,
@@ -1408,14 +1432,29 @@ const createnewUserForCompany = async (req, res) => {
       email,
       password,
       phone,
-      role = "AGENT",
       isActive = true,
     } = req.body;
+
+    const role = req.body.role || "AGENT";
+    let roleId = req.body.roleId || null;
+
+    const VALID_ROLE_ENUMS = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER", "AGENT", "AFFILIATE"];
+
+    if (!roleId && role) {
+      const roleRecord = await getSharedPrismaClient().role.findFirst({
+        where: { key: role, companyId: companyId },
+      });
+      if (roleRecord) {
+        roleId = roleRecord.id;
+      }
+    }
+
+    const ucRole = VALID_ROLE_ENUMS.includes(role) ? role : "AGENT";
 
     console.log(
       `👤 [CREATE-USER] Request to create user for company: ${companyId}`,
     );
-    console.log(`📧 [CREATE-USER] Email: ${email}, Role: ${role}`);
+    console.log(`📧 [CREATE-USER] Email: ${email}, Role: ${role}${roleId ? ` (roleId: ${roleId})` : ""}`);
     console.log(
       `🔐 [CREATE-USER] Requester: ${req.user?.email}, Role: ${req.user?.role}`,
     );
@@ -1485,7 +1524,8 @@ const createnewUserForCompany = async (req, res) => {
         data: {
           userId: existingUser.id,
           companyId: companyId,
-          role: role,
+          role: ucRole,
+          roleId: roleId,
           isActive: isActive,
           isDefault: false,
         },
@@ -1607,7 +1647,8 @@ const createnewUserForCompany = async (req, res) => {
         data: {
           userId: newUser.id,
           companyId: companyId,
-          role: role,
+          role: ucRole,
+          roleId: roleId,
           isActive: isActive,
           isDefault: true,
         },
@@ -1824,6 +1865,7 @@ const updateUser = async (req, res) => {
               key: role,
               OR: [
                 { companyId: '__system__', isBuiltIn: true },
+                { companyId: null, isBuiltIn: true },
                 { companyId },
               ],
             },
@@ -1832,11 +1874,28 @@ const updateUser = async (req, res) => {
 
           if (roleRecord) {
             ucData.roleId = roleRecord.id;
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: `الدور "${role}" غير موجود في النظام`,
+          } else if (VALID_ROLE_ENUMS.includes(role)) {
+            const newRole = await getSharedPrismaClient().role.create({
+              data: { key: role, name: getRoleDisplayName(role), companyId: '__system__', isBuiltIn: true, isActive: true, priority: 0 },
             });
+            // Sync all active permissions so the role isn't empty (edge case: missing seed)
+            const allPerms = await getSharedPrismaClient().permission.findMany({
+              where: { isActive: true },
+              select: { id: true },
+            });
+            if (allPerms.length > 0) {
+              await getSharedPrismaClient().rolePermission.createMany({
+                data: allPerms.map(p => ({ roleId: newRole.id, permissionId: p.id })),
+              });
+            }
+            ucData.roleId = newRole.id;
+            console.log(`✅ [UPDATE-USER] Auto-created built-in Role record for "${role}" → ${newRole.id} with ${allPerms.length} permissions`);
+          } else {
+            const newRole = await getSharedPrismaClient().role.create({
+              data: { key: role, name: role, companyId, isBuiltIn: false, isActive: true, priority: 0 },
+            });
+            ucData.roleId = newRole.id;
+            console.log(`✅ [UPDATE-USER] Auto-created custom Role record for "${role}"`);
           }
         }
 
@@ -1952,7 +2011,7 @@ const updateUser = async (req, res) => {
       avatar: userCompanyAfterUpdate.user.avatar,
       role: userCompanyAfterUpdate.role,
       roleId: userCompanyAfterUpdate.roleId,
-      roleName: userCompanyAfterUpdate.roleRef?.name || null,
+      roleName: userCompanyAfterUpdate.roleRef?.name || (userCompanyAfterUpdate.role ? getRoleDisplayName(userCompanyAfterUpdate.role) : null),
       isActive: userCompanyAfterUpdate.isActive, // From UserCompany
       isEmailVerified: userCompanyAfterUpdate.user.isEmailVerified,
       lastLoginAt: userCompanyAfterUpdate.user.lastLoginAt,
@@ -2759,7 +2818,7 @@ const sendUserInvitation = async (req, res) => {
                   userId: existingUser.id,
                   companyId: uc.companyId, // User's current company, not the inviting company
                   title: `🎉 دعوة للانضمام إلى ${invitation.company.name}`,
-                  message: `${invitation.inviter.firstName} ${invitation.inviter.lastName} يدعوك للانضمام إلى ${invitation.company.name} كـ ${role === "AGENT" ? "موظف" : role === "MANAGER" ? "مدير" : role === "AFFILIATE" ? "مسوق" : "مسؤول"}`,
+                    message: `${invitation.inviter.firstName} ${invitation.inviter.lastName} يدعوك للانضمام إلى ${invitation.company.name} كـ ${getRoleDisplayName(role)}`,
                   type: "invitation",
                   isRead: false,
                   data: JSON.stringify({
@@ -2842,7 +2901,7 @@ const sendUserInvitation = async (req, res) => {
                             <div style="background-color: #f8f9fa; border-right: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 5px;">
                                 <p style="margin: 0; color: #555;">
                                     <strong style="color: #333;">دورك في النظام:</strong> 
-                                    <span style="color: #667eea; font-weight: bold;">${role === "AGENT" ? "موظف" : role === "MANAGER" ? "مدير" : role === "AFFILIATE" ? "مسوق (Affiliate)" : "مسؤول"}</span>
+                                    <span style="color: #667eea; font-weight: bold;">${getRoleDisplayName(role)}</span>
                                 </p>
                             </div>
                             
@@ -3134,7 +3193,7 @@ const resendInvitation = async (req, res) => {
                             <div style="background-color: #f8f9fa; border-right: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 5px;">
                                 <p style="margin: 0; color: #555;">
                                     <strong style="color: #333;">دورك في النظام:</strong> 
-                                    <span style="color: #667eea; font-weight: bold;">${invitation.role === "AGENT" ? "موظف" : invitation.role === "MANAGER" ? "مدير" : "مسؤول"}</span>
+                                    <span style="color: #667eea; font-weight: bold;">${getRoleDisplayName(invitation.role)}</span>
                                 </p>
                             </div>
                             

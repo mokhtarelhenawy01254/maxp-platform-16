@@ -36,7 +36,7 @@ const MainAdsLanding = () => {
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-primary-100" dir="rtl">
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-primary-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-200">
@@ -63,7 +63,7 @@ const MainAdsLanding = () => {
 
       {/* Hero Section */}
       <header className="pt-40 pb-24 px-4 relative overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-50 via-white to-white">
-        <div className="max-w-7xl mx-auto text-center relative z-10">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -120,7 +120,7 @@ const MainAdsLanding = () => {
 
       {/* Features Grid */}
       <section id="features" className="py-24 px-4 bg-white relative">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 font-cairo">تحكم كامل في كل تفصيلة</h2>
             <p className="text-gray-500 text-lg max-w-2xl mx-auto">
@@ -191,7 +191,7 @@ const MainAdsLanding = () => {
 
       {/* Trust & Stats */}
       <section id="results" className="py-24 bg-gray-900 text-white rounded-[4rem] mx-4 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold mb-8 font-cairo leading-tight">
@@ -250,7 +250,7 @@ const MainAdsLanding = () => {
 
       {/* App Preview / How it works */}
       <section id="how-it-works" className="py-24 px-4 bg-white text-center">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
           <h2 className="text-4xl font-bold mb-16 font-cairo">ابدأ في 3 خطوات بسيطة</h2>
           <div className="grid md:grid-cols-3 gap-12">
             {[
@@ -317,7 +317,7 @@ const MainAdsLanding = () => {
 
       {/* Footer */}
       <footer className="py-12 border-t border-gray-100 bg-white">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white">
               <Rocket size={24} />

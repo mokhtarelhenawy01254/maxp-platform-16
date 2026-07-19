@@ -159,7 +159,8 @@ const companyDashboardOverview = async (req, res) => {
             prevTrackedOrdersCount,
             prevOrderItems,
             prevStoreVisits,
-            prevNewCustomersCount
+            prevNewCustomersCount,
+            revenueHistory
         ] = await Promise.all([
             withDashboardFallback('newUsersCount', () => getSharedPrismaClient().user.count({
                 where: {
@@ -287,6 +288,26 @@ const companyDashboardOverview = async (req, res) => {
                     createdAt: { gte: prevStart, lte: prevEnd }
                 }
             }), 0),
+            withDashboardFallback('revenueHistory', () => getSharedPrismaClient().order.findMany({
+                where: {
+                    ...trackedOrdersWhereClause,
+                    createdAt: { gte: start, lte: end }
+                },
+                select: {
+                    createdAt: true,
+                    total: true
+                },
+                orderBy: { createdAt: 'asc' }
+            }).then(orders => {
+                const byDate = {};
+                orders.forEach(o => {
+                    const date = o.createdAt.toISOString().slice(0, 10);
+                    if (!byDate[date]) byDate[date] = { date, revenue: 0, orders: 0 };
+                    byDate[date].revenue += parseFloat(o.total || 0);
+                    byDate[date].orders += 1;
+                });
+                return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+            }), []),
         ]);
 
         const safeTrackedOrdersCount = trackedOrdersCount ?? totalOrdersCount;
@@ -431,7 +452,8 @@ const companyDashboardOverview = async (req, res) => {
                 piecesPerOrder
             },
             topProducts,
-            previousPeriod
+            previousPeriod,
+            revenueHistory
         };
 
         res.json({
@@ -879,6 +901,142 @@ const getCompanyLinkPassword = async (req, res) => {
     }
 };
 
+// ─── Widget Data (per-app live metrics) ───────────────────────────────
+const getWidgetData = async (req, res) => {
+    try {
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+        if (!companyId) {
+            return res.status(400).json({ success: false, message: 'Company context required' });
+        }
+
+        const prisma = getSharedPrismaClient();
+        const activeInstalls = await prisma.companyApp.findMany({
+            where: { companyId, status: { in: ['TRIAL', 'ACTIVE'] } },
+            include: { app: true }
+        });
+        const slugs = new Set(activeInstalls.map(i => i.app.slug));
+
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+        const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const data = {};
+
+        async function q(label, fn) {
+            try { data[label] = await fn(); } catch (_) { /* model may not exist */ }
+        }
+
+        await q('whatsapp', async () => {
+            const [conversations, unread, sessions] = await Promise.all([
+                prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', status: { not: 'CLOSED' } } }),
+                prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', isRead: false } }),
+                prisma.whatsAppSession.count({ where: { companyId, status: 'CONNECTED' } }),
+            ]);
+            return { conversations, unread, sessions };
+        });
+
+        await q('ai', async () => {
+            const [interactionsToday, sessions] = await Promise.all([
+                prisma.aiInteraction.count({ where: { companyId, createdAt: { gte: today } } }),
+                prisma.aiSandboxSession.count({ where: { companyId, isDeleted: false } }),
+            ]);
+            return { interactionsToday, sessions };
+        });
+
+        await q('hr', async () => {
+            const [active, present, onLeave] = await Promise.all([
+                prisma.employee.count({ where: { companyId, status: 'ACTIVE' } }),
+                prisma.attendance.count({ where: { companyId, date: today, checkIn: { not: null } } }),
+                prisma.leaveRequest.count({ where: { companyId, status: 'APPROVED', startDate: { lte: today }, endDate: { gte: today } } }),
+            ]);
+            return { activeEmployees: active, presentToday: present, onLeave };
+        });
+
+        await q('marketing', async () => {
+            const [total, active] = await Promise.all([
+                prisma.facebookCampaign.count({ where: { companyId } }),
+                prisma.facebookCampaign.count({ where: { companyId, status: 'ACTIVE' } }),
+            ]);
+            return { campaigns: total, activeCampaigns: active };
+        });
+
+        await q('medical', async () => {
+            const todayAppts = await prisma.appointment.count({
+                where: { companyId, appointmentDate: today, status: { in: ['pending', 'confirmed'] } }
+            });
+            return { appointmentsToday: todayAppts };
+        });
+
+        await q('education', async () => {
+            const [students, sessionsToday] = await Promise.all([
+                prisma.educationStudent.count({ where: { companyId, isActive: true } }),
+                prisma.educationSession.count({ where: { companyId, scheduledAt: { gte: today, lt: tomorrow } } }),
+            ]);
+            return { activeStudents: students, sessionsToday };
+        });
+
+        await q('hotel', async () => {
+            const [checkedIn, occupied, available] = await Promise.all([
+                prisma.hotelReservation.count({ where: { companyId, status: 'CHECKED_IN' } }),
+                prisma.hotelRoom.count({ where: { companyId, status: 'OCCUPIED' } }),
+                prisma.hotelRoom.count({ where: { companyId, status: 'AVAILABLE' } }),
+            ]);
+            return { checkedIn, occupiedRooms: occupied, availableRooms: available };
+        });
+
+        await q('booking', async () => {
+            const todayAppts = await prisma.appointment.count({
+                where: { companyId, appointmentDate: today, status: { in: ['pending', 'confirmed'] } }
+            });
+            return { appointmentsToday: todayAppts };
+        });
+
+        await q('procurement', async () => {
+            const [pending, suppliers] = await Promise.all([
+                prisma.purchaseOrder.count({ where: { companyId, status: { in: ['PENDING', 'ORDERED'] } } }),
+                prisma.supplier.count({ where: { companyId, isActive: true } }),
+            ]);
+            return { pendingOrders: pending, activeSuppliers: suppliers };
+        });
+
+        await q('wholesale', async () => {
+            const customers = await prisma.wholesaleCustomer.count({ where: { companyId, isActive: true } });
+            return { activeCustomers: customers };
+        });
+
+        await q('affiliate', async () => {
+            const [affiliates, pendingCommissions] = await Promise.all([
+                prisma.affiliate.count({ where: { companyId, status: 'ACTIVE' } }),
+                prisma.commission.count({ where: { companyId, status: 'PENDING' } }),
+            ]);
+            return { activeAffiliates: affiliates, pendingCommissions };
+        });
+
+        await q('competitors', async () => {
+            const tracked = await prisma.competitor.count({ where: { companyId, isActive: true } });
+            return { tracked };
+        });
+
+        await q('tasks', async () => {
+            const [open, completedWeek] = await Promise.all([
+                prisma.task.count({ where: { companyId, status: { not: 'COMPLETED' }, parentTaskId: null } }),
+                prisma.task.count({ where: { companyId, status: 'COMPLETED', completedDate: { gte: weekAgo } } }),
+            ]);
+            return { openTasks: open, completedThisWeek: completedWeek };
+        });
+
+        await q('telegram', async () => {
+            const groups = await prisma.telegramGroup.count({ where: { companyId, managedByUs: true } });
+            return { groups };
+        });
+
+        return res.json({ success: true, data });
+    } catch (error) {
+        console.error('❌ [WIDGET-DATA] Error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load widget data', error: error.message });
+    }
+};
+
 module.exports = {
     companyDashboardOverview,
     companySettings,
@@ -887,5 +1045,6 @@ module.exports = {
     createCompanyLink,
     updateCompanyLink,
     deleteCompanyLink,
-    getCompanyLinkPassword
+    getCompanyLinkPassword,
+    getWidgetData
 }

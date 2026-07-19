@@ -1,5 +1,254 @@
 # Backend Bugs Log
 
+### [FEATURE / OVERRIDE] Support for Separate WhatsApp Facebook App ID & Credentials
+- **Date**: 2026-07-19
+- **Root Cause / Requirement**:
+  1. **Development vs. Live mode restrictions**: The main Facebook App configured on the platform is in Development mode and undergoing App Review for Page permissions (e.g., Pages Read/Engagement). This prevents it from being made Live.
+  2. **WhatsApp Blocked in Development**: In Development mode, WhatsApp Embedded Signup triggers a Meta Business Account Integrity Limit block/crash (`WhatsAppBizxPlatformMetaBusinessAccountIntegrityLimitView`) if the tester accounts or business portfolios do not perfectly align, or due to Meta's strict onboarding security policies.
+  3. **disrupted Page Integrations**: Overwriting the global Facebook App credentials with a new Live App specifically for WhatsApp would break existing Facebook Page tokens and integrations.
+- **Resolution**:
+  1. **Optional Credentials Override**: Added support for optional, separate WhatsApp-specific Facebook App credentials (`whatsappAppId`, `whatsappAppSecret`, `whatsappConfigId`) in the configuration JSON.
+  2. **Prioritization Logic**: Modified the backend (`whatsappController.js`) configuration loader and token exchange endpoints to prioritize these WhatsApp credentials if they are populated, leaving the default Facebook Page integration unaffected.
+  3. **Super Admin UI Integration**: Expanded `/super-admin/facebook-oauth` to allow editing, viewing, and saving these optional WhatsApp App credentials.
+- **Files Modified**:
+  - `apps/backend/config/facebookAppConfig.js` (MODIFIED)
+  - `apps/backend/controller/whatsappController.js` (MODIFIED)
+  - `apps/backend/routes/facebookOAuthRoutes.js` (MODIFIED)
+  - `apps/frontend/src/pages/SuperAdminFacebookOAuth.jsx` (MODIFIED)
+
+### [BUG FIX / DEPLOY] Deploy Script rsync --delete Wiping facebook-oauth-config.json
+- **Date**: 2026-07-19
+- **Root Cause**:
+  1. **rsync --delete without exclude**: The `deploy-remote.sh` script uses `rsync -a --delete` to sync backend files from the staging tarball to `/var/www/backend2/`. Since `facebook-oauth-config.json` is in `.gitignore` and not tracked in git, it's absent from the tarball. The `--delete` flag causes rsync to remove any file on the server that doesn't exist in the source — including the credentials file managed via Super Admin.
+  2. **Legacy deploy path uses rm -rf**: The fallback deploy path (staging directory without tarball) does `sudo rm -rf /var/www/backend2` before `mv`, which also destroys the config file.
+- **Resolution**:
+  1. **Added rsync exclude**: Added `--exclude data/facebook-oauth-config.json` to the rsync command in the tarball deploy path.
+  2. **Added backup/restore**: In the legacy deploy path, added backup of `facebook-oauth-config.json` before `rm -rf` and restore after `mv`, similar to how `.env` is handled.
+- **Files Modified**:
+  - `scripts/deploy-remote.sh` (MODIFIED)
+
+### [BUG FIX / API & UI] Facebook Embedded Connect redirect_uri Mismatch (500 Internal Server Error)
+- **Date**: 2026-07-19
+- **Root Cause**:
+  1. **Hardcoded Empty redirect_uri**: In the `facebookEmbeddedConnect` backend controller, the `redirect_uri` for code exchange was hardcoded as `''` (empty string).
+  2. **SDK Redirect Mismatch**: When the frontend utilizes the Facebook JavaScript SDK's `FB.login` method with `response_type: "code"`, the SDK automatically manages the OAuth flow. If the backend tries to exchange the code with a specific redirect URI (like `https://maxp.online/whatsapp/cloud-connect` or `https://maxp.online/`), Meta often rejects it with: `"Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request"` because the SDK did not pass an explicit redirect URI in the dialog.
+- **Resolution**:
+  1. **Dual-Attempt Self-Healing Exchange**: Modified `facebookEmbeddedConnect` in `whatsappController.js` to first attempt the OAuth code exchange **without** the `redirect_uri` parameter (which is standard for Facebook SDK flows and eliminates mismatch errors entirely). If that fails, it catches the error and retries the exchange **with** the `redirect_uri` parameter (falling back to Referer path or client payload).
+  2. **Frontend Payload Update**: Kept frontend payload sending `redirectUri: window.location.origin + window.location.pathname` inside the payload as a fallback.
+- **Files Modified**:
+  - `apps/backend/controller/whatsappController.js` (MODIFIED)
+  - `apps/frontend/src/pages/whatsapp/WhatsAppCloudConnect.tsx` (MODIFIED)
+
+### [ARCHITECTURAL FIX] Facebook OAuth Credentials Single Source of Truth Alignment (Overwriting / 400 Errors)
+- **Date**: 2026-07-19
+- **Root Cause**:
+  1. **Deployment Overwriting Stored Configurations**: The `facebook-oauth-config.json` was tracked in Git history. When we untracked it and populated placeholders, git pull on the server applied the modification, replacing the actual production keys with placeholders.
+  2. **Multi-Source Fallback Confusion**: The configuration loader `getFacebookOAuthConfig` had fallback options looking at `process.env.FACEBOOK_APP_SECRET` and hardcoded default app IDs. This caused silent credential mix-ups and made debugging 400 errors in production difficult.
+- **Resolution**:
+  1. **Eliminated Fallbacks**: Rewrote `getFacebookOAuthConfig` in `facebookAppConfig.js` to strictly load `appId` and `appSecret` from the local `facebook-oauth-config.json` file. Removed all `.env` fallbacks (`env.FACEBOOK_APP_SECRET`, `env.FACEBOOK_APP_ID`) and hardcoded credential fallbacks.
+  2. **Refactored Helpers & Tests**: Updated helper functions `getFacebookAppSecret` and `getFacebookConfigId` to align with the new signature. Rewrote configuration unit tests to mock and test JSON file scenarios exclusively.
+- **Files Modified**:
+  - `apps/backend/config/facebookAppConfig.js` (MODIFIED)
+  - `apps/backend/tests/config/facebookAppConfig.test.js` (MODIFIED)
+
+### [BUG FIX / API & UI] Customer Classification Not Persisting, Tags Invisible, Classification Shows ID
+- **Date**: 2026-07-18
+- **Root Cause**:
+  1. **Classification not persisting on reopen**: The backend `getConversations` endpoint did not include `leadCategoryId` or `leadCategory` in the Prisma `select` projection for `whatsAppContact.findMany`. This meant the conversations API response never contained classification data. When the user reopened a chat, `contact.leadCategoryId` was `undefined`, resetting the local state to empty.
+  2. **Tags always invisible**: The `useCustomerProfile` hook set the customer state to `customerRes.data.data` (the entire response wrapper object containing `customer`, `stats`, `activities`, etc.) instead of `customerRes.data.data.customer` (the actual customer record). This meant `customer.tags` was always `undefined` since `.tags` doesn't exist on the wrapper object.
+  3. **Classification shows raw ID instead of name**: The `Select` component from `@base-ui/react/select` was given `value=""` for the "no category" option. Base UI's Select does not support empty string values correctly, causing the `SelectValue` component to fail matching and fall back to displaying the raw value (the CUID database ID). Additionally, the `WhatsAppChat.tsx` sync effect did not include `leadCategoryId` in its change detection, so classification updates were not propagated from the query cache to the active `selectedContact` state.
+- **Resolution**:
+  1. Added `leadCategoryId: true` and `leadCategory: { select: { id, name, color } }` to the Prisma `select` block in `getConversations`.
+  2. Fixed `useCustomerProfile.ts` to correctly extract `customerRes.data.data.customer` and added `tags` to the `Customer` interface.
+  3. Replaced `value=""` with `value="none"` sentinel in the category `<Select>`, updated `handleCategoryChange` to map `'none'` back to `null`, and added `queryClient.invalidateQueries` after successful category update.
+  4. Added `leadCategoryId` comparison to the `hasConversationStateChange` detection in `WhatsAppChat.tsx` sync effect.
+- **Files Modified**:
+  - `apps/backend/controller/whatsappController.js` (MODIFIED)
+  - `apps/frontend/src/hooks/inbox/useCustomerProfile.ts` (MODIFIED)
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx` (MODIFIED)
+  - `apps/frontend/src/pages/whatsapp/components/ChatRightPanel.tsx` (MODIFIED)
+
+### [BUG FIX / API & UI] AI Key Logs Filter Mismatch, Global Stats & Pagination Bypass
+- **Date**: 2026-07-18
+- **Root Cause**:
+  1. **Status filter mismatch**: Backend database log status used `success`/`failed` for LLM requests but `ok`/`error` for key tests/creation. The frontend filter only sent `success` or `failed` which was strictly matched by backend, hiding the other statuses.
+  2. **Page-level vs Global Stats**: The frontend statistics cards computed successful/failed counts and average latency locally from the current page's slice (25 logs), instead of retrieving global statistics from the backend, capped success/failed cards at 25.
+  3. **Backend Pagination Bypass**: If the raw SQL query to `public.ai_provider_logs` threw an exception, the exception block swallowed the error but bypassed pagination slicing `rows[offset:offset+limit]`, returning full raw data length `fetch_limit` to the client.
+  4. **Error handling UX**: Any error from the queries triggered an early return of the layout, rendering a blank screen with only an error message and retry button, making filters unusable.
+  5. **PostgreSQL JSON Operator Error**: The raw SQL query for `public.ai_provider_logs` used the `->>` operator on the `metadata` column directly (`metadata->>'response'`). Since `metadata` is a `text` type column (not `jsonb` or `json`) in the DB schema, Postgres failed with an `UndefinedFunctionError: operator does not exist: text ->> unknown` exception. The exception was swallowed in the raw SQL block, silently causing generation logs to never load.
+  6. **Timezone Awareness Sorting Mismatch**: The ORM returns timezone-aware datetimes (timezone=True) for `created_at` in the `ProviderLog` table, whereas the raw SQL query returns timezone-naive datetimes for `createdAt` in `public.ai_provider_logs`. Python's `sort` failed with a `TypeError: can't compare offset-naive and offset-aware datetimes` exception when merging both datasets, leading to a HTTP 500 error.
+- **Resolution**:
+  1. Updated the backend status filter mapping (`list_logs` and `_build_public_filters` helper in `keys.py`) to resolve `success` to `["success", "ok"]` and `failed` to `["failed", "error"]`.
+  2. Extended backend schema `LogListResponse` and `list_logs` implementation to dynamically calculate global success, failed, and average latency stats across both ORM and raw SQL tables.
+  3. Modified frontend `SuperAdminAIKeyLogs.tsx` to read stats globally from `logsRes`, falling back to page-level slice if undefined. Updated Select value onChange callbacks with nullish coalescing to prevent TypeScript null-assignment compilation errors.
+  4. Moved slicing and sorting outside of the `try-except` block in `keys.py` to ensure pagination limit is always enforced.
+  5. Rendered the error alert inline on the frontend logs page instead of early-returning the page layout.
+  6. Added explicit `CAST(COALESCE(metadata, '{}') AS jsonb)->>'response'` casting to the raw SQL query in `keys.py`, resolving the exception and successfully restoring generation logs.
+  7. Safe-guarded sorting comparison by stripping timezone info from offset-aware datetimes: `rows.sort(key=lambda r: r.created_at.replace(tzinfo=None) if r.created_at.tzinfo else r.created_at, reverse=True)`.
+- **Files Modified**:
+  - `apps/ai-service/src/api/admin/keys.py` (MODIFIED)
+  - `apps/ai-service/src/api/admin/schemas.py` (MODIFIED)
+  - `apps/frontend/src/services/aiAdminService.ts` (MODIFIED)
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIKeyLogs.tsx` (MODIFIED)
+
+
+### [BUG FIX / SEEDING] Dev Seeding Script Password Hashing & Role Mismatch
+- **Date**: 2026-07-17
+- **Root Cause**: The development database seeding script `seed-agentic-dev.js` inserted the test user `dev@maxp.test` with a plain-text password `dev123456` and a `null` role. The authentication login handler checks passwords using bcrypt matching (`bcrypt.compare`), and sandbox routes require roles of `OWNER`, `COMPANY_ADMIN`, or `SUPER_ADMIN`. This caused login to fail and restricted sandbox access for local verification.
+- **Resolution**: Updated `seed-agentic-dev.js` to hash the test user's password using bcrypt and set the user's role to `OWNER`.
+- **Files Modified**:
+  - `scripts/seed-agentic-dev.js` (MODIFIED)
+
+### [BUG FIX / PIPELINE] Legacy Heuristics and Forced Tool Injection
+- **Date**: 2026-07-17
+- **Root Cause**: The hotel agent was using a legacy 2024-era pattern in a custom hook `HotelEnforcementHook` (`hotel_hook.py`) consisting of brittle regex-based customer name/phone/dates/room extractions and manual injection of `hotel_reserve` tool-calls when confirmation keywords were matched. This was brittle, lacked semantic intent understanding, bypassed the LLM's natural conversational flow, and contradicted the 2026 SOTA agentic AI paradigm (where intent and parameter extraction are natively model-driven and handled via Pydantic model validation).
+- **Resolution**:
+  1. Removed `HotelEnforcementHook` registration from `base.py` and deleted `hotel_hook.py` entirely.
+  2. Overhauled `SOUL.md` and `TOOLS.md` prompts inside the `hotel-agent` template directory to explicitly instruct the agent to conversationally gather missing required fields (name, phone, dates) instead of inventing mock values or relying on heuristic scripts (Conversational Slot-Filling).
+  3. Cleaned up and updated unit tests in `test_skills_pipeline.py` to match the simplified machine-readable tool results formatter.
+- **Files Modified**:
+  - `apps/ai-service/src/agents/base.py` (MODIFIED)
+  - `apps/backend/agents/hotel-agent/SOUL.md` (MODIFIED)
+  - `apps/backend/agents/hotel-agent/TOOLS.md` (MODIFIED)
+  - `apps/ai-service/tests/pipeline/test_skills_pipeline.py` (MODIFIED)
+  - `apps/ai-service/src/agents/hooks/hotel_hook.py` (DELETED)
+
+### [BUG FIX / UI] WhatsApp Session Selection CUID Display Bug
+- **Date**: 2026-07-17
+- **Root Cause**: Newly created Baileys sessions that have not scanned their QR code or been explicitly named default to having their `name` column set to the session's CUID (e.g. `cmr0zgrz902fkjuhdx0ni7jnk`) with no phone number. In `/whatsapp/template-broadcast` and `WhatsAppSettings.tsx`, the select dropdown was rendering the name directly without checking for CUIDs, which leaked the raw database identifier to the user.
+- **Resolution**: Updated the session mapping in both selection dropdowns to verify if the session name is a CUID. If it is a CUID, it displays a friendly name `"جلسة واتساب"` and appends the phone number if available (e.g. `جلسة واتساب (010xxxxxxx)`).
+- **Files Modified**:
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppSettings.tsx`
+
+### [FEATURE / BUG FIX] Customer Tags Integration & Filtering Gaps
+- **Date**: 2026-07-17
+- **Root Cause**: The customer tags field was saved to the DB but there was no way to filter the Customer List by tags, create smart lists matching tags, send broadcast campaigns targeting specific tags directly, or add/remove tags for the customer directly from the moderator chat sidebar.
+- **Resolution**:
+  1. Updated `getAllCustomer` in the backend and `getCustomers` in the frontend to support a `tag` query parameter.
+  2. Implemented `GET /api/v1/customers/tags/distinct` to aggregate and return unique tags with customer counts.
+  3. Added tag filter UI to `CustomerList.tsx`.
+  4. Integrated tag criteria type (`criteria.type = 'tag'`) to `createCustomerList` and `getCustomersInList` on the backend and added tag criteria configuration inside `CreateListModal.tsx`.
+  5. Added direct Tag selection to the WhatsApp template broadcast form.
+  6. Implemented interactive Customer Tags editor section in `ChatRightPanel.tsx` on the moderator chat sidebar to easily add, auto-complete, and delete customer tags (fixed a JSX tag imbalance compilation error by adding the missing closing `</div>` tag for the tab content block).
+- **Files Modified**:
+  - `apps/backend/controller/customerController.js`
+  - `apps/backend/routes/customerRoutes.js`
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/frontend/src/services/customerService.ts`
+  - `apps/frontend/src/pages/customers/CustomerList.tsx`
+  - `apps/frontend/src/components/broadcast/CreateListModal.tsx`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/ChatRightPanel.tsx`
+
+### [BUG FIX / UI] Customer Import Modal Placement and Layering (Layout Containment)
+- **Date**: 2026-07-17
+- **Root Cause**: The `CustomerImportModal` component was rendered inline within the `CustomerList` component tree inside the main `<main className="... overflow-y-auto">` layout container. This caused visual clipping/placement defects and z-index issues because parent elements had specific overflow constraints and stacking contexts.
+- **Resolution**: Wrapped the modal rendering with `React.createPortal` to render the modal directly into `document.body`, escaping layout containment. Increased the overlay z-index to `z-[9999]` to guarantee it appears on top of all sidebar/header elements.
+- **Files Modified**:
+  - `apps/frontend/src/pages/customers/CustomerImportModal.tsx`
+
+
+### [BUG FIX / PIPELINE] Legacy Frontend Path Conflict
+- **Date**: 2026-07-17
+- **Root Cause**: The storefront html controller (`storefrontHtmlController.js`) resolves candidates to serve `index.html` dynamically. The legacy path `path.resolve(__dirname, "../../frontend/dist/index.html")` resolved to `/var/www/frontend/dist/index.html` on the production server. Because the deployment script (`deploy-remote.sh`) only cleaned up this directory under conditional blocks that were skipped when staging tarballs were used, `/var/www/frontend` remained on disk. This caused the backend to continue serving the old `index.html` (which loaded obsolete chunk hashes like `54lLAbYb`) instead of `/var/www/frontend2/dist/index.html`.
+- **Resolution**: Updated `storefrontHtmlController.js` to prioritize the absolute production path `/var/www/frontend2/dist/index.html` before checking the relative path (preserving local development). Also updated `deploy-remote.sh` to unconditionally remove the legacy `/var/www/frontend` directory if it exists on the server.
+- **Files Modified**:
+  - `apps/backend/controller/storefrontHtmlController.js`
+  - `scripts/deploy-remote.sh`
+
+### [BUG FIX / UI] Customer Import Modal — Missing Translation Keys
+- **Date**: 2026-07-16
+- **Root Cause**: `CustomerImportModal.tsx` used `t("customers.import.title")`, `t("customers.import.clickOrDrag")`, and 8+ other i18n keys under the `customers.import.*` namespace, but none were defined in either `ar/sections/customers.json` or `en/sections/customers.json`. This caused the UI to display raw translation key strings instead of proper Arabic/English text.
+- **Resolution**: Added the complete `import` block with all 14 keys to both locale section files, then ran `merge-translations.js` to compile them into the main `translation.json` files.
+- **Files Modified**:
+  - `apps/frontend/src/locales/ar/sections/customers.json`
+  - `apps/frontend/src/locales/en/sections/customers.json`
+
+### [BUG FIX / UI] Customer List hasOrders Default Filter Bug
+- **Date**: 2026-07-16
+- **Root Cause**: In `CustomerList.tsx`, the default state of the query filter `hasOrders` was set to `false`. In the backend controller `customerController.js`, `hasOrders = false` is mapped to find customers with **no orders** (`where.orders = { none: {} }`), whereas omitting `hasOrders` (or setting it to `undefined`) yields no orders filter. This caused the general Customers list page (`/customers`) to default to displaying only prospects without orders, mirroring the Leads page.
+- **Resolution**: Removed `hasOrders: false` from the initial state of the `filters` object in `CustomerList.tsx` and modified the `handleToggleWithOrders` method to set it to `true` when checked and `undefined` (omitting it) when unchecked, allowing `/customers` to correctly load all customers by default.
+- **Files Modified**:
+  - `apps/frontend/src/pages/customers/CustomerList.tsx`
+
+### [BUG FIX / API] Dead Customer Service Client Functions (Segments & Stats)
+- **Date**: 2026-07-16
+- **Root Cause**: The frontend `customerService.ts` defined two functions: `getCustomerSegments` and `getCustomerStats` that were not actually registered in the backend Express router (`customerRoutes.js`).
+  - Requesting `/customers/segments` matched the `/:customerId` route, executing `getCustomerDetails` with a parameter value of `"segments"`, resulting in a `404` error ("العميل غير موجود").
+  - `stats` were already returned inline within the payload of `getCustomerDetails` rather than via a separate route.
+- **Resolution**: Removed the dead `getCustomerSegments` and `getCustomerStats` methods and their associated types from `customerService.ts`. Since their functionality was either dead or already bundled in other requests, this cleans up code and removes confusing non-implemented endpoints.
+- **Files Modified**:
+  - `apps/frontend/src/services/customerService.ts`
+
+### [BUG FIX / UI] Sidebar Layout Preference Reset & Company Override Mismatches
+- **Date**: 2026-07-14
+- **Root Cause**:
+  1. The `syncUserLayout` mount handler in `SidebarSettingsContext.tsx` used the nullish coalescing operator (`serverLayout ?? prev.sidebarLayout`). When the user explicitly reset their custom sidebar layout to null (meaning "use company default"), the server stored `null` successfully. However, on subsequent page reloads, the local context evaluated `null ?? prev.sidebarLayout` to the stale cached localStorage value, causing it to override the server's null layout and persist the cached layout indefinitely.
+  2. When the company admin updated the organization-level layout in `CompanySettings.tsx`, it did not clear the user's local layout override. Since `Layout.tsx` resolves layout as `userLayout || company.sidebarLayout`, the personal override masked the new company setting, making it appear stuck.
+- **Resolution**:
+  1. Updated `syncUserLayout` to check if `sidebarLayout` property is returned by the server (using `"sidebarLayout" in serverData`), and if so, overwriting localStorage and local state even if the value is explicitly `null`.
+  2. In `CompanySettings.tsx`, injected `useSidebarSettings` context and updated the company layout change handler to call `setUserLayout(null)` to clear any active per-user override, forcing immediate adoption of the company's new layout default.
+- **Files Modified**:
+  - `apps/frontend/src/contexts/SidebarSettingsContext.tsx`
+  - `apps/frontend/src/pages/settings/CompanySettings.tsx`
+
+### [BUG FIX / CONFIG] Sidebar Feature Gating & Mobile Navigation Defects
+- **Date**: 2026-07-14
+- **Root Cause**: Two key bugs were identified in the sidebar configuration and mobile rendering:
+  1. The `isFeatureEnabled` function in `sidebar.ts` ignored the passed `key` parameter and evaluated `currentCompany?.aiToolsEnabled === true` unconditionally, which broke custom feature flag validation rules.
+  2. Mobile main navigation items (rendered via `NavLink`) did not trigger `toggleSidebar`, keeping the drawer open after selecting a page.
+  3. Duplicate imports of `GiftIcon` and incorrect section headers caused redundant payload issues.
+- **Resolution**:
+  1. Fixed `isFeatureEnabled` in `sidebar.ts` by mapping the key parameter to a structured dictionary `FEATURE_FLAG_MAP`.
+  2. Extracted `NavLink` to file scope and passed `toggleSidebar` in mobile mode.
+  3. Cleaned up imports and section header comments.
+- **Files Modified**:
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/components/layout/sidebar/ClassicSidebar.tsx`
+
+### [BUG FIX / PIPELINE] AI Agent Sandbox Active Skill Context Trace Loss
+- **Date**: 2026-07-14
+- **Root Cause**: The Sandbox interface contains visual logs, active skill badges, and trace boxes designed to display which modular skill (such as `catalog-search` or `booking_packages`) was used to generate each response. However, `active_skill_context` was defined on `PipelineContext` in the Python `ai-service` but never actually populated during execution inside `skills_pipeline.py`. As a result, the backend always returned `activeSkill: null`, causing the sandbox UI to hide the active skill badge on chat replies and leave the trace logs blank.
+- **Resolution**: Updated `skills_pipeline.py` to identify the first executed skill tool call from `provider_response.tool_calls`, resolve its metadata from the registry, and assign its properties to `ctx.active_skill_context` at the beginning of the tool execution phase. Additionally, enhanced the frontend `ChatArea.tsx` to map the returned raw skill ID to its friendly localized `displayName` using the loaded agent skill profile details.
+- **Files Modified**:
+    - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
+    - `apps/frontend/src/pages/admin/ai-agent-sandbox/AIAgentSandboxPage.tsx`
+    - `apps/frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx`
+
+### [BUG FIX / TS COMPILATION] Facebook OAuth canReconnect Type Narrowing Error
+- **Date**: 2026-07-14
+- **Root Cause**: In `FacebookOAuth.tsx`, a redundant comparison `page.canReconnect === false` was checked inside a block already guarded by `page.canReconnect !== false`. Under strict TypeScript narrowing rules, this comparison was flagged as a type overlap error (TS2367) because `page.canReconnect` could not be `false` within that scope.
+- **Resolution**: Simplified the check to `disabled={loading}` since `page.canReconnect` is already verified not to be false.
+- **Files Modified**:
+    - `apps/frontend/src/pages/settings/FacebookOAuth.tsx`
+
+### [BUG FIX] WhatsApp Baileys Unsupported Wrapped Messages & Mock Test Errors
+- **Date**: 2026-07-14
+- **Root Cause**:
+    1. **Wrapped Messages Ignored in Extraction**: Baileys wraps ephemeral messages, view-once media, and captioned documents in structures like `ephemeralMessage`, `viewOnceMessage`, `viewOnceMessageV2`, etc. The `extractMessageContent()` function did not recursively unwrap these containers, leading it to return `null` and skip them entirely, resulting in message loss during receiving.
+    2. **Mock Missing `getSocketReadyState` in Tests**: The Jest test suite for message sending had a mock for `WhatsAppManager` that did not include `getSocketReadyState`. This caused tests to fail with `TypeError: WhatsAppManager.getSocketReadyState is not a function`.
+- **Resolution**:
+    1. **Unwrap Message Loops**: Added a nested wrapper unwrap loop at the start of `extractMessageContent` in `WhatsAppManager.js` to process viewOnce, ephemeral, and other wrapped messages recursively.
+    2. **Enhanced Test Mocks**: Added `getSocketReadyState: jest.fn(() => 1)` to the `WhatsAppManager` mock in `WhatsAppMessageHandler.sendTextSession.test.js`.
+- **Files Modified**:
+    - `apps/backend/services/whatsapp/WhatsAppManager.js`
+    - `apps/backend/tests/services/WhatsAppMessageHandler.sendTextSession.test.js`
+
+### [BUG FIX] WhatsApp Dead Socket Recovery & Pre-Send Connection Validation
+- **Date**: 2026-07-13
+- **Root Cause**:
+    1. **Lack of readyState verification**: The `isSendableBaileysSession()` validation checked only the memory session status and function presence but did not verify the WebSocket's `readyState` (which could be `0` (CONNECTING), `2` (CLOSING), or `3` (CLOSED)).
+    2. **Bypassed validation**: Media sending and utility functions (such as `sendImage`, `sendButtons`, etc.) completely bypassed the readiness checks of `getSendableBaileysSession` and directly accessed `WhatsAppManager.getSession()`, missing any connection state checks.
+- **Resolution**:
+    1. **Public readyState utility**: Exported `getSocketReadyState` publicly from `WhatsAppManager.js` to allow external service modules to query connection states.
+    2. **Integrated readyState checking**: Updated `isSendableBaileysSession()` and `getBaileysSessionReadinessReason()` in `WhatsAppMessageHandler.js` to query the socket's `readyState`. Any status other than `1` (OPEN) marks the session as unsendable.
+    3. **Standardized session retrieval**: Refactored all media, list, catalog, template, and button-sending handlers in `WhatsAppMessageHandler.js` to fetch sessions through `getSendableBaileysSession()` rather than directly referencing the cache.
+    4. **Automatic send retry**: Implemented active retry inside `sendText()`. If the first transmission attempt fails due to a dead socket, it catches the error, catches the error, calls `reconnectSession` with `forceRestart: true` to recreate the connection, waits for connectivity, and retries once.
+- **Files Modified**:
+    - `apps/backend/services/whatsapp/WhatsAppManager.js`
+    - `apps/backend/services/whatsapp/WhatsAppMessageHandler.js`
+
 ### [BUG FIX] AI Service Self-Review Judge — Conversation History Context Loss
 - **Date**: 2026-07-13
 - **Root Cause**: The self-review judge model was operating without the context of prior messages in the conversation. While `ContextAssembler.fetch_message_history` correctly retrieved the thread history from the database inside `_llm_call` (`skills_pipeline.py`), the resulting messages array was only used as a local variable. It was never written to `ctx.messages`, leaving `ctx.messages` empty. When the downstream `validate_reply.py` stage extracted conversation context via `_extract_conversation_context(ctx)`, it found an empty list and passed `(لا يوجد تاريخ محادثة)` to the judge.
@@ -91,6 +340,13 @@
   - `apps/backend/controller/whatsappController.js` — Added `correctAIMessage()` bridge function
   - `apps/backend/routes/whatsappRoutes.js` — Added `POST /messages/:whatsappMessageId/correct` route
   - `apps/frontend/src/pages/whatsapp/components/MessageBubble.tsx` — Added correction button + inline editor
+
+### [BUG FIX] WhatsApp Baileys Zombie Session False-Positive Force Relink
+- **Date**: 2026-07-14
+- **Root Cause**: When a WhatsApp connection transitions to `open` (OPEN state), the system performed a strict check for "zombie sessions" (sessions where `registered` is false). However, during the initial pairing sequence or immediately after connection establishment, Baileys' `creds.registered` flag may not be updated to `true` yet, even though the connection is fully authenticated and has a valid `sock.user` mapping. This caused the system to falsely identify active sessions as zombies, wiping their auth credentials and forcing a relink, which disconnected the device immediately after pairing.
+- **Resolution**: Updated the zombie session check in `WhatsAppManager.js` to verify that both `sd.creds.registered` is false AND `sock.user` is not defined (meaning there is no active user mapping). This ensures that successfully authenticated sessions are not wiped.
+- **Files Modified**:
+  - `apps/backend/services/whatsapp/WhatsAppManager.js`
 
 ### [BUG FIX] AI Correction Button Not Visible Across All Inbox Pages
 - **Date**: 2026-07-12
@@ -899,3 +1155,93 @@
   - `apps/ai-service/src/api/admin/guardrails.py`
   - `apps/ai-service/src/pipeline/stages/skills_pipeline.py`
 
+### [FIX] Facebook Inbox Space Waste & Mobile Layout Clutter
+- **Date**: 2026-07-13
+- **Description**: The Facebook Inbox page was suffering from severe space waste on medium screens (squeezing the active conversation window), and the drawer/overlays (notes and customer profile) cluttered small mobile screens by stretching to 100% width, blocking visibility and navigation.
+- **Root Cause**:
+  1. Both the conversation list column (`292px`) and customer profile column (`312px`) used fixed widths across all screen sizes above mobile, leaving only around `~400px` for the chat body on medium viewports (like `1024px`).
+  2. The page margins, column gap, and stage padding combined to waste ~38px of horizontal width.
+  3. Action buttons (Sound, notifications, order, block/unblock) in the CustomerProfile component rendered with full text labels and expanded sizes, causing them to wrap, collision, and clutter narrow mobile drawer displays.
+  4. Notes and profile overlays on mobile screens used `w-full`, fully covering the chat viewport.
+- **Resolution**:
+  1. Modified `apps/frontend/src/styles/index.css` to make column widths responsive (conversation list is `256px` and profile column is `268px` on medium screens, and gap/padding is reduced from `0.6rem` to `0.45rem`/`0.35rem` respectively).
+  2. Modified `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx` to set width of overlays to `w-[85%]` on mobile viewports, allowing the underlying chat thread to remain visible.
+  3. Integrated a responsive viewport resize listener in `apps/frontend/src/components/facebook-inbox/CustomerProfile/CustomerProfile.tsx` to detect mobile screens (< 768px). When active, it forces action buttons into a compact row, hiding textual labels (`sr-only`) and formatting them as icon-only buttons to fit cleanly without wrapping.
+  4. Resolved `onCopyConversationLink` declared-but-not-used compiler warning inside `CustomerProfile.tsx`.
+- **Files Modified**:
+  - `apps/frontend/src/styles/index.css`
+  - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx`
+  - `apps/frontend/src/components/facebook-inbox/CustomerProfile/CustomerProfile.tsx`
+
+### [FEATURE/FIX] Pause AI Agent Replies on a Per-Conversation Basis
+- **Date**: 2026-07-14 / 2026-03-09
+- **Description**: Enabled toggling the AI Agent automatic replies on/off for specific customer threads across all channels (WhatsApp, Facebook Messenger, Instagram, Telegram).
+- **Root Cause/Gap**: Previously, merchants could only enable/disable the AI Agent globally or per-session, but had no way to temporarily pause the AI replies for a single conversation when a human agent wanted to intervene manually.
+- **Resolution**:
+  1. Updated the `updateConversation` controller in `conversationCrudController.js` to accept and update the `aiEnabled` boolean field.
+  2. Integrated checking of `conversation.aiEnabled !== false` into all webhook processors:
+     - `WhatsAppInboundService.js` (Meta Cloud WhatsApp)
+     - `WhatsAppManager.js` (Baileys WhatsApp)
+     - `TelegramBotService.js` (Telegram)
+     - `allFunctions.js` (Facebook Messenger & Instagram)
+  3. Added the `toggleAi` function in `useConversationActions` hook on the frontend to update `aiEnabled` on the conversation.
+  4. Added a premium AI Toggle Button (🤖 icon) across all chat pages:
+     - `WhatsAppChat.tsx` (whatsapp-inbox and whatsapp layouts)
+     - `TelegramConversationsPro.tsx`
+     - `MessengerChat-final.tsx`
+     - `FacebookInbox.tsx`
+     - `InstagramInbox.tsx`
+     - `UnifiedInbox.tsx`
+- **Files Modified**:
+  - `apps/backend/controller/conversation/conversationCrudController.js`
+  - `apps/backend/services/whatsapp/WhatsAppInboundService.js`
+  - `apps/backend/services/whatsapp/WhatsAppManager.js`
+  - `apps/backend/services/TelegramBotService.js`
+  - `apps/backend/utils/allFunctions.js`
+  - `apps/frontend/src/hooks/inbox/useConversationActions.ts`
+  - `apps/frontend/src/pages/whatsapp-inbox/WhatsAppChat.tsx`
+  - `apps/frontend/src/pages/whatsapp/components/ChatWindow.tsx`
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx`
+  - `apps/frontend/src/pages/conversations/TelegramConversationsPro.tsx`
+  - `apps/frontend/src/pages/conversations/MessengerChat-final.tsx`
+  - `apps/frontend/src/pages/facebook-inbox/FacebookInbox.tsx`
+  - `apps/frontend/src/pages/instagram-inbox/InstagramInbox.tsx`
+  - `apps/frontend/src/pages/unified-inbox/UnifiedInbox.tsx`
+
+
+### [FIX] Company Dashboard Layout Gaps and Card Stretching Failures
+- **Date**: 2026-07-16 / 2026-03-09
+- **Description**: Resolved issues where dashboard widget cards did not stretch to fill the grid columns, causing large empty spaces and misalignments in RTL layouts.
+- **Root Cause**:
+  1. Card components (`AppWidgetCard.tsx` and `AppWidgetMini.tsx`) used `<button>` elements that lacked `w-full` class names, preventing them from stretching within their parent grid cells.
+  2. The parent grid container in `AppWidgetGrid.tsx` did not use `grid-flow-row-dense` or proper responsive column spanning wrappers for double-width widgets (`colSpan: 2`), resulting in large layout gaps on large viewport sizes.
+  3. Hardcoded text alignments (`text-right` instead of `text-start`) caused styling inconsistencies under different localization contexts.
+  4. TypeScript errors were present due to uncasted translations and unchecked array index references on metric variables.
+- **Resolution**:
+  1. Updated `AppWidgetGrid.tsx` to utilize `grid-flow-row-dense` and dynamically apply `sm:col-span-2 xl:col-span-2` wrapper classes around cards with `colSpan === 2`.
+  2. Applied `w-full` and `text-start` to `AppWidgetCard.tsx` and `AppWidgetMini.tsx` buttons to ensure correct alignment and stretching.
+  3. Added group hover animations (`hover:-translate-y-1.5`, `group-hover:scale-110`) for the cards and their icons to enhance premium UI aesthetics.
+  4. Fixed type check errors by safe-extracting array elements and casting translation returns to standard string types.
+- **Files Modified**:
+  - `apps/frontend/src/components/dashboard/widgets/AppWidgetGrid.tsx`
+  - `apps/frontend/src/components/dashboard/widgets/AppWidgetCard.tsx`
+  - `apps/frontend/src/components/dashboard/widgets/AppWidgetMini.tsx`
+
+
+### [SECURITY/FIX] WhatsApp Cloud Connect App Secret Protection & Dynamic PIN
+- **Date**: 2026-07-19 / 2026-03-09
+- **Description**: Secured the Meta OAuth credentials from git history, generated random registration PINs, and aligned Graph API versions.
+- **Root Cause**:
+  1. The Facebook App Client Secret (`appSecret`) was stored in clear text inside `apps/backend/data/facebook-oauth-config.json` and committed to the Git repository, presenting a security vulnerability.
+  2. The registration API call for WhatsApp numbers during Embedded Sign-up utilized a hardcoded PIN `'000000'`, which is not secure for production use.
+  3. The Graph API version defaults diverged between the frontend (`v25.0`) and backend (`v22.0`).
+- **Resolution**:
+  1. Replaced sensitive credentials in `facebook-oauth-config.json` with safe placeholders and added the file to `.gitignore` to prevent future check-ins of server configuration values. Provided `facebook-oauth-config.example.json` as a baseline template.
+  2. Modified the `facebookEmbeddedConnect` method in `whatsappController.js` to generate a random 6-digit PIN dynamically for phone registrations, and stored it inside the session record's `metadata` field.
+  3. Updated default `META_GRAPH_VERSION` to `'v25.0'` in `whatsappController.js` to align with the frontend and modern Graph API features.
+  4. Added dynamic autodiscovery fallback to `facebookEmbeddedConnect` to dynamically query and resolve `businessId`, `wabaId`, and `phoneNumberId` from Meta's Graph API when they are not passed by the frontend payload, avoiding 400 Bad Request failures.
+- **Files Modified**:
+  - `apps/backend/data/facebook-oauth-config.json`
+  - `apps/backend/data/facebook-oauth-config.example.json`
+  - `apps/backend/controller/whatsappController.js`
+  - `.gitignore`

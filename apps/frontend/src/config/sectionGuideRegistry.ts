@@ -130,7 +130,7 @@ export const sectionGuideRegistry: SectionGuideEntry[] = [
     ],
   },
   {
-    pathPrefix: "/whatsapp-inbox",
+    pathPrefix: "/whatsapp/routing",
     titleKey: "guides.whatsapp.title",
     descriptionKey: "guides.whatsapp.description",
     stepKeys: [

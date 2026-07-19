@@ -1051,46 +1051,24 @@ async function handleFacebookComment(commentData, pageId = null) {
 // NEW: Function to send a reply to a Facebook comment
 async function sendFacebookCommentReply(commentId, messageText, pageAccessToken) {
   try {
-    //console.log(`📤 [COMMENT-REPLY] Sending reply to comment ${commentId}: "${messageText}"`);
-
-    // For Facebook comment replies, we need to send the message as form data
-    const formData = new URLSearchParams();
-    formData.append('message', messageText);
-    formData.append('access_token', pageAccessToken);
-
     const url = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${commentId}/comments`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: formData.toString()
-    });
+    const response = await axios.post(url,
+      new URLSearchParams({ message: messageText, access_token: pageAccessToken }).toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 15000 }
+    );
 
-    const responseData = await response.json();
-
-    // Log the full response for debugging
-    //console.log(`📊 [COMMENT-REPLY] Full response:`, JSON.stringify(responseData, null, 2));
-
-    if (responseData.error) {
-      console.error('❌ [COMMENT-REPLY] Error sending comment reply:', responseData.error);
-
-      // Log additional debugging information
-      if (responseData.error.code === 200) {
-        console.error('💡 [COMMENT-REPLY] Code 200 usually means permission issues. Check if:');
-        console.error('   1. The page access token has pages_manage_engagement permission');
-        console.error('   2. The app is properly installed on the page');
-        console.error('   3. The page admin has granted the necessary permissions');
+    if (response.data?.error) {
+      console.error('❌ [COMMENT-REPLY] Error sending comment reply:', response.data.error);
+      if (response.data.error.code === 200) {
+        console.error('💡 [COMMENT-REPLY] Code 200 usually means permission issues');
       }
-
       return false;
     }
 
-    //console.log(`✅ [COMMENT-REPLY] Successfully sent comment reply. Response ID: ${responseData.id}`);
     return true;
   } catch (error) {
-    console.error('❌ [COMMENT-REPLY] Error sending comment reply:', error);
+    console.error('❌ [COMMENT-REPLY] Error sending comment reply:', error?.response?.data || error.message);
     return false;
   }
 }
@@ -2090,6 +2068,18 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
               console.log(`🤖 [AI-AUTOREPLY] Processing ${entries.length} debounced message(s) as one request`);
 
+              if (first.conversationId) {
+                const prisma = getSharedPrismaClient();
+                const conversation = await prisma.conversation.findUnique({
+                  where: { id: first.conversationId },
+                  select: { aiEnabled: true }
+                });
+                if (conversation && conversation.aiEnabled === false) {
+                  console.log(`🤖 [AI-AUTOREPLY] AI auto-reply disabled for conversation ${first.conversationId}`);
+                  return;
+                }
+              }
+
               // 3. Process through Python AI service
               const aiSdkClient = require('../services/aiSdkClient');
               const result = await aiSdkClient.sendChatMessage({
@@ -2277,33 +2267,26 @@ async function handleMessageDirectly(senderId, messageText, webhookEvent) {
 // NEW: Function to delete a Facebook comment
 async function deleteFacebookComment(commentId, pageAccessToken) {
   try {
-    //console.log(`🗑️ [COMMENT-DELETE] Deleting comment ${commentId} from Facebook`);
+    const url = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${commentId}`;
 
-    const url = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${commentId}?access_token=${pageAccessToken}`;
-
-    const response = await fetch(url, {
-      method: 'DELETE'
+    const response = await axios.delete(url, {
+      params: { access_token: pageAccessToken },
+      timeout: 15000,
     });
 
-    const responseData = await response.json();
-
-    // Log the full response for debugging
-    //console.log(`📊 [COMMENT-DELETE] Full response:`, JSON.stringify(responseData, null, 2));
-
-    if (responseData.error) {
-      console.error('❌ [COMMENT-DELETE] Error deleting comment:', responseData.error);
+    if (response.data?.error) {
+      console.error('❌ [COMMENT-DELETE] Error deleting comment:', response.data.error);
       return false;
     }
 
-    if (responseData.success === true) {
-      //console.log(`✅ [COMMENT-DELETE] Successfully deleted comment ${commentId} from Facebook`);
+    if (response.data?.success === true) {
       return true;
     } else {
-      console.error('❌ [COMMENT-DELETE] Unexpected response format:', responseData);
+      console.error('❌ [COMMENT-DELETE] Unexpected response format:', response.data);
       return false;
     }
   } catch (error) {
-    console.error('❌ [COMMENT-DELETE] Error deleting comment:', error);
+    console.error('❌ [COMMENT-DELETE] Error deleting comment:', error?.response?.data || error.message);
     return false;
   }
 }
@@ -2311,33 +2294,21 @@ async function deleteFacebookComment(commentId, pageAccessToken) {
 // NEW: Function to hide a Facebook comment
 async function hideFacebookComment(commentId, pageAccessToken) {
   try {
-    //console.log(`🔒 [COMMENT-HIDE] Hiding comment ${commentId}`);
-
-    const formData = new URLSearchParams();
-    formData.append('is_hidden', 'true');
-    formData.append('access_token', pageAccessToken);
-
     const url = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${commentId}`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: formData.toString()
-    });
+    const response = await axios.post(url,
+      new URLSearchParams({ is_hidden: 'true', access_token: pageAccessToken }).toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 15000 }
+    );
 
-    const responseData = await response.json();
-
-    if (responseData.error) {
-      console.error('❌ [COMMENT-HIDE] Error hiding comment:', responseData.error);
+    if (response.data?.error) {
+      console.error('❌ [COMMENT-HIDE] Error hiding comment:', response.data.error);
       return false;
     }
 
-    //console.log(`✅ [COMMENT-HIDE] Successfully hidden comment ${commentId}`);
     return true;
   } catch (error) {
-    console.error('❌ [COMMENT-HIDE] Error hiding comment:', error);
+    console.error('❌ [COMMENT-HIDE] Error hiding comment:', error?.response?.data || error.message);
     return false;
   }
 }
@@ -2710,6 +2681,11 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
                 detail: 'high'
               })).filter(a => a.url)
             : undefined;
+
+          if (conversation && conversation.aiEnabled === false) {
+            console.log('🤖 [IG-AI-AUTOREPLY] AI auto-reply disabled for conversation');
+            return;
+          }
 
           const result = await aiSdkClient.sendChatMessage({
             companyId: customer.companyId,

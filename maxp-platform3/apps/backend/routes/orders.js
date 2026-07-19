@@ -2259,6 +2259,27 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           }
         });
 
+        // 🧾 Auto Invoice Generation (background)
+        (async () => {
+          try {
+            const prisma = getSharedPrismaClient();
+            const invoiceSettings = await prisma.orderInvoiceSettings.findUnique({
+              where: { companyId: order.companyId }
+            });
+
+            if (invoiceSettings && invoiceSettings.autoGenerate && invoiceSettings.autoGenerateOnStatus) {
+              const targetStatuses = invoiceSettings.autoGenerateOnStatus.split(',').map(s => s.trim().toUpperCase());
+              if (targetStatuses.includes(statusUpper) || targetStatuses.includes(mappedStatus) || targetStatuses.includes('*')) {
+                const { generateInvoiceForOrder } = require('../services/orderInvoiceService');
+                await generateInvoiceForOrder(order.id, userId);
+                console.log(`✅ [INVOICE-AUTO] Auto-generated invoice for order ${orderNumber} on preparation status ${statusUpper}`);
+              }
+            }
+          } catch (invoiceError) {
+            console.error('⚠️ [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
+          }
+        })();
+
         return res.json({
           success: true,
           message: 'تم تحديث حالة التجهيز بنجاح',

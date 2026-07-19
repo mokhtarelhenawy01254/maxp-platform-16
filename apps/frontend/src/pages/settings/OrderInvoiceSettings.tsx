@@ -68,6 +68,8 @@ type InvoiceSettings = {
   primaryColor: string;
   secondaryColor: string;
   fontFamily: string;
+  showBarcodeOrderCode: boolean;
+  showBarcodeShippingCode: boolean;
 };
 
 type SlipSettings = {
@@ -119,6 +121,8 @@ const defaultInvoice: InvoiceSettings = {
   primaryColor: "#4F46E5",
   secondaryColor: "#6B7280",
   fontFamily: "Arial",
+  showBarcodeOrderCode: true,
+  showBarcodeShippingCode: true,
 };
 
 const defaultSlip: SlipSettings = {
@@ -149,6 +153,11 @@ const invoiceFlags = [
   ["showOrderItems", "عرض تفاصيل المنتجات"],
 ] as const;
 
+const barcodeFlags = [
+  ["showBarcodeOrderCode", "باركود رقم الطلب"],
+  ["showBarcodeShippingCode", "باركود كود الشحن"],
+] as const;
+
 const slipFlags = [
   ["showCompanyName", "إظهار اسم الشركة"],
   ["showCustomerEmail", "إظهار بريد العميل"],
@@ -169,6 +178,11 @@ const statuses = [
   "SHIPPED",
   "DELIVERED",
   "COMPLETED",
+  "PENDING_PREPARATION",
+  "PREPARING",
+  "QUALITY_CHECK",
+  "PACKAGED",
+  "READY_TO_SHIP",
 ] as const;
 
 const labelForStatus = (status: string) =>
@@ -180,6 +194,11 @@ const labelForStatus = (status: string) =>
       SHIPPED: "تم الشحن",
       DELIVERED: "تم التوصيل",
       COMPLETED: "مكتمل",
+      PENDING_PREPARATION: "في انتظار التجهيز",
+      PREPARING: "قيد التجهيز",
+      QUALITY_CHECK: "فحص الجودة",
+      PACKAGED: "تم التغليف",
+      READY_TO_SHIP: "جاهز للشحن",
     } as Record<string, string>
   )[status] || status;
 
@@ -300,7 +319,7 @@ const orientationLabelMap: Record<
   landscape: "أفقي",
 };
 
-const OrderInvoiceSettings: React.FC = () => {
+const OrderInvoiceSettings: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded = false }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -451,6 +470,9 @@ const OrderInvoiceSettings: React.FC = () => {
   }`;
 
   if (loading) {
+    if (isEmbedded) {
+      return <div className="p-4 text-center text-slate-500">جاري تحميل الإعدادات...</div>;
+    }
     return (
       <SettingsLoadingState
         title="جاري تحميل مركز الفواتير والطباعة..."
@@ -459,29 +481,31 @@ const OrderInvoiceSettings: React.FC = () => {
     );
   }
 
-  return (
-    <SettingsPageShell>
-      <SettingsPageHero
-        badgeIcon={Sparkles}
-        badgeLabel="منصة الفاتورة والإخراج"
-        title="مركز الفواتير والطباعة"
-        description="صفحة تشغيل موحدة تضبط التوليد الآلي للفواتير، إعدادات قالب الطباعة، والنسخة الداخلية الخاصة بورقة تجهيز الطلبات."
-        summaryItems={[
-          { label: "الفاتورة", value: invoiceSummary },
-          { label: "ورقة التجهيز", value: slipSummary },
-          {
-            label: "البريد التلقائي",
-            value: invoice.autoEmailToCustomer ? "مفعل" : "متوقف",
-          },
-          {
-            label: "التوليد التلقائي",
-            value: invoice.autoGenerate ? "يعمل" : "متوقف",
-          },
-        ]}
-        gradientClassName="bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_36%),linear-gradient(135deg,_rgba(248,250,252,0.98),_rgba(239,246,255,0.9))]"
-      />
+  const content = (
+    <>
+      {!isEmbedded && (
+        <SettingsPageHero
+          badgeIcon={Sparkles}
+          badgeLabel="منصة الفاتورة والإخراج"
+          title="مركز الفواتير والطباعة"
+          description="صفحة تشغيل موحدة تضبط التوليد الآلي للفواتير، إعدادات قالب الطباعة، والنسخة الداخلية الخاصة بورقة تجهيز الطلبات."
+          summaryItems={[
+            { label: "الفاتورة", value: invoiceSummary },
+            { label: "ورقة التجهيز", value: slipSummary },
+            {
+              label: "البريد التلقائي",
+              value: invoice.autoEmailToCustomer ? "مفعل" : "متوقف",
+            },
+            {
+              label: "التوليد التلقائي",
+              value: invoice.autoGenerate ? "يعمل" : "متوقف",
+            },
+          ]}
+          gradientClassName="bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_36%),linear-gradient(135deg,_rgba(248,250,252,0.98),_rgba(239,246,255,0.9))]"
+        />
+      )}
 
-      <div className="space-y-6 px-6 py-6">
+      <div className={isEmbedded ? "" : "space-y-6 px-6 py-6"}>
         <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-slate-50/70 p-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="grid gap-3 sm:grid-cols-3 xl:flex xl:flex-wrap">
             <Button
@@ -824,6 +848,34 @@ const OrderInvoiceSettings: React.FC = () => {
                         key={key}
                         title={label}
                         description="يمكنك إيقاف هذا الجزء مؤقتًا دون تغيير باقي القالب."
+                        checked={invoice[key]}
+                        onCheckedChange={(checked) =>
+                          setInvoice((currentInvoice) => ({
+                            ...currentInvoice,
+                            [key]: checked,
+                          }))
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  <Separator className="my-2" />
+
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      إعدادات الباركود
+                    </p>
+                    <p className="text-xs leading-5 text-slate-400">
+                      تحكم في إظهار الباركود داخل الفاتورة المطبوعة.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {barcodeFlags.map(([key, label]) => (
+                      <ToggleCard
+                        key={key}
+                        title={label}
+                        description="حدد ما إذا كان هذا الباركود سيظهر في الفاتورة."
                         checked={invoice[key]}
                         onCheckedChange={(checked) =>
                           setInvoice((currentInvoice) => ({
@@ -1248,8 +1300,10 @@ const OrderInvoiceSettings: React.FC = () => {
             </TabsContent>
           </Tabs>
       </div>
-    </SettingsPageShell>
+    </>
   );
+
+  return isEmbedded ? content : <SettingsPageShell>{content}</SettingsPageShell>;
 };
 
 export default OrderInvoiceSettings;

@@ -16,23 +16,31 @@ class LeadFollowUpService {
         return [{ delayHours: settings.delayHours ?? 24, message: settings.message ?? '', mediaUrl: settings.mediaUrl ?? null }];
     }
 
+    _getHourInTimezone(tz) {
+        if (!tz || tz === 'UTC') return new Date().getUTCHours();
+        try {
+            return parseInt(new Date().toLocaleTimeString('en-US', { timeZone: tz, hour12: false }), 10);
+        } catch {
+            return new Date().getUTCHours();
+        }
+    }
+
     _isWithinBusinessHours(settings) {
         if (settings.businessHourStart == null || settings.businessHourEnd == null) return true;
-        const now = new Date();
-        const hour = now.getUTCHours();
+        const hour = this._getHourInTimezone(settings.timezone);
         if (settings.businessHourStart <= settings.businessHourEnd) {
             return hour >= settings.businessHourStart && hour < settings.businessHourEnd;
         }
-        //跨 midnight (e.g. 22-6)
         return hour >= settings.businessHourStart || hour < settings.businessHourEnd;
     }
 
     _nextBusinessHourDate(settings) {
         if (settings.businessHourStart == null) return new Date();
-        const now = new Date();
-        const next = new Date(now);
-        next.setUTCHours(settings.businessHourStart, 0, 0, 0);
-        if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+        const next = new Date();
+        if (next.getHours() >= settings.businessHourStart) {
+            next.setDate(next.getDate() + 1);
+        }
+        next.setHours(settings.businessHourStart, 0, 0, 0);
         return next;
     }
 
@@ -53,6 +61,46 @@ class LeadFollowUpService {
             if (steps.length === 0 || !steps[0].message) {
                 console.log(`[LEAD-FOLLOWUP] No message content configured for company ${companyId}`);
                 return;
+            }
+
+            // Check lead category — autoFollowUp + triggerFlowId
+            const contact = await this.prisma.whatsAppContact.findUnique({
+                where: { id: whatsappContactId },
+                select: { leadCategoryId: true }
+            });
+            if (contact?.leadCategoryId) {
+                const category = await this.prisma.leadCategory.findUnique({
+                    where: { id: contact.leadCategoryId },
+                    select: { autoFollowUp: true, triggerFlowId: true }
+                });
+                if (category && !category.autoFollowUp) {
+                    console.log(`[LEAD-FOLLOWUP] Contact ${whatsappContactId} category has autoFollowUp disabled, skipping`);
+                    return;
+                }
+                if (category?.triggerFlowId) {
+                    const journeyService = require('./WhatsAppJourneyService');
+                    await journeyService.enrollFromCategory(companyId, customerId, whatsappContactId, contact.leadCategoryId);
+                    return;
+                }
+                // التصنيف ملوش flow مخصص → شوف لو فيه flow عام
+                const generalFlow = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                    where: { companyId, isGeneral: true, isEnabled: true }
+                });
+                if (generalFlow) {
+                    const journeyService = require('./WhatsAppJourneyService');
+                    await journeyService.enrollInGeneralFlow(companyId, customerId, whatsappContactId);
+                    return;
+                }
+            } else {
+                // العميل مالوش تصنيف → شوف لو فيه flow عام
+                const generalFlow = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                    where: { companyId, isGeneral: true, isEnabled: true }
+                });
+                if (generalFlow) {
+                    const journeyService = require('./WhatsAppJourneyService');
+                    await journeyService.enrollInGeneralFlow(companyId, customerId, whatsappContactId);
+                    return;
+                }
             }
 
             const existing = await this.prisma.leadFollowUpEnrollment.findFirst({

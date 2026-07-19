@@ -1,37 +1,25 @@
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  CurrencyDollarIcon,
-  ShoppingCartIcon,
-  UserGroupIcon,
-  CubeIcon,
-  EyeIcon,
-  ChartBarIcon,
-  ExclamationTriangleIcon,
-  ArchiveBoxXMarkIcon,
-} from "@heroicons/react/24/outline";
-import { cn } from "../../lib/utils";
+import { EyeIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { useDashboardLiveSync } from "../../hooks/useDashboardLiveSync";
-import { MetricCard } from "../../components/dashboard/MetricCard";
+import { useWidgetData } from "../../hooks/useWidgetData";
 import { QuickActions } from "../../components/dashboard/QuickActions";
-import { RevenueTrendChart, TopProductsPanel, DashboardSkeleton, InsightsPanel, OnboardingChecklist, DashboardExportMenu } from ".";
+import {
+  AppWidgetGrid,
+  getWidgetsForApps,
+  type WidgetDefinition,
+} from "../../components/dashboard/widgets";
+import { DashboardStatusBar } from "../../components/dashboard/DashboardStatusBar";
+import { DashboardActivityFeed } from "../../components/dashboard/DashboardActivityFeed";
+import { DashboardAlertsHub } from "../../components/dashboard/DashboardAlertsHub";
+import { DashboardSkeleton, OnboardingChecklist, DashboardExportMenu } from ".";
+import { SetupProgressBanner } from "./SetupProgressBanner";
 import DateRangeToolbar from "./DateRangeToolbar";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
-
-function pctDelta(current: number | null | undefined, prev: number | null | undefined): { value: string; positive: boolean } | undefined {
-  const c = current ?? 0;
-  const p = prev ?? 0;
-  if (p === 0 && c === 0) return undefined;
-  if (p === 0) return c > 0 ? { value: "+100%", positive: true } : undefined;
-  const pct = ((c - p) / p) * 100;
-  if (Math.abs(pct) < 0.5) return undefined;
-  const sign = pct > 0 ? "+" : "";
-  return { value: `${sign}${pct.toFixed(1)}%`, positive: pct > 0 };
-}
 
 const PERIOD_LABEL_MAP: Record<string, string> = {
   "today": "companyDashboard.presets.today",
@@ -44,40 +32,6 @@ const PERIOD_LABEL_MAP: Record<string, string> = {
   "thisYear": "companyDashboard.presets.thisYear",
 };
 
-function formatLargeNumber(value: number | null | undefined): string {
-  if (value == null) return "—";
-  if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + "M";
-  if (value >= 1_000) return (value / 1_000).toFixed(1) + "K";
-  return value.toLocaleString();
-}
-
-function formatCurrency(value: number | null | undefined, currency?: string | null): string {
-  if (value == null) return "—";
-  const symbols: Record<string, string> = { EGP: "E£", SAR: "﷼", USD: "$", EUR: "€" };
-  const sym = currency ? symbols[currency] ?? currency : "";
-  return sym + value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function useOnScreen(ref: React.RefObject<HTMLElement | null>) {
-  const [isVisible, setIsVisible] = useState(true);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (el.getBoundingClientRect().top < window.innerHeight) {
-      setIsVisible(true);
-      return;
-    }
-    setIsVisible(false);
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ref]);
-  return isVisible;
-}
-
 function isNewCompany(dashboard: { company?: unknown; counts?: { orders?: number | null; products?: number | null; customers?: number | null } | null; financials?: { totalRevenue?: number | null } | null } | undefined): boolean {
   if (!dashboard || !("counts" in dashboard)) return true;
   const { counts, financials } = dashboard as { counts?: { orders?: number | null; products?: number | null; customers?: number | null } | null; financials?: { totalRevenue?: number | null } | null };
@@ -89,7 +43,7 @@ function isNewCompany(dashboard: { company?: unknown; counts?: { orders?: number
 }
 
 function toISODate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return date.toISOString().slice(0, 10);
 }
 
 export default function MainDashboardPage() {
@@ -97,9 +51,6 @@ export default function MainDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const activeApps: string[] = user?.company?.activeApps ?? [];
-  const hasEcommerce = activeApps.some((a) => a.toLowerCase() === "ecommerce-basic");
-  const hasInbox = activeApps.some((a) => a.toLowerCase() === "unified-inbox");
-  const hasAI = activeApps.some((a) => a.toLowerCase() === "ai-chat-basic");
   const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
 
   const [period, setPeriod] = useState<PeriodPreset>("today");
@@ -124,7 +75,7 @@ export default function MainDashboardPage() {
       case "thisWeek": {
         start = new Date(end);
         const dayOfWeek = start.getDay();
-        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday start
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
         start.setDate(start.getDate() - diff);
         break;
       }
@@ -146,34 +97,29 @@ export default function MainDashboardPage() {
 
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardData(dateParams);
   const live = useDashboardLiveSync(!isLoading && !isError);
+  const { data: widgetAppData } = useWidgetData(!isLoading && !isError);
 
   const dashboard = data?.data;
-  const company = dashboard?.company;
-  const financials = dashboard?.financials;
-  const counts = dashboard?.counts;
-  const metrics = dashboard?.metrics;
-  const orderHealth = dashboard?.orderHealth;
-  const recentActivity = dashboard?.recentActivity;
-  const topProducts = dashboard?.topProducts ?? [];
-  const inventory = dashboard?.inventory;
-  const prev = dashboard?.previousPeriod;
   const isEmpty = !isLoading && !isError && isNewCompany(dashboard);
+  const isRtl = i18n.language === "ar";
+  const activeWidgets = useMemo(() => getWidgetsForApps(activeApps), [activeApps]);
 
-  const revenueHistory = dashboard?.revenueHistory ?? [];
+  const getWidgetData = useCallback(
+    (widget: WidgetDefinition) => widget.fetchData(dashboard, widgetAppData?.[widget.id]),
+    [dashboard, widgetAppData],
+  );
 
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartVisible = useOnScreen(chartRef);
-
+  const _t = t as (key: string) => string;
   const presetsList = useMemo(() => [
-    { id: "today", label: t("companyDashboard.presets.today") },
-    { id: "yesterday", label: t("companyDashboard.presets.yesterday") },
-    { id: "7d", label: t("companyDashboard.presets.last7Days") },
-    { id: "30d", label: t("companyDashboard.presets.last30Days") },
-    { id: "90d", label: t("companyDashboard.presets.last90Days") },
-    { id: "thisWeek", label: t("companyDashboard.presets.thisWeek") },
-    { id: "thisMonth", label: t("companyDashboard.presets.thisMonth") },
-    { id: "thisYear", label: t("companyDashboard.presets.thisYear") },
-    { id: "custom", label: t("companyDashboard.presets.custom") },
+    { id: "today", label: _t("companyDashboard.presets.today") },
+    { id: "yesterday", label: _t("companyDashboard.presets.yesterday") },
+    { id: "7d", label: _t("companyDashboard.presets.last7Days") },
+    { id: "30d", label: _t("companyDashboard.presets.last30Days") },
+    { id: "90d", label: _t("companyDashboard.presets.last90Days") },
+    { id: "thisWeek", label: _t("companyDashboard.presets.thisWeek") },
+    { id: "thisMonth", label: _t("companyDashboard.presets.thisMonth") },
+    { id: "thisYear", label: _t("companyDashboard.presets.thisYear") },
+    { id: "custom", label: _t("companyDashboard.presets.custom") },
   ], [t]);
 
   const now = useMemo(() => new Date(), []);
@@ -225,14 +171,13 @@ export default function MainDashboardPage() {
   }
 
   return (
-    <div
-      className="space-y-6"
-      style={{ viewTransitionName: "main-dashboard" }}
-    >
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div className="space-y-6" style={{ viewTransitionName: "main-dashboard" }}>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            {company?.name ? t("companyDashboard.welcome", { name: company.name }) : t("companyDashboard.title")}
+          <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
+            {dashboard?.company?.name
+              ? t("companyDashboard.welcome", { name: dashboard.company.name })
+              : t("companyDashboard.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             {now.toLocaleDateString(locale, {
@@ -246,291 +191,61 @@ export default function MainDashboardPage() {
           end={customEnd}
           presets={presetsList}
           selectedFilterId={period}
-          currentRangeLabel={PERIOD_LABEL_MAP[period] ? t(PERIOD_LABEL_MAP[period]) : t("companyDashboard.presets.custom")}
+          currentRangeLabel={PERIOD_LABEL_MAP[period] ? _t(PERIOD_LABEL_MAP[period]!) : _t("companyDashboard.presets.custom")}
           currentRangeMeta=""
-          customPresetLabel={t("companyDashboard.presets.custom")}
+          customPresetLabel={_t("companyDashboard.presets.custom")}
           showCustomRangeInputs={period === "custom"}
           isRefreshing={isFetching}
-          fromLabel={t("companyDashboard.from")}
-          toLabel={t("companyDashboard.to")}
-          rangeLabel={t("companyDashboard.dateRangeLabel")}
-          refreshLabel={t("companyDashboard.refresh")}
+          fromLabel={_t("companyDashboard.from")}
+          toLabel={_t("companyDashboard.to")}
+          rangeLabel={_t("companyDashboard.dateRangeLabel")}
+          refreshLabel={_t("companyDashboard.refresh")}
           onStartChange={setCustomStart}
           onEndChange={setCustomEnd}
-          onSelectFilter={(v) => setPeriod(v as PeriodPreset)}
+          onSelectFilter={(v: string) => setPeriod(v as PeriodPreset)}
           onRefresh={() => refetch()}
         />
         {dashboard && (
           <DashboardExportMenu
             dashboard={dashboard}
-            periodLabel={PERIOD_LABEL_MAP[period] ? t(PERIOD_LABEL_MAP[period]) : t("companyDashboard.presets.custom")}
+            periodLabel={PERIOD_LABEL_MAP[period] ? _t(PERIOD_LABEL_MAP[period]!) : _t("companyDashboard.presets.custom")}
             disabled={isFetching}
           />
         )}
       </div>
 
-      {live.isConnected && (
-        <div className="flex items-center gap-3 flex-wrap">
-          <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-            style={{
-              background: live.liveCount > 0 ? "color-mix(in srgb, var(--color-success) 14%, transparent)" : "color-mix(in srgb, var(--color-border) 20%, transparent)",
-              color: live.liveCount > 0 ? "var(--color-success)" : "var(--color-muted-foreground)",
-            }}
-            title={t("companyDashboard.live.connected")}
-          >
-            <span className="relative flex h-2 w-2">
-              {live.liveCount > 0 && (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "var(--color-success)" }} />
-              )}
-              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: live.liveCount > 0 ? "var(--color-success)" : "var(--color-muted-foreground)" }} />
-            </span>
-            {t("companyDashboard.live.label")}{live.liveCount > 0 ? ` · ${live.liveCount}` : ""}
-          </span>
-          {live.activities.slice(0, 3).map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => a.href && navigate(a.href)}
-              className="text-xs px-2 py-1 rounded-full transition-colors hover:underline"
-              style={{ background: "color-mix(in srgb, var(--color-border) 22%, transparent)", color: "var(--color-foreground)" }}
-            >
-              {a.text}
-            </button>
-          ))}
-        </div>
+      {dashboard && (
+        <DashboardStatusBar dashboard={dashboard} isRtl={isRtl} activeApps={activeApps} />
       )}
 
-      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div
-          className={cn(
-            "lg:col-span-2 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-            chartVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
-          )}
-        >
-          <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
-            <RevenueTrendChart
-              data={revenueHistory}
-              title={t("companyDashboard.financials.revenue")}
-              revenueLabel={t("companyDashboard.financials.revenue")}
-              ordersLabel={t("companyDashboard.rangeStats.orders")}
-              emptyLabel={t("companyDashboard.noTimelineData")}
-              formatRevenue={(v) => formatCurrency(v, company?.currency)}
-            />
-          </div>
-        </div>
-        <div className="space-y-4">
-          <TopProductsPanel
-            items={topProducts}
-            title={t("companyDashboard.rangeStats.topProducts")}
-            emptyLabel={t("companyDashboard.rangeStats.noTopProducts")}
-            itemsUnitLabel={t("companyDashboard.rangeStats.itemsUnit")}
-            formatCount={formatLargeNumber}
-          />
-
-          <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
-              {t("companyDashboard.activity.title")}
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2.5 px-3 rounded-xl" style={{ background: "color-mix(in srgb, var(--color-border) 30%, transparent)" }}>
-                <span className="text-xs text-muted-foreground">{t("companyDashboard.activity.newCustomers")}</span>
-                <span className="text-sm font-bold tabular-nums text-foreground">{formatLargeNumber(recentActivity?.newCustomers)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2.5 px-3 rounded-xl" style={{ background: "color-mix(in srgb, var(--color-border) 30%, transparent)" }}>
-                <span className="text-xs text-muted-foreground">{t("companyDashboard.stats.orders")}</span>
-                <span className="text-sm font-bold tabular-nums text-foreground">{formatLargeNumber(orderHealth?.newOrders)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2.5 px-3 rounded-xl" style={{ background: "color-mix(in srgb, var(--color-border) 30%, transparent)" }}>
-                <span className="text-xs text-muted-foreground">{t("companyDashboard.activity.newConversations")}</span>
-                <span className="text-sm font-bold tabular-nums text-foreground">{formatLargeNumber(recentActivity?.newConversations)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          variant="trend"
-          label={t("companyDashboard.metrics.totalOrders")}
-          value={formatLargeNumber(counts?.orders)}
-          icon={ShoppingCartIcon}
-          isRtl={i18n.language === "ar"}
-          trend={pctDelta(orderHealth?.trackedOrders, prev?.trackedOrders)}
-          onClick={() => navigate("/orders")}
-        />
-        <MetricCard
-          variant="bar"
-          label={t("companyDashboard.metrics.totalCustomers")}
-          value={formatLargeNumber(counts?.customers)}
-          progress={counts?.customers ? 65 : 0}
-          isRtl={i18n.language === "ar"}
-          onClick={() => navigate("/customers")}
-        />
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.stats.products")}
-          value={formatLargeNumber(counts?.products)}
-          icon={CubeIcon}
-          isRtl={i18n.language === "ar"}
-          onClick={() => navigate("/products")}
-        />
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.rangeStats.storeVisits")}
-          value={formatLargeNumber(metrics?.visits)}
-          icon={EyeIcon}
-          isRtl={i18n.language === "ar"}
-          trend={pctDelta(metrics?.visits, prev?.visits)}
-          onClick={() => navigate("/analytics/orders")}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.financials.profit")}
-          value={formatCurrency(financials?.grossProfit, company?.currency)}
-          icon={ChartBarIcon}
-          isRtl={i18n.language === "ar"}
-          trend={pctDelta(financials?.grossProfit, prev?.revenue)}
-          onClick={() => navigate("/analytics/orders/revenue")}
-        />
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.financials.aov")}
-          value={formatCurrency(financials?.aov, company?.currency)}
-          icon={CurrencyDollarIcon}
-          isRtl={i18n.language === "ar"}
-          trend={pctDelta(financials?.aov, prev?.aov)}
-          onClick={() => navigate("/analytics/orders")}
-        />
-      </div>
+      {dashboard && !isEmpty && <SetupProgressBanner dashboard={dashboard} />}
 
       <QuickActions
         activeApps={activeApps}
         badges={{
-          orders: orderHealth?.openOrders ?? 0,
-          inbox: recentActivity?.newConversations ?? 0,
-          products: (inventory?.lowStockCount ?? 0) + (inventory?.outOfStockCount ?? 0),
+          orders: dashboard?.orderHealth?.openOrders ?? 0,
+          inbox: dashboard?.recentActivity?.newConversations ?? 0,
+          products: (dashboard?.inventory?.lowStockCount ?? 0) + (dashboard?.inventory?.outOfStockCount ?? 0),
         }}
       />
 
-      {inventory && (inventory.lowStockCount > 0 || inventory.outOfStockCount > 0) && (
-        <div
-          className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm"
-          style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}
-        >
-          <h3 className="text-sm font-semibold text-foreground mb-4">
-            {t("companyDashboard.sections.inventoryAlerts")}
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {inventory.outOfStockCount > 0 && (
-              <button
-                type="button"
-                onClick={() => navigate("/products?filter=out-of-stock")}
-                className="flex items-center gap-3 p-3 rounded-xl text-right transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                style={{ background: "color-mix(in srgb, var(--color-destructive) 12%, transparent)" }}
-              >
-                <div className="p-2 rounded-lg shrink-0" style={{ background: "color-mix(in srgb, var(--color-destructive) 18%, transparent)" }}>
-                  <ArchiveBoxXMarkIcon className="w-5 h-5" style={{ color: "var(--color-destructive)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs text-muted-foreground block">
-                    {t("companyDashboard.inventory.outOfStock")}
-                  </span>
-                  <span className="text-lg font-bold tabular-nums" style={{ color: "var(--color-destructive)" }}>
-                    {formatLargeNumber(inventory.outOfStockCount)}
-                  </span>
-                </div>
-              </button>
-            )}
-            {inventory.lowStockCount > 0 && (
-              <button
-                type="button"
-                onClick={() => navigate("/products?filter=low-stock")}
-                className="flex items-center gap-3 p-3 rounded-xl text-right transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                style={{ background: "color-mix(in srgb, var(--color-warning) 12%, transparent)" }}
-              >
-                <div className="p-2 rounded-lg shrink-0" style={{ background: "color-mix(in srgb, var(--color-warning) 18%, transparent)" }}>
-                  <ExclamationTriangleIcon className="w-5 h-5" style={{ color: "var(--color-warning)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs text-muted-foreground block">
-                    {t("companyDashboard.inventory.lowStock")}
-                  </span>
-                  <span className="text-lg font-bold tabular-nums" style={{ color: "var(--color-warning)" }}>
-                    {formatLargeNumber(inventory.lowStockCount)}
-                  </span>
-                </div>
-              </button>
-            )}
-          </div>
+      <AppWidgetGrid
+        widgets={activeWidgets}
+        getData={getWidgetData}
+        companyId={user?.companyId}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {dashboard && (
+          <DashboardActivityFeed
+            dashboard={dashboard}
+            liveActivities={live.activities}
+            liveCount={live.liveCount}
+          />
+        )}
+        <div className="lg:col-span-2">
+          <DashboardAlertsHub dashboard={dashboard} />
         </div>
-      )}
-
-      {dashboard && (
-        <InsightsPanel dashboard={dashboard} onNavigate={(href) => navigate(href)} />
-      )}
-
-      <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
-        <h3 className="text-sm font-semibold text-foreground mb-4">
-          {t("companyDashboard.sections.operations")}
-        </h3>
-        <div className="space-y-3">
-          <OrderHealthRow
-            label={t("companyDashboard.metrics.confirmedOrders")}
-            value={orderHealth?.confirmedOrders}
-            total={orderHealth?.trackedOrders}
-            accent="var(--color-success)"
-          />
-          <OrderHealthRow
-            label={t("companyDashboard.metrics.cancelledOrders")}
-            value={orderHealth?.cancelledOrders}
-            total={orderHealth?.trackedOrders}
-            accent="var(--color-destructive)"
-          />
-          <OrderHealthRow
-            label={t("companyDashboard.metrics.returnedOrders")}
-            value={orderHealth?.returnedOrders}
-            total={orderHealth?.trackedOrders}
-            accent="var(--color-warning)"
-          />
-          <div className="pt-2 border-t border-border/30">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{t("companyDashboard.rangeStats.conversionRate")}</span>
-              <span className="text-sm font-bold text-foreground tabular-nums">
-                {metrics?.conversionRate != null ? `${metrics.conversionRate}%` : "—"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OrderHealthRow({ label, value, total, accent }: {
-  label: string;
-  value: number | null | undefined;
-  total: number | null | undefined;
-  accent: string;
-}) {
-  const pct = total && value ? Math.min((value / total) * 100, 100) : 0;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-sm font-bold tabular-nums text-foreground">
-          {value ?? 0} <span className="text-xs font-normal text-muted-foreground">({pct.toFixed(0)}%)</span>
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "color-mix(in srgb, var(--color-border) 38%, transparent)" }}>
-        <div
-          className="h-full rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-          style={{ width: `${pct}%`, background: `color-mix(in srgb, ${accent} 70%, transparent)` }}
-        />
       </div>
     </div>
   );

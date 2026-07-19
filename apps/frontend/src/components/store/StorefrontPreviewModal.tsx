@@ -55,7 +55,7 @@ const StorefrontPreviewModal: React.FC<StorefrontPreviewModalProps> = ({
       />
       
       {/* Modal Container */}
-      <div className="relative flex h-full w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-900/5 dark:bg-gray-900 dark:ring-white/10">
+      <div className="relative flex h-full w-full max-w-6xl 2xl:max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-900/5 dark:bg-gray-900 dark:ring-white/10">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-950 sm:px-6">

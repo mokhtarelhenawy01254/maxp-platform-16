@@ -25,7 +25,7 @@ const PlatformLandingExecutiveAtlas: React.FC = () => {
       dir="rtl"
       className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.14),transparent_28%),linear-gradient(180deg,#07131a_0%,#0f172a_52%,#091118_100%)] text-white"
     >
-      <section className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
           <Link to="/" className="inline-flex items-center gap-3 text-white">
             <span className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-black">
@@ -181,7 +181,7 @@ const PlatformLandingExecutiveAtlas: React.FC = () => {
         </div>
       </section>
 
-      <section id="executive-brief" className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+      <section id="executive-brief" className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
         <div className="grid gap-5 lg:grid-cols-[0.94fr_1.06fr]">
           <article className="rounded-[2.4rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-teal-200">
@@ -226,7 +226,7 @@ const PlatformLandingExecutiveAtlas: React.FC = () => {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
         <div className="grid gap-5 lg:grid-cols-3">
           {section.useCases.map((useCase) => (
             <article

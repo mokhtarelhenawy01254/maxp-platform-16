@@ -1594,7 +1594,7 @@ const getFacebookPages = async (req, res) => {
   }
 };
 
-// NEW: Get posts for a specific page
+// NEW: Get posts for a specific page — optimized bulk queries
 const getPostsByPageId = async (req, res) => {
   try {
     const user = req.user;
@@ -1605,25 +1605,69 @@ const getPostsByPageId = async (req, res) => {
     const companyId = user.companyId;
     const { pageId } = req.params;
 
-    const posts = await getSharedPrismaClient().facebookComment.groupBy({
-      by: ['postId'],
-      where: { companyId, pageId },
-      orderBy: { _max: { createdTime: 'desc' } }
+    // Pagination — prevents timeouts on pages with many posts
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    // Get actual posts from facebook_posts table (only real posts, no pseudo-posts from comments)
+    let postWhereClause = { companyId, pageId };
+    if (search) {
+      postWhereClause.message = { contains: search };
+    }
+
+    const localPosts = await getSharedPrismaClient().facebookPost.findMany({
+      where: postWhereClause,
+      select: { postId: true, message: true, mediaUrl: true, postedAt: true },
+      orderBy: { postedAt: 'desc' },
+      take,
+      skip
     });
 
-    const postDetails = [];
-    for (const post of posts) {
-      const comments = await getSharedPrismaClient().facebookComment.findMany({
-        where: { postId: post.postId, companyId },
-        orderBy: { createdTime: 'desc' }
-      });
+    if (localPosts.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
 
+    const postIds = localPosts.map(p => p.postId);
+
+    // Get ALL comments for all posts in ONE bulk query (no N+1 loop)
+    const allComments = await getSharedPrismaClient().facebookComment.findMany({
+      where: { postId: { in: postIds }, companyId },
+      select: {
+        id: true,
+        postId: true,
+        respondedAt: true,
+        createdTime: true,
+        message: true,
+        senderName: true,
+        senderId: true,
+        response: true
+      },
+      orderBy: { createdTime: 'desc' }
+    });
+
+    // Build lookup maps for O(1) access
+    const localPostMap = new Map(localPosts.map(p => [p.postId, p]));
+    const commentsByPost = new Map();
+    for (const comment of allComments) {
+      if (!commentsByPost.has(comment.postId)) {
+        commentsByPost.set(comment.postId, []);
+      }
+      commentsByPost.get(comment.postId).push(comment);
+    }
+
+    // Build final response — no extra queries, no HTTP calls per post
+    const postDetails = localPosts.map(post => {
+      const comments = commentsByPost.get(post.postId) || [];
       const totalComments = comments.length;
       const respondedComments = comments.filter(c => c.respondedAt !== null).length;
 
-      postDetails.push({
+      return {
         postId: post.postId,
         pageId,
+        message: post.message,
+        pictureUrl: post.mediaUrl,
+        responseMethod: comments.length > 0 ? (comments[0].response ? 'fixed' : 'manual') : 'manual',
         totalComments,
         respondedComments,
         pendingComments: totalComments - respondedComments,
@@ -1631,8 +1675,8 @@ const getPostsByPageId = async (req, res) => {
         latestComment: comments[0] || null,
         firstCommentTime: comments.length > 0 ? comments[comments.length - 1].createdTime : null,
         lastCommentTime: comments.length > 0 ? comments[0].createdTime : null
-      });
-    }
+      };
+    });
 
     res.json({ success: true, data: postDetails });
   } catch (error) {

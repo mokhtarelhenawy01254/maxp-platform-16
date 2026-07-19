@@ -103,6 +103,7 @@ export const useProducts = () => {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState<string>("");
   const [editStock, setEditStock] = useState<string>("");
+  const [editSku, setEditSku] = useState<string>("");
 
   // Filters
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
@@ -426,23 +427,29 @@ export const useProducts = () => {
     setEditingProduct(product.id);
     setEditPrice(product.price?.toString() ?? '0');
     setEditStock(product.stock?.toString() ?? '0');
+    setEditSku(product.sku ?? '');
   };
 
   const cancelQuickEdit = () => {
     setEditingProduct(null);
     setEditPrice("");
     setEditStock("");
+    setEditSku("");
   };
 
   const saveQuickEdit = async (productId: string) => {
     try {
       const currentProduct = products.find((product) => product.id === productId);
-      const payload: { price: number; stock?: number } = {
+      const payload: { price: number; stock?: number; sku?: string } = {
         price: parseFloat(editPrice),
       };
 
       if (canEditProductStock(currentProduct)) {
         payload.stock = parseInt(editStock, 10);
+      }
+
+      if (editSku !== (currentProduct?.sku ?? '')) {
+        payload.sku = editSku;
       }
 
       const r = await apiClient.patch(`products/${productId}`, payload);
@@ -451,7 +458,7 @@ export const useProducts = () => {
         setProducts((prev) =>
           prev.map((p) =>
             p.id === productId
-              ? transformProduct(updatedProduct || { ...p, price: parseFloat(editPrice), stock: parseInt(editStock, 10) }, p)
+              ? transformProduct(updatedProduct || { ...p, price: parseFloat(editPrice), stock: parseInt(editStock, 10), sku: editSku }, p)
               : p,
           ),
         );
@@ -627,6 +634,7 @@ export const useProducts = () => {
     editingProduct,
     editPrice,
     editStock,
+    editSku,
     filters,
     hasActiveFilters,
     categories,
@@ -649,6 +657,7 @@ export const useProducts = () => {
     cancelQuickEdit,
     setEditPrice,
     setEditStock,
+    setEditSku,
     saveQuickEdit,
     handleDuplicate,
     handleWorkflowAction,

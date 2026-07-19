@@ -23,7 +23,7 @@ const SuperAdminMarketingLinks = () => {
 
   return (
     <div className="bg-slate-50 dark:bg-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto space-y-6">
         <header className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">
             مركز روابط صفحات التسويق

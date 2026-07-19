@@ -1,5 +1,32 @@
 # Learned Patterns
 
+## 2026-07-14 — Hotel Module: Prisma camelCase in Raw SQL Migrations
+
+- **Problem:** The first migration SQL for hotel tables used `snake_case` columns (`company_id`) because of PostgreSQL naming convention, but Prisma expects `camelCase` (`companyId`) for all fields defined in the schema. The app failed with `column "companyId" does not exist` on queries.
+- **Solution:** Use quoted camelCase column names in raw SQL migrations: `CREATE TABLE "HotelRoom" (id TEXT PRIMARY KEY, "companyId" TEXT NOT NULL REFERENCES "Company"(id) ON DELETE CASCADE, "propertyId" TEXT, ...);`. Every camelCase column must be quoted.
+- **Verification:** Run `npx prisma generate` and then hit a real endpoint that reads/writes the table; if any column name mismatch remains Prisma throws a clear DB error.
+
+## 2026-07-14 — Hotel Module: Auto-Assign Room from Room Type
+
+- **Problem:** Reservation creation originally required the caller to pass an explicit `roomId`. Front-end users and AI agents think in room types, not individual room IDs.
+- **Solution:** In `hotelController.js#createReservation`, if `roomId` is missing for a line item, pick the first `AVAILABLE` room of that `roomTypeId` that does not have an overlapping reservation in the requested date range. If an occupied room later frees up, the same logic still works.
+- **Edge case:** Multi-room bookings — each line item can either specify a `roomId` or rely on auto-assignment independently.
+
+## 2026-07-17 — Agent Tool Resolution: Bypass `ceo.py` Wrapping
+
+- **Problem:** Production `orchestration_flow.py` wrapped `BaseAgent` in `create_channel_agent()` (ceo.py → agent_framework.Agent), which lost `allowed_tools` and `allowed_skills` attributes. `process_with_skills` couldn't filter tools → agent used ALL registered skills instead of hotel tools.
+- **Solution:** Remove `ceo.py` entirely. Use `BaseAgent` directly as `ctx.agent` in `PipelineContext`. `ctx.agent` is a `BaseAgent` (or from `BaseAgent.from_template()`), which carries `allowed_tools` and `allowed_skills` as native attributes. `_build_skill_tool_dicts` reads `allowed_tools` directly from `ctx.agent`.
+- **Prerequisite:** The agent's DB record must include the channel in `channels` array (e.g., `["dashboard", "whatsapp", "messenger", "chat"]`), otherwise `_resolve_channel_agent` returns None and falls back to `manager-ceo` template.
+- **Verification:** POST /chat with `channel: "chat"` returns hotel_info tool call instead of product_search.
+
+## 2026-07-17 — Hotel Module: Avoid Conditional Hooks in Modal Rendering
+
+- **Problem:** `HotelManagementPage.tsx` had `renderModal()` function defined inside the component that returned JSX using `useState` hooks internally. React raised a Rules of Hooks error whenever the modal changed, causing the page to reset to the first tab instead of opening the modal.
+- **Solution:** Extract every modal to a top-level component file. In the parent, use conditional JSX: `{modal?.type === 'reservation' && <ReservationModal ... />}`. This keeps hooks at component top level and avoids hook-order changes during re-renders.
+- **Pattern:** Any modal that owns its own state should be a separate component, not a nested renderer function.
+
+# Learned Patterns
+
 ## 2026-07-12 — SSH Key Generation in PowerShell (Passphrase Bug)
 - **Problem:** `ssh-keygen -t ed25519 -N "mysecret" -f keyfile` in PowerShell sets the passphrase to literal `"mysecret"` (with quotes) because PowerShell passes the double-quotes as part of the argument value.
 - **Solution:** Use single quotes for the `-N` argument: `-N 'mysecret'`. Or omit `-N` entirely and use stdin pipe. On Windows, `ssh-keygen` from OpenSSH for Windows interprets quoted strings literally.
@@ -102,3 +129,24 @@ When adding a new tool/skill that returns structured data and is called in the s
 
 ### Key Files
 - `apps/ai-service/src/pipeline/stages/skills_pipeline.py` — `_format_tool_results()` function
+
+## 2026-07-16 — Auto-Invoice Generation on Status Change
+- **Problem:** `OrderInvoiceSettings.autoGenerate` and `autoGenerateOnStatus` existed in DB schema and settings UI but no backend code checked them — invoices never auto-generated.
+- **Solution:** Added checks in two trigger points:
+  1. `orderService.js:updateOrderStatus` → background async block (after WhatsApp notifications). Triggers when main order status matches `autoGenerateOnStatus`.
+  2. `routes/orders.js` preparation status handler → background IIFE after order update. Triggers when preparation status (PACKAGED, READY_TO_SHIP, etc.) OR mapped status matches `autoGenerateOnStatus`.
+- **`autoGenerateOnStatus` format:** Comma-separated status codes (e.g., `PACKAGED,READY_TO_SHIP`). Supports `*` wildcard for all status changes.
+- **Files changed (both `apps/` and `maxp-platform3/`):**
+  - `services/orderService.js` — added auto-invoice block
+  - `routes/orders.js` — added auto-invoice block in preparation handler
+  - `frontend/src/pages/settings/OrderInvoiceSettings.tsx` — added preparation statuses to dropdown
+
+## 2026-07-16 — Company Dashboard: Responsive CSS Grid & RTL Sizing
+- **Problem:** Widget cards in a responsive CSS Grid can leave empty gaps and fail to stretch, particularly under RTL layout flow. Buttons inside grid items do not automatically fill their columns if they are not explicitly styled with width utilities.
+- **Solution:** 
+  1. Add `grid-flow-row-dense` to the grid container to pack cells tightly and resolve large gaps.
+  2. Wrap grid items in responsive column span containers (`sm:col-span-2 xl:col-span-2` instead of just desktop-only layout spans).
+  3. Standardize inner elements (like card buttons) to stretch fully (`w-full`) and align text logically to start (`text-start`) instead of using hardcoded left/right alignments.
+  4. Cast i18n translation function returns `t(...)` using `as string` when assigning to native HTML attributes like `title` that expect plain strings, preventing TypeScript `TS2322` errors.
+  5. Avoid accessing array elements directly (e.g. `data.metrics[0].label`) without checking both the array and the item presence first, preventing `TS2532: Object is possibly 'undefined'` compilation errors.
+

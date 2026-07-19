@@ -88,6 +88,12 @@ const getAllCustomer = async (req, res) => {
       where.status = statusFilter;
     }
 
+    // 🏷️ فلتر الوسوم (Tags)
+    const tagFilter = req.query.tag;
+    if (tagFilter) {
+      where.tags = { contains: `"${tagFilter}"` };
+    }
+
     // تنفيذ الاستعلام مع الترقيم
     const [customers, total] = await Promise.all([
       getSharedPrismaClient().customer.findMany({
@@ -1531,47 +1537,49 @@ const updateCustomerTags = async (req, res) => {
     const { customerId } = req.params;
     const { tags } = req.body;
 
-    // التحقق من وجود العميل وانتمائه للشركة
-    const customer = await getSharedPrismaClient().customer.findUnique({
+    // Validate tags input
+    if (!Array.isArray(tags)) {
+      return res.status(400).json({ success: false, message: 'الوسوم يجب أن تكون مصفوفة' });
+    }
+    for (const tag of tags) {
+      if (typeof tag !== 'string' || tag.length > 50 || !tag.trim()) {
+        return res.status(400).json({ success: false, message: 'كل وسم يجب أن يكون نصاً بين 1 و 50 حرفاً' });
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+    const customer = await prisma.customer.findUnique({
       where: { id: customerId },
-      select: { id: true, companyId: true }
+      select: { id: true, companyId: true, tags: true }
     });
 
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: 'العميل غير موجود'
-      });
+      return res.status(404).json({ success: false, message: 'العميل غير موجود' });
     }
-
     if (customer.companyId !== companyId) {
-      return res.status(403).json({
-        success: false,
-        message: 'غير مصرح بتعديل هذا العميل'
-      });
+      return res.status(403).json({ success: false, message: 'غير مصرح بتعديل هذا العميل' });
     }
 
-    // تحديث العلامات (تخزينها كـ JSON string)
-    const tagsString = Array.isArray(tags) ? JSON.stringify(tags) : tags;
+    const tagsString = JSON.stringify(tags);
 
-    const updatedCustomer = await getSharedPrismaClient().customer.update({
+    const updatedCustomer = await prisma.customer.update({
       where: { id: customerId },
       data: { tags: tagsString }
     });
 
-    res.json({
-      success: true,
-      data: updatedCustomer,
-      message: 'تم تحديث العلامات بنجاح'
-    });
+    // Sync to WhatsAppContact
+    if (customer.tags !== tagsString) {
+      await prisma.whatsAppContact.updateMany({
+        where: { customerId },
+        data: { tags: tagsString }
+      });
+    }
+
+    res.json({ success: true, data: updatedCustomer, message: 'تم تحديث العلامات بنجاح' });
 
   } catch (error) {
     console.error('❌ Error updating customer tags:', error);
-    res.status(500).json({
-      success: false,
-      message: 'خطأ في تحديث العلامات',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'خطأ في تحديث العلامات', error: error.message });
   }
 };
 
@@ -1845,6 +1853,158 @@ const exportCustomers = async (req, res) => {
   }
 };
 
+/**
+ * جلب جميع الوسوم الفريدة المستخدمة في عملاء الشركة
+ * GET /api/v1/customers/tags/distinct
+ */
+const getDistinctTags = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+
+    // جلب جميع العملاء اللي عندهم وسوم
+    const customersWithTags = await getSharedPrismaClient().customer.findMany({
+      where: {
+        companyId,
+        tags: { not: null }
+      },
+      select: { tags: true }
+    });
+
+    // تجميع الوسوم الفريدة مع العدد
+    const tagCountMap = {};
+    for (const c of customersWithTags) {
+      try {
+        const parsed = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags;
+        if (Array.isArray(parsed)) {
+          for (const tag of parsed) {
+            if (tag && typeof tag === 'string' && tag.trim()) {
+              const normalizedTag = tag.trim();
+              tagCountMap[normalizedTag] = (tagCountMap[normalizedTag] || 0) + 1;
+            }
+          }
+        }
+      } catch {
+        // تجاهل القيم غير الصالحة
+      }
+    }
+
+    // تحويل إلى مصفوفة مرتبة حسب العدد
+    const tags = Object.entries(tagCountMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json({ success: true, data: tags });
+  } catch (error) {
+    console.error('❌ Error fetching distinct tags:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب الوسوم', error: error.message });
+  }
+};
+
+/**
+ * إعادة تسمية وسم عبر جميع العملاء
+ * PUT /api/v1/customers/tags/rename
+ */
+const renameTag = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+
+    const { oldName, newName } = req.body;
+    if (!oldName || !oldName.trim()) return res.status(400).json({ success: false, message: 'اسم الوسم القديم مطلوب' });
+    if (!newName || !newName.trim()) return res.status(400).json({ success: false, message: 'اسم الوسم الجديد مطلوب' });
+
+    const trimmedOld = oldName.trim();
+    const trimmedNew = newName.trim();
+    if (trimmedOld === trimmedNew) return res.status(400).json({ success: false, message: 'الوسم الجديد مطابق للقديم' });
+
+    const customers = await getSharedPrismaClient().customer.findMany({
+      where: { companyId, tags: { not: null } },
+      select: { id: true, tags: true }
+    });
+
+    let updatedCount = 0;
+    const prisma = getSharedPrismaClient();
+    for (const c of customers) {
+      let tags;
+      try { tags = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags; } catch { continue; }
+      if (!Array.isArray(tags)) continue;
+
+      const idx = tags.indexOf(trimmedOld);
+      if (idx === -1) continue;
+
+      tags[idx] = trimmedNew;
+      const newTagsStr = JSON.stringify([...new Set(tags)]);
+      await prisma.customer.update({
+        where: { id: c.id },
+        data: { tags: newTagsStr }
+      });
+      // Sync to WhatsAppContact
+      await prisma.whatsAppContact.updateMany({
+        where: { customerId: c.id },
+        data: { tags: newTagsStr }
+      });
+      updatedCount++;
+    }
+
+    res.json({ success: true, data: { renamed: trimmedOld, to: trimmedNew, customersAffected: updatedCount } });
+  } catch (error) {
+    console.error('❌ Error renaming tag:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * حذف وسم من جميع العملاء
+ * DELETE /api/v1/customers/tags/:tagName
+ */
+const deleteTag = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+
+    const { tagName } = req.params;
+    if (!tagName || !tagName.trim()) return res.status(400).json({ success: false, message: 'اسم الوسم مطلوب' });
+
+    const decodedTag = decodeURIComponent(tagName).trim();
+
+    const customers = await getSharedPrismaClient().customer.findMany({
+      where: { companyId, tags: { not: null } },
+      select: { id: true, tags: true }
+    });
+
+    let updatedCount = 0;
+    const prisma = getSharedPrismaClient();
+    for (const c of customers) {
+      let tags;
+      try { tags = typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags; } catch { continue; }
+      if (!Array.isArray(tags)) continue;
+
+      const filtered = tags.filter(t => t !== decodedTag);
+      if (filtered.length === tags.length) continue;
+
+      const newTagsStr = JSON.stringify(filtered);
+      await prisma.customer.update({
+        where: { id: c.id },
+        data: { tags: newTagsStr }
+      });
+      // Sync to WhatsAppContact
+      await prisma.whatsAppContact.updateMany({
+        where: { customerId: c.id },
+        data: { tags: newTagsStr }
+      });
+      updatedCount++;
+    }
+
+    res.json({ success: true, data: { deleted: decodedTag, customersAffected: updatedCount } });
+  } catch (error) {
+    console.error('❌ Error deleting tag:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAllCustomer,
   createCustomer,
@@ -1865,5 +2025,8 @@ module.exports = {
   importCustomersFromCSV,
   deleteCustomer,
   updateCustomerTags,
-  updateCustomer
+  updateCustomer,
+  getDistinctTags,
+  renameTag,
+  deleteTag,
 };

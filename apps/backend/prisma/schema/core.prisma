@@ -247,6 +247,7 @@ model Company {
   whatsAppSettings                WhatsAppSettings?
   whatsappFollowUpFlows           WhatsAppFollowUpFlow[]
   customerJourneys                CustomerJourney[]
+  leadCategories                  LeadCategory[]
   leadFollowUpSettings            LeadFollowUpSettings?
   leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wishlists                       Wishlist[]
@@ -296,7 +297,16 @@ model Company {
      educationSessions                EducationSession[]
     formDefinitions                  FormDefinition[]
     formSubmissions                  FormSubmission[]
-    wholesalePriceLists              WholesalePriceList[]
+     hotelProperties                  HotelProperty[]
+     hotelRoomTypes                   HotelRoomType[]
+     hotelRooms                       HotelRoom[]
+     hotelReservations                HotelReservation[]
+     hotelFolioItems                  HotelFolioItem[]
+      hotelRoomRates                   HotelRoomRate[]
+      hotelServices                    HotelService[]
+      hotelPolicy                      HotelPolicy?
+      hotelRoomTypePrices              HotelRoomTypePrice[]
+     wholesalePriceLists              WholesalePriceList[]
    wholesaleCustomers               WholesaleCustomer[]
    wholesaleTransactions            WholesaleTransaction[]
    wholesaleStatements              WholesaleStatement[]

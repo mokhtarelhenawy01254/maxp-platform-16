@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import CommentService from "../../services/commentService";
@@ -20,8 +21,9 @@ import {
 } from "lucide-react";
 
 const UnifiedCommentsSplit = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const dateFt = useMemo(() => new Intl.DateTimeFormat(i18n.language), [i18n.language]);
 
   // State
   const [pages, setPages] = useState([]);
@@ -108,8 +110,7 @@ const UnifiedCommentsSplit = () => {
     }
   };
 
-  // Filter posts locally for now (since API might not support all filters on this endpoint yet, or to be snappy)
-  const filteredPosts = posts.filter((post) => {
+  const filteredPosts = useMemo(() => posts.filter((post) => {
     const matchesSearch =
       filters.search === "" ||
       post.postId.includes(filters.search) ||
@@ -119,10 +120,10 @@ const UnifiedCommentsSplit = () => {
       (filters.status === "responded" && post.pendingComments === 0) ||
       (filters.status === "pending" && post.pendingComments > 0);
     return matchesSearch && matchesStatus;
-  });
+  }), [posts, filters.search, filters.status]);
 
   return (
-    <div className="h-[calc(100vh-64px)] overflow-hidden bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="h-[calc(100dvh-64px)] overflow-hidden bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -264,7 +265,7 @@ const UnifiedCommentsSplit = () => {
                   <div
                     key={post.postId}
                     className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col md:flex-row transition-all duration-200 hover:border-blue-400 group animate-fade-in"
-                    style={{ animationDelay: `${index * 0.05}s` }}
+                    style={{ animationDelay: `${Math.min(index, 20) * 0.05}s` }}
                   >
                     {/* Post Image (Left side in list view) */}
                     <div className="md:w-32 md:h-32 relative bg-gray-100 dark:bg-gray-700 flex-shrink-0">
@@ -272,6 +273,8 @@ const UnifiedCommentsSplit = () => {
                         <img
                           src={post.pictureUrl}
                           className="w-full h-full object-cover"
+                          width={128}
+                          height={128}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -298,9 +301,7 @@ const UnifiedCommentsSplit = () => {
                             #{post.postId.substring(post.postId.length - 8)}
                           </span>
                           <span className="text-[10px] text-gray-500">
-                            {new Date(post.firstCommentTime).toLocaleDateString(
-                              "ar-EG",
-                            )}
+                            {dateFt.format(new Date(post.firstCommentTime))}
                           </span>
                         </div>
 
@@ -345,7 +346,7 @@ const UnifiedCommentsSplit = () => {
                     <div className="p-2 bg-gray-50 dark:bg-gray-900/50 border-t md:border-t-0 md:border-r border-gray-100 dark:border-gray-700 flex md:flex-col justify-center gap-2 md:w-32 flex-shrink-0">
                       <button
                         onClick={() =>
-                          navigate(`/posts/${post.postId}/comments`)
+                          navigate(`/unified-comments/${post.postId}`)
                         }
                         className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 px-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-1"
                       >

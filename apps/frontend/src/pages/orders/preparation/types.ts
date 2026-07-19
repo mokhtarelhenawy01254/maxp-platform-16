@@ -35,6 +35,13 @@ export interface MerchantFulfillmentView {
   warehouseId?: string | null;
 }
 
+export interface SimpleOrderShipment {
+  trackingNumber: string | null;
+  externalShipmentId: string | null;
+  status: string;
+  carrierType: string;
+}
+
 export interface SimpleOrder {
   id: string;
   orderNumber: string;
@@ -52,6 +59,10 @@ export interface SimpleOrder {
   metadata?: JsonObject | string | null;
   merchantFulfillment?: MerchantFulfillmentView | null;
   items: SimpleOrderItem[];
+  turboTrackingNumber?: string | null;
+  turboShipmentId?: string | null;
+  turboShipmentStatus?: string | null;
+  shipments?: SimpleOrderShipment[];
 }
 
 export interface InventoryRecord {
@@ -197,6 +208,13 @@ export interface ApiOrderItemResponse {
   metadata?: JsonObject | string | null;
 }
 
+export interface ApiOrderShipmentResponse {
+  trackingNumber?: string | null;
+  externalShipmentId?: string | null;
+  status?: string;
+  carrierType?: string;
+}
+
 export interface ApiOrderResponse {
   id?: string | number | null;
   orderNumber?: string | number | null;
@@ -217,6 +235,10 @@ export interface ApiOrderResponse {
   notes?: string | null;
   metadata?: JsonObject | string | null;
   items?: ApiOrderItemResponse[] | null;
+  turboTrackingNumber?: string | null;
+  turboShipmentId?: string | null;
+  turboShipmentStatus?: string | null;
+  shipments?: ApiOrderShipmentResponse[] | null;
 }
 
 export interface ApiInventoryResponse {

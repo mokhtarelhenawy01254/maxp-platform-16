@@ -1,5 +1,146 @@
 # Team Sync Updates
 
+## 2026-07-19 / 2026-03-09
+- **Separate WhatsApp Facebook App Credentials (FEATURE / COMPLETE)**:
+  1. **Purpose**: Solved the limitation where the main Facebook App is in Development mode and undergoing App Review (blocking switching to Live).
+  2. **Override Mechanism**: Created optional overrides (`whatsappAppId`, `whatsappAppSecret`, `whatsappConfigId`) in the configuration JSON.
+  3. **Backend Logic**: Updated `whatsappController.js` to automatically prioritize these overrides for the WhatsApp OAuth exchange, avoiding disruptions to existing Facebook Page integrations.
+  4. **Super Admin Dashboard**: Extended `/super-admin/facebook-oauth` to allow super admins to edit, view, and save these optional credentials.
+
+- **Deploy Script: Preserve facebook-oauth-config.json (BUGFIX / COMPLETE)**:
+  1. **Root Cause**: `deploy-remote.sh` uses `rsync --delete` which deletes server files not present in the git-tracked tarball. Since `facebook-oauth-config.json` is in `.gitignore`, every deploy wiped the Super Admin credentials.
+  2. **Fix (tarball path)**: Added `--exclude data/facebook-oauth-config.json` to the `rsync` command.
+  3. **Fix (legacy path)**: Added backup/restore logic for `facebook-oauth-config.json` before `rm -rf` and after `mv`, mirroring how `.env` is handled.
+
+- **WhatsApp Cloud Connect Security & Dynamic PIN Registration (FEATURE/FIX / COMPLETE)**:
+  1. **Secured Credentials**: Cleared production Meta App Client Secret (`appSecret`) and App ID from git-tracked `facebook-oauth-config.json` and replaced them with placeholders. Added the config file to `.gitignore` to prevent developers from accidentally pushing server configurations back to Git, and provided `facebook-oauth-config.example.json` as a baseline template.
+  2. **Dynamic Registration PIN**: Upgraded `facebookEmbeddedConnect` in `whatsappController.js` to generate a random 6-digit PIN dynamically for every phone number registration instead of using the insecure hardcoded `'000000'` value.
+  3. **Metadata Storage**: Stored the dynamically generated registration PIN inside the `WhatsAppSession` record's `metadata` field as a JSON string (`JSON.stringify({ registrationPin })`).
+  4. **Graph API Alignment**: Standardized `META_GRAPH_VERSION` default to `'v25.0'` in `whatsappController.js` to match the frontend version.
+  5. **Autodiscover Fallback**: Added auto-discovery logic inside `facebookEmbeddedConnect` to query Meta's Graph API for missing WABA, business, and phone IDs when they are omitted in the frontend payload (e.g. if the iframe postMessage was blocked or lost), preventing 400 Bad Request failures.
+  6. **Diagnostic Logging**: Added structured logging to `facebookEmbeddedConnect` for request payload inspection, Facebook config validation, and detailed error messages to diagnose 400 errors in production (e.g. missing appSecret after deployment).
+  7. **Single Source of Truth Realignment**: Modified `getFacebookOAuthConfig` in `facebookAppConfig.js` to read credentials strictly from the local `facebook-oauth-config.json` configuration file. Completely removed all `.env` fallsbacks and hardcoded credential backups, ensuring the `/super-admin/facebook-oauth` dashboard acts as the absolute single source of truth.
+  8. **redirect_uri Mismatch Fix**: Resolved Meta OAuth code exchange 500 error by updating `facebookEmbeddedConnect` in `whatsappController.js` to accept `redirectUri` from the payload, falling back to the Origin/Referer header, and sending the page origin from `WhatsAppCloudConnect.tsx`.
+  9. **Verification**: Updated config unit tests and ran test suites successfully to verify the strict JSON loading mechanism.
+
+## 2026-07-18 / 2026-03-09
+- **Customer Classification & Tags Sync Bugs Fix (BUGFIX / COMPLETE)**:
+  1. **Backend `getConversations` projection gap**: Added `leadCategoryId` and `leadCategory` (with `id`, `name`, `color`) to the Prisma `select` block in the conversations API, ensuring classification data flows to the frontend on every page load.
+  2. **`useCustomerProfile` data extraction bug**: Fixed the hook to extract `customerRes.data.data.customer` instead of the entire wrapper object, restoring `tags` visibility.
+  3. **Base UI Select empty value fix**: Replaced `value=""` with `value="none"` sentinel for the "no classification" option. Updated `handleCategoryChange` to map `'none'` back to `null`.
+  4. **Query cache invalidation**: Added `queryClient.invalidateQueries` for the conversations query key after successful classification updates, ensuring the parent `WhatsAppChat` component's sync effect picks up the change.
+  5. **Sync effect coverage**: Extended the `hasConversationStateChange` detection in `WhatsAppChat.tsx` to include `leadCategoryId`, propagating category changes from the query cache to `selectedContact`.
+
+- **AI Key Logs Analysis Page & API Fixes (BUGFIX / COMPLETE)**:
+  1. **Global stats computation**: Overhauled `/ai-admin/logs` endpoint (`keys.py`) to query and sum success, failed, and average latency stats across both ORM and raw SQL tables for the filtered query, returning them globally to the frontend.
+  2. **Dropdown selection null-checks**: Updated `SuperAdminAIKeyLogs.tsx` select components onValueChange handlers with null-checks (`v || ""`) and casted companies select query response to `any`, resolving all local TypeScript compiler warnings and errors.
+  3. **Pagination bypass fix**: Reordered sorting and slicing instructions in keys.py to execute outside the public logs database try-except block, guaranteeing pagination limits are always enforced when queries throw exceptions.
+  4. **Status mapping alignment**: Resolved status filtering discrepancies between client and server: `success` filters map to both `["success", "ok"]` and `failed` filters map to `["failed", "error"]`.
+  5. **UX inline error handling**: Replaced early return layout with inline alert components, allowing administrators to still toggle filters and retry requests.
+  6. **Postgres metadata casting**: Resolved UndefinedFunctionError exception in the raw SQL query to `public.ai_provider_logs` by explicitly casting the text-based `metadata` column: `CAST(COALESCE(metadata, '{}') AS jsonb)->>'response'`, which successfully restored generation logs to the view.
+  7. **Datetime timezone naive/aware sorting**: Prevented sorting failures on date comparison between timezone-aware and timezone-naive objects by stripping the tzinfo component: `.replace(tzinfo=None)` during sorting.
+  8. **Stats cards UI/UX polishing**: Redesigned statistics cards to align symmetrically in a single row on desktop devices (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`). Integrated inline percentage rates and proportional progress bars representing success/failure ratios.
+- **Marketplace Visual Overhaul & Premium Redesign (UI/UX / COMPLETE)**:
+  1. **Category Color Coding**: Added unique color accents and gradients for all application categories (Ecommerce, HR, CRM, Analytics, Marketing, Integration, etc.) to visually group related apps.
+  2. **Featured Apps Redesign**: Overhauled the featured section to use a horizontal snap scroll carousel layout with large, beautifully detailed hero cards.
+  3. **App Cards overhaul**: Redesigned individual app cards with responsive padding, gradient-styled icon containers, visual category indicators, premium hover elevation, and distinct price tag chips.
+  4. **Filter Bar improvements**: Simplified search, sorting, and filter pill selectors to prevent layout clutter and improve navigation.
+  5. **Animations and theme integration**: Created `marketplace-premium.css` to manage custom oklch color values, micro-animations, and hover glow transitions. Loaded style sheets natively inside `index.css`.
+
+## 2026-07-17 / 2026-03-09
+- **Agent Refactoring to SOTA 2026 paradigms & Removal of Legacy Heuristics (REFACTOR / COMPLETE)**:
+  1. **Hook & File Deletion**: Completely removed `HotelEnforcementHook` registration in `base.py` and deleted the hook file `hotel_hook.py` from `apps/ai-service/src/agents/hooks/`. This eliminates 150+ lines of brittle regex-based parsing, hardcoded Arabic month translations, and manual `hotel_reserve` tool-call injection.
+  2. **LLM-Native Tool Calling & Slot-Filling**: Shifted the `hotel-agent` behavior to be natively model-driven. The agent now relies on the database-backed conversation history to extract parameters (name, phone, dates, room) and invoke the `hotel_reserve` tool.
+  3. **Conversational Prompts Overhaul**: Updated `SOUL.md` and `TOOLS.md` instructions inside the `hotel-agent` template directory to instruct the agent to ask the customer politely for missing required fields (Conversational Slot-Filling) instead of utilizing scripts to guess values.
+  4. **Pydantic ValidationError Handling**: Upgraded `_execute_one_tool` inside the skills pipeline (`skills_pipeline.py`) to catch validation errors (`ValidationError`) from Pydantic input models during tool calling, formats them into a structured human-readable parameter-by-parameter error description, and feeds them back as a tool execution error to the LLM to guide self-correction.
+  5. **Seeding & Credentials Resolution**: Fixed a database credentials mismatch where the dev seeding script `seed-agentic-dev.js` inserted unhashed passwords and null roles. Re-secured the test user account `dev@maxp.test` with standard bcrypt hashing and designated the `OWNER` role, unblocking login and API sandbox authentication access.
+  6. **End-to-End Sandbox Verification**: Completed manual verification of the hotel agent dialog flow inside the sandbox API session. Confirmed that requesting a booking ("عايز أحجز أوضة ديلوكس لشخصين") prompts the receptionist to warmly request the customer's name, phone, and dates in Egyptian Arabic dialect, and executes `hotel_reserve` only after the customer gives confirmation ("تمام موافق احجزلي").
+  7. **Unit Tests Cleared**: Updated all obsolete unit tests in `test_skills_pipeline.py` to match the simplified machine-readable JSON formatting output of `_format_tool_results`.
+- **WhatsApp Session Dropdown CUID Display Name Fix (BUGFIX / COMPLETE)**:
+  1. **Template Broadcast Session Select**: Updated `WhatsAppTemplateBroadcast.tsx` to identify if a session name is a CUID (25-character alphanumeric format) and fallback to displaying the friendly name `"جلسة واتساب"` and appending the phone number if available, preventing raw CUID leakage.
+  2. **WhatsApp Settings Session Select**: Updated `WhatsAppSettings.tsx` default session selection list to also format CUID names in a user-friendly manner with phone numbers.
+- **Customer Tags Activation & Campaign Integration (FEATURE / COMPLETE)**:
+  1. **Backend Filtering**: Added support for filtering customer lists by tag via `GET /customers?tag=tag_name` and query validation in `getAllCustomer`.
+  2. **Distinct Tags API**: Implemented `GET /customers/tags/distinct` to extract all unique tags from company customers with counts for UI dropdown aggregation.
+  3. **Customer Lists Tag Criteria**: Expanded database criteria queries (`createCustomerList` and `getCustomersInList`) to support dynamic tag lists (`criteria.type === 'tag'`) using relational filters.
+  4. **Frontend Tags Filter**: Integrated tag select filters inside `CustomerList.tsx` and custom lists creator `CreateListModal.tsx`.
+  5. **WhatsApp Template Broadcast Tags**: Added tag-based recipient filtering dropdown to the template broadcast campaign page, enabling quick targeting.
+  6. **Moderator Sidebar Tags Editor**: Added an interactive Customer Tags editor section in `ChatRightPanel.tsx` inside the WhatsApp Inbox/Chat sidebar, allowing agents/moderators to view, add with auto-completion suggestions, and delete tags for the active customer directly from their ongoing conversation workspace (fixed a JSX tag imbalance compilation error by adding the missing closing `</div>` tag for the tab content block).
+- **Customer Import Modal Portal Rendering & Z-Index (BUGFIX / COMPLETE)**:
+  1. **Portal Rendering**: Wrapped `CustomerImportModal` inside `React.createPortal` rendering to the `document.body` level. This completely resolves the layout isolation constraints and ensures the modal escapes parent `overflow` or `transform` containment blocks from the layout.
+  2. **Z-Index Layering**: Elevated overlay z-index to `z-[9999]` to guarantee overlay sits correctly above all other elements like the HeaderBar and Sidebar navigation layout columns.
+- **Legacy Frontend Path Conflict (BUGFIX / COMPLETE)**:
+  1. **Storefront HTML Controller Fix**: Updated `storefrontHtmlController.js` to prioritize the absolute production folder path `/var/www/frontend2/dist/index.html` as the candidate location before evaluating relative path candidates. This ensures the correct, recently deployed frontend code takes precedence over any legacy directories on the server.
+  2. **Deployment Script Cleanup**: Enhanced `deploy-remote.sh` to unconditionally remove the legacy `/var/www/frontend` directory if it exists on the server, eliminating any potential path resolution conflicts and freeing up disk space.
+
+## 2026-07-16 / 2026-03-09
+- **Customer Import Modal — Excel/CSV/Paste Support & Translation Fix (FEATURE / COMPLETE)**:
+  1. **Excel Import**: Integrated `xlsx` (SheetJS) library into `CustomerImportModal.tsx` to support `.xlsx` and `.xls` file uploads alongside existing `.csv` support. The parser reads the first worksheet and maps headers automatically (Arabic/English).
+  2. **Direct Paste Tab**: Added a second tab "لصق مباشر للبيانات" allowing users to copy-paste rows directly from Excel or any text editor. Auto-detects delimiter (Tab for Excel copy, Comma for CSV text).
+  3. **CSV Template Download**: Added a "تحميل نموذج CSV" button that generates and downloads a UTF-8 BOM-encoded CSV template with Arabic headers and a sample data row.
+  4. **Translation Keys Fix**: Populated all missing `customers.import.*` i18n keys (title, clickOrDrag, requiredColumns, foundCount, success, importing, importButton, noValidData, readError, downloadTemplate, tabFile, tabPaste, pastePlaceholder, parseButton) in both `ar` and `en` locale section files.
+  5. **TypeScript Safety**: Fixed multiple TS compiler errors (TS2532, TS2538, TS2769, TS2345) related to nullable checks, type casting, and i18next `DefaultTFuncReturn` compatibility.
+  6. **UI Overlay Bug**: Resolved a CSS stacking issue where a sibling `fixed inset-0 bg-black/50` overlay rendered on top of the modal content card, making it invisible. Restructured the modal DOM to apply overlay styles directly to the parent flex container and added event propagation controls to make the modal card fully visible.
+- **Customer vs. Lead Separation & Code Cleanup (FEATURE / COMPLETE)**:
+  1. Clarified the architectural separation: both concepts share the single `Customer` database table, distinguished solely by the `status` enum field (defaulting to `LEAD` when created automatically via `WhatsAppSyncService` from new numbers, and auto-promoted to `ACTIVE` upon order creation inside `enhancedOrderService`).
+  2. Documented the system boundaries in `Structure.md` for team onboarding and future agent iterations.
+  3. Cleaned up dead client service code from `customerService.ts`, removing `getCustomerSegments` and `getCustomerStats` methods and types that were never registered or implemented in backend Express routing (stats are already inline within `getCustomerDetails` payload).
+  4. Logged the bugs and routes mismatch in `Bugs.md`.
+  5. Fixed a default filtering bug in `CustomerList.tsx` where the general Customers page incorrectly defaulted to `hasOrders: false`, displaying only prospects without orders (mirroring the Leads page). It now defaults to `undefined` showing all customers with or without orders by default.
+
+### [BUG FIX / UI] Customer Import Modal — Missing Translation Keys
+- **Date**: 2026-07-16
+- **Root Cause**: `CustomerImportModal.tsx` used `t("customers.import.title")`, `t("customers.import.clickOrDrag")`, and 8+ other i18n keys under the `customers.import.*` namespace, but none were defined in either `ar/sections/customers.json` or `en/sections/customers.json`. This caused the UI to display raw translation key strings (e.g., `customers.import.title`) instead of proper Arabic/English text.
+- **Resolution**: Added the complete `import` block with all 14 keys to both locale section files, then ran `merge-translations.js` to compile them into the main `translation.json` files.
+- **Files Modified**:
+  - `apps/frontend/src/locales/ar/sections/customers.json`
+  - `apps/frontend/src/locales/en/sections/customers.json`
+  - `apps/frontend/src/locales/ar/translation.json`
+  - `apps/frontend/src/locales/en/translation.json`
+
+### [BUG FIX / UI] Customer List hasOrders Default Filter Bug
+- **Date**: 2026-07-16
+- **Root Cause**: The general Customers page incorrectly defaulted to `hasOrders: false`, displaying only prospects without orders (mirroring the Leads page).
+- **Resolution**: It now defaults to `undefined` showing all customers with or without orders by default.
+
+## 2026-07-14 / 2026-03-09
+- **Sidebar Layout Persistence & Company Override Resolution (UI/UX / COMPLETE)**: Fixed the sidebar layout "getting stuck" when changing layouts:
+  1. Resolved a race condition in `SidebarSettingsContext.tsx` where the nullish coalescing operator `serverLayout ?? prev.sidebarLayout` overrode `null` server responses with stale localStorage layouts, preventing users from resetting layout to default.
+  2. Integrated `useSidebarSettings` in `CompanySettings.tsx` to automatically call `setUserLayout(null)` when the company admin changes the organization-level layout template, clearing active per-user overrides and ensuring immediate alignment with the new corporate layout default.
+- **Sidebar Architecture & Path Matching Overhaul (UI/UX / COMPLETE)**: Audited and resolved 18 weaknesses across the sidebar config and components:
+  1. Decoupled `NavLink` from `ClassicSidebar` to prevent performance drops and unnecessary re-mounts on render.
+  2. Implemented general sub-path matching inside `isSidebarPathActive` to highlight parent sidebar links when visiting sub-routes (e.g. `/orders/123` highlights `/orders`), while keeping base dashboards isolated.
+  3. Upgraded sidebar search filter to scan item URLs and nested child links.
+  4. Configured mobile view to auto-close the sidebar when main navigation links are selected.
+  5. Cleaned up duplicated imports, hardcoded Arabic strings, and section numbering comments in `sidebar.ts`.
+- **AI Agent Sandbox Skills Display & Tracing (UI/UX / COMPLETE)**: Added a dedicated skills display bar below the HeaderBar in the Sandbox testing tab (`/admin/ai-hub?tab=sandbox`) to show the display name and description of all skills assigned to the currently selected agent. Additionally, resolved an active skill trace loss bug in the Python `ai-service` pipeline (`skills_pipeline.py`) by setting `ctx.active_skill_context` upon skill execution, and updated the frontend `ChatArea.tsx` to map raw skill IDs to localized friendly display names (`displayName`) on chat bubble badges.
+- **Facebook OAuth App Config Consolidation (FEATURE / COMPLETE)**: Unified fallback Facebook app configurations by reading `appId` and `appSecret` dynamically from `facebook-oauth-config.json` as the single source of truth, removing hardcoded credentials from `facebookAppConfig.js`, and ensuring Meta webhook verification reads the correct secret.
+- **Facebook Connected Account Profile Display (FEATURE / COMPLETE)**: Enhanced the Facebook OAuth settings page to display the profile details (name and avatar) of the currently authenticated Facebook personal account:
+  1. Updated backend `GET /facebook-oauth/status` in `facebookOAuthRoutes.js` to query Meta's `/me` Graph API endpoint dynamically if the company possesses a valid `facebookUserAccessToken`.
+  2. Enhanced frontend `FacebookOAuth.tsx` to render a profile card showing the Facebook user's profile picture and name in both the connected and disconnected UI states.
+  3. Resolved a pre-existing TypeScript compiler type narrowing mismatch (TS2367) on `canReconnect` by simplifying the disabled condition inside the outer check.
+- **AI Agent Pause Toggle System (FEATURE / COMPLETE)**: Implemented conversation-level toggling to pause/resume AI replies across all channels (WhatsApp, Facebook, Instagram, Telegram):
+  1. Updated `conversationCrudController.js` and `unifiedInboxController.js` to support updating `aiEnabled` on specific conversation rows.
+  2. Added `aiEnabled !== false` validation checks before triggering agent auto-replies in `WhatsAppInboundService.js`, `WhatsAppManager.js`, `TelegramBotService.js`, and `allFunctions.js`.
+  3. Integrated client toggle support in `useConversationActions.ts` hook.
+  4. Added premium visual toggle buttons (🤖 icon) in `WhatsAppChat.tsx`, `ChatWindow.tsx`, `TelegramConversationsPro.tsx`, `MessengerChat-final.tsx`, `FacebookInbox.tsx`, `InstagramInbox.tsx`, and `UnifiedInbox.tsx`.
+- **WhatsApp Baileys Wrapped Messages Support (BUGFIX / CRITICAL)**: Added support for incoming wrapped messages (such as `viewOnceMessage`, `viewOnceMessageV2`, `viewOnceMessageV2Extension`, `ephemeralMessage`, and `documentWithCaptionMessage`) by recursively unwrapping them in `extractMessageContent` in `WhatsAppManager.js` before processing, avoiding message loss.
+- **WhatsApp Message Handler Mocking (BUGFIX)**: Fixed failing tests in `WhatsAppMessageHandler.sendTextSession.test.js` by adding `getSocketReadyState` to the mocked `WhatsAppManager` to resolve `TypeError: WhatsAppManager.getSocketReadyState is not a function`.
+- **WhatsApp Baileys Zombie Session Detection Hardening (BUGFIX / CRITICAL)**: Resolved a critical issue where active, newly authenticated sessions were incorrectly identified as zombie sessions and wiped immediately after opening. Added a check to verify that both `creds.registered` is false AND `sock.user` is not defined before declaring a session as a zombie.
+
+## 2026-07-13 / 2026-03-09
+- **Facebook Inbox Space Optimization & Mobile Layout Clutter (FIX)**: Overhauled the layout structure of the Facebook Inbox page to eliminate wasted space on desktop and resolve cluttered displays on mobile viewports:
+  1. Made the left conversation list column and right customer details column widths responsive. The conversation list reduces to `256px` and the profile column to `268px` on medium screens, freeing up over 60px of screen width for the chat thread.
+  2. Reduced main workspace gap and padding (stage margins) to maximize content container space.
+  3. Re-configured notes and profile drawers to occupy `85%` of mobile screens instead of `100%`, keeping the chat viewport visible in the background and making back-navigation more intuitive.
+  4. Implemented viewport resize monitoring inside `CustomerProfile.tsx` to automatically transition action buttons (Sound, notifications, order, block) into a compact row on screens < 768px, hiding their labels (`sr-only`) to avoid wrapping and collision.
+  5. Cleaned up typescript declared-but-unused compiler errors inside the profile component.
+- **WhatsApp Dead Socket & Pre-Send Validation (BUGFIX / CRITICAL)**: Hardened unofficial WhatsApp connection stability and message delivery:
+  1. Exported `getSocketReadyState` helper from `WhatsAppManager.js` to enable explicit check of WebSocket state.
+  2. Integrated `readyState` verification inside `isSendableBaileysSession()` and `getBaileysSessionReadinessReason()` in `WhatsAppMessageHandler.js` to treat non-open socket connections (CONNECTING, CLOSING, CLOSED) as unsendable.
+  3. Standardized session retrieval across all media, interactive buttons, list, and catalog sending actions in `WhatsAppMessageHandler.js` to fetch sessions through `getSendableBaileysSession()` rather than raw cache lookup, ensuring connection checks are performed before every type of outbound call.
+  4. Added automatic retry mechanism in `sendText()`: if sending fails due to a dead socket connection, the system force-restarts the WhatsApp session in the background (`forceRestart: true`), waits for reconnect, and retries transmission once.
+
 ## 2026-07-12 / 2026-03-09
 - **AI Service Self-Review Judge — Conversation History Context Fix (BUGFIX / CRITICAL)**: Fixed a bug where the self-review judge was operating without conversation history. Updated `_llm_call` in `skills_pipeline.py` to persist the assembled messages array (containing DB-backed conversation history and customer message) to `ctx.messages`. This ensures downstream stages (like the self-review judge) can access the full context of prior turns.
 - **AI Service Active Polishing & Refinement Layer (FEATURE / COMPLETE)**: Overhauled the self-review judge pipeline in `validate_reply.py` to act as an active editor/polishing layer rather than a strict gatekeeper:
@@ -170,6 +311,14 @@
   3. Updated `apps/ai-service/docs/skills-pipeline-architecture.md` to document the category result formatting behavior.
 - **Yasmine Greeting Repetition Prevention (REFACTOR)**: Addressed greeting repetition behavior in the Yasmine/sales-rep-v2 agent template:
   1. Added a strict instruction in `apps/backend/agents/sales-rep-v2-agent/SOUL.md` under the "Voice & Tone" section to prohibit repeating the greeting once the conversation is already in progress and the user has been initially greeted.
+
+
+## 2026-07-16 / 2026-03-09
+- **Company Dashboard Layout & Styling Redesign (FIX/UI/UX)**: Resolved layout gaps, alignment issues, and card stretching failures in the company dashboard page, especially under RTL configurations:
+  1. Updated `AppWidgetGrid.tsx` to utilize `grid-flow-row-dense` and properly handle responsive `colSpan` sizes (using `sm:col-span-2 xl:col-span-2` wrapper divs) to prevent empty grid cells.
+  2. Redesigned `AppWidgetCard.tsx` to set button widths to `w-full` for full stretch capability, corrected text alignment to `text-start` for standard RTL/LTR support, and added group-hover translations (`hover:-translate-y-1.5`) and transition animations for a premium visual feel.
+  3. Redesigned `AppWidgetMini.tsx` to set width to `w-full`, corrected text alignment to `text-start`, and improved hover animations.
+  4. Fixed TypeScript compilation errors (`TS2322` and `TS2532`) inside `AppWidgetGrid.tsx` and `AppWidgetMini.tsx` by casting translation values to strings and safe-extracting the first metrics item with non-null checks.
 
 
 ## 2026-07-03 / 2026-03-09

@@ -86,7 +86,7 @@ export const STAGE_DEFINITIONS: Array<{
 }> = [
   {
     key: "WAITING",
-    label: "في الانتظار",
+    label: "طلبات مؤكده",
     colorClass: "bg-amber-100 text-amber-800 border-amber-200",
     description: "طلبات مؤكدة لم يبدأ تجهيزها بعد",
   },

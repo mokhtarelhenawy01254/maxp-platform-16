@@ -75,6 +75,7 @@
     "i18next": "^22.4.10",
     "i18next-browser-languagedetector": "^7.0.1",
     "idb-keyval": "^6.2.2",
+    "jsbarcode": "^3.12.3",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "linkify-react": "^4.3.3",

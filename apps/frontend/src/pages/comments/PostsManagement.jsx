@@ -7,14 +7,13 @@ import {
   Settings,
   Layers,
   Rss,
-  Eye,
   MessageCircle,
   Clock,
   ChevronDown,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 
 const PostsManagement = ({ embedded = false }) => {
   const navigate = useNavigate();
@@ -35,6 +34,7 @@ const PostsManagement = ({ embedded = false }) => {
 
   const [enableDelayReply, setEnableDelayReply] = useState(true);
   const [showMobilePages, setShowMobilePages] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchPages();
@@ -44,6 +44,10 @@ const PostsManagement = ({ embedded = false }) => {
     if (selectedPage) {
       fetchPosts();
       fetchPageSettings();
+      setSyncing(true);
+      CommentService.syncPagePosts(selectedPage).then(() => {
+        if (selectedPage) fetchPosts();
+      }).catch(() => {}).finally(() => setSyncing(false));
       setShowMobilePages(false);
     } else {
       setPosts([]);
@@ -59,7 +63,10 @@ const PostsManagement = ({ embedded = false }) => {
       if (response.success && response.data) {
         setPages(response.data);
         if (response.data.length > 0 && !selectedPage) {
-          setSelectedPage(response.data[0].pageId);
+          const firstWithPosts = response.data.find(p => p.totalPosts > 0);
+          if (firstWithPosts) {
+            setSelectedPage(firstWithPosts.pageId);
+          }
         }
       }
     } catch (error) {
@@ -187,6 +194,7 @@ const PostsManagement = ({ embedded = false }) => {
   };
 
   const imgErrorHandler = (e, name) => {
+    e.target.onerror = null;
     e.target.src =
       "https://ui-avatars.com/api/?name=" +
       encodeURIComponent(name || "Page") +
@@ -290,10 +298,7 @@ const PostsManagement = ({ embedded = false }) => {
                 </div>
               </div>
 
-              <Button variant="outline" size="sm" className="text-[#6b52a3] font-bold text-[10px] md:text-xs shadow-sm gap-1.5">
-                <Eye className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                تقارير الحملة ▾
-              </Button>
+
             </div>
           </div>
         </div>
@@ -446,11 +451,10 @@ const PostsManagement = ({ embedded = false }) => {
             <div className="flex items-center gap-1.5 md:gap-2 text-white font-bold text-sm md:text-lg">
               <Rss className="w-4 h-4 md:w-5 md:h-5" />
               <span>آخر المنشورات</span>
+              {syncing && <span className="text-white/70 text-xs mr-2 animate-pulse">جاري التحديث...</span>}
             </div>
             <div className="flex items-center gap-2 md:gap-4">
-              <button className="hidden md:inline-flex bg-white hover:bg-gray-50 text-[#e84b5c] text-[10px] md:text-sm font-bold px-3 md:px-5 py-1 md:py-1.5 rounded-full shadow-sm transition-colors whitespace-nowrap">
-                تعيين حملة بالمعرف
-              </button>
+
               <input
                 type="text"
                 placeholder="بحث..."
@@ -492,17 +496,23 @@ const PostsManagement = ({ embedded = false }) => {
                   >
                     <div className="flex items-center gap-3 md:block">
                       <div className="relative w-12 h-12 md:w-[80px] md:h-[80px] flex-shrink-0">
-                        <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-md">
+                        <div className="w-full h-full rounded-xl overflow-hidden bg-gray-100 border-2 border-white shadow-md">
                           {post.pictureUrl ? (
                             <img
                               src={post.pictureUrl}
                               alt=""
                               className="w-full h-full object-cover"
                               loading="lazy"
+                              width={320}
+                              height={320}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320"><rect width="320" height="320" fill="url(#g)"/><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%236b52a3"/><stop offset="100%" style="stop-color:%23e84b5c"/></linearGradient></defs><text x="160" y="160" text-anchor="middle" dominant-baseline="central" font-family="Arial" font-size="64" fill="white" opacity="0.6">📷</text></svg>');
+                              }}
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <MessageSquare className="w-4 h-4 md:w-6 md:h-6" />
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#6b52a3] to-[#e84b5c]">
+                              <MessageSquare className="w-4 h-4 md:w-6 md:h-6 text-white opacity-80" />
                             </div>
                           )}
                         </div>

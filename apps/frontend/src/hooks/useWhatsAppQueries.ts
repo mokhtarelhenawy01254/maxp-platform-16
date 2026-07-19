@@ -46,7 +46,10 @@ export interface Contact {
   pushName: string | null;
   profilePicUrl: string | null;
   isGroup: boolean;
+  isNewsletter: boolean;
   category: string | null;
+  leadCategoryId?: string | null;
+  leadCategory?: { id: string; name: string; color: string | null } | null;
   labels?: string[];
   unreadCount: number;
   lastMessageAt: string | null;
@@ -59,9 +62,11 @@ export interface Contact {
     phoneNumber: string | null;
   };
   customer: {
+    id: string;
     firstName: string;
     lastName: string;
     status: string;
+    conversations?: Array<{ id: string; aiEnabled: boolean }>;
   } | null;
   lastMessage?: {
     content: string | null;

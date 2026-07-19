@@ -14,8 +14,9 @@ const {
 
 const INDEX_HTML_CANDIDATES = [
   process.env.STOREFRONT_INDEX_HTML,
-  path.resolve(__dirname, "../../frontend/dist/index.html"),
   "/var/www/frontend2/dist/index.html",
+  path.resolve(__dirname, "../../frontend/dist/index.html"),
+  "/var/www/frontend/dist/index.html",
 ].filter(Boolean);
 
 let cachedIndexHtml = null;

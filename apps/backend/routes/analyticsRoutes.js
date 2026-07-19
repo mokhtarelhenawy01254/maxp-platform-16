@@ -43,6 +43,7 @@ router.get('/coupons', authenticateToken, analyticsController.getCouponsAnalytic
 router.get('/cod-performance', authenticateToken, analyticsController.getCODPerformanceAnalytics);
 
 // تحليل أسباب الإلغاء ومراجعة الطلبات الملغاة
+router.get('/today-ops', authenticateToken, analyticsController.getTodayOps);
 router.get('/cancellations', authenticateToken, analyticsController.getCancellationAnalytics);
 router.get('/cancellations/settings', authenticateToken, analyticsController.getCancellationReasonSettings);
 router.put('/cancellations/settings', authenticateToken, analyticsController.updateCancellationReasonSettings);

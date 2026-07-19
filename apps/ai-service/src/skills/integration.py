@@ -322,6 +322,21 @@ def get_skill_tool_names() -> list[str]:
     return [t.name for t in SKILL_TOOLS]
 
 
+def get_skill_allowed_tools(skill_id: str) -> list[str]:
+    """Return allowed tools for a skill — DB cache first, filesystem fallback.
+
+    Replaces direct filesystem reads in BaseAgent._resolve_tools().
+    """
+    meta = _get_skill_meta(skill_id)
+    if not meta:
+        return []
+    tools = meta.get("allowed_tools")
+    if tools is not None:
+        return [canonical_tool_name(str(t)) for t in tools]
+    tools = meta.get("allowedTools", meta.get("tools", []))
+    return [canonical_tool_name(str(t)) for t in tools]
+
+
 def _build_inline_skill(skill_id: str) -> InlineSkill | None:
     meta = _get_skill_meta(skill_id)
     if not meta:

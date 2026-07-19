@@ -1,7 +1,15 @@
 # System Structure & Architecture
 
+### Sidebar Navigation & Path Matching
+1. Refactored `isSidebarPathActive` in `matchSidebarPath.ts` to support generalized sub-path highlighting. It now returns true for sub-paths (e.g. `/orders/123` highlights `/orders`), while excluding root-level dashboards such as `/`, `/hr`, `/admin/booking`, and `/admin/education` to prevent duplicate active state styling.
+2. Extracted `NavLink` into a standalone, file-scoped component within `ClassicSidebar.tsx` to optimize React rendering performance and avoid reconciliation re-mount loops.
+
 ### API Endpoints
-1. Added FastAPI REST admin API endpoints for agent guardrails (mounted under the FastAPI `/admin` router prefix):
+1. Extended `/ai-admin/logs` endpoint (`LogListResponse` schema):
+   - `GET /api/v1/ai-admin/logs` — Extended response payload to include global aggregated stats (`success_count`, `failed_count`, and `avg_latency`) for the filtered keys and providers, computed across both PostgreSQL tables: `ai.provider_logs` (ORM) and `public.ai_provider_logs` (Raw SQL).
+2. Added Facebook connected user details to the `/facebook-oauth/status` endpoint:
+   - `GET /api/v1/facebook-oauth/status` — Now queries the database for the company's `facebookUserAccessToken` and makes a Graph API request to `GET /me` (fields: `id,name,picture`) to fetch the connected Facebook personal account profile info. Returns `facebookUser: { id, name, picture } | null`.
+2. Added FastAPI REST admin API endpoints for agent guardrails (mounted under the FastAPI `/admin` router prefix):
    - `GET /agents/{agent_id}/guardrails` (List active rules)
    - `POST /agents/{agent_id}/guardrails` (Create and translate raw feedback text to structured Excuse/Rebuttal/Action JSON via LLM + generate embeddings)
    - `PUT /agents/{agent_id}/guardrails/{rule_id}` (Edit rule details/state)
@@ -13,6 +21,8 @@
     - `POST /api/v1/whatsapp-inbox/conversations/:conversationId/messages/:messageId/correct` — Accepts `{ correction: string }`, resolves the preceding customer message, creates a `correction_auto` guardrail rule via the AI Service, sends the corrected text to the customer via WhatsApp, and updates conversation state. Protected by `conversationAccessGuard` and `requireDbPermission('inbox.send')`.
 19. **Unified Inbox AI Message Auto-Correction** — General Express endpoint for inline AI response correction across multiple platforms (WhatsApp, Facebook, Instagram, Telegram):
     - `POST /api/v1/unified-inbox/conversations/:conversationId/messages/:messageId/correct` — Accepts `{ correction: string }`, resolves the preceding customer message, creates a `correction_auto` guardrail rule via the AI Service, sends the corrected text to the customer via the appropriate platform-specific delivery method, updates conversation state, and persists the message to the database (for non-WhatsApp channels). Protected by `conversationAccessGuard` and `requireDbPermission('inbox.send')`.
+20. **Customer Tags (Distinct list)** — GET /api/v1/customers/tags/distinct: Returns a list of unique tags used by the company's customers along with the count of customers having each tag. Used for tags filter dropdowns in customer lists and WhatsApp template broadcasts.
+21. **Customer List Tag Criteria** — POST /api/v1/broadcast/customer-lists: Updated list creation and list membership resolution (`getCustomersInList`) to support `criteria.type === 'tag'` using Prisma relation filtering to select customers based on their assigned tags JSON array.
 
 2. The backend endpoint `/api/v1/ai-image/model-config` (handled by `getModelConfig` in `aiImageController.js`) now has its `allowedModels` payload fully consumed by the newly introduced model selection dropdown in the AI Image Generator interface.
 3. The backend template creation endpoint `/api/v1/whatsapp-templates/templates` (handled by `whatsappMetaTemplateController.createMetaTemplate`) was updated to propagate Meta's detailed API error payloads (including `error_user_title`, `error_user_msg`, and Meta subcodes) with the correct HTTP status code instead of swallowing them with a generic 500 status.
@@ -81,6 +91,70 @@
 - **GramJS Unhandled Rejection Alert Loop Isolation**: Added `isGramJsResolveError` helper in `recoverableUnhandledRejection.js` to identify and ignore `resolve() called for non-request instance` errors from the GramJS library, preventing an infinite feedback loop where unhandled rejections trigger Telegram alerts, which in turn generate new Telegram updates and trigger new errors.
 - **Merchant Guardrails Similarity Matching Threshold**: Lowered the default cosine similarity threshold inside `MerchantRuleGuardrail.get_relevant_rules` from 0.75 to 0.65 to ensure reliable semantic matching against customer messages featuring colloquial dialect variations.
 - **Compiled System Prompt Observability & Context Pipeline**: Refactored `_llm_call` in the skills pipeline to re-assign the fully-assembled system prompt (`enriched_prompt`) back to the `PipelineContext.system_prompt` field, ensuring it is propagated correctly to sandbox logs and database session traces.
+- **WhatsApp Baileys Wrapped Messages Unwrapping**: Enhanced the `extractMessageContent()` method in `WhatsAppManager.js` to recursively unwrap container structures (such as `viewOnceMessage`, `viewOnceMessageV2`, `viewOnceMessageV2Extension`, `ephemeralMessage`, and `documentWithCaptionMessage`) before extracting the underlying message type and content. This ensures full coverage for ephemeral and view-once media incoming messages.
+- **WhatsApp Baileys Zombie Session Detection Hardening**: Hardened the zombie check routine in `WhatsAppManager.js` during connection updates by verifying that `sock.user` is also missing before classifying a session with `registered: false` as a zombie, preventing active sessions from being accidentally wiped and disconnected right after successful pairing.
+
+### AI Agent Pause Toggle System
+1. **API Support (`PUT /conversations/:id`)**:
+   - `conversationCrudController.js` and `unifiedInboxController.js` (PUT `/api/v1/unified-inbox/conversations/:id`) now accept and process the `aiEnabled` boolean parameter in requests body, updating the corresponding database field on the `Conversation` model (and matching customer conversations for WhatsApp contacts).
+2. **Channel Auto-Reply Interceptors**:
+   - Integrated check for `conversation.aiEnabled !== false` into:
+     - `WhatsAppInboundService.js` (Meta Cloud WhatsApp webhook)
+     - `WhatsAppManager.js` (Baileys WhatsApp socket handler)
+     - `TelegramBotService.js` (Telegram update webhook)
+     - `allFunctions.js` (Facebook Messenger and Instagram webhook routing)
+3. **Frontend Integration**:
+   - Implemented `toggleAi` method in `useConversationActions.ts` hook.
+   - Updated `whatsappController.getConversations` and `unifiedInboxController.getUnifiedConversations` to return the `conversations` list containing `aiEnabled` states.
+   - Added interactive `🤖` toggle buttons to pause/resume AI replies in:
+     - `whatsapp-inbox/WhatsAppChat.tsx`
+     - `whatsapp/WhatsAppChat.tsx`
+     - `TelegramConversationsPro.tsx`
+     - `MessengerChat-final.tsx`
+     - `FacebookInbox.tsx`
+     - `InstagramInbox.tsx`
+     - `UnifiedInbox.tsx`
+
+### Facebook OAuth Configuration & Webhook Verification
+1. **Single Source of Truth Configuration (`facebook-oauth-config.json`)**:
+   - Removed hardcoded fallback Facebook app secrets from `facebookAppConfig.js`.
+   - Unified config loading to read `appId` and `appSecret` dynamically from `facebook-oauth-config.json` (managed via `/super-admin/facebook-oauth`) with environment variable overrides.
+   - Secured by clearing committed credentials in Git, adding it to `.gitignore`, and providing `facebook-oauth-config.example.json` as a baseline template.
+   - Updated `webhookController.js` to verify Meta webhook signatures using the app secret resolved from this unified module fallback.
+
+### AI Agent Sandbox
+1. **Agent Skills Visual Strip**:
+   - Added a dedicated skills display bar below the HeaderBar in `/admin/ai-hub?tab=sandbox` page (`AIAgentSandboxPage.tsx`).
+   - Fetches the rich skill list (including `displayName` and `description`) from the agent profile API on agent switch and displays them as a horizontal row of themed badges with a `Sparkles` icon.
+2. **Active Skill Context Tracing & Display Name Mapping**:
+   - Updated Python `skills_pipeline.py` to assign the matching resolved skill tool's properties to `ctx.active_skill_context` during the tool execution phase.
+   - Updated `ChatArea.tsx` and `AIAgentSandboxPage.tsx` to pass the loaded agent skill profile details and map the active skill ID returned in the metadata to its localized friendly `displayName` on assistant chat bubble badges.
+
+
+### Company Dashboard Layout Optimization
+1. **Grid Layout Sizing & Row Density**:
+   - Refactored the core grid layout inside `AppWidgetGrid.tsx` to enable `grid-flow-row-dense` row packing.
+   - Wrapped the active cards in conditional wrapper `div`s that dynamically assign responsive column-spanning tags (`sm:col-span-2 xl:col-span-2`) for double-width widgets, ensuring complete layout grid utilization without empty spaces.
+2. **Button Sizing & RTL Alignments**:
+   - Standardized button elements inside `AppWidgetCard.tsx` and `AppWidgetMini.tsx` to use full-width stretching (`w-full`) and logical text-start alignments (`text-start`), ensuring clean RTL layout compliance.
+   - Integrated micro-interactions such as scaling icons on group-hover (`group-hover:scale-110`) and slight translations (`hover:-translate-y-1.5`) for a premium user experience.
+
+### Customer vs. Lead Architecture
+1. **Unified Storage Model**: Both Customers (`/customers`) and Leads (`/leads`) share a single PostgreSQL database table/model (`Customer`, mapped to `"customers"` in Prisma). They are distinguished using the `status` enum field (`CustomersStatus` in `enums.prisma`).
+2. **Transition & Auto-Promotion**:
+   - Incoming WhatsApp conversations from unsaved contacts automatically create a `Customer` with `status: 'LEAD'` via `WhatsAppSyncService.js`.
+   - Once a lead submits a successful order, `enhancedOrderService.js` automatically upgrades their status from `LEAD` to `ACTIVE`.
+3. **Frontend Routing Division**:
+   - `/customers` is rendered by `CustomerList.tsx` showing all customer profiles (leads, active, inactive, blocked) with status filter toggles.
+   - `/leads` is rendered by `LeadsList.tsx` displaying profiles pre-filtered to `status: 'LEAD'`, serving as a focused pipeline for prospects.
+4. **WhatsApp Automation Integrations**:
+   - `LeadCategory` classifies leads (e.g. VIP, Warm Lead) and associates them with automatic follow-up and engagement sequences via `LeadFollowUpEnrollment` and `CustomerJourney` models defined in `whatsapp_automation.prisma`.
+
+### 2026 SOTA Agent Refactoring (No-Heuristics)
+1. **Removal of 2024-era Heuristic Hooks**: Fully deprecated and deleted `HotelEnforcementHook` (`hotel_hook.py`) from the pipeline hooks, eliminating brittle regex parsers, Egyptian mobile phone number matchers, Arabic month conversion dictionaries, and hardcoded `hotel_reserve` tool-call injection.
+2. **LLM-Native Tool Calling & Slot-Filling**: The `hotel-agent` now relies on clean, native tool calling schemas where the LLM itself evaluates the user's intent to book, parses arguments from context, and manages parameter validation (Pydantic schemas) dynamically.
+3. **Conversational Slot-Filling Prompting**: Enhanced `SOUL.md` and `TOOLS.md` prompts inside the `hotel-agent` templates directory to instruct the model to conversationally gather missing required fields (name, phone, dates) rather than inventing mock values or aborting.
+4. **Pydantic ValidationError Handling**: Upgraded `_execute_one_tool` inside the skills pipeline (`skills_pipeline.py`) to catch validation errors (`ValidationError`) from Pydantic input models during tool calling, formats them into a structured human-readable parameter-by-parameter error description, and feeds them back as a tool execution error to the LLM to guide self-correction.
 
 
 

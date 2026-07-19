@@ -616,11 +616,11 @@ const getStoreAnalytics = async (req, res) => {
       });
     }
 
-    const { startDate, endDate, period = '30' } = req.query;
+    const { startDate, endDate, period = '30', comparisonType = 'previous' } = req.query;
 
     const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
 
-    const analytics = await analyticsService.getStoreAnalytics(companyId, start, end);
+    const analytics = await analyticsService.getStoreAnalytics(companyId, start, end, comparisonType);
 
     res.json({
       success: true,
@@ -1960,7 +1960,8 @@ const getCustomerQualityAnalytics = async (req, res) => {
       return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, period } = req.query;
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
     const prisma = getSharedPrismaClient();
 
     const customers = await prisma.customer.findMany({
@@ -1969,12 +1970,12 @@ const getCustomerQualityAnalytics = async (req, res) => {
       },
       include: {
         orders: {
-          where: startDate && endDate ? {
+          where: {
             createdAt: {
-              gte: new Date(startDate),
-              lte: new Date(endDate)
+              gte: start,
+              lte: end
             }
-          } : {},
+          },
           select: {
             id: true,
             total: true,
@@ -2037,12 +2038,24 @@ const getCustomerQualityAnalytics = async (req, res) => {
         totalSpent,
         avgOrderValue: completedOrders > 0 ? (totalSpent / completedOrders).toFixed(2) : 0,
         daysSinceLastOrder,
+        lastOrderDate: lastOrderDate ? lastOrderDate.toISOString() : null,
         completionRate: (completionRate * 100).toFixed(2),
         score: Math.min(100, score),
         tier
       };
     }).filter(c => c.totalOrders > 0)
       .sort((a, b) => b.score - a.score);
+
+    const totalCustomers = customerScores.length;
+    const repeatCustomers = customerScores.filter(c => c.totalOrders > 1).length;
+    const newCustomers = customerScores.filter(c => c.totalOrders === 1).length;
+    const repeatRate = totalCustomers > 0 ? parseFloat(((repeatCustomers / totalCustomers) * 100).toFixed(1)) : 0;
+    const totalRevenue = customerScores.reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
+    const totalOrdersCount = customerScores.reduce((sum, c) => sum + c.totalOrders, 0);
+    const averageOrderValue = totalOrdersCount > 0 ? parseFloat((totalRevenue / totalOrdersCount).toFixed(2)) : 0;
+    const customerLifetimeValue = totalCustomers > 0 ? parseFloat((totalRevenue / totalCustomers).toFixed(2)) : 0;
+
+    const vipRevenue = customerScores.filter(c => c.tier === 'VIP').reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
 
     // Segment customers by tier
     const tierCounts = {
@@ -2052,19 +2065,39 @@ const getCustomerQualityAnalytics = async (req, res) => {
       'منخفض': customerScores.filter(c => c.tier === 'منخفض').length
     };
 
-    const totalRevenue = customerScores.reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
-    const vipRevenue = customerScores.filter(c => c.tier === 'VIP').reduce((sum, c) => sum + parseFloat(c.totalSpent), 0);
+    const topCustomers = customerScores.slice(0, 100).map(c => ({
+      id: c.customerId,
+      name: c.customerName,
+      email: c.customerPhone,
+      orders: c.totalOrders,
+      totalSpent: c.totalSpent,
+      lastOrderDate: c.lastOrderDate || new Date().toISOString()
+    }));
+
+    const segments = [
+      { segment: 'VIP', count: tierCounts.VIP, revenue: vipRevenue },
+      { segment: 'عالي', count: tierCounts['عالي'], revenue: 0 },
+      { segment: 'متوسط', count: tierCounts['متوسط'], revenue: 0 },
+      { segment: 'منخفض', count: tierCounts['منخفض'], revenue: 0 }
+    ];
 
     res.json({
       success: true,
       data: {
+        totalCustomers,
+        repeatCustomers,
+        newCustomers,
+        repeatRate,
+        averageOrderValue,
+        customerLifetimeValue,
+        topCustomers,
+        segments,
         customers: customerScores.slice(0, 100),
-        totalCustomers: customerScores.length,
         tierCounts,
         totalRevenue,
         vipRevenue,
-        vipRevenuePercentage: totalRevenue > 0 ? ((vipRevenue / totalRevenue) * 100).toFixed(2) : 0,
-        avgCustomerScore: customerScores.length > 0 ? (customerScores.reduce((sum, c) => sum + c.score, 0) / customerScores.length).toFixed(2) : 0
+        vipRevenuePercentage: totalRevenue > 0 ? parseFloat(((vipRevenue / totalRevenue) * 100).toFixed(2)) : 0,
+        avgCustomerScore: customerScores.length > 0 ? parseFloat((customerScores.reduce((sum, c) => sum + c.score, 0) / customerScores.length).toFixed(2)) : 0
       }
     });
   } catch (error) {
@@ -2816,7 +2849,8 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       where: { companyId: String(companyId), isActive: true },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         email: true,
         role: true
       }
@@ -2838,7 +2872,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
     users.forEach(user => {
       userPerformance[user.id] = {
         userId: user.id,
-        userName: user.name,
+        userName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
         email: user.email,
         role: user.role,
         ordersCreated: 0,
@@ -3589,6 +3623,7 @@ const getPublicStoreAnalytics = async (req, res) => {
       data: analytics,
       period: { start, end, days: period }
     });
+    return;
   } catch (error) {
     console.error('Error in getPublicStoreAnalytics:', error);
     res.status(500).json({
@@ -4104,6 +4139,156 @@ const getStatusSummaryItems = async (req, res) => {
   }
 };
 
+const getTodayOps = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+    const prisma = getSharedPrismaClient();
+    const now = new Date();
+    const todayS = new Date(now); todayS.setHours(0,0,0,0);
+    const todayE = new Date(now); todayE.setHours(23,59,59,999);
+
+    // ── Section 1: شغل النهارده (Actions Today) ──
+    // All status-change actions that happened today
+    const todayHistory = await prisma.orderStatusHistory.findMany({
+      where: { order: { companyId }, createdAt: { gte: todayS, lte: todayE } },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      select: { id: true, orderId: true, guestOrderId: true, status: true, oldStatus: true, changedBy: true, userName: true, createdAt: true }
+    });
+
+    // Confirmations today (via Order.confirmedAt)
+    const confirmsFromDb = await prisma.order.count({ where: { companyId, confirmedAt: { gte: todayS, lte: todayE } } });
+    // Also track confirmed guest orders via history today
+    const guestConfirmIds = [...new Set(todayHistory.filter(h => h.status === 'CONFIRMED' && h.guestOrderId).map(h => h.guestOrderId))];
+    const guestCancelsIds = [...new Set(todayHistory.filter(h => h.status === 'CANCELLED' && h.guestOrderId).map(h => h.guestOrderId))];
+    // Cancellations today (via Order.status + updatedAt today, OR via history)
+    const cancelsFromDb = await prisma.order.count({ where: { companyId, status: 'CANCELLED', updatedAt: { gte: todayS, lte: todayE } } });
+
+    // Actions summary
+    const todayConfirms = confirmsFromDb + guestConfirmIds.length;
+    const todayCancels = cancelsFromDb + guestCancelsIds.length;
+
+    // Team grouping: who did what today
+    const teamMap = {};
+    todayHistory.forEach(h => {
+      const name = h.userName || h.changedBy || 'system';
+      if (!teamMap[name]) teamMap[name] = { confirms: 0, cancels: 0, others: 0, total: 0 };
+      teamMap[name].total++;
+      if (h.status === 'CONFIRMED') teamMap[name].confirms++;
+      else if (h.status === 'CANCELLED') teamMap[name].cancels++;
+      else teamMap[name].others++;
+    });
+
+    // Build order lookup for today's history
+    const hOrderIds = [...new Set(todayHistory.filter(h => h.orderId).map(h => h.orderId))].filter(Boolean);
+    const hGuestIds = [...new Set(todayHistory.filter(h => h.guestOrderId).map(h => h.guestOrderId))].filter(Boolean);
+    let hOrderMap = {};
+    let hGuestMap = {};
+    if (hOrderIds.length) {
+      const hOrders = await prisma.order.findMany({ where: { id: { in: hOrderIds } }, select: { id: true, orderNumber: true, createdAt: true } });
+      hOrders.forEach(o => hOrderMap[o.id] = o);
+    }
+    if (hGuestIds.length) {
+      const hGuests = await prisma.guestOrder.findMany({ where: { id: { in: hGuestIds } }, select: { id: true, orderNumber: true, createdAt: true } });
+      hGuests.forEach(o => hGuestMap[o.id] = o);
+    }
+
+    // Distinguish old vs new orders for today's actions
+    const actionsFeed = todayHistory.slice(0, 100).map(h => {
+      const ord = hOrderMap[h.orderId] || hGuestMap[h.guestOrderId];
+      const orderCreated = ord ? new Date(ord.createdAt) : null;
+      const isOld = orderCreated && orderCreated < todayS;
+      return {
+        id: h.id,
+        orderLabel: ord ? ord.orderNumber : (h.orderId || h.guestOrderId || '').slice(0, 8),
+        oldStatus: h.oldStatus, newStatus: h.status,
+        changedBy: h.userName || h.changedBy || 'system',
+        createdAt: h.createdAt,
+        orderDate: ord ? ord.createdAt : null,
+        isOldOrder: isOld,
+      };
+    });
+
+    // ── Section 2: تقرير يوم (Day Snapshot) ──
+    // نستخدم snapshotDate من query洗干净، افتراضيًا اليوم
+    const { snapshotDate } = req.query || {};
+    let snapS = snapshotDate ? normalizeAnalyticsDateInput(snapshotDate) : new Date(todayS);
+    if (!snapS) { snapS = new Date(todayS); }
+    const snapE = new Date(snapS); snapE.setHours(23, 59, 59, 999);
+
+    const snapOrders = await prisma.order.findMany({
+      where: { companyId, createdAt: { gte: snapS, lte: snapE } },
+      select: { id: true, orderNumber: true, customerName: true, customerPhone: true, total: true, status: true, confirmedAt: true, createdAt: true, sourceType: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const snapGuests = await prisma.guestOrder.findMany({
+      where: { companyId, createdAt: { gte: snapS, lte: snapE } },
+      select: { id: true, orderNumber: true, guestName: true, guestPhone: true, finalTotal: true, status: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Status distribution for snapshot
+    const snapStatusMap = {};
+    snapOrders.forEach(o => { snapStatusMap[o.status] = (snapStatusMap[o.status] || 0) + 1; });
+    snapGuests.forEach(o => { snapStatusMap[o.status] = (snapStatusMap[o.status] || 0) + 1; });
+    const snapStatusBreakdown = Object.entries(snapStatusMap)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Pending orders in snapshot (not confirmed, not cancelled/terminal)
+    const terminalStatuses = ['CANCELLED','DELIVERED','REFUNDED','DUPLICATE_ORDER'];
+    const snapPending = snapOrders.filter(o => !o.confirmedAt && !terminalStatuses.includes(o.status));
+    const snapPendingGuests = snapGuests.filter(o => !terminalStatuses.includes(o.status));
+
+    const snapshot = {
+      date: snapS.toISOString().slice(0, 10),
+      totalOrders: snapOrders.length + snapGuests.length,
+      regular: snapOrders.length,
+      guests: snapGuests.length,
+      pendingList: snapPending.slice(0, 50).map(o => ({
+        orderNumber: o.orderNumber, customerName: o.customerName, customerPhone: o.customerPhone,
+        total: o.total, status: o.status, sourceType: o.sourceType, createdAt: o.createdAt,
+      })),
+      pendingListGuests: snapPendingGuests.slice(0, 50).map(o => ({
+        orderNumber: o.orderNumber, customerName: o.guestName, customerPhone: o.guestPhone,
+        total: o.finalTotal, status: o.status, createdAt: o.createdAt,
+      })),
+      statusBreakdown: snapStatusBreakdown,
+      // Hourly distribution (for orders created on that day)
+      hourly: Object.entries(
+        [...snapOrders, ...snapGuests].reduce(function(acc, o) {
+          const h = new Date(o.createdAt).getHours();
+          acc[h] = (acc[h] || 0) + 1;
+          return acc;
+        }, {})
+      ).sort(function(a, b) { return Number(a[0]) - Number(b[0]); }).map(function(e) { return { hour: Number(e[0]), count: e[1] }; }),
+    };
+
+    res.json({
+      success: true,
+      data: {
+        todayActions: {
+          confirms: todayConfirms,
+          cancels: todayCancels,
+          total: todayConfirms + todayCancels,
+          team: Object.entries(teamMap).map(function(e) { return { name: e[0], confirms: e[1].confirms, cancels: e[1].cancels, others: e[1].others, total: e[1].total }; }).sort(function(a, b) { return b.total - a.total; }),
+          feed: actionsFeed,
+        },
+        daySnapshot: snapshot,
+      },
+    });
+  } catch (error) {
+    console.error('Error in getTodayOps:', error);
+    res.status(200).json({ success: true, data: {
+      todayActions: { confirms: 0, cancels: 0, total: 0, team: [], feed: [] },
+      daySnapshot: { date: '', totalOrders: 0, regular: 0, guests: 0, pendingList: [], pendingListGuests: [], statusBreakdown: [], hourly: [] },
+    }, error: error.message });
+  }
+};
+
 module.exports = {
   getStoreAnalytics,
   getConversionRate,
@@ -4138,6 +4323,7 @@ module.exports = {
   getStatusSummaryReport,
   getStatusSummaryOrders,
   getStatusSummaryItems,
+  getTodayOps,
   // Public endpoints
   getPublicStoreAnalytics,
   getPublicTopProducts,

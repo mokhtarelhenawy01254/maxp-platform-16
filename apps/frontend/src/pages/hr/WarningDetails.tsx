@@ -131,7 +131,7 @@ const WarningDetails: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-full lg:max-w-7xl mx-auto overflow-hidden" dir="rtl">
+    <div className="p-6 space-y-6 max-w-full lg:max-w-6xl 2xl:max-w-7xl mx-auto overflow-hidden" dir="rtl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
         <div className="flex items-center gap-5 min-w-0 flex-1">
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl text-blue-600 dark:text-blue-400 flex-shrink-0">

@@ -6,7 +6,7 @@ const createOwnerSidebar = () =>
     role: "OWNER",
     company: {
       isCurrent: true,
-      activeApps: ["ecommerce-basic"],
+      activeApps: ["store"],
     },
   });
 

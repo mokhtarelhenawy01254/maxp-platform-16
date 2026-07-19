@@ -80,7 +80,6 @@ interface EmployeeStat {
 
 interface AnalyticsSummary {
   totalIncomingConversations: number;
-  totalOutgoingConversations: number;
   totalAssigned: number;
   totalReplied: number;
   totalUnreplied: number;
@@ -499,6 +498,10 @@ const WhatsAppEmployeeAnalytics: React.FC<{
   );
 
   const maxMessages = topActive[0]?.outgoingMessages || 1;
+  const avgAssignedConv = useMemo(
+    () => employees.reduce((s, e) => s + e.assignedConversations, 0) / Math.max(1, employees.length),
+    [employees],
+  );
 
   // Chart data for per-employee bars
   const chartData = useMemo(() =>
@@ -931,7 +934,7 @@ const WhatsAppEmployeeAnalytics: React.FC<{
                     <TableBody>
                       {sortedEmployees.map((emp, idx) => {
                         const perfScore =
-                          (emp.responseRate + Math.min(100, emp.outgoingMessages / Math.max(1, maxMessages) * 100)) / 2;
+                          emp.responseRate * 0.7 + Math.min(100, emp.assignedConversations / Math.max(1, avgAssignedConv) * 100) * 0.3;
                         const perfColor =
                           perfScore >= 70
                             ? "text-[color:var(--color-success)]"

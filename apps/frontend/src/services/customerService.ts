@@ -49,19 +49,6 @@ interface CustomerStats {
   daysSinceLastContact?: number;
 }
 
-interface CustomerSegments {
-  total: number;
-  active: number;
-  leads: number;
-  vip: number;
-  recent: number;
-  segments: Array<{
-    name: string;
-    count: number;
-    percentage: number;
-  }>;
-}
-
 interface CreateCustomerData {
   firstName: string;
   lastName: string;
@@ -89,6 +76,7 @@ interface CustomerFilters {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   hasOrders?: boolean;
+  tag?: string;
 }
 
 class CustomerService {
@@ -116,6 +104,14 @@ class CustomerService {
 
     const response = await apiClient.get(`/customers?${params.toString()}`);
     return response.data;
+  }
+
+  /**
+   * Get all distinct tags used by company customers
+   */
+  async getDistinctTags(): Promise<{ name: string; count: number }[]> {
+    const response = await apiClient.get("/customers/tags/distinct");
+    return response.data?.data || [];
   }
 
   /**
@@ -162,13 +158,6 @@ class CustomerService {
     return response.data.data;
   }
 
-  /**
-   * Get customer statistics
-   */
-  async getCustomerStats(id: string): Promise<CustomerStats> {
-    const response = await apiClient.get(`/customers/${id}/stats`);
-    return response.data.data;
-  }
 
   /**
    * Get customer interactions
@@ -215,13 +204,6 @@ class CustomerService {
     return response.data.data;
   }
 
-  /**
-   * Get customer segments
-   */
-  async getCustomerSegments(): Promise<CustomerSegments> {
-    const response = await apiClient.get("/customers/segments");
-    return response.data.data;
-  }
 
   /**
    * Export customers
@@ -290,6 +272,14 @@ class CustomerService {
       "ملغي",
     ];
   }
+
+  /**
+   * Update customer tags
+   */
+  async updateCustomerTags(customerId: string, tags: string[]): Promise<any> {
+    const response = await apiClient.put(`/customers/${customerId}/tags`, { tags });
+    return response.data;
+  }
 }
 
 export const customerService = new CustomerService();
@@ -297,7 +287,6 @@ export type {
   Customer,
   CustomerNote,
   CustomerStats,
-  CustomerSegments,
   CreateCustomerData,
   UpdateCustomerData,
   CustomerFilters,

@@ -358,3 +358,7 @@ dist-check/
 
 # Backup translation files (manual backups)
 *.backup.json
+
+# Facebook Local OAuth Config
+apps/backend/data/facebook-oauth-config.json
+

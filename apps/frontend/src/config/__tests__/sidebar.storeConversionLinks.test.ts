@@ -12,7 +12,7 @@ const createOwnerSidebar = (activeApps: string[]) =>
 
 describe("store conversion sidebar links", () => {
   it("shows grouped store conversion pages inside the store section", () => {
-    const config = createOwnerSidebar(["ecommerce-basic", "analytics-advanced"]);
+    const config = createOwnerSidebar(["store", "analytics-advanced"]);
 
     const storefrontSection = config.find(
       (section) => section.id === "storefront-design",
@@ -23,11 +23,11 @@ describe("store conversion sidebar links", () => {
         ?.filter((item) => item.hidden !== true)
         .map((item) => item.label) || [];
 
-    expect(labels).toContain("أدوات التحويل");
-    expect(labels).toContain("العروض والباقات");
-    expect(labels).toContain("ودجات الموقع");
-    expect(labels).toContain("أوضاع البيع");
-    expect(labels).toContain("المراجعات والثقة");
+    expect(labels).toContain("sidebar.conversionTools");
+    expect(labels).toContain("sidebar.offersBundles");
+    expect(labels).toContain("sidebar.growthWidgets");
+    expect(labels).toContain("sidebar.sellingModes");
+    expect(labels).toContain("sidebar.reviewsSocialProof");
   });
 
   it("shows conversion pages when only the granular conversion-suite app is active", () => {
@@ -83,42 +83,6 @@ describe("granular marketplace gates", () => {
     expect(config.find((section) => section.id === "appointments")?.hidden).not.toBe(true);
     expect(config.find((section) => section.id === "tasks")?.hidden).not.toBe(true);
     expect(config.find((section) => section.id === "ai")).toBeUndefined();
-  });
-});
-
-describe("marketplace feature audit sidebar link", () => {
-  it("shows the audit link to marketplace admins", () => {
-    const config = getSidebarConfig((key) => key, {
-      role: "OWNER",
-      company: {
-        isCurrent: true,
-        activeApps: [],
-      },
-    });
-
-    const marketplaceSection = config.find((section) => section.id === "marketplace");
-    const auditLink = marketplaceSection?.items.find(
-      (item) => item.to === "/marketplace/feature-audit",
-    );
-
-    expect(auditLink?.hidden).toBe(false);
-  });
-
-  it("hides the audit link from regular team members", () => {
-    const config = getSidebarConfig((key) => key, {
-      role: "EMPLOYEE",
-      company: {
-        isCurrent: true,
-        activeApps: [],
-      },
-    });
-
-    const marketplaceSection = config.find((section) => section.id === "marketplace");
-    const auditLink = marketplaceSection?.items.find(
-      (item) => item.to === "/marketplace/feature-audit",
-    );
-
-    expect(auditLink?.hidden).toBe(true);
   });
 });
 

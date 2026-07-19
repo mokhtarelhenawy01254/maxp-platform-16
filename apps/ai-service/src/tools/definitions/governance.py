@@ -2,10 +2,16 @@ from __future__ import annotations
 
 from typing import Any
 
+import structlog
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
+import src.db.session as _db_mod
 from src.tools.definitions._helpers import _write_result
+from src.tools.facebook_client import FacebookGraphClient
+from src.tools.repositories.facebook_page_repository import FacebookPageRepository
+
+logger = structlog.get_logger(__name__)
 
 
 class SchedulerCreateJobInput(BaseModel):
@@ -77,6 +83,53 @@ async def message_broadcast(input_data: MessageBroadcastInput) -> dict[str, Any]
         "message": input_data.message,
         "audience": input_data.audience,
     }, input_data.company_id or "")
+
+
+async def send_facebook_reply(
+    company_id: str,
+    recipient_id: str,
+    message: str,
+    page_id: str,
+    message_type: str = "TEXT",
+    media_url: str | None = None,
+) -> dict[str, Any]:
+    if not company_id or not recipient_id or not page_id:
+        return {"success": False, "error": "Missing required params"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = FacebookPageRepository(sess)
+        token = await repo.get_page_token(company_id, page_id)
+
+    if not token:
+        return {"success": False, "error": "Facebook page not configured or token not found"}
+
+    client = FacebookGraphClient(token)
+
+    try:
+        if message_type == "IMAGE" and media_url:
+            result = await client._client.request(
+                "POST", "/me/messages",
+                json={
+                    "recipient": {"id": recipient_id},
+                    "message": {
+                        "attachment": {
+                            "type": "image",
+                            "payload": {"url": media_url, "is_reusable": True},
+                        }
+                    },
+                    "access_token": token,
+                },
+            )
+            result.raise_for_status()
+            data = result.json()
+        else:
+            data = await client.send_message(recipient_id, message)
+
+        return {"success": True, "result": data, "messageId": data.get("message_id", "")}
+    except Exception as exc:
+        logger.error("facebook_reply_failed", error=str(exc))
+        return {"success": False, "error": str(exc)}
 
 
 scheduler_create_job_tool = FunctionTool(

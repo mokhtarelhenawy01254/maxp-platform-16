@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   ChevronDownIcon,
@@ -44,7 +45,6 @@ import { usePreparationQueueUiState } from "./preparation/usePreparationQueueUiS
 import PreparationBulkActions from "./preparation/components/PreparationBulkActions";
 import PreparationFilters from "./preparation/components/PreparationFilters";
 import PreparationOrdersTable from "./preparation/components/PreparationOrdersTable";
-import PreparationStats from "./preparation/components/PreparationStats";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 
 type BulkStatusResult = {
@@ -53,6 +53,7 @@ type BulkStatusResult = {
 };
 
 const PreparationQueue: React.FC = () => {
+  const navigate = useNavigate();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
@@ -98,7 +99,6 @@ const PreparationQueue: React.FC = () => {
     Record<string, ShortageHoldDetails>
   >({});
   const [transferingItemKey, setTransferingItemKey] = useState<string | null>(null);
-  const [showStats, setShowStats] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [printingOrderNumber, setPrintingOrderNumber] = useState<string | null>(
     null,
@@ -106,6 +106,8 @@ const PreparationQueue: React.FC = () => {
   const [shortageSavingOrderId, setShortageSavingOrderId] = useState<
     string | null
   >(null);
+  const [sendingToTurbo, setSendingToTurbo] = useState(false);
+  const [printingInvoices, setPrintingInvoices] = useState(false);
 
   const {
     activeStage,
@@ -353,14 +355,8 @@ const PreparationQueue: React.FC = () => {
   const totalPages = Math.max(1, pagination.pages);
   const paginatedOrders = preparationOrders;
   const visibleOrdersCount = summary.visibleTotal;
-  const searchedOrdersCount = summary.filteredTotal;
-  const readyCount = summary.readyCount;
-  const shortageCount = summary.shortageCount;
-  const shortageHoldCount = summary.shortageHoldCount;
-  const overdueShortageFollowUpCount = summary.overdueShortageFollowUpCount;
   const allOverdueShortageFollowUpCount =
     summary.allOverdueShortageFollowUpCount;
-  const readyToShipCount = summary.readyToShipCount;
 
   useEffect(() => {
     uiActions.clampPage(totalPages);
@@ -736,6 +732,79 @@ const PreparationQueue: React.FC = () => {
     validateTransition,
   ]);
 
+  const handleBulkUpdateAll = useCallback(async () => {
+    if (!bulkStatus || paginatedOrders.length === 0) return;
+
+    const validOrders: PreparationOrder[] = [];
+    const invalidOrders: PreparationOrder[] = [];
+
+    paginatedOrders.forEach((order) => {
+      const validation = validateTransition(order, bulkStatus);
+      if (validation.valid) {
+        validOrders.push(order);
+      } else {
+        invalidOrders.push(order);
+      }
+    });
+
+    if (validOrders.length === 0) {
+      toast.error("كل الطلبات الظاهرة مخالفة لقواعد التجهيز الحالية");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `تحديث ${validOrders.length} طلب إلى مرحلة ${
+        statusLabelMap.get(bulkStatus) || bulkStatus
+      }${invalidOrders.length > 0 ? ` مع استبعاد ${invalidOrders.length} طلب غير مطابق` : ""}؟`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setBulkUpdating(true);
+      const response = await apiClient.post("/orders-new/bulk/status", {
+        orderIds: validOrders.map((order) => order.orderNumber),
+        status: bulkStatus,
+      });
+
+      const results: BulkStatusResult[] = Array.isArray(response.data?.data?.results)
+        ? response.data.data.results
+        : [];
+      const successIds = results
+        .filter((result) => result.success)
+        .map((result) => String(result.id));
+
+      if (successIds.length > 0) {
+        updateLocalStatuses(successIds, bulkStatus);
+      }
+
+      const failedCount = results.filter((result) => !result.success).length;
+      toast.success(
+        failedCount > 0
+          ? `تم تحديث ${successIds.length} طلب وفشل ${failedCount} طلب`
+          : `تم تحديث ${successIds.length} طلب بنجاح`,
+      );
+
+      uiActions.clearBulkControls();
+      void fetchAll();
+    } catch (error: unknown) {
+      console.error("Failed bulk status update all:", error);
+      toast.error(
+        getApiErrorMessage(error) || "تعذر تحديث جميع الطلبات",
+      );
+    } finally {
+      setBulkUpdating(false);
+    }
+  }, [
+    bulkStatus,
+    paginatedOrders,
+    statusLabelMap,
+    updateLocalStatuses,
+    uiActions,
+    fetchAll,
+    validateTransition,
+  ]);
+
   const handleQuickTransfer = useCallback(
     async (orderNumber: string, item: ItemInsight) => {
       if (!selectedWarehouseId) {
@@ -787,6 +856,74 @@ const PreparationQueue: React.FC = () => {
     },
     [fetchInventory, inventorySummaryByProduct, selectedWarehouseId],
   );
+
+  const handleSendToTurbo = useCallback(async () => {
+    if (selectedOrders.length === 0) {
+      toast.error("حدد طلبًا واحدًا على الأقل للإرسال إلى تربو");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `إرسال ${selectedOrders.length} طلب إلى تربو؟`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setSendingToTurbo(true);
+      const response = await apiClient.post("/turbo/bulk/create-shipments", {
+        orderIds: selectedOrders,
+      });
+
+      if (response.data?.success) {
+        const data = response.data.data;
+        toast.success(
+          `تم إرسال ${data.success || 0} طلب إلى تربو بنجاح` +
+            (data.failed > 0 ? `، فشل ${data.failed} طلب` : ""),
+        );
+        uiActions.clearBulkControls();
+        void fetchAll();
+      } else {
+        toast.error(response.data?.error || "فشل الإرسال إلى تربو");
+      }
+    } catch (error: unknown) {
+      console.error("Failed to send to Turbo:", error);
+      toast.error(getApiErrorMessage(error) || "تعذر الإرسال إلى تربو");
+    } finally {
+      setSendingToTurbo(false);
+    }
+  }, [fetchAll, selectedOrders, uiActions]);
+
+  const handlePrintInvoices = useCallback(async () => {
+    if (selectedOrders.length === 0) {
+      toast.error("حدد طلبًا واحدًا على الأقل لطباعة الفواتير");
+      return;
+    }
+
+    try {
+      setPrintingInvoices(true);
+      const response = await apiClient.post("/order-invoices/bulk-generate", {
+        orderIds: selectedOrders,
+      });
+
+      if (response.data?.success) {
+        const invoices: Array<{ id: string }> = response.data.data?.invoices || [];
+        if (invoices.length === 0) {
+          toast.error("لم يتم العثور على فواتير للطلبات المحددة");
+          return;
+        }
+
+        const invoiceIds = invoices.map((inv) => inv.id).join(",");
+        navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
+      } else {
+        toast.error(response.data?.message || "فشل في تجهيز الفواتير");
+      }
+    } catch (error: unknown) {
+      console.error("Failed to print invoices:", error);
+      toast.error(getApiErrorMessage(error) || "تعذر طباعة الفواتير");
+    } finally {
+      setPrintingInvoices(false);
+    }
+  }, [navigate, selectedOrders]);
 
   const handleMarkAsShortageHold = useCallback(
     async (orderNumber: string) => {
@@ -858,33 +995,6 @@ const PreparationQueue: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <button
-          type="button"
-          onClick={() => setShowStats((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-        >
-          <span>الإحصائيات</span>
-          <ChevronDownIcon
-            className={`h-4 w-4 text-gray-400 transition-transform ${
-              showStats ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        {showStats && (
-          <div className="border-t border-gray-100 px-4 pb-4 pt-3">
-            <PreparationStats
-              searchedOrdersCount={searchedOrdersCount}
-              readyCount={readyCount}
-              shortageCount={shortageCount}
-              readyToShipCount={readyToShipCount}
-              shortageHoldCount={shortageHoldCount}
-              overdueShortageFollowUpCount={overdueShortageFollowUpCount}
-            />
-          </div>
-        )}
-      </div>
-
       {isMerchantUser ? (
         <MerchantOperationsSummary
           formatPrice={formatPrice}
@@ -952,20 +1062,32 @@ const PreparationQueue: React.FC = () => {
             />
           </div>
         )}
-      </div>
 
-      <PreparationBulkActions
-        selectedOrdersCount={selectedOrders.length}
-        bulkStatus={bulkStatus}
-        statusOptions={statusOptions}
-        statusLabelMap={statusLabelMap}
-        bulkUpdating={bulkUpdating}
-        preparationEnabled={preparationSettings.enabled}
-        bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
-        onBulkStatusChange={uiActions.setBulkStatus}
-        onApply={() => void handleBulkUpdate()}
-        onClear={uiActions.clearBulkControls}
-      />
+        <div className="border-t border-gray-100 px-4 py-3">
+          <PreparationBulkActions
+            compact
+            selectedOrdersCount={selectedOrders.length}
+            bulkStatus={bulkStatus}
+            statusOptions={statusOptions}
+            statusLabelMap={statusLabelMap}
+            bulkUpdating={bulkUpdating}
+            preparationEnabled={preparationSettings.enabled}
+            bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
+            allVisibleSelected={allVisibleSelected}
+            totalVisibleOrders={paginatedOrders.length}
+            sendingToTurbo={sendingToTurbo}
+            printingInvoices={printingInvoices}
+            onBulkStatusChange={uiActions.setBulkStatus}
+            onApply={() => void handleBulkUpdate()}
+            onApplyToAll={() => void handleBulkUpdateAll()}
+            onClear={uiActions.clearBulkControls}
+            onSelectAll={toggleSelectAllVisible}
+            onClearSelection={() => uiActions.clearBulkControls()}
+            onSendToTurbo={() => void handleSendToTurbo()}
+            onPrintInvoices={() => void handlePrintInvoices()}
+          />
+        </div>
+      </div>
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">

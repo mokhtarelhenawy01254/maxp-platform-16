@@ -206,6 +206,7 @@ const educationTeacherAvailabilityRoutes = require("./routes/educationTeacherAva
 const educationTeacherPaymentsRoutes = require("./routes/educationTeacherPaymentsRoutes");
 const educationTeacherPortalRoutes = require("./routes/educationTeacherPortalRoutes");
 const educationParentPortalRoutes = require("./routes/educationParentPortalRoutes");
+const hotelRoutes = require("./routes/hotelRoutes");
 const servicesRoutes = require("./routes/servicesRoutes");
 const serviceOrdersRoutes = require("./routes/serviceOrdersRoutes");
 const formsRoutes = require("./routes/formsRoutes");
@@ -371,6 +372,7 @@ const billingCronService = require("./services/billingCronService");
 const whatsappNotificationRoutes = require("./routes/whatsappNotificationRoutes");
 const whatsappMetaTemplateRoutes = require("./routes/whatsappMetaTemplateRoutes");
 const leadFollowUpRoutes = require("./routes/leadFollowUpRoutes");
+const leadCategoryRoutes = require("./routes/leadCategoryRoutes");
 const WhatsAppNotificationService = require("./services/whatsapp/WhatsAppNotificationService");
 const errorRoutes = require("./routes/errorRoutes");
 
@@ -687,6 +689,7 @@ app.use("/api/v1/userbot", userbotRoutes);
 app.use("/api/v1/whatsapp-notifications", whatsappNotificationRoutes);
 app.use("/api/v1/whatsapp-templates", whatsappMetaTemplateRoutes);
 app.use("/api/v1/whatsapp/lead-followup", leadFollowUpRoutes);
+app.use("/api/v1/whatsapp/lead-categories", leadCategoryRoutes);
 
 // ─── WhatsApp Inbox CRM (Number-Based Permissions) ──────────────
 app.use("/api/v1/whatsapp-inbox", whatsappInboxRoutes);
@@ -758,6 +761,7 @@ app.use("/api/v1/education/availability", educationTeacherAvailabilityRoutes);
 app.use("/api/v1/education/payments", educationTeacherPaymentsRoutes);
 app.use("/api/v1/education/teacher-portal", educationTeacherPortalRoutes);
 app.use("/api/v1/education/parent-portal", educationParentPortalRoutes);
+app.use("/api/v1/hotel", hotelRoutes);
 app.use("/api/v1/services", servicesRoutes);
 app.use("/api/v1/service-orders", serviceOrdersRoutes);
 app.use("/api/v1/forms", formsRoutes);

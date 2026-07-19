@@ -22,6 +22,7 @@ import {
 import { tokenManager } from "../../utils/tokenManager";
 import { getApiUrl, envConfig } from "../../config/environment";
 import i18n from "../../i18n";
+import { useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 
 import { useDateFormat } from "../../hooks/useDateFormat";
 import {
@@ -173,6 +174,7 @@ const CompanySettings: React.FC = () => {
   const [sidebarLayout, setSidebarLayout] =
     useState<SidebarLayout>("three-tier");
   const [savingLayout, setSavingLayout] = useState(false);
+  const sidebarCtx = useSidebarSettings();
 
   // Logo upload states
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -570,6 +572,14 @@ const CompanySettings: React.FC = () => {
           ...currentCompany,
           sidebarLayout: layout,
         }));
+        // Clear the per-user sidebar override so the new company default
+        // takes effect immediately instead of being masked by a stale
+        // personal preference.
+        try {
+          await sidebarCtx.setUserLayout(null);
+        } catch {
+          // Non-critical — the reload below will fix it anyway
+        }
         // Reload page to apply changes everywhere (simple way) or rely on Context
         if (
           window.confirm(

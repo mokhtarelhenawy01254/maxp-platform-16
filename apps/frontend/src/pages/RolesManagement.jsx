@@ -403,17 +403,19 @@ const RolesManagement = () => {
                     </div>
                   </button>
                   {expandedDomain === domain && (
-                    <div className="p-2 grid grid-cols-1 gap-0.5 border-t">
-                      {domainPermissions.map(permission => (
-                        <label key={permission.key} className="flex items-center gap-3 p-2.5 rounded hover:bg-muted/50 cursor-pointer transition-colors min-h-12">
-                          <input type="checkbox" checked={formData.permissions.includes(permission.key)}
-                            onChange={() => handlePermissionToggle(permission.key)} disabled={submitting} className="size-5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium">{permission.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{permission.description || permission.key}</p>
-                          </div>
-                        </label>
-                      ))}
+                    <div className="border-t">
+                      <div className="p-2 grid grid-cols-1 gap-0.5">
+                        {domainPermissions.map(permission => (
+                          <label key={permission.key} className="flex items-center gap-3 p-2.5 rounded hover:bg-muted/50 cursor-pointer transition-colors min-h-12">
+                            <input type="checkbox" checked={formData.permissions.includes(permission.key)}
+                              onChange={() => handlePermissionToggle(permission.key)} disabled={submitting} className="size-5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium">{permission.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{permission.description || permission.key}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -56,10 +56,31 @@
   "tagsLabel": "العلامات",
   "noTags": "لا توجد علامات مسجلة",
   "addTagPlaceholder": "إضافة علامة جديدة...",
+  "filterByTag": "تصفية بالوسم",
+  "allTags": "جميع الوسوم",
+  "tagCriteria": "تصفية بالوسم (Tag)",
+  "selectTag": "اختر وسم",
+  "filterByTagPlaceholder": "اختر أو اكتب وسم...",
   "noOrders": "لا توجد مسجل طلبات",
   "noConversations": "لا توجد محادثات سابقة",
   "notesPlaceholder": "اكتب الملاحظة هنا...",
   "noNotes": "لا توجد ملاحظات سابقة",
   "noActivities": "لا توجد سجل للأنشطة",
-  "deleteConfirmTitle": "تأكيد الحذف النهائي"
+  "deleteConfirmTitle": "تأكيد الحذف النهائي",
+  "import": {
+    "title": "استيراد عملاء",
+    "clickOrDrag": "اضغط هنا أو اسحب الملف لرفعه",
+    "requiredColumns": "الملفات المدعومة: Excel (.xlsx, .xls) أو CSV (.csv)",
+    "foundCount": "تم العثور على {{count}} عميل",
+    "success": "تم استيراد {{count}} عميل بنجاح",
+    "importing": "جاري الاستيراد...",
+    "importButton": "استيراد {{count}} عميل",
+    "noValidData": "لم يتم العثور على بيانات صالحة",
+    "readError": "حدث خطأ أثناء قراءة الملف أو تحليل البيانات",
+    "downloadTemplate": "تحميل نموذج CSV",
+    "tabFile": "استيراد من ملف (Excel / CSV)",
+    "tabPaste": "لصق مباشر للبيانات",
+    "pastePlaceholder": "انسخ الصفوف والأعمدة من ملف Excel أو اكتبها هنا بالفاصلة...\nالاسم,الهاتف,البريد الإلكتروني,الحالة\nمحمد أحمد,01012345678,mohamed@example.com,LEAD",
+    "parseButton": "معاينة وتحليل البيانات"
+  }
 }

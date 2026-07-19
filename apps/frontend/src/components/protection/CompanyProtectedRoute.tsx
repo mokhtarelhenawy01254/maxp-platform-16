@@ -1,4 +1,5 @@
 import React, { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 
@@ -171,6 +172,66 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
           </div>
         </div>
       )
+    );
+  }
+
+  return <>{children}</>;
+};
+
+// Permission-based protection (checks user.permissions[])
+interface PermissionProtectedRouteProps {
+  children: ReactNode;
+  requiredPermissions: string[];
+  fallbackRedirect?: string;
+}
+
+export const PermissionProtectedRoute: React.FC<PermissionProtectedRouteProps> = ({
+  children,
+  requiredPermissions,
+  fallbackRedirect,
+}) => {
+  const { user, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-yellow-800 font-semibold mb-2">
+              مطلوب تسجيل الدخول
+            </h3>
+            <p className="text-yellow-700 mb-4">
+              يجب تسجيل الدخول للوصول لهذه الصفحة
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const userPerms = user.permissions || [];
+  const hasAccess = requiredPermissions.length === 0 || requiredPermissions.some(p => userPerms.includes(p));
+
+  if (!hasAccess) {
+    if (fallbackRedirect) {
+      return <Navigate to={fallbackRedirect} replace />;
+    }
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-red-800 font-semibold mb-2">
+              غير مصرح لك
+            </h3>
+            <p className="text-red-700 mb-4">
+              ليس لديك الصلاحيات اللازمة للوصول إلى هذه الصفحة
+            </p>
+            <button type="button" onClick={() => window.history.back()} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+              العودة
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

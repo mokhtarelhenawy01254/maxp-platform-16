@@ -10,6 +10,7 @@ const verifyToken = require('../utils/verifyToken');
 // Flows management
 router.get('/flows', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.getFlows(req, res));
 router.post('/flows', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.createFlow(req, res));
+router.post('/flows/preset', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.createPresetFlow(req, res));
 router.put('/flows/:id', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.updateFlow(req, res));
 router.delete('/flows/:id', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.deleteFlow(req, res));
 
@@ -20,5 +21,6 @@ router.delete('/steps/:id', verifyToken.authenticateToken, (req, res) => whatsap
 
 // Journeys monitoring
 router.get('/journeys', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.getJourneys(req, res));
+router.post('/journeys/re-enroll', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.reEnrollJourney(req, res));
 
 module.exports = router;

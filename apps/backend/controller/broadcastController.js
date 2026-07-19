@@ -1,6 +1,8 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 const { sendFacebookMessage } = require('../utils/allFunctions');
+const WhatsAppMessageHandler = require('../services/whatsapp').WhatsAppMessageHandler;
+const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvider');
 const socketService = require('../services/socketService');
 const { recordSentMessageStat } = require('../utils/statsRecorder');
 
@@ -49,8 +51,12 @@ exports.createCampaign = async (req, res) => {
 
     let {
       name,
+      channel,
       message,
       targetAudience,
+      waTemplateName,
+      waLanguageCode,
+      leadCategoryId,
       scheduledAt,
       tags,
       priority,
@@ -153,8 +159,12 @@ exports.createCampaign = async (req, res) => {
       data: {
         id: generateId(),
         name,
+        channel: channel || 'facebook',
         message,
         targetAudience,
+        waTemplateName: waTemplateName || null,
+        waLanguageCode: waLanguageCode || 'en',
+        leadCategoryId: leadCategoryId || null,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
         tags: tagsString,
         priority: priority || 'medium',
@@ -203,14 +213,15 @@ exports.getCampaigns = async (req, res) => {
   try {
     console.log('📋 [GET CAMPAIGNS] بدء جلب قائمة الحملات');
     const companyId = req.user.companyId;
-    const { status, page = 1, limit = 10 } = req.query;
+    const { status, channel, page = 1, limit = 10 } = req.query;
     console.log(`🔍 [GET CAMPAIGNS] معايير البحث - الشركة: ${companyId}, الحالة: ${status || 'الكل'}, الصفحة: ${page}, الحد: ${limit}`);
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {
       companyId,
-      ...(status && { status })
+      ...(status && { status }),
+      ...(channel && { channel })
     };
 
     console.log('🔄 [GET CAMPAIGNS] تنفيذ استعلام قاعدة البيانات');
@@ -714,6 +725,18 @@ exports.sendCampaign = async (req, res) => {
 
     console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة`);
 
+    // Filter by lead category if set on campaign
+    if (campaign.channel === 'whatsapp' && campaign.leadCategoryId) {
+      console.log(`🏷️ [SEND CAMPAIGN] تصفية حسب تصنيف العملاء: ${campaign.leadCategoryId}`);
+      const validContacts = await getSharedPrismaClient().whatsAppContact.findMany({
+        where: { leadCategoryId: campaign.leadCategoryId, companyId },
+        select: { customerId: true }
+      });
+      const validCustomerIds = new Set(validContacts.map(c => c.customerId).filter(Boolean));
+      conversations = conversations.filter(c => validCustomerIds.has(c.customer?.id));
+      console.log(`📊 [SEND CAMPAIGN] بعد تصفية التصنيف: ${conversations.length} محادثة`);
+    }
+
     console.log('📝 [SEND CAMPAIGN] إنشاء سجلات المستلمين');
     // Generate ID helper function
     const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
@@ -739,8 +762,9 @@ exports.sendCampaign = async (req, res) => {
       console.log('⚠️ [SEND CAMPAIGN] لا توجد مستلمين للحملة');
     }
 
-    // ==================== إرسال الرسائل عبر Facebook Messenger ====================
-    console.log('📤 [SEND CAMPAIGN] بدء إرسال الرسائل عبر Facebook Messenger');
+    // ==================== إرسال الرسائل حسب القناة ====================
+    const isWhatsApp = campaign.channel === 'whatsapp';
+    console.log(`📤 [SEND CAMPAIGN] بدء إرسال الرسائل عبر ${isWhatsApp ? 'WhatsApp' : 'Facebook Messenger'}`);
 
     let sentCount = 0;
     let failedCount = 0;
@@ -772,82 +796,78 @@ exports.sendCampaign = async (req, res) => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     io.emit('campaign:progress', startEvent);
 
-    // Send messages to each customer
-    for (let i = 0; i < conversations.length; i++) {
-      const conv = conversations[i];
-      try {
-        // Skip if customer doesn't have Facebook ID
-        if (!conv.customer.facebookId) {
-          console.log(`⚠️ [SEND CAMPAIGN] تخطي العميل ${conv.customer.firstName} - لا يوجد Facebook ID`);
-          failedCount++;
-
-          // Update recipient status
-          await getSharedPrismaClient().broadcastRecipient.updateMany({
-            where: {
-              campaignId: campaign.id,
-              conversationId: conv.id
-            },
-            data: {
-              status: 'failed',
-              failureReason: 'No Facebook ID',
-              sentAt: new Date()
-            }
-          });
-
-          // 📊 [STATS-RECORDER] Record as ignored
-          await recordSentMessageStat({
-            companyId: companyId,
-            facebookPageId: null,
-            recipientFacebookId: 'MISSING',
-            recipientCustomerId: conv.customer.id,
-            messageId: `failed_no_fb_id_${conv.id}_${Date.now()}`,
-            messageContent: campaign.message,
-            messageType: 'TEXT',
-            messageStatus: 'ignored',
-            ignoredReason: 'No Facebook ID',
-            conversationId: conv.id,
-            conversationStatus: 'existed',
-            sentAt: new Date()
-          }).catch(err => console.error('⚠️ [BROADCAST-IGNORED] Error:', err.message));
-
-          continue;
-        }
-
-        console.log(`📨 [SEND CAMPAIGN] إرسال رسالة إلى ${conv.customer.firstName} ${conv.customer.lastName} (${conv.customer.facebookId})`);
-
-        // 🔍 جلب Page ID من metadata المحادثة
-        let conversationPageId = null;
-        if (conv.metadata) {
-          try {
-            const metadata = JSON.parse(conv.metadata);
-            if (metadata.pageId) {
-              conversationPageId = metadata.pageId;
-              console.log(`🎯 [SEND CAMPAIGN] استخدام Page ID من المحادثة: ${conversationPageId}`);
-            }
-          } catch (error) {
-            console.log(`⚠️ [SEND CAMPAIGN] خطأ في قراءة metadata: ${error.message}`);
+    if (isWhatsApp) {
+      // ==================== إرسال عبر WhatsApp Templates ====================
+      for (let i = 0; i < conversations.length; i++) {
+        const conv = conversations[i];
+        try {
+          const phone = conv.customer.phone;
+          if (!phone) {
+            console.log(`⚠️ [SEND CAMPAIGN] تخطي ${conv.customer.firstName} - لا يوجد رقم هاتف`);
+            failedCount++;
+            await getSharedPrismaClient().broadcastRecipient.updateMany({
+              where: { campaignId: campaign.id, conversationId: conv.id },
+              data: { status: 'failed', failureReason: 'No phone number', sentAt: new Date() }
+            });
+            continue;
           }
-        }
 
-        // إذا لم يتم العثور على Page ID في metadata، استخدم أول صفحة متصلة
-        if (!conversationPageId) {
-          const defaultPage = await getSharedPrismaClient().facebookPage.findFirst({
-            where: {
-              companyId: companyId,
-              status: 'connected'
-            },
-            orderBy: {
-              connectedAt: 'desc'
-            }
+          const to = phone.startsWith('+') ? phone.slice(1) : phone;
+          const waSessionId = companyId ? `company:${companyId}` : null;
+
+
+          // Build template body parameters from customer data
+          const bodyParams = [];
+          if (conv.customer.firstName) {
+            bodyParams.push({ type: 'text', text: conv.customer.firstName });
+          }
+          if (conv.customer.lastName) {
+            bodyParams.push({ type: 'text', text: conv.customer.lastName });
+          }
+
+          const components = bodyParams.length > 0
+            ? [{ type: 'body', parameters: bodyParams }]
+            : [];
+
+          const result = await WhatsAppMessageHandler.sendTemplateMessage(
+            waSessionId, to, campaign.waTemplateName,
+            { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
+            { metadata: { isBroadcast: true, campaignId: campaign.id } }
+          );
+
+          sentCount++;
+          const waMessageId = result?.messages?.[0]?.id || result?.messageId || null;
+          await getSharedPrismaClient().broadcastRecipient.updateMany({
+            where: { campaignId: campaign.id, conversationId: conv.id },
+            data: { status: 'sent', sentAt: new Date(), messageId: waMessageId }
           });
 
-          if (defaultPage) {
-            conversationPageId = defaultPage.pageId;
-            console.log(`🔄 [SEND CAMPAIGN] استخدام الصفحة الافتراضية: ${defaultPage.pageName} (${conversationPageId})`);
-          } else {
-            console.log(`❌ [SEND CAMPAIGN] لا توجد صفحة Facebook متصلة للعميل ${conv.customer.firstName}`);
+          sendResults.push({ customerId: conv.customer.id, customerName: `${conv.customer.firstName} ${conv.customer.lastName}`, status: 'sent', success: true });
+
+          const progress = Math.round(((i + 1) / totalRecipients) * 100);
+          io.emit('campaign:progress', { campaignId: campaign.id, status: 'sending', total: totalRecipients, sent: sentCount, failed: failedCount, progress });
+          await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (err) {
+          console.error(`❌ [SEND CAMPAIGN] فشل إرسال واتساب لـ ${conv.customer.firstName}:`, err.message);
+          failedCount++;
+          await getSharedPrismaClient().broadcastRecipient.updateMany({
+            where: { campaignId: campaign.id, conversationId: conv.id },
+            data: { status: 'failed', failureReason: err.message, sentAt: new Date() }
+          });
+          sendResults.push({ customerId: conv.customer.id, customerName: `${conv.customer.firstName} ${conv.customer.lastName}`, status: 'failed', success: false, error: err.message });
+        }
+      }
+    } else {
+      // ==================== إرسال عبر Facebook Messenger ====================
+      for (let i = 0; i < conversations.length; i++) {
+        const conv = conversations[i];
+        try {
+          // Skip if customer doesn't have Facebook ID
+          if (!conv.customer.facebookId) {
+            console.log(`⚠️ [SEND CAMPAIGN] تخطي العميل ${conv.customer.firstName} - لا يوجد Facebook ID`);
             failedCount++;
 
+            // Update recipient status
             await getSharedPrismaClient().broadcastRecipient.updateMany({
               where: {
                 campaignId: campaign.id,
@@ -855,7 +875,7 @@ exports.sendCampaign = async (req, res) => {
               },
               data: {
                 status: 'failed',
-                failureReason: 'No connected Facebook page',
+                failureReason: 'No Facebook ID',
                 sentAt: new Date()
               }
             });
@@ -864,13 +884,13 @@ exports.sendCampaign = async (req, res) => {
             await recordSentMessageStat({
               companyId: companyId,
               facebookPageId: null,
-              recipientFacebookId: conv.customer.facebookId,
+              recipientFacebookId: 'MISSING',
               recipientCustomerId: conv.customer.id,
-              messageId: `failed_no_page_${conv.id}_${Date.now()}`,
+              messageId: `failed_no_fb_id_${conv.id}_${Date.now()}`,
               messageContent: campaign.message,
               messageType: 'TEXT',
               messageStatus: 'ignored',
-              ignoredReason: 'No connected Facebook page',
+              ignoredReason: 'No Facebook ID',
               conversationId: conv.id,
               conversationStatus: 'existed',
               sentAt: new Date()
@@ -878,41 +898,107 @@ exports.sendCampaign = async (req, res) => {
 
             continue;
           }
-        }
 
-        // 🚀 CRITICAL FIX: حفظ الرسالة في database قبل الإرسال لتجنب race condition
-        // حفظ الرسالة النصية إذا وجدت
-        const savedMessages = [];
+          console.log(`📨 [SEND CAMPAIGN] إرسال رسالة إلى ${conv.customer.firstName} ${conv.customer.lastName} (${conv.customer.facebookId})`);
 
-        // ✨ استبدال المتغيرات بالبيانات الفعلية للعميل
-        const personalizedMessage = replaceMessageVariables(campaign.message, conv.customer);
-        console.log(`✨ [PERSONALIZATION] Original: "${campaign.message}" => Personalized: "${personalizedMessage}"`);
-
-        if (personalizedMessage && personalizedMessage.trim().length > 0) {
-          // Generate ID helper function
-          const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
-
-          const textMessage = await getSharedPrismaClient().message.create({
-            data: {
-              id: generateId(),
-              conversationId: conv.id,
-              content: personalizedMessage,
-              isFromCustomer: false,
-              type: 'TEXT',
-              senderId: null,
-              metadata: JSON.stringify({
-                isBroadcast: true,
-                campaignId: campaign.id,
-                campaignName: campaign.name,
-                sentAt: new Date().toISOString(),
-                originalMessage: campaign.message,
-                hasVariables: campaign.message !== personalizedMessage
-              })
+          // 🔍 جلب Page ID من metadata المحادثة
+          let conversationPageId = null;
+          if (conv.metadata) {
+            try {
+              const metadata = JSON.parse(conv.metadata);
+              if (metadata.pageId) {
+                conversationPageId = metadata.pageId;
+                console.log(`🎯 [SEND CAMPAIGN] استخدام Page ID من المحادثة: ${conversationPageId}`);
+              }
+            } catch (error) {
+              console.log(`⚠️ [SEND CAMPAIGN] خطأ في قراءة metadata: ${error.message}`);
             }
-          });
-          savedMessages.push(textMessage);
-          console.log(`💾 [BROADCAST] Saved message BEFORE sending: ${textMessage.id}`);
-        }
+          }
+
+          // إذا لم يتم العثور على Page ID في metadata، استخدم أول صفحة متصلة
+          if (!conversationPageId) {
+            const defaultPage = await getSharedPrismaClient().facebookPage.findFirst({
+              where: {
+                companyId: companyId,
+                status: 'connected'
+              },
+              orderBy: {
+                connectedAt: 'desc'
+              }
+            });
+
+            if (defaultPage) {
+              conversationPageId = defaultPage.pageId;
+              console.log(`🔄 [SEND CAMPAIGN] استخدام الصفحة الافتراضية: ${defaultPage.pageName} (${conversationPageId})`);
+            } else {
+              console.log(`❌ [SEND CAMPAIGN] لا توجد صفحة Facebook متصلة للعميل ${conv.customer.firstName}`);
+              failedCount++;
+
+              await getSharedPrismaClient().broadcastRecipient.updateMany({
+                where: {
+                  campaignId: campaign.id,
+                  conversationId: conv.id
+                },
+                data: {
+                  status: 'failed',
+                  failureReason: 'No connected Facebook page',
+                  sentAt: new Date()
+                }
+              });
+
+              // 📊 [STATS-RECORDER] Record as ignored
+              await recordSentMessageStat({
+                companyId: companyId,
+                facebookPageId: null,
+                recipientFacebookId: conv.customer.facebookId,
+                recipientCustomerId: conv.customer.id,
+                messageId: `failed_no_page_${conv.id}_${Date.now()}`,
+                messageContent: campaign.message,
+                messageType: 'TEXT',
+                messageStatus: 'ignored',
+                ignoredReason: 'No connected Facebook page',
+                conversationId: conv.id,
+                conversationStatus: 'existed',
+                sentAt: new Date()
+              }).catch(err => console.error('⚠️ [BROADCAST-IGNORED] Error:', err.message));
+
+              continue;
+            }
+          }
+
+          // 🚀 CRITICAL FIX: حفظ الرسالة في database قبل الإرسال لتجنب race condition
+          // حفظ الرسالة النصية إذا وجدت
+          const savedMessages = [];
+
+          // ✨ استبدال المتغيرات بالبيانات الفعلية للعميل
+          const personalizedMessage = replaceMessageVariables(campaign.message, conv.customer);
+          console.log(`✨ [PERSONALIZATION] Original: "${campaign.message}" => Personalized: "${personalizedMessage}"`);
+
+          if (personalizedMessage && personalizedMessage.trim().length > 0) {
+            // Generate ID helper function
+            const generateId = () => 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
+
+            const textMessage = await getSharedPrismaClient().message.create({
+              data: {
+                id: generateId(),
+                conversationId: conv.id,
+                content: personalizedMessage,
+                isFromCustomer: false,
+                type: 'TEXT',
+                senderId: null,
+                metadata: JSON.stringify({
+                  isBroadcast: true,
+                  campaignId: campaign.id,
+                  campaignName: campaign.name,
+                  sentAt: new Date().toISOString(),
+                  originalMessage: campaign.message,
+                  hasVariables: campaign.message !== personalizedMessage
+                })
+              }
+            });
+            savedMessages.push(textMessage);
+            console.log(`💾 [BROADCAST] Saved message BEFORE sending: ${textMessage.id}`);
+          }
 
         let sendResult;
         // إذا كانت الحملة تحتوي على صور، أرسل كل صورة كرسالة منفصلة
@@ -1123,6 +1209,7 @@ exports.sendCampaign = async (req, res) => {
         });
       }
     }
+    } // end else (Facebook)
 
     console.log(`📊 [SEND CAMPAIGN] نتائج الإرسال - نجح: ${sentCount}, فشل: ${failedCount}`);
 
@@ -1152,7 +1239,7 @@ exports.sendCampaign = async (req, res) => {
           recipientCount: recipients.length,
           sentCount: sentCount,
           failedCount: failedCount,
-          deliveredCount: 0, // ponytail: starts at 0, updated by webhooks on actual delivery
+          deliveredCount: 0, // ponytail: starts at 0, updated by webhooks
           status: sentCount > 0 ? 'sent' : 'failed'
         }
       });
@@ -1429,6 +1516,9 @@ exports.createCustomerList = async (req, res) => {
       const dateThreshold = new Date();
       dateThreshold.setDate(dateThreshold.getDate() - days);
       whereCondition.updatedAt = { lt: dateThreshold };
+    } else if (criteria.type === 'tag' && criteria.tag) {
+      // 🏷️ فلتر بالوسم — يبحث في حقل tags الخاص بالعميل المرتبط بالمحادثة
+      whereCondition.customer = { tags: { contains: `"${criteria.tag}"` } };
     } else if (criteria.type === 'all') {
       whereCondition.status = 'ACTIVE';
     }
@@ -1442,7 +1532,7 @@ exports.createCustomerList = async (req, res) => {
       data: {
         name,
         description: description || '',
-        criteria,
+        criteria: JSON.stringify(criteria),
         count,
         companyId
       }
@@ -1716,8 +1806,9 @@ exports.getCustomersInList = async (req, res) => {
     let whereCondition = { companyId };
 
     // تطبيق المعايير حسب نوع القائمة
-    if (list.criteria.type === 'active' && list.criteria.lastActivity) {
-      const hours = parseInt(list.criteria.lastActivity);
+    const criteria = typeof list.criteria === 'string' ? JSON.parse(list.criteria) : list.criteria;
+    if (criteria.type === 'active' && criteria.lastActivity) {
+      const hours = parseInt(criteria.lastActivity);
       const dateThreshold = new Date();
       dateThreshold.setHours(dateThreshold.getHours() - hours);
 
@@ -1730,7 +1821,10 @@ exports.getCustomersInList = async (req, res) => {
           }
         }
       };
-    } else if (list.criteria.type === 'all') {
+    } else if (criteria.type === 'tag' && criteria.tag) {
+      // 🏷️ فلتر بالوسم
+      whereCondition.customer = { tags: { contains: `"${criteria.tag}"` } };
+    } else if (criteria.type === 'all') {
       whereCondition.status = 'ACTIVE';
     }
 
@@ -1780,6 +1874,22 @@ exports.getCustomersInList = async (req, res) => {
       message: 'فشل في جلب العملاء',
       error: error.message
     });
+  }
+};
+
+exports.deleteCustomerList = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { listId } = req.params;
+    const list = await getSharedPrismaClient().customerList.findFirst({
+      where: { id: listId, companyId }
+    });
+    if (!list) return res.status(404).json({ success: false, message: 'القائمة غير موجودة' });
+    if (list.isDefault) return res.status(400).json({ success: false, message: 'لا يمكن حذف قائمة افتراضية' });
+    await getSharedPrismaClient().customerList.delete({ where: { id: listId } });
+    res.json({ success: true, message: 'تم حذف القائمة' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'فشل في حذف القائمة', error: error.message });
   }
 };
 

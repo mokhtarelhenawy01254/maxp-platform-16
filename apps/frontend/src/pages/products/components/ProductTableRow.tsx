@@ -48,8 +48,10 @@ interface ProductTableRowProps {
   isEditing: boolean;
   editPrice: string;
   editStock: string;
+  editSku: string;
   onEditPriceChange: (value: string) => void;
   onEditStockChange: (value: string) => void;
+  onEditSkuChange: (value: string) => void;
   onSaveQuickEdit: (id: string) => void;
   onCancelQuickEdit: () => void;
   onStartQuickEdit: (product: Product) => void;
@@ -75,8 +77,10 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
   isEditing,
   editPrice,
   editStock,
+  editSku,
   onEditPriceChange,
   onEditStockChange,
+  onEditSkuChange,
   onSaveQuickEdit,
   onCancelQuickEdit,
   onStartQuickEdit,
@@ -233,6 +237,22 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
             </span>
           )}
         </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {isEditing ? (
+          <input
+            type="text"
+            value={editSku}
+            onChange={(e) => onEditSkuChange(e.target.value)}
+            className="w-28 px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded text-sm"
+            placeholder="SKU"
+            dir="ltr"
+          />
+        ) : (
+          <span className="text-sm text-gray-700 dark:text-gray-300" dir="ltr">
+            {product.sku || <span className="text-gray-400">—</span>}
+          </span>
+        )}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {isEditing ? (

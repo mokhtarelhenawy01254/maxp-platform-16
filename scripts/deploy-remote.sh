@@ -96,10 +96,15 @@ elif [ -d "$DEPLOY_STAGING/frontend/dist" ]; then
 elif [ -d "/var/www/frontend/dist" ]; then
   echo "📦 Moving frontend files from legacy location..."
   sync_frontend_dist "/var/www/frontend/dist"
-  sudo rm -rf /var/www/frontend
   echo "✅ Frontend moved successfully from legacy"
 else
   echo "⚠️ Frontend files not found, skipping..."
+fi
+
+# Clean up legacy frontend directory unconditionally
+if [ -d "/var/www/frontend" ]; then
+  echo "🧹 Cleaning up legacy /var/www/frontend directory..."
+  sudo rm -rf /var/www/frontend
 fi
 
 if [ -f "$DEPLOY_STAGING/theme-presets.tar.gz" ]; then
@@ -230,6 +235,7 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     --exclude .env \
     --exclude node_modules \
     --exclude prisma/generated \
+    --exclude data/facebook-oauth-config.json \
     "$DEPLOY_STAGING/backend_extract/backend/" /var/www/backend2/
   sudo mkdir -p /var/www/backend2/logs
   sudo chown -R $USER:$USER /var/www/backend2
@@ -285,11 +291,24 @@ elif [ -d "$DEPLOY_STAGING/backend" ]; then
     sudo cp /var/www/backend2/.env /tmp/backend_env_backup.env
   fi
 
+  # Save facebook-oauth-config.json if it exists (managed via Super Admin, not in git)
+  if [ -f "/var/www/backend2/data/facebook-oauth-config.json" ]; then
+    sudo cp /var/www/backend2/data/facebook-oauth-config.json /tmp/facebook_oauth_config_backup.json
+  fi
+
   sudo chmod -R 777 /var/www/backend2 2>/dev/null || true
   sudo rm -rf /var/www/backend2 || true
   sudo mv "$DEPLOY_STAGING/backend" /var/www/backend2
   sudo mkdir -p /var/www/backend2/logs
   sudo chown -R $USER:$USER /var/www/backend2
+
+  # Restore facebook-oauth-config.json
+  if [ -f "/tmp/facebook_oauth_config_backup.json" ]; then
+    sudo mkdir -p /var/www/backend2/data
+    sudo cp /tmp/facebook_oauth_config_backup.json /var/www/backend2/data/facebook-oauth-config.json
+    sudo chown $USER:$USER /var/www/backend2/data/facebook-oauth-config.json
+    sudo rm -f /tmp/facebook_oauth_config_backup.json
+  fi
   
   # Restore .env strategy: backup first (preserves real secrets), then fallback to template
   if [ -f "/tmp/backend_env_backup.env" ]; then
@@ -402,6 +421,10 @@ bash scripts/sync-db-pass.sh || echo "⚠️ Password sync failed, continuing...
 echo "🛠️ Fixing Audit Logs data types..."
 bash scripts/fix-audit-logs.sh || echo "⚠️ Audit logs fix skipped or failed, continuing..."
 
+# Step 2.8: Fix Data Duplicates
+echo "🛠️ Fixing data duplicates..."
+node scripts/fix-duplicates.js || echo "⚠️ Duplicates fix failed, continuing..."
+
 # Step 3: Push schema to PostgreSQL database
 echo "🚀 Pushing schema to PostgreSQL..."
 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
@@ -412,6 +435,8 @@ echo "🚀 Pushing schema to PostgreSQL..."
 # Step 6: Automated Seeding
 echo "🌱 Running automated seeding..."
 "$PRISMA_BIN" db seed --schema=prisma/schema || echo "⚠️ Seeding failed, continuing deployment..."
+echo "🔐 Seeding permissions..."
+npm run seed:permissions || echo "⚠️ Permissions seeding failed, continuing deployment..."
 
 # Step 7: Create/Verify Super Admin
 echo "👑 Creating/verifying super admin user..."

@@ -227,7 +227,7 @@ const FacebookAdsConnection: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 text-slate-950 dark:bg-slate-950 dark:text-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4">
+      <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-4">
         <header className="flex flex-col gap-3">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>

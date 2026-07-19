@@ -525,6 +525,7 @@ class AnalyticsService {
     period: string = "30",
     startDate?: string,
     endDate?: string,
+    comparisonType?: string,
     signal?: AbortSignal,
   ) {
     try {
@@ -533,9 +534,10 @@ class AnalyticsService {
         throw new Error("No companyId found");
       }
 
-      const params: AnalyticsQueryParams = { period };
+      const params: any = { period };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
+      if (comparisonType) params.comparisonType = comparisonType;
 
       const response = await this.getAnalyticsReport("/store", "/analytics/store", {
         params,
@@ -848,9 +850,9 @@ class AnalyticsService {
     }
   }
 
-  async getCustomerQualityAnalytics(startDate?: string, endDate?: string) {
+  async getCustomerQualityAnalytics(period: string = "30", startDate?: string, endDate?: string) {
     try {
-      const params: AnalyticsQueryParams = {};
+      const params: any = { period };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       const response = await apiClient.get("/analytics/customer-quality", {
@@ -1147,6 +1149,17 @@ class AnalyticsService {
       return response.data;
     } catch (error) {
       console.error("Error fetching available statuses for summary:", error);
+      throw error;
+    }
+  }
+
+  async getTodayOps(queryString?: string) {
+    try {
+      const url = queryString ? `/analytics/today-ops?${queryString}` : "/analytics/today-ops";
+      const response = await apiClient.get(url);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching today ops:", error);
       throw error;
     }
   }

@@ -20,6 +20,7 @@ import {
   Upload
 } from "lucide-react";
 import type { ChatMessage, AgentConfig, ModelConfig, ToolCall } from "../types/sandbox.types";
+import type { AgentSkillDetail } from "../services/sandboxApi";
 
 interface ChatAreaProps {
   messages: ChatMessage[];
@@ -36,6 +37,7 @@ interface ChatAreaProps {
     attachments?: Array<{ type: string; url: string; dataUrl?: string; base64Data?: string }>
   ) => void;
   isSuper?: boolean;
+  agentSkills?: AgentSkillDetail[];
 }
 
 const TEST_IMAGES = [
@@ -68,6 +70,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   activeToolCalls,
   onSendMessage,
   isSuper = false,
+  agentSkills = [],
 }) => {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
@@ -366,12 +369,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         <span>{msg.provider ? `${msg.provider}/${msg.model}` : msg.model}</span>
                       </Badge>
                     )}
-                    {msg.metadata?.activeSkill && (
-                      <Badge variant="outline" className="text-[10px] py-0 px-2 flex items-center gap-1 font-medium select-none border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400">
-                        <BookOpen className="size-3" />
-                        <span>{msg.metadata.activeSkill.skillId}</span>
-                      </Badge>
-                    )}
+                    {msg.metadata?.activeSkill && (() => {
+                      const skillId = msg.metadata.activeSkill.skillId;
+                      const skillDetail = agentSkills.find((s) => s.id === skillId);
+                      const displayName = skillDetail?.displayName || skillDetail?.name || skillId;
+                      return (
+                        <Badge variant="outline" className="text-[10px] py-0 px-2 flex items-center gap-1 font-medium select-none border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400" title={skillDetail?.description || skillId}>
+                          <BookOpen className="size-3" />
+                          <span>{displayName}</span>
+                        </Badge>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

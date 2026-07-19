@@ -106,6 +106,10 @@ router.get('/areas/:governmentId', verifyToken.authenticateToken, checkAppAccess
  */
 const turboReportController = require('../controller/turboReportController');
 router.get('/reports/shipping', verifyToken.authenticateToken, checkAppAccess('order-shipping-reports'), turboReportController.getShippingReport);
+router.patch('/reports/shipping/cost', verifyToken.authenticateToken, checkAppAccess('order-shipping-reports'), turboReportController.updateManualCost);
+router.post('/reports/shipping/bulk-cost', verifyToken.authenticateToken, checkAppAccess('order-shipping-reports'), turboReportController.bulkUpdateManualCost);
+router.get('/reports/shipping/governorate-costs', verifyToken.authenticateToken, checkAppAccess('order-shipping-reports'), turboReportController.getGovernorateCosts);
+router.put('/reports/shipping/governorate-costs', verifyToken.authenticateToken, checkAppAccess('order-shipping-reports'), turboReportController.saveGovernorateCostsHandler);
 
 /**
  * GET /api/turbo/branches

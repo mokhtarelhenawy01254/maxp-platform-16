@@ -1,4 +1,4 @@
-import { Fragment, memo, useState } from "react";
+import { Fragment, memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import {
@@ -128,6 +128,7 @@ const PreparationOrdersTable = ({
             <th className="px-3 py-2.5">الحالة</th>
             <th className="px-3 py-2.5">المخزن</th>
             <th className="px-3 py-2.5">التجهيز</th>
+            <th className="px-3 py-2.5">كود الشحن</th>
             <th className="w-20 px-3 py-2.5">
               <span className="sr-only">التفاصيل</span>
             </th>
@@ -297,6 +298,19 @@ const PreparationOrdersTable = ({
                     </span>
                   </td>
 
+                  {/* Shipping code */}
+                  <td className="px-3 py-2.5">
+                    <span className="text-xs font-medium text-gray-700">
+                      {order.turboTrackingNumber ||
+                        (order.shipments?.length
+                          ? order.shipments
+                              .map((s) => s.trackingNumber)
+                              .filter(Boolean)
+                              .join(", ")
+                          : null) || "—"}
+                    </span>
+                  </td>
+
                   {/* Details button */}
                   <td className="px-3 py-2.5">
                     <button
@@ -317,7 +331,7 @@ const PreparationOrdersTable = ({
                 {/* Expanded details row */}
                 {isExpanded && (
                   <tr className="bg-gray-50/80">
-                    <td colSpan={9} className="border-b border-gray-100 px-4 py-4">
+                    <td colSpan={10} className="border-b border-gray-100 px-4 py-4">
                       <div className="space-y-2.5">
                         <PreparationOrderItemsList
                           order={order}

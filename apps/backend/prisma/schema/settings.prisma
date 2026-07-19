@@ -217,6 +217,7 @@ model PageResponseSettings {
   aiPrompt              String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+  delayReply            Boolean  @default(false)
   commentMessages       String?
   company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

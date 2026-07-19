@@ -141,13 +141,7 @@ const AffiliateProducts: React.FC = () => {
               إدارة منتجاتك مع هامش الربح
             </p>
           </div>
-          <button
-            onClick={() => navigate("/affiliates/marketplace")}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-bold shadow-lg shadow-blue-500/20"
-          >
-            <ShoppingBagIcon className="h-5 w-5" />
-            تصفح كتالوج الشركة
-          </button>
+          
         </div>
 
         {/* Product Grid / Empty State */}
@@ -298,12 +292,7 @@ const AffiliateProducts: React.FC = () => {
             >
               كتالوجك الشخصي فارغ تماماً
             </p>
-            <button
-              onClick={() => navigate("/affiliates/marketplace")}
-              className="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition font-bold shadow-lg shadow-blue-500/30"
-            >
-              اكتشف منتجات الشركة الآن
-            </button>
+            
           </div>
         )}
       </div>

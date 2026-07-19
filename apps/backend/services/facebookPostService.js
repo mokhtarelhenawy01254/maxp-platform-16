@@ -2,20 +2,79 @@ const { getSharedPrismaClient } = require('./sharedDatabase');
 const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
 const { getPageToken } = require('../utils/allFunctions');
+const {
+  ensureValidFacebookPageAccessToken,
+  refreshFacebookPageAccessToken,
+  buildFacebookPageTokenFailureMessage,
+} = require('../utils/facebookPageTokenUtils');
 
-async function syncPagePosts(pageId) {
+async function syncPagePosts(pageId, companyId) {
   const prisma = getSharedPrismaClient();
   const page = await prisma.facebookPage.findFirst({ where: { pageId } });
   if (!page) throw new Error('Page not found');
 
+  if (page.status !== 'connected') {
+    throw new Error(`Page "${page.pageName}" is disconnected. Please reconnect it.`);
+  }
+
+  const pageToken = await getPageToken(pageId);
+  if (!pageToken) {
+    throw new Error(`Unable to retrieve token for page "${page.pageName}". Please reconnect.`);
+  }
+
+  const tokenState = await ensureValidFacebookPageAccessToken({
+    companyId: pageToken.companyId || companyId,
+    pageId,
+    pageAccessToken: pageToken.pageAccessToken,
+    allowRefresh: true,
+  });
+
+  if (!tokenState.ok) {
+    const errorMsg = buildFacebookPageTokenFailureMessage(tokenState, pageId);
+    console.error(`[FB-POST] Token validation failed for ${pageId}: ${errorMsg}`);
+    throw new Error(errorMsg);
+  }
+
   const apiVer = getMetaGraphApiVersion();
   let allPosts = [];
-  let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${page.pageAccessToken}`;
+
+  let validToken = tokenState.pageAccessToken;
+  let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
+  let refreshAttempted = false;
 
   while (url) {
-    const res = await axios.get(url, { timeout: 15000 });
-    if (res.data.data) allPosts = allPosts.concat(res.data.data);
-    url = res.data.paging?.next || null;
+    try {
+      const res = await axios.get(url, { timeout: 15000 });
+      if (res.data.data) allPosts = allPosts.concat(res.data.data);
+      url = res.data.paging?.next || null;
+    } catch (error) {
+      const graphError = error?.response?.data?.error || {};
+      const isPermissionError =
+        (graphError.code === 10 || graphError.code === 100) &&
+        /pages_read_engagement/i.test(graphError.message || '');
+
+      if (isPermissionError && !refreshAttempted) {
+        refreshAttempted = true;
+        const refreshResult = await refreshFacebookPageAccessToken({
+          companyId: pageToken.companyId || companyId,
+          pageId,
+        });
+        if (refreshResult.success) {
+          validToken = refreshResult.pageAccessToken;
+          url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
+          allPosts = [];
+          continue;
+        }
+      }
+
+      if (isPermissionError && refreshAttempted) {
+        throw new Error(
+          `تعذرت مزامنة المنشورات: صلاحية صفحة الفيسبوك لا تحتوي على الإذن المطلوب. ` +
+          `يرجى فصل الصفحة وإعادة ربطها لمنح جميع الأذونات المطلوبة.`
+        );
+      }
+      throw error;
+    }
   }
 
   for (const fbPost of allPosts) {
@@ -41,7 +100,7 @@ async function syncPagePosts(pageId) {
     });
   }
 
-  return { synced: allPosts.length, pageName: page.pageName };
+  return { synced: allPosts.length, pageName: pageToken.pageName };
 }
 
 async function setProduct(postId, productId) {

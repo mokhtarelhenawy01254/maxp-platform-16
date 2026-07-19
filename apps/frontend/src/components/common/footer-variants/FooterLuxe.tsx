@@ -28,7 +28,7 @@ const FooterLuxe: React.FC<Readonly<FooterLuxeProps>> = ({
 
   return (
     <footer className="bg-slate-900 text-slate-300 mt-auto" dir="rtl">
-      <div className="max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3 text-white">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-luxe-500/20 text-luxe-500 font-black">
@@ -116,7 +116,7 @@ const FooterLuxe: React.FC<Readonly<FooterLuxeProps>> = ({
 
       {settings.showCopyright && (
         <div className="border-t border-slate-800">
-          <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+          <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
             <p>
               {settings.copyrightText?.replace("{year}", year) ||
                 `© ${year} ${companyDisplayName}. جميع الحقوق محفوظة.`}

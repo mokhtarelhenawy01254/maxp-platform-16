@@ -156,6 +156,11 @@ const WhatsAppSyncService = {
         return null;
       }
 
+      if (String(remoteJid || '').endsWith('@newsletter')) {
+        console.log(`📢 Skipping CRM sync for WhatsApp newsletter/channel: ${remoteJid}`);
+        return null;
+      }
+
       const phoneNumber = remoteJid.split('@')[0].replace(/\D/g, '');
       const customer = await this.findOrCreateCustomer(
         companyId,

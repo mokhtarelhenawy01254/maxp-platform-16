@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../services/apiClient';
@@ -273,9 +274,9 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   const navigateToInbox = useCallback(
     (nextSessionId: string) => {
       if (superAdminMode && companyId) {
-        navigate(`/super-admin/whatsapp/companies/${companyId}/inbox/${nextSessionId}`);
+        navigate(`/super-admin/whatsapp/companies/${companyId}/routing/${nextSessionId}`);
       } else {
-        navigate(`/whatsapp-inbox/${nextSessionId}`);
+        navigate(`/whatsapp/routing/${nextSessionId}`);
       }
     },
     [companyId, navigate, superAdminMode],
@@ -328,7 +329,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
   return (
     <div
       dir={copy.isArabic ? 'rtl' : 'ltr'}
-      className="flex h-[calc(100vh-64px)] overflow-y-auto bg-background"
+      className="flex h-[calc(100dvh-64px)] overflow-y-auto bg-background"
     >
       <aside className="hidden w-72 flex-col border-r border-border/50 bg-card lg:flex">
         <div className="border-b border-border/50 px-4 py-4">
@@ -348,7 +349,7 @@ const WhatsAppInbox: React.FC<WhatsAppInboxProps> = ({ companyId, superAdminMode
                 type="button"
                 onClick={() => {
                     setActiveSession(item.id);
-                    navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox/${item.id}` : `/whatsapp-inbox/${item.id}`);
+                    navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/routing/${item.id}` : `/whatsapp/routing/${item.id}`);
                   }}
                   className={`mb-1 w-full rounded-lg border px-3 py-3 text-left transition ${
                     active

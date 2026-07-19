@@ -5,7 +5,8 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools import customer_tools
+import src.db.session as _db_mod
+from src.tools.repositories.customer_repository import CustomerRepository
 
 
 class CustomerInfoInput(BaseModel):
@@ -20,16 +21,52 @@ class CustomerTopBuyersInput(BaseModel):
 
 
 async def customer_info(input_data: CustomerInfoInput) -> dict[str, Any]:
-    return await customer_tools.customer_info(
-        input_data.company_id or "", input_data.query
-    )
+    company_id = input_data.company_id or ""
+    query = input_data.query
+    if not company_id or not query:
+        return {"found": False, "code": "MISSING_PARAMS", "query": query}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = CustomerRepository(sess)
+        c = await repo.find_customer(company_id, query)
+
+    if not c:
+        return {"found": False, "code": "CUSTOMER_NOT_FOUND", "query": query}
+
+    first = c.get("firstName") or ""
+    last = c.get("lastName") or ""
+
+    return {
+        "found": True,
+        "name": f"{first} {last}".strip(),
+        "phone": c.get("phone"),
+        "email": c.get("email") or "\u2014",
+        "status": c.get("status"),
+        "ordersCount": c.get("totalOrders", 0),
+        "totalOrders": c.get("totalOrders", 0),
+        "rating": c.get("customerRating") or "\u2014",
+        "joinDate": str(c.get("joinDate") or ""),
+    }
 
 
 async def customer_top_buyers(input_data: CustomerTopBuyersInput) -> dict[str, Any]:
-    customers = await customer_tools.top_buyers(
-        input_data.company_id or "", limit=input_data.limit, period=input_data.period
-    )
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"customers": []}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = CustomerRepository(sess)
+        customers = await repo.get_top_buyers(company_id, input_data.limit, input_data.period)
     return {"customers": customers}
+
+
+def _format_customer_info(result: dict) -> str:
+    if result.get("found") or result.get("customer"):
+        cust = result.get("customer") or result
+        return f"بيانات العميل: {cust.get('name') or cust.get('customerName')}"
+    return ""
 
 
 customer_info_tool = FunctionTool(
@@ -37,6 +74,7 @@ customer_info_tool = FunctionTool(
     description="Look up a customer by phone number, name, or email.",
     func=customer_info,
     input_model=CustomerInfoInput,
+    format_result=_format_customer_info,
 )
 
 customer_top_buyers_tool = FunctionTool(

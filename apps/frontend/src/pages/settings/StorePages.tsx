@@ -261,7 +261,7 @@ const StorePages: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl 2xl:max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* 🌟 Header Section */}
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>

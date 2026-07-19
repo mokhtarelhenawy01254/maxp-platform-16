@@ -1,13 +1,16 @@
 import React, { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   XMarkIcon,
   ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
   DocumentArrowUpIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import * as XLSX from "xlsx";
 
 interface CustomerImportModalProps {
   isOpen: boolean;
@@ -32,7 +35,11 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
   onSuccess,
 }) => {
   const { t } = useTranslation();
+  const [__cb] = useState("v2");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [activeTab, setActiveTab] = useState<"file" | "paste">("file");
+  const [pastedText, setPastedText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedCustomer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,23 +49,16 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
     count: number;
   } | null>(null);
 
-  const parseCSV = (text: string): ParsedCustomer[] => {
-    const lines = text.trim().split("\n");
-    if (lines.length < 2) return [];
-
-    const headers = lines[0]
-      .split(",")
-      .map((h) => h.trim().toLowerCase().replace(/['"]/g, ""));
+  const parseHeadersAndRows = (headers: string[], rows: any[][]): ParsedCustomer[] => {
     const customers: ParsedCustomer[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i]
-        .split(",")
-        .map((v) => v.trim().replace(/['"]/g, ""));
+    for (let i = 0; i < rows.length; i++) {
+      const values = rows[i];
+      if (!values || values.length === 0) continue;
       const customer: any = {};
 
       headers.forEach((header, index) => {
-        const value = values[index] || "";
+        const value = String(values[index] ?? "").trim();
         // Map common header names
         if (header.includes("first") || header === "الاسم الأول")
           customer.firstName = value;
@@ -90,8 +90,25 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
         customers.push(customer);
       }
     }
-
     return customers;
+  };
+
+  const parseCSV = (text: string): ParsedCustomer[] => {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) return [];
+
+    const firstLine = lines[0];
+    if (!firstLine) return [];
+
+    const headers = firstLine
+      .split(",")
+      .map((h) => h.trim().toLowerCase().replace(/['"]/g, ""));
+    
+    const rows = lines.slice(1).map(line => 
+      line.split(",").map(v => v.trim().replace(/['"]/g, ""))
+    );
+
+    return parseHeadersAndRows(headers, rows);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,20 +119,102 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
     setError("");
     setResult(null);
 
+    const isExcel = selectedFile.name.endsWith(".xlsx") || selectedFile.name.endsWith(".xls");
+
     const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const parsed = parseCSV(text);
-        setParsedData(parsed);
-        if (parsed.length === 0) {
-          setError(t("customers.import.noValidData"));
+    if (isExcel) {
+      reader.onload = (event) => {
+        try {
+          if (!event.target || !event.target.result) {
+            setError(t("customers.import.readError") as string);
+            return;
+          }
+          const data = new Uint8Array(event.target.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          if (!sheetName) {
+            setError(t("customers.import.noValidData") as string);
+            return;
+          }
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+          
+          if (!jsonData || jsonData.length < 2) {
+            setError(t("customers.import.noValidData") as string);
+            return;
+          }
+
+          const headers = ((jsonData[0] as any) || []).map((h: any) => String(h || "").trim().toLowerCase());
+          const rows = jsonData.slice(1);
+          const parsed = parseHeadersAndRows(headers, rows);
+          setParsedData(parsed);
+
+          if (parsed.length === 0) {
+            setError(t("customers.import.noValidData") as string);
+          }
+        } catch (err) {
+          setError(t("customers.import.readError") as string);
         }
-      } catch (err) {
-        setError(t("customers.import.readError"));
+      };
+      reader.readAsArrayBuffer(selectedFile);
+    } else {
+      reader.onload = (event) => {
+        try {
+          if (!event.target || typeof event.target.result !== "string") {
+            setError(t("customers.import.readError") as string);
+            return;
+          }
+          const text = event.target.result;
+          const parsed = parseCSV(text);
+          setParsedData(parsed);
+          if (parsed.length === 0) {
+            setError(t("customers.import.noValidData") as string);
+          }
+        } catch (err) {
+          setError(t("customers.import.readError") as string);
+        }
+      };
+      reader.readAsText(selectedFile);
+    }
+  };
+
+  const handlePasteParse = () => {
+    setError("");
+    setResult(null);
+
+    if (!pastedText.trim()) {
+      setError(t("customers.import.noValidData") as string);
+      return;
+    }
+
+    try {
+      const lines = pastedText.trim().split("\n");
+      if (lines.length < 2 || !lines[0]) {
+        setError(t("customers.import.noValidData") as string);
+        return;
       }
-    };
-    reader.readAsText(selectedFile);
+
+      // Auto-detect delimiter: tab for Excel sheet copies, comma for CSV paste
+      const firstLine = lines[0];
+      const delimiter = firstLine.includes("\t") ? "\t" : ",";
+
+      const headers = firstLine
+        .split(delimiter)
+        .map((h) => h.trim().toLowerCase().replace(/['"]/g, ""));
+
+      const rows = lines.slice(1).map(line =>
+        line.split(delimiter).map(v => v.trim().replace(/['"]/g, ""))
+      );
+
+      const parsed = parseHeadersAndRows(headers, rows);
+      setParsedData(parsed);
+
+      if (parsed.length === 0) {
+        setError(t("customers.import.noValidData") as string);
+      }
+    } catch (err) {
+      setError(t("customers.import.readError") as string);
+    }
   };
 
   const handleImport = async () => {
@@ -125,16 +224,16 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
     setError("");
 
     try {
-      const response = await apiClient.post("/customers/import", {
+      const response: any = await apiClient.post("/customers/import", {
         customers: parsedData,
       });
       setResult({
         success: true,
-        count: response.data.importedCount || parsedData.length,
+        count: response.data?.importedCount || parsedData.length,
       });
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || t("customers.deleteError")); // fallback to generic error if needed or use a specific one
+      setError(err.response?.data?.message || (t("customers.deleteError") as string));
     } finally {
       setIsLoading(false);
     }
@@ -145,15 +244,36 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
     setParsedData([]);
     setError("");
     setResult(null);
+    setPastedText("");
+    setActiveTab("file");
     onClose();
+  };
+
+  const downloadTemplate = () => {
+    const headers = "\u0627\u0644\u0627\u0633\u0645,\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a,\u0627\u0644\u0647\u0627\u062a\u0641,\u0627\u0644\u0639\u0646\u0648\u0627\u0646,\u0627\u0644\u0645\u062f\u064a\u0646\u0629,\u0627\u0644\u062b\u0627\u0646\u064a\u0629,\u0627\u0644\u062d\u0627\u0644\u0629\n";
+    const example = "\u0645\u062d\u0645\u062f \u0623\u062d\u0645\u062f,mohamed@example.com,01012345678,\u0634\u0627\u0631\u0639 \u0627\u0644\u062a\u062d\u0631\u064a\u0631,\u0627\u0644\u0642\u0627\u0647\u0631\u0629,\u0645\u0635\u0631,LEAD\n";
+    const blob = new Blob(["\uFEFF" + headers + example], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "maxp_customers_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
-      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+      onClick={handleClose}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col z-10"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -170,26 +290,94 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
 
         {/* Content */}
         <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
-          {/* Upload Area */}
+          
+          {/* Tab Selector */}
           {!result && (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 transition-colors"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="hidden"
+            <div className="flex border-b border-gray-200 dark:border-gray-700 mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("file");
+                  setParsedData([]);
+                  setError("");
+                }}
+                className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "file"
+                    ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                {t("customers.import.tabFile")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("paste");
+                  setParsedData([]);
+                  setError("");
+                }}
+                className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "paste"
+                    ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                {t("customers.import.tabPaste")}
+              </button>
+            </div>
+          )}
+
+          {/* Upload File Area */}
+          {activeTab === "file" && !result && (
+            <>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 transition-colors"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <DocumentArrowUpIcon className="h-12 w-12 mx-auto text-gray-400" />
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  {file ? file.name : (t("customers.import.clickOrDrag") as string)}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {t("customers.import.requiredColumns") as string}
+                </p>
+              </div>
+
+              {/* Download Template */}
+              <button
+                onClick={downloadTemplate}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+              >
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                {t("customers.import.downloadTemplate")}
+              </button>
+            </>
+          )}
+
+          {/* Paste Direct Data Area */}
+          {activeTab === "paste" && !result && (
+            <div className="space-y-3">
+              <textarea
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                placeholder={t("customers.import.pastePlaceholder") as string}
+                rows={6}
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
               />
-              <DocumentArrowUpIcon className="h-12 w-12 mx-auto text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                {file ? file.name : t("customers.import.clickOrDrag")}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {t("customers.import.requiredColumns")}
-              </p>
+              <button
+                type="button"
+                onClick={handlePasteParse}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+              >
+                {t("customers.import.parseButton")}
+              </button>
             </div>
           )}
 
@@ -288,14 +476,15 @@ const CustomerImportModal: React.FC<CustomerImportModalProps> = ({
               ) : (
                 <>
                   <ArrowUpTrayIcon className="h-4 w-4 ml-2" />
-                  {t("customers.import.importButton", { count: parsedData.length })}
+                  {t("customers.import.importButton", { count: parsedData.length }) as string}
                 </>
               )}
             </button>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

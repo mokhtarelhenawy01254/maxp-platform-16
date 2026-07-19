@@ -29,4 +29,10 @@ const InstagramIcon: React.FC<IconProps> = ({ className, ...rest }) => (
   </svg>
 );
 
-export { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon };
+const MessengerIcon: React.FC<IconProps> = ({ className, ...rest }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...rest}>
+    <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.353 1.655 6.353 4.242 8.305V24l3.895-2.135c1.16.325 2.384.502 3.672.502h.09C18.438 22.367 24 17.4 24 11.111 24 4.974 18.627 0 12 0zm0 2c5.514 0 10 4.088 10 9.111 0 5.035-4.486 9.122-10 9.122-1.19 0-2.34-.189-3.418-.536l-.417-.135-2.586 1.418.502-2.403-.267-.427A8.926 8.926 0 012 11.11C2 6.089 6.486 2 12 2zm.874 7.283l-5.119 5.432 4.646-2.583 2.35 2.625 5.014-5.36-4.677 2.48z" />
+  </svg>
+);
+
+export { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon, MessengerIcon };

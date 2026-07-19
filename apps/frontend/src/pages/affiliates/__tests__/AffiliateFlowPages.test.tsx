@@ -2,7 +2,6 @@ import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import AffiliateDashboard from "../AffiliateDashboard";
-import AffiliateMarketplace from "../AffiliateMarketplace";
 import AffiliateProducts from "../AffiliateProducts";
 import AffiliateOrders from "../AffiliateOrders";
 import AffiliateOrderDetails from "../AffiliateOrderDetails";
@@ -274,51 +273,6 @@ describe("affiliate flow pages", () => {
       screen.queryByText("متابعة التحويلات والعملاء"),
     ).not.toBeInTheDocument();
     expect(screen.getByText("متابعة التحويلات")).toBeInTheDocument();
-  });
-
-  test("marketplace loads products that affiliates can import", async () => {
-    mockGet.mockImplementation((url: string) => {
-      if (url === "/products?limit=50&marketplace=true") {
-        return Promise.resolve({
-          data: {
-            success: true,
-            data: [
-              {
-                id: "product-1",
-                name: "منتج تجريبي",
-                price: 250,
-                images: '["https://example.com/product.png"]',
-              },
-            ],
-          },
-        });
-      }
-
-      if (url === "/affiliates/me") {
-        return Promise.resolve({
-          data: {
-            success: true,
-            data: {
-              id: "affiliate-1",
-              affiliateCode: "AFF123",
-              company: { id: "company-1", slug: "demo-company" },
-            },
-          },
-        });
-      }
-
-      return Promise.reject(new Error(`Unexpected GET ${url}`));
-    });
-
-    render(
-      <MemoryRouter>
-        <AffiliateMarketplace />
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText("كتالوج منتجات الشركة")).toBeInTheDocument();
-    expect(screen.getByText("منتج تجريبي")).toBeInTheDocument();
-    expect(screen.getByText("إضافة لمنتجاتي")).toBeInTheDocument();
   });
 
   test("affiliate products page lists imported products and actions", async () => {

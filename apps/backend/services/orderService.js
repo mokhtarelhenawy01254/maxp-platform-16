@@ -1110,19 +1110,28 @@ class OrderService {
             const dropshippingService = require('./dropshippingService');
             const prisma = this.getPrisma();
 
-            const existingCommissions = await prisma.commission.findMany({
-              where: { orderId: order.id },
+            // قراءة الإعداد: في أي حالة تتحسب العمولة
+            const affSetting = await prisma.affiliateSetting.findUnique({
+              where: { companyId: order.companyId },
+              select: { commissionOnStatus: true },
             });
-            const hasActiveCommissions = existingCommissions.some(
-              (commission) => commission.status !== 'CANCELLED',
-            );
+            const triggerStatus = affSetting?.commissionOnStatus || 'CONFIRMED';
 
-            if (!hasActiveCommissions) {
-              if (order.isDropshipped || order.orderItems?.some(item => item.product?.isDropshipped)) {
-                await dropshippingService.routeOrderToMerchant(order.id);
+            if (status === triggerStatus) {
+              const existingCommissions = await prisma.commission.findMany({
+                where: { orderId: order.id },
+              });
+              const hasActiveCommissions = existingCommissions.some(
+                (commission) => commission.status !== 'CANCELLED',
+              );
+
+              if (!hasActiveCommissions) {
+                if (order.isDropshipped || order.orderItems?.some(item => item.product?.isDropshipped)) {
+                  await dropshippingService.routeOrderToMerchant(order.id);
+                }
+                await commissionService.calculateCommissions(order.id);
+                console.log(`✅ [COMMISSION-BG] Calculated for order ${orderNumber}`);
               }
-              await commissionService.calculateCommissions(order.id);
-              console.log(`✅ [COMMISSION-BG] Calculated for order ${orderNumber}`);
             }
           }
 
@@ -1169,6 +1178,27 @@ class OrderService {
             }
           } catch (whatsappError) {
             console.error('⚠️ [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
+          }
+
+          // 🧾 Auto Invoice Generation
+          try {
+            const prisma = this.getPrisma();
+            const invoiceSettings = await prisma.orderInvoiceSettings.findUnique({
+              where: { companyId: order.companyId }
+            });
+
+            if (invoiceSettings && invoiceSettings.autoGenerate && invoiceSettings.autoGenerateOnStatus) {
+              const targetStatuses = invoiceSettings.autoGenerateOnStatus.split(',').map(s => s.trim().toUpperCase());
+              const normalizedStatus = status.toUpperCase();
+
+              if (targetStatuses.includes(normalizedStatus) || targetStatuses.includes('*')) {
+                const { generateInvoiceForOrder } = require('./orderInvoiceService');
+                await generateInvoiceForOrder(order.id, userId);
+                console.log(`✅ [INVOICE-AUTO] Auto-generated invoice for order ${order.orderNumber} on status ${normalizedStatus}`);
+              }
+            }
+          } catch (invoiceError) {
+            console.error('⚠️ [INVOICE-AUTO-ERROR] Failed auto-generation:', invoiceError.message);
           }
 
         } catch (backgroundError) {

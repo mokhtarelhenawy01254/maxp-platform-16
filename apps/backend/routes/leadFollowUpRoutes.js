@@ -9,5 +9,6 @@ router.get('/enrollments', verifyToken.authenticateToken, (req, res) => leadFoll
 router.get('/enrollments/:id', verifyToken.authenticateToken, (req, res) => leadFollowUpController.getEnrollment(req, res));
 router.put('/enrollments/:id/cancel', verifyToken.authenticateToken, (req, res) => leadFollowUpController.cancelEnrollment(req, res));
 router.get('/stats', verifyToken.authenticateToken, (req, res) => leadFollowUpController.getStats(req, res));
+router.get('/category-stats', verifyToken.authenticateToken, (req, res) => leadFollowUpController.getCategoryStats(req, res));
 
 module.exports = router;

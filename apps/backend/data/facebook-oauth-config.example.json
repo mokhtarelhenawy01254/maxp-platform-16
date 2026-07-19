@@ -1,0 +1,22 @@
+{
+  "_comment": "Facebook OAuth Configuration Template — Copy to facebook-oauth-config.json and configure via /super-admin/facebook-oauth",
+  "appId": "your-facebook-app-id",
+  "appSecret": "your-facebook-app-secret",
+  "permissions": [
+    "business_management",
+    "whatsapp_business_messaging",
+    "whatsapp_business_management"
+  ],
+  "graphApiVersion": "v25.0",
+  "webhook": {
+    "verifyToken": "maxp-whatsapp-webhook-verify-2026",
+    "fields": ["messages", "message_deliveries", "message_reads"]
+  },
+  "redirectPaths": {
+    "success": "/whatsapp/cloud-connect?status=success",
+    "cancel": "/whatsapp/cloud-connect?status=cancel",
+    "error": "/whatsapp/cloud-connect?status=error"
+  },
+  "configured": false,
+  "updatedAt": ""
+}

@@ -36,8 +36,8 @@ const MERCHANT_BLOCKED_ORDER_PATHS = new Set([
 const AFFILIATE_ALLOWED_PRIVATE_PREFIXES = [
   "/affiliates/dashboard",
   "/affiliates/register",
-  "/affiliates/marketplace",
   "/affiliates/products",
+  "/affiliates/products/visibility",
   "/affiliates/orders",
   "/affiliates/customers",
   "/affiliates/referrals",

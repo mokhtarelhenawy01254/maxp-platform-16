@@ -39,14 +39,15 @@ model Customer {
   returnRequests                 ReturnRequest[]
   whatsAppContacts               WhatsAppContact[]
   whatsapp_notification_logs     WhatsAppNotificationLog[]
-  customerJourneys               CustomerJourney[]
-  leadFollowUpEnrollments         LeadFollowUpEnrollment[]
+   customerJourneys               CustomerJourney[]
+   hotelReservations              HotelReservation[]
+   leadFollowUpEnrollments         LeadFollowUpEnrollment[]
   wholesaleCustomerPriceLists    WholesaleCustomerPriceList[]
-   wholesaleCustomer              WholesaleCustomer?
+    wholesaleCustomer              WholesaleCustomer?
     educationStudents               EducationStudent[]
-    formSubmissions                 FormSubmission[]
-
-    @@unique([facebookId, companyId])
+     formSubmissions                 FormSubmission[]
+ 
+     @@unique([facebookId, companyId])
   @@unique([instagramId, companyId])
   @@unique([telegramId, companyId])
   @@unique([whatsappId, companyId])
@@ -355,6 +356,8 @@ model Product {
   merchantProductId          String?
   basePrice                  Decimal?                  @db.Decimal(10, 2)
   allowAffiliateMarkup       Boolean                   @default(false)
+  affiliateVisibility        String                    @default("ALL")
+  affiliateVisibleAffiliateIds String?
   affiliateCommission        Decimal?                  @db.Decimal(10, 2)
   commissionType             String?                   @default("PERCENTAGE")
   affiliate_products         AffiliateProduct[]

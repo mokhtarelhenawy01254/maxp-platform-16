@@ -631,7 +631,7 @@ const TelegramUserbot: React.FC = () => {
   };
 
   return (
-    <div className="p-6 w-full h-[calc(100vh-100px)] flex flex-col">
+    <div className="p-6 w-full h-[calc(100dvh-100px)] flex flex-col">
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2 dark:text-white">

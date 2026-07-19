@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { getImageUrl } from "../utils/imageUrl";
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -694,8 +695,19 @@ const UsersManagement: React.FC = () => {
     setInviteDialogOpen(true);
   };
 
-  const openEditUser = (targetUser: UserRecord) => {
+  const openEditUser = async (targetUser: UserRecord) => {
     setEditingUser(targetUser);
+    try {
+      const freshPayload = await requestApi<UserRecord>(
+        `companies/${user?.companyId}/users/${targetUser.id}`
+      );
+      if (freshPayload.success && freshPayload.data) {
+        targetUser = freshPayload.data;
+        setEditingUser(targetUser);
+      }
+    } catch {
+      // Fall back to the passed-in user data if fetch fails
+    }
     const resolvedRole = targetUser.roleId
       ? (Object.entries(roles).find(([, r]) => r.id === targetUser.roleId)?.[0] || targetUser.role)
       : targetUser.role;
@@ -746,6 +758,9 @@ const UsersManagement: React.FC = () => {
       nextErrors.email = String(t("users.form.emailRequired"));
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userForm.email.trim())) {
       nextErrors.email = String(t("users.form.emailInvalid"));
+    }
+    if (!userForm.role.trim()) {
+      nextErrors.role = String(t("users.form.roleRequired"));
     }
     if (editorMode !== "edit" && !userForm.password.trim()) {
       nextErrors.password = String(t("users.form.passwordRequired"));
@@ -1452,7 +1467,7 @@ const UsersManagement: React.FC = () => {
                               <TableCell className="min-w-[16rem]">
                                 <div className="flex items-center gap-3">
                                   <Avatar size="lg">
-                                    <AvatarImage src={entry.avatar || undefined} alt={entry.email} />
+                                    <AvatarImage src={getImageUrl(entry.avatar) || undefined} alt={entry.email} />
                                     <AvatarFallback>{getInitials(entry.firstName, entry.lastName)}</AvatarFallback>
                                   </Avatar>
                                   <div className="space-y-1">
@@ -1547,7 +1562,7 @@ const UsersManagement: React.FC = () => {
                             <div className="flex items-start gap-3">
                               <Checkbox checked={selectedUsers.includes(entry.id)} onCheckedChange={() => toggleUserSelection(entry.id)} aria-label={`تحديد ${entry.firstName} ${entry.lastName}`} className="mt-1" />
                               <Avatar size="lg">
-                                <AvatarImage src={entry.avatar || undefined} alt={entry.email} />
+                                <AvatarImage src={getImageUrl(entry.avatar) || undefined} alt={entry.email} />
                                 <AvatarFallback>{getInitials(entry.firstName, entry.lastName)}</AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 flex-1 space-y-3">
@@ -1918,7 +1933,7 @@ const UsersManagement: React.FC = () => {
             <DialogHeader className="border-b border-border/70 px-5 py-4">
               <div className="flex items-center gap-3">
                 <Avatar size="lg">
-                  <AvatarImage src={detailsUser?.avatar || undefined} alt={detailsUser?.email || ""} />
+                  <AvatarImage src={getImageUrl(detailsUser?.avatar) || undefined} alt={detailsUser?.email || ""} />
                   <AvatarFallback>{getInitials(detailsUser?.firstName, detailsUser?.lastName)}</AvatarFallback>
                 </Avatar>
                 <div>

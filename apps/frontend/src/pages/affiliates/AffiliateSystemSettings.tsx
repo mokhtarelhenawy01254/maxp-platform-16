@@ -18,7 +18,7 @@ interface ApiSuccess<T> {
   recalculatedProducts?: number;
 }
 
-const VALID_COMMISSION_TYPES = ["PERCENTAGE", "MARKUP"] as const;
+const VALID_COMMISSION_TYPES = ["PERCENTAGE", "MARKUP", "FIXED", "FIXED_PER_ITEM"] as const;
 const VALID_PLATFORM_MARGIN_TYPES = ["FIXED", "PERCENTAGE"] as const;
 
 const parseNumberInput = (value: string, fallback: number) => {
@@ -52,6 +52,7 @@ const AffiliateSystemSettings: React.FC = () => {
     payoutSlaDays: 3,
     platformMarginType: "FIXED",
     platformMarginValue: 0,
+    commissionOnStatus: "CONFIRMED",
   });
 
   const normalizeSettings = (incoming: Partial<typeof settings> = {}) => ({
@@ -72,6 +73,7 @@ const AffiliateSystemSettings: React.FC = () => {
     payoutSlaDays: Number(incoming.payoutSlaDays ?? 3),
     platformMarginType: incoming.platformMarginType || "FIXED",
     platformMarginValue: Number(incoming.platformMarginValue ?? 0),
+    commissionOnStatus: incoming.commissionOnStatus || "CONFIRMED",
   });
 
   const validateSettings = (nextSettings: typeof settings) => {
@@ -94,6 +96,14 @@ const AffiliateSystemSettings: React.FC = () => {
 
     if (nextSettings.commissionType === "MARKUP" && commissionRate > 1000000) {
       return "قيمة هامش ربح المسوق أكبر من الحد المسموح";
+    }
+
+    if (nextSettings.commissionType === "FIXED" && commissionRate > 1000000) {
+      return "المبلغ الثابت لكل طلب أكبر من الحد المسموح";
+    }
+
+    if (nextSettings.commissionType === "FIXED_PER_ITEM" && commissionRate > 1000000) {
+      return "المبلغ الثابت لكل قطعة أكبر من الحد المسموح";
     }
 
     const platformMarginValue = Number(nextSettings.platformMarginValue);
@@ -622,6 +632,8 @@ const AffiliateSystemSettings: React.FC = () => {
                 >
                   <option value="PERCENTAGE">نسبة مئوية (%)</option>
                   <option value="MARKUP">هامش ربح ثابت</option>
+                  <option value="FIXED">مبلغ ثابت لكل طلب</option>
+                  <option value="FIXED_PER_ITEM">مبلغ ثابت لكل قطعة</option>
                 </select>
               </div>
 
@@ -658,10 +670,53 @@ const AffiliateSystemSettings: React.FC = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 />
+            </div>
+          </div>
+
+          {/* حالة احتساب العمولة */}
+          <div className={`rounded-2xl border p-6 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"} shadow-sm`}>
+            <h2 className={`text-xl font-semibold ${isDark ? "text-white" : "text-gray-900"} mb-2`}>
+              حالة احتساب العمولة
+            </h2>
+            <p className={`text-sm mb-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+              حدد في أي مرحلة من الطلب تتحسب عمولة المسوق تلقائياً.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}>
+                  تحتسب العمولة عند
+                </label>
+                <select
+                  value={settings.commissionOnStatus}
+                  onChange={(e) =>
+                    setSettings({ ...settings, commissionOnStatus: e.target.value })
+                  }
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                    isDark
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                >
+                  <option value="PENDING">فور إنشاء الطلب (PENDING)</option>
+                  <option value="CONFIRMED">تأكيد الطلب (CONFIRMED)</option>
+                  <option value="PROCESSING">جاري التجهيز (PROCESSING)</option>
+                  <option value="SHIPPED">تم الشحن (SHIPPED)</option>
+                  <option value="DELIVERED">تم التسليم (DELIVERED)</option>
+                </select>
+              </div>
+              <div className="flex items-center">
+                <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                  {settings.commissionOnStatus === "PENDING" && "⚡ تتحسب العمولة فور إنشاء الطلب — مناسبة للمسوقين الموثوقين."}
+                  {settings.commissionOnStatus === "CONFIRMED" && "🟢 تتحسب العمولة فور تأكيد الطلب — مناسبة للطلبات المدفوعة مسبقاً."}
+                  {settings.commissionOnStatus === "PROCESSING" && "🔵 تتحسب العمولة عند بدء تجهيز الطلب."}
+                  {settings.commissionOnStatus === "SHIPPED" && "📦 تتحسب العمولة عند شحن الطلب."}
+                  {settings.commissionOnStatus === "DELIVERED" && "🚚 تتحسب العمولة عند تسليم الطلب للعميل — الخيار الأكثر أماناً."}
+                </p>
               </div>
             </div>
+          </div>
 
-            <h2
+          <h2
               className={`text-xl font-semibold border-b pb-2 pt-6 ${isDark ? "text-white border-gray-700" : "text-gray-900 border-gray-200"}`}
             >
               هامش ربح المنصة (بين التاجر والمسوق)

@@ -670,7 +670,7 @@ export default function AgentProfilesPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-140px)] lg:h-[calc(100vh-90px)] bg-slate-50 dark:bg-slate-950 overflow-hidden">
+    <div className="flex h-[calc(100dvh-140px)] lg:h-[calc(100dvh-90px)] bg-slate-50 dark:bg-slate-950 overflow-hidden">
       {/* ── Mobile: Sheet Drawer + Full Main ── */}
       {isMobile && (
         <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>

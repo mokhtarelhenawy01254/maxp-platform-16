@@ -65,11 +65,38 @@ const getAffiliateVisibilityIds = (metadata) => {
   );
 };
 
+const parseAffiliateVisibleIds = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(String);
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
 const isProductVisibleToAffiliate = (product, affiliateId) => {
   if (!product) {
     return false;
   }
 
+  const affId = String(affiliateId);
+
+  // Check new top-level columns first
+  if (product.affiliateVisibility === AFFILIATE_PRODUCT_VISIBILITY.HIDDEN) {
+    return false;
+  }
+
+  if (product.affiliateVisibility === AFFILIATE_PRODUCT_VISIBILITY.SELECTED) {
+    return parseAffiliateVisibleIds(product.affiliateVisibleAffiliateIds).includes(affId);
+  }
+
+  if (product.affiliateVisibility === AFFILIATE_PRODUCT_VISIBILITY.ALL) {
+    return true;
+  }
+
+  // Fallback to metadata for backward compatibility
   const visibility = normalizeAffiliateVisibility(product.metadata);
 
   if (visibility === AFFILIATE_PRODUCT_VISIBILITY.HIDDEN) {
@@ -77,7 +104,7 @@ const isProductVisibleToAffiliate = (product, affiliateId) => {
   }
 
   if (visibility === AFFILIATE_PRODUCT_VISIBILITY.SELECTED) {
-    return getAffiliateVisibilityIds(product.metadata).includes(String(affiliateId));
+    return getAffiliateVisibilityIds(product.metadata).includes(affId);
   }
 
   return true;

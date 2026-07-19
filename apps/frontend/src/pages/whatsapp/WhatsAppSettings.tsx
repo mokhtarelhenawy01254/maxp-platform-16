@@ -355,11 +355,16 @@ function SessionScopeSelector({
           <SelectValue placeholder={label} />
         </SelectTrigger>
         <SelectContent>
-          {sessions.map((session) => (
-            <SelectItem key={session.id} value={session.id}>
-              {session.name}
-            </SelectItem>
-          ))}
+          {sessions.map((session) => {
+            const isCuid = session.name && session.name.length === 25 && /^[a-z0-9]+$/.test(session.name);
+            const nameToUse = isCuid ? "جلسة واتساب" : session.name;
+            const phone = session.metaDisplayPhoneNumber || session.phoneNumber;
+            return (
+              <SelectItem key={session.id} value={session.id}>
+                {phone ? `${nameToUse} (${phone})` : nameToUse}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>
@@ -856,6 +861,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             : session,
         ),
       );
+      if (isConnectedStatus(data.status)) {
+        setQrDialogOpen(false);
+        setCurrentQR(null);
+        setCurrentPairingCode(null);
+        setCurrentPairingPhone(null);
+        setQrRefreshed(false);
+      }
     };
 
     socket.on("whatsapp:qr", handleQRCode);
@@ -1013,8 +1025,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       setCurrentQR(updatedSession?.qrCode || null);
       setCurrentPairingCode(updatedSession?.pairingCode || null);
       setCurrentPairingPhone(updatedSession?.phoneNumber || session.phoneNumber);
-      setQrDialogOpen(true);
-      toast.info(t("whatsappSettings.connecting"));
+      if (isConnectedStatus(updatedSession?.liveStatus) || isConnectedStatus(updatedSession?.status)) {
+        setQrDialogOpen(false);
+        toast.success(t("whatsappSettings.dialogs.linkedSuccess"));
+      } else {
+        setQrDialogOpen(true);
+        toast.info(t("whatsappSettings.connecting"));
+      }
       void invalidateSessionsCache();
     } catch (error) {
       showError(error, t("common.error"));

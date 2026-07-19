@@ -22,7 +22,7 @@ const PlatformLandingSalesFlow: React.FC = () => {
     >
       <div className="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_34%),radial-gradient(circle_at_top_left,rgba(45,212,191,0.14),transparent_28%)]" />
 
-      <section className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_28px_70px_-48px_rgba(15,23,42,0.45)] backdrop-blur">
           <Link to="/" className="flex items-center gap-3 text-slate-950">
             <span className="rounded-2xl bg-slate-950 px-3 py-2 text-sm font-black text-white">
@@ -173,7 +173,7 @@ const PlatformLandingSalesFlow: React.FC = () => {
         </div>
       </section>
 
-      <section id="platform-flow" className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+      <section id="platform-flow" className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
         <div className="grid gap-5 lg:grid-cols-3">
           {section.pains.map((pain) => (
             <article
@@ -191,7 +191,7 @@ const PlatformLandingSalesFlow: React.FC = () => {
       </section>
 
       <section className="border-y border-slate-200 bg-slate-950 text-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:px-8">
+        <div className="mx-auto grid max-w-6xl 2xl:max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:px-8">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-orange-200">
               لماذا هذه النسخة؟
@@ -219,7 +219,7 @@ const PlatformLandingSalesFlow: React.FC = () => {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-5 lg:grid-cols-3">
           {section.useCases.map((useCase) => (
             <article

@@ -184,7 +184,7 @@ const WorkReportRecordsPage: React.FC = () => {
       className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 dark:bg-slate-950 dark:text-slate-50 sm:px-6 lg:px-8"
       dir="rtl"
     >
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl">
         <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
             <Link

@@ -10,7 +10,7 @@ const PERMISSIONS = [
   { key: 'analytics.view', name: 'عرض التحليلات', domain: 'DASHBOARD' },
   { key: 'analytics.view.own', name: 'عرض تحليلاتي فقط', domain: 'DASHBOARD' },
 
-  // Orders
+  // Orders — main
   { key: 'orders.view', name: 'عرض الطلبات', domain: 'ORDERS' },
   { key: 'orders.create', name: 'إنشاء طلب', domain: 'ORDERS' },
   { key: 'orders.edit', name: 'تعديل طلب', domain: 'ORDERS' },
@@ -19,6 +19,107 @@ const PERMISSIONS = [
   { key: 'orders.assign', name: 'تعيين طلب لمستخدم', domain: 'ORDERS' },
   { key: 'orders.export', name: 'تصدير الطلبات', domain: 'ORDERS' },
   { key: 'orders.bulk.create', name: 'إنشاء طلبات bulk', domain: 'ORDERS' },
+  { key: 'orders.invoice.print', name: 'طباعة الفواتير', domain: 'ORDERS' },
+
+  // Orders — Incomplete Orders section
+  { key: 'orders.incomplete.view', name: 'عرض الطلبات الناقصة', domain: 'ORDERS' },
+  { key: 'orders.incomplete.edit', name: 'تعديل الطلبات الناقصة', domain: 'ORDERS' },
+  { key: 'orders.incomplete.delete', name: 'حذف الطلبات الناقصة', domain: 'ORDERS' },
+
+  // Orders — Preparation Queue section
+  { key: 'orders.preparation.view', name: 'عرض قائمة التجهيز', domain: 'ORDERS' },
+  { key: 'orders.preparation.manage', name: 'إدارة قائمة التجهيز', domain: 'ORDERS' },
+
+  // Orders — Agent Workspace / Confirmation Queue section
+  { key: 'orders.workspace.view', name: 'عرض مساحة العمل', domain: 'ORDERS' },
+  { key: 'orders.confirmation.view', name: 'عرض تأكيدات الطلبات', domain: 'ORDERS' },
+  { key: 'orders.confirmation.manage', name: 'إدارة تأكيدات الطلبات', domain: 'ORDERS' },
+
+  // Orders — Quick Status Change section
+  { key: 'orders.quickstatus.view', name: 'عرض تغيير الحالة السريع', domain: 'ORDERS' },
+  { key: 'orders.quickstatus.manage', name: 'إدارة تغيير الحالة السريع', domain: 'ORDERS' },
+
+  // Orders — Turbo Records section
+  { key: 'orders.turbo.view', name: 'عرض سجلات Turbo', domain: 'ORDERS' },
+  { key: 'orders.turbo.manage', name: 'إدارة سجلات Turbo', domain: 'ORDERS' },
+
+  // Orders — Bosta Records section
+  { key: 'orders.bosta.view', name: 'عرض سجلات Bosta', domain: 'ORDERS' },
+  { key: 'orders.bosta.manage', name: 'إدارة سجلات Bosta', domain: 'ORDERS' },
+
+  // Orders — Stats section
+  { key: 'orders.stats.view', name: 'عرض إحصائيات الطلبات', domain: 'ORDERS' },
+
+  // Orders — Automation
+  { key: 'orders.automation.view', name: 'عرض أتمتة الطلبات', domain: 'ORDERS' },
+  { key: 'orders.automation.manage', name: 'إدارة أتمتة الطلبات', domain: 'ORDERS' },
+
+  // Orders — Invoices section
+  { key: 'orders.invoices.view', name: 'عرض فواتير الطلبات', domain: 'ORDERS' },
+  { key: 'orders.invoices.manage', name: 'إدارة فواتير الطلبات', domain: 'ORDERS' },
+  { key: 'orders.invoices.print', name: 'طباعة فواتير الطلبات', domain: 'ORDERS' },
+
+  // Orders — Manual Order
+  { key: 'orders.manual.create', name: 'إنشاء طلب يدوي', domain: 'ORDERS' },
+
+  // Orders — Status Summary Report
+  { key: 'orders.status-summary.view', name: 'عرض تقرير الحالات', domain: 'ORDERS' },
+
+  // Orders — Returns
+  { key: 'orders.returns.view', name: 'عرض المرتجعات', domain: 'ORDERS' },
+  { key: 'orders.returns.manage', name: 'إدارة المرتجعات', domain: 'ORDERS' },
+  { key: 'orders.returns.approve', name: 'الموافقة على المرتجعات', domain: 'ORDERS' },
+
+  // Orders — Shipping Companies
+  { key: 'orders.shipping.view', name: 'عرض شركات الشحن', domain: 'ORDERS' },
+  { key: 'orders.shipping.manage', name: 'إدارة شركات الشحن', domain: 'ORDERS' },
+
+  // Orders — Turbo Tickets
+  { key: 'orders.tickets.view', name: 'عرض تذاكر Turbo', domain: 'ORDERS' },
+  { key: 'orders.tickets.create', name: 'إنشاء تذكرة Turbo', domain: 'ORDERS' },
+  { key: 'orders.tickets.manage', name: 'إدارة تذاكر Turbo', domain: 'ORDERS' },
+
+  // Orders — Bulk Search
+  { key: 'orders.bulk-search.view', name: 'عرض البحث المجمع', domain: 'ORDERS' },
+
+  // Orders — POS (Point of Sale)
+  { key: 'orders.pos.view', name: 'عرض نقطة البيع', domain: 'ORDERS' },
+  { key: 'orders.pos.manage', name: 'إدارة نقطة البيع', domain: 'ORDERS' },
+
+  // Orders — Order Settings
+  { key: 'orders.settings.view', name: 'عرض إعدادات الطلبات', domain: 'ORDERS' },
+  { key: 'orders.settings.manage', name: 'إدارة إعدادات الطلبات', domain: 'ORDERS' },
+
+  // Orders — Customer Blocks
+  { key: 'orders.customer-blocks.view', name: 'عرض حظر العملاء', domain: 'ORDERS' },
+  { key: 'orders.customer-blocks.manage', name: 'إدارة حظر العملاء', domain: 'ORDERS' },
+
+  // Orders — Turbo Settings
+  { key: 'orders.turbo-settings.view', name: 'عرض إعدادات Turbo', domain: 'ORDERS' },
+  { key: 'orders.turbo-settings.manage', name: 'إدارة إعدادات Turbo', domain: 'ORDERS' },
+
+  // Orders — Return Settings
+  { key: 'orders.return-settings.view', name: 'عرض إعدادات المرتجعات', domain: 'ORDERS' },
+  { key: 'orders.return-settings.manage', name: 'إدارة إعدادات المرتجعات', domain: 'ORDERS' },
+
+  // Orders — Cancellation Reasons
+  { key: 'orders.cancellation-reasons.view', name: 'عرض أسباب الإلغاء', domain: 'ORDERS' },
+  { key: 'orders.cancellation-reasons.manage', name: 'إدارة أسباب الإلغاء', domain: 'ORDERS' },
+
+  // Orders — Platform Integrations
+  { key: 'orders.integrations.view', name: 'عرض التكاملات', domain: 'ORDERS' },
+  { key: 'orders.integrations.manage', name: 'إدارة التكاملات', domain: 'ORDERS' },
+
+  // Orders — Order Workflow
+  { key: 'orders.workflow.view', name: 'عرض مسار الطلبات', domain: 'ORDERS' },
+  { key: 'orders.workflow.manage', name: 'إدارة مسار الطلبات', domain: 'ORDERS' },
+
+  // Orders — Product Reviews
+  { key: 'orders.product-reviews.view', name: 'عرض تقييمات المنتجات', domain: 'ORDERS' },
+
+  // Orders — WhatsApp Order Notifications
+  { key: 'orders.whatsapp-notifications.view', name: 'عرض إشعارات واتساب للطلبات', domain: 'ORDERS' },
+  { key: 'orders.whatsapp-notifications.manage', name: 'إدارة إشعارات واتساب للطلبات', domain: 'ORDERS' },
 
   // Products
   { key: 'products.view', name: 'عرض المنتجات', domain: 'PRODUCTS' },
@@ -171,6 +272,9 @@ const BUILT_IN_ROLES = {
       'dashboard.view', 'dashboard.view.all', 'dashboard.view.team',
       'analytics.view',
       'orders.view', 'orders.create', 'orders.edit', 'orders.status.change', 'orders.assign', 'orders.export',
+      'orders.preparation.view', 'orders.preparation.manage',
+      'orders.invoices.view', 'orders.manual.create', 'orders.status-summary.view',
+      'orders.shipping.view', 'orders.workflow.view', 'orders.settings.view',
       'products.view', 'products.create', 'products.edit',
       'customers.view', 'customers.view.all', 'customers.view.team',
       'customers.create', 'customers.edit',
@@ -199,6 +303,8 @@ const BUILT_IN_ROLES = {
     permissions: [
       'dashboard.view',
       'orders.view', 'orders.create', 'orders.status.change',
+      'orders.preparation.view',
+      'orders.invoices.view', 'orders.manual.create',
       'products.view',
       'customers.view', 'customers.view.own',
       'customers.create',
@@ -218,6 +324,7 @@ const BUILT_IN_ROLES = {
     permissions: [
       'marketing.campaigns', 'marketing.coupons',
       'reports.view',
+      'products.view', 'products.create',
     ],
   },
 };
@@ -279,6 +386,10 @@ async function seed() {
   console.log('🎉 Seed complete!');
 }
 
-seed()
-  .catch(e => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+module.exports = { PERMISSIONS, BUILT_IN_ROLES };
+
+if (require.main === module) {
+  seed()
+    .catch(e => { console.error(e); process.exit(1); })
+    .finally(() => prisma.$disconnect());
+}

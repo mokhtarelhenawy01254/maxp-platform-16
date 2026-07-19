@@ -4,7 +4,8 @@
  * Uses raw SQL with quoted column names.
  */
 
-const { getSharedPrismaClient } = require('../backend/services/sharedDatabase');
+const { getSharedPrismaClient } = require('../apps/backend/services/sharedDatabase');
+const bcrypt = require('bcryptjs');
 
 async function seed() {
   const prisma = getSharedPrismaClient();
@@ -23,8 +24,8 @@ async function seed() {
   } else {
     companyId = 'dev_company_' + Date.now();
     await prisma.$executeRawUnsafe(`
-      INSERT INTO "companies" (id, name, email, phone, currency, plan, "isActive", timezone, "sidebarLayout", "createdAt", "updatedAt")
-      VALUES ('${companyId}', 'MaxP Dev Company', 'dev@maxp.test', '01000000000', 'EGP', 'ENTERPRISE', true, 'Africa/Cairo', 'three-tier', NOW(), NOW())
+      INSERT INTO "companies" (id, name, email, phone, currency, "isActive", timezone, "sidebarLayout", "createdAt", "updatedAt")
+      VALUES ('${companyId}', 'MaxP Dev Company', 'dev@maxp.test', '01000000000', 'EGP', true, 'Africa/Cairo', 'three-tier', NOW(), NOW())
     `);
     console.log('[SEED] Created company:', companyId);
   }
@@ -35,9 +36,10 @@ async function seed() {
   `;
   if (existingUser.length === 0) {
     const userId = 'dev_user_' + Date.now();
+    const hashedPassword = await bcrypt.hash('dev123456', 10);
     await prisma.$executeRawUnsafe(`
-      INSERT INTO "users" (id, email, password, "firstName", "lastName", "isActive", "companyId", "createdAt", "updatedAt")
-      VALUES ('${userId}', 'dev@maxp.test', 'dev123456', 'Dev', 'User', true, '${companyId}', NOW(), NOW())
+      INSERT INTO "users" (id, email, password, "firstName", "lastName", role, "isActive", "companyId", "createdAt", "updatedAt")
+      VALUES ('${userId}', 'dev@maxp.test', '${hashedPassword}', 'Dev', 'User', 'OWNER', true, '${companyId}', NOW(), NOW())
     `);
     console.log('[SEED] Created user:', userId);
   } else {
@@ -58,7 +60,7 @@ async function seed() {
   for (const dept of departments) {
     const id = `agent_dept_${companyId.slice(-6)}_${dept.key}`;
     await prisma.$executeRawUnsafe(`
-      INSERT INTO "agent_departments" (id, "companyId", key, name, description, icon, "sortOrder", "createdAt", "updatedAt")
+      INSERT INTO "ai"."agent_departments" (id, "company_id", key, name, description, icon, "sort_order", "created_at", "updated_at")
       VALUES ('${id}', '${companyId}', '${dept.key.replace(/'/g, "''")}', '${dept.name.replace(/'/g, "''")}', '${(dept.description || '').replace(/'/g, "''")}', '${dept.icon}', ${dept.sortOrder}, NOW(), NOW())
       ON CONFLICT (id) DO NOTHING
     `);
@@ -68,8 +70,8 @@ async function seed() {
   // Create a CEO agent
   const ceoId = `agent_${companyId.slice(-6)}_ceo`;
   await prisma.$executeRawUnsafe(`
-    INSERT INTO "company_agents" (id, "companyId", name, role, description, icon, status, "templateSlug", "createdBy", "createdAt", "updatedAt")
-    VALUES ('${ceoId}', '${companyId}', 'CEO Agent', 'CEO', 'المدير التنفيذي للوكلاء', '👑', 'ACTIVE', 'manager-ceo', 'seed_script', NOW(), NOW())
+    INSERT INTO "ai"."agents" (id, "company_id", name, role, description, icon, status, "template_slug", "created_at", "updated_at")
+    VALUES ('${ceoId}', '${companyId}', 'CEO Agent', 'CEO', 'المدير التنفيذي للوكلاء', '👑', 'ACTIVE', 'manager-ceo', NOW(), NOW())
     ON CONFLICT (id) DO NOTHING
   `);
   console.log('[SEED] Created CEO agent:', ceoId);

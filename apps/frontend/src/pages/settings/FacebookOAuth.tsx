@@ -40,6 +40,11 @@ interface OAuthStatus {
   needsAttention?: boolean;
   unhealthyPagesCount?: number;
   pages: FacebookPage[];
+  facebookUser?: {
+    id: string;
+    name: string;
+    picture?: string | null;
+  } | null;
 }
 
 interface SkippedPage {
@@ -447,6 +452,60 @@ const FacebookOAuth: React.FC = () => {
     }
   };
 
+  const handleHardDeletePages = async (pageIds: string[]) => {
+    if (pageIds.length === 0) {
+      return;
+    }
+
+    const confirmMessage =
+      pageIds.length === 1
+        ? "هل أنت متأكد من حذف هذه الصفحة نهائياً؟ لا يمكن التراجع عن هذا الإجراء."
+        : `هل أنت متأكد من حذف ${pageIds.length} صفحات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    if (!user?.companyId) {
+      setError("معرف الشركة غير متوفر");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        `${envConfig.apiUrl}/facebook-oauth/disconnect?companyId=${user.companyId}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            pageIds,
+            permanent: true,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSelectedPageIds((current) =>
+          current.filter((pageId) => !pageIds.includes(pageId)),
+        );
+        setSuccess(data.message || "تم حذف الصفحات بنجاح");
+        await loadOAuthStatus();
+        emitFacebookPageSync(user.companyId);
+      } else {
+        setError(data.message || "فشل في حذف الصفحات");
+      }
+    } catch (error) {
+      console.error("Error hard deleting page:", error);
+      setError("خطأ في حذف الصفحات");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReconnectPages = async (pageIds: string[]) => {
     if (pageIds.length === 0) {
       return;
@@ -702,18 +761,43 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
           </div>
         ) : oauthStatus?.connected ? (
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/30 rounded-full">
-              <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                متصل - {connectedPagesCount} صفحة نشطة
-              </span>
-            </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-900/30 border border-gray-150 dark:border-gray-800 rounded-xl">
+              <div className="flex flex-col gap-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/30 rounded-full w-fit">
+                  <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                    متصل - {connectedPagesCount} صفحة نشطة
+                  </span>
+                </div>
+                {disconnectedPagesCount > 0 && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    هناك {disconnectedPagesCount} صفحة غير متصلة ويمكن إعادة ربطها من الأسفل.
+                  </p>
+                )}
+              </div>
 
-            {disconnectedPagesCount > 0 && (
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                هناك {disconnectedPagesCount} صفحة غير متصلة ويمكن إعادة ربطها من الأسفل.
-              </p>
-            )}
+              {oauthStatus.facebookUser && (
+                <div className="flex items-center gap-3 bg-white dark:bg-gray-850 p-2.5 px-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm shrink-0">
+                  {oauthStatus.facebookUser.picture ? (
+                    <img
+                      src={oauthStatus.facebookUser.picture}
+                      alt={oauthStatus.facebookUser.name}
+                      className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+                      {oauthStatus.facebookUser.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">الحساب المرتبط</p>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
+                      {oauthStatus.facebookUser.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={handleConnectFacebook}
@@ -730,6 +814,28 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               <ExclamationTriangleIcon className="h-8 w-8 text-gray-400" />
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">غير متصل بأي صفحة Facebook</p>
+
+            {oauthStatus?.facebookUser && (
+              <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900/30 p-2.5 px-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 max-w-sm">
+                {oauthStatus.facebookUser.picture ? (
+                  <img
+                    src={oauthStatus.facebookUser.picture}
+                    alt={oauthStatus.facebookUser.name}
+                    className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+                    {oauthStatus.facebookUser.name.charAt(0)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">الحساب المرتبط</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
+                    {oauthStatus.facebookUser.name}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleConnectFacebook}
@@ -785,6 +891,14 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               >
                 <TrashIcon className="h-3.5 w-3.5" />
                 فصل المحدد
+              </button>
+              <button
+                onClick={() => handleHardDeletePages(selectedPageIds)}
+                disabled={loading || selectedPageIds.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900 text-white rounded-lg hover:bg-red-950 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+              >
+                <TrashIcon className="h-3.5 w-3.5" />
+                حذف نهائي
               </button>
             </div>
           </div>
@@ -856,7 +970,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                     {page.canReconnect !== false && (
                       <button
                         onClick={() => handleReconnectPages([page.id])}
-                        disabled={loading || page.canReconnect === false}
+                        disabled={loading}
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg disabled:opacity-50 text-xs font-medium transition-colors"
                         title="إعادة الربط"
                       >
@@ -875,6 +989,14 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     )}
+                    <button
+                      onClick={() => handleHardDeletePages([page.id])}
+                      disabled={loading}
+                      className="p-1.5 text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg disabled:opacity-50 transition-colors"
+                      title="حذف نهائي"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}

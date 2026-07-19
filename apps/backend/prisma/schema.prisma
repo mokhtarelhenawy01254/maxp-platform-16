@@ -126,6 +126,7 @@ model AffiliateSetting {
   updatedAt                       DateTime @updatedAt
   platformMarginType              String   @default("FIXED")
   platformMarginValue             Float    @default(0)
+  commissionOnStatus              String   @default("CONFIRMED")
   company                         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("affiliate_settings")
@@ -1439,16 +1440,16 @@ model CompetitorAdIntelligence {
 
 // --- From: competitors_features.prisma ---
 model CompetitorFeature {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   competitorId String
   title        String
-  description  String?    @db.Text
-  priority     String     @default("medium")
-  status       String     @default("pending")
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  description  String?  @db.Text
+  priority     String   @default("medium")
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  competitor   Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  competitor Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
 
   @@index([competitorId])
   @@index([competitorId, status])
@@ -1458,30 +1459,30 @@ model CompetitorFeature {
 
 // --- From: competitors_dev_recommendations.prisma ---
 model CompetitorDevRecommendation {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   competitorId String
-  notes        String?    @db.Text
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  competitor   Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
-  tasks        CompetitorDevTask[]
+  competitor Competitor          @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  tasks      CompetitorDevTask[]
 
   @@index([competitorId])
   @@map("competitor_dev_recommendations")
 }
 
 model CompetitorDevTask {
-  id               String                     @id @default(cuid())
+  id               String    @id @default(cuid())
   recommendationId String
   title            String
-  description      String?                    @db.Text
-  status           String                     @default("not_started")
+  description      String?   @db.Text
+  status           String    @default("not_started")
   targetDate       DateTime?
-  createdAt        DateTime                   @default(now())
-  updatedAt        DateTime                   @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  recommendation   CompetitorDevRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  recommendation CompetitorDevRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
 
   @@index([recommendationId])
   @@index([recommendationId, status])
@@ -1779,18 +1780,18 @@ model Competitor {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company        Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  products       CompetitorProduct[]
-  ads            CompetitorAd[]
-  reports        CompetitorReport[]
-  socialProfiles CompetitorSocialProfile[]
-  amazonData     CompetitorAmazonData[]
-  googleBusiness CompetitorGoogleBusiness[]
-  techStack      CompetitorTechStack[]
-  shopifyStores  CompetitorShopifyStore[]
-  adCampaigns    CompetitorAdCampaign[]
-  adIntelligence CompetitorAdIntelligence[]
-  features       CompetitorFeature[]
+  company            Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products           CompetitorProduct[]
+  ads                CompetitorAd[]
+  reports            CompetitorReport[]
+  socialProfiles     CompetitorSocialProfile[]
+  amazonData         CompetitorAmazonData[]
+  googleBusiness     CompetitorGoogleBusiness[]
+  techStack          CompetitorTechStack[]
+  shopifyStores      CompetitorShopifyStore[]
+  adCampaigns        CompetitorAdCampaign[]
+  adIntelligence     CompetitorAdIntelligence[]
+  features           CompetitorFeature[]
   devRecommendations CompetitorDevRecommendation[]
 
   @@unique([companyId, slug])
@@ -1966,6 +1967,7 @@ model Company {
   branches                        Branche[]
   broadcastCampaigns              BroadcastCampaign[]
   broadcastSettings               BroadcastSettings?
+  leadCategories                  LeadCategory[]
   categories                      Category[]
   checkoutFormSettings            CheckoutFormSettings?
   commissions                     Commission[]
@@ -2172,22 +2174,22 @@ model Company {
 }
 
 model FollowUp {
-  id                  String   @id @default(cuid())
-  companyId           String   @unique
-  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  status              String   @default("unassigned")
-  assignedOwnerId     String?
-  assignedOwnerName   String?
-  assignedOwnerEmail  String?
-  assignedOwnerRole   String?
-  lastNote            String?
-  updatedAt           DateTime?
-  contactedAt         DateTime?
-  resolvedAt          DateTime?
-  nextActionAt        DateTime?
-  lastReminderSentAt  DateTime?
-  lastEscalatedAt     DateTime?
-  createdAt           DateTime @default(now())
+  id                 String    @id @default(cuid())
+  companyId          String    @unique
+  company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status             String    @default("unassigned")
+  assignedOwnerId    String?
+  assignedOwnerName  String?
+  assignedOwnerEmail String?
+  assignedOwnerRole  String?
+  lastNote           String?
+  updatedAt          DateTime?
+  contactedAt        DateTime?
+  resolvedAt         DateTime?
+  nextActionAt       DateTime?
+  lastReminderSentAt DateTime?
+  lastEscalatedAt    DateTime?
+  createdAt          DateTime  @default(now())
 
   history FollowUpHistory[]
 
@@ -2195,23 +2197,23 @@ model FollowUp {
 }
 
 model FollowUpHistory {
-  id                  String   @id @default(cuid())
-  followUpId          String
-  followUp            FollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
-  occurredAt          DateTime
-  status              String
-  note                String?
-  action              String   @default("updated")
-  nextActionAt        DateTime?
-  actorId             String?
-  actorName           String?
-  actorEmail          String?
-  actorRole           String?
-  assignedOwnerId     String?
-  assignedOwnerName   String?
-  assignedOwnerEmail  String?
-  assignedOwnerRole   String?
-  createdAt           DateTime @default(now())
+  id                 String    @id @default(cuid())
+  followUpId         String
+  followUp           FollowUp  @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  occurredAt         DateTime
+  status             String
+  note               String?
+  action             String    @default("updated")
+  nextActionAt       DateTime?
+  actorId            String?
+  actorName          String?
+  actorEmail         String?
+  actorRole          String?
+  assignedOwnerId    String?
+  assignedOwnerName  String?
+  assignedOwnerEmail String?
+  assignedOwnerRole  String?
+  createdAt          DateTime  @default(now())
 
   @@index([followUpId])
   @@map("follow_up_history")
@@ -2587,10 +2589,10 @@ enum OrderStatus {
   CANCELLED
   DUPLICATE_ORDER
   REFUNDED
-    RETURNED
-    PARTIALLY_RETURNED
-    EXCHANGED
-    PARTIALLY_REFUNDED
+  RETURNED
+  PARTIALLY_RETURNED
+  EXCHANGED
+  PARTIALLY_REFUNDED
   WOO_TAGHEZ
   DRAFT
   TRASH
@@ -3424,6 +3426,7 @@ enum AffiliatesCommissionType {
   PERCENTAGE
   MARKUP
   FIXED
+  FIXED_PER_ITEM
 
   @@map("affiliates_commissionType")
 }
@@ -6148,8 +6151,12 @@ model Supplier {
 model BroadcastCampaign {
   id                  String               @id @default(cuid())
   name                String
+  channel             String               @default("facebook") // facebook | whatsapp
   message             String
   targetAudience      String
+  waTemplateName      String? // WhatsApp template name (when channel=whatsapp)
+  waLanguageCode      String?              @default("en")
+  leadCategoryId      String?
   scheduledAt         DateTime?
   sentAt              DateTime?
   tags                String?
@@ -6897,8 +6904,31 @@ model FacebookPage {
   blockedCustomersOnPages BlockedCustomersOnPage[]
   company                 Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  facebookPosts FacebookPost[]
+
   @@index([companyId])
   @@map("facebook_pages")
+}
+
+model FacebookPost {
+  id         String   @id @default(cuid())
+  postId     String   @unique
+  pageId     String
+  companyId  String
+  message    String   @default("")
+  mediaUrl   String?
+  permalink  String?
+  postedAt   DateTime @default(now())
+  syncStatus String   @default("synced")
+  productId  String?
+  isProduct  Boolean  @default(false)
+
+  page    FacebookPage? @relation(fields: [pageId], references: [pageId])
+  product Product?      @relation(fields: [productId], references: [id])
+
+  @@index([companyId, pageId])
+  @@index([pageId])
+  @@map("facebook_posts")
 }
 
 model FacebookPixelConfig {
@@ -7736,35 +7766,38 @@ model SentMessageStat {
 }
 
 model WhatsAppContact {
-  id              String          @id @default(cuid())
-  sessionId       String
-  jid             String
-  phoneNumber     String
-  name            String?
-  pushName        String?
-  profilePicUrl   String?
-  isGroup         Boolean         @default(false)
-  isNewsletter    Boolean         @default(false)
-  isBlocked       Boolean         @default(false)
-  customerId      String?
-  category        String?         @default("LEAD")
-  tags            String?
-  notes           String?
-  lastMessageAt   DateTime?
-  unreadCount     Int             @default(0)
-  totalMessages   Int             @default(0)
-  isArchived      Boolean         @default(false)
-  isPinned        Boolean         @default(false)
-  isMuted                Boolean         @default(false)
-  lastMessagePreview     String?
-  lastMessageIsFromMe    Boolean         @default(false)
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-  customer               Customer?       @relation(fields: [customerId], references: [id])
-  whatsAppSession        WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id                  String          @id @default(cuid())
+  sessionId           String
+  jid                 String
+  phoneNumber         String
+  name                String?
+  pushName            String?
+  profilePicUrl       String?
+  isGroup             Boolean         @default(false)
+  isNewsletter        Boolean         @default(false)
+  isBlocked           Boolean         @default(false)
+  customerId          String?
+  category            String?         @default("LEAD")
+  leadCategoryId      String?
+  tags                String?
+  notes               String?
+  lastMessageAt       DateTime?
+  unreadCount         Int             @default(0)
+  totalMessages       Int             @default(0)
+  isArchived          Boolean         @default(false)
+  isPinned            Boolean         @default(false)
+  isMuted             Boolean         @default(false)
+  lastMessagePreview  String?
+  lastMessageIsFromMe Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  customer            Customer?       @relation(fields: [customerId], references: [id])
+  leadCategory        LeadCategory?   @relation(fields: [leadCategoryId], references: [id])
+  whatsAppSession     WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, jid])
   @@index([category])
+  @@index([leadCategoryId])
   @@index([customerId])
   @@index([lastMessageAt])
   @@index([phoneNumber])
@@ -8231,7 +8264,7 @@ model Appointment {
   meetingLink     String?
   notes           String?
   createdById     String?
-  createdByType   String?   /// ai_service / user (human dashboard user)
+  createdByType   String? /// ai_service / user (human dashboard user)
   createdByName   String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -8951,6 +8984,8 @@ model OrderInvoiceSettings {
   primaryColor                  String   @default("#4F46E5")
   secondaryColor                String   @default("#6B7280")
   fontFamily                    String   @default("Arial")
+  showBarcodeOrderCode          Boolean  @default(true)
+  showBarcodeShippingCode       Boolean  @default(true)
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
   enableSequentialOrders        Boolean  @default(false)
@@ -9549,6 +9584,8 @@ model Product {
   merchantProductId          String?
   basePrice                  Decimal?                  @db.Decimal(10, 2)
   allowAffiliateMarkup       Boolean                   @default(false)
+  affiliateVisibility        String                    @default("ALL")
+  affiliateVisibleAffiliateIds String?
   affiliateCommission        Decimal?                  @db.Decimal(10, 2)
   commissionType             String?                   @default("PERCENTAGE")
   affiliate_products         AffiliateProduct[]
@@ -9575,6 +9612,8 @@ model Product {
   wishlists                  Wishlist[]
 
   showFakeStock Boolean @default(false)
+
+  facebookPosts FacebookPost[]
 
   @@unique([companyId, sku])
   @@unique([companyId, slug])
@@ -10407,6 +10446,7 @@ model PageResponseSettings {
   aiPrompt              String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+  delayReply            Boolean  @default(false)
   commentMessages       String?
   company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -10862,17 +10902,17 @@ model PlatformSiteMetaPixelSetting {
 }
 
 model ReturnSettings {
-  id                 String   @id @default(cuid())
-  companyId          String   @unique
-  excellentThreshold Int      @default(90)
-  goodThreshold      Int      @default(70)
-  minOrdersForRating Int      @default(3)
-  autoApproveScore   Int      @default(95)
-  enableAutoApproval Boolean  @default(false)
-  reviewDisplayConfig Json   @default("{}")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id                  String   @id @default(cuid())
+  companyId           String   @unique
+  excellentThreshold  Int      @default(90)
+  goodThreshold       Int      @default(70)
+  minOrdersForRating  Int      @default(3)
+  autoApproveScore    Int      @default(95)
+  enableAutoApproval  Boolean  @default(false)
+  reviewDisplayConfig Json     @default("{}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@map("return_settings")
@@ -11872,28 +11912,28 @@ model DevTimerGroup {
 
 // --- From: telegram.prisma ---
 model TelegramConfig {
-  id             String                  @id @default(cuid())
-  companyId      String
-  botToken       String?
-  botName        String?
-  botUsername    String?
-  apiId          String?
-  apiHash        String?
-  isActive       Boolean                 @default(false)
-  clientSession  String?
-  clientPhone    String?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  label          String                  @default("Official Bot")
+  id                String                  @id @default(cuid())
+  companyId         String
+  botToken          String?
+  botName           String?
+  botUsername       String?
+  apiId             String?
+  apiHash           String?
+  isActive          Boolean                 @default(false)
+  clientSession     String?
+  clientPhone       String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  label             String                  @default("Official Bot")
   sessionString     String?
   tempAuthSession   String?
   tempPhoneCodeHash String?
-  type              String   @default("BOT")
-  inboxEnabled      Boolean  @default(false)
-  company        Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  autoReplyRules TelegramAutoReplyRule[]
-  bulkMessages   TelegramBulkMessage[]
-  forwardRules   TelegramForwardRule[]
+  type              String                  @default("BOT")
+  inboxEnabled      Boolean                 @default(false)
+  company           Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  autoReplyRules    TelegramAutoReplyRule[]
+  bulkMessages      TelegramBulkMessage[]
+  forwardRules      TelegramForwardRule[]
 
   @@index([companyId])
   @@index([type])
@@ -12090,6 +12130,27 @@ model TelegramForwardRule {
 }
 
 // --- From: whatsapp_automation.prisma ---
+model LeadCategory {
+  id                    String        @id @default(cuid())
+  companyId             String
+  name                  String
+  color                 String?       @default("#6366f1")
+  isDefault             Boolean       @default(false)
+  sortOrder             Int           @default(0)
+  autoFollowUp          Boolean       @default(true)
+  autoPromoteCategoryId String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  company               Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contacts              WhatsAppContact[]
+  autoPromoteCategory   LeadCategory?  @relation("CategoryPromotion", fields: [autoPromoteCategoryId], references: [id])
+  promotedFrom          LeadCategory[] @relation("CategoryPromotion")
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("lead_categories")
+}
+
 model WhatsAppFollowUpFlow {
   id        String                 @id @default(cuid())
   companyId String
@@ -12487,7 +12548,7 @@ model OrderStatusAutoChangeRule {
   fromStatus String
   toStatus   String
   waitTime   Int
-  timeUnit   String   // 'Minutes', 'Hours', 'Days'
+  timeUnit   String // 'Minutes', 'Hours', 'Days'
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -12508,7 +12569,7 @@ model AppExplanation {
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@index([targetRoute])
   @@map("app_explanations")
 }

@@ -42,7 +42,7 @@ const MyActivity = () => {
   const getSeverityIcon = (s) => { if (s === "CRITICAL") return <AlertTriangle className="size-4" />; if (s === "HIGH") return <AlertTriangle className="size-4" />; return <Info className="size-4" />; };
 
   return (
-    <div className="max-w-7xl mx-auto mt-4 mb-4 px-4">
+    <div className="max-w-6xl 2xl:max-w-7xl mx-auto mt-4 mb-4 px-4">
       <h1 className="text-2xl font-bold mb-3">📊 نشاطاتي</h1>
 
       {stats && <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">

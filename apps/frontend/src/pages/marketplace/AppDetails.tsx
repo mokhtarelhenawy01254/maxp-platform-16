@@ -21,9 +21,18 @@ import {
   Users,
   X,
   Zap,
+  Bot, Camera, Megaphone, ShoppingCart, PackageOpen,
+  ClipboardList, Route, ClipboardCheck, Inbox, Bell,
+  Truck, FileText, Percent, Heart, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
+import { FacebookIcon } from "../../components/icons/brands";
+import type { ElementType } from "react";
+
+const brandIconsBySlug: Record<string, ElementType> = {
+  "facebook-ads-pro": FacebookIcon,
+};
 import {
   getFeatureAccessKind,
   getFeatureAccessLabel,
@@ -103,13 +112,30 @@ const DETAIL_CATEGORY_ICONS: Record<string, any> = {
 };
 
 const DETAIL_ICON_ALIASES: Record<string, any> = {
+  megaphone: Megaphone,
   "chart-bar": BarChart3,
   chart: BarChart3,
   analytics: BarChart3,
+  bot: Bot,
   store: Store,
   shop: Store,
   cart: ShoppingBag,
+  "shopping-cart": ShoppingCart,
+  users: Users,
   sparkles: Sparkles,
+  camera: Camera,
+  "package-open": PackageOpen,
+  "clipboard-list": ClipboardList,
+  route: Route,
+  "clipboard-check": ClipboardCheck,
+  inbox: Inbox,
+  bell: Bell,
+  calendar: Calendar,
+  heart: Heart,
+  package: Package,
+  truck: Truck,
+  "file-text": FileText,
+  percent: Percent,
 };
 
 function shouldUseTextIcon(icon?: string) {
@@ -336,6 +362,7 @@ export default function AppDetails() {
   const normalizedRequiredApps = Array.isArray(requiredApps) ? requiredApps : [];
   const pricingSummary = getPricingSummary(app, isEnterprise);
   const accessKind = getFeatureAccessKind(app.pricingModel);
+  const BrandIcon = app.slug ? brandIconsBySlug[app.slug] : undefined;
   const DetailIcon =
     DETAIL_ICON_ALIASES[String(app.icon || "").trim()] ||
     DETAIL_CATEGORY_ICONS[String(app.category || "").trim().toUpperCase()] ||
@@ -375,7 +402,7 @@ export default function AppDetails() {
 
               <div className="flex flex-col items-end gap-4 sm:flex-row-reverse sm:items-start">
                 <div className="bg-primary/10 text-primary flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border text-3xl">
-                  {textIcon || <DetailIcon size={30} aria-hidden="true" />}
+                  {BrandIcon ? <BrandIcon className="size-8" /> : textIcon || <DetailIcon size={30} aria-hidden="true" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h1 className="text-foreground text-3xl font-black leading-tight text-pretty sm:text-4xl">

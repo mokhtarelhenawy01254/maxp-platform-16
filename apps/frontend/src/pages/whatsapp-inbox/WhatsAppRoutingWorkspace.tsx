@@ -68,7 +68,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-6xl 2xl:max-w-7xl">
           <div className="h-6 w-64 animate-pulse rounded bg-muted" />
           <div className="mt-4 flex gap-8">
             {[1, 2, 3, 4].map((i) => (
@@ -85,7 +85,7 @@ const WhatsAppRoutingWorkspace: React.FC = () => {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)] flex-col bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="flex h-[calc(100dvh-64px)] flex-col bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Top bar */}
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border/50 px-4 py-3 md:px-6">
         <div className="flex items-center gap-3">

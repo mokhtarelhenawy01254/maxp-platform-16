@@ -8,7 +8,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import String, cast, func, select
+from sqlalchemy import String, cast, func, select, case
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -440,28 +440,70 @@ async def list_logs(
     offset: int = Query(default=0, ge=0),
     admin: dict | None = Depends(verify_admin_jwt),
 ) -> LogListResponse:
-    count_stmt = select(func.count(ProviderLog.id))
+    # 1. ORM stats query
+    orm_stats_stmt = select(
+        func.count(ProviderLog.id).label("total"),
+        func.sum(case((ProviderLog.status.in_(["success", "ok"]), 1), else_=0)).label("success"),
+        func.sum(case((ProviderLog.status.in_(["failed", "error"]), 1), else_=0)).label("failed"),
+        func.sum(ProviderLog.latency_ms).label("total_latency"),
+        func.count(ProviderLog.latency_ms).label("latency_count")
+    )
     if provider:
-        count_stmt = count_stmt.where(ProviderLog.provider == provider)
+        orm_stats_stmt = orm_stats_stmt.where(ProviderLog.provider == provider)
     if key_id:
-        count_stmt = count_stmt.where(ProviderLog.key_id == key_id)
+        orm_stats_stmt = orm_stats_stmt.where(ProviderLog.key_id == key_id)
     if status:
-        count_stmt = count_stmt.where(ProviderLog.status == status)
-    total_orm = (await session.execute(count_stmt)).scalar() or 0
+        if status == "success":
+            orm_stats_stmt = orm_stats_stmt.where(ProviderLog.status.in_(["success", "ok"]))
+        elif status == "failed":
+            orm_stats_stmt = orm_stats_stmt.where(ProviderLog.status.in_(["failed", "error"]))
+        else:
+            orm_stats_stmt = orm_stats_stmt.where(ProviderLog.status == status)
 
+    orm_stats_res = (await session.execute(orm_stats_stmt)).one()
+    orm_total = orm_stats_res.total or 0
+    orm_success = orm_stats_res.success or 0
+    orm_failed = orm_stats_res.failed or 0
+    orm_tot_latency = orm_stats_res.total_latency or 0
+    orm_lat_count = orm_stats_res.latency_count or 0
+
+    # 2. Public (Raw SQL) stats query
     clause, p = _build_public_filters(provider, key_id, status)
-    total_pub = 0
+    pub_total = 0
+    pub_success = 0
+    pub_failed = 0
+    pub_tot_latency = 0
+    pub_lat_count = 0
+
+    from sqlalchemy import text as _t
     try:
-        from sqlalchemy import text as _t
-        total_result = await session.execute(
-            _t(f"SELECT COUNT(*) FROM public.ai_provider_logs WHERE {clause}"), p
-        )
-        total_pub = total_result.scalar() or 0
-    except Exception:
-        pass
+        pub_stats_res = await session.execute(_t(f"""
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN status IN ('success', 'ok') THEN 1 ELSE 0 END) AS success,
+                   SUM(CASE WHEN status IN ('failed', 'error') THEN 1 ELSE 0 END) AS failed,
+                   SUM("latencyMs") AS total_latency,
+                   COUNT("latencyMs") AS latency_count
+            FROM public.ai_provider_logs
+            WHERE {clause}
+        """), p)
+        pub_stats = pub_stats_res.mappings().one()
+        pub_total = pub_stats["total"] or 0
+        pub_success = pub_stats["success"] or 0
+        pub_failed = pub_stats["failed"] or 0
+        pub_tot_latency = pub_stats["total_latency"] or 0
+        pub_lat_count = pub_stats["latency_count"] or 0
+    except Exception as _pub_stats_exc:
+        logger.warning("public_stats_query_failed", error=str(_pub_stats_exc))
 
-    total = total_orm + total_pub
+    total = orm_total + pub_total
+    success_count = orm_success + pub_success
+    failed_count = orm_failed + pub_failed
+    
+    tot_latency = orm_tot_latency + pub_tot_latency
+    lat_count = orm_lat_count + pub_lat_count
+    avg_latency = round(tot_latency / lat_count) if lat_count > 0 else 0
 
+    # 3. Fetch records
     fetch_limit = offset + limit
     stmt = select(ProviderLog).order_by(ProviderLog.created_at.desc(), ProviderLog.id.desc())
     if provider:
@@ -469,7 +511,13 @@ async def list_logs(
     if key_id:
         stmt = stmt.where(ProviderLog.key_id == key_id)
     if status:
-        stmt = stmt.where(ProviderLog.status == status)
+        if status == "success":
+            stmt = stmt.where(ProviderLog.status.in_(["success", "ok"]))
+        elif status == "failed":
+            stmt = stmt.where(ProviderLog.status.in_(["failed", "error"]))
+        else:
+            stmt = stmt.where(ProviderLog.status == status)
+
     stmt = stmt.limit(fetch_limit)
     result = await session.execute(stmt)
     rows = [LogEntry.model_validate(r) for r in result.scalars().all()]
@@ -480,28 +528,36 @@ async def list_logs(
             SELECT id, provider, "keyId" AS key_id, action, status,
                    model, "latencyMs" AS latency_ms,
                    COALESCE(message, '') AS error,
-                   metadata->>'response' AS response,
+                   CAST(COALESCE(metadata, '{{}}') AS jsonb)->>'response' AS response,
                    "companyId" AS company_id, "createdAt" AS created_at
             FROM public.ai_provider_logs
             WHERE {clause}
             ORDER BY "createdAt" DESC, id DESC LIMIT :lim
         """), pp)
         rows.extend(LogEntry.model_validate(r) for r in pub.mappings().all())
-        rows.sort(key=lambda r: r.created_at, reverse=True)
-        rows = rows[offset:offset + limit]
     except Exception as _pub_exc:
         logger.warning("public_logs_query_failed", error=str(_pub_exc))
 
-    return LogListResponse(items=rows, total=total)
+    # Move sorting and slicing outside try-except so they ALWAYS execute!
+    rows.sort(key=lambda r: r.created_at.replace(tzinfo=None) if r.created_at.tzinfo else r.created_at, reverse=True)
+    rows = rows[offset:offset + limit]
+
+    return LogListResponse(
+        items=rows,
+        total=total,
+        success_count=success_count,
+        failed_count=failed_count,
+        avg_latency=avg_latency
+    )
 
 
 def _build_public_filters(
     provider: str | None,
     key_id: str | None,
     status: str | None,
-) -> tuple[str, dict[str, str]]:
+) -> tuple[str, dict]:
     clause = []
-    params: dict[str, str] = {}
+    params: dict = {}
     if provider:
         clause.append("provider = :provider")
         params["provider"] = provider
@@ -509,9 +565,15 @@ def _build_public_filters(
         clause.append('"keyId" = :key_id')
         params["key_id"] = key_id
     if status:
-        clause.append("status = :status")
-        params["status"] = status
+        if status == "success":
+            clause.append("status IN ('success', 'ok')")
+        elif status == "failed":
+            clause.append("status IN ('failed', 'error')")
+        else:
+            clause.append("status = :status")
+            params["status"] = status
     return " AND ".join(clause) if clause else "TRUE", params
+
 
 
 _DEFAULT_TEST_MODELS: dict[str, str] = {

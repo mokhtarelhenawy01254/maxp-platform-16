@@ -18,6 +18,8 @@ import {
   Loader2,
   MapPin,
   MousePointerSquare,
+  PanelRightClose,
+  PanelRightOpen,
   Phone,
   PlusCircle,
   Reply,
@@ -56,6 +58,7 @@ import { useAuth } from '../../hooks/useAuthSimple';
 import MessageBubble from './components/MessageBubble';
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
+import ChatRightPanel from './components/ChatRightPanel';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { config } from '../../config';
 import {
@@ -228,6 +231,7 @@ const WhatsAppChatContent: React.FC = () => {
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [contactMenuAnchor, setContactMenuAnchor] = useState<null | HTMLElement>(null);
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(() => localStorage.getItem('whatsappChatRightPanelVisible') !== 'false');
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [messageContextMenu, setMessageContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
@@ -298,6 +302,11 @@ const WhatsAppChatContent: React.FC = () => {
       document.body.classList.remove('wa-mobile-chat-active');
     };
   }, [selectedContact]);
+
+  // Persist right panel visibility
+  useEffect(() => {
+    localStorage.setItem('whatsappChatRightPanelVisible', String(showRightPanel));
+  }, [showRightPanel]);
 
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [selectedContactForLabel, setSelectedContactForLabel] = useState<Contact | null>(null);
@@ -689,7 +698,8 @@ const WhatsAppChatContent: React.FC = () => {
       syncedContact.isBlocked !== selectedContact.isBlocked ||
       syncedContact.name !== selectedContact.name ||
       syncedContact.pushName !== selectedContact.pushName ||
-      syncedContact.profilePicUrl !== selectedContact.profilePicUrl;
+      syncedContact.profilePicUrl !== selectedContact.profilePicUrl ||
+      syncedContact.leadCategoryId !== selectedContact.leadCategoryId;
 
     if (!hasConversationStateChange) return;
 
@@ -1089,6 +1099,45 @@ const WhatsAppChatContent: React.FC = () => {
 
 
 
+
+  const handleToggleAi = useCallback(async (contact: Contact, aiEnabled: boolean) => {
+    if (!contact.customer?.conversations || contact.customer.conversations.length === 0) {
+      toast.error('لم يتم العثور على محادثة نشطة لهذا الرقم للتحكم في الرد الآلي');
+      return;
+    }
+    const conversationId = contact.customer.conversations[0].id;
+    try {
+      await api.put(`/conversations/${conversationId}`, {
+        aiEnabled,
+      });
+      
+      toast.success(aiEnabled ? 'تم تفعيل الرد الآلي' : 'تم إيقاف الرد الآلي');
+      
+      // Update selectedContact local state
+      setSelectedContact((prev: Contact | null) => {
+        if (!prev || prev.id !== contact.id) return prev;
+        return {
+          ...prev,
+          customer: prev.customer ? {
+            ...prev.customer,
+            conversations: prev.customer.conversations ? [
+              {
+                ...prev.customer.conversations[0],
+                aiEnabled
+              }
+            ] : []
+          } : null
+        };
+      });
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["whatsapp", "conversations"] });
+
+    } catch (error) {
+      console.error(error);
+      toast.error('فشل تحديث حالة الرد الآلي');
+    }
+  }, [queryClient]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedContact || !selectedSession || sendMessageMutation.isPending) return;
@@ -1971,68 +2020,81 @@ const WhatsAppChatContent: React.FC = () => {
         onBulkDelete={handleBulkDeleteChats}
       />
 
-      <ChatWindow
-        className={cn("wa-panel-chat", !selectedContact && "max-lg:hidden")}
-        selectedContact={selectedContact}
-        messages={visibleMessages}
-        loadingMessages={loadingMessages}
-        virtualItems={messagesVirtualizer.getVirtualItems()}
-        totalHeight={messagesVirtualizer.getTotalSize()}
-        measureElement={messagesVirtualizer.measureElement}
-        messagesContainerRef={messagesContainerRef}
-        typingUsers={typingUsers}
-        newMessage={newMessage}
-        setNewMessage={setNewMessage}
-        showEmojiPicker={showEmojiPicker}
-        setShowEmojiPicker={setShowEmojiPicker}
-        replyingTo={replyingTo}
-        setReplyingTo={setReplyingTo}
-        isRecording={isRecording}
-        setIsRecording={setIsRecording}
-        isSendingMessage={sendMessageMutation.isPending}
-        onSendMessage={handleSendMessage}
-        onFileUpload={handleFileUpload}
-        onVoiceNoteSend={async (blob) => {
-          const formData = new FormData();
-          if (selectedSession && selectedContact) {
-            formData.append('sessionId', selectedSession);
-            formData.append('to', selectedContact.jid);
-            formData.append('file', blob, 'voice_note.webm');
-            formData.append('ptt', 'true');
-            try {
-              await api.post('/whatsapp/messages/upload-send', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-              toast.success('تم إرسال الرسالة الصوتية');
-              // Messages reload automatically via socket or refetch
-            } catch (error) {
-              toast.error('فشل إرسال الرسالة الصوتية');
+      <div className="flex min-w-0 flex-1">
+        <ChatWindow
+          showRightPanel={showRightPanel}
+          onToggleRightPanel={() => setShowRightPanel((prev) => !prev)}
+          className={cn("wa-panel-chat", !selectedContact && "max-lg:hidden")}
+          selectedContact={selectedContact}
+          messages={visibleMessages}
+          loadingMessages={loadingMessages}
+          onToggleAi={handleToggleAi}
+          virtualItems={messagesVirtualizer.getVirtualItems()}
+          totalHeight={messagesVirtualizer.getTotalSize()}
+          measureElement={messagesVirtualizer.measureElement}
+          messagesContainerRef={messagesContainerRef}
+          typingUsers={typingUsers}
+          newMessage={newMessage}
+          setNewMessage={setNewMessage}
+          showEmojiPicker={showEmojiPicker}
+          setShowEmojiPicker={setShowEmojiPicker}
+          replyingTo={replyingTo}
+          setReplyingTo={setReplyingTo}
+          isRecording={isRecording}
+          setIsRecording={setIsRecording}
+          isSendingMessage={sendMessageMutation.isPending}
+          onSendMessage={handleSendMessage}
+          onFileUpload={handleFileUpload}
+          onVoiceNoteSend={async (blob) => {
+            const formData = new FormData();
+            if (selectedSession && selectedContact) {
+              formData.append('sessionId', selectedSession);
+              formData.append('to', selectedContact.jid);
+              formData.append('file', blob, 'voice_note.webm');
+              formData.append('ptt', 'true');
+              try {
+                await api.post('/whatsapp/messages/upload-send', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+                toast.success('تم إرسال الرسالة الصوتية');
+                // Messages reload automatically via socket or refetch
+              } catch (error) {
+                toast.error('فشل إرسال الرسالة الصوتية');
+              }
             }
-          }
-        }}
-        onOpenContactInfo={() => setShowContactInfo(true)}
-        onMessageContextMenu={handleMessageContextMenu}
-        getContactName={getContactName}
-        getParticipantName={getParticipantName}
-        onOpenPoll={() => setPollDialogOpen(true)}
-        onOpenButtons={() => setButtonsDialogOpen(true)}
-        onOpenList={() => setListDialogOpen(true)}
-        onOpenCatalog={() => { loadProducts(); setCatalogDialogOpen(true); }}
-        onOpenLocation={() => setLocationDialogOpen(true)}
-        onOpenOrder={() => setShowQuickOrderModal(true)}
-        onOpenTasks={() => setShowQuickCreateTaskModal(true)}
-        onOpenTemplate={handleOpenTemplateDialog}
-        onBackToList={() => {
-          if (typeof document.startViewTransition === 'function') {
-            document.startViewTransition(() => setSelectedContact(null));
-          } else {
-            setSelectedContact(null);
-          }
-        }}
-        onTouchStart={handleChatTouchStart}
-        onTouchEnd={handleChatTouchEnd}
-        fileInputRef={fileInputRef}
-        messagesError={messagesError}
-        onRetryMessages={() => refetchMessages()}
-      />
+          }}
+          onOpenContactInfo={() => setShowContactInfo(true)}
+          onMessageContextMenu={handleMessageContextMenu}
+          getContactName={getContactName}
+          getParticipantName={getParticipantName}
+          onOpenPoll={() => setPollDialogOpen(true)}
+          onOpenButtons={() => setButtonsDialogOpen(true)}
+          onOpenList={() => setListDialogOpen(true)}
+          onOpenCatalog={() => { loadProducts(); setCatalogDialogOpen(true); }}
+          onOpenLocation={() => setLocationDialogOpen(true)}
+          onOpenOrder={() => setShowQuickOrderModal(true)}
+          onOpenTasks={() => setShowQuickCreateTaskModal(true)}
+          onOpenTemplate={handleOpenTemplateDialog}
+          onBackToList={() => {
+            if (typeof document.startViewTransition === 'function') {
+              document.startViewTransition(() => setSelectedContact(null));
+            } else {
+              setSelectedContact(null);
+            }
+          }}
+          onTouchStart={handleChatTouchStart}
+          onTouchEnd={handleChatTouchEnd}
+          fileInputRef={fileInputRef}
+          messagesError={messagesError}
+          onRetryMessages={() => refetchMessages()}
+        />
+        {selectedContact && showRightPanel ? (
+          <ChatRightPanel
+            contact={selectedContact}
+            onOpenOrder={() => setShowQuickOrderModal(true)}
+            onOpenTasks={() => setShowQuickCreateTaskModal(true)}
+            onClose={() => setShowRightPanel(false)}
+          />
+        ) : null}
+      </div>
       </div>
 
       <ConfirmDialog

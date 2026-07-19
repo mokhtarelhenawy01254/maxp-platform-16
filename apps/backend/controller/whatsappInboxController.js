@@ -321,86 +321,52 @@ exports.getEmployeeAnalytics = async (req, res) => {
 
     const dateRange = { gte: start, lte: end };
 
-    // 1. Conversations where customer initiated (incoming)
-    const incomingConversations = await prisma.conversation.findMany({
-      where: {
-        companyId,
-        channel: 'WHATSAPP',
-        createdAt: dateRange,
-      },
-      select: {
-        id: true,
-        assignedUserId: true,
-        status: true,
-        createdAt: true,
-        lastMessageAt: true,
-        lastMessageIsFromCustomer: true,
-      },
-    });
-
-    const totalIncoming = incomingConversations.length;
-    const totalAssigned = incomingConversations.filter(c => c.assignedUserId).length;
-
-    // 2. Outgoing conversations (employee-initiated)
-    const outgoingConversations = await prisma.conversation.findMany({
-      where: {
-        companyId,
-        channel: 'WHATSAPP',
-        lastMessageIsFromCustomer: false,
-        updatedAt: dateRange,
-      },
-      select: {
-        id: true,
-        assignedUserId: true,
-        status: true,
-      },
-    });
-
-    const totalOutgoing = outgoingConversations.length;
-
-    // 3. Messages by employees (replied)
-    const employeeMessages = await prisma.message.findMany({
-      where: {
-        conversation: {
-          companyId,
-          channel: 'WHATSAPP',
-        },
-        isFromCustomer: false,
-        createdAt: dateRange,
-      },
-      select: {
-        id: true,
-        conversationId: true,
-        senderId: true,
-        createdAt: true,
-      },
-    });
-
-    const repliedConversationIds = new Set(employeeMessages.map(m => m.conversationId));
-    const totalReplied = repliedConversationIds.size;
-    const totalUnreplied = Math.max(0, totalIncoming - totalReplied);
-
-    // 4. Messages from customers
+    // 1. Customer messages in period → determines incoming conversations
     const customerMessages = await prisma.message.findMany({
       where: {
-        conversation: {
-          companyId,
-          channel: 'WHATSAPP',
-        },
+        conversation: { companyId, channel: 'WHATSAPP' },
         isFromCustomer: true,
         createdAt: dateRange,
       },
-      select: {
-        id: true,
-        conversationId: true,
-        createdAt: true,
-      },
+      select: { id: true, conversationId: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
     });
+
+    const incomingConversationIds = [...new Set(customerMessages.map(m => m.conversationId))];
+    const totalIncomingConversations = incomingConversationIds.length;
+
+    // 2. Conversations with incoming messages → get assignments
+    const incomingConversations = incomingConversationIds.length > 0
+      ? await prisma.conversation.findMany({
+          where: { id: { in: incomingConversationIds } },
+          select: { id: true, assignedUserId: true },
+        })
+      : [];
+    const assignedConvMap = new Map(incomingConversations.map(c => [c.id, c]));
+    const totalAssigned = incomingConversations.filter(c => c.assignedUserId).length;
+
+    // 3. Employee messages in period
+    const employeeMessages = await prisma.message.findMany({
+      where: {
+        conversation: { companyId, channel: 'WHATSAPP' },
+        isFromCustomer: false,
+        createdAt: dateRange,
+      },
+      select: { id: true, conversationId: true, senderId: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const incomingConvIdSet = new Set(incomingConversationIds);
+    const repliedIncomingConvIds = new Set(
+      employeeMessages.filter(m => incomingConvIdSet.has(m.conversationId)).map(m => m.conversationId)
+    );
+    const totalReplied = repliedIncomingConvIds.size;
+    const totalUnreplied = totalIncomingConversations - totalReplied;
 
     const totalIncomingMessages = customerMessages.length;
     const totalOutgoingMessages = employeeMessages.length;
 
-    // 5. Per-employee breakdown
+    // 4. Per-employee breakdown
     const employeeMap = new Map();
 
     const addToEmployee = (userId, field, value = 1) => {
@@ -427,15 +393,26 @@ exports.getEmployeeAnalytics = async (req, res) => {
       }
     }
 
-    // Track which conversations each employee replied to
+    // Per-employee incoming message count (was always 0 before)
+    for (const msg of customerMessages) {
+      const conv = assignedConvMap.get(msg.conversationId);
+      if (conv?.assignedUserId) {
+        addToEmployee(conv.assignedUserId, 'incomingMessages');
+      }
+    }
+
+    // Track employee replies — only count replies in conversations assigned TO them
     const employeeRepliedConvos = new Map();
     for (const msg of employeeMessages) {
       if (msg.senderId && msg.conversationId) {
-        if (!employeeRepliedConvos.has(msg.senderId)) {
-          employeeRepliedConvos.set(msg.senderId, new Set());
-        }
-        employeeRepliedConvos.get(msg.senderId).add(msg.conversationId);
         addToEmployee(msg.senderId, 'outgoingMessages');
+        const conv = assignedConvMap.get(msg.conversationId);
+        if (conv?.assignedUserId === msg.senderId) {
+          if (!employeeRepliedConvos.has(msg.senderId)) {
+            employeeRepliedConvos.set(msg.senderId, new Set());
+          }
+          employeeRepliedConvos.get(msg.senderId).add(msg.conversationId);
+        }
       }
     }
 
@@ -445,28 +422,31 @@ exports.getEmployeeAnalytics = async (req, res) => {
     }
 
     for (const [userId, emp] of employeeMap) {
-      emp.unrepliedConversations = Math.max(0, emp.assignedConversations - emp.repliedConversations);
+      emp.unrepliedConversations = emp.assignedConversations - emp.repliedConversations;
     }
 
-    // 6. Response time calculation (first response per conversation)
-    // Build a map: conversationId -> first customer message time
-    const convFirstCustomerMsg = new Map();
+    // 5. Response time: per-turn, from last customer msg to next employee reply
+    const msgsByConv = new Map();
     for (const msg of customerMessages) {
-      const existing = convFirstCustomerMsg.get(msg.conversationId);
-      if (!existing || msg.createdAt < existing) {
-        convFirstCustomerMsg.set(msg.conversationId, msg.createdAt);
-      }
+      if (!msgsByConv.has(msg.conversationId)) msgsByConv.set(msg.conversationId, []);
+      msgsByConv.get(msg.conversationId).push({ ...msg, isCustomer: true });
+    }
+    for (const msg of employeeMessages) {
+      if (!msgsByConv.has(msg.conversationId)) msgsByConv.set(msg.conversationId, []);
+      msgsByConv.get(msg.conversationId).push({ ...msg, isCustomer: false });
     }
 
-    // For each employee message, find time diff with the first customer message in that conversation
-    for (const msg of employeeMessages) {
-      const firstCustomer = convFirstCustomerMsg.get(msg.conversationId);
-      if (firstCustomer && msg.senderId) {
-        const diffMs = msg.createdAt - firstCustomer;
-        if (diffMs > 0 && diffMs < 24 * 60 * 60 * 1000) {
-          const emp = employeeMap.get(msg.senderId);
-          if (emp) {
-            emp.responseTimes.push(diffMs);
+    for (const [, msgs] of msgsByConv) {
+      msgs.sort((a, b) => a.createdAt - b.createdAt);
+      let lastCustomerTime = null;
+      for (const msg of msgs) {
+        if (msg.isCustomer) {
+          lastCustomerTime = msg.createdAt;
+        } else if (lastCustomerTime && msg.senderId) {
+          const diffMs = msg.createdAt - lastCustomerTime;
+          if (diffMs > 0 && diffMs < 24 * 60 * 60 * 1000) {
+            const emp = employeeMap.get(msg.senderId);
+            if (emp) emp.responseTimes.push(diffMs);
           }
         }
       }
@@ -510,32 +490,31 @@ exports.getEmployeeAnalytics = async (req, res) => {
     employeeStats.sort((a, b) => b.assignedConversations - a.assignedConversations);
 
     // Overall summary
-    const overallAvgResponseMs = employeeMessages.length > 0 && customerMessages.length > 0
-      ? (() => {
-          const allTimes = [];
-          for (const msg of employeeMessages) {
-            const firstCustomer = convFirstCustomerMsg.get(msg.conversationId);
-            if (firstCustomer) {
-              const diff = msg.createdAt - firstCustomer;
-              if (diff > 0 && diff < 24 * 60 * 60 * 1000) allTimes.push(diff);
-            }
-          }
-          return allTimes.length > 0
-            ? allTimes.reduce((a, b) => a + b, 0) / allTimes.length
-            : null;
-        })()
+    const allTimes = [];
+    for (const [, msgs] of msgsByConv) {
+      let lastCustomerTime = null;
+      for (const msg of msgs) {
+        if (msg.isCustomer) {
+          lastCustomerTime = msg.createdAt;
+        } else if (lastCustomerTime) {
+          const diff = msg.createdAt - lastCustomerTime;
+          if (diff > 0 && diff < 24 * 60 * 60 * 1000) allTimes.push(diff);
+        }
+      }
+    }
+    const overallAvgResponseMs = allTimes.length > 0
+      ? allTimes.reduce((a, b) => a + b, 0) / allTimes.length
       : null;
 
     const summary = {
-      totalIncomingConversations: totalIncoming,
-      totalOutgoingConversations: totalOutgoing,
+      totalIncomingConversations,
       totalAssigned,
       totalReplied,
       totalUnreplied,
       totalIncomingMessages,
       totalOutgoingMessages,
-      overallResponseRate: totalIncoming > 0
-        ? Math.round((totalReplied / totalIncoming) * 10000) / 100
+      overallResponseRate: totalIncomingConversations > 0
+        ? Math.round((totalReplied / totalIncomingConversations) * 10000) / 100
         : 0,
       overallAvgResponseTimeMs: overallAvgResponseMs,
       overallAvgResponseTimeMin: overallAvgResponseMs

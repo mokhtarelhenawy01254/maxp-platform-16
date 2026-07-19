@@ -63,7 +63,7 @@ interface DashboardResponse {
 
 const MyCompaniesDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { switchCompany } = useAuth();
+  const { switchCompany, user } = useAuth();
   const [activeTab, setActiveTab] = useState<
     "overview" | "reports" | "attendance"
   >("overview");
@@ -112,6 +112,15 @@ const MyCompaniesDashboard: React.FC = () => {
         setError(null);
       }
 
+      // Only owners and super admins can access owner dashboard
+      const userRole = user?.role;
+      if (userRole !== 'OWNER' && userRole !== 'SUPER_ADMIN') {
+        if (!background) {
+          setError('هذه الصفحة متاحة لأصحاب الشركات فقط');
+        }
+        return;
+      }
+
       const response = await apiClient.get("owner/dashboard", { signal });
       if (response.data.success) {
         setDashboardData(response.data.data);
@@ -134,7 +143,7 @@ const MyCompaniesDashboard: React.FC = () => {
         setIsLoading(false);
       }
     }
-  }, [cacheKey]);
+  }, [cacheKey, user]);
 
   useEffect(() => {
     const controller = new AbortController();

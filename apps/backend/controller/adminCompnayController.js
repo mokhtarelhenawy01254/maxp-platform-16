@@ -1499,6 +1499,26 @@ const deleteCompany = async (req, res) => {
             where: { companyId }
         });
 
+        // Delete hotel data first to avoid FK constraint issues
+        await getSharedPrismaClient().hotelReservationRoom.deleteMany({
+            where: { reservation: { companyId } }
+        });
+        await getSharedPrismaClient().hotelReservation.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelFolioItem.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelRoom.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelRoomType.deleteMany({
+            where: { companyId }
+        });
+        await getSharedPrismaClient().hotelProperty.deleteMany({
+            where: { companyId }
+        });
+
         await getSharedPrismaClient().company.delete({
             where: { id: companyId }
         });
@@ -1851,17 +1871,19 @@ const bulkDeleteCompanies = async (req, res) => {
 
         console.log(`🗑️ [BULK DELETE] Deleting ${companyIds.length} companies...`);
 
-        // Delete related notifications first (missing onDelete: Cascade in schema)
-        await getSharedPrismaClient().notification.deleteMany({
-            where: { companyId: { in: companyIds } }
-        });
-
-        const result = await getSharedPrismaClient().company.deleteMany({
-            where: {
-                id: {
-                    in: companyIds
+        // deleteMany does NOT cascade in Prisma; use individual delete() in a transaction
+        const prisma = getSharedPrismaClient();
+        const result = await prisma.$transaction(async (tx) => {
+            let count = 0;
+            for (const id of companyIds) {
+                try {
+                    await tx.company.delete({ where: { id } });
+                    count++;
+                } catch (err) {
+                    console.warn(`⚠️ [BULK DELETE] Skipping company ${id}: ${err.message}`);
                 }
             }
+            return { count };
         });
 
         console.log(`✅ [BULK DELETE] Deleted ${result.count} companies`);

@@ -5,8 +5,9 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools import competitor_tools
+import src.db.session as _db_mod
 from src.tools.definitions._helpers import _executed_result
+from src.tools.repositories.competitor_repository import CompetitorRepository
 
 
 class CompetitorSearchInput(BaseModel):
@@ -40,38 +41,61 @@ class CompetitorGenerateReportInput(BaseModel):
 
 
 async def competitor_search(input_data: CompetitorSearchInput) -> dict[str, Any]:
-    competitors = await competitor_tools.search_competitors(
-        input_data.company_id or "", input_data.query, limit=input_data.limit
-    )
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.query:
+        return {"competitors": []}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = CompetitorRepository(sess)
+        competitors = await repo.search_competitors(company_id, input_data.query, input_data.limit)
     return {"competitors": competitors}
 
 
 async def competitor_get_products(input_data: CompetitorGetProductsInput) -> dict[str, Any]:
-    products = await competitor_tools.get_competitor_products(
-        input_data.company_id or "", input_data.competitor_id, limit=input_data.limit
-    )
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.competitor_id:
+        return {"products": []}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = CompetitorRepository(sess)
+        products = await repo.get_competitor_products(input_data.competitor_id, input_data.limit)
     return {"products": products}
 
 
 async def competitor_price_compare(input_data: CompetitorPriceCompareInput) -> dict[str, Any]:
-    return await competitor_tools.competitor_price_compare(
-        input_data.company_id or "", input_data.competitor_id
-    )
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.competitor_id:
+        return {"found": False, "error": "Missing params"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = CompetitorRepository(sess)
+        return await repo.get_price_comparison(company_id, input_data.competitor_id)
 
 
 async def competitor_get_ads(input_data: CompetitorGetAdsInput) -> dict[str, Any]:
-    ads = await competitor_tools.get_competitor_ads(
-        input_data.company_id or "", input_data.competitor_id, limit=input_data.limit
-    )
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.competitor_id:
+        return {"ads": []}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = CompetitorRepository(sess)
+        ads = await repo.get_competitor_ads(input_data.competitor_id, input_data.limit)
     return {"ads": ads}
 
 
 async def competitor_generate_report(input_data: CompetitorGenerateReportInput) -> dict[str, Any]:
-    result = await competitor_tools.generate_report(
-        input_data.company_id or "",
-        input_data.competitor_id,
-        input_data.report_type,
-    )
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.competitor_id:
+        return {"success": False, "error": "Missing params"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = CompetitorRepository(sess)
+        result = await repo.generate_report(input_data.competitor_id, input_data.report_type)
     return _executed_result("COMPETITOR_REPORT_GENERATED", result)
 
 

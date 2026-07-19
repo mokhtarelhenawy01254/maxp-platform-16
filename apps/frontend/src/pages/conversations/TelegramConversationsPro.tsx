@@ -76,6 +76,7 @@ interface Conversation {
   isOnline: boolean;
   messages: Message[];
   telegramBotId?: string;
+  aiEnabled?: boolean;
 }
 
 const TelegramConversationsPro: React.FC = () => {
@@ -155,6 +156,7 @@ const TelegramConversationsPro: React.FC = () => {
             platform: "telegram",
             isOnline: false,
             messages: [],
+            aiEnabled: c.aiEnabled !== false,
           }));
           setConversations(formatted);
         }
@@ -632,6 +634,27 @@ const TelegramConversationsPro: React.FC = () => {
     alert(isRTL ? "ميزة إعادة التوجيه قريباً" : "Forward feature coming soon");
   };
 
+  const handleToggleAi = async () => {
+    if (!selectedConversationId || !activeConversation) return;
+    const newStatus = activeConversation.aiEnabled === false;
+    try {
+      await companyAwareApi.put(`/conversations/${selectedConversationId}`, {
+        aiEnabled: newStatus,
+      });
+      // Update local state
+      setConversations(prev => prev.map(c => {
+        if (c.id === selectedConversationId) {
+          return { ...c, aiEnabled: newStatus };
+        }
+        return c;
+      }));
+      toast.success(newStatus ? 'تم تفعيل الرد الآلي' : 'تم إيقاف الرد الآلي');
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل تحديث حالة الرد الآلي');
+    }
+  };
+
   // Get media messages for gallery
   const mediaMessages = messages.filter((m) =>
     ["image", "video", "document"].includes(m.type),
@@ -640,7 +663,7 @@ const TelegramConversationsPro: React.FC = () => {
   // --- Render ---
   return (
     <div
-      className={`flex h-[calc(100vh-64px)] business-bg-messenger-app business-bg-soft overflow-hidden`}
+      className={`flex h-[calc(100dvh-64px)] business-bg-messenger-app business-bg-soft overflow-hidden`}
       dir={dir}
     >
       {/* SIDEBAR: Conversations List - Position based on language */}
@@ -773,6 +796,17 @@ const TelegramConversationsPro: React.FC = () => {
               <div
                 className={`flex items-center gap-2 business-text-muted ${isRTL ? "flex-row-reverse" : ""}`}
               >
+                <button
+                  onClick={handleToggleAi}
+                  className={`p-2 business-hover-soft rounded-full transition-colors ${
+                    activeConversation.aiEnabled !== false
+                      ? "business-text-primary business-bg-primary-soft"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                  title={activeConversation.aiEnabled !== false ? (isRTL ? "إيقاف الرد الآلي" : "Disable AI Auto-reply") : (isRTL ? "تشغيل الرد الآلي" : "Enable AI Auto-reply")}
+                >
+                  <span className="text-base">🤖</span>
+                </button>
                 <button
                   onClick={() => setChatSearchQuery(chatSearchQuery ? "" : " ")}
                   className="p-2 business-hover-soft rounded-full transition-colors"

@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-07-13: Responsive Design Overhaul — 1366×768 Laptop Optimization
+
+### Phase 1: Auto-collapse Sidebar at 1366px
+- **File:** `apps/frontend/src/components/layout/Layout.tsx`
+- Added `isCompact` state for screens <1400px with sidebar collapsed to 80px rail
+- `useEffect` with `matchMedia('(max-width: 1399px)')` — collapses on resize below threshold
+- Saves/restores manual toggle preference, respects manual override over auto-collapse
+- Transition: `data-collapsed` attribute on ThreeTierSidebar (300ms cubic-bezier)
+- **Impact:** Frees ~200px content width on all pages at once
+
+### Phase 2: `max-w-7xl` → `max-w-6xl 2xl:max-w-7xl` (80 pages + 4 components)
+- **80 occurrences** across 40 page files updated with responsive max-w pattern
+- **Pages:** Landing pages (MainAdsLanding, PlatformLanding*, EmployeesLanding, MgAgencyLeadLanding, MaxPMerchantsLanding, RestaurantThemeDemo), marketplace (AppSettings, Bundles, BundleDetails), super-admin (BillingOverview, PlatformSiteHomepageTemplates, SkillDetailPage, SuperAdminLandingPages, SuperAdminMarketingLinks), HR (CreatePromotion, EditPromotion, WarningDetails, 4 work-reporting pages), conversations (CampaignPredictionCalculator, CampaignResultsPredictor, SentMessagesStats), products (ProductNewFinal, ProductsTrash), settings (StorePages, AgentInboxKeyPage), subscription (AppPricingSheet), plus AffiliateProfile, MerchantPortalDashboard, MerchantProfileDetails, AgentWorkspace, PartnerDashboard, WhatsAppRoutingWorkspace, WooCommerceSync, CompanyActivity, MyActivity, ad pages, ErrorLogsPage, OrderWorkflow
+- **Components (4 files):** FooterElite (×2), FooterLuxe (×2), AppDashboardPage, StorefrontPreviewModal
+- **Pattern:** `max-w-7xl` → `max-w-6xl 2xl:max-w-7xl`
+
+### Phase 3: Dashboard xl/2xl Grid Overrides
+- **File:** `apps/frontend/src/pages/dashboard/MainDashboardPage.tsx`
+  - MetricCards: `lg:grid-cols-4` → `lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`
+  - Chart area: `lg:grid-cols-3` → `lg:grid-cols-3 xl:grid-cols-[minmax(0,1.5fr)_350px] 2xl:grid-cols-[minmax(0,1.8fr)_380px]`
+- **File:** `apps/frontend/src/pages/dashboard/DashboardMetricRail.tsx`
+  - MetricRail: `lg:grid-cols-6` → `lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10`
+
+### Phase 4: `100vh` → `100dvh` (26 files)
+- **18 files** with `calc(100vh-64px)` → `calc(100dvh-64px)`: WhatsAppChat, WhatsAppInbox, WhatsAppRoutingWorkspace, InstagramInbox, TelegramConversationsPro, POS, UnifiedCommentsSplit, AIChatPage, ManualOrderPage, 6 SuperAdmin pages (AIChatPage, AITemplates, AITemplateDetail, AIProductEmbeddings, SkillDetailPage), 4 admin agent pages (AgentCatalogPage, AgentSkillsPage, AgentTeamMapPage, AgentToolsPage)
+- **6 files** with other calc heights → `100dvh`: AgentProfilesPage (140/90px), AgentGuardrailsTab (280px), PayrollTesting (300px ×3), PayrollSimulator (180px), TelegramUserbot (100px)
+
+### Build
+- `npm run build -- --filter=frontend` succeeded (dist/, 6501 modules)
+
 ## 2026-07-13: Unified Comments Page (PostsManagement.jsx) Fixes
 
 ### Fixes Applied

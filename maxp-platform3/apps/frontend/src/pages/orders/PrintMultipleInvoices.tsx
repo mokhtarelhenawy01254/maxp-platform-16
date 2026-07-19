@@ -33,6 +33,7 @@ interface Invoice {
       orderNumber: string;
       orderItems: Array<{
         productName: string;
+        productSku?: string;
         productColor?: string;
         productSize?: string;
         productDetails?: string;
@@ -40,6 +41,7 @@ interface Invoice {
         price: number;
         total: number;
         metadata?: unknown;
+        product?: { sku?: string | null };
       }>;
     };
   }
@@ -101,17 +103,6 @@ const PrintMultipleInvoices: React.FC = () => {
     }).format(amount);
   };
 
-  const getPaymentStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      PAID: "مدفوعة",
-      PENDING: "قيد الانتظار",
-      CANCELLED: "ملغاة",
-      REFUNDED: "مستردة",
-      PARTIALLY_PAID: "مدفوعة جزئياً",
-    };
-    return statusMap[status] || status;
-  };
-
   const renderInvoiceRows = (invoice: Invoice) => {
     const groupedItems = groupOrderDocumentQuantityOffers(
       invoice.order.orderItems || [],
@@ -142,6 +133,7 @@ const PrintMultipleInvoices: React.FC = () => {
         );
 
         const itemRows = group.items.map(({ item, slotIndex }, itemIndex) => {
+          const code = item.productSku || item.product?.sku;
           const extraDetails = [
             item.productColor ? `اللون: ${item.productColor}` : "",
             item.productSize ? `المقاس: ${item.productSize}` : "",
@@ -156,7 +148,7 @@ const PrintMultipleInvoices: React.FC = () => {
               className="border-b border-gray-300"
             >
               <td className="text-right py-2 pr-6">
-                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}`}</div>
+                <div>{`القطعة ${slotIndex || itemIndex + 1} - ${item.productName}${code ? ` (${code})` : ""}`}</div>
                 {extraDetails ? (
                   <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
                 ) : null}
@@ -175,6 +167,7 @@ const PrintMultipleInvoices: React.FC = () => {
         return [summaryRow, ...itemRows];
       }),
       ...groupedItems.singles.map((item, idx) => {
+        const code = item.productSku || item.product?.sku;
         const extraDetails = [
           item.productColor ? `اللون: ${item.productColor}` : "",
           item.productSize ? `المقاس: ${item.productSize}` : "",
@@ -186,7 +179,7 @@ const PrintMultipleInvoices: React.FC = () => {
         return (
           <tr key={`${invoice.id}-single-${idx}`} className="border-b border-gray-300">
             <td className="text-right py-2">
-              <div>{item.productName}</div>
+              <div>{`${item.productName}${code ? ` (${code})` : ""}`}</div>
               {extraDetails ? (
                 <div className="text-xs text-gray-500 mt-1">{extraDetails}</div>
               ) : null}
@@ -233,33 +226,33 @@ const PrintMultipleInvoices: React.FC = () => {
             margin: 0;
             padding: 0;
           }
-          
+
           .invoice-page {
             page-break-after: always;
             page-break-inside: avoid;
             padding: 15mm !important;
           }
-          
+
           .invoice-page:last-child {
             page-break-after: auto;
           }
-          
+
           .no-print {
             display: none !important;
           }
-          
+
           @page {
             margin: 1cm;
             size: A4;
           }
         }
-        
+
         @media screen {
           .print-container {
             background: #f3f4f6;
             padding: 20px;
           }
-          
+
           .invoice-page {
             background: white;
             max-width: 210mm;
@@ -295,21 +288,9 @@ const PrintMultipleInvoices: React.FC = () => {
 
       {invoices.map((invoice) => (
         <div key={invoice.id} className="invoice-page" dir="rtl">
-          {/* Header - بسيط جداً */}
-          <div className="text-right mb-4 text-xs text-gray-500">
-            <p>منصة إدارة التواصل والمبيعات الإلكترونية</p>
-          </div>
-
+          {/* رأس الفاتورة - اسم الشركة والتاريخ */}
           <div className="flex justify-between items-start mb-6">
             <div className="text-right">
-              <p className="text-sm mb-1">
-                <span className="font-bold">فاتورة: </span>
-                {invoice.invoiceNumber}
-              </p>
-              <p className="text-sm mb-1">
-                <span className="font-bold">طلب: </span>
-                {invoice.order.orderNumber}
-              </p>
               <p className="text-sm">
                 {new Date(invoice.issueDate).toLocaleDateString("ar-EG", {
                   year: "numeric",
@@ -337,7 +318,7 @@ const PrintMultipleInvoices: React.FC = () => {
             <p className="text-sm">المدينة: {invoice.city || ""}</p>
           </div>
 
-          {/* جدول المنتجات - بسيط */}
+          {/* جدول المنتجات */}
           <table className="w-full mb-6 text-sm">
             <thead>
               <tr className="border-b-2 border-gray-800">
@@ -352,8 +333,8 @@ const PrintMultipleInvoices: React.FC = () => {
             </tbody>
           </table>
 
-          {/* المجاميع - بسيطة */}
-          <div className="text-right mb-6 text-sm space-y-1">
+          {/* المجاميع */}
+          <div className="text-right text-sm space-y-1">
             <p>
               المجموع الفرعي:{" "}
               <span className="font-bold">
@@ -375,30 +356,6 @@ const PrintMultipleInvoices: React.FC = () => {
               </span>
             </p>
           </div>
-
-          {/* حالة الدفع */}
-          <div className="mb-6 text-sm space-y-1">
-            <p className="text-right">
-              حالة الدفع:{" "}
-              <span className="font-bold">
-                {getPaymentStatusText(invoice.paymentStatus)}
-              </span>
-            </p>
-            {invoice.paymentMethod && (
-              <p className="text-right">
-                طريقة الدفع:{" "}
-                <span className="font-bold">{invoice.paymentMethod}</span>
-              </p>
-            )}
-          </div>
-
-          {/* ملاحظات */}
-          {invoice.notes && (
-            <div className="mb-4 text-sm">
-              <p className="font-bold mb-1">ملاحظات:</p>
-              <p className="text-gray-700">{invoice.notes}</p>
-            </div>
-          )}
         </div>
       ))}
     </div>

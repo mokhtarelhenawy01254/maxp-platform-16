@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   PlusIcon,
@@ -8,9 +8,9 @@ import {
   ArrowUpTrayIcon,
   EyeIcon,
   PencilIcon,
-  TrashIcon,
   UsersIcon,
   ShoppingBagIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import {
   customerService,
@@ -24,8 +24,9 @@ import { useAuth } from "../../hooks/useAuthSimple";
 
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const [__cb] = useState("v2");
   const { formatDate } = useDateFormat();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
     user?.role || "",
@@ -36,12 +37,15 @@ const CustomerList: React.FC = () => {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showOnlyWithOrders, setShowOnlyWithOrders] = useState(false);
-  const [filters, setFilters] = useState<CustomerFilters>({
-    page: 1,
-    limit: 10,
-    sortBy: "updatedAt",
-    sortOrder: "desc",
-    hasOrders: false,
+  const [filters, setFilters] = useState<CustomerFilters>(() => {
+    const statusFromUrl = searchParams.get("status");
+    return {
+      page: 1,
+      limit: 10,
+      sortBy: "updatedAt",
+      sortOrder: "desc",
+      ...(statusFromUrl ? { status: statusFromUrl } : {}),
+    };
   });
 
   const [pagination, setPagination] = useState({
@@ -55,16 +59,26 @@ const CustomerList: React.FC = () => {
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
+  const [selectedTag, setSelectedTag] = useState("");
 
   const statusOptions = customerService.getStatusOptions();
+
+  // Sync status filter from URL search params (set by sidebar links)
+  useEffect(() => {
+    const statusFromUrl = searchParams.get("status");
+    setFilters((prev) => {
+      const newStatus = statusFromUrl || undefined;
+      if (prev.status === newStatus) return prev;
+      return { ...prev, page: 1, status: newStatus };
+    });
+  }, [searchParams]);
 
   // Toggle hasOrders filter
   const handleToggleWithOrders = () => {
     const newVal = !showOnlyWithOrders;
     setShowOnlyWithOrders(newVal);
-    setFilters((prev) => ({ ...prev, page: 1, hasOrders: newVal }));
+    setFilters((prev) => ({ ...prev, page: 1, hasOrders: newVal ? true : undefined }));
   };
 
   // Selection handlers
@@ -86,38 +100,6 @@ const CustomerList: React.FC = () => {
     setSelectedIds(newSet);
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    if (!confirm(t("customers.bulkDeleteConfirm", { count: selectedIds.size }))) return;
-
-    setIsBulkDeleting(true);
-    try {
-      await Promise.all(
-        Array.from(selectedIds).map((id) => customerService.deleteCustomer(id)),
-      );
-      setSelectedIds(new Set());
-      loadCustomers();
-    } catch (err: any) {
-      setError(err.message || t("customers.deleteError"));
-    } finally {
-      setIsBulkDeleting(false);
-    }
-  };
-
-  // Single delete handler
-  const handleDeleteCustomer = async (customer: Customer) => {
-    setError("");
-    if (!confirm(t("customers.deleteCustomerConfirm"))) return;
-    setDeletingId(customer.id);
-    try {
-      await customerService.deleteCustomer(customer.id);
-      loadCustomers();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || t("customers.deleteError"));
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   const loadCustomers = async () => {
     try {
@@ -136,6 +118,16 @@ const CustomerList: React.FC = () => {
     loadCustomers();
   }, [filters]);
 
+  // 🏷️ Fetch available tags on mount
+  useEffect(() => {
+    customerService.getDistinctTags().then(setAvailableTags).catch(() => {});
+  }, []);
+
+  const handleTagFilter = (tagName: string) => {
+    setSelectedTag(tagName);
+    setFilters((prev) => ({ ...prev, tag: tagName || undefined, page: 1 }));
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setFilters((prev) => ({
@@ -143,18 +135,6 @@ const CustomerList: React.FC = () => {
       search: searchQuery,
       page: 1,
     }));
-  };
-
-  const handleStatusFilter = (status: string) => {
-    setFilters((prev) => {
-      const newFilters: CustomerFilters = { ...prev, page: 1 };
-      if (status === "all") {
-        delete newFilters.status;
-      } else {
-        newFilters.status = status;
-      }
-      return newFilters;
-    });
   };
 
   // Parse tags safely — DB stores them as a JSON string or real array
@@ -324,6 +304,22 @@ const CustomerList: React.FC = () => {
                 ? t("customers.withOrdersOnly")
                 : t("customers.showAllCustomers")}
             </button>
+
+            {/* 🏷️ Tag Filter */}
+            {availableTags.length > 0 && (
+              <select
+                value={selectedTag}
+                onChange={(e) => handleTagFilter(e.target.value)}
+                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">{t("customers.allTags")}</option>
+                {availableTags.map((tag) => (
+                  <option key={tag.name} value={tag.name}>
+                    🏷️ {tag.name} ({tag.count})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 

@@ -2,7 +2,8 @@ import React, { useMemo, useState } from "react";
 import {
   X,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
 import { sandboxApi } from "./services/sandboxApi";
@@ -12,6 +13,7 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { HeaderBar } from "./components/HeaderBar";
 import { Button } from "@/components/ui/button";
 import AgentProfilePanel from "./components/AgentProfilePanel";
+import type { AgentSkillDetail } from "./services/sandboxApi";
 import type { SandboxTraceSummary } from "./types/sandbox.types";
 import { useAuth } from "@/hooks/useAuthSimple";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -62,15 +64,20 @@ const AIAgentSandboxPage: React.FC = () => {
   // Agent profile files (SOUL.md, AGENTS.md) for InspectorPanel System tab
   const [agentSystemPrompt, setAgentSystemPrompt] = useState<string>("");
   const [agentInstructions, setAgentInstructions] = useState<string>("");
+  const [agentSkillDetails, setAgentSkillDetails] = useState<AgentSkillDetail[]>([]);
 
   React.useEffect(() => {
     if (!selectedAgent?.id) return;
     setAgentSystemPrompt("");
     setAgentInstructions("");
+    setAgentSkillDetails([]);
     sandboxApi.getAgentProfile(selectedAgent.id).then((res) => {
       if (res.success && res.files) {
         setAgentSystemPrompt(res.files["SOUL.md"] || "");
         setAgentInstructions(res.files["AGENTS.md"] || "");
+      }
+      if (res.success && res.skills) {
+        setAgentSkillDetails(res.skills);
       }
     }).catch(() => {});
   }, [selectedAgent?.id]);
@@ -172,6 +179,29 @@ const AIAgentSandboxPage: React.FC = () => {
         isSuper={isSuper}
       />
 
+      {/* Skills Bar — shows skill names the agent uses */}
+      {agentSkillDetails.length > 0 && (
+        <div className="px-3 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 flex items-center gap-2 overflow-x-auto">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">
+            <Sparkles className="size-3 text-purple-500" />
+            <span>المهارات</span>
+          </div>
+          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {agentSkillDetails.map((skill) => (
+              <span
+                key={skill.id}
+                title={skill.description || skill.id}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-950/30 dark:border-purple-800 dark:text-purple-400 whitespace-nowrap transition-colors hover:bg-purple-100 dark:hover:bg-purple-950/50 cursor-default"
+              >
+                <Sparkles className="size-2.5" />
+                {skill.displayName || skill.id}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Main workspace - three columns */}
       <div className="flex-1 flex overflow-hidden relative min-h-0">
         <SessionList
@@ -199,6 +229,7 @@ const AIAgentSandboxPage: React.FC = () => {
           activeToolCalls={activeToolCalls}
           onSendMessage={sendMessage}
           isSuper={isSuper}
+          agentSkills={agentSkillDetails}
         />
         {isSuper && (
         <InspectorPanel

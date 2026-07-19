@@ -902,6 +902,7 @@ enum AffiliatesCommissionType {
   PERCENTAGE
   MARKUP
   FIXED
+  FIXED_PER_ITEM
 
   @@map("affiliates_commissionType")
 }
@@ -1968,6 +1969,46 @@ enum EducationSessionStatus {
   CANCELLED
 
   @@map("education_session_status")
+}
+
+enum HotelRoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+  RESERVED
+
+  @@map("hotel_room_status")
+}
+
+enum HotelReservationStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+  NO_SHOW
+
+  @@map("hotel_reservation_status")
+}
+
+enum HotelFolioItemType {
+  ROOM_CHARGE
+  SERVICE
+  RESTAURANT
+  SPA
+  TOUR
+  TRANSPORT
+  OTHER
+
+  @@map("hotel_folio_item_type")
+}
+
+enum HotelPricingModel {
+  PER_ROOM
+  PER_PERSON
+
+  @@map("hotel_pricing_model")
 }
 
 enum ServiceOrderStatus {

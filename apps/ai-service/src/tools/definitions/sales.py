@@ -5,8 +5,9 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools import governance_tools, sales_tools
+import src.db.session as _db_mod
 from src.tools.definitions._helpers import _write_result
+from src.tools.repositories.sales_repository import SalesRepository
 
 
 class SalesRevenueInput(BaseModel):
@@ -32,17 +33,32 @@ class DiscountCreateInput(DiscountCreateDraftInput):
 class WhatsappSendInput(BaseModel):
     phone: str = Field(description="Customer phone number in international format")
     message: str = Field(description="Message text to send")
+    media_url: str | None = Field(default=None, description="Optional image URL to send as a media attachment")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
 async def sales_revenue(input_data: SalesRevenueInput) -> dict[str, Any]:
-    return await sales_tools.sales_revenue(
-        input_data.company_id or "", period=input_data.period
-    )
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"period": input_data.period, "revenue": "0", "ordersCount": 0, "totalOrders": 0, "avgOrderValue": "0", "byStatus": {}}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = SalesRepository(sess)
+        return await repo.get_revenue_summary(company_id, input_data.period)
 
 
 async def company_snapshot(input_data: CompanySnapshotInput) -> dict[str, Any]:
-    return await sales_tools.company_snapshot(input_data.company_id or "")
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"todayOrders": 0, "pendingOrders": 0, "lowStockCount": 0, "todayRevenue": "0",
+                "todayPending": 0, "todayConfirmed": 0, "todayShipped": 0,
+                "todayDelivered": 0, "todayCancelled": 0}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = SalesRepository(sess)
+        return await repo.get_company_snapshot(company_id)
 
 
 async def discount_create_draft(input_data: DiscountCreateDraftInput) -> dict[str, Any]:
@@ -62,8 +78,10 @@ async def discount_create(input_data: DiscountCreateInput) -> dict[str, Any]:
 
 
 async def whatsapp_send(input_data: WhatsappSendInput) -> dict[str, Any]:
-    return await governance_tools.send_whatsapp(
-        input_data.company_id or "", input_data.phone, input_data.message
+    from src.tools.backend_client import get_backend_client
+    client = get_backend_client()
+    return await client.send_whatsapp_message(
+        input_data.company_id or "", input_data.phone, input_data.message, input_data.media_url
     )
 
 

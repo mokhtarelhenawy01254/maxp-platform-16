@@ -54,8 +54,8 @@ async def test_company_snapshot():
     db_session.async_session = lambda: _Session()
     
     try:
-        from src.tools.sales_tools import company_snapshot
-        result = await company_snapshot(company_id="comp1")
+        from src.tools.definitions.sales import company_snapshot, CompanySnapshotInput
+        result = await company_snapshot(CompanySnapshotInput(company_id="comp1"))
         print("Result:", result)
         
         # Check pending_total

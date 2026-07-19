@@ -26,8 +26,10 @@ interface ProductsTableProps {
   editingProductId: string | null;
   editPrice: string;
   editStock: string;
+  editSku: string;
   onEditPriceChange: (value: string) => void;
   onEditStockChange: (value: string) => void;
+  onEditSkuChange: (value: string) => void;
   onSaveQuickEdit: (id: string) => void;
   onCancelQuickEdit: () => void;
   onStartQuickEdit: (product: Product) => void;
@@ -58,8 +60,10 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
   editingProductId,
   editPrice,
   editStock,
+  editSku,
   onEditPriceChange,
   onEditStockChange,
+  onEditSkuChange,
   onSaveQuickEdit,
   onCancelQuickEdit,
   onStartQuickEdit,
@@ -101,6 +105,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
               {[
                 { label: "المنتج", field: "name" as SortField },
                 { label: "النوع", field: null },
+                { label: "SKU", field: null },
                 { label: "السعر", field: "price" as SortField },
                 { label: "المخزون", field: "stock" as SortField },
               ].map(({ label, field }) => {
@@ -156,8 +161,10 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                 isEditing={editingProductId === product.id}
                 editPrice={editPrice}
                 editStock={editStock}
+                editSku={editSku}
                 onEditPriceChange={onEditPriceChange}
                 onEditStockChange={onEditStockChange}
+                onEditSkuChange={onEditSkuChange}
                 onSaveQuickEdit={onSaveQuickEdit}
                 onCancelQuickEdit={onCancelQuickEdit}
                 onStartQuickEdit={onStartQuickEdit}

@@ -334,7 +334,7 @@ const SuperAdminProductEmbeddings: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]" dir={i18n.dir()}>
+    <div className="flex flex-col h-[calc(100dvh-64px)]" dir={i18n.dir()}>
       {/* Header */}
       <div className="px-4 py-3 shrink-0 border-b bg-card flex items-center gap-3">
         <div className="p-2 rounded-lg bg-blue-50">

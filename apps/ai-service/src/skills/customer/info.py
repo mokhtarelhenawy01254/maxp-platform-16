@@ -9,9 +9,8 @@ class CustomerInfoInput(BaseModel):
 
 
 async def get_customer_info(params: CustomerInfoInput) -> dict:
-    from src.tools.customer_tools import customer_info as _info
-    result = await _info(company_id=params.company_id, query=params.query)
-    return {"customer": result}
+    from src.tools.definitions.customer import customer_info, CustomerInfoInput as _CII
+    return await customer_info(_CII(query=params.query, company_id=params.company_id))
 
 
 customer_info = Skill(

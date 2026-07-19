@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { broadcastService } from "../../services/broadcastService";
+import { customerService } from "../../services/customerService";
 
 interface CreateListModalProps {
   onClose: () => void;
@@ -16,9 +17,18 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
     description: "",
     criteriaType: "active",
     lastActivity: "24",
+    tag: "",
   });
+  const [availableTags, setAvailableTags] = useState<{ name: string; count: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // تحميل الوسوم المتاحة
+  useEffect(() => {
+    customerService.getDistinctTags()
+      .then(setAvailableTags)
+      .catch((err) => console.error("Error loading tags in modal:", err));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,14 +38,24 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
       return;
     }
 
+    if (formData.criteriaType === "tag" && !formData.tag.trim()) {
+      setError("يرجى اختيار أو كتابة وسم");
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const criteria = {
+      const criteria: any = {
         type: formData.criteriaType,
-        lastActivity: formData.lastActivity,
       };
+
+      if (formData.criteriaType === "active" || formData.criteriaType === "inactive") {
+        criteria.lastActivity = formData.lastActivity;
+      } else if (formData.criteriaType === "tag") {
+        criteria.tag = formData.tag.trim();
+      }
 
       await broadcastService.createCustomerList({
         name: formData.name,
@@ -137,8 +157,54 @@ const CreateListModal: React.FC<CreateListModalProps> = ({
               <option value="all">جميع العملاء</option>
               <option value="active">نشطين في فترة محددة</option>
               <option value="inactive">غير نشطين لفترة محددة</option>
+              <option value="tag">وسوم العملاء (Tags)</option>
             </select>
           </div>
+
+          {/* Tag Criteria Selector */}
+          {formData.criteriaType === "tag" && (
+            <div>
+              <label
+                htmlFor="tag"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                اسم الوسم (Tag) <span className="text-red-500">*</span>
+              </label>
+              {availableTags.length > 0 ? (
+                <select
+                  id="tag"
+                  value={formData.tag}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tag: e.target.value })
+                  }
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  required
+                >
+                  <option value="">-- اختر وسم --</option>
+                  {availableTags.map((t) => (
+                    <option key={t.name} value={t.name}>
+                      {t.name} ({t.count} عملاء)
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  id="tag"
+                  value={formData.tag}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tag: e.target.value })
+                  }
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="اكتب اسم الوسم (مثال: vip)"
+                  required
+                />
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                سيتم تصفية القائمة لتشمل العملاء الذين يحملون هذا الوسم فقط.
+              </p>
+            </div>
+          )}
 
           {/* Last Activity (only for active/inactive) */}
           {(formData.criteriaType === "active" ||

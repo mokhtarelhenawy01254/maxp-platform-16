@@ -380,9 +380,10 @@ class LLMClient:
         tool_choice = options.get("tool_choice")
         if openai_tools:
             extra_params["tools"] = openai_tools
-            extra_params["tool_choice"] = tool_choice if tool_choice is not None else "auto"
             if self.provider == "DEEPSEEK":
                 extra_params["parallel_tool_calls"] = False
+            else:
+                extra_params["tool_choice"] = tool_choice if tool_choice is not None else "auto"
 
         logger.info("openai_compat_request", model=self.model, messages=body_messages, extra_params=extra_params)
 

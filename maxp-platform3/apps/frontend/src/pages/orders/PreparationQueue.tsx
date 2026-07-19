@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   ChevronDownIcon,
@@ -53,6 +54,7 @@ type BulkStatusResult = {
 };
 
 const PreparationQueue: React.FC = () => {
+  const navigate = useNavigate();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
@@ -87,6 +89,7 @@ const PreparationQueue: React.FC = () => {
   });
   const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [printingInvoices, setPrintingInvoices] = useState(false);
   const [qcChecklistState, setQcChecklistState] = useState<
     Record<string, Partial<Record<QcCheckKey, boolean>>>
   >({});
@@ -542,6 +545,38 @@ const PreparationQueue: React.FC = () => {
     }
   }, []);
 
+  const handlePrintInvoices = useCallback(async () => {
+    if (selectedOrders.length === 0) {
+      toast.error("حدد طلبًا واحدًا على الأقل لطباعة الفواتير");
+      return;
+    }
+
+    try {
+      setPrintingInvoices(true);
+      const response = await apiClient.post("/order-invoices/bulk-generate", {
+        orderIds: selectedOrders,
+      });
+
+      if (response.data?.success) {
+        const invoices: Array<{ id: string }> = response.data.data?.invoices || [];
+        if (invoices.length === 0) {
+          toast.error("لم يتم العثور على فواتير للطلبات المحددة");
+          return;
+        }
+
+        const invoiceIds = invoices.map((inv) => inv.id).join(",");
+        navigate(`/orders/invoices/print-multiple?ids=${invoiceIds}`);
+      } else {
+        toast.error(response.data?.message || "فشل في تجهيز الفواتير");
+      }
+    } catch (error: unknown) {
+      console.error("Failed to print invoices:", error);
+      toast.error(getApiErrorMessage(error) || "تعذر طباعة الفواتير");
+    } finally {
+      setPrintingInvoices(false);
+    }
+  }, [navigate, selectedOrders]);
+
   const saveShortageHoldDetails = useCallback(
     async (
       orderNumber: string,
@@ -953,9 +988,11 @@ const PreparationQueue: React.FC = () => {
         bulkUpdating={bulkUpdating}
         preparationEnabled={preparationSettings.enabled}
         bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
+        printingInvoices={printingInvoices}
         onBulkStatusChange={uiActions.setBulkStatus}
         onApply={() => void handleBulkUpdate()}
         onClear={uiActions.clearBulkControls}
+        onPrintInvoices={() => void handlePrintInvoices()}
       />
 
       <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">

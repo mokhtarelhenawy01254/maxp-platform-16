@@ -1205,7 +1205,8 @@ async function createSession(sessionId, companyId, options = {}) {
             metadata: options.metadata || null,
             loadBalanceWeight: options.loadBalanceWeight || 1,
             createdAt: new Date(),
-            lastQRTimestamp: null
+            lastQRTimestamp: null,
+            creds: state.creds
         };
         activeSessions.set(sessionId, sessionData);
         trackCompanySession(companyId, sessionId);
@@ -1271,8 +1272,14 @@ async function createSession(sessionId, companyId, options = {}) {
             }
         });
 
-        // حفظ بيانات المصادقة
-        sock.ev.on('creds.update', saveCreds);
+        // حفظ بيانات المصادقة مع تحديث الذاكرة
+        sock.ev.on('creds.update', (updatedCreds) => {
+            const sd = activeSessions.get(sessionId);
+            if (sd) {
+                sd.creds = updatedCreds;
+            }
+            saveCreds(updatedCreds);
+        });
 
         // إضافة معالج أخطاء عام
         sock.ev.on('error', (error) => {
@@ -1550,6 +1557,7 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
 
             // تحديث الحالة
             const sessionData = activeSessions.get(sessionId);
+            const previousStatus = sessionData?.status;
             if (sessionData) {
                 sessionData.status = 'connected';
                 sessionData.phoneNumber = phoneNumber;
@@ -1571,6 +1579,32 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
             }, 5);
 
             WA_LOG.ok(sessionId, `DB updated to CONNECTED`);
+
+            // ponytail: skip zombie check on first-time pairing (QR/authenticating flow)
+            // Only detect zombies during reconnection where auth was previously valid
+            if (previousStatus !== 'qr_pending' && previousStatus !== 'QR_PENDING' && previousStatus !== 'pairing_code_pending' && previousStatus !== 'authenticating') {
+                const sd = activeSessions.get(sessionId);
+                if (sd?.creds && !sd.creds.registered && !sock.user) {
+                    WA_LOG.error(sessionId, `ZOMBIE SESSION: connected but registered=false and no sock.user. Auth state lost during crash. Forcing relink.`);
+                    await clearDatabaseAuthState(sessionId);
+                    if (io) {
+                        io.to(`company_${companyId}`).emit('whatsapp:connection', {
+                            sessionId,
+                            status: 'relink_required',
+                            phoneNumber
+                        });
+                    }
+                    await logEvent(sessionId, companyId, 'relink_required', { reason: 'registered_false', phoneNumber }, 'critical');
+                    await endSocketQuietly(sock, 'Unregistered session - forcing relink');
+                    return;
+                }
+            }
+
+            // Ensure auth state is saved immediately (critical for first-time pairing)
+            const connectedSessionData = activeSessions.get(sessionId);
+            if (connectedSessionData?.saveCreds?.flush) {
+                connectedSessionData.saveCreds.flush().catch(err => WA_LOG.warn(sessionId, `Auth flush failed: ${err.message}`));
+            }
 
             // ✅ Sync Profile Automatically
             syncProfile(sessionId).catch(err => WA_LOG.warn(sessionId, `Profile sync failed: ${err.message}`));
@@ -1809,8 +1843,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 }
             }
 
-            // Normalize JID (only for non-group, non-broadcast, non-newsletter, and already valid-looking JIDs)
-            if (remoteJid && !remoteJid.includes('@g.us') && remoteJid !== 'status@broadcast' && !isJidNewsletter?.(remoteJid) && isPhoneJid(remoteJid)) {
+            // Normalize JID (only for non-group, non-broadcast, and already valid-looking JIDs)
+            if (remoteJid && !remoteJid.includes('@g.us') && remoteJid !== 'status@broadcast' && isPhoneJid(remoteJid)) {
                 remoteJid = normalizePhoneJid(remoteJid);
             }
 
@@ -1818,12 +1852,6 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             if (remoteJid === 'status@broadcast') {
                 console.log('📸 Received status update');
                 await handleStatusUpdate(sessionId, companyId, msg, sock);
-                continue;
-            }
-
-            // تخطي رسائل القنوات (WhatsApp Channels / Newsletter)
-            if (isJidNewsletter?.(remoteJid)) {
-                console.log(`📢 Skipping newsletter message from ${remoteJid}`);
                 continue;
             }
 
@@ -2049,7 +2077,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
             // ── AI auto-reply with debounce (Baileys sessions) ────────────────────
-            if (!fromMe && !importHistory && isNewMessage && messageContent.type === 'TEXT' && syncedCustomer?.companyId) {
+            const isNewsletter = isJidNewsletter?.(remoteJid);
+            if (!fromMe && !importHistory && isNewMessage && messageContent.type === 'TEXT' && syncedCustomer?.companyId && !isNewsletter) {
                 setImmediate(async () => {
                     try {
                         const prisma = getSharedPrismaClient();
@@ -2111,6 +2140,17 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 }
                             } catch (e) {
                                 console.warn('⚠️ [BAILEYS-DEBOUNCE] Admin channel resolution failed, defaulting to WHATSAPP:', e.message);
+                            }
+
+                            if (first.conversationId) {
+                                const conversation = await prisma.conversation.findUnique({
+                                    where: { id: first.conversationId },
+                                    select: { aiEnabled: true }
+                                });
+                                if (conversation && conversation.aiEnabled === false) {
+                                    console.log(`🟡 [BAILEYS-DEBOUNCE] AI auto-reply disabled for conversation ${first.conversationId}`);
+                                    return;
+                                }
                             }
 
                             const aiSdkClient = require('../aiSdkClient');
@@ -2256,7 +2296,26 @@ async function handleStatusUpdate(sessionId, companyId, msg, sock) {
  * استخراج محتوى الرسالة
  */
 async function extractMessageContent(msg, sock, sessionId, options = {}) {
-    const message = msg.message;
+    let message = msg.message;
+    if (!message) return null;
+
+    // Unwrap message wrappers to access the real underlying message content (e.g. viewOnce, ephemeral, etc.)
+    while (message) {
+        if (message.ephemeralMessage) {
+            message = message.ephemeralMessage.message;
+        } else if (message.viewOnceMessage) {
+            message = message.viewOnceMessage.message;
+        } else if (message.viewOnceMessageV2) {
+            message = message.viewOnceMessageV2.message;
+        } else if (message.viewOnceMessageV2Extension) {
+            message = message.viewOnceMessageV2Extension.message;
+        } else if (message.documentWithCaptionMessage) {
+            message = message.documentWithCaptionMessage.message;
+        } else {
+            break;
+        }
+    }
+
     if (!message) return null;
 
     // Lazy load to avoid circular dependency
@@ -2542,7 +2601,7 @@ async function updateOrCreateContact(sessionId, remoteJid, msg, sock, options = 
         const createData = {
             jid: remoteJid,
             phoneNumber,
-            pushName: pushName || null, // Use null if undefined (outgoing)
+            pushName: pushName || null,
             profilePicUrl,
             lastMessageAt: lastMessageAt || new Date(),
             unreadCount: (!isOutgoing && !isGroupParticipant && !suppressUnread) ? 1 : 0,
@@ -3838,7 +3897,11 @@ async function getBroadcastLists(sessionId) {
  */
 async function labelChat(sessionId, jid, labelId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true };
+        throw new Error('Session not found');
+    }
 
     try {
         await session.sock.labelChat(jid, labelId);
@@ -3875,7 +3938,11 @@ async function getLabels(sessionId) {
  */
 async function createLabel(sessionId, name, color) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true, id: `meta_${Date.now()}`, name, color };
+        throw new Error('Session not found');
+    }
 
     try {
         const label = await session.sock.createLabel(name, color);
@@ -3892,7 +3959,11 @@ async function createLabel(sessionId, name, color) {
  */
 async function deleteLabel(sessionId, labelId) {
     const session = getSession(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({ where: { id: sessionId } });
+        if (dbSession?.provider === 'META_CLOUD') return { success: true };
+        throw new Error('Session not found');
+    }
 
     try {
         await session.sock.deleteLabel(labelId);
@@ -4452,6 +4523,7 @@ module.exports = {
     emitSessionStatusesForCompany,
     emitAllSessionStatuses,
     verifySessionHealth,
+    getSocketReadyState,
     startSessionHealthCheck,
     stopSessionHealthCheck,
 

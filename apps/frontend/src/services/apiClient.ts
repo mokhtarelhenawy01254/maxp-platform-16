@@ -455,7 +455,7 @@ class ApiClient {
     }
 
     const method = String(request.method || "get").toUpperCase();
-    if (!["GET", "HEAD"].includes(method)) {
+    if (!["GET", "HEAD", "PUT", "DELETE"].includes(method)) {
       return false;
     }
 

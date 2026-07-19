@@ -228,6 +228,8 @@ const PRODUCT_LIST_SELECT = {
   merchantProductId: true,
   basePrice: true,
   allowAffiliateMarkup: true,
+  affiliateVisibility: true,
+  affiliateVisibleAffiliateIds: true,
   affiliateCommission: true,
   commissionType: true,
   showFakeStock: true,
@@ -1382,6 +1384,7 @@ const updateSingleProduct = async (req, res) => {
       'saleStartDate', 'saleEndDate', 'sizeGuide', 'isPreOrder', 
       'preOrderDate', 'preOrderMessage', 'slug', 'isDropshipped', 
       'merchantProductId', 'basePrice', 'allowAffiliateMarkup', 
+      'affiliateVisibility', 'affiliateVisibleAffiliateIds', 
       'affiliateCommission', 'commissionType', 'showFakeStock'
     ];
 
@@ -3771,6 +3774,45 @@ const bulkUpdateVisibility = async (req, res) => {
   }
 };
 
+const bulkUpdateAffiliateVisibility = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const { productIds, allowAffiliateMarkup, affiliateVisibility, affiliateVisibleAffiliateIds } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات مطلوبة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const data = {};
+
+    if (typeof allowAffiliateMarkup === 'boolean') {
+      data.allowAffiliateMarkup = allowAffiliateMarkup;
+    }
+
+    if (affiliateVisibility && ['ALL', 'HIDDEN', 'SELECTED'].includes(affiliateVisibility)) {
+      data.affiliateVisibility = affiliateVisibility;
+    }
+
+    if (affiliateVisibleAffiliateIds !== undefined) {
+      data.affiliateVisibleAffiliateIds = JSON.stringify(affiliateVisibleAffiliateIds);
+    }
+
+    const result = await prisma.product.updateMany({
+      where: { id: { in: productIds }, companyId },
+      data,
+    });
+
+    res.json({ success: true, data: { count: result.count } });
+  } catch (err) {
+    console.error('Bulk affiliate visibility update error:', err);
+    res.status(500).json({ success: false, message: 'فشل في تحديث رؤية المنتجات للمسوقين' });
+  }
+};
+
 module.exports = {
   getAllProducts,
   getCategory,
@@ -3783,6 +3825,7 @@ module.exports = {
   deleteSingleProduct,
   deleteAllProducts,
   bulkUpdateVisibility,
+  bulkUpdateAffiliateVisibility,
   createProduct,
   duplicateProduct,
   deleteImageFromOneProduct,

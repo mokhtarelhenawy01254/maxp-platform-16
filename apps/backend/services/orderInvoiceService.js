@@ -5,6 +5,12 @@ const {
   generateInvoiceNumber
 } = require('./orderInvoiceDocumentUtils');
 
+function resolveItemSku(item) {
+  if (!item) return item;
+  const productSku = item.product?.sku || item.productSku || null;
+  return { ...item, productSku };
+}
+
 async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
   try {
     const prisma = getSharedPrismaClient();
@@ -111,6 +117,10 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
       });
     });
 
+    if (invoice?.order?.orderItems) {
+      invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
+    }
+
     return {
       success: true,
       invoice,
@@ -145,6 +155,10 @@ async function getInvoiceByOrderId(orderId) {
       });
     });
 
+    if (invoice?.order?.orderItems) {
+      invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
+    }
+
     return invoice;
   } catch (error) {
     console.error('Error fetching invoice:', error);
@@ -174,6 +188,10 @@ async function getInvoiceById(invoiceId) {
       });
     });
 
+    if (invoice?.order?.orderItems) {
+      invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
+    }
+
     return invoice;
   } catch (error) {
     console.error('Error fetching invoice:', error);
@@ -202,6 +220,10 @@ async function getInvoiceByNumber(invoiceNumber) {
         }
       });
     });
+
+    if (invoice?.order?.orderItems) {
+      invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
+    }
 
     return invoice;
   } catch (error) {

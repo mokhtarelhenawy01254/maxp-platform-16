@@ -12,12 +12,20 @@ import { buildApiUrl } from "../utils/urlHelper";
 import { Save, Eye, EyeOff, Info, Facebook } from "lucide-react";
 
 const SuperAdminFacebookOAuth = () => {
-  const [config, setConfig] = useState({ appId: "", appSecret: "", redirectUri: "" });
+  const [config, setConfig] = useState({
+    appId: "",
+    appSecret: "",
+    redirectUri: "",
+    whatsappAppId: "",
+    whatsappAppSecret: "",
+    whatsappConfigId: "",
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [showSecret, setShowSecret] = useState(false);
+  const [showWaSecret, setShowWaSecret] = useState(false);
 
   useEffect(() => { fetchConfig(); }, []);
 
@@ -26,7 +34,14 @@ const SuperAdminFacebookOAuth = () => {
       setLoading(true); setError(null);
       const response = await fetch(buildApiUrl("admin/facebook-oauth/config"), { headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }) });
       const data = await response.json();
-      if (data.success) setConfig({ appId: data.data.appId || "", appSecret: data.data.appSecret || "", redirectUri: data.data.redirectUri || "" });
+      if (data.success) setConfig({
+        appId: data.data.appId || "",
+        appSecret: data.data.appSecret || "",
+        redirectUri: data.data.redirectUri || "",
+        whatsappAppId: data.data.whatsappAppId || "",
+        whatsappAppSecret: data.data.whatsappAppSecret || "",
+        whatsappConfigId: data.data.whatsappConfigId || "",
+      });
       else setError(data.message || "فشل في جلب الإعدادات");
     } catch (err) { setError("فشل في الاتصال بالخادم"); } finally { setLoading(false); }
   };
@@ -57,13 +72,25 @@ const SuperAdminFacebookOAuth = () => {
         <p className="text-sm mb-3">لتمكين تكامل Facebook OAuth، تحتاج إلى إنشاء تطبيق على منصة Facebook Developers وإدخال المعلومات التالية:</p>
         <ol className="list-decimal pr-4 mb-3 text-sm space-y-1"><li>انتقل إلى <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Facebook Developers</a></li><li>أنشئ تطبيقًا جديدًا أو استخدم تطبيقًا موجودًا</li><li>احصل على App ID و App Secret</li><li>أضف رابط إعادة التوجيه: <code className="bg-muted px-1 rounded">{window.location.origin}/settings/facebook/callback</code></li></ol>
         <hr className="my-3" />
-        <div className="flex items-center gap-2 mb-2"><Facebook className="size-5 text-[#1877F2]" /><h2 className="text-base font-semibold">إعدادات التطبيق</h2></div>
+        <div className="flex items-center gap-2 mb-2"><Facebook className="size-5 text-[#1877F2]" /><h2 className="text-base font-semibold">إعدادات التطبيق الأساسي</h2></div>
         <div className="flex items-center gap-2 mb-3"><Badge variant={isConfigured ? "default" : "secondary"}>{isConfigured ? "مُكوَّن" : "غير مُكوَّن"}</Badge><span className="text-sm text-muted-foreground">{isConfigured ? "تم تكوين إعدادات Facebook OAuth بشكل صحيح" : "لم يتم تكوين إعدادات Facebook OAuth بعد"}</span></div>
         <div className="space-y-3">
-          <div><Label>Facebook App ID</Label><Input value={config.appId} onChange={e => setConfig(p => ({ ...p, appId: e.target.value }))} placeholder="أدخل App ID" /></div>
-          <div><Label>Facebook App Secret</Label><div className="relative"><Input type={showSecret ? "text" : "password"} value={config.appSecret} onChange={e => setConfig(p => ({ ...p, appSecret: e.target.value }))} placeholder="أدخل App Secret" /><Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2" onClick={() => setShowSecret(!showSecret)}>{showSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</Button></div></div>
+          <div><Label>Facebook App ID</Label><Input value={config.appId} onChange={e => setConfig(p => ({ ...p, appId: e.target.value }))} placeholder="أدخل App ID للتطبيق الأساسي" /></div>
+          <div><Label>Facebook App Secret</Label><div className="relative"><Input type={showSecret ? "text" : "password"} value={config.appSecret} onChange={e => setConfig(p => ({ ...p, appSecret: e.target.value }))} placeholder="أدخل App Secret للتطبيق الأساسي" /><Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2" onClick={() => setShowSecret(!showSecret)}>{showSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</Button></div></div>
           <div><Label>رابط إعادة التوجيه (Redirect URI)</Label><Input value={config.redirectUri} onChange={e => setConfig(p => ({ ...p, redirectUri: e.target.value }))} placeholder="https://yourdomain.com/settings/facebook/callback" /></div>
         </div>
+
+        <hr className="my-5" />
+
+        <div className="flex items-center gap-2 mb-2"><Facebook className="size-5 text-green-600" /><h2 className="text-base font-semibold">إعدادات WhatsApp Cloud Connect المنفصلة (اختياري)</h2></div>
+        <p className="text-xs text-muted-foreground mb-3">اترك هذه الحقول فارغة إذا كنت تريد استخدام نفس التطبيق الأساسي أعلاه للواتساب. استخدمها فقط إذا كنت تريد ربط الواتساب بتطبيق فيسبوك منفصل (مثلاً لتجنب قيود وضع التطوير أو المراجعة).</p>
+        
+        <div className="space-y-3">
+          <div><Label>WhatsApp App ID (اختياري)</Label><Input value={config.whatsappAppId} onChange={e => setConfig(p => ({ ...p, whatsappAppId: e.target.value }))} placeholder="أدخل App ID الخاص بالواتساب" /></div>
+          <div><Label>WhatsApp App Secret (اختياري)</Label><div className="relative"><Input type={showWaSecret ? "text" : "password"} value={config.whatsappAppSecret} onChange={e => setConfig(p => ({ ...p, whatsappAppSecret: e.target.value }))} placeholder="أدخل App Secret الخاص بالواتساب" /><Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2" onClick={() => setShowWaSecret(!showWaSecret)}>{showWaSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</Button></div></div>
+          <div><Label>WhatsApp Configuration ID (اختياري)</Label><Input value={config.whatsappConfigId} onChange={e => setConfig(p => ({ ...p, whatsappConfigId: e.target.value }))} placeholder="أدخل Configuration ID الخاص بـ Facebook Login for Business" /></div>
+        </div>
+
         <div className="flex justify-end mt-4"><Button onClick={handleSave} disabled={saving}>{saving ? <LoadingSpinner size="sm" /> : <Save className="size-4" />} حفظ الإعدادات</Button></div>
         <Alert className="mt-3"><Info className="size-4" /><AlertDescription>بعد حفظ الإعدادات، سيتم تطبيق التغييرات تلقائيًا.</AlertDescription></Alert>
       </CardContent></Card>

@@ -423,7 +423,7 @@ You are continuing an existing conversation on Facebook Messenger that was previ
     async def assemble_messages(self, ctx: PipelineContext) -> list[dict[str, Any]]:
         """Fetch history, compress it, and compile the full list of messages for LLM processing."""
         # Retrieve recent history messages from DB
-        history = await self.fetch_message_history(ctx, limit=15)
+        history = await self.fetch_message_history(ctx, limit=50)
 
         # Calculate original tokens in history
         ctx.original_history_tokens = sum(count_tokens(m.get("content", "")) for m in history)
@@ -435,7 +435,7 @@ You are continuing an existing conversation on Facebook Messenger that was previ
         retained_history, summary_text = await compress_history(
             messages=history,
             max_tokens=1000,
-            keep_recent=15,
+            keep_recent=30,
             llm_client=llm_client
         )
 
