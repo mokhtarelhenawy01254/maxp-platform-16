@@ -2025,7 +2025,7 @@ router.put(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { commissionRate } = req.body;
+      const { commissionRate, commissionType } = req.body;
       if (!canManageAffiliates(req.user.role)) {
         return res
           .status(403)
@@ -2048,6 +2048,15 @@ router.put(
         });
       }
 
+      const finalType = commissionType || managedAffiliate.commissionType;
+      const VALID_COMMISSION_TYPES = ['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM'];
+      if (commissionType && !VALID_COMMISSION_TYPES.includes(commissionType)) {
+        return res.status(400).json({
+          success: false,
+          message: "نوع العمولة غير صالح",
+        });
+      }
+
       const parsedCommission = parsePositiveAmount(commissionRate, "قيمة العمولة");
       if (parsedCommission.error) {
         return res.status(400).json({
@@ -2057,7 +2066,7 @@ router.put(
       }
 
       if (
-        managedAffiliate.commissionType === "PERCENTAGE" &&
+        finalType === "PERCENTAGE" &&
         parsedCommission.value > 100
       ) {
         return res.status(400).json({
@@ -2067,7 +2076,7 @@ router.put(
       }
 
       if (
-        managedAffiliate.commissionType === "MARKUP" &&
+        finalType === "MARKUP" &&
         parsedCommission.value > 1000000
       ) {
         return res.status(400).json({
@@ -2076,7 +2085,7 @@ router.put(
         });
       }
 
-      await affiliateService.updateAffiliateCommission(id, parsedCommission.value);
+      await affiliateService.updateAffiliateCommission(id, parsedCommission.value, commissionType);
       res.json({ success: true, message: "تم تحديث العمولة بنجاح" });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });

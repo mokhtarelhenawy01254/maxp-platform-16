@@ -349,6 +349,23 @@ router.put('/', async (req, res) => {
             }
         }
 
+        // مزامنة الإعدادات الجديدة مع المسوقين الحاليين (نوع + قيمة)
+        try {
+            await prisma.affiliate.updateMany({
+                where: {
+                    companyId,
+                    commissionType: { not: normalizedCommissionType }
+                },
+                data: { commissionType: normalizedCommissionType }
+            });
+            const syncedCount = await prisma.affiliate.count({
+                where: { companyId }
+            });
+            console.log(`✅ [AFFILIATE-SYNC] Synced ${syncedCount} affiliates to type: ${normalizedCommissionType}`);
+        } catch (syncError) {
+            console.error('⚠️ [AFFILIATE-SYNC] Failed to sync commission type to existing affiliates:', syncError);
+        }
+
         res.json({
             success: true,
             message: 'Settings updated successfully',

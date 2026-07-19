@@ -1636,34 +1636,44 @@ class AffiliateService {
   /**
    * تحديث نسبة عمولة المسوق
    */
-  async updateAffiliateCommission(affiliateId, commissionRate) {
+  async updateAffiliateCommission(affiliateId, commissionRate, commissionType) {
     try {
       const prisma = this.prisma;
       const affiliate = await prisma.affiliate.findUnique({
         where: { id: affiliateId },
-        select: { commissionType: true }
+        select: { id: true, commissionType: true }
       });
 
       if (!affiliate) {
         throw new Error('المسوق غير موجود');
       }
 
+      const finalType = commissionType || affiliate.commissionType;
+      const VALID_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
+
+      if (commissionType && !VALID_TYPES.has(commissionType)) {
+        throw new Error('نوع العمولة غير صالح');
+      }
+
       const parsedCommissionRate = validateNonNegativeNumber(
         commissionRate,
         'قيمة العمولة',
       );
-      if (affiliate.commissionType === 'PERCENTAGE' && parsedCommissionRate > 100) {
+      if (finalType === 'PERCENTAGE' && parsedCommissionRate > 100) {
         throw new Error('نسبة العمولة لا يمكن أن تتجاوز 100%');
       }
-      if (affiliate.commissionType === 'MARKUP' && parsedCommissionRate > 1000000) {
+      if (finalType === 'MARKUP' && parsedCommissionRate > 1000000) {
         throw new Error('قيمة هامش الربح أكبر من الحد المسموح');
+      }
+
+      const data = { commissionRate: parsedCommissionRate };
+      if (commissionType) {
+        data.commissionType = commissionType;
       }
 
       return await prisma.affiliate.update({
         where: { id: affiliateId },
-        data: {
-          commissionRate: parsedCommissionRate
-        }
+        data
       });
     } catch (error) {
       console.error('❌ [AFFILIATE] Error updating affiliate commission:', error);
