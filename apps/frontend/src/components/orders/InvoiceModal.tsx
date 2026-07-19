@@ -2,6 +2,7 @@ import React from "react";
 import { XMarkIcon, PrinterIcon } from "@heroicons/react/24/outline";
 import InvoiceContent from "./InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
+import { printClean } from "../../utils/printClean";
 
 interface InvoiceModalProps {
   invoice: Record<string, unknown>;
@@ -12,7 +13,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
   const { settings } = useInvoiceSettings();
 
   const handlePrint = () => {
-    window.print();
+    printClean();
   };
 
   return (
