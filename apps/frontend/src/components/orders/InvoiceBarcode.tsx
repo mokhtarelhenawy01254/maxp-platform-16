@@ -6,6 +6,7 @@ interface InvoiceBarcodeProps {
   label: string;
   height?: number;
   width?: number;
+  compact?: boolean;
 }
 
 const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
@@ -13,6 +14,7 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   label,
   height = 50,
   width = 2,
+  compact = false,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -35,12 +37,12 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
   }, [value, height, width]);
 
   return (
-    <div className="flex flex-col items-center gap-1" style={{ textAlign: "center" }}>
-      <svg ref={svgRef} />
-      <span className="text-xs font-bold" style={{ color: "#374151" }}>
+    <div className="flex flex-col items-center gap-0.5" style={{ textAlign: "center", lineHeight: 1 }}>
+      <svg ref={svgRef} style={{ maxWidth: "100%", height: `${height}px` }} />
+      <span style={{ fontSize: compact ? "8px" : "10px", fontWeight: "bold", color: "#374151" }}>
         {label}
       </span>
-      <span className="text-xs" style={{ color: "#6B7280", fontFamily: "monospace" }}>
+      <span style={{ fontSize: compact ? "8px" : "9px", color: "#6B7280", fontFamily: "monospace" }}>
         {value}
       </span>
     </div>
