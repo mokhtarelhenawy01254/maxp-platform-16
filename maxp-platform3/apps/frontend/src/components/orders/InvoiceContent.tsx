@@ -261,17 +261,17 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
                 style={{
                   display: "flex",
                   justifyContent: "center",
-                  gap: compact ? "4px" : "24px",
-                  transform: compact ? "scale(0.55)" : "scale(0.7)",
-                  transformOrigin: "center",
+                  gap: compact ? "8px" : "24px",
+                  transform: compact ? "scale(0.45)" : "scale(0.7)",
+                  transformOrigin: "top center",
                   marginBottom: compact ? "0" : "4px",
                 }}
               >
                 {showBarcodeOrderCode && invoice.order?.orderNumber && (
-                  <InvoiceBarcode value={invoice.order.orderNumber} label={compact ? "" : "رقم الطلب"} height={45} width={1.5} />
+                  <InvoiceBarcode value={invoice.order.orderNumber} label={compact ? "" : "رقم الطلب"} height={35} width={1.2} />
                 )}
                 {showBarcodeShippingCode && invoice.order?.turboTrackingNumber && (
-                  <InvoiceBarcode value={invoice.order.turboTrackingNumber} label={compact ? "" : "كود الشحن"} height={45} width={1.5} />
+                  <InvoiceBarcode value={invoice.order.turboTrackingNumber} label={compact ? "" : "كود الشحن"} height={35} width={1.2} />
                 )}
               </div>
             )}
