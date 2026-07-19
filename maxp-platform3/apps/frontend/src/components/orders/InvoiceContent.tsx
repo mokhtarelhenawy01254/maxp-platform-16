@@ -200,10 +200,19 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
             )}
           </span>
         </div>
-        {/* tiny barcode in header */}
-        {isFirst && compact && showBarcodeOrderCode && invoice.order?.orderNumber && (
-          <div style={{ transform: "scale(0.32)", transformOrigin: "left top", height: "32px", overflow: "hidden" }}>
-            <InvoiceBarcode value={invoice.order.orderNumber} label="" height={30} width={1} />
+        {/* barcodes in header - separated */}
+        {isFirst && compact && (showBarcodeOrderCode || showBarcodeShippingCode) && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px", flexShrink: 0 }}>
+            {showBarcodeOrderCode && invoice.order?.orderNumber && (
+              <div style={{ transform: "scale(0.3)", transformOrigin: "right top" }}>
+                <InvoiceBarcode value={invoice.order.orderNumber} label="طلب" height={28} width={1} />
+              </div>
+            )}
+            {showBarcodeShippingCode && invoice.order?.turboTrackingNumber && (
+              <div style={{ transform: "scale(0.3)", transformOrigin: "right top" }}>
+                <InvoiceBarcode value={invoice.order.turboTrackingNumber} label="شحن" height={28} width={1} />
+              </div>
+            )}
           </div>
         )}
       </div>
