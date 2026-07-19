@@ -82,6 +82,12 @@ interface InvoiceContentProps {
 
 const parseNumber = (v: number | string | null | undefined): number => Number(v || 0);
 
+const getItemTotal = (item: InvoiceItem): number => {
+  const x = item.total ?? item.totalPrice;
+  if (x != null) return parseNumber(x);
+  return parseNumber(item.price) * parseNumber(item.quantity);
+};
+
 const formatAddress = (address: unknown): string => {
   if (!address) return "";
   if (typeof address === "string") {
@@ -103,8 +109,7 @@ const formatAddress = (address: unknown): string => {
 export const ITEMS_PER_PAGE = 7;
 
 export function getInvoicePages(invoice: InvoiceData): InvoicePageInfo[] {
-  // Since we concatenate items into one string, we only need 1 page per invoice.
-  // We keep this function signature for compatibility with PrintMultipleInvoices.tsx
+  // Since this is a shipping label format, we generally fit everything on one label.
   const all = invoice.order?.orderItems || [];
   return [{ pageIndex: 0, totalPages: 1, isFirst: true, isLast: true, chunkItems: all }];
 }
@@ -124,30 +129,25 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   // Format total (e.g. 854.94 جنيه)
   const fm = (a: number) => `${new Intl.NumberFormat("ar-EG").format(a)} جنيه`;
   
-  // Choose barcode value (prefer tracking number for shipping labels)
-  const barcodeValue = invoice.order?.turboTrackingNumber || invoice.order?.orderNumber;
-  
-  // Concatenate products (e.g. The Collection Snowboard: Liquid * 1)
-  const productsString = items.map(i => {
-    let name = i.productName;
-    if (i.productColor) name += ` (${i.productColor})`;
-    if (i.productSize) name += ` [${i.productSize}]`;
-    return `${name} * ${i.quantity}`;
-  }).join(" | ");
+  const showOrderBarcode = s.showBarcodeOrderCode !== false && invoice.order?.orderNumber;
+  const showShipBarcode = s.showBarcodeShippingCode !== false && invoice.order?.turboTrackingNumber;
 
   const borderStyle = "2px solid #000";
+  const innerBorderStyle = "1.5px solid #000";
   
   // Reusable cell styles
   const titleStyle: React.CSSProperties = {
     fontSize: compact ? "11px" : "13px",
     fontWeight: 700,
-    marginBottom: "4px",
+    marginBottom: "2px",
+    color: "#000",
     textAlign: "right"
   };
   
   const valueStyle: React.CSSProperties = {
     fontSize: compact ? "13px" : "15px",
     fontWeight: 600,
+    color: "#000",
     textAlign: "right",
     direction: "rtl"
   };
@@ -169,25 +169,32 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         height: "100%",
         boxSizing: "border-box"
       }}>
-        {/* Row 1: Logo */}
-        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "center", alignItems: "center", padding: "6px", minHeight: compact ? "40px" : "55px" }}>
-           {invoice.companyLogo ? (
-             <img src={invoice.companyLogo} alt={invoice.companyName} style={{ maxHeight: compact ? "30px" : "40px", objectFit: "contain" }} />
-           ) : (
-             <h2 style={{ margin: 0, fontSize: compact ? "16px" : "20px", fontWeight: 800, color: "#dc2626" }}>{invoice.companyName}</h2>
-           )}
+        
+        {/* Row 1: Header (Logo + Barcodes) */}
+        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px", minHeight: compact ? "55px" : "75px" }}>
+           {/* Right side: Logo/Company */}
+           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flex: 1 }}>
+             {invoice.companyLogo ? (
+               <img src={invoice.companyLogo} alt={invoice.companyName} style={{ maxHeight: compact ? "35px" : "50px", maxWidth: "140px", objectFit: "contain" }} />
+             ) : (
+               <h2 style={{ margin: 0, fontSize: compact ? "16px" : "20px", fontWeight: 800, color: "#000", textAlign: "right" }}>{invoice.companyName}</h2>
+             )}
+           </div>
+           
+           {/* Left side: Barcodes */}
+           <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "flex-start", flex: 2 }}>
+             {showOrderBarcode && (
+               <InvoiceBarcode value={invoice.order!.orderNumber!} label="رقم الطلب" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+             )}
+             {showShipBarcode && (
+               <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="رقم الشحنة" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+             )}
+           </div>
         </div>
 
-        {/* Row 2: Barcode */}
-        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "center", alignItems: "center", padding: "8px", minHeight: compact ? "65px" : "85px" }}>
-           {barcodeValue && (
-             <InvoiceBarcode value={barcodeValue} label="" height={compact ? 45 : 55} width={compact ? 1.5 : 2} compact={compact} />
-           )}
-        </div>
-
-        {/* Row 3: Recipient & Phone */}
+        {/* Row 2: Recipient & Phone */}
         <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-           <div style={{ borderLeft: borderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>اسم المستلم</div>
              <div style={valueStyle}>{invoice.customerName}</div>
            </div>
@@ -197,9 +204,9 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
         </div>
 
-        {/* Row 4: City & Area */}
+        {/* Row 3: City & Area */}
         <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-           <div style={{ borderLeft: borderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>المدينة</div>
              <div style={valueStyle}>{invoice.city || "—"}</div>
            </div>
@@ -209,33 +216,68 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
         </div>
 
-        {/* Row 5: Address */}
-        <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "50px" : "70px", display: "flex", flexDirection: "column" }}>
+        {/* Row 4: Address */}
+        <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "45px" : "60px", display: "flex", flexDirection: "column" }}>
            <div style={titleStyle}>العنوان :</div>
            <div style={{ ...valueStyle, flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>{addressText || "—"}</div>
         </div>
 
-        {/* Row 6: Items (وصف الشحنة) */}
-        <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
-           <div style={titleStyle}>وصف الشحنة :</div>
-           <div style={{ ...valueStyle, flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "flex-end", lineHeight: "1.5" }}>{productsString || "—"}</div>
+        {/* Row 5: Products Table (Replaces string concatenation) */}
+        <div style={{ borderBottom: borderStyle, flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+             <thead>
+               <tr style={{ borderBottom: innerBorderStyle }}>
+                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "38%", textAlign: "center" }}>المنتج</th>
+                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "20%", textAlign: "center" }}>SKU</th>
+                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "10%", textAlign: "center" }}>كم</th>
+                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "15%", textAlign: "center" }}>السعر</th>
+                 <th style={{ ...titleStyle, padding: "4px 6px", width: "17%", textAlign: "center" }}>الإجمالي</th>
+               </tr>
+             </thead>
+             <tbody>
+               {items.map((item, idx) => (
+                 <tr key={item.id || idx} style={{ borderBottom: idx < items.length - 1 ? "1.5px solid #000" : "none" }}>
+                   <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "right" }}>
+                     <div style={{ fontSize: compact ? "12px" : "14px", fontWeight: 700, lineHeight: "1.2" }}>{item.productName}</div>
+                     {(item.productColor || item.productSize) && (
+                       <div style={{ fontSize: compact ? "10px" : "12px", color: "#333", marginTop: "2px" }}>
+                         {[item.productColor, item.productSize].filter(Boolean).join(" | ")}
+                       </div>
+                     )}
+                   </td>
+                   <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontFamily: "monospace", fontSize: compact ? "11px" : "13px", fontWeight: 800 }}>
+                     {item.productSku || "—"}
+                   </td>
+                   <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontSize: compact ? "12px" : "14px", fontWeight: 700 }}>
+                     {item.quantity}
+                   </td>
+                   <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontSize: compact ? "11px" : "13px", fontWeight: 600 }}>
+                     {fm(parseNumber(item.price))}
+                   </td>
+                   <td style={{ padding: "4px 6px", textAlign: "center", fontSize: compact ? "12px" : "14px", fontWeight: 800 }}>
+                     {fm(getItemTotal(item))}
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
         </div>
 
-        {/* Row 7: Notes */}
+        {/* Row 6: Notes */}
         <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "35px" : "45px", display: "flex", flexDirection: "column" }}>
            <div style={titleStyle}>ملاحظات :</div>
            <div style={{ ...valueStyle, flex: 1 }}></div>
         </div>
 
-        {/* Row 8: Total & Company (Centered values) */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: compact ? "50px" : "70px" }}>
-           <div style={{ borderLeft: borderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "8px" }}>اسم الشركة :</div>
-             <div style={{ ...valueStyle, textAlign: "center" }}>{invoice.companyName}</div>
+        {/* Row 7: Payment Method & Total (Footer) */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: compact ? "50px" : "65px", alignItems: "stretch" }}>
+           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>طريقة الدفع :</div>
+             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700 }}>{invoice.paymentMethod || "نقداً عند الاستلام"}</div>
            </div>
            <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "8px" }}>المبلغ المطلوب تحصيله :</div>
-             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 800, fontSize: compact ? "15px" : "18px" }}>{fm(totalAmount)}</div>
+             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>المبلغ المطلوب تحصيله :</div>
+             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 800, fontSize: compact ? "16px" : "20px" }}>{fm(totalAmount)}</div>
            </div>
         </div>
       </div>
