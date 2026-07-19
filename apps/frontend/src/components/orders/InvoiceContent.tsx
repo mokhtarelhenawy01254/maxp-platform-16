@@ -232,7 +232,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
                         </span>
                       )}
                     </td>
-                    <td style={{ textAlign: "center", padding: rp, fontFamily: "monospace", fontSize: compact ? "8px" : "10px", color: s.secondaryColor }}>{item.productSku || "—"}</td>
+                    <td style={{ textAlign: "center", padding: rp, fontFamily: "monospace", fontSize: compact ? "8px" : "10px", color: "#111827", fontWeight: 700 }}>{item.productSku || "—"}</td>
                     <td style={{ textAlign: "center", padding: rp, fontSize: rowFont }}>{item.quantity}</td>
                     <td style={{ textAlign: "left", padding: rp, whiteSpace: "nowrap", fontSize: rowFont }}>{fm(parseNumber(item.price))}</td>
                     <td style={{ textAlign: "left", padding: rp, whiteSpace: "nowrap", fontWeight: 600, fontSize: rowFont }}>{fm(getItemTotal(item))}</td>
