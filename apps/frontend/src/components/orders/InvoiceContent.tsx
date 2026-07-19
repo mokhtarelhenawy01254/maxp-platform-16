@@ -189,8 +189,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
 
       {/* ── Continuation header (non-first pages) ── */}
       {!isFirst && (
-        <div style={{ flexShrink: 0, borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "1mm" : "4px", marginBottom: compact ? "1mm" : "4px", display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontWeight: 700, fontSize: compact ? "11px" : "14px", color: s.primaryColor }}>{invoice.companyName}</span>
+        <div style={{ flexShrink: 0, borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "1mm" : "4px", marginBottom: compact ? "1mm" : "4px" }}>
           <span style={{ fontSize: "9px", color: s.secondaryColor }}>تابع {pageIndex + 1}/{totalPages}</span>
         </div>
       )}
