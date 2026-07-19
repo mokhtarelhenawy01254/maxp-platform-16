@@ -333,6 +333,7 @@ export const printOrderInvoice = async ({
           @media print {
             html, body { margin: 0 !important; padding: 0 !important; background: #ffffff; }
             .page { margin: 0; min-height: auto; border: none; }
+            .invoice-num { display: none !important; }
             @page { size: A5; margin: 0; }
           }
         </style>

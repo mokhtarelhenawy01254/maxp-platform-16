@@ -246,7 +246,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({
           </h1>
         </div>
         <div style={{ textAlign: "left", flexShrink: 0 }}>
-          <p style={{ margin: 0, fontSize: compact ? "10px" : "12px", fontWeight: 600, color: s.secondaryColor }}>
+          <p className="invoice-number-text" style={{ margin: 0, fontSize: compact ? "10px" : "12px", fontWeight: 600, color: s.secondaryColor }}>
             {invoice.invoiceNumber || ""}
           </p>
         </div>
