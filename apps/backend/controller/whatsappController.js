@@ -4235,19 +4235,22 @@ async function getFacebookConfig(req, res) {
             : require('../config/environment').frontendUrl;
         const redirectUri = new URL('/whatsapp/cloud-connect', `${frontendUrl}/`).toString();
 
-        if (!config.appId || facebookAppConfig.isPlaceholderFacebookCredential(config.appId)) {
+        const appId = config.whatsappAppId || config.appId;
+        const configId = config.whatsappConfigId || config.configId;
+
+        if (!appId || facebookAppConfig.isPlaceholderFacebookCredential(appId)) {
             return res.status(200).json({
-                appId: config.appId,
+                appId,
                 redirectUri,
-                configId: config.configId,
+                configId,
                 configured: false
             });
         }
 
         res.json({
-            appId: config.appId,
+            appId,
             redirectUri,
-            configId: config.configId,
+            configId,
             configured: true
         });
     } catch (error) {
@@ -4266,6 +4269,9 @@ async function facebookConnect(req, res) {
         }
 
         const config = facebookAppConfig.getFacebookOAuthConfig();
+        const appId = config.whatsappAppId || config.appId;
+        const appSecret = config.whatsappAppSecret || config.appSecret;
+
         const redirectUri = clientRedirectUri || (() => {
             const origin = req.get('Origin') || req.get('Referer') || '';
             const frontendUrl = origin
@@ -4274,7 +4280,7 @@ async function facebookConnect(req, res) {
             return new URL('/whatsapp/cloud-connect', `${frontendUrl}/`).toString();
         })();
 
-        if (!config.appSecret) {
+        if (!appSecret) {
             return res.status(400).json({ error: 'Facebook App Secret غير مضبوط' });
         }
 
@@ -4282,9 +4288,9 @@ async function facebookConnect(req, res) {
         const axios = require('axios');
         const tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
             params: {
-                client_id: config.appId,
+                client_id: appId,
                 redirect_uri: redirectUri,
-                client_secret: config.appSecret,
+                client_secret: appSecret,
                 code
             },
             timeout: 15000
@@ -4295,12 +4301,11 @@ async function facebookConnect(req, res) {
             return res.status(400).json({ error: 'فشل الحصول على رمز الوصول من Facebook' });
         }
 
-        // Step 2: Exchange for long-lived token
         const longTokenResponse = await axios.get(`${META_GRAPH_BASE}/oauth/access_token`, {
             params: {
                 grant_type: 'fb_exchange_token',
-                client_id: config.appId,
-                client_secret: config.appSecret,
+                client_id: appId,
+                client_secret: appSecret,
                 fb_exchange_token: shortLivedToken
             },
             timeout: 15000
@@ -4451,14 +4456,18 @@ async function facebookEmbeddedConnect(req, res) {
         }
 
         const config = facebookAppConfig.getFacebookOAuthConfig();
+        const appId = config.whatsappAppId || config.appId;
+        const appSecret = config.whatsappAppSecret || config.appSecret;
+        const configId = config.whatsappConfigId || config.configId;
+
         console.log('🔧 [facebookEmbeddedConnect] Facebook config:', {
-            appId: config.appId ? `${config.appId.substring(0, 6)}...` : '(empty)',
-            hasAppSecret: !!config.appSecret,
-            appSecretLength: config.appSecret?.length || 0,
-            configId: config.configId || '(none)'
+            appId: appId ? `${appId.substring(0, 6)}...` : '(empty)',
+            hasAppSecret: !!appSecret,
+            appSecretLength: appSecret?.length || 0,
+            configId: configId || '(none)'
         });
 
-        if (!config.appSecret) {
+        if (!appSecret) {
             console.error('❌ [facebookEmbeddedConnect] Facebook App Secret is not configured! Please set it via /super-admin/facebook-oauth or FACEBOOK_APP_SECRET env var.');
             return res.status(400).json({ error: 'Facebook App Secret غير مضبوط. الرجاء ضبطه من لوحة تحكم السوبر أدمن.' });
         }
@@ -4486,8 +4495,8 @@ async function facebookEmbeddedConnect(req, res) {
             console.log('🔑 [facebookEmbeddedConnect] Attempting token exchange without redirect_uri...');
             tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
                 params: {
-                    client_id: config.appId,
-                    client_secret: config.appSecret,
+                    client_id: appId,
+                    client_secret: appSecret,
                     code
                 },
                 timeout: 15000
@@ -4499,9 +4508,9 @@ async function facebookEmbeddedConnect(req, res) {
             
             tokenResponse = await axios.post(`${META_GRAPH_BASE}/oauth/access_token`, null, {
                 params: {
-                    client_id: config.appId,
+                    client_id: appId,
                     redirect_uri: redirectUri,
-                    client_secret: config.appSecret,
+                    client_secret: appSecret,
                     code
                 },
                 timeout: 15000
@@ -4517,8 +4526,8 @@ async function facebookEmbeddedConnect(req, res) {
         const longTokenResponse = await axios.get(`${META_GRAPH_BASE}/oauth/access_token`, {
             params: {
                 grant_type: 'fb_exchange_token',
-                client_id: config.appId,
-                client_secret: config.appSecret,
+                client_id: appId,
+                client_secret: appSecret,
                 fb_exchange_token: shortLivedToken
             },
             timeout: 15000

@@ -1,6 +1,12 @@
 # Team Sync Updates
 
 ## 2026-07-19 / 2026-03-09
+- **Separate WhatsApp Facebook App Credentials (FEATURE / COMPLETE)**:
+  1. **Purpose**: Solved the limitation where the main Facebook App is in Development mode and undergoing App Review (blocking switching to Live).
+  2. **Override Mechanism**: Created optional overrides (`whatsappAppId`, `whatsappAppSecret`, `whatsappConfigId`) in the configuration JSON.
+  3. **Backend Logic**: Updated `whatsappController.js` to automatically prioritize these overrides for the WhatsApp OAuth exchange, avoiding disruptions to existing Facebook Page integrations.
+  4. **Super Admin Dashboard**: Extended `/super-admin/facebook-oauth` to allow super admins to edit, view, and save these optional credentials.
+
 - **Deploy Script: Preserve facebook-oauth-config.json (BUGFIX / COMPLETE)**:
   1. **Root Cause**: `deploy-remote.sh` uses `rsync --delete` which deletes server files not present in the git-tracked tarball. Since `facebook-oauth-config.json` is in `.gitignore`, every deploy wiped the Super Admin credentials.
   2. **Fix (tarball path)**: Added `--exclude data/facebook-oauth-config.json` to the `rsync` command.

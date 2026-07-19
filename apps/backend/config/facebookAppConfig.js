@@ -70,6 +70,9 @@ const saveFacebookOAuthConfig = (config) => {
     appId: normalizeCredential(config?.appId),
     appSecret: normalizeCredential(config?.appSecret),
     redirectUri: normalizeCredential(config?.redirectUri),
+    whatsappAppId: normalizeCredential(config?.whatsappAppId),
+    whatsappAppSecret: normalizeCredential(config?.whatsappAppSecret),
+    whatsappConfigId: normalizeCredential(config?.whatsappConfigId),
     updatedAt: new Date().toISOString(),
   };
 
@@ -92,7 +95,10 @@ const getFacebookOAuthConfig = () => {
     redirectUri:
       normalizeCredential(stored.redirectUri) ||
       buildFacebookBackendCallbackUrl("page"),
-    configId: normalizeCredential(FACEBOOK_LOGIN_CONFIG_ID),
+    configId: normalizeCredential(stored.configId || FACEBOOK_LOGIN_CONFIG_ID),
+    whatsappAppId: chooseCredential(stored.whatsappAppId),
+    whatsappAppSecret: chooseCredential(stored.whatsappAppSecret),
+    whatsappConfigId: normalizeCredential(stored.whatsappConfigId),
   };
 };
 

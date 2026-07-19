@@ -1,5 +1,21 @@
 # Backend Bugs Log
 
+### [FEATURE / OVERRIDE] Support for Separate WhatsApp Facebook App ID & Credentials
+- **Date**: 2026-07-19
+- **Root Cause / Requirement**:
+  1. **Development vs. Live mode restrictions**: The main Facebook App configured on the platform is in Development mode and undergoing App Review for Page permissions (e.g., Pages Read/Engagement). This prevents it from being made Live.
+  2. **WhatsApp Blocked in Development**: In Development mode, WhatsApp Embedded Signup triggers a Meta Business Account Integrity Limit block/crash (`WhatsAppBizxPlatformMetaBusinessAccountIntegrityLimitView`) if the tester accounts or business portfolios do not perfectly align, or due to Meta's strict onboarding security policies.
+  3. **disrupted Page Integrations**: Overwriting the global Facebook App credentials with a new Live App specifically for WhatsApp would break existing Facebook Page tokens and integrations.
+- **Resolution**:
+  1. **Optional Credentials Override**: Added support for optional, separate WhatsApp-specific Facebook App credentials (`whatsappAppId`, `whatsappAppSecret`, `whatsappConfigId`) in the configuration JSON.
+  2. **Prioritization Logic**: Modified the backend (`whatsappController.js`) configuration loader and token exchange endpoints to prioritize these WhatsApp credentials if they are populated, leaving the default Facebook Page integration unaffected.
+  3. **Super Admin UI Integration**: Expanded `/super-admin/facebook-oauth` to allow editing, viewing, and saving these optional WhatsApp App credentials.
+- **Files Modified**:
+  - `apps/backend/config/facebookAppConfig.js` (MODIFIED)
+  - `apps/backend/controller/whatsappController.js` (MODIFIED)
+  - `apps/backend/routes/facebookOAuthRoutes.js` (MODIFIED)
+  - `apps/frontend/src/pages/SuperAdminFacebookOAuth.jsx` (MODIFIED)
+
 ### [BUG FIX / DEPLOY] Deploy Script rsync --delete Wiping facebook-oauth-config.json
 - **Date**: 2026-07-19
 - **Root Cause**:
