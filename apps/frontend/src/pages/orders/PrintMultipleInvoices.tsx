@@ -76,12 +76,34 @@ function toInvoiceData(inv: Invoice): InvoiceData {
   };
 }
 
-/** Represents one half-page slot on an A4 sheet */
+/** Represents one slot on a printed sheet */
 interface PageSlot {
   invoiceData: InvoiceData;
   page: ReturnType<typeof getInvoicePages>[0];
   key: string;
 }
+
+/**
+ * Print layout modes:
+ *  - "single"  → one invoice per A5 page   (1 slot / sheet, no grid)
+ *  - "2up"     → two invoices per A4 page   (2 slots / sheet, stacked vertically)
+ *  - "grid"    → four invoices per A4 page  (2×2 grid)
+ */
+type PrintLayout = "single" | "2up" | "grid";
+
+/** Smart auto-detect based on total slot count */
+function autoDetectLayout(slotCount: number): PrintLayout {
+  if (slotCount <= 1) return "single";
+  if (slotCount === 2) return "2up";
+  return "grid";
+}
+
+/** How many slots go on each sheet for a given layout */
+const SLOTS_PER_SHEET: Record<PrintLayout, number> = {
+  single: 1,
+  "2up": 2,
+  grid: 4,
+};
 
 const PrintMultipleInvoices: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -89,7 +111,8 @@ const PrintMultipleInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { settings } = useInvoiceSettings();
-  const [printLayout, setPrintLayout] = useState<"grid" | "single">("grid");
+  const [printLayout, setPrintLayout] = useState<PrintLayout>("grid");
+  const [autoLayout, setAutoLayout] = useState(true); // tracks if user overrode auto
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -119,18 +142,7 @@ const PrintMultipleInvoices: React.FC = () => {
   }, [searchParams]);
 
   useEffect(() => { void fetchInvoices(); }, [fetchInvoices]);
-  useEffect(() => {
-    if (invoices.length > 0 && !loading) {
-      if (invoices.length === 1) {
-        setPrintLayout("single");
-      } else {
-        setPrintLayout("grid");
-      }
-      setTimeout(() => {
-        printClean();
-      }, 1200);
-    }
-  }, [invoices, loading]);
+
   // Expand every invoice into its page chunks, collect all slots
   const allSlots: PageSlot[] = useMemo(() => {
     const slots: PageSlot[] = [];
@@ -144,18 +156,143 @@ const PrintMultipleInvoices: React.FC = () => {
     return slots;
   }, [invoices]);
 
-  // Group slots into sheets depending on layout mode (4 per sheet for grid, 1 per sheet for single)
-  const sheets = useMemo(() => {
-    if (printLayout === "single") {
-      return allSlots.map((slot) => [slot]);
-    } else {
-      const grouped: PageSlot[][] = [];
-      for (let i = 0; i < allSlots.length; i += 4) {
-        grouped.push(allSlots.slice(i, i + 4));
-      }
-      return grouped;
+  // Auto-set layout once slots are known (only if user hasn't overridden)
+  useEffect(() => {
+    if (allSlots.length > 0 && !loading && autoLayout) {
+      setPrintLayout(autoDetectLayout(allSlots.length));
     }
+  }, [allSlots, loading, autoLayout]);
+
+  // Trigger print after layout is set and data is ready
+  useEffect(() => {
+    if (allSlots.length > 0 && !loading) {
+      setTimeout(() => { printClean(); }, 1200);
+    }
+  }, [allSlots, loading]);
+
+  // Group slots into sheets
+  const sheets = useMemo(() => {
+    const perSheet = SLOTS_PER_SHEET[printLayout];
+    const grouped: PageSlot[][] = [];
+    for (let i = 0; i < allSlots.length; i += perSheet) {
+      grouped.push(allSlots.slice(i, i + perSheet));
+    }
+    return grouped;
   }, [allSlots, printLayout]);
+
+  // --- CSS per layout ---
+  const printCSS = (() => {
+    if (printLayout === "single") {
+      return `
+        @page { margin: 6mm; size: A5 portrait; }
+        .a4-sheet {
+          width: 100%; height: auto;
+          page-break-after: always; page-break-inside: avoid;
+          padding: 0; margin: 0; display: block;
+        }
+        .a4-sheet:last-child { page-break-after: auto; }
+        .a4-cell { width: 100%; height: auto; overflow: hidden; box-sizing: border-box; border: none; }
+      `;
+    }
+    if (printLayout === "2up") {
+      return `
+        @page { margin: 0; size: A4 portrait; }
+        .a4-sheet {
+          width: 210mm; height: 297mm;
+          page-break-after: always; page-break-inside: avoid;
+          padding: 0; margin: 0; overflow: hidden; box-sizing: border-box;
+          display: grid;
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 1fr;
+        }
+        .a4-sheet:last-child { page-break-after: auto; }
+        .a4-cell {
+          width: 210mm; height: 148.5mm;
+          overflow: hidden; box-sizing: border-box;
+          page-break-inside: avoid;
+          border-bottom: 1.5px dashed #94a3b8;
+        }
+        .a4-cell:last-child { border-bottom: none; }
+      `;
+    }
+    // grid (4-up)
+    return `
+      @page { margin: 0; size: A4 portrait; }
+      .a4-sheet {
+        width: 210mm; height: 297mm;
+        page-break-after: always; page-break-inside: avoid;
+        padding: 0; margin: 0; overflow: hidden; box-sizing: border-box;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
+      .a4-sheet:last-child { page-break-after: auto; }
+      .a4-cell {
+        width: 105mm; height: 148.5mm;
+        overflow: hidden; box-sizing: border-box;
+        page-break-inside: avoid;
+        border-right: 1px dashed #e2e8f0;
+        border-bottom: 1px dashed #e2e8f0;
+      }
+      .a4-cell:nth-child(even) { border-right: none; }
+      .a4-cell:nth-child(n+3) { border-bottom: none; }
+    `;
+  })();
+
+  const screenCSS = (() => {
+    if (printLayout === "single") {
+      return `
+        .a4-sheet {
+          background: #fff; max-width: 148mm;
+          margin: 0 auto 24px; border-radius: 12px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+          overflow: hidden; padding: 16px;
+        }
+        .a4-cell { border: none; }
+      `;
+    }
+    if (printLayout === "2up") {
+      return `
+        .a4-sheet {
+          background: #fff; max-width: 210mm; height: 297mm;
+          margin: 0 auto 24px; border-radius: 12px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+          overflow: hidden;
+          display: grid;
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 1fr;
+        }
+        .a4-cell {
+          padding: 12px 16px;
+          border-bottom: 1.5px dashed #cbd5e1;
+          overflow: hidden; box-sizing: border-box;
+        }
+        .a4-cell:last-child { border-bottom: none; }
+      `;
+    }
+    return `
+      .a4-sheet {
+        background: #fff; max-width: 210mm; height: 297mm;
+        margin: 0 auto 24px; border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
+      .a4-cell {
+        padding: 10px 12px;
+        border-right: 1px dashed #cbd5e1;
+        border-bottom: 1px dashed #cbd5e1;
+        overflow: hidden; box-sizing: border-box;
+      }
+      .a4-cell:nth-child(even) { border-right: none; }
+      .a4-cell:nth-child(n+3) { border-bottom: none; }
+    `;
+  })();
+
+  /** is the current layout compact (multiple per sheet)? */
+  const isCompact = printLayout !== "single";
 
   if (loading) {
     return (
@@ -180,61 +317,11 @@ const PrintMultipleInvoices: React.FC = () => {
     <div className="invoice-print-wrapper">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
-        
+
         @media print {
           html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
           .no-print { display: none !important; }
-          ${
-            printLayout === "grid"
-              ? `
-                @page { margin: 0; size: A4 portrait; }
-                .a4-sheet {
-                  width: 210mm;
-                  height: 297mm;
-                  page-break-after: always;
-                  page-break-inside: avoid;
-                  padding: 0;
-                  margin: 0;
-                  overflow: hidden;
-                  box-sizing: border-box;
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  grid-template-rows: 1fr 1fr;
-                }
-                .a4-sheet:last-child { page-break-after: auto; }
-                .a4-cell {
-                  width: 105mm;
-                  height: 148.5mm;
-                  overflow: hidden;
-                  box-sizing: border-box;
-                  page-break-inside: avoid;
-                  border-right: 1px dashed #e2e8f0;
-                  border-bottom: 1px dashed #e2e8f0;
-                }
-                .a4-cell:nth-child(even) { border-right: none; }
-                .a4-cell:nth-child(n+3) { border-bottom: none; }
-                `
-              : `
-                @page { margin: 6mm; size: A5 portrait; }
-                .a4-sheet {
-                  width: 100%;
-                  height: auto;
-                  page-break-after: always;
-                  page-break-inside: avoid;
-                  padding: 0;
-                  margin: 0;
-                  display: block;
-                }
-                .a4-sheet:last-child { page-break-after: auto; }
-                .a4-cell {
-                  width: 100%;
-                  height: auto;
-                  overflow: hidden;
-                  box-sizing: border-box;
-                  border: none;
-                }
-                `
-          }
+          ${printCSS}
           .invoice-header, .invoice-totals { page-break-inside: avoid; }
           .invoice-number-text { display: none !important; }
         }
@@ -244,60 +331,34 @@ const PrintMultipleInvoices: React.FC = () => {
             min-height: 100vh;
             padding: 32px 16px;
           }
-          ${
-            printLayout === "grid"
-              ? `
-                .a4-sheet {
-                  background: #fff;
-                  max-width: 210mm;
-                  height: 297mm;
-                  margin: 0 auto 24px;
-                  border-radius: 12px;
-                  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-                  overflow: hidden;
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  grid-template-rows: 1fr 1fr;
-                }
-                .a4-cell {
-                  padding: 10px 12px;
-                  border-right: 1px dashed #cbd5e1;
-                  border-bottom: 1px dashed #cbd5e1;
-                  overflow: hidden;
-                  box-sizing: border-box;
-                }
-                .a4-cell:nth-child(even) { border-right: none; }
-                .a4-cell:nth-child(n+3) { border-bottom: none; }
-                `
-              : `
-                .a4-sheet {
-                  background: #fff;
-                  max-width: 148mm;
-                  margin: 0 auto 24px;
-                  border-radius: 12px;
-                  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-                  overflow: hidden;
-                  padding: 16px;
-                }
-                .a4-cell {
-                  border: none;
-                }
-                `
-          }
+          ${screenCSS}
         }
       `}</style>
 
+      {/* ── Controls ── */}
       <div className="no-print fixed top-4 right-4 z-50 flex items-center gap-3 bg-white p-3 rounded-xl shadow-xl border border-gray-200" dir="rtl">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold text-gray-700">تنسيق الطباعة:</label>
+          <label className="text-xs font-bold text-gray-700">
+            تنسيق الطباعة:
+            {autoLayout && (
+              <span className="ml-1 text-blue-500 text-[10px] font-normal">(تلقائي)</span>
+            )}
+          </label>
           <select
             value={printLayout}
-            onChange={(e) => setPrintLayout(e.target.value as "grid" | "single")}
+            onChange={(e) => {
+              setPrintLayout(e.target.value as PrintLayout);
+              setAutoLayout(false); // user override
+            }}
             className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
           >
-            <option value="grid">توفير ورق (4 فواتير في ورقة A4)</option>
-            <option value="single">فاتورة كاملة (A5 أو حراري)</option>
+            <option value="grid">4 فواتير في A4 (توفير ورق)</option>
+            <option value="2up">2 فواتير في A4 (أوسع)</option>
+            <option value="single">فاتورة كاملة (A5 / حراري)</option>
           </select>
+          <span className="text-[10px] text-gray-400">
+            {allSlots.length} فاتورة · {sheets.length} ورقة
+          </span>
         </div>
         <button
           onClick={() => printClean()}
@@ -319,7 +380,7 @@ const PrintMultipleInvoices: React.FC = () => {
               <InvoiceContent
                 invoice={slot.invoiceData}
                 settings={settings}
-                compact={printLayout === "grid"}
+                compact={isCompact}
                 page={slot.page}
               />
             </div>

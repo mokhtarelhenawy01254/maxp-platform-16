@@ -1,5 +1,6 @@
 import React from "react";
 import InvoiceBarcode from "./InvoiceBarcode";
+import InvoiceQR from "./InvoiceQR";
 
 export interface InvoicePrintSettings {
   showCompanyLogo: boolean;
@@ -165,14 +166,26 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
               </div>
             )}
           </div>
-          {/* barcodes — right side (RTL: left) */}
+          {/* barcodes + QR — right side (RTL: left) */}
           {hasBarcode && isFirst && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0, width: compact ? "110px" : "150px" }}>
+            <div style={{ display: "flex", flexDirection: "row", gap: compact ? "4px" : "8px", flexShrink: 0, alignItems: "flex-start" }}>
+              {/* Linear barcodes column */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: compact ? "90px" : "130px" }}>
+                {showOrderBarcode && (
+                  <InvoiceBarcode value={invoice.order!.orderNumber!} label="طلب" height={compact ? 22 : 32} width={compact ? 1.0 : 1.2} compact={compact} />
+                )}
+                {showShipBarcode && (
+                  <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="شحن" height={compact ? 22 : 32} width={compact ? 1.0 : 1.2} compact={compact} />
+                )}
+              </div>
+              {/* QR code column — shows order number for quick mobile scanning */}
               {showOrderBarcode && (
-                <InvoiceBarcode value={invoice.order!.orderNumber!} label="طلب" height={compact ? 22 : 32} width={compact ? 1.1 : 1.3} compact={compact} />
-              )}
-              {showShipBarcode && (
-                <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="شحن" height={compact ? 22 : 32} width={compact ? 1.1 : 1.3} compact={compact} />
+                <InvoiceQR
+                  value={invoice.order!.orderNumber!}
+                  label="QR"
+                  size={compact ? 36 : 52}
+                  compact={compact}
+                />
               )}
             </div>
           )}
