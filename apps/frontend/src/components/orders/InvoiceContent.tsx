@@ -1,6 +1,5 @@
 import React from "react";
 import InvoiceBarcode from "./InvoiceBarcode";
-import InvoiceQR from "./InvoiceQR";
 
 export interface InvoicePrintSettings {
   showCompanyLogo: boolean;
@@ -83,12 +82,6 @@ interface InvoiceContentProps {
 
 const parseNumber = (v: number | string | null | undefined): number => Number(v || 0);
 
-const getItemTotal = (item: InvoiceItem): number => {
-  const x = item.total ?? item.totalPrice;
-  if (x != null) return parseNumber(x);
-  return parseNumber(item.price) * parseNumber(item.quantity);
-};
-
 const formatAddress = (address: unknown): string => {
   if (!address) return "";
   if (typeof address === "string") {
@@ -110,152 +103,142 @@ const formatAddress = (address: unknown): string => {
 export const ITEMS_PER_PAGE = 7;
 
 export function getInvoicePages(invoice: InvoiceData): InvoicePageInfo[] {
+  // Since we concatenate items into one string, we only need 1 page per invoice.
+  // We keep this function signature for compatibility with PrintMultipleInvoices.tsx
   const all = invoice.order?.orderItems || [];
-  const n = Math.ceil(all.length / ITEMS_PER_PAGE) || 1;
-  const pages: InvoicePageInfo[] = [];
-  for (let i = 0; i < n; i++) {
-    pages.push({ pageIndex: i, totalPages: n, isFirst: i === 0, isLast: i === n - 1, chunkItems: all.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE) });
-  }
-  return pages;
+  return [{ pageIndex: 0, totalPages: 1, isFirst: true, isLast: true, chunkItems: all }];
 }
 
 const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, compact = false, page }) => {
   const s: InvoicePrintSettings = { ...DEFAULT_INVOICE_SETTINGS, ...(ps || {}) };
   const currency = invoice.currency || "EGP";
-  const totalAmount = invoice.totalAmount != null ? parseNumber(invoice.totalAmount) : parseNumber(invoice.subtotal) + parseNumber(invoice.shipping) + parseNumber(invoice.tax) - parseNumber(invoice.discount);
+  
+  // Total calculation
+  const totalAmount = invoice.totalAmount != null 
+    ? parseNumber(invoice.totalAmount) 
+    : parseNumber(invoice.subtotal) + parseNumber(invoice.shipping) + parseNumber(invoice.tax) - parseNumber(invoice.discount);
+  
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
-
-  const isPaginated = page != null;
-  const pageIndex = page?.pageIndex ?? 0;
-  const totalPages = page?.totalPages ?? 1;
-  const isFirst = page?.isFirst ?? true;
-  const isLast = page?.isLast ?? true;
   const items = page?.chunkItems ?? (invoice.order?.orderItems || []);
+  
+  // Format total (e.g. 854.94 جنيه)
+  const fm = (a: number) => `${new Intl.NumberFormat("ar-EG").format(a)} جنيه`;
+  
+  // Choose barcode value (prefer tracking number for shipping labels)
+  const barcodeValue = invoice.order?.turboTrackingNumber || invoice.order?.orderNumber;
+  
+  // Concatenate products (e.g. The Collection Snowboard: Liquid * 1)
+  const productsString = items.map(i => {
+    let name = i.productName;
+    if (i.productColor) name += ` (${i.productColor})`;
+    if (i.productSize) name += ` [${i.productSize}]`;
+    return `${name} * ${i.quantity}`;
+  }).join(" | ");
 
-  const fm = (a: number) => new Intl.NumberFormat("ar-EG", { style: "currency", currency }).format(a);
-
-  const showOrderBarcode = s.showBarcodeOrderCode !== false && invoice.order?.orderNumber;
-  const showShipBarcode = s.showBarcodeShippingCode !== false && invoice.order?.turboTrackingNumber;
-  const hasBarcode = (showOrderBarcode || showShipBarcode);
-
-  // shared compact row padding
-  const rp = compact ? "1.5px 4px" : "3px 6px";
-  const rowFont = compact ? "11px" : "13.5px";
-  const thFont = compact ? "10px" : "12px";
-  const sep = "1px solid #d1d5db";
+  const borderStyle = "2px solid #000";
+  
+  // Reusable cell styles
+  const titleStyle: React.CSSProperties = {
+    fontSize: compact ? "11px" : "13px",
+    fontWeight: 700,
+    marginBottom: "4px",
+    textAlign: "right"
+  };
+  
+  const valueStyle: React.CSSProperties = {
+    fontSize: compact ? "13px" : "15px",
+    fontWeight: 600,
+    textAlign: "right",
+    direction: "rtl"
+  };
 
   return (
-    <div dir="rtl" style={{ fontFamily: s.fontFamily, color: "#0f172a", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: compact ? "1.5mm 2.5mm" : "0", boxSizing: "border-box" }}>
-      {/* ── Top block: customer + barcodes side by side ── */}
-      {isFirst && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0, borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "1mm" : "4px", marginBottom: compact ? "1mm" : "4px", gap: "6px" }}>
-          {/* customer info — left side (RTL: right) */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: compact ? "13px" : "15px", marginBottom: "1.5px", color: s.primaryColor }}>
-              {invoice.customerName}
-            </div>
-            {invoice.customerPhone && (
-              <div style={{ fontWeight: 500, fontSize: compact ? "11px" : "13.5px", marginBottom: "1.5px" }}>
-                {invoice.customerPhone}
-              </div>
-            )}
-            {addressText && (
-              <div style={{ fontSize: compact ? "10px" : "12.5px", color: "#374151", lineHeight: "1.3" }}>
-                {addressText}
-                {invoice.city ? " - " + invoice.city : ""}
-              </div>
-            )}
-          </div>
-          {/* barcodes + QR — right side (RTL: left) */}
-          {hasBarcode && isFirst && (
-            <div style={{ display: "flex", flexDirection: "row", gap: compact ? "4px" : "8px", flexShrink: 0, alignItems: "flex-start" }}>
-              {/* Linear barcodes column */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: compact ? "90px" : "130px" }}>
-                {showOrderBarcode && (
-                  <InvoiceBarcode value={invoice.order!.orderNumber!} label="طلب" height={compact ? 22 : 32} width={compact ? 1.0 : 1.2} compact={compact} />
-                )}
-                {showShipBarcode && (
-                  <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="شحن" height={compact ? 22 : 32} width={compact ? 1.0 : 1.2} compact={compact} />
-                )}
-              </div>
-              {/* QR code column — shows order number for quick mobile scanning */}
-              {showOrderBarcode && (
-                <InvoiceQR
-                  value={invoice.order!.orderNumber!}
-                  label="QR"
-                  size={compact ? 36 : 52}
-                  compact={compact}
-                />
-              )}
-            </div>
-          )}
-          {/* pagination marker */}
-          {isPaginated && !isFirst && (
-            <span style={{ fontSize: "9px", color: s.secondaryColor, flexShrink: 0 }}>{pageIndex + 1}/{totalPages}</span>
-          )}
+    <div dir="rtl" style={{ 
+      fontFamily: s.fontFamily, 
+      color: "#000", 
+      width: "100%", 
+      height: "100%", 
+      boxSizing: "border-box",
+      padding: compact ? "6px" : "12px",
+      backgroundColor: "#fff"
+    }}>
+      <div style={{
+        border: borderStyle,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        boxSizing: "border-box"
+      }}>
+        {/* Row 1: Logo */}
+        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "center", alignItems: "center", padding: "6px", minHeight: compact ? "40px" : "55px" }}>
+           {invoice.companyLogo ? (
+             <img src={invoice.companyLogo} alt={invoice.companyName} style={{ maxHeight: compact ? "30px" : "40px", objectFit: "contain" }} />
+           ) : (
+             <h2 style={{ margin: 0, fontSize: compact ? "16px" : "20px", fontWeight: 800, color: "#dc2626" }}>{invoice.companyName}</h2>
+           )}
         </div>
-      )}
 
-      {/* ── Continuation header (non-first pages) ── */}
-      {!isFirst && (
-        <div style={{ flexShrink: 0, borderBottom: "1.5px solid " + s.primaryColor, paddingBottom: compact ? "1mm" : "4px", marginBottom: compact ? "1mm" : "4px" }}>
-          <span style={{ fontSize: "9px", color: s.secondaryColor }}>تابع {pageIndex + 1}/{totalPages}</span>
+        {/* Row 2: Barcode */}
+        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "center", alignItems: "center", padding: "8px", minHeight: compact ? "65px" : "85px" }}>
+           {barcodeValue && (
+             <InvoiceBarcode value={barcodeValue} label="" height={compact ? 45 : 55} width={compact ? 1.5 : 2} compact={compact} />
+           )}
         </div>
-      )}
 
-      {/* ── Products table ── */}
-      {s.showOrderItems && (
-        <div style={{ overflow: "hidden" }}>
-          {items.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#94a3b8", padding: "4px 0", fontSize: rowFont }}>—</p>
-          ) : (
-            <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
-              <thead>
-                <tr style={{ background: s.primaryColor + "0f", borderBottom: sep }}>
-                  <th style={{ textAlign: "right", width: "38%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: thFont }}>المنتج</th>
-                  <th style={{ textAlign: "center", width: "14%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: thFont }}>SKU</th>
-                  <th style={{ textAlign: "center", width: "10%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: thFont }}>كم</th>
-                  <th style={{ textAlign: "left", width: "18%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: thFont }}>السعر</th>
-                  <th style={{ textAlign: "left", width: "20%", padding: rp, fontWeight: 600, color: s.secondaryColor, fontSize: thFont }}>الإجمالي</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, idx) => (
-                  <tr key={item.id || idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ textAlign: "right", padding: rp }}>
-                      <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.25", fontWeight: 500, fontSize: rowFont }}>
-                        {item.productName}
-                      </span>
-                      {(item.productColor || item.productSize) && (
-                        <span style={{ display: "block", color: s.secondaryColor, fontSize: compact ? "8px" : "10px" }}>
-                          {[item.productColor, item.productSize].filter(Boolean).join(" | ")}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: "center", padding: rp, fontFamily: "monospace", fontSize: compact ? "8px" : "10px", color: "#111827", fontWeight: 700 }}>{item.productSku || "—"}</td>
-                    <td style={{ textAlign: "center", padding: rp, fontSize: rowFont }}>{item.quantity}</td>
-                    <td style={{ textAlign: "left", padding: rp, whiteSpace: "nowrap", fontSize: rowFont }}>{fm(parseNumber(item.price))}</td>
-                    <td style={{ textAlign: "left", padding: rp, whiteSpace: "nowrap", fontWeight: 600, fontSize: rowFont }}>{fm(getItemTotal(item))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        {/* Row 3: Recipient & Phone */}
+        <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+           <div style={{ borderLeft: borderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+             <div style={titleStyle}>اسم المستلم</div>
+             <div style={valueStyle}>{invoice.customerName}</div>
+           </div>
+           <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+             <div style={titleStyle}>تليفون</div>
+             <div style={{ ...valueStyle, direction: "ltr", textAlign: "right" }}>{invoice.customerPhone || "—"}</div>
+           </div>
         </div>
-      )}
 
-      {/* ── Totals (last page only) ── */}
-      {isLast && (
-        <div style={{ flexShrink: 0, borderTop: "1.5px solid " + s.primaryColor, paddingTop: compact ? "1mm" : "4px", marginTop: compact ? "0.5mm" : "2px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
-          <div style={{ fontWeight: 700, fontSize: compact ? "12px" : "1rem" }}>الإجمالي</div>
-          <div>
-            <span style={{ fontWeight: 700, fontSize: compact ? "12px" : "1rem" }}>{fm(totalAmount)}</span>
-            {invoice.paymentMethod && compact && (
-              <span style={{ fontSize: "9px", color: s.secondaryColor, marginRight: "6px" }}>{invoice.paymentMethod}</span>
-            )}
-          </div>
+        {/* Row 4: City & Area */}
+        <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+           <div style={{ borderLeft: borderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+             <div style={titleStyle}>المدينة</div>
+             <div style={valueStyle}>{invoice.city || "—"}</div>
+           </div>
+           <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+             <div style={titleStyle}>المنطقة</div>
+             <div style={valueStyle}>{invoice.governorate || "—"}</div>
+           </div>
         </div>
-      )}
+
+        {/* Row 5: Address */}
+        <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "50px" : "70px", display: "flex", flexDirection: "column" }}>
+           <div style={titleStyle}>العنوان :</div>
+           <div style={{ ...valueStyle, flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>{addressText || "—"}</div>
+        </div>
+
+        {/* Row 6: Items (وصف الشحنة) */}
+        <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
+           <div style={titleStyle}>وصف الشحنة :</div>
+           <div style={{ ...valueStyle, flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "flex-end", lineHeight: "1.5" }}>{productsString || "—"}</div>
+        </div>
+
+        {/* Row 7: Notes */}
+        <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "35px" : "45px", display: "flex", flexDirection: "column" }}>
+           <div style={titleStyle}>ملاحظات :</div>
+           <div style={{ ...valueStyle, flex: 1 }}></div>
+        </div>
+
+        {/* Row 8: Total & Company (Centered values) */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: compact ? "50px" : "70px" }}>
+           <div style={{ borderLeft: borderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "8px" }}>اسم الشركة :</div>
+             <div style={{ ...valueStyle, textAlign: "center" }}>{invoice.companyName}</div>
+           </div>
+           <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "8px" }}>المبلغ المطلوب تحصيله :</div>
+             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 800, fontSize: compact ? "15px" : "18px" }}>{fm(totalAmount)}</div>
+           </div>
+        </div>
+      </div>
     </div>
   );
 };
