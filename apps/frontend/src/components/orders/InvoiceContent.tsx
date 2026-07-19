@@ -179,9 +179,6 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
              {showOrderBarcode && (
                <InvoiceBarcode value={invoice.order!.orderNumber!} label="رقم الطلب" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
              )}
-             {showShipBarcode && (
-               <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="رقم الشحنة" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
-             )}
            </div>
         </div>
 
@@ -197,15 +194,15 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
         </div>
 
-        {/* Row 3: City & Area */}
+        {/* Row 3: Governorate & City */}
         <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1fr 1fr" }}>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-             <div style={titleStyle}>المدينة</div>
-             <div style={valueStyle}>{invoice.city || "—"}</div>
+             <div style={titleStyle}>المحافظة</div>
+             <div style={valueStyle}>{invoice.governorate || "—"}</div>
            </div>
            <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-             <div style={titleStyle}>المنطقة</div>
-             <div style={valueStyle}>{invoice.governorate || "—"}</div>
+             <div style={titleStyle}>المدينة</div>
+             <div style={valueStyle}>{invoice.city || "—"}</div>
            </div>
         </div>
 
@@ -262,11 +259,14 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            <div style={{ ...valueStyle, flex: 1 }}></div>
         </div>
 
-        {/* Row 7: Payment Method & Total (Footer) */}
+        {/* Row 7: Shipping Barcode & Total (Footer) */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: compact ? "50px" : "65px", alignItems: "stretch" }}>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>طريقة الدفع :</div>
-             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700 }}>{invoice.paymentMethod || "نقداً عند الاستلام"}</div>
+             {showShipBarcode ? (
+               <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="رقم الشحنة" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+             ) : (
+               <span style={{ color: "#94a3b8" }}>—</span>
+             )}
            </div>
            <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
              <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>المبلغ المطلوب تحصيله :</div>
