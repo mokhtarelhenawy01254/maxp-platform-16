@@ -1,5 +1,10 @@
 # Team Sync Updates
 
+## 2026-07-20 / 2026-03-09
+- **Repository Migration (DEPLOY / COMPLETE)**:
+  1. **Purpose**: Switched active development from the old repository `maxp-platform3` to the new repository `maxp-platform4` due to exhausted GitHub Actions quota on the old account.
+  2. **Migration Details**: Renamed old origin to `old-origin`, configured `maxp-platform4` as the new `origin`, pushed all active local branches (`main`, `staging`, and `codex/*` dev branches), and updated upstream tracking for all branches.
+
 ## 2026-07-19 / 2026-03-09
 - **Separate WhatsApp Facebook App Credentials (FEATURE / COMPLETE)**:
   1. **Purpose**: Solved the limitation where the main Facebook App is in Development mode and undergoing App Review (blocking switching to Live).
