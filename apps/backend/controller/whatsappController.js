@@ -4464,24 +4464,18 @@ async function facebookEmbeddedConnect(req, res) {
         }
 
         let redirectUri = clientRedirectUri || (() => {
-            const origin = req.get('Origin') || req.get('Referer') || '';
+            const referer = req.get('Referer') || '';
+            const origin = req.get('Origin') || '';
             try {
-                return origin ? new URL(origin).origin : '';
+                if (referer) {
+                    const parsed = new URL(referer);
+                    return parsed.origin + parsed.pathname;
+                }
+                return origin ? new URL(origin).origin + '/' : '';
             } catch (err) {
                 return '';
             }
         })();
-
-        if (redirectUri) {
-            try {
-                const parsedUrl = new URL(redirectUri);
-                if (parsedUrl.pathname === '/' && !redirectUri.endsWith('/')) {
-                    redirectUri = redirectUri + '/';
-                }
-            } catch (e) {
-                // ignore
-            }
-        }
 
         console.log('🔗 [facebookEmbeddedConnect] Using redirect_uri for token exchange:', redirectUri);
 
