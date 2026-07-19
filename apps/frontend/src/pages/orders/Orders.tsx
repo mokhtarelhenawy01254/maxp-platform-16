@@ -1929,7 +1929,7 @@ const Orders: React.FC = () => {
       case "CONFIRMED":
         return t("orders.confirmed");
       case "SCHEDULED":
-        return t("orders.scheduled");
+        return "مجدول";
       case "PROCESSING":
         return t("orders.processing");
       case "SHIPPED":
@@ -1941,18 +1941,18 @@ const Orders: React.FC = () => {
       case "DUPLICATE_ORDER":
         return t("orders.duplicate");
       case "PARTIALLY_RETURNED":
-        return t("orders.partiallyReturned");
+        return "مرتجع جزئي";
       case "PARTIALLY_DELIVERED":
-        return t("orders.partiallyDelivered");
+        return "تسليم جزئي";
       case "RETURNED":
-        return t("orders.returned");
+        return "مرتجع";
       case "REFUNDED":
-        return t("orders.refunded");
+        return "مسترد";
       case "PARTIALLY_REFUNDED":
-        return t("orders.partiallyRefunded");
+        return "مسترد جزئياً";
       case "TRASH":
       case "TRASH_ORDER":
-        return t("orders.trashLabel");
+        return "سلة المحذوفات";
       default:
         return status;
     }
@@ -2668,14 +2668,14 @@ const Orders: React.FC = () => {
                       {showMerchantOperationFilters && (
                         <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                           <select
-                            aria-label={String(t("orders.allMerchants"))}
+                            aria-label="كل التجار"
                             value={filters.merchantId}
                             onChange={(e) =>
                               handleFilterChange("merchantId", e.target.value)
                             }
                             className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                           >
-                            <option value="">{t("orders.allMerchants")}</option>
+                            <option value="">كل التجار</option>
                             {merchantOptions.map((merchantOption) => (
                               <option key={merchantOption.id} value={merchantOption.id}>
                                 {merchantOption.name || merchantOption.email || merchantOption.id}
@@ -2688,14 +2688,14 @@ const Orders: React.FC = () => {
                       {showAffiliateOperationFilter && (
                         <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                           <select
-                            aria-label={String(t("orders.allAffiliates"))}
+                            aria-label="كل المسوقين"
                             value={filters.affiliateId}
                             onChange={(e) =>
                               handleFilterChange("affiliateId", e.target.value)
                             }
                             className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                           >
-                            <option value="">{t("orders.allAffiliates")}</option>
+                            <option value="">كل المسوقين</option>
                             {affiliateOptions.map((affiliateOption) => (
                               <option key={affiliateOption.id} value={affiliateOption.id}>
                                 {getAffiliateDisplayName(affiliateOption)}
@@ -2709,22 +2709,22 @@ const Orders: React.FC = () => {
                         <>
                           <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                             <select
-                              aria-label={String(t("orders.fulfillmentSource"))}
+                              aria-label="مصدر التنفيذ"
                               value={filters.fulfillmentSource}
                               onChange={(e) =>
                                 handleFilterChange("fulfillmentSource", e.target.value)
                               }
                               className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                             >
-                              <option value="">{t("orders.allFulfillmentSources")}</option>
-                              <option value="MERCHANT">{t("orders.fromMerchant")}</option>
-                              <option value="COMPANY_WAREHOUSE">{t("orders.fromCompanyWarehouse")}</option>
+                              <option value="">كل مصادر التنفيذ</option>
+                              <option value="MERCHANT">من عند التاجر</option>
+                              <option value="COMPANY_WAREHOUSE">من مخزن الشركة</option>
                             </select>
                           </div>
 
                           <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                             <select
-                              aria-label={String(t("orders.merchantOperationStatus"))}
+                              aria-label="حالة تشغيل التاجر"
                               value={filters.merchantOperationStatus}
                               onChange={(e) =>
                                 handleFilterChange(
@@ -2734,17 +2734,17 @@ const Orders: React.FC = () => {
                               }
                               className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                             >
-                              <option value="">{t("orders.allMerchantOperationStatuses")}</option>
-                              <option value="PREPARATION">{t("orders.processing")}</option>
-                              <option value="IN_SHIPPING">{t("orders.inShipping")}</option>
-                              <option value="DELIVERED">{t("orders.delivered")}</option>
-                              <option value="NOT_DELIVERED">{t("orders.notDelivered")}</option>
+                              <option value="">كل حالات تشغيل التاجر</option>
+                              <option value="PREPARATION">قيد التجهيز</option>
+                              <option value="IN_SHIPPING">في الشحن</option>
+                              <option value="DELIVERED">تم التسليم</option>
+                              <option value="NOT_DELIVERED">مرتجع / لم يسلم</option>
                             </select>
                           </div>
 
                           <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                             <select
-                              aria-label={String(t("orders.merchantSettlements"))}
+                              aria-label="مستحقات التاجر"
                               value={filters.merchantSettlementStatus}
                               onChange={(e) =>
                                 handleFilterChange(
@@ -2754,10 +2754,10 @@ const Orders: React.FC = () => {
                               }
                               className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                             >
-                              <option value="">{t("orders.allSettlements")}</option>
-                              <option value="PAYABLE">{t("orders.payable")}</option>
-                              <option value="PAID">{t("orders.paid")}</option>
-                              <option value="NOT_PAYABLE">{t("orders.notPayable")}</option>
+                              <option value="">كل المستحقات</option>
+                              <option value="PAYABLE">مستحق السحب</option>
+                              <option value="PAID">تم السداد</option>
+                              <option value="NOT_PAYABLE">غير مستحق</option>
                             </select>
                           </div>
                         </>
@@ -2770,11 +2770,11 @@ const Orders: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
                           <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.fromDate")}
+                            من
                           </span>
                           <input
                             type="date"
-                            aria-label={String(t("orders.fromDate"))}
+                            aria-label="تاريخ البداية"
                             value={filters.startDate}
                             onChange={(e) => {
                               handleFilterChange("startDate", e.target.value);
@@ -2786,11 +2786,11 @@ const Orders: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
                           <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {t("orders.toDate")}
+                            إلى
                           </span>
                           <input
                             type="date"
-                            aria-label={String(t("orders.toDate"))}
+                            aria-label="تاريخ النهاية"
                             value={filters.endDate}
                             onChange={(e) => {
                               handleFilterChange("endDate", e.target.value);
@@ -2806,7 +2806,7 @@ const Orders: React.FC = () => {
                         onClick={clearAdvancedFilters}
                         className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
                       >
-                        {t("orders.clearAdvancedFilters")}
+                        مسح الفلاتر المتقدمة
                       </button>
                     </div>
                   )}
@@ -2817,7 +2817,7 @@ const Orders: React.FC = () => {
                         onClick={clearAdvancedFilters}
                         className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
                       >
-                        {t("orders.clearAdvancedFilters")}
+                        مسح الفلاتر المتقدمة
                       </button>
                     </div>
                   )}
@@ -2860,8 +2860,8 @@ const Orders: React.FC = () => {
                   {status.name}
                 </option>
               ))}
-              <option value="trash">{t("orders.bulkMoveToTrash")}</option>
-              <option value="restore">{t("orders.bulkRestoreFromTrash")}</option>
+              <option value="trash">نقل إلى سلة المحذوفات</option>
+              <option value="restore">استعادة من سلة المحذوفات</option>
             </select>
             <button
               onClick={handleBulkPrintInvoices}
@@ -2869,7 +2869,7 @@ const Orders: React.FC = () => {
               className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg text-sm hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
             >
               <PrinterIcon className="w-4 h-4 ml-2" />
-              {printingInvoices ? t("orders.printingInvoices") : t("orders.bulkPrintInvoices")}
+              {printingInvoices ? "جاري الطباعة..." : "طباعة الفواتير"}
             </button>
             <button
               onClick={handleBulkCreateTurboShipments}
@@ -2918,7 +2918,7 @@ const Orders: React.FC = () => {
           <div className="rounded-[28px] border border-dashed border-slate-300/80 bg-white/80 px-6 py-12 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
             <ShoppingBagIcon className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" />
             <p className="text-lg font-semibold text-slate-900 dark:text-white">
-              {ordersLoadError ? t("orders.ordersLoadError") : t("orders.noOrders")}
+              {ordersLoadError ? "تعذر تحميل الطلبات" : t("orders.noOrders")}
             </p>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
@@ -2945,7 +2945,7 @@ const Orders: React.FC = () => {
                       </span>
                       {!order.isViewed && (
                         <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                          {t("orders.newBadge")}
+                          جديد
                         </span>
                       )}
                       {order.metadata?.isGuestOrder && (
@@ -2973,7 +2973,7 @@ const Orders: React.FC = () => {
                   {canSelectOrders && (
                     <input
                       type="checkbox"
-                      aria-label={t("orders.selectOrder", { number: order.orderNumber })}
+                      aria-label={`تحديد الطلب ${order.orderNumber}`}
                       className="mt-1 h-5 w-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400"
                       checked={isSelected}
                       onChange={() => toggleOrderSelection(order.orderNumber)}
@@ -2995,7 +2995,7 @@ const Orders: React.FC = () => {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t("orders.amount")}
+                      المبلغ
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                       {formatPrice(getOrderAmount(order))}
@@ -3007,7 +3007,7 @@ const Orders: React.FC = () => {
 
                   <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t("orders.time")}
+                      الوقت
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                       {getRelativeTime(order.createdAt || new Date().toISOString())}
@@ -3054,7 +3054,7 @@ const Orders: React.FC = () => {
                     className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                   >
                     <EyeIcon className="h-4 w-4" />
-                    {t("orders.quickView")}
+                    عرض سريع
                   </button>
 
                   <Link
@@ -3067,7 +3067,7 @@ const Orders: React.FC = () => {
                     className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                   >
                     <ShoppingBagIcon className="h-4 w-4" />
-                    {t("orders.details")}
+                    التفاصيل
                   </Link>
 
                   {order.conversationId && (
@@ -3076,7 +3076,7 @@ const Orders: React.FC = () => {
                       className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
                     >
                       <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                      {t("orders.conversation")}
+                      المحادثة
                     </Link>
                   )}
                 </div>
@@ -3096,7 +3096,7 @@ const Orders: React.FC = () => {
                   <th className="w-10 px-3 py-2.5 lg:px-4">
                     <input
                       type="checkbox"
-                      aria-label={String(t("orders.selectAllOrders"))}
+                      aria-label="تحديد كل الطلبات"
                       className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
                       onChange={toggleAllSelection}
                       checked={
@@ -3202,7 +3202,7 @@ const Orders: React.FC = () => {
                     <div className="flex flex-col items-center justify-center">
                       <ShoppingBagIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
                       <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        {ordersLoadError ? t("orders.ordersLoadError") : t("orders.noOrders")}
+                        {ordersLoadError ? "تعذر تحميل الطلبات" : t("orders.noOrders")}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
@@ -3233,7 +3233,7 @@ const Orders: React.FC = () => {
                         >
                           <input
                             type="checkbox"
-                            aria-label={t("orders.selectOrder", { number: order.orderNumber })}
+                            aria-label={`تحديد الطلب ${order.orderNumber}`}
                             className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
                             checked={selectedOrders.includes(order.orderNumber)}
                             onClick={(e) => e.stopPropagation()}
@@ -3258,7 +3258,7 @@ const Orders: React.FC = () => {
                               )}
                               {!order.isViewed && (
                                 <span className="mr-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">
-                                  {t("orders.newBadge")}
+                                  جديد
                                 </span>
                               )}
                             </div>
@@ -3474,10 +3474,10 @@ const Orders: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("orders.show")}
+                  عرض:
                 </label>
                 <select
-                  aria-label={String(t("orders.ordersPerPage"))}
+                  aria-label="عدد الطلبات في الصفحة"
                   value={limit}
                   onChange={(e) => handleLimitChange(parseInt(e.target.value))}
                   className="theme-native-control px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-sm transition-colors"
@@ -3539,7 +3539,7 @@ const Orders: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {t("orders.currentPage")}
+                الصفحة الحالية
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                 {page} / {Math.max(totalPages, 1)}
@@ -3547,7 +3547,7 @@ const Orders: React.FC = () => {
             </div>
             <div className="text-left">
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {t("orders.showingNow")}
+                الظاهر الآن
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                 {Math.min(page * limit, totalOrders)} / {totalOrders}
@@ -3561,17 +3561,17 @@ const Orders: React.FC = () => {
               disabled={page === 1}
               className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
-              {t("orders.previous")}
+              السابق
             </button>
             <button
               onClick={() => handlePageChange(page + 1)}
               disabled={page === totalPages}
               className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              {t("orders.next")}
+              التالي
             </button>
             <select
-              aria-label={String(t("orders.ordersPerPage"))}
+              aria-label="عدد الطلبات في الصفحة"
               value={limit}
               onChange={(e) => handleLimitChange(parseInt(e.target.value))}
               className={`${fieldClassName} w-auto min-w-[88px] px-3`}
