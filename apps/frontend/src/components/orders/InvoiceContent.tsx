@@ -170,11 +170,14 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         boxSizing: "border-box"
       }}>
         
-        {/* Row 1: Header (Logo + Barcodes) */}
-        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "center", alignItems: "center", padding: "8px", minHeight: compact ? "55px" : "75px", gap: "24px", flexWrap: "wrap" }}>
-           {invoice.companyLogo && (
-             <img src={invoice.companyLogo} alt="" style={{ maxHeight: compact ? "35px" : "50px", maxWidth: "140px", objectFit: "contain" }} />
-           )}
+        {/* Row 1: Header (Sender + Order Barcode) */}
+        <div style={{ borderBottom: borderStyle, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px", minHeight: compact ? "55px" : "75px" }}>
+           <div style={{ display: "flex", flexDirection: "column", gap: "4px", justifyContent: "center", alignItems: "flex-start" }}>
+             {invoice.companyLogo && (
+               <img src={invoice.companyLogo} alt="" style={{ maxHeight: compact ? "30px" : "40px", maxWidth: "120px", objectFit: "contain" }} />
+             )}
+             <div style={{ fontSize: compact ? "12px" : "14px", fontWeight: 800, color: "#000" }}>المرسل: {invoice.companyName}</div>
+           </div>
            <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "center" }}>
              {showOrderBarcode && (
                <InvoiceBarcode value={invoice.order!.orderNumber!} label="رقم الطلب" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
@@ -182,25 +185,21 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
         </div>
 
-        {/* Row 2: Recipient & Phone */}
-        <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        {/* Row 2: Customer Data (4 columns) */}
+        <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1.5fr 1.2fr 1fr 1fr" }}>
+           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>اسم المستلم</div>
              <div style={valueStyle}>{invoice.customerName}</div>
            </div>
-           <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>تليفون</div>
-             <div style={{ ...valueStyle, direction: "ltr", textAlign: "right" }}>{invoice.customerPhone || "—"}</div>
+             <div style={{ ...valueStyle, direction: "ltr", textAlign: "right", fontSize: compact ? "12px" : "14px" }}>{invoice.customerPhone || "—"}</div>
            </div>
-        </div>
-
-        {/* Row 3: Governorate & City */}
-        <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+           <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>المحافظة</div>
              <div style={valueStyle}>{invoice.governorate || "—"}</div>
            </div>
-           <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+           <div style={{ padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
              <div style={titleStyle}>المدينة</div>
              <div style={valueStyle}>{invoice.city || "—"}</div>
            </div>
