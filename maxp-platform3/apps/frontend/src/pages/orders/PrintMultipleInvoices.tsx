@@ -177,15 +177,22 @@ const PrintMultipleInvoices: React.FC = () => {
             margin: 0;
             overflow: hidden;
             box-sizing: border-box;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
           }
           .a4-sheet:last-child { page-break-after: auto; }
-          .a4-quarter {
-            width: 100%;
-            height: 74.25mm;
+          .a4-cell {
+            width: 105mm;
+            height: 148.5mm;
             overflow: hidden;
             box-sizing: border-box;
             page-break-inside: avoid;
+            border-right: 1px dashed #e2e8f0;
+            border-bottom: 1px dashed #e2e8f0;
           }
+          .a4-cell:nth-child(even) { border-right: none; }
+          .a4-cell:nth-child(n+3) { border-bottom: none; }
           .invoice-header, .invoice-totals { page-break-inside: avoid; }
           .no-print { display: none !important; }
           @page { margin: 0; size: A4; }
@@ -204,12 +211,15 @@ const PrintMultipleInvoices: React.FC = () => {
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.06);
             overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
           }
-          .a4-quarter {
+          .a4-cell {
+            padding: 8px 10px;
+            border-right: 1px dashed #cbd5e1;
             border-bottom: 1px dashed #cbd5e1;
-            min-height: 74mm;
           }
-          .a4-quarter:last-child { border-bottom: none; }
+          .a4-cell:nth-child(even) { border-right: none; }
         }
       `}</style>
 
@@ -230,7 +240,7 @@ const PrintMultipleInvoices: React.FC = () => {
       {a4Sheets.map((slots, sheetIdx) => (
         <div key={sheetIdx} className="a4-sheet">
           {slots.map((slot) => (
-            <div key={slot.key} className="a4-quarter">
+            <div key={slot.key} className="a4-cell">
               <InvoiceContent
                 invoice={slot.invoiceData}
                 settings={settings}

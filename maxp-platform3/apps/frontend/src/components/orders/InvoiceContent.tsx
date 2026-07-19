@@ -122,7 +122,7 @@ const formatAddress = (address: unknown): string => {
  * Calculate how many half-pages an invoice needs.
  * Uses fixed known element heights to determine items-per-page.
  */
-export const ITEMS_PER_PAGE = 4; // safe count for quarter A4 (74mm height)
+export const ITEMS_PER_PAGE = 8; // fits in 2×2 grid cell (105×148mm)
 
 export function getInvoicePages(invoice: InvoiceData): InvoicePageInfo[] {
   const allItems = invoice.order?.orderItems || [];
