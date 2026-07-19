@@ -7,6 +7,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ArrowLeft, Download, Mail, Printer } from "lucide-react";
 import InvoiceContent from "./InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
+import { printClean } from "../../utils/printClean";
 
 interface InvoiceData {
   id: string;
@@ -110,7 +111,7 @@ const OrderInvoice: React.FC<{ orderId?: string; invoiceId?: string }> = ({
     const shouldPrint = urlParams.get("print") === "true";
     if (shouldPrint && invoice && !loading) {
       setTimeout(() => {
-        window.print();
+        printClean();
       }, 1200);
     }
   }, [invoice, loading]);
@@ -120,7 +121,7 @@ const OrderInvoice: React.FC<{ orderId?: string; invoiceId?: string }> = ({
     try {
       setPrinting(true);
       await apiClient.post(`/order-invoices/${invoice.id}/print`);
-      window.print();
+      printClean();
     } catch (err: unknown) {
       console.error("Error printing invoice:", err);
     } finally {

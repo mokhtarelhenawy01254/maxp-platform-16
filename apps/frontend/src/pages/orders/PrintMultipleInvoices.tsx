@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import InvoiceContent, { getInvoicePages, type InvoiceData } from "../../components/orders/InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
+import { printClean } from "../../utils/printClean";
 
 interface Invoice {
   id: string;
@@ -117,13 +118,13 @@ const PrintMultipleInvoices: React.FC = () => {
   }, [searchParams]);
 
   useEffect(() => { void fetchInvoices(); }, [fetchInvoices]);
-
   useEffect(() => {
     if (invoices.length > 0 && !loading) {
-      setTimeout(() => { window.print(); }, 1000);
+      setTimeout(() => {
+        printClean();
+      }, 1000);
     }
   }, [invoices, loading]);
-
   // Expand every invoice into its page chunks, collect all slots
   const allSlots: PageSlot[] = useMemo(() => {
     const slots: PageSlot[] = [];
@@ -213,7 +214,7 @@ const PrintMultipleInvoices: React.FC = () => {
 
       <div className="no-print fixed top-4 right-4 z-50">
         <button
-          onClick={() => window.print()}
+          onClick={() => printClean()}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

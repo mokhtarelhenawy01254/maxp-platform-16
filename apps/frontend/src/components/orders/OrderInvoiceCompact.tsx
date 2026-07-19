@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import InvoiceContent from "./InvoiceContent";
 import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
+import { printClean } from "../../utils/printClean";
 
 interface Invoice {
   id: string;
@@ -54,7 +55,7 @@ const OrderInvoiceCompact: React.FC = () => {
   useEffect(() => {
     const shouldPrint = searchParams.get("print") === "true";
     if (shouldPrint && invoice && !loading) {
-      setTimeout(() => window.print(), 800);
+      setTimeout(() => printClean(), 800);
     }
   }, [invoice, loading, searchParams]);
 
@@ -113,7 +114,7 @@ const OrderInvoiceCompact: React.FC = () => {
 
       <div className="no-print fixed top-4 right-4 z-50">
         <button
-          onClick={() => window.print()}
+          onClick={() => printClean()}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
