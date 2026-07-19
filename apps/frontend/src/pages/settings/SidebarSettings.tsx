@@ -23,15 +23,18 @@ import type { SidebarItem, SidebarItemSettings, SidebarLayoutType, SidebarSectio
 
 const ALL_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER", "AGENT", "AFFILIATE", "MERCHANT", "CUSTOMER"];
 
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: "Super Admin",
-  COMPANY_ADMIN: "Company Admin",
-  OWNER: "مالك",
-  MANAGER: "مدير",
-  AGENT: "وكيل",
-  AFFILIATE: "مسوق",
-  MERCHANT: "تاجر",
-  CUSTOMER: "عميل",
+const getRoleLabel = (t: (key: string, options?: Record<string, unknown>) => string, role: string): string => {
+  const labels: Record<string, string> = {
+    SUPER_ADMIN: t("sidebar.roleSuperAdmin"),
+    COMPANY_ADMIN: t("sidebar.roleCompanyAdmin"),
+    OWNER: t("sidebar.roleOwner"),
+    MANAGER: t("sidebar.roleManager"),
+    AGENT: t("sidebar.roleAgent"),
+    AFFILIATE: t("sidebar.roleAffiliate"),
+    MERCHANT: t("sidebar.roleMerchant"),
+    CUSTOMER: t("sidebar.roleCustomer"),
+  };
+  return labels[role] || role;
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -46,70 +49,70 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_MAP: Record<string, string> = {
-  main: "رئيسية",
-  facebook: "تواصل",
-  whatsapp: "تواصل",
-  telegram: "تواصل",
-  orders: "مبيعات",
-  "orders-analytics": "تحليلات",
-  products: "مبيعات",
-  "storefront-design": "مبيعات",
-  customers: "عملاء",
-  procurement: "مشتريات",
-  affiliate: "تسويق",
-  "platform-partner": "تسويق",
-  inventory: "مخزون",
-  marketing: "تسويق",
-  "my-account": "موظفين",
-  "my-companies": "إدارة",
-  hr: "موظفين",
-  business: "عمليات",
-  analytics: "تحليلات",
-  support: "دعم",
-  marketplace: "نظام",
-  billing: "مالية",
-  notifications: "نظام",
-  activity: "نظام",
-  settings: "نظام",
-  "ai-operator": "نظام",
-  admin: "إدارة",
-  system: "إدارة",
-  company: "إدارة",
-  legal: "نظام",
+  main: "main",
+  facebook: "communication",
+  whatsapp: "communication",
+  telegram: "communication",
+  orders: "sales",
+  "orders-analytics": "analytics",
+  products: "sales",
+  "storefront-design": "sales",
+  customers: "customers",
+  procurement: "procurement",
+  affiliate: "marketing",
+  "platform-partner": "marketing",
+  inventory: "inventory",
+  marketing: "marketing",
+  "my-account": "employees",
+  "my-companies": "management",
+  hr: "employees",
+  business: "operations",
+  analytics: "analytics",
+  support: "support",
+  marketplace: "system",
+  billing: "finance",
+  notifications: "system",
+  activity: "system",
+  settings: "system",
+  "ai-operator": "system",
+  admin: "management",
+  system: "management",
+  company: "management",
+  legal: "system",
 };
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  رئيسية: Squares2X2Icon,
-  تواصل: ChatBubbleIcon,
-  مبيعات: ShoppingCartIcon,
-  تحليلات: ChartIcon,
-  عملاء: UsersIcon,
-  مشتريات: ClipboardIcon,
-  تسويق: MegaphoneIcon,
-  مخزون: ArchiveBoxIcon,
-  موظفين: UserGroupIcon,
-  إدارة: CogIcon,
-  عمليات: CalendarIcon,
-  دعم: TicketIcon,
-  نظام: ComputerIcon,
-  مالية: CurrencyIcon,
+  main: Squares2X2Icon,
+  communication: ChatBubbleIcon,
+  sales: ShoppingCartIcon,
+  analytics: ChartIcon,
+  customers: UsersIcon,
+  procurement: ClipboardIcon,
+  marketing: MegaphoneIcon,
+  inventory: ArchiveBoxIcon,
+  employees: UserGroupIcon,
+  management: CogIcon,
+  operations: CalendarIcon,
+  support: TicketIcon,
+  system: ComputerIcon,
+  finance: CurrencyIcon,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  رئيسية: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 ring-sky-200 dark:ring-sky-800",
-  تواصل: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-800",
-  مبيعات: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 ring-violet-200 dark:ring-violet-800",
-  تحليلات: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 ring-amber-200 dark:ring-amber-800",
-  عملاء: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 ring-blue-200 dark:ring-blue-800",
-  مشتريات: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 ring-orange-200 dark:ring-orange-800",
-  تسويق: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300 ring-pink-200 dark:ring-pink-800",
-  مخزون: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 ring-teal-200 dark:ring-teal-800",
-  موظفين: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300 ring-cyan-200 dark:ring-cyan-800",
-  إدارة: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-800",
-  عمليات: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 ring-rose-200 dark:ring-rose-800",
-  دعم: "bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300 ring-lime-200 dark:ring-lime-800",
-  نظام: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 ring-gray-200 dark:ring-gray-700",
-  مالية: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 ring-yellow-200 dark:ring-yellow-800",
+  main: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 ring-sky-200 dark:ring-sky-800",
+  communication: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-800",
+  sales: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 ring-violet-200 dark:ring-violet-800",
+  analytics: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 ring-amber-200 dark:ring-amber-800",
+  customers: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 ring-blue-200 dark:ring-blue-800",
+  procurement: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 ring-orange-200 dark:ring-orange-800",
+  marketing: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300 ring-pink-200 dark:ring-pink-800",
+  inventory: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 ring-teal-200 dark:ring-teal-800",
+  employees: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300 ring-cyan-200 dark:ring-cyan-800",
+  management: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-800",
+  operations: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 ring-rose-200 dark:ring-rose-800",
+  support: "bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300 ring-lime-200 dark:ring-lime-800",
+  system: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 ring-gray-200 dark:ring-gray-700",
+  finance: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 ring-yellow-200 dark:ring-yellow-800",
 };
 
 function ChatBubbleIcon({ className }: { className?: string }) {
@@ -427,11 +430,11 @@ const SidebarSettings: React.FC = () => {
 
   const categorizedSections = useMemo(() => {
     const groups: Record<string, Array<{ sectionId: string; section: SidebarSectionSettings }>> = {};
-    const categoryOrder = ["رئيسية", "تواصل", "مبيعات", "تحليلات", "عملاء", "تسويق", "مشتريات", "مخزون", "موظفين", "عمليات", "إدارة", "مالية", "دعم", "نظام"];
+    const categoryOrder = ["main", "communication", "sales", "analytics", "customers", "marketing", "procurement", "inventory", "employees", "operations", "management", "finance", "support", "system"];
 
     for (const [sectionId, section] of Object.entries(localSections)) {
       if (!visibleSectionIds.has(sectionId)) continue;
-      const cat = CATEGORY_MAP[sectionId] || "نظام";
+      const cat = CATEGORY_MAP[sectionId] || "system";
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push({ sectionId, section });
     }
@@ -495,15 +498,15 @@ const SidebarSettings: React.FC = () => {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100">
             <PaintBrushIcon className="h-6 w-6 text-indigo-500" />
-            إدارة القائمة الجانبية
+            {t("sidebar.sidebarTitle")}
           </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            تحكم في ظهور وترتيب عناصر القائمة الجانبية حسب الصلاحيات والتطبيقات المفعلة
+            {t("sidebar.sidebarDescription")}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden text-xs text-gray-400 sm:inline">
-            {visibleCount}/{totalCount} ظاهر
+            {t("sidebar.sidebarCountVisible", { visible: visibleCount, total: totalCount })}
           </span>
           {saveStatus === "saving" && (
             <span className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
@@ -511,19 +514,19 @@ const SidebarSettings: React.FC = () => {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              جاري الحفظ...
+              {t("sidebar.sidebarSaving")}
             </span>
           )}
           {saveStatus === "saved" && (
             <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
               <CheckCircleIcon className="h-4 w-4" />
-              تم الحفظ
+              {t("sidebar.sidebarSaved")}
             </span>
           )}
           {saveStatus === "error" && (
             <span className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
               <ExclamationCircleIcon className="h-4 w-4" />
-              فشل الحفظ
+              {t("sidebar.sidebarSaveFailed")}
             </span>
           )}
           <button
@@ -532,7 +535,7 @@ const SidebarSettings: React.FC = () => {
             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             <ArrowPathIcon className="h-3.5 w-3.5" />
-            تحديث
+            {t("sidebar.sidebarRefresh")}
           </button>
         </div>
       </div>
@@ -541,15 +544,15 @@ const SidebarSettings: React.FC = () => {
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-gray-100">
           <PaintBrushIcon className="h-4 w-4 text-indigo-500" />
-          شكل القائمة الجانبية (إعداد شخصي)
+          {t("sidebar.sidebarLayout")}
         </h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {([
-            { id: "classic" as const, label: "كلاسيك", desc: "قائمة جانبية موسعة" },
-            { id: "three-tier" as const, label: "ثلاثي", desc: "رتل + لوحة + قائمة" },
-            { id: "horizontal" as const, label: "أفقي", desc: "شريط علوي" },
-            { id: "floating" as const, label: "عائم", desc: "بطاقة عائمة" },
-            { id: "minimal" as const, label: "مصغر", desc: "أيقونات فقط" },
+            { id: "classic" as const, label: t("sidebar.sidebarLayoutClassic"), desc: t("sidebar.sidebarLayoutClassicDesc") },
+            { id: "three-tier" as const, label: t("sidebar.sidebarLayoutThreeTier"), desc: t("sidebar.sidebarLayoutThreeTierDesc") },
+            { id: "horizontal" as const, label: t("sidebar.sidebarLayoutHorizontal"), desc: t("sidebar.sidebarLayoutHorizontalDesc") },
+            { id: "floating" as const, label: t("sidebar.sidebarLayoutFloating"), desc: t("sidebar.sidebarLayoutFloatingDesc") },
+            { id: "minimal" as const, label: t("sidebar.sidebarLayoutMinimal"), desc: t("sidebar.sidebarLayoutMinimalDesc") },
           ]).map((opt) => (
             <button
               key={opt.id}
@@ -576,7 +579,7 @@ const SidebarSettings: React.FC = () => {
               onClick={() => setUserLayout(null)}
               className="col-span-full mt-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
-              إلغاء التخصيص والعودة لإعداد الشركة
+              {t("sidebar.sidebarResetLayout")}
             </button>
           )}
         </div>
@@ -589,7 +592,7 @@ const SidebarSettings: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="بحث في عناصر القائمة..."
+            placeholder={t("sidebar.sidebarSearchPlaceholder")}
             className="w-full rounded-xl border border-gray-300 bg-white py-2.5 pr-10 pl-4 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
           />
         </div>
@@ -604,7 +607,7 @@ const SidebarSettings: React.FC = () => {
             }`}
           >
             <Squares2X2Icon className="ml-1 inline h-3.5 w-3.5" />
-            تصنيفات
+            {t("sidebar.sidebarViewCategories")}
           </button>
           <button
             type="button"
@@ -616,7 +619,7 @@ const SidebarSettings: React.FC = () => {
             }`}
           >
             <Bars3Icon className="ml-1 inline h-3.5 w-3.5" />
-            مسطح
+            {t("sidebar.sidebarViewFlat")}
           </button>
         </div>
       </div>
@@ -624,23 +627,23 @@ const SidebarSettings: React.FC = () => {
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-          <span className="mr-3 text-sm text-gray-500">جاري تحميل الإعدادات...</span>
+          <span className="mr-3 text-sm text-gray-500">{t("sidebar.sidebarLoading")}</span>
         </div>
       ) : flatItems ? (
         <div className="space-y-2">
           <h3 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            نتائج البحث ({flatItems.length})
+            {t("sidebar.sidebarSearchResults", { count: flatItems.length })}
           </h3>
           {flatItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
               <MagnifyingGlassIcon className="h-10 w-10 mb-3 opacity-50" />
-              <p className="text-sm">لا توجد نتائج مطابقة</p>
+              <p className="text-sm">{t("sidebar.sidebarNoSearchResults")}</p>
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
                 className="mt-2 text-xs text-indigo-500 hover:underline"
               >
-                مسح البحث
+                {t("sidebar.sidebarClearSearch")}
               </button>
             </div>
           ) : (
@@ -691,7 +694,7 @@ const SidebarSettings: React.FC = () => {
           ))}
           {categorizedSections.length === 0 && (
             <div className="flex items-center justify-center py-12 text-gray-400">
-              <p className="text-sm">لا توجد أقسام</p>
+              <p className="text-sm">{t("sidebar.sidebarNoSections")}</p>
             </div>
           )}
         </div>
@@ -727,7 +730,7 @@ const SidebarSettings: React.FC = () => {
                       <div className="hidden items-center gap-1 sm:flex">
                         {roles.map((role) => (
                           <span key={role} className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ${ROLE_COLORS[role] || "bg-gray-100 text-gray-700"}`}>
-                            {ROLE_LABELS[role] || role}
+                            {getRoleLabel(t, role)}
                           </span>
                         ))}
                       </div>
@@ -739,7 +742,7 @@ const SidebarSettings: React.FC = () => {
                       onClick={() => moveSection(sectionId, "up")}
                       disabled={sectionIdx === 0}
                       className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 disabled:opacity-30 dark:hover:bg-gray-700"
-                      title="تحريك لأعلى"
+                      title={t("sidebar.sidebarMoveUp")}
                     >
                       <ArrowUpIcon className="h-3.5 w-3.5" />
                     </button>
@@ -748,7 +751,7 @@ const SidebarSettings: React.FC = () => {
                       onClick={() => moveSection(sectionId, "down")}
                       disabled={sectionIdx === Object.keys(localSections).length - 1}
                       className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 disabled:opacity-30 dark:hover:bg-gray-700"
-                      title="تحريك لأسفل"
+                      title={t("sidebar.sidebarMoveDown")}
                     >
                       <ArrowDownIcon className="h-3.5 w-3.5" />
                     </button>
@@ -795,7 +798,7 @@ const SidebarSettings: React.FC = () => {
                                     <div className="hidden items-center gap-1 lg:flex">
                                       {itemRoles.slice(0, 2).map((role) => (
                                         <span key={role} className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ${ROLE_COLORS[role] || "bg-gray-100 text-gray-700"}`}>
-                                          {ROLE_LABELS[role] || role}
+                                          {getRoleLabel(t, role)}
                                         </span>
                                       ))}
                                       {itemRoles.length > 2 && (
@@ -811,7 +814,7 @@ const SidebarSettings: React.FC = () => {
                                     onClick={() => moveItem(sectionId, itemId, "up")}
                                     disabled={itemIdx === 0}
                                     className="rounded-lg p-1 text-gray-400 opacity-0 hover:bg-gray-200 hover:text-gray-600 group-hover:opacity-100 disabled:opacity-0 dark:hover:bg-gray-600"
-                                    title="تحريك لأعلى"
+                                    title={t("sidebar.sidebarMoveUp")}
                                   >
                                     <ArrowUpIcon className="h-3 w-3" />
                                   </button>
@@ -820,7 +823,7 @@ const SidebarSettings: React.FC = () => {
                                     onClick={() => moveItem(sectionId, itemId, "down")}
                                     disabled={itemIdx === entries.length - 1}
                                     className="rounded-lg p-1 text-gray-400 opacity-0 hover:bg-gray-200 hover:text-gray-600 group-hover:opacity-100 disabled:opacity-0 dark:hover:bg-gray-600"
-                                    title="تحريك لأسفل"
+                                    title={t("sidebar.sidebarMoveDown")}
                                   >
                                     <ArrowDownIcon className="h-3 w-3" />
                                   </button>
@@ -835,7 +838,7 @@ const SidebarSettings: React.FC = () => {
                                     type="button"
                                     onClick={() => toggleRoleExpand(itemKey)}
                                     className={`rounded-lg p-1.5 transition ${isRolesExpanded || itemRoles.length > 0 ? "text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" : "text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
-                                    title="صلاحيات الظهور"
+                                    title={t("sidebar.sidebarRolePermissions")}
                                   >
                                     <ShieldCheckIcon className="h-3.5 w-3.5" />
                                   </button>
@@ -854,7 +857,7 @@ const SidebarSettings: React.FC = () => {
                                     <div className="mb-2 mt-3 mr-9 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/30 dark:bg-indigo-900/10">
                                       <div className="mb-1.5 flex items-center justify-between">
                                         <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                                          صلاحيات الظهور - {item.label || itemDef?.label || itemId}
+                                          {t("sidebar.sidebarRoleFor", { label: item.label || itemDef?.label || itemId })}
                                         </span>
                                       </div>
                                       <div className="flex flex-wrap gap-1.5">
@@ -871,13 +874,13 @@ const SidebarSettings: React.FC = () => {
                                                   : "bg-white text-gray-600 ring-1 ring-gray-200 hover:ring-indigo-300 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700"
                                               }`}
                                             >
-                                              {ROLE_LABELS[role] || role}
+                                              {getRoleLabel(t, role)}
                                             </button>
                                           );
                                         })}
                                       </div>
                                       {itemRoles.length === 0 && (
-                                        <p className="mt-1.5 text-[10px] text-indigo-400">بدون تحديد: متاح للجميع</p>
+                                        <p className="mt-1.5 text-[10px] text-indigo-400">{t("sidebar.sidebarRoleNoRestriction")}</p>
                                       )}
                                     </div>
                                   </motion.div>
@@ -891,14 +894,14 @@ const SidebarSettings: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                               <ShieldCheckIcon className="ml-1 inline h-3.5 w-3.5" />
-                              صلاحيات القسم الأساسية
+                              {t("sidebar.sidebarSectionRoles")}
                             </span>
                             <button
                               type="button"
                               onClick={() => toggleRoleExpand(`section-${sectionId}`)}
                               className="text-xs text-indigo-500 hover:text-indigo-700 dark:text-indigo-400"
                             >
-                              {expandedItemRoles[`section-${sectionId}`] ? "إخفاء" : "تعديل الصلاحيات"}
+                              {expandedItemRoles[`section-${sectionId}`] ? t("sidebar.sidebarHideRoles") : t("sidebar.sidebarEditRoles")}
                             </button>
                           </div>
                           <AnimatePresence>
@@ -924,7 +927,7 @@ const SidebarSettings: React.FC = () => {
                                             : "bg-white text-gray-600 ring-1 ring-gray-200 hover:ring-indigo-300 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700"
                                         }`}
                                       >
-                                        {ROLE_LABELS[role] || role}
+                                        {getRoleLabel(t, role)}
                                       </button>
                                     );
                                   })}
@@ -948,24 +951,24 @@ const SidebarSettings: React.FC = () => {
           <SparklesIcon className="mt-0.5 h-5 w-5 text-indigo-500" />
           <div>
             <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
-              نظام إدارة القائمة الجانبية الذكي
+              {t("sidebar.sidebarSmartTitle")}
             </h4>
             <ul className="mt-2 space-y-1 text-xs text-indigo-700 dark:text-indigo-300">
               <li className="flex items-center gap-1.5">
                 <CheckCircleIcon className="h-3.5 w-3.5" />
-                العناصر المخفية لا تظهر للمستخدمين نهائياً
+                {t("sidebar.sidebarSmartHidden")}
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircleIcon className="h-3.5 w-3.5" />
-                صلاحيات الأدوار تمنع ظهور العناصر لغير المصرح لهم
+                {t("sidebar.sidebarSmartRoles")}
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircleIcon className="h-3.5 w-3.5" />
-                التطبيقات غير المفعلة تخفي عناصرها تلقائياً
+                {t("sidebar.sidebarSmartInactive")}
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircleIcon className="h-3.5 w-3.5" />
-                يتم حفظ التغييرات تلقائياً بعد التعديل
+                {t("sidebar.sidebarSmartAutoSave")}
               </li>
             </ul>
           </div>
@@ -1008,6 +1011,7 @@ const CategoryGroup = React.memo<CategoryGroupProps>(function CategoryGroup({
   onToggleRoleForItem,
   onToggleRoleExpand,
 }) {
+  const { t } = useTranslation();
   const CatIcon = CATEGORY_ICONS[category] || Squares2X2Icon;
   const categoryColor = CATEGORY_COLORS[category] || "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 ring-gray-200 dark:ring-gray-700";
   const allSectionsVisible = sections.every(({ section }) => section.visible);
@@ -1022,9 +1026,9 @@ const CategoryGroup = React.memo<CategoryGroupProps>(function CategoryGroup({
           <span className={`rounded-lg p-1.5 ring-1 ${categoryColor}`}>
             <CatIcon className="h-4 w-4" />
           </span>
-          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{category}</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{t(`sidebar.category${category.charAt(0).toUpperCase()}${category.slice(1)}`)}</span>
           <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-            {sections.length} أقسام
+            {t("sidebar.sidebarSectionsCount", { count: sections.length })}
           </span>
         </div>
         <Switch
