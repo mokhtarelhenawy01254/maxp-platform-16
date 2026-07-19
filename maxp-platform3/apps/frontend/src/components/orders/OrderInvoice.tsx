@@ -169,6 +169,7 @@ const OrderInvoice: React.FC<{ orderId?: string; invoiceId?: string }> = ({
           .invoice-page { padding: 0 !important; }
           .no-print { display: none !important; }
           @page { margin: 0; size: A5; }
+          .invoice-number-text { display: none !important; }
         }
         @media screen {
           .invoice-wrapper {

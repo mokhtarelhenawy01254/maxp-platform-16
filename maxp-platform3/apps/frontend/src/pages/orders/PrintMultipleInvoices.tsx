@@ -189,6 +189,7 @@ const PrintMultipleInvoices: React.FC = () => {
           .invoice-header, .invoice-totals { page-break-inside: avoid; }
           .no-print { display: none !important; }
           @page { margin: 0; size: A4; }
+          .invoice-number-text { display: none !important; }
         }
         @media screen {
           .invoice-print-wrapper {

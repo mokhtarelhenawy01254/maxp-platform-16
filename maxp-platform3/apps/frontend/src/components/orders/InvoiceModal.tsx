@@ -61,6 +61,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
             .print\\:max-w-none, .print\\:max-w-none * { visibility: visible; }
             .print\\:max-w-none { position: absolute; left: 0; top: 0; width: 100%; }
             @page { margin: 0; size: A5; }
+            .invoice-number-text { display: none !important; }
           }
         `}</style>
 
