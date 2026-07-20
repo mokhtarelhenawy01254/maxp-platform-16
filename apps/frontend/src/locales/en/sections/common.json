@@ -1,6 +1,7 @@
 {
   "loading": "Loading...",
   "save": "Save",
+  "saveChanges": "Save Changes",
   "saved": "Saved",
   "cancel": "Cancel",
   "delete": "Delete",
@@ -35,6 +36,7 @@
   "quantity": "Quantity",
   "total": "Total",
   "welcome": "Welcome",
+  "noData": "No data",
   "no_data": "No data available",
   "user": "User",
   "clear": "Clear",

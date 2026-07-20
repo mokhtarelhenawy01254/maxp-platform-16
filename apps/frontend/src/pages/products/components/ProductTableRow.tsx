@@ -335,15 +335,9 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
               >
                 <EyeIcon className="h-4 w-4" />
               </button>
-              <a
-                href={`/products/${product.id}/edit`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-600 hover:text-green-900 transition-colors"
-                title="تعديل"
-              >
+              <button onClick={() => window.open(`/products/${product.id}/edit`, "_blank", "noopener,noreferrer")} className="text-green-600 hover:text-green-900 transition-colors" title="تعديل">
                 <PencilIcon className="h-4 w-4" />
-              </a>
+              </button>
               <button onClick={() => onStartQuickEdit(product)} className="text-blue-600 hover:text-blue-900 transition-colors" title="تعديل سريع">
                 <PencilIcon className="h-4 w-4" />
               </button>
