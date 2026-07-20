@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { getDirection } from "../../i18n";
 import {
   BuildingStorefrontIcon,
   TruckIcon,
@@ -287,10 +289,13 @@ interface StoreSettingsProps {
 const StoreSettings: React.FC<StoreSettingsProps> = ({
   forcedTab,
   hideNavigation = false,
-  pageTitle = "إعدادات المتجر الأساسية",
-  pageDescription = "إدارة الفروع، الشحن، الفوتر، وإعدادات التوصيل",
+  pageTitle: propPageTitle,
+  pageDescription: propPageDescription,
 }) => {
   const { isLoading: isAuthLoading, isAuthenticated, user } = useAuth();
+  const { t } = useTranslation();
+  const pageTitle = propPageTitle ?? t("storeSettings.pageTitle");
+  const pageDescription = propPageDescription ?? t("storeSettings.pageDescription");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<StoreSettingsTab>(() =>
@@ -507,10 +512,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
       ].some((result) => result.status === "rejected");
 
       if (hasBlockingFailures) {
-        toast.error("تم تحميل جزء من البيانات وتعذر تحميل بعض الأقسام");
+        toast.error(t("storeSettings.dataLoadedPartial"));
       }
     } catch (error) {
-      toast.error("فشل تحميل البيانات");
+      toast.error(t("storeSettings.failedToLoadData"));
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
@@ -545,35 +550,35 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
   const handleSaveBranch = async () => {
     try {
       if (!branchForm.name || !branchForm.phone) {
-        toast.error("يرجى ملء جميع الحقول المطلوبة (الاسم والهاتف)");
+        toast.error(t("storeSettings.requiredFieldsMissing"));
         return;
       }
 
       if (editingBranch) {
         await storeSettingsService.updateBranch(editingBranch.id, branchForm);
-        toast.success("تم تحديث الفرع بنجاح");
+        toast.success(t("storeSettings.branchUpdated"));
       } else {
         await storeSettingsService.createBranch(branchForm);
-        toast.success("تم إضافة الفرع بنجاح");
+        toast.success(t("storeSettings.branchAdded"));
       }
 
       setShowBranchModal(false);
       loadData();
     } catch (error) {
-      toast.error("فشل حفظ الفرع");
+      toast.error(t("storeSettings.branchSaveFailed"));
       console.error("Error saving branch:", error);
     }
   };
 
   const handleDeleteBranch = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا الفرع؟")) return;
+    if (!confirm(t("storeSettings.deleteBranchConfirm"))) return;
 
     try {
       await storeSettingsService.deleteBranch(id);
-      toast.success("تم حذف الفرع بنجاح");
+      toast.success(t("storeSettings.branchDeleted"));
       loadData();
     } catch (error) {
-      toast.error("فشل حذف الفرع");
+      toast.error(t("storeSettings.branchDeleteFailed"));
       console.error("Error deleting branch:", error);
     }
   };
@@ -689,7 +694,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
         !shippingForm.governorateIds?.length ||
         !shippingForm.deliveryTime
       ) {
-        toast.error("يرجى ملء جميع الحقول المطلوبة");
+        toast.error(t("storeSettings.shippingRequiredFields"));
         return;
       }
 
@@ -697,16 +702,16 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
         shippingForm.pricingType === "flat" &&
         (!shippingForm.price || shippingForm.price <= 0)
       ) {
-        toast.error("يرجى إدخال سعر صحيح");
+        toast.error(t("storeSettings.enterValidPrice"));
         return;
       }
 
       if (
         shippingForm.pricingType === "tiered" &&
         (!shippingForm.pricingTiers?.length ||
-          shippingForm.pricingTiers.some((t) => !t.price || t.price <= 0))
+          shippingForm.pricingTiers.some((pt) => !pt.price || pt.price <= 0))
       ) {
-        toast.error("يرجى إدخال أسعار صحيحة لجميع الشرائح");
+        toast.error(t("storeSettings.enterValidTieredPrices"));
         return;
       }
 
@@ -736,29 +741,29 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
           editingShipping.id,
           dataToSave,
         );
-        toast.success("تم تحديث منطقة الشحن بنجاح");
+        toast.success(t("storeSettings.shippingUpdated"));
       } else {
         await storeSettingsService.createShippingZone(dataToSave);
-        toast.success("تم إضافة منطقة الشحن بنجاح");
+        toast.success(t("storeSettings.shippingAdded"));
       }
 
       setShowShippingModal(false);
       loadData();
     } catch (error) {
-      toast.error("فشل حفظ منطقة الشحن");
+      toast.error(t("storeSettings.shippingSaveFailed"));
       console.error("Error saving shipping zone:", error);
     }
   };
 
   const handleDeleteShipping = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذه المنطقة؟")) return;
+    if (!confirm(t("storeSettings.deleteShippingConfirm"))) return;
 
     try {
       await storeSettingsService.deleteShippingZone(id);
-      toast.success("تم حذف منطقة الشحن بنجاح");
+      toast.success(t("storeSettings.shippingDeleted"));
       loadData();
     } catch (error) {
-      toast.error("فشل حذف منطقة الشحن");
+      toast.error(t("storeSettings.shippingDeleteFailed"));
       console.error("Error deleting shipping zone:", error);
     }
   };
@@ -770,9 +775,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
       setLoading(true);
       await apiClient.post("/promotion-settings", data);
       setPromotionSettings(data);
-      toast.success("تم تحديث إعدادات الشحن بنجاح");
+      toast.success(t("storeSettings.promotionUpdated"));
     } catch (error) {
-      toast.error("فشل تحديث الإعدادات");
+      toast.error(t("storeSettings.promotionUpdateFailed"));
       console.error("Error updating promotion settings:", error);
     } finally {
       setLoading(false);
@@ -783,7 +788,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
     const rawLabel = newShippingClassLabel.trim();
     const rawKey = newShippingClassKey.trim() || rawLabel;
     if (!rawLabel && !rawKey) {
-      toast.error("يرجى إدخال اسم فئة الشحن");
+      toast.error(t("storeSettings.shippingClassNameRequired"));
       return;
     }
 
@@ -792,7 +797,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
       (option) => normalizeShippingClassKey(option.key) === normalizedKey,
     );
     if (exists) {
-      toast.error("هذه الفئة موجودة بالفعل");
+      toast.error(t("storeSettings.shippingClassExists"));
       return;
     }
 
@@ -840,7 +845,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
         },
       });
 
-      toast.success("تمت إضافة الفئة وحفظها");
+      toast.success(t("storeSettings.classAdded"));
     } catch (error) {
       // Revert optimistic updates
       setShippingClasses(prevClasses);
@@ -849,7 +854,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
       setNewShippingClassLabel(rawLabel);
       setNewShippingClassKey(rawKey !== rawLabel ? rawKey : "");
 
-      toast.error("فشل حفظ إعدادات فئات الشحن");
+      toast.error(t("storeSettings.classSaveFailed"));
       console.error("Error saving shipping class:", error);
     }
   };
@@ -872,7 +877,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
     );
     const normalizedKey = normalizeShippingClassKey(key);
     if (defaultKeys.has(normalizedKey)) {
-      toast.error("لا يمكن حذف الفئات الافتراضية");
+      toast.error(t("storeSettings.defaultClassesNotDeletable"));
       return;
     }
 
@@ -916,9 +921,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
       });
       setShippingClassFees(mergedFees);
       setShippingClasses(normalizedClasses);
-      toast.success("تم حفظ إعدادات فئات الشحن");
+      toast.success(t("storeSettings.classFeesSaved"));
     } catch (error) {
-      toast.error("فشل حفظ إعدادات فئات الشحن");
+      toast.error(t("storeSettings.classFeesSaveFailed"));
       console.error("Error saving shipping class fees:", error);
     } finally {
       setSavingShippingClassFees(false);
@@ -935,10 +940,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
         designTokens: storefrontSettings.designTokens || {},
       });
       syncStorefrontSettingsState(storefrontResponse.data);
-      toast.success("تم حفظ إعدادات الفوتر بنجاح");
+      toast.success(t("storeSettings.footerSaved"));
       loadData();
     } catch (error) {
-      toast.error("فشل حفظ إعدادات الفوتر");
+      toast.error(t("storeSettings.footerSaveFailed"));
       console.error("Error saving footer settings:", error);
     } finally {
       setLoading(false);
@@ -947,17 +952,17 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
 
   const handleResetFooter = async () => {
     if (
-      !confirm("هل أنت متأكد من إعادة تعيين إعدادات الفوتر للقيم الافتراضية؟")
+      !confirm(t("storeSettings.resetFooterConfirm"))
     )
       return;
 
     try {
       setLoading(true);
       await footerSettingsService.resetSettings();
-      toast.success("تم إعادة تعيين إعدادات الفوتر بنجاح");
+      toast.success(t("storeSettings.footerReset"));
       loadData();
     } catch (error) {
-      toast.error("فشل إعادة تعيين إعدادات الفوتر");
+      toast.error(t("storeSettings.footerResetFailed"));
       console.error("Error resetting footer settings:", error);
     } finally {
       setLoading(false);
@@ -1006,7 +1011,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
     });
 
     if (!checkoutFieldsSaved) {
-      toast.error("تعذر حفظ إعدادات حقول الشيك أوت");
+      toast.error(t("storeSettings.checkoutSaveFailed"));
       return false;
     }
 
@@ -1027,14 +1032,14 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
       });
 
       syncStorefrontSettingsState(storefrontResponse.data);
-      toast.success("تم حفظ إعدادات الشيك أوت بنجاح");
+      toast.success(t("storeSettings.checkoutSaved"));
       return true;
     } catch (error) {
       console.error("Error saving product page checkout settings:", error);
       toast.error(
         getErrorMessage(
           error,
-          "تم حفظ حقول الشيك أوت لكن تعذر حفظ تفعيل الشيك أوت داخل صفحة المنتج",
+          t("storeSettings.checkoutPartialSave"),
         ),
       );
       return false;
@@ -1044,7 +1049,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
   };
 
   const handleResetCheckoutTabSettings = async () => {
-    if (!window.confirm("هل أنت متأكد من إعادة ضبط إعدادات الشيك أوت؟")) {
+    if (!window.confirm(t("storeSettings.resetCheckoutConfirm"))) {
       return;
     }
 
@@ -1064,11 +1069,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
       });
 
       syncStorefrontSettingsState(storefrontResponse.data);
-      toast.success("تمت إعادة ضبط إعدادات الشيك أوت");
+      toast.success(t("storeSettings.checkoutReset"));
     } catch (error) {
       console.error("Error resetting checkout tab settings:", error);
       toast.error(
-        getErrorMessage(error, "فشل في إعادة ضبط إعدادات الشيك أوت"),
+        getErrorMessage(error, t("storeSettings.checkoutResetFailed")),
       );
     } finally {
       setProcessingCheckoutTab(false);
@@ -1118,21 +1123,21 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
     checkoutFormSettingsSaving ||
     processingCheckoutTab;
   const tabs = [
-    { id: "branches", label: "الفروع والمخازن", icon: BuildingStorefrontIcon },
-    { id: "shipping", label: "مناطق الشحن وتكلفتها", icon: TruckIcon },
-    { id: "footer", label: "إعدادات الفوتر", icon: DocumentTextIcon },
-    { id: "promotion", label: "إعدادات التوصيل المجاني", icon: GiftIcon },
+    { id: "branches", label: t("storeSettings.tabBranches"), icon: BuildingStorefrontIcon },
+    { id: "shipping", label: t("storeSettings.tabShipping"), icon: TruckIcon },
+    { id: "footer", label: t("storeSettings.tabFooter"), icon: DocumentTextIcon },
+    { id: "promotion", label: t("storeSettings.tabPromotion"), icon: GiftIcon },
   ];
 
   const tabsWithCheckout = [
     ...tabs.slice(0, 2),
-    { id: "checkout", label: "إعدادات الشيك أوت", icon: CreditCardIcon },
-    { id: "payment", label: "بوابات الدفع", icon: CreditCardIcon },
+    { id: "checkout", label: t("storeSettings.tabCheckout"), icon: CreditCardIcon },
+    { id: "payment", label: t("storeSettings.tabPayment"), icon: CreditCardIcon },
     ...tabs.slice(2),
   ];
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={getDirection()}>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -1196,17 +1201,17 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                 <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      رسوم فئات الشحن
+                      {t("storeSettings.shippingClassFeesTitle")}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      حدّد الزيادة حسب فئة المنتج وطريقة احتسابها.
+                      {t("storeSettings.shippingClassFeesDesc")}
                     </p>
                   </div>
 
                   <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        طريقة الحساب
+                        {t("storeSettings.calculationMethod")}
                       </label>
                       <select
                         value={shippingClassMode}
@@ -1217,13 +1222,12 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                         }
                         className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value="max">أعلى قيمة داخل الطلب</option>
-                        <option value="per_item">لكل قطعة</option>
+                        <option value="max">{t("storeSettings.maxValue")}</option>
+                        <option value="per_item">{t("storeSettings.perItem")}</option>
                       </select>
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400 flex items-end">
-                      وضع &quot;أعلى قيمة&quot; يضيف أعلى رسوم بين العناصر، بينما
-                      &quot;لكل قطعة&quot; يجمع الرسوم على كل عنصر.
+                      {t("storeSettings.maxValueDesc")}
                     </div>
                   </div>
 
@@ -1231,25 +1235,25 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                       <div className="md:col-span-1">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          اسم فئة الشحن
+                          {t("storeSettings.className")}
                         </label>
                         <input
                           type="text"
                           value={newShippingClassLabel}
                           onChange={(e) => setNewShippingClassLabel(e.target.value)}
-                          placeholder="مثال: مبرد، هدايا"
+                          placeholder={t("storeSettings.classNamePlaceholder")}
                           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          المعرّف (اختياري)
+                          {t("storeSettings.classIdentifier")}
                         </label>
                         <input
                           type="text"
                           value={newShippingClassKey}
                           onChange={(e) => setNewShippingClassKey(e.target.value)}
-                          placeholder="slug أو اسم مختصر"
+                          placeholder={t("storeSettings.classIdentifierPlaceholder")}
                           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
@@ -1258,7 +1262,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                         onClick={handleAddShippingClass}
                         className="px-4 py-2 h-11 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
                       >
-                        إضافة فئة
+                        {t("storeSettings.addClass")}
                       </button>
                     </div>
 
@@ -1276,7 +1280,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                           >
                             <div className="flex-1">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                الاسم
+                                {t("storeSettings.name")}
                               </label>
                               <input
                                 type="text"
@@ -1290,12 +1294,12 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                                 className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                               />
                               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                المعرّف: {option.key}
+                                {t("storeSettings.identifier")}: {option.key}
                               </p>
                             </div>
                             <div className="w-full md:w-40">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                الرسوم
+                                {t("storeSettings.fees")}
                               </label>
                               <input
                                 type="number"
@@ -1320,7 +1324,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                                   : "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300"
                                   }`}
                               >
-                                حذف
+                                 {t("storeSettings.delete")}
                               </button>
                             </div>
                           </div>
@@ -1338,7 +1342,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                         : "bg-indigo-600 text-white hover:bg-indigo-700"
                         }`}
                     >
-                      {savingShippingClassFees ? "جاري الحفظ..." : "حفظ الرسوم"}
+                      {savingShippingClassFees ? t("storeSettings.saving") : t("storeSettings.saveFees")}
                     </button>
                   </div>
                 </div>
@@ -1349,10 +1353,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        إعدادات حقول الشيك أوت
+                        {t("storeSettings.checkoutFieldsTitle")}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        اضبط صفحة الشيك أوت الكاملة، وفورم الطلب السريع داخل صفحة المنتج، وترتيب ظهوره من نفس المكان.
+                        {t("storeSettings.checkoutFieldsDesc")}
                       </p>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row">
@@ -1361,7 +1365,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                         onClick={() => navigate("/settings/store/product-conversion")}
                         className="px-4 py-2 rounded-md text-sm font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
                       >
-                        فتح أدوات التحويل
+                        {t("storeSettings.openConversionTools")}
                       </button>
                       <button
                         type="button"
@@ -1375,7 +1379,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                             : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
                         }`}
                       >
-                        إعادة الضبط الافتراضي
+                        {t("storeSettings.resetToDefault")}
                       </button>
                     </div>
                   </div>

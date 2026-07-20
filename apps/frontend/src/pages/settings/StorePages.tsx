@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import RichTextEditor from "../../components/RichTextEditor";
 import { buildStorefrontPreviewPath } from "../../storefront/utils/paths";
-import i18n from "../../i18n";
+import { useTranslation } from "react-i18next";
 
 interface StorePage {
   id: string;
@@ -35,26 +35,26 @@ interface StorePage {
   updatedAt: string;
 }
 
-const PAGE_TYPES = {
-  SHIPPING_POLICY: { label: "سياسة الشحن", icon: GlobeAltIcon, color: "text-blue-500" },
-  RETURN_POLICY: { label: "سياسة الإرجاع", icon: ShieldCheckIcon, color: "text-indigo-500" },
-  REFUND_POLICY: { label: "سياسة الاسترجاع المالي", icon: ShieldCheckIcon, color: "text-rose-500" },
-  PRIVACY_POLICY: { label: "سياسة الخصوصية", icon: ShieldCheckIcon, color: "text-emerald-500" },
-  TERMS_CONDITIONS: { label: "الشروط والأحكام", icon: DocumentTextIcon, color: "text-amber-500" },
-  ABOUT_US: { label: "عن المتجر", icon: InformationCircleIcon, color: "text-purple-500" },
-  CONTACT_US: { label: "اتصل بنا", icon: InformationCircleIcon, color: "text-sky-500" },
-  FAQ: { label: "الأسئلة الشائعة", icon: InformationCircleIcon, color: "text-orange-500" },
-  PAYMENT_METHODS: { label: "طرق الدفع", icon: GlobeAltIcon, color: "text-teal-500" },
-  CUSTOM: { label: "صفحة مخصصة", icon: DocumentTextIcon, color: "text-gray-500" },
-};
-
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
 
 const StorePages: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
-  /** Build the public storefront URL for a given page slug */
+  const PAGE_TYPES = {
+    SHIPPING_POLICY: { label: t("storePages.shippingPolicy"), icon: GlobeAltIcon, color: "text-blue-500" },
+    RETURN_POLICY: { label: t("storePages.returnPolicy"), icon: ShieldCheckIcon, color: "text-indigo-500" },
+    REFUND_POLICY: { label: t("storePages.refundPolicy"), icon: ShieldCheckIcon, color: "text-rose-500" },
+    PRIVACY_POLICY: { label: t("storePages.privacyPolicy"), icon: ShieldCheckIcon, color: "text-emerald-500" },
+    TERMS_CONDITIONS: { label: t("storePages.termsConditions"), icon: DocumentTextIcon, color: "text-amber-500" },
+    ABOUT_US: { label: t("storePages.aboutUs"), icon: InformationCircleIcon, color: "text-purple-500" },
+    CONTACT_US: { label: t("storePages.contactUs"), icon: InformationCircleIcon, color: "text-sky-500" },
+    FAQ: { label: t("storePages.faq"), icon: InformationCircleIcon, color: "text-orange-500" },
+    PAYMENT_METHODS: { label: t("storePages.paymentMethods"), icon: GlobeAltIcon, color: "text-teal-500" },
+    CUSTOM: { label: t("storePages.customPage"), icon: DocumentTextIcon, color: "text-gray-500" },
+  };
+
   const getPageUrl = useCallback(
     (slug: string): string => {
       const company = user?.company;
@@ -106,7 +106,7 @@ const StorePages: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching pages:", error);
-      toast.error("حدث خطأ أثناء جلب الصفحات");
+      toast.error(t("storePages.fetchError"));
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ const StorePages: React.FC = () => {
 
   const initializeDefaultPages = async () => {
     try {
-      const toastId = toast.loading("جاري إنشاء الصفحات الافتراضية...");
+      const toastId = toast.loading(t("storePages.initializeLoading"));
       const response = await fetch(`${getApiUrl()}/store-pages/initialize`, {
         method: "POST",
         headers: getAuthHeaders({ "Content-Type": "application/json" }),
@@ -122,26 +122,26 @@ const StorePages: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success("تم إنشاء الصفحات الافتراضية بنجاح!", { id: toastId });
+        toast.success(t("storePages.initSuccess"), { id: toastId });
         fetchPages();
       } else {
-        toast.error(data.error || "فشل في إنشاء الصفحات", { id: toastId });
+        toast.error(data.error || t("storePages.initFailed"), { id: toastId });
       }
     } catch (error) {
       console.error("Error initializing pages:", error);
-      toast.error("حدث خطأ أثناء إنشاء الصفحات");
+      toast.error(t("storePages.initError"));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.slug) {
-      toast.error("يرجى تعبئة الحقول المطلوبة (العنوان والرابط)");
+      toast.error(t("storePages.formTitleRequired"));
       return;
     }
     
     try {
-      const toastId = toast.loading(editingPage ? "جاري التحديث..." : "جاري الحفظ...");
+      const toastId = toast.loading(editingPage ? t("storePages.formUpdating") : t("storePages.formSaving"));
       const url = editingPage
         ? `${getApiUrl()}/store-pages/page/${editingPage.id}`
         : `${getApiUrl()}/store-pages/`;
@@ -154,16 +154,16 @@ const StorePages: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success(editingPage ? "تم تحديث الصفحة بنجاح!" : "تم إنشاء الصفحة بنجاح!", { id: toastId });
+        toast.success(editingPage ? t("storePages.formUpdated") : t("storePages.formSaved"), { id: toastId });
         setShowModal(false);
         resetForm();
         fetchPages();
       } else {
-        toast.error(data.error || "فشل في حفظ الصفحة", { id: toastId });
+        toast.error(data.error || t("storePages.formSaveFailed"), { id: toastId });
       }
     } catch (error) {
       console.error("Error saving page:", error);
-      toast.error("حدث خطأ أثناء حفظ الصفحة");
+      toast.error(t("storePages.formSaveError"));
     }
   };
 
@@ -185,10 +185,10 @@ const StorePages: React.FC = () => {
   };
 
   const handleDelete = async (pageId: string) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذه الصفحة نهائياً؟")) return;
+    if (!window.confirm(t("storePages.deleteConfirm"))) return;
 
     try {
-      const toastId = toast.loading("جاري الحذف...");
+      const toastId = toast.loading(t("storePages.deleteLoading"));
       const response = await fetch(
         `${getApiUrl()}/store-pages/page/${pageId}`,
         {
@@ -200,14 +200,14 @@ const StorePages: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success("تم حذف الصفحة بنجاح!", { id: toastId });
+        toast.success(t("storePages.deleteSuccess"), { id: toastId });
         fetchPages();
       } else {
-        toast.error(data.error || "فشل في حذف الصفحة", { id: toastId });
+        toast.error(data.error || t("storePages.deleteFailed"), { id: toastId });
       }
     } catch (error) {
       console.error("Error deleting page:", error);
-      toast.error("حدث خطأ أثناء حذف الصفحة");
+      toast.error(t("storePages.deleteError"));
     }
   };
 
@@ -224,14 +224,14 @@ const StorePages: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success("تم تحديث حالة الصفحة");
+        toast.success(t("storePages.toggleSuccess"));
         fetchPages();
       } else {
-        toast.error(data.error || "فشل في تغيير حالة الصفحة");
+        toast.error(data.error || t("storePages.toggleFailed"));
       }
     } catch (error) {
       console.error("Error toggling status:", error);
-      toast.error("حدث خطأ أثناء تغيير حالة الصفحة");
+      toast.error(t("storePages.toggleError"));
     }
   };
 
@@ -255,25 +255,25 @@ const StorePages: React.FC = () => {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-indigo-600 dark:border-gray-700 dark:border-t-indigo-500"></div>
-        <p className="mt-4 text-sm font-medium text-gray-500 dark:text-gray-400">جاري تحميل الصفحات...</p>
+        <p className="mt-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t("storePages.loadingPages")}</p>
       </div>
     );
   }
 
   return (
     <div className="mx-auto w-full max-w-6xl 2xl:max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* 🌟 Header Section */}
+      {/* Header Section */}
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <div className="mb-2 inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-800 dark:border-indigo-900/50 dark:bg-indigo-900/30 dark:text-indigo-300">
             <DocumentTextIcon className="mr-1.5 h-3.5 w-3.5" />
-            إدارة المحتوى
+            {t("storePages.badgeLabel")}
           </div>
           <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-            صفحات المتجر
+            {t("storePages.pageTitle")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-            أدر محتوى متجرك من سياسات، شروط استخدام، وصفحات تعريفية بطريقة احترافية. ستظهر هذه الصفحات في الفوتر أو الروابط المخصصة في واجهة المتجر.
+            {t("storePages.pageSubtitle")}
           </p>
         </div>
         
@@ -284,7 +284,7 @@ const StorePages: React.FC = () => {
               className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white"
             >
               <ShieldCheckIcon className="ml-2 h-5 w-5 opacity-70" />
-              توليد الصفحات الأساسية
+              {t("storePages.generatePolicies")}
             </button>
           )}
           <button
@@ -295,27 +295,27 @@ const StorePages: React.FC = () => {
             className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             <PlusIcon className="ml-2 h-5 w-5" />
-            صفحة جديدة
+            {t("storePages.newPage")}
           </button>
         </div>
       </div>
 
-      {/* 🌟 Content Area */}
+      {/* Content Area */}
       {pages.length === 0 ? (
         <div className="flex min-h-[400px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-gray-300 bg-gray-50/50 p-12 text-center dark:border-gray-700 dark:bg-gray-800/20">
           <div className="mb-6 rounded-full bg-white p-4 shadow-sm ring-1 ring-gray-900/5 dark:bg-gray-900 dark:ring-white/10">
             <DocumentTextIcon className="h-10 w-10 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">لا توجد صفحات حالياً</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t("storePages.noPagesTitle")}</h3>
           <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-            يمكنك البدء من الصفر بإنشاء صفحة جديدة، أو استخدام المولد الآلي لإنشاء سياسات المتجر الأساسية لضمان ثقة العملاء.
+            {t("storePages.noPagesDesc")}
           </p>
           <div className="mt-8 flex gap-3">
             <button
               onClick={initializeDefaultPages}
               className="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
             >
-              توليد آلي للسياسات
+              {t("storePages.generatePolicies")}
             </button>
             <button
               onClick={() => {
@@ -324,7 +324,7 @@ const StorePages: React.FC = () => {
               }}
               className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
             >
-              إنشاء صفحة مخصصة
+              {t("storePages.createCustomPage")}
             </button>
           </div>
         </div>
@@ -350,7 +350,7 @@ const StorePages: React.FC = () => {
                   <button
                     onClick={() => toggleStatus(page.id)}
                     className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white"
-                    title={page.isActive ? "إيقاف الصفحة" : "تفعيل الصفحة"}
+                    title={page.isActive ? t("storePages.deactivateButton") : t("storePages.activateButton")}
                   >
                     {page.isActive ? (
                       <EyeIcon className="h-5 w-5 text-indigo-500" />
@@ -374,7 +374,7 @@ const StorePages: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 truncate text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
-                        title={i18n.t("storePages.viewPageWithSlug", { slug: page.slug })}
+                        title={t("storePages.viewPageWithSlug", { slug: page.slug })}
                       >
                         /{page.slug}
                         <ArrowTopRightOnSquareIcon className="h-3 w-3 flex-shrink-0 opacity-60" />
@@ -389,7 +389,7 @@ const StorePages: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {page.showInFooter && (
                       <span className="inline-flex h-6 items-center rounded-full bg-gray-100 px-2.5 text-[10px] font-bold tracking-wide text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                        الفوتر
+                        {t("storePages.footerTag")}
                       </span>
                     )}
                   </div>
@@ -400,7 +400,7 @@ const StorePages: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="rounded-lg p-2 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400"
-                        title={i18n.t("storePages.viewPageOnStore")}
+                        title={t("storePages.viewPageOnStore")}
                       >
                         <GlobeAltIcon className="h-4 w-4" />
                       </a>
@@ -408,14 +408,14 @@ const StorePages: React.FC = () => {
                     <button
                       onClick={() => handleEdit(page)}
                       className="rounded-lg p-2 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400"
-                      title="تعديل"
+                      title={t("storePages.editButton")}
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(page.id)}
                       className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                      title="حذف"
+                      title={t("storePages.deleteButton")}
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>
@@ -427,7 +427,7 @@ const StorePages: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 Full Screen Modal */}
+      {/* Full Screen Modal */}
       {showModal && (
         <div className="fixed inset-0 z-[100] overflow-y-auto">
           {/* Backdrop */}
@@ -445,10 +445,10 @@ const StorePages: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                        {editingPage ? "تعديل محتوى الصفحة" : "إنشاء صفحة جديدة"}
+                        {editingPage ? t("storePages.modalEditTitle") : t("storePages.modalCreateTitle")}
                       </h3>
                       <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {editingPage ? "تحديث سياسات ومحتوى الصفحة" : "أضف صفحة جديدة لمتجرك"}
+                        {editingPage ? t("storePages.modalEditDesc") : t("storePages.modalCreateDesc")}
                       </p>
                     </div>
                   </div>
@@ -471,7 +471,7 @@ const StorePages: React.FC = () => {
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="col-span-1 lg:col-span-2">
                       <label className="mb-1.5 block text-sm font-semibold text-gray-900 dark:text-white">
-                        العنوان <span className="text-red-500">*</span>
+                        {t("storePages.formTitle")} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -479,13 +479,13 @@ const StorePages: React.FC = () => {
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         className="block w-full rounded-xl border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 dark:text-white dark:ring-gray-700 sm:text-sm sm:leading-6"
-                        placeholder="مثال: سياسة الاسترجاع"
+                        placeholder={t("storePages.formTitlePlaceholder")}
                       />
                     </div>
                     
                     <div className="col-span-1">
                       <label className="mb-1.5 block text-sm font-semibold text-gray-900 dark:text-white">
-                        نوع الصفحة
+                        {t("storePages.formPageType")}
                       </label>
                       <select
                         value={formData.pageType}
@@ -502,11 +502,11 @@ const StorePages: React.FC = () => {
 
                     <div className="col-span-1 lg:col-span-3">
                       <label className="mb-1.5 block text-sm font-semibold text-gray-900 dark:text-white">
-                        مسار الرابط (Slug) <span className="text-red-500">*</span>
+                        {t("storePages.formSlug")} <span className="text-red-500">*</span>
                       </label>
                       <div className="flex rounded-xl shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 dark:ring-gray-700">
                         <span className="flex select-none items-center pl-3 pr-4 text-gray-500 dark:text-gray-400 sm:text-sm" dir="ltr">
-                          /pages/
+                          {t("storePages.formSlugPrefix")}
                         </span>
                         <input
                           type="text"
@@ -524,7 +524,7 @@ const StorePages: React.FC = () => {
                         />
                       </div>
                       <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        يجب أن يحتوي على حروف إنجليزية وأرقام وعلامة "-" فقط.
+                        {t("storePages.formSlugDesc")}
                       </p>
                     </div>
                   </div>
@@ -532,24 +532,24 @@ const StorePages: React.FC = () => {
                   {/* Rich Text Editor */}
                   <div>
                     <label className="mb-1.5 block text-sm font-semibold text-gray-900 dark:text-white">
-                      محتوى الصفحة
+                      {t("storePages.formContent")}
                     </label>
                     <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                       <RichTextEditor
                         value={formData.content}
                         onChange={(val) => setFormData({ ...formData, content: val })}
-                        placeholder="اكتب محتوى الصفحة هنا..."
+                        placeholder={t("storePages.formContentPlaceholder")}
                       />
                     </div>
                   </div>
 
                   {/* SEO Section */}
                   <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-5 dark:border-gray-800 dark:bg-gray-800/30">
-                    <h4 className="mb-4 text-sm font-bold text-gray-900 dark:text-white">إعدادات محركات البحث (SEO)</h4>
+                    <h4 className="mb-4 text-sm font-bold text-gray-900 dark:text-white">{t("storePages.formSeoTitle")}</h4>
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                       <div>
                         <label className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          عنوان الميتا (Meta Title)
+                          {t("storePages.formMetaTitle")}
                         </label>
                         <input
                           type="text"
@@ -560,7 +560,7 @@ const StorePages: React.FC = () => {
                       </div>
                       <div>
                         <label className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          وصف الميتا (Meta Description)
+                          {t("storePages.formMetaDescription")}
                         </label>
                         <input
                           type="text"
@@ -576,8 +576,8 @@ const StorePages: React.FC = () => {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <label className="relative flex cursor-pointer items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-800/80">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">حالة النشر</span>
-                        <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">تفعيل ظهور الصفحة للمستخدمين</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{t("storePages.formPublishStatus")}</span>
+                        <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("storePages.formPublishDesc")}</span>
                       </div>
                       <div className="ml-4 flex h-6 items-center">
                         <input
@@ -592,8 +592,8 @@ const StorePages: React.FC = () => {
 
                     <label className="relative flex cursor-pointer items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-800/80">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">الفوتر السُفلي</span>
-                        <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">إظهار الرابط في أسفل المتجر</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{t("storePages.formFooter")}</span>
+                        <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("storePages.formFooterDesc")}</span>
                       </div>
                       <div className="ml-4 flex h-6 items-center">
                         <input
@@ -616,14 +616,14 @@ const StorePages: React.FC = () => {
                   form="page-form"
                   className="inline-flex w-full justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
                 >
-                  {editingPage ? "حفظ التعديلات" : "إضافة الصفحة"}
+                  {editingPage ? t("storePages.formSubmitUpdate") : t("storePages.formSubmitCreate")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
                   className="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-gray-700"
                 >
-                  إلغاء
+                  {t("storePages.formCancel")}
                 </button>
               </div>
             </div>

@@ -57,7 +57,12 @@ const GROUP_LABEL_KEYS: Record<string, string> = {
   management: "agentTools.groups.management", system: "agentTools.groups.system",
   mcp: "agentTools.groups.mcp",
 };
-const groupLabel = (g: string) => i18n.t(GROUP_LABEL_KEYS[g] || `agentTools.groups.${g}`) || g;
+const groupLabel = (g: string) => {
+  const key = GROUP_LABEL_KEYS[g];
+  if (key) return i18n.t(key);
+  const fallback = i18n.t(`agentTools.groups.${g}`);
+  return fallback === `agentTools.groups.${g}` ? g : fallback;
+};
 interface AgentToolInfo { id: string; name: string; role: string; icon: string; status: string; autonomy?: string; }
 interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedTools: string[]; toolAutonomy?: Record<string, string>; }
 

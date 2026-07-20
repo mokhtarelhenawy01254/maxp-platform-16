@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useCurrency } from "../../hooks/useCurrency";
 import { getApiUrl } from "../../config/environment";
@@ -35,6 +36,7 @@ interface Coupon {
 type CouponType = Coupon["type"];
 
 const Coupons: React.FC = () => {
+  const { t } = useTranslation();
   const { formatDate } = useDateFormat();
   const { formatPrice } = useCurrency();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -64,6 +66,34 @@ const Coupons: React.FC = () => {
     customerSegments: ["all"],
   });
 
+  const getTypeText = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case "percentage":
+        return t("coupons.typePercentage");
+      case "fixed":
+      case "fixed_amount":
+        return t("coupons.typeFixed");
+      case "free_shipping":
+        return t("coupons.typeFreeShipping");
+      default:
+        return type;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case "percentage":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      case "fixed":
+      case "fixed_amount":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      case "free_shipping":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+    }
+  };
+
   const fetchCoupons = useCallback(async () => {
     try {
       setLoading(true);
@@ -91,11 +121,11 @@ const Coupons: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching coupons:", error);
-      alert("فشل في جلب الكوبونات. يرجى المحاولة مرة أخرى.");
+      alert(t("coupons.fetchFailed"));
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, t]);
 
   useEffect(() => {
     fetchCoupons();
@@ -137,51 +167,23 @@ const Coupons: React.FC = () => {
           isActive: true,
           customerSegments: ["all"],
         });
-        alert("تم إنشاء الكوبون بنجاح");
+        alert(t("coupons.created"));
       } else {
-        alert(data.error || "فشل في إنشاء الكوبون");
+        alert(data.error || t("coupons.createFailed"));
       }
     } catch (error: unknown) {
       console.error("Error creating coupon:", error);
       alert(
-        `فشل في إنشاء الكوبون: ${
-          error instanceof Error ? error.message : "حدث خطأ غير متوقع"
+        `${t("coupons.createFailed")}: ${
+          error instanceof Error ? error.message : t("coupons.createError")
         }`,
       );
     }
   };
 
-  const getTypeText = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case "percentage":
-        return "نسبة مئوية";
-      case "fixed":
-      case "fixed_amount":
-        return "مبلغ ثابت";
-      case "free_shipping":
-        return "شحن مجاني";
-      default:
-        return type;
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case "percentage":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-      case "fixed":
-      case "fixed_amount":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-      case "free_shipping":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-    }
-  };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert("تم نسخ الكود");
+    alert(t("coupons.codeCopied"));
   };
 
   if (loading) {
@@ -200,10 +202,10 @@ const Coupons: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
               <TicketIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mr-3" />
-              إدارة الكوبونات والخصومات
+              {t("coupons.pageTitle")}
             </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              إنشاء وإدارة أكواد الخصم والعروض الترويجية
+              {t("coupons.pageDescription")}
             </p>
           </div>
           <button
@@ -211,7 +213,7 @@ const Coupons: React.FC = () => {
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
           >
             <PlusIcon className="h-5 w-5 mr-2" />
-            كوبون جديد
+            {t("coupons.newCoupon")}
           </button>
         </div>
       </div>
@@ -221,7 +223,7 @@ const Coupons: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              الحالة
+              {t("coupons.filterStatus")}
             </label>
             <select
               value={filters.isActive}
@@ -230,31 +232,31 @@ const Coupons: React.FC = () => {
               }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">جميع الحالات</option>
-              <option value="true">نشط</option>
-              <option value="false">غير نشط</option>
+              <option value="">{t("coupons.filterAllStatuses")}</option>
+              <option value="true">{t("coupons.filterActive")}</option>
+              <option value="false">{t("coupons.filterInactive")}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              نوع الخصم
+              {t("coupons.filterType")}
             </label>
             <select
               value={filters.type}
               onChange={(e) => setFilters({ ...filters, type: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">جميع الأنواع</option>
-              <option value="percentage">نسبة مئوية</option>
-              <option value="fixed">مبلغ ثابت</option>
-              <option value="free_shipping">شحن مجاني</option>
+              <option value="">{t("coupons.filterAllTypes")}</option>
+              <option value="percentage">{t("coupons.filterPercentage")}</option>
+              <option value="fixed">{t("coupons.filterFixed")}</option>
+              <option value="free_shipping">{t("coupons.filterFreeShipping")}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              فئة العملاء
+              {t("coupons.filterSegment")}
             </label>
             <select
               value={filters.customerSegment}
@@ -263,11 +265,11 @@ const Coupons: React.FC = () => {
               }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">جميع الفئات</option>
-              <option value="all">جميع العملاء</option>
-              <option value="new">عملاء جدد</option>
-              <option value="VIP">عملاء VIP</option>
-              <option value="regular">عملاء عاديين</option>
+              <option value="">{t("coupons.filterAllSegments")}</option>
+              <option value="all">{t("coupons.filterAllCustomers")}</option>
+              <option value="new">{t("coupons.filterNewCustomers")}</option>
+              <option value="VIP">{t("coupons.filterVip")}</option>
+              <option value="regular">{t("coupons.filterRegular")}</option>
             </select>
           </div>
 
@@ -278,7 +280,7 @@ const Coupons: React.FC = () => {
               }
               className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
             >
-              إعادة تعيين
+              {t("coupons.filterReset")}
             </button>
           </div>
         </div>
@@ -291,28 +293,28 @@ const Coupons: React.FC = () => {
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الكود
+                  {t("coupons.tableCode")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الاسم
+                  {t("coupons.tableName")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  النوع
+                  {t("coupons.tableType")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  القيمة
+                  {t("coupons.tableValue")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الاستخدام
+                  {t("coupons.tableUsage")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الصلاحية
+                  {t("coupons.tableValidity")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الحالة
+                  {t("coupons.tableStatus")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  الإجراءات
+                  {t("coupons.tableActions")}
                 </th>
               </tr>
             </thead>
@@ -358,8 +360,8 @@ const Coupons: React.FC = () => {
                       : coupon.type === "fixed" ||
                           coupon.type === "FIXED" ||
                           coupon.type === "FIXED_AMOUNT"
-                        ? `${coupon.value} ريال`
-                        : "شحن مجاني"}
+                        ? `${coupon.value}`
+                        : t("coupons.typeFreeShipping")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-gray-100">
@@ -375,8 +377,8 @@ const Coupons: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    <div>من: {formatDate(coupon.validFrom)}</div>
-                    <div>إلى: {formatDate(coupon.validTo)}</div>
+                    <div>{t("coupons.fromLabel")}: {formatDate(coupon.validFrom)}</div>
+                    <div>{t("coupons.toLabel")}: {formatDate(coupon.validTo)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -386,7 +388,7 @@ const Coupons: React.FC = () => {
                           : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                       }`}
                     >
-                      {coupon.isActive ? "نشط" : "غير نشط"}
+                      {coupon.isActive ? t("coupons.active") : t("coupons.inactive")}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -418,10 +420,10 @@ const Coupons: React.FC = () => {
           <div className="text-center py-12">
             <TicketIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
             <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-              لا توجد كوبونات
+              {t("coupons.noCoupons")}
             </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              لم يتم العثور على كوبونات تطابق المعايير المحددة.
+              {t("coupons.noCouponsDesc")}
             </p>
           </div>
         )}
@@ -433,7 +435,7 @@ const Coupons: React.FC = () => {
           <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                إنشاء كوبون جديد
+                {t("coupons.modalCreateTitle")}
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -447,7 +449,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    كود الكوبون *
+                    {t("coupons.couponCode")} *
                   </label>
                   <input
                     type="text"
@@ -459,12 +461,12 @@ const Coupons: React.FC = () => {
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="SUMMER2024"
+                    placeholder={t("coupons.codePlaceholder")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    اسم الكوبون *
+                    {t("coupons.couponName")} *
                   </label>
                   <input
                     type="text"
@@ -473,14 +475,14 @@ const Coupons: React.FC = () => {
                       setNewCoupon({ ...newCoupon, name: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="خصم الصيف"
+                    placeholder={t("coupons.namePlaceholder")}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  الوصف
+                  {t("coupons.description")}
                 </label>
                 <textarea
                   value={newCoupon.description}
@@ -489,14 +491,14 @@ const Coupons: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   rows={2}
-                  placeholder="وصف الكوبون..."
+                  placeholder={t("coupons.descPlaceholder")}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    نوع الخصم *
+                    {t("coupons.discountType")} *
                   </label>
                   <select
                     value={newCoupon.type}
@@ -508,14 +510,14 @@ const Coupons: React.FC = () => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    <option value="percentage">نسبة مئوية</option>
-                    <option value="fixed">مبلغ ثابت</option>
-                    <option value="free_shipping">شحن مجاني</option>
+                    <option value="percentage">{t("coupons.typePercentage")}</option>
+                    <option value="fixed">{t("coupons.typeFixed")}</option>
+                    <option value="free_shipping">{t("coupons.typeFreeShipping")}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    القيمة *
+                    {t("coupons.value")} *
                   </label>
                   <input
                     type="number"
@@ -527,7 +529,7 @@ const Coupons: React.FC = () => {
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="20"
+                    placeholder={t("coupons.valuePlaceholder")}
                   />
                 </div>
               </div>
@@ -535,7 +537,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    الحد الأدنى للطلب
+                    {t("coupons.minOrderAmount")}
                   </label>
                   <input
                     type="number"
@@ -547,12 +549,12 @@ const Coupons: React.FC = () => {
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="100"
+                    placeholder={t("coupons.minOrderPlaceholder")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    الحد الأقصى للخصم
+                    {t("coupons.maxDiscount")}
                   </label>
                   <input
                     type="number"
@@ -564,7 +566,7 @@ const Coupons: React.FC = () => {
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="200"
+                    placeholder={t("coupons.maxDiscountPlaceholder")}
                   />
                 </div>
               </div>
@@ -572,7 +574,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    عدد مرات الاستخدام الكلي
+                    {t("coupons.totalUsageLimit")}
                   </label>
                   <input
                     type="number"
@@ -584,12 +586,12 @@ const Coupons: React.FC = () => {
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="100"
+                    placeholder={t("coupons.totalUsagePlaceholder")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    عدد مرات الاستخدام لكل عميل
+                    {t("coupons.perCustomerLimit")}
                   </label>
                   <input
                     type="number"
@@ -601,7 +603,7 @@ const Coupons: React.FC = () => {
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="1"
+                    placeholder={t("coupons.perCustomerPlaceholder")}
                   />
                 </div>
               </div>
@@ -609,7 +611,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    تاريخ البداية *
+                    {t("coupons.startDate")} *
                   </label>
                   <input
                     type="datetime-local"
@@ -622,7 +624,7 @@ const Coupons: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    تاريخ الانتهاء *
+                    {t("coupons.endDate")} *
                   </label>
                   <input
                     type="datetime-local"
@@ -645,7 +647,7 @@ const Coupons: React.FC = () => {
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded dark:border-gray-600"
                 />
                 <label className="mr-2 block text-sm text-gray-900 dark:text-gray-300">
-                  تفعيل الكوبون
+                  {t("coupons.activateCoupon")}
                 </label>
               </div>
 
@@ -654,13 +656,13 @@ const Coupons: React.FC = () => {
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  إلغاء
+                  {t("coupons.cancel")}
                 </button>
                 <button
                   onClick={createCoupon}
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                 >
-                  إنشاء الكوبون
+                  {t("coupons.create")}
                 </button>
               </div>
             </div>
@@ -674,7 +676,7 @@ const Coupons: React.FC = () => {
           <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                تفاصيل الكوبون
+                {t("coupons.modalViewTitle")}
               </h3>
               <button
                 onClick={() => setShowCouponModal(false)}
@@ -702,7 +704,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    النوع
+                    {t("coupons.tableType")}
                   </label>
                   <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                     {getTypeText(selectedCoupon.type)}
@@ -710,7 +712,7 @@ const Coupons: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    القيمة
+                    {t("coupons.value")}
                   </label>
                   <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                     {selectedCoupon.type === "percentage" ||
@@ -719,8 +721,8 @@ const Coupons: React.FC = () => {
                       : selectedCoupon.type === "fixed" ||
                           selectedCoupon.type === "FIXED" ||
                           selectedCoupon.type === "FIXED_AMOUNT"
-                        ? `${selectedCoupon.value} جنيه`
-                        : "شحن مجاني"}
+                        ? `${selectedCoupon.value}`
+                        : t("coupons.typeFreeShipping")}
                   </div>
                 </div>
               </div>
@@ -728,7 +730,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    الحد الأدنى للطلب
+                    {t("coupons.minOrderAmount")}
                   </label>
                   <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                     {formatPrice(selectedCoupon.minOrderAmount || 0)}
@@ -736,12 +738,12 @@ const Coupons: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    الحد الأقصى للخصم
+                    {t("coupons.maxDiscount")}
                   </label>
                   <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                     {selectedCoupon.maxDiscountAmount
                       ? formatPrice(selectedCoupon.maxDiscountAmount)
-                      : "غير محدد"}
+                      : t("coupons.notSpecified")}
                   </div>
                 </div>
               </div>
@@ -749,7 +751,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    عدد مرات الاستخدام
+                    {t("coupons.totalUsageLimit")}
                   </label>
                   <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                     {selectedCoupon.usageCount} /{" "}
@@ -758,7 +760,7 @@ const Coupons: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    الحالة
+                    {t("coupons.tableStatus")}
                   </label>
                   <div className="mt-1">
                     <span
@@ -768,7 +770,7 @@ const Coupons: React.FC = () => {
                           : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                       }`}
                     >
-                      {selectedCoupon.isActive ? "نشط" : "غير نشط"}
+                      {selectedCoupon.isActive ? t("coupons.active") : t("coupons.inactive")}
                     </span>
                   </div>
                 </div>
@@ -777,7 +779,7 @@ const Coupons: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    تاريخ البداية
+                    {t("coupons.startDate")}
                   </label>
                   <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                     {formatDate(selectedCoupon.validFrom)}
@@ -785,7 +787,7 @@ const Coupons: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    تاريخ الانتهاء
+                    {t("coupons.endDate")}
                   </label>
                   <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                     {formatDate(selectedCoupon.validTo)}
@@ -798,7 +800,7 @@ const Coupons: React.FC = () => {
                   onClick={() => setShowCouponModal(false)}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  إغلاق
+                  {t("coupons.close")}
                 </button>
               </div>
             </div>
