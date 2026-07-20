@@ -113,6 +113,7 @@ const InternalIntegrations: React.FC = () => {
     const [selectedProductIndexes, setSelectedProductIndexes] = useState<Set<number>>(new Set());
     const [fetchingProducts, setFetchingProducts] = useState(false);
     const [importing, setImporting] = useState(false);
+    const [productSearchQuery, setProductSearchQuery] = useState("");
 
     // Response Loading State
     const [respondingIds, setRespondingIds] = useState<Set<string>>(new Set());
@@ -387,10 +388,27 @@ const InternalIntegrations: React.FC = () => {
         0
     );
 
+    const filteredProducts = providerProducts.filter((p) =>
+        productSearchQuery
+            ? p.name.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
+              (p.sku || "").toLowerCase().includes(productSearchQuery.toLowerCase()) ||
+              (p.category || "").toLowerCase().includes(productSearchQuery.toLowerCase())
+            : true
+    );
+
+    const handleSelectAll = () => {
+        const filteredIndexes = filteredProducts.map((p) => providerProducts.indexOf(p));
+        setSelectedProductIndexes(new Set(filteredIndexes));
+    };
+
+    const handleDeselectAll = () => {
+        setSelectedProductIndexes(new Set());
+    };
+
     if (view === "pull-products" && selectedProvider) {
         return (
             <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <button onClick={() => setView("main")} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                             <ArrowLeftIcon className="w-5 h-5 text-gray-500" />
@@ -413,19 +431,51 @@ const InternalIntegrations: React.FC = () => {
                     </button>
                 </div>
 
+                {/* Search + Selection Actions */}
+                {!fetchingProducts && providerProducts.length > 0 && (
+                    <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                        <div className="relative flex-1">
+                            <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                value={productSearchQuery}
+                                onChange={(e) => setProductSearchQuery(e.target.value)}
+                                placeholder="ابحث عن منتج بالاسم أو SKU..."
+                                className="w-full pr-9 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 outline-none"
+                                dir="rtl"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSelectAll}
+                                className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                                تحديد الكل ({filteredProducts.length})
+                            </button>
+                            <button
+                                onClick={handleDeselectAll}
+                                className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-sm rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                إلغاء الكل
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {fetchingProducts ? (
                     <div className="py-20 text-center">
                         <ArrowPathIcon className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
                         <p className="text-gray-500">جاري جلب المنتجات...</p>
                     </div>
-                ) : providerProducts.length > 0 ? (
+                ) : filteredProducts.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {providerProducts.map((product, idx) => {
-                            const isSelected = selectedProductIndexes.has(idx);
+                        {filteredProducts.map((product, idx) => {
+                            const originalIndex = providerProducts.indexOf(product);
+                            const isSelected = selectedProductIndexes.has(originalIndex);
                             return (
                                 <div
                                     key={product.internalId}
-                                    onClick={() => toggleProduct(idx)}
+                                    onClick={() => toggleProduct(originalIndex)}
                                     className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10" : "border-gray-100 dark:border-gray-700 hover:border-gray-200"
                                         }`}
                                 >
@@ -452,6 +502,12 @@ const InternalIntegrations: React.FC = () => {
                                 </div>
                             );
                         })}
+                    </div>
+                ) : providerProducts.length > 0 ? (
+                    <div className="py-20 text-center">
+                        <ExclamationTriangleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">لا توجد منتجات تطابق البحث</h3>
+                        <p className="text-gray-500">حاول تغيير كلمة البحث.</p>
                     </div>
                 ) : (
                     <div className="py-20 text-center">
