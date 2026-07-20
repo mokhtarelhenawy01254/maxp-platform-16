@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getDirection } from "../../i18n";
 import { Link, useParams } from "react-router-dom";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -126,7 +127,7 @@ const IncompleteOrderDetails: React.FC = () => {
     order?.checkoutUpdatedAt || order?.updatedAt || order?.checkoutStartedAt || "";
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={getDirection()}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
