@@ -1,9 +1,0 @@
-{
-  "id": "deal-closing",
-  "displayName": "Deal Closing",
-  "version": "1.0.0",
-  "description": "Guide high-value deals through the final stages with urgency signals, objections handling, and closing tactics.",
-  "allowedTools": ["pipeline_overview", "lead_score", "purchase_prediction", "customer_info", "order_create_draft", "discount_create_draft", "whatsapp_send", "shipping_rates"],
-  "requiresHumanApproval": false,
-  "maxToolCount": 4
-}

@@ -1,4 +1,0 @@
-ALTER TABLE "affiliates"
-  ADD COLUMN IF NOT EXISTS "statusReason" TEXT,
-  ADD COLUMN IF NOT EXISTS "reviewedAt" TIMESTAMP(3),
-  ADD COLUMN IF NOT EXISTS "reviewedBy" TEXT;
