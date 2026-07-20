@@ -151,7 +151,14 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    setActiveTab(tab.id);
+                                    if (tab.id === 'transitions') {
+                                        orderWorkflowService.getStatuses()
+                                            .then(res => setStatuses((res.data || [])))
+                                            .catch(() => {});
+                                    }
+                                }}
                                 className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${activeTab === tab.id
                                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30'
                                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 border border-slate-200 dark:border-slate-700'
