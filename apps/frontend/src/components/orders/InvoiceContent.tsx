@@ -163,7 +163,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   
   const valueStyle: React.CSSProperties = {
     fontSize: compact ? "13px" : "15px",
-    fontWeight: 600,
+    fontWeight: 700,
     color: "#000",
     textAlign: "right",
     direction: "rtl"
@@ -251,18 +251,18 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
                         </div>
                       )}
                    </td>
-                   <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontFamily: "monospace", fontSize: compact ? "11px" : "13px", fontWeight: 800 }}>
-                     {item.productSku || "—"}
-                   </td>
-                   <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontSize: compact ? "12px" : "14px", fontWeight: 700 }}>
-                     {item.quantity}
-                   </td>
-                   <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontSize: compact ? "11px" : "13px", fontWeight: 600 }}>
-                     {fm(parseNumber(item.price))}
-                   </td>
-                   <td style={{ padding: "4px 6px", textAlign: "center", fontSize: compact ? "12px" : "14px", fontWeight: 800 }}>
-                     {fm(getItemTotal(item))}
-                   </td>
+                    <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontFamily: "monospace", fontSize: compact ? "11px" : "13px", fontWeight: 900 }}>
+                      {item.productSku || "—"}
+                    </td>
+                    <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontSize: compact ? "12px" : "14px", fontWeight: 800 }}>
+                      {item.quantity}
+                    </td>
+                    <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontSize: compact ? "11px" : "13px", fontWeight: 700 }}>
+                      {fm(parseNumber(item.price))}
+                    </td>
+                    <td style={{ padding: "4px 6px", textAlign: "center", fontSize: compact ? "12px" : "14px", fontWeight: 900 }}>
+                      {fm(getItemTotal(item))}
+                    </td>
                  </tr>
                ))}
              </tbody>

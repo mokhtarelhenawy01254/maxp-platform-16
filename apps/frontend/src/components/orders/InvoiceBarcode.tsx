@@ -42,7 +42,7 @@ const InvoiceBarcode: React.FC<InvoiceBarcodeProps> = ({
         {label}
       </div>
       <svg ref={svgRef} style={{ maxWidth: "100%", height: `${height}px` }} />
-      <span style={{ fontSize: compact ? "8px" : "9px", color: "#6B7280", fontFamily: "monospace", marginTop: "2px" }}>
+      <span style={{ fontSize: compact ? "9px" : "10px", color: "#000", fontFamily: "monospace", marginTop: "2px", fontWeight: 900 }}>
         {value}
       </span>
     </div>
