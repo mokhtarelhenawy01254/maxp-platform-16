@@ -43,17 +43,17 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
             setConfig(configData.data);
             setHasTransitions((transitionsData.data || []).length > 0);
             const statuses = statusesData.data || [];
-            if (statuses.length === 0) {
-                try {
-                    await orderWorkflowService.seedDefaultStatuses();
+            try {
+                const seedResult = await orderWorkflowService.seedDefaultStatuses();
+                if (seedResult?.data?.length > 0) {
                     const refreshed = await orderWorkflowService.getStatuses();
                     setStatuses(refreshed.data || []);
-                    toast.success('تم استيراد الحالات الأساسية بنجاح', { duration: 3000 });
-                } catch (seedErr) {
-                    console.warn('Seed defaults failed (maybe already exist):', seedErr);
+                    toast.success(`تم استيراد ${seedResult.data.length} حالة أساسية`, { duration: 3000 });
+                } else {
                     setStatuses(statuses);
                 }
-            } else {
+            } catch (seedErr) {
+                console.warn('Seed defaults failed:', seedErr);
                 setStatuses(statuses);
             }
         } catch (error) {
