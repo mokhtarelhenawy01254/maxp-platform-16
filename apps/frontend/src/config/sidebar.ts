@@ -647,6 +647,7 @@ export const getSidebarConfig = (
                 { to: '/cancellations/settings', icon: XCircleIcon, label: t('sidebar.cancellationSettings'), requiredPermissions: ['orders.cancellation-reasons.view'] },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
                 { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
+                { to: '/settings/cod-deposit', icon: BanknotesIcon, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },
                 { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
