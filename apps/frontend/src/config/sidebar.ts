@@ -827,6 +827,7 @@ export const getSidebarConfig = (
                     { to: '/platform/commissions', icon: CurrencyDollarIcon, label: t('sidebar.commissions') },
                     { to: '/affiliates/settings', icon: CogIcon, label: t('sidebar.affiliateSettings') },
                     { to: '/affiliates/products/visibility', icon: GlobeAltIcon, label: 'إدارة ظهور المنتجات للمسوقين' },
+                    { to: '/company-affiliates', icon: BuildingStorefrontIcon, label: 'الشركات المرتبطة' },
                 ] : []),
                 ...(user?.role === 'AFFILIATE' ? [
                     { to: '/affiliates/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
