@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
     ArrowsRightLeftIcon,
     ListBulletIcon,
@@ -25,6 +26,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
     const [config, setConfig] = useState<OrderWorkflowConfig | null>(null);
     const [statuses, setStatuses] = useState<OrderStatusDefinition[]>([]);
     const [loading, setLoading] = useState(true);
+    const [hasTransitions, setHasTransitions] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -33,17 +35,20 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [configData, statusesData] = await Promise.all([
+            const [configData, statusesData, transitionsData] = await Promise.all([
                 orderWorkflowService.getConfig(),
-                orderWorkflowService.getStatuses()
+                orderWorkflowService.getStatuses(),
+                orderWorkflowService.getTransitions()
             ]);
             setConfig(configData.data);
+            setHasTransitions((transitionsData.data || []).length > 0);
             const statuses = statusesData.data || [];
             if (statuses.length === 0) {
                 try {
                     await orderWorkflowService.seedDefaultStatuses();
                     const refreshed = await orderWorkflowService.getStatuses();
                     setStatuses(refreshed.data || []);
+                    toast.success('تم استيراد الحالات الأساسية بنجاح', { duration: 3000 });
                 } catch (seedErr) {
                     console.warn('Seed defaults failed (maybe already exist):', seedErr);
                     setStatuses(statuses);
@@ -177,6 +182,15 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                     {activeTab === 'settings' && (
                                         <TabErrorBoundary tabLabel="الإعدادات العامة">
                                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            {config?.enabled && !hasTransitions && (
+                                                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 flex gap-3 text-amber-700 dark:text-amber-400">
+                                                    <ShieldCheckIcon className="w-6 h-6 flex-shrink-0" />
+                                                    <div className="text-sm">
+                                                        <p className="font-bold mb-1">لا توجد قواعد انتقال مخصصة حتى الآن</p>
+                                                        <p>«فرض قواعد الانتقال» مفعل افتراضيًا — أي تغيير لحالة الطلب هيتصد لو مفيش قاعدة انتقال معرفة. روح لتبويبة <strong>قواعد الانتقال</strong> عشان تحدد التحولات المسموح فيها، أو عطل «فرض قواعد الانتقال» مؤقتًا.</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div>
                                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">الإعدادات العامة للمسار</h2>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
