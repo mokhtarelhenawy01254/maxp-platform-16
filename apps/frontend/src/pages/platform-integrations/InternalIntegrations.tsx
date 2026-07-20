@@ -10,10 +10,13 @@ import {
     ArrowLeftIcon,
     ExclamationTriangleIcon,
     UsersIcon as UserGroupIcon,
-    TrashIcon
+    TrashIcon,
+    BuildingOfficeIcon,
+    ClipboardDocumentIcon
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
+import { useAuth } from "../../hooks/useAuthSimple";
 
 interface Connection {
     id: string;
@@ -101,6 +104,8 @@ const InternalIntegrations: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [searchId, setSearchId] = useState("");
     const [searching, setSearching] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const { user } = useAuth();
 
     // Pull Products State
     const [selectedProvider, setSelectedProvider] = useState<Connection | null>(null);
@@ -766,8 +771,37 @@ const InternalIntegrations: React.FC = () => {
                 )}
 
                 {activeTab === "find" && (
-                    <div className="max-w-xl mx-auto py-8">
-                        <h3 className="text-lg font-semibold mb-4 text-center">إرسال طلب ربط جديد</h3>
+                    <div className="max-w-xl mx-auto py-8 space-y-6">
+                        {/* Company ID Card */}
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl">
+                            <div className="flex items-center gap-2 mb-2">
+                                <BuildingOfficeIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <span className="text-sm font-medium text-blue-800 dark:text-blue-300">معرف شركتك (Your Company ID)</span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                                <code className="flex-1 text-sm font-mono text-gray-900 dark:text-white dir-ltr text-left break-all" style={{ direction: "ltr" }}>
+                                    {user?.companyId || "—"}
+                                </code>
+                                <button
+                                    onClick={() => {
+                                        if (user?.companyId) {
+                                            navigator.clipboard.writeText(user.companyId);
+                                            setCopied(true);
+                                            setTimeout(() => setCopied(false), 2000);
+                                        }
+                                    }}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors shrink-0"
+                                >
+                                    <ClipboardDocumentIcon className="w-3.5 h-3.5" />
+                                    {copied ? "تم النسخ" : "نسخ"}
+                                </button>
+                            </div>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                شارك هذا المعرف مع الشركات الأخرى لتربط متجرك بهم
+                            </p>
+                        </div>
+
+                        <h3 className="text-lg font-semibold text-center">إرسال طلب ربط جديد</h3>
                         <div className="space-y-4">
                             <div className="relative">
                                 <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
