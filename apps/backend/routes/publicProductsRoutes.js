@@ -1689,6 +1689,92 @@ router.get('/:id/volume-discounts', async (req, res) => {
   }
 });
 
+router.get('/:id/:presentationSlug', async (req, res) => {
+  try {
+    const { id, presentationSlug } = req.params;
+    const orConditions = [{ slug: id }];
+
+    if (id.length > 20) {
+      orConditions.unshift({ id });
+    }
+
+    const prisma = await getPrisma();
+    const product = await prisma.product.findFirst({
+      where: withPublicActiveProductFilter({
+        OR: orConditions,
+        companyId: req.companyId,
+        isActive: true,
+      }),
+      select: {
+        ...PUBLIC_PRODUCT_SELECT,
+        productPresentations: {
+          where: { slug: presentationSlug, isActive: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            images: true,
+            mainImage: true,
+            title: true,
+            description: true,
+            metadata: true,
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'المنتج غير موجود',
+      });
+    }
+
+    const presentation = product.productPresentations?.[0];
+    if (!presentation) {
+      return res.status(404).json({
+        success: false,
+        error: 'العرض التقديمي غير موجود',
+      });
+    }
+
+    const demandSignals = await getProductDemandSignals(prisma, {
+      companyId: req.companyId,
+      productId: product.id,
+    });
+    const affiliatePricing = await resolveAffiliateProductPricing(prisma, req, product.id);
+
+    const presImages = presentation.images ? JSON.parse(presentation.images) : [];
+    const formattedProduct = formatProductResponse({
+      ...product,
+      ...demandSignals,
+      images: presImages.length > 0 ? JSON.stringify(presImages) : product.images,
+      mainImage: presentation.mainImage || product.mainImage,
+      name: presentation.title || product.name,
+      description: presentation.description || product.description,
+    });
+
+    const result = applyAffiliatePricing(formattedProduct, affiliatePricing);
+    result.presentation = {
+      id: presentation.id,
+      name: presentation.name,
+      slug: presentation.slug,
+    };
+    result.canonicalSlug = product.slug;
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error('❌ [PUBLIC-PRODUCTS] GET /:id/:presentationSlug error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;

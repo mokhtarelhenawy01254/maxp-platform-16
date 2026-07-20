@@ -6,7 +6,7 @@ import {
 import { getBaseDomain } from "../../utils/storeUrl";
 
 const STOREFRONT_PRODUCT_PATH_PATTERN =
-  /^\/(?:store\/)?(?:product|shop\/products)\/([^/?#]+)\/?$/;
+  /^\/(?:store\/)?(?:product|products|shop\/products)\/([^/?#]+)(?:\/([^/?#]+))?\/?$/;
 const STOREFRONT_PREVIEW_QUERY_KEYS = [
   "companyId",
   "previewTheme",
@@ -71,6 +71,16 @@ export const getStorefrontProductRouteKey = (
   const match = normalizedPathname.match(STOREFRONT_PRODUCT_PATH_PATTERN);
 
   return match?.[1] ? decodeURIComponent(match[1]) : null;
+};
+
+export const getStorefrontProductPresentationSlug = (
+  pathname: NullablePathInput,
+): string | null => {
+  const normalizedPathname =
+    normalizePathnameInput(pathname).replace(/\/+$/, "") || "/";
+  const match = normalizedPathname.match(STOREFRONT_PRODUCT_PATH_PATTERN);
+
+  return match?.[2] ? decodeURIComponent(match[2]) : null;
 };
 
 interface BuildStorefrontPreviewPathOptions {

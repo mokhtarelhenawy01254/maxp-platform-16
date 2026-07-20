@@ -9,6 +9,14 @@ import { getCompanyId, getStorefrontScope, storefrontFetch } from '../../utils/s
 import { Product, normalizeStorefrontProduct } from './useProducts';
 import { resolveLegacyProductSlugAlias } from '../utils/productSlugAliases';
 
+let _globalPresentationSlug: string | null = null;
+
+export const setGlobalPresentationSlug = (slug: string | null) => {
+  _globalPresentationSlug = slug;
+};
+
+export const getGlobalPresentationSlug = () => _globalPresentationSlug;
+
 export const resolveStorefrontProductPreviewMode = (): boolean =>
   typeof window !== 'undefined' &&
   (new URLSearchParams(window.location.search).get('productPreview') === '1' ||
@@ -31,6 +39,7 @@ export const getStorefrontProductQueryKey = (
   storefrontScope = getStorefrontScope(),
   isPreviewMode = resolveStorefrontProductPreviewMode(),
   previewKey = resolveThemeCatalogPreviewKey(),
+  presentationSlug?: string,
 ) =>
   [
     'storefront',
@@ -39,6 +48,7 @@ export const getStorefrontProductQueryKey = (
     idOrSlug,
     isPreviewMode ? 'preview' : 'public',
     previewKey,
+    presentationSlug || '_default',
   ] as const;
 
 const getStoredUserCompanyId = (): string | null => {
@@ -138,10 +148,23 @@ const fetchPreviewProductFromAdminApi = async (
   }
 };
 
-const fetchPublicStorefrontProduct = async (idOrSlug: string): Promise<Product> => {
-  const response = await storefrontFetch(`/products/${encodeURIComponent(idOrSlug)}`);
+const fetchPublicStorefrontProduct = async (
+  idOrSlug: string,
+  presentationSlug?: string,
+): Promise<Product> => {
+  const endpoint = presentationSlug
+    ? `/products/${encodeURIComponent(idOrSlug)}/${encodeURIComponent(presentationSlug)}`
+    : `/products/${encodeURIComponent(idOrSlug)}`;
+  const response = await storefrontFetch(endpoint);
   if (response.success) {
-    return normalizeStorefrontProduct(response.data);
+    const product = normalizeStorefrontProduct(response.data);
+    if (response.data?.canonicalSlug) {
+      (product as any)._canonicalSlug = response.data.canonicalSlug;
+    }
+    if (response.data?.presentation) {
+      (product as any)._presentation = response.data.presentation;
+    }
+    return product;
   }
 
   throw new Error(response.message || 'Failed to fetch product');
@@ -181,7 +204,9 @@ const resolveStorefrontProductPreviewKey = (): string => {
 export const fetchStorefrontProduct = async (
   idOrSlug: string,
   isPreviewMode = resolveStorefrontProductPreviewMode(),
+  presentationSlug?: string,
 ): Promise<Product> => {
+  const resolvedPresentationSlug = presentationSlug || getGlobalPresentationSlug();
   if (!idOrSlug) {
     throw new Error('Product ID or Slug is required');
   }
@@ -221,14 +246,15 @@ export const fetchStorefrontProduct = async (
       return previewProduct;
     }
 
-    return fetchPublicStorefrontProduct(requestIdOrSlug);
+    return fetchPublicStorefrontProduct(requestIdOrSlug, resolvedPresentationSlug);
   }
 
-  return fetchPublicStorefrontProduct(requestIdOrSlug);
+  return fetchPublicStorefrontProduct(requestIdOrSlug, resolvedPresentationSlug);
 };
 
 interface UseProductOptions {
   enabled?: boolean;
+  presentationSlug?: string;
 }
 
 export const useProduct = (
@@ -242,6 +268,7 @@ export const useProduct = (
     idOrSlug,
     storefrontScope,
   );
+  const presentationSlug = options.presentationSlug;
 
   const { data: product, isLoading, error, refetch } = useQuery<Product>({
     queryKey: getStorefrontProductQueryKey(
@@ -249,8 +276,9 @@ export const useProduct = (
       storefrontScope,
       isPreviewMode,
       previewKey,
+      presentationSlug,
     ),
-    queryFn: () => fetchStorefrontProduct(requestIdOrSlug!, isPreviewMode),
+    queryFn: () => fetchStorefrontProduct(requestIdOrSlug!, isPreviewMode, presentationSlug),
     enabled: Boolean(requestIdOrSlug) && (options.enabled ?? true),
     staleTime: 60 * 1000,
   });

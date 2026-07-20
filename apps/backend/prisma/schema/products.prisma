@@ -307,6 +307,28 @@ model ProductVariant {
   @@map("product_variants")
 }
 
+model ProductPresentation {
+  id             String    @id @default(cuid())
+  productId      String
+  name           String
+  slug           String
+  images         String?
+  mainImage      String?
+  title          String?
+  description    String?
+  isActive       Boolean   @default(true)
+  sortOrder      Int       @default(0)
+  metadata       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, slug])
+  @@index([productId])
+  @@index([slug])
+  @@map("product_presentations")
+}
+
 model Product {
   id                         String                    @id @default(cuid())
   name                       String
@@ -371,6 +393,7 @@ model Product {
   postResponseSettings       PostResponseSettings[]
   productAnalytics           ProductAnalytic[]
   productLandingPages        ProductLandingPage[]
+  productPresentations       ProductPresentation[]
   productReviews             ProductReview[]
   productVariants            ProductVariant[]
   productVisits              ProductVisit[]

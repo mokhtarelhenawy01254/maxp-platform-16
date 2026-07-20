@@ -25,6 +25,7 @@ import {
 import { useProductForm } from "./hooks/useProductForm";
 import { useProductMedia } from "./hooks/useProductMedia";
 import { useProductVariants } from "./hooks/useProductVariants";
+import { useProductPresentations } from "./hooks/useProductPresentations";
 import { useProductApi } from "./hooks/useProductApi";
 
 // Tabs
@@ -41,6 +42,7 @@ import { ShippingTab } from "./components/tabs/ShippingTab";
 import { SeoTab } from "./components/tabs/SeoTab";
 import { AdvancedTab } from "./components/tabs/AdvancedTab";
 import { QuantityOffersTab } from "./components/tabs/QuantityOffersTab";
+import { PresentationsTab } from "./components/tabs/PresentationsTab";
 import {
   hydrateVariantSettings,
   normalizeVariantSettingsForSave,
@@ -439,6 +441,15 @@ export const ProductNewFinal: React.FC = () => {
   } = useProductApi();
 
   const effectiveProductId = id || currentProductId;
+
+  const {
+    presentations,
+    loading: presentationsLoading,
+    fetchPresentations,
+    addPresentation,
+    updatePresentation,
+    deletePresentation,
+  } = useProductPresentations(effectiveProductId);
 
   useEffect(() => {
     setCurrentProductId(id || null);
@@ -1250,6 +1261,7 @@ export const ProductNewFinal: React.FC = () => {
     { id: "media", name: t("products.tabs.media"), icon: PhotoIcon },
     { id: "attributes", name: t("products.tabs.attributes"), icon: SwatchIcon },
     { id: "variants", name: t("products.tabs.variants"), icon: SwatchIcon },
+    { id: "presentations", name: "العروض التقديمية", icon: PhotoIcon },
     { id: "display", name: t("products.tabs.display"), icon: EyeIcon },
     ...(!isMerchant
       ? [
@@ -1647,6 +1659,18 @@ export const ProductNewFinal: React.FC = () => {
                 displayCurrency={displayCurrency}
                 shippingClassOptions={resolvedShippingClassOptions}
                 t={t}
+              />
+            )}
+
+            {activeTab === "presentations" && (
+              <PresentationsTab
+                presentations={presentations}
+                loading={presentationsLoading}
+                productId={effectiveProductId}
+                onAdd={addPresentation}
+                onUpdate={updatePresentation}
+                onDelete={deletePresentation}
+                onRefresh={fetchPresentations}
               />
             )}
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controller/productController');
 const volumeDiscountController = require('../controller/volumeDiscountController');
+const presentationController = require('../controller/productPresentationController');
 const verifyToken = require("../utils/verifyToken")
 const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const multer = require('multer');
@@ -94,5 +95,12 @@ router.delete('/:id/variants/:variantId/images', verifyToken.authenticateToken, 
 
 // Variant images routes (variantId in body) - receives imageUrl in JSON
 router.post('/:id/variant-images', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.addImageToVariantFromBody);
+
+// Product presentation routes
+router.post('/:id/presentations', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.createPresentation);
+router.get('/:id/presentations', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.getPresentations);
+router.get('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.getSinglePresentation);
+router.put('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.updatePresentation);
+router.delete('/:id/presentations/:presentationId', verifyToken.authenticateToken, requireDbPermission('products.view'), presentationController.deletePresentation);
 
 module.exports = router;

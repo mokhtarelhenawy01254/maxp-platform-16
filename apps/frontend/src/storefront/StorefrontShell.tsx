@@ -70,7 +70,7 @@ import "./styles/storefront-layout.css";
 
 /* ─────────────────── Search Results ─────────────────── */
 import type { Product } from "./hooks/useProducts";
-import { useProduct } from "./hooks/useProduct";
+import { useProduct, setGlobalPresentationSlug } from "./hooks/useProduct";
 
 const GlobalConversionHost = React.lazy(
   () => import("./components/GlobalConversionHost"),
@@ -8094,6 +8094,15 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       />
     </div>
   );
+  const PresentationRouteWrapper: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+    const { presentationSlug } = useParams<{ presentationSlug: string }>();
+    React.useEffect(() => {
+      setGlobalPresentationSlug(presentationSlug || null);
+      return () => setGlobalPresentationSlug(null);
+    }, [presentationSlug]);
+    return element;
+  };
+
   const productPageElement = (
     <div key={`product:${routePageKey}`} className="w-full flex flex-col">
       {isElessiPackTheme
@@ -8433,6 +8442,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <Route path={scopedPath("shop")} element={shopPageElement} />
         <Route path={scopedPath("product/:id")} element={productPageElement} />
         <Route path={scopedPath("products/:id")} element={productPageElement} />
+        <Route path={scopedPath("products/:slug/:presentationSlug")} element={<PresentationRouteWrapper element={productPageElement} />} />
         <Route
           path={scopedPath("lp/:id")}
           element={<ProductImageLandingPage />}

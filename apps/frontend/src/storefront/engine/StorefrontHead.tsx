@@ -226,8 +226,13 @@ export const StorefrontHead: React.FC = () => {
     setMetaTag('meta[name="twitter:title"]', 'name', 'twitter:title', finalTitle);
     setMetaTag('meta[name="twitter:description"]', 'name', 'twitter:description', defaultDescription);
 
-    // Canonical URL
-    setLinkTag('canonical', currentUrl);
+    // Canonical URL — strip presentation slug if present
+    const PRESENTATION_PATH_PATTERN = /^\/(?:store\/)?(?:product|products|shop\/products)\/([^/?#]+)\/([^/?#]+)/;
+    const presMatch = window.location.pathname.match(PRESENTATION_PATH_PATTERN);
+    const canonicalUrl = presMatch
+      ? `${window.location.origin}${presMatch[0].replace(/\/[^/?#]+$/, '')}${window.location.search}`
+      : currentUrl;
+    setLinkTag('canonical', canonicalUrl);
 
     // Cleanup on unmount: restore original title
     return () => {
