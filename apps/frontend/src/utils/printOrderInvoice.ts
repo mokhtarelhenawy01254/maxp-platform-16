@@ -288,14 +288,14 @@ export const printOrderInvoice = async ({
           }
           .offer-item-row td:first-child { padding-right: 20px; }
           .item-name {
-            font-weight: 600;
+            font-weight: 700;
             color: #0f172a;
             font-size: 14px;
           }
           .item-meta { color: #000; font-size: 13px; font-weight: 700; }
-          .sku-cell { font-family: monospace; font-size: 0.8rem; color: ${s.secondaryColor}; }
+          .sku-cell { font-family: monospace; font-size: 0.8rem; color: ${s.secondaryColor}; font-weight: 800; }
           .center { text-align: center; }
-          .amount { text-align: left; white-space: nowrap; }
+          .amount { text-align: left; white-space: nowrap; font-weight: 700; }
           .totals-left { text-align: left; margin-right: auto; max-width: 60%; }
           .totals-row {
             display: flex;
@@ -312,7 +312,7 @@ export const printOrderInvoice = async ({
           }
           .totals-row.total-line .value {
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 800;
             color: #0f172a;
           }
           .barcode-wrap {
