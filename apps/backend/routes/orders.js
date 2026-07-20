@@ -10,6 +10,7 @@ const orderService = require('../services/orderService');
 const orderDetailsUpdateService = require('../services/orderDetailsUpdateService');
 const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { VALID_ORDER_STATUSES } = require('../utils/constants');
 const preparationQueueService = require('../services/preparationQueueService');
 const merchantService = require('../services/merchantService');
 const { validateOrderItems, validateEgyptianPhone } = require('../utils/orderValidation');
@@ -3876,17 +3877,25 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
       });
     }
 
-    const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED', 'WOO_TAGHEZ', 'DUPLICATE_ORDER'];
-    if (!validStatuses.includes(normalizedStatus)) {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    const validStatuses = new Set(VALID_ORDER_STATUSES);
+    try {
+      const customStatuses = await getSharedPrismaClient().orderStatusDefinition.findMany({
+        where: { companyId },
+        select: { code: true }
+      });
+      customStatuses.forEach(s => validStatuses.add(s.code.toUpperCase()));
+    } catch (_) { /* fallback to built-in list */ }
+
+    if (!validStatuses.has(normalizedStatus)) {
       console.log(`❌ [ORDERS-ROUTE-DEBUG] Invalid status: ${status}`);
       return res.status(400).json({
         success: false,
         message: 'حالة الطلب غير صحيحة'
       });
     }
-
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
     // --- ADD PERMISSION CHECK ---
     const hasPermission = await checkOrderEditPermission(req, orderNumber);
@@ -4071,7 +4080,8 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
     console.log('🔍 [ORDER-DEBUG] Checking affiliate for userId:', req.user?.id, 'Role:', req.user?.role);
 
     try {
-      const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { VALID_ORDER_STATUSES } = require('../utils/constants');
       const affiliate = await getSharedPrismaClient().affiliate.findUnique({
         where: { userId: req.user.id }
       });
