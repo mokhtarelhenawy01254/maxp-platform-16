@@ -25,6 +25,9 @@ const isPublicSubdomainBypassPath = (pathname: string): boolean =>
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
+const ADMIN_PRODUCT_PATH_PATTERN = /\/products\/(?:new|trash|reviews|import-|settings\/upsell)/;
+const ADMIN_PRODUCT_EDIT_PATTERN = /\/products\/[^/]+\/edit$/;
+
 export const shouldBootstrapStorefront = (
   hostnameInput: string,
   pathnameInput: string,
@@ -38,6 +41,14 @@ export const shouldBootstrapStorefront = (
   // /products/…, /settings/store/… or /cart MUST NOT bootstrap the
   // storefront rendering engine on localhost.
   if (isLocalhost) {
+    return false;
+  }
+
+  // Exclude admin product paths — these are NOT storefront routes
+  if (
+    ADMIN_PRODUCT_PATH_PATTERN.test(pathname) ||
+    ADMIN_PRODUCT_EDIT_PATTERN.test(pathname)
+  ) {
     return false;
   }
 
