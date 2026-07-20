@@ -26,8 +26,14 @@
 - **Root cause:** The `allowOverride` config field was saved to DB and shown in the UI toggle, but `evaluateStatusChange` never checked it.
 - **Fix:** Added `config.allowOverride === false` check in the override handling block, rejecting override requests when disabled.
 
+### 7. System statuses not auto-seeded (P1)
+- **Root cause:** When opening the workflow page for the first time, no `OrderStatusDefinition` records exist. Users had to create every status manually before they could define transitions.
+- **Fix:** Added `POST /order-workflow/statuses/seed-defaults` endpoint (seeds 20 default statuses with names, colors, sort orders, terminal flags) and auto-call it in the workflow page when statuses are empty.
+
 ## Files Changed
 - `apps/backend/routes/orders.js` — expanded PATCH status validation
-- `apps/backend/services/orderWorkflowService.js` — fallback transition lookup, requireApprovalByDefault check, allowOverride enforcement
-- `apps/frontend/src/pages/admin/OrderWorkflow/index.tsx` — added StatusManagement tab
+- `apps/backend/services/orderWorkflowService.js` — fallback transition lookup, requireApprovalByDefault check, allowOverride enforcement, seedDefaultStatuses
+- `apps/frontend/src/pages/admin/OrderWorkflow/index.tsx` — added StatusManagement tab + auto-seed
 - `apps/frontend/src/pages/orders/QuickStatusChange.tsx` — conditional isOverride
+- `apps/frontend/src/services/orderWorkflowService.ts` — added seedDefaultStatuses method
+- `apps/backend/routes/orderWorkflowRoutes.js` — added POST /statuses/seed-defaults route

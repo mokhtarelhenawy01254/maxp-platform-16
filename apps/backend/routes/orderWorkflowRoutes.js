@@ -93,6 +93,19 @@ router.delete('/statuses/:id', async (req, res) => {
     }
 });
 
+// Seed default system statuses for a company
+router.post('/statuses/seed-defaults', async (req, res) => {
+    try {
+        const companyId = getCompanyId(req);
+        if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+        const created = await orderWorkflowService.seedDefaultStatuses(companyId);
+        res.json({ success: true, data: created, message: `تم إنشاء ${created.length} حالة افتراضية` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 /**
  * 🔗 Transition Routes
  */
