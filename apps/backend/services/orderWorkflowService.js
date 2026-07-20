@@ -101,6 +101,50 @@ class OrderWorkflowService {
     }
 
     /**
+     * Seed default system statuses as OrderStatusDefinition records
+     */
+    async seedDefaultStatuses(companyId) {
+        const existing = await this.prisma.orderStatusDefinition.findMany({
+            where: { companyId },
+            select: { code: true }
+        });
+        const existingCodes = new Set(existing.map(s => s.code.toUpperCase()));
+
+        const defaults = [
+            { code: 'PENDING', name: 'معلق', color: '#EAB308', sortOrder: 10 },
+            { code: 'CONFIRMED', name: 'مؤكد', color: '#3B82F6', sortOrder: 20 },
+            { code: 'SCHEDULED', name: 'مجدول', color: '#6366F1', sortOrder: 25 },
+            { code: 'PROCESSING', name: 'قيد المعالجة', color: '#2563EB', sortOrder: 30, notifyCustomer: true },
+            { code: 'PREPARING', name: 'قيد التجهيز', color: '#3B82F6', sortOrder: 35 },
+            { code: 'QUALITY_CHECK', name: 'فحص الجودة', color: '#6366F1', sortOrder: 40 },
+            { code: 'PACKAGED', name: 'تم التعبئة', color: '#14B8A6', sortOrder: 45 },
+            { code: 'READY_TO_SHIP', name: 'جاهز للشحن', color: '#22C55E', sortOrder: 50 },
+            { code: 'SHIPPED', name: 'تم الشحن', color: '#A855F7', sortOrder: 60, notifyCustomer: true },
+            { code: 'OUT_FOR_DELIVERY', name: 'خرج للتسليم', color: '#A855F7', sortOrder: 70 },
+            { code: 'PARTIALLY_DELIVERED', name: 'تسليم جزئي', color: '#22C55E', sortOrder: 80 },
+            { code: 'DELIVERED', name: 'تم التسليم', color: '#22C55E', sortOrder: 90, notifyCustomer: true, isTerminal: true },
+            { code: 'PARTIALLY_RETURNED', name: 'مرتجع جزئي', color: '#F97316', sortOrder: 100, notifyCustomer: true },
+            { code: 'RETURNED', name: 'مرتجع', color: '#EF4444', sortOrder: 110, notifyCustomer: true },
+            { code: 'EXCHANGED', name: 'مستبدل', color: '#14B8A6', sortOrder: 120, notifyCustomer: true },
+            { code: 'PARTIALLY_REFUNDED', name: 'مسترجع جزئي', color: '#EC4899', sortOrder: 130 },
+            { code: 'REFUNDED', name: 'تم الاسترداد', color: '#EC4899', sortOrder: 140, notifyCustomer: true, isTerminal: true },
+            { code: 'CANCELLED', name: 'ملغي', color: '#EF4444', sortOrder: 150, notifyCustomer: true, isTerminal: true },
+            { code: 'ON_HOLD', name: 'معلق (استثناء)', color: '#EAB308', sortOrder: 160 },
+            { code: 'LOST', name: 'مفقود', color: '#EF4444', sortOrder: 170, isTerminal: true },
+        ];
+
+        const created = [];
+        for (const def of defaults) {
+            if (existingCodes.has(def.code)) continue;
+            const status = await this.prisma.orderStatusDefinition.create({
+                data: { ...def, companyId }
+            });
+            created.push(status);
+        }
+        return created;
+    }
+
+    /**
      * Get all transition rules
      */
     async getTransitions(companyId) {

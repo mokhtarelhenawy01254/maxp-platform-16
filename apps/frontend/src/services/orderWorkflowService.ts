@@ -57,6 +57,8 @@ const orderWorkflowService = {
 
     changeStatus: (orderId: string, statusId: string, reason?: string, isOverride: boolean = false) =>
         api.post('/order-workflow/change-status', { orderId, statusId, reason, isOverride }).then(res => res.data),
+
+    seedDefaultStatuses: () => api.post('/order-workflow/statuses/seed-defaults').then(res => res.data),
 };
 
 export default orderWorkflowService;

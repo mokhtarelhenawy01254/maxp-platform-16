@@ -38,7 +38,19 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                 orderWorkflowService.getStatuses()
             ]);
             setConfig(configData.data);
-            setStatuses(statusesData.data);
+            const statuses = statusesData.data || [];
+            if (statuses.length === 0) {
+                try {
+                    await orderWorkflowService.seedDefaultStatuses();
+                    const refreshed = await orderWorkflowService.getStatuses();
+                    setStatuses(refreshed.data || []);
+                } catch (seedErr) {
+                    console.warn('Seed defaults failed (maybe already exist):', seedErr);
+                    setStatuses(statuses);
+                }
+            } else {
+                setStatuses(statuses);
+            }
         } catch (error) {
             console.error('Failed to fetch workflow data', error);
         } finally {
