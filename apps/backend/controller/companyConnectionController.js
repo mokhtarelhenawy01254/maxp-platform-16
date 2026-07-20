@@ -345,7 +345,7 @@ exports.updatePermissions = async (req, res) => {
     try {
         const companyId = req.user.companyId;
         const { id } = req.params;
-        const { allowProductPull, allowOrderPull } = req.body;
+        const { allowProductPull, allowOrderPull, commissionRate } = req.body;
 
         const prisma = getSharedPrismaClient();
         const connection = await prisma.companyConnection.findUnique({ where: { id } });
@@ -362,7 +362,8 @@ exports.updatePermissions = async (req, res) => {
             where: { id },
             data: {
                 allowProductPull: allowProductPull !== undefined ? allowProductPull : connection.allowProductPull,
-                allowOrderPull: allowOrderPull !== undefined ? allowOrderPull : connection.allowOrderPull
+                allowOrderPull: allowOrderPull !== undefined ? allowOrderPull : connection.allowOrderPull,
+                commissionRate: commissionRate !== undefined ? commissionRate : connection.commissionRate
             }
         });
 
@@ -790,6 +791,197 @@ exports.importInternalOrders = async (req, res) => {
     } catch (error) {
         console.error('Error importing internal orders:', error);
         res.status(500).json({ success: false, message: 'خطأ في عملية الاستيراد' });
+    }
+};
+
+/**
+ * جلب الشركات المرتبطة كعلاقة أفليت
+ * GET /api/v1/company-connections/affiliates
+ */
+exports.getCompanyAffiliates = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const prisma = getSharedPrismaClient();
+
+        // 1. جلب كل الاتصالات النشطة للشركة (كمستهلك وكمورّد)
+        const [asConsumer, asProvider] = await Promise.all([
+            prisma.companyConnection.findMany({
+                where: { consumerId: companyId, status: 'ACTIVE' },
+                include: { provider: { select: { id: true, name: true, logo: true, email: true } } }
+            }),
+            prisma.companyConnection.findMany({
+                where: { providerId: companyId, status: 'ACTIVE' },
+                include: { consumer: { select: { id: true, name: true, logo: true, email: true } } }
+            })
+        ]);
+
+        // 2. جمع كل الـ userIds بتوع الشركة الحالية
+        const myUserIds = (await prisma.user.findMany({
+            where: { companyId, isActive: true },
+            select: { id: true }
+        })).map(u => u.id);
+
+        // 3. جلب كل الـ affiliates بتوع users الشركة الحالية عند أي provider
+        const myAffiliates = myUserIds.length > 0 ? await prisma.affiliate.findMany({
+            where: { userId: { in: myUserIds } },
+            select: { id: true, companyId: true }
+        }) : [];
+
+        // 4. جلب كل الـ affiliates عند الشركة الحالية (من شركات تانية)
+        const myProvidersAffiliates = await prisma.affiliate.findMany({
+            where: { companyId },
+            select: { id: true, userId: true }
+        });
+
+        // 5. تجهيز بيانات المستهلك (Flora): providers اللي أنا مرتبط بيهم
+        const consumerResult = [];
+        for (const conn of asConsumer) {
+            const providerId = conn.providerId;
+
+            // affiliates لـ users من شركتي عند الـ provider ده
+            const providerAffiliates = myAffiliates.filter(a => a.companyId === providerId);
+            const affIds = providerAffiliates.map(a => a.id);
+
+            if (affIds.length === 0) {
+                consumerResult.push({
+                    connectionId: conn.id,
+                    partner: conn.provider,
+                    role: 'consumer',
+                    commissionRate: conn.commissionRate,
+                    totalOrders: 0,
+                    totalCommissions: 0,
+                    paidCommissions: 0,
+                    pendingCommissions: 0,
+                    lastOrderAt: null
+                });
+                continue;
+            }
+
+            // الطلبات المدفوعة للـ provider (sourceType: internal_push)
+            const [orderAgg, commissionAgg] = await Promise.all([
+                prisma.order.aggregate({
+                    where: {
+                        affiliateId: { in: affIds },
+                        companyId: providerId,
+                        sourceType: 'internal_push'
+                    },
+                    _count: true,
+                    _max: { createdAt: true }
+                }),
+                prisma.commission.aggregate({
+                    where: {
+                        affiliateId: { in: affIds },
+                        companyId: providerId
+                    },
+                    _sum: { amount: true }
+                })
+            ]);
+
+            // العمولات المدفوعة والمعلقة
+            const paidAgg = await prisma.commission.aggregate({
+                where: {
+                    affiliateId: { in: affIds },
+                    companyId: providerId,
+                    status: 'PAID'
+                },
+                _sum: { amount: true }
+            });
+            const pendingAgg = await prisma.commission.aggregate({
+                where: {
+                    affiliateId: { in: affIds },
+                    companyId: providerId,
+                    status: { in: ['CONFIRMED', 'PENDING'] }
+                },
+                _sum: { amount: true }
+            });
+
+            consumerResult.push({
+                connectionId: conn.id,
+                partner: conn.provider,
+                role: 'consumer',
+                commissionRate: conn.commissionRate,
+                totalOrders: orderAgg._count || 0,
+                totalCommissions: Number(commissionAgg._sum?.amount || 0),
+                paidCommissions: Number(paidAgg._sum?.amount || 0),
+                pendingCommissions: Number(pendingAgg._sum?.amount || 0),
+                lastOrderAt: orderAgg._max?.createdAt || null
+            });
+        }
+
+        // 6. تجهيز بيانات المورّد (Swan): consumers اللي مرتبطين بيا
+        const providerResult = [];
+        for (const conn of asProvider) {
+            const consumerId = conn.consumerId;
+
+            // affiliates بتوع المستهلك عندي
+            const consumerUserIds = (await prisma.user.findMany({
+                where: { companyId: consumerId, isActive: true },
+                select: { id: true }
+            })).map(u => u.id);
+
+            const consumerAffiliatesAtMe = consumerUserIds.length > 0 ? await prisma.affiliate.findMany({
+                where: { userId: { in: consumerUserIds }, companyId }
+            }) : [];
+            const affIds = consumerAffiliatesAtMe.map(a => a.id);
+
+            if (affIds.length === 0) {
+                providerResult.push({
+                    connectionId: conn.id,
+                    partner: conn.consumer,
+                    role: 'provider',
+                    commissionRate: conn.commissionRate,
+                    totalOrders: 0,
+                    totalCommissions: 0,
+                    paidCommissions: 0,
+                    pendingCommissions: 0,
+                    lastOrderAt: null
+                });
+                continue;
+            }
+
+            const [orderAgg, commissionAgg, paidAgg, pendingAgg] = await Promise.all([
+                prisma.order.aggregate({
+                    where: { affiliateId: { in: affIds }, companyId, sourceType: 'internal_push' },
+                    _count: true,
+                    _max: { createdAt: true }
+                }),
+                prisma.commission.aggregate({
+                    where: { affiliateId: { in: affIds }, companyId },
+                    _sum: { amount: true }
+                }),
+                prisma.commission.aggregate({
+                    where: { affiliateId: { in: affIds }, companyId, status: 'PAID' },
+                    _sum: { amount: true }
+                }),
+                prisma.commission.aggregate({
+                    where: { affiliateId: { in: affIds }, companyId, status: { in: ['CONFIRMED', 'PENDING'] } },
+                    _sum: { amount: true }
+                })
+            ]);
+
+            providerResult.push({
+                connectionId: conn.id,
+                partner: conn.consumer,
+                role: 'provider',
+                commissionRate: conn.commissionRate,
+                totalOrders: orderAgg._count || 0,
+                totalCommissions: Number(commissionAgg._sum?.amount || 0),
+                paidCommissions: Number(paidAgg._sum?.amount || 0),
+                pendingCommissions: Number(pendingAgg._sum?.amount || 0),
+                lastOrderAt: orderAgg._max?.createdAt || null
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                asConsumer: consumerResult,
+                asProvider: providerResult
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching company affiliates:', error);
+        res.status(500).json({ success: false, message: 'خطأ في جلب الشركات المرتبطة' });
     }
 };
 

@@ -309,6 +309,12 @@ model Order {
   affiliateId             String?
   merchantOrderId         String?                   @unique
   isDropshipped           Boolean                   @default(false)
+  codDepositAmount        Decimal?                  @db.Decimal(10, 2)
+  codDepositPaid          Boolean                   @default(false)
+  codDepositPaidAt        DateTime?
+  codDepositMethod        String?
+  codDepositSessionId     String?
+  codDepositRefunded      Boolean                   @default(false)
   orderSource             OrderSource               @default(REGULAR)
   externalId              String?
   createdBy               String?
@@ -336,6 +342,7 @@ model Order {
   userRel                 User?                     @relation(fields: [userRelId], references: [id])
   returnRequests          ReturnRequest[]
   walletTransactions      WalletTransaction[]
+  depositProofs           OrderDepositProof[]
   notificationLogs        WhatsAppNotificationLog[]
   customerJourneys        CustomerJourney[]
 
@@ -357,6 +364,30 @@ model Order {
   @@index([turboTrackingNumber])
   @@index([wooCommerceId])
   @@map("orders")
+}
+
+/// COD Deposit - Proof of payment uploaded by customer/employee for manual deposit verification
+model OrderDepositProof {
+  id            String    @id @default(cuid())
+  orderId       String
+  imageUrl      String
+  amount        Decimal   @db.Decimal(10, 2)
+  walletNumber  String?
+  transferRef   String?
+  status        String    @default("PENDING")
+  notes         String?
+  submittedBy   String?
+  verifiedBy    String?
+  verifiedAt    DateTime?
+  rejectedAt    DateTime?
+  rejectReason  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@map("order_deposit_proofs")
 }
 
 /// UNUSED - Legacy feature

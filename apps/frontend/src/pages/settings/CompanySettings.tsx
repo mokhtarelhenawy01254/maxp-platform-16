@@ -1048,6 +1048,31 @@ const CompanySettings: React.FC = () => {
               </p>
             </div>
 
+            {/* Company ID (Read-only) */}
+            <div className="col-span-1 md:col-span-2 border-t border-gray-100 dark:border-gray-700 pt-4 mt-2">
+              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                معرف الشركة (Company ID){" "}
+                <span className="text-xs text-gray-500 font-normal">
+                  - استخدمه للربط مع الشركات الأخرى
+                </span>
+              </span>
+              <div className="mt-1 flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center text-gray-700 dark:text-gray-300 font-mono text-sm dir-ltr" style={{ direction: "ltr" }}>
+                  <BuildingOfficeIcon className="h-4 w-4 ml-2 shrink-0" />
+                  {company?.id || user?.companyId || "—"}
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(company?.id || user?.companyId || "");
+                  }}
+                  className="mr-auto text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 text-sm font-medium shrink-0"
+                  title="نسخ المعرف"
+                >
+                  نسخ
+                </button>
+              </div>
+            </div>
+
             <div className="col-span-1 md:col-span-2 border-t border-gray-100 dark:border-gray-700 pt-4 mt-2">
               <div className="flex items-center justify-between mb-2">
                 <label

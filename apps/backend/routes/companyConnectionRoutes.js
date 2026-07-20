@@ -17,6 +17,9 @@ router.get('/consumers', companyConnectionController.getConsumers);
 router.put('/:id/permissions', companyConnectionController.updatePermissions);
 router.delete('/:id', companyConnectionController.deleteConnection);
 
+// Company Affiliates (Dashboard)
+router.get('/affiliates', companyConnectionController.getCompanyAffiliates);
+
 // Data Pulling
 router.get('/:providerId/products', companyConnectionController.fetchProductsFromProvider);
 router.post('/:providerId/import', companyConnectionController.importInternalProducts);

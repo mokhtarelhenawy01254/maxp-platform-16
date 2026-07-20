@@ -290,6 +290,7 @@ const wholesaleRoutes = require("./routes/wholesaleRoutes");
 const pageEngagementRoutes = require("./routes/pageEngagementRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const kashierRoutes = require("./routes/kashierRoutes");
+const codDepositRoutes = require("./routes/codDepositRoutes");
 const promotionSettingsRoutes = require("./routes/promotionSettingsRoutes");
 const policyCrudRoutes = require("./routes/policy");
 const policyRoutes = require("./routes/policyRoutes");
@@ -580,6 +581,9 @@ app.use("/api/v1/product-landings", productLandingPagesRoutes);
 
   // Public Kashier payment & checkout routes (no dashboard auth required)
   app.use("/api/v1/payment", kashierRoutes);
+
+  // COD Deposit routes (payment link generation, webhook, status)
+  app.use("/api/v1/payment", codDepositRoutes);
 
   // Public webhook for platform subscription payments (Kashier → MaxP platform billing)
   const { handleWebhook: handlePlatformSubscriptionWebhook } = require("./controller/platformSubscriptionController");

@@ -617,6 +617,11 @@ model StorefrontSettings {
   gtmDataLayerEnabled             Boolean               @default(true)
   gtmTrackPageView                Boolean               @default(true)
   gtmSuppressPixels               Boolean               @default(false)
+  codDepositEnabled                Boolean               @default(false)
+  codDepositType                   String                @default("PERCENTAGE")
+  codDepositValue                  Decimal               @default(30.00) @db.Decimal(5, 2)
+  codDepositMinAmount              Decimal?              @db.Decimal(10, 2)
+  codDepositMaxAmount              Decimal?              @db.Decimal(10, 2)
   designTokens                     Json?
   enabledPaymentMethods            String                @default("[\"cod\"]")
   paymentGatewayConfig             Json?

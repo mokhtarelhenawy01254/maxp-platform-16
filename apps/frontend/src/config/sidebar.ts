@@ -545,7 +545,7 @@ export const getSidebarConfig = (
                 { to: '/campaign-calculator', icon: CalculatorIcon, label: t('sidebar.campaignCalculator') },
                 { to: '/settings/facebook-oauth', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookConnect') },
                 { to: '/settings/facebook-blocked', icon: NoSymbolIcon, label: t('sidebar.facebookBlocked') },
-                { to: '/settings/agent-inbox', icon: KeyIcon, label: 'Agent Inbox API' },
+                { to: '/settings/agent-inbox', icon: KeyIcon, label: t('sidebar.agentInboxApi') },
                 { to: '/settings/smart-replies', icon: ChatBubbleLeftRightIcon, label: t('sidebar.smartReplies') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
@@ -647,6 +647,7 @@ export const getSidebarConfig = (
                 { to: '/cancellations/settings', icon: XCircleIcon, label: t('sidebar.cancellationSettings'), requiredPermissions: ['orders.cancellation-reasons.view'] },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
                 { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow'), requiredPermissions: ['orders.workflow.view'] },
+                { to: '/settings/cod-deposit', icon: BanknotesIcon, label: t('sidebar.codDeposit', 'الدفعة المقدمة COD'), requiredPermissions: ['orders.settings.view'] },
                 { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications'), requiredPermissions: ['orders.whatsapp-notifications.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
@@ -727,7 +728,7 @@ export const getSidebarConfig = (
                 { to: '/settings/store-promotion', icon: GiftIcon, label: t('sidebar.storePromotion') },
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
-                { to: '/settings/clarity', icon: ChartBarIcon, label: 'Microsoft Clarity' },
+                { to: '/settings/clarity', icon: ChartBarIcon, label: t('sidebar.microsoftClarity') },
                 { to: '/offers-review', icon: ClipboardDocumentListIcon, label: t('sidebar.offersReview') },
                 { to: '/coupons', icon: TicketIcon, label: t('sidebar.coupons') },
                 {
@@ -826,7 +827,8 @@ export const getSidebarConfig = (
                     { to: '/merchants', icon: BuildingStorefrontIcon, label: t('sidebar.merchants') },
                     { to: '/platform/commissions', icon: CurrencyDollarIcon, label: t('sidebar.commissions') },
                     { to: '/affiliates/settings', icon: CogIcon, label: t('sidebar.affiliateSettings') },
-                    { to: '/affiliates/products/visibility', icon: GlobeAltIcon, label: 'إدارة ظهور المنتجات للمسوقين' },
+                    { to: '/affiliates/products/visibility', icon: GlobeAltIcon, label: t('sidebar.affiliateProductVisibility') },
+                    { to: '/company-affiliates', icon: BuildingStorefrontIcon, label: t('sidebar.relatedCompanies') },
                 ] : []),
                 ...(user?.role === 'AFFILIATE' ? [
                     { to: '/affiliates/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
@@ -1155,9 +1157,9 @@ export const getSidebarConfig = (
                 { to: '/super-admin/billing-overview', icon: BanknotesIcon, label: t('sidebar.billingOverview') },
 
                 { to: '/super-admin/marketplace-management', icon: CubeIcon, label: t('sidebar.marketplaceManagement') },
-                { to: '/super-admin/storefront-themes', icon: SwatchIcon, label: 'تسعير قوالب المتجر' },
+                { to: '/super-admin/storefront-themes', icon: SwatchIcon, label: t('sidebar.storeThemePricing') },
                 { to: '/super-admin/marketing-links', icon: MegaphoneIcon, label: t('sidebar.marketingLinks') },
-                { to: '/super-admin/homepage-templates', icon: ComputerDesktopIcon, label: 'قوالب لاندنج المنصة' },
+                { to: '/super-admin/homepage-templates', icon: ComputerDesktopIcon, label: t('sidebar.homepageTemplates') },
                 { to: '/super-admin/new-section', icon: SparklesIcon, label: t('sidebar.productStudio') },
                 { to: '/settings/store', icon: SwatchIcon, label: t('sidebar.shopStudio') },
                 { to: '/settings/store', icon: SwatchIcon, label: t('sidebar.shopTemplates') },

@@ -18,8 +18,16 @@
 - **Root cause:** When a status was a system enum fallback (no `OrderStatusDefinition`), the transition lookup used the status code as ID, which never matched CUIDs.
 - **Fix:** `evaluateStatusChange` now detects system fallbacks and re-searches transitions by code when the ID-based lookup fails.
 
+### 5. requireApprovalByDefault not enforced (P1)
+- **Root cause:** The `requireApprovalByDefault` config field was saved to DB but never read by the workflow engine. Also, the approval check was gated on a transition existing, so status changes without a defined transition always bypassed approval.
+- **Fix:** `evaluateStatusChange` now checks `config.requireApprovalByDefault` and returns `pending` when it's true (unless the transition explicitly says `requiresApproval: false`). The approval check was also moved outside the transition-exists block.
+
+### 6. allowOverride toggle not enforced (P1)
+- **Root cause:** The `allowOverride` config field was saved to DB and shown in the UI toggle, but `evaluateStatusChange` never checked it.
+- **Fix:** Added `config.allowOverride === false` check in the override handling block, rejecting override requests when disabled.
+
 ## Files Changed
 - `apps/backend/routes/orders.js` — expanded PATCH status validation
-- `apps/backend/services/orderWorkflowService.js` — fallback transition lookup
+- `apps/backend/services/orderWorkflowService.js` — fallback transition lookup, requireApprovalByDefault check, allowOverride enforcement
 - `apps/frontend/src/pages/admin/OrderWorkflow/index.tsx` — added StatusManagement tab
 - `apps/frontend/src/pages/orders/QuickStatusChange.tsx` — conditional isOverride

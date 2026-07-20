@@ -193,6 +193,9 @@ const AffiliateProducts = React.lazy(
 const AffiliateProductsVisibility = React.lazy(
   () => import("./pages/affiliates/AffiliateProductsVisibility"),
 );
+const CompanyAffiliateDashboard = React.lazy(
+  () => import("./pages/affiliates/CompanyAffiliateDashboard"),
+);
 const MerchantsList = React.lazy(
   () => import("./pages/merchants/MerchantsList"),
 );
@@ -340,6 +343,9 @@ const StorefrontVisualEditorPage = React.lazy(
 const StorePages = React.lazy(() => import("./pages/settings/StorePages"));
 const StorefrontClaritySettings = React.lazy(
   () => import("./pages/settings/StorefrontClaritySettings"),
+);
+const CodDepositSettings = React.lazy(
+  () => import("./pages/settings/CodDepositSettings"),
 );
 const TurboSettings = React.lazy(
   () => import("./pages/settings/TurboSettings"),
@@ -3869,6 +3875,14 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                <Route
+                  path="/company-affiliates"
+                  element={
+                    <Layout>
+                      <CompanyAffiliateDashboard />
+                    </Layout>
+                  }
+                />
                 {/* Merchant Portal */}
                 <Route
                   path="/merchant-portal/products"
@@ -5324,16 +5338,24 @@ const AppContent = () => {
                   path="/settings/checkout"
                   element={<Navigate to="/settings/store?tab=checkout" replace />}
                 />
-                <Route
-                  path="/settings/clarity"
-                  element={
-                    <Layout>
-                      <StorefrontClaritySettings />
-                    </Layout>
-                  }
-                />
                   <Route
-                    path="/settings/storefront/tools"
+                    path="/settings/clarity"
+                    element={
+                      <Layout>
+                        <StorefrontClaritySettings />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/settings/cod-deposit"
+                    element={
+                      <Layout>
+                        <CodDepositSettings />
+                      </Layout>
+                    }
+                  />
+                    <Route
+                      path="/settings/storefront/tools"
                     element={<Navigate to="/settings/storefront/editor" replace />}
                   />
                 <Route

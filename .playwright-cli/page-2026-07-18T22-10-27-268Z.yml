@@ -1,0 +1,78 @@
+- generic [ref=e7]:
+  - generic [ref=e45]:
+    - banner [ref=e46]:
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - button "superAdmin.toggleSidebar" [ref=e49]:
+            - img
+          - heading "🛠️ إدارة التطوير" [level=1] [ref=e50]
+          - generic [ref=e52]:
+            - img [ref=e54]
+            - combobox "ابحث في جميع أجزاء النظام..." [ref=e57]
+        - generic [ref=e58]:
+          - button "المستخدمون النشطون" [ref=e59]:
+            - img
+          - button "تبديل للوضع الليلي" [ref=e60] [cursor=pointer]:
+            - img
+          - button "superAdmin.profileMenu" [ref=e61]:
+            - generic [ref=e63]: S
+    - navigation "التحكم الذكي" [ref=e65]:
+      - generic [ref=e66]:
+        - img [ref=e68]
+        - generic [ref=e70]:
+          - paragraph [ref=e71]: التحكم الذكي
+          - text: السوبر أدمن
+      - generic [ref=e72]:
+        - generic [ref=e73]:
+          - button "الرئيسية" [expanded] [ref=e74]:
+            - img [ref=e76]
+            - generic [ref=e81]: الرئيسية
+            - img [ref=e82]
+          - link "لوحة التحكم" [ref=e85] [cursor=pointer]:
+            - /url: /super-admin/dashboard
+            - img [ref=e87]
+            - generic [ref=e92]: لوحة التحكم
+        - button "إدارة الشركات" [ref=e94]:
+          - img [ref=e96]
+          - generic [ref=e100]: إدارة الشركات
+          - img [ref=e101]
+        - button "واتساب المنصة" [ref=e104]:
+          - img [ref=e106]
+          - generic [ref=e108]: واتساب المنصة
+          - img [ref=e109]
+        - button "💰 إدارة الاشتراكات والفوترة" [ref=e112]:
+          - img [ref=e114]
+          - generic [ref=e117]: 💰 إدارة الاشتراكات والفوترة
+          - img [ref=e118]
+        - button "الذكاء الصناعي" [ref=e121]:
+          - img [ref=e123]
+          - generic [ref=e126]: الذكاء الصناعي
+          - img [ref=e127]
+        - button "المتابعة والمراقبة" [ref=e130]:
+          - img [ref=e132]
+          - generic [ref=e134]: المتابعة والمراقبة
+          - img [ref=e135]
+        - button "إدارة النظام" [ref=e138]:
+          - img [ref=e140]
+          - generic [ref=e141]: إدارة النظام
+          - img [ref=e142]
+        - button "روابط التسويق" [ref=e145]:
+          - img [ref=e147]
+          - generic [ref=e149]: روابط التسويق
+          - img [ref=e150]
+        - button "الدعم الفني" [ref=e153]:
+          - img [ref=e155]
+          - generic [ref=e157]: الدعم الفني
+          - img [ref=e158]
+        - button "🛠️ إدارة التطوير" [ref=e161]:
+          - img [ref=e163]
+          - generic [ref=e165]: 🛠️ إدارة التطوير
+          - img [ref=e166]
+      - generic [ref=e169]:
+        - generic [ref=e171]: S
+        - generic [ref=e172]:
+          - paragraph [ref=e173]: Super Admin
+          - generic [ref=e174]: admin@mokhtarelhenawy.com
+        - img [ref=e175]
+    - main [ref=e178]
+  - region "Notifications alt+T"

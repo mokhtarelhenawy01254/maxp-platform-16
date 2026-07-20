@@ -1730,6 +1730,15 @@ class AffiliateService {
 
       const tenantContext = require('./tenantContext');
 
+      // 0. جلب نسبة العمولة من CompanyConnection لو موجودة
+      const connection = await prisma.companyConnection.findUnique({
+        where: {
+          providerId_consumerId: { providerId, consumerId }
+        },
+        select: { commissionRate: true }
+      });
+      const connectionCommissionRate = connection?.commissionRate;
+
       // 1. البحث عن مالك الشركة المستهلكة (Switch to consumer context to find its owner)
       const owner = await tenantContext.run(consumerId, async () => {
         return await prisma.user.findFirst({
@@ -1753,14 +1762,21 @@ class AffiliateService {
         }
       });
 
-      // 3. إذا لم يوجد، إنشاؤه
+      // 3. إذا لم يوجد، إنشاؤه (بنسبة العمولة من الاتصال أو الافتراضية)
       if (!affiliate) {
-        console.log(`ℹ️ [AFFILIATE] Creating new affiliate for owner ${owner.email} in company ${providerId}`);
+        const rate = connectionCommissionRate ?? 5;
+        console.log(`ℹ️ [AFFILIATE] Creating new affiliate for owner ${owner.email} in company ${providerId} with rate ${rate}%`);
         affiliate = await this.registerAffiliate(owner.id, {
           companyId: providerId,
           commissionType: 'PERCENTAGE',
-          commissionRate: 5, // نسبة افتراضية
+          commissionRate: rate,
           status: 'ACTIVE'
+        });
+      } else if (connectionCommissionRate && affiliate.commissionRate !== connectionCommissionRate) {
+        // 4. تحديث النسبة لو اتغيرت في الاتصال
+        affiliate = await prisma.affiliate.update({
+          where: { id: affiliate.id },
+          data: { commissionRate: connectionCommissionRate }
         });
       }
 

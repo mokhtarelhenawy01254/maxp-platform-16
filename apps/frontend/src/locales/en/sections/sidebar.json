@@ -546,5 +546,21 @@
   "sidebarRefresh": "Refresh",
   "sidebarCountVisible": "{visible}/{total} visible",
   "sidebarSectionsCount": "{count} sections",
-  "sidebarNoRestriction": "No restriction"
+  "sidebarNoRestriction": "No restriction",
+  "profileSettings": "Profile Settings",
+  "securitySettings": "Security Settings",
+  "appearanceSettings": "Appearance Settings",
+  "sidebarSettings": "Sidebar Settings",
+  "customDomain": "Custom Domain",
+  "conversionTools": "Conversion Tools",
+  "offersBundles": "Offers & Bundles",
+  "growthWidgets": "Growth Widgets",
+  "sellingModes": "Selling Modes",
+  "reviewsSocialProof": "Reviews & Social Proof",
+  "agentInboxApi": "Agent Inbox API",
+  "microsoftClarity": "Microsoft Clarity",
+  "affiliateProductVisibility": "Product Visibility for Affiliates",
+  "relatedCompanies": "Related Companies",
+  "storeThemePricing": "Store Theme Pricing",
+  "homepageTemplates": "Platform Homepage Templates"
 }

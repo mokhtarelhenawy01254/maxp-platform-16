@@ -553,5 +553,21 @@
   "sidebarRefresh": "تحديث",
   "sidebarCountVisible": "{visible}/{total} ظاهر",
   "sidebarSectionsCount": "{count} أقسام",
-  "sidebarNoRestriction": "بدون تحديد"
+  "sidebarNoRestriction": "بدون تحديد",
+  "profileSettings": "إعدادات الملف الشخصي",
+  "securitySettings": "إعدادات الأمان",
+  "appearanceSettings": "إعدادات المظهر",
+  "sidebarSettings": "إعدادات القائمة الجانبية",
+  "customDomain": "الدومين المخصص",
+  "conversionTools": "أدوات التحويل",
+  "offersBundles": "العروض والحزم",
+  "growthWidgets": "أدوات النمو",
+  "sellingModes": "أنماط البيع",
+  "reviewsSocialProof": "التقييمات والدليل الاجتماعي",
+  "agentInboxApi": "Agent Inbox API",
+  "microsoftClarity": "Microsoft Clarity",
+  "affiliateProductVisibility": "إدارة ظهور المنتجات للمسوقين",
+  "relatedCompanies": "الشركات المرتبطة",
+  "storeThemePricing": "تسعير قوالب المتجر",
+  "homepageTemplates": "قوالب لاندنج المنصة"
 }

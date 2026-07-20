@@ -1,9 +1,0 @@
-{
-  "id": "smart-negotiation",
-  "displayName": "Smart Negotiation",
-  "version": "1.0.0",
-  "description": "Provide data-driven negotiation parameters and discount boundaries for sales conversations.",
-  "allowedTools": ["deal_params", "pipeline_overview", "product_search", "product_performance", "customer_info", "lead_score", "purchase_prediction", "discount_create_draft"],
-  "requiresHumanApproval": false,
-  "maxToolCount": 5
-}
