@@ -377,7 +377,14 @@ const Products: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{product.name}</h3>
+                  <a
+                    href={`/products/${product.id}/edit`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-semibold text-gray-900 dark:text-white truncate block hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  >
+                    {product.name}
+                  </a>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{formatPrice(product.price)}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${getStockStatusColor(stockStatus)}`}>
