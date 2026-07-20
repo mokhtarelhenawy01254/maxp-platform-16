@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -316,6 +316,7 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 export const ProductNewFinal: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isEditMode = Boolean(id);
   const { user } = useAuth();
   const { currency } = useCurrency();
@@ -327,8 +328,19 @@ export const ProductNewFinal: React.FC = () => {
   const currencyInfo = getCurrencyByCode(currency || "EGP");
   const displayCurrency = currencyInfo?.symbol || "ج.م";
 
-  // General State
-  const [activeTab, setActiveTab] = useState("basic");
+  // General State – sync tab with URL search param for deep-link support
+  const tabFromUrl = searchParams.get("tab") || "basic";
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const changeTab = useCallback((tab: string) => {
+    setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
+  }, [setSearchParams]);
+  // Keep in sync if the URL changes externally
+  useEffect(() => {
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
   const [productMetadata, setProductMetadata] = useState<ProductMetadata>({});
   const [workflow, setWorkflow] = useState<ProductWorkflow>(
     normalizeProductWorkflow(null, false),
@@ -951,14 +963,14 @@ export const ProductNewFinal: React.FC = () => {
 
       if (Object.keys(errors).length > 0) {
         setError(Object.values(errors)[0] || null);
-        if (errors["name"] || errors["category"]) setActiveTab("basic");
+        if (errors["name"] || errors["category"]) changeTab("basic");
         else if (
           errors["price"] ||
           errors["comparePrice"] ||
           errors["saleEndDate"]
         )
-          setActiveTab("pricing");
-        else if (errors["slug"]) setActiveTab("advanced");
+          changeTab("pricing");
+        else if (errors["slug"]) changeTab("advanced");
         return false;
       }
 
@@ -1488,10 +1500,17 @@ export const ProductNewFinal: React.FC = () => {
                 const shouldPulse =
                   tab.id === "variants" && showVariants && !isActive;
 
+                const tabUrl = isEditMode
+                  ? `/products/${id}/edit?tab=${tab.id}`
+                  : `/products/new?tab=${tab.id}`;
                 return (
-                  <button
+                  <a
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    href={tabUrl}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      changeTab(tab.id);
+                    }}
                     className={`${
                       isActive
                         ? "bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-500 dark:text-indigo-300"
@@ -1516,7 +1535,7 @@ export const ProductNewFinal: React.FC = () => {
                     {tab.id === "pricing" && fieldErrors.price && (
                       <span className="ml-auto rtl:mr-auto w-2 h-2 bg-red-500 rounded-full"></span>
                     )}
-                  </button>
+                  </a>
                 );
               })}
             </nav>
