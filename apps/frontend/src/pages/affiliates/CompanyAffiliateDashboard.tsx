@@ -9,6 +9,7 @@ import {
     ClockIcon,
     LinkIcon,
     UserGroupIcon,
+    PencilIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
@@ -42,6 +43,8 @@ const CompanyAffiliateDashboard: React.FC = () => {
     const { user } = useAuth();
     const [data, setData] = useState<AffiliatesData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [editingRate, setEditingRate] = useState<Record<string, string>>({});
+    const [savingRate, setSavingRate] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         fetchData();
@@ -79,93 +82,172 @@ const CompanyAffiliateDashboard: React.FC = () => {
         });
     };
 
-    const PartnerCard: React.FC<{ item: CompanyAffiliate }> = ({ item }) => (
-        <div className="p-5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-                <img
-                    src={item.partner.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.partner.name)}&background=random`}
-                    alt={item.partner.name}
-                    className="w-12 h-12 rounded-xl object-cover bg-gray-100"
-                />
-                <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">
-                        {item.partner.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 truncate">{item.partner.email}</p>
-                </div>
-                <span className={`px-2.5 py-1 text-[10px] rounded-full font-medium ${item.totalOrders > 0
-                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-500"
-                    }`}>
-                    {item.role === "consumer" ? "مورد" : "مسوق"}
-                </span>
-            </div>
+    const saveCommissionRate = async (connectionId: string) => {
+        const raw = editingRate[connectionId];
+        const rate = raw === "" || raw === undefined ? null : Number(raw);
+        if (rate !== null && (isNaN(rate) || rate < 0 || rate > 100)) return;
 
-            <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                        <ShoppingBagIcon className="w-3.5 h-3.5" />
-                        الطلبات
-                    </div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        {item.totalOrders}
-                    </p>
-                </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                        <CurrencyDollarIcon className="w-3.5 h-3.5" />
-                        إجمالي العمولات
-                    </div>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                        {formatPrice(item.totalCommissions)}
-                    </p>
-                </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                        <CheckCircleIcon className="w-3.5 h-3.5 text-green-500" />
-                        مدفوع
-                    </div>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                        {formatPrice(item.paidCommissions)}
-                    </p>
-                </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                        <ClockIcon className="w-3.5 h-3.5 text-amber-500" />
-                        معلق
-                    </div>
-                    <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
-                        {formatPrice(item.pendingCommissions)}
-                    </p>
-                </div>
-            </div>
+        setSavingRate(prev => ({ ...prev, [connectionId]: true }));
+        try {
+            const resp = await fetch(`/api/v1/company-connections/${connectionId}/permissions`, {
+                method: "PUT",
+                headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({ commissionRate: rate })
+            });
+            const result = await resp.json();
+            if (result.success) {
+                toast.success("تم تحديث نسبة العمولة");
+                setEditingRate(prev => {
+                    const next = { ...prev };
+                    delete next[connectionId];
+                    return next;
+                });
+                fetchData();
+            } else {
+                toast.error(result.message || "فشل التحديث");
+            }
+        } catch {
+            toast.error("حدث خطأ أثناء التحديث");
+        } finally {
+            setSavingRate(prev => ({ ...prev, [connectionId]: false }));
+        }
+    };
 
-            {/* Commission Rate */}
-            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span>
-                        آخر طلب: {formatDate(item.lastOrderAt)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <CurrencyDollarIcon className="w-3 h-3" />
-                        العمولة: {item.commissionRate != null ? `${item.commissionRate}%` : "5% (افتراضي)"}
+    const PartnerCard: React.FC<{ item: CompanyAffiliate }> = ({ item }) => {
+        const isEditing = editingRate[item.connectionId] !== undefined;
+        const isSaving = savingRate[item.connectionId];
+        const currentDisplay = item.commissionRate != null ? `${item.commissionRate}%` : "5% (افتراضي)";
+
+        return (
+            <div className="p-5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                    <img
+                        src={item.partner.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.partner.name)}&background=random`}
+                        alt={item.partner.name}
+                        className="w-12 h-12 rounded-xl object-cover bg-gray-100"
+                    />
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 dark:text-white truncate">
+                            {item.partner.name}
+                        </h4>
+                        <p className="text-xs text-gray-500 truncate">{item.partner.email}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 text-[10px] rounded-full font-medium ${item.totalOrders > 0
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-500"
+                        }`}>
+                        {item.role === "consumer" ? "مورد" : "مسوق"}
                     </span>
                 </div>
-                {item.role === "consumer" && item.pendingCommissions > 0 && (
-                    <button
-                        onClick={() => {
-                            navigator.clipboard.writeText(window.location.origin + "/affiliates/commission");
-                            toast.success("تم نسخ رابط العمولات");
-                        }}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs rounded-lg hover:bg-indigo-100 transition-colors"
-                    >
-                        <CurrencyDollarIcon className="w-3.5 h-3.5" />
-                        طلب سحب العمولة ←
-                    </button>
-                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                            <ShoppingBagIcon className="w-3.5 h-3.5" />
+                            الطلبات
+                        </div>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                            {item.totalOrders}
+                        </p>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                            <CurrencyDollarIcon className="w-3.5 h-3.5" />
+                            إجمالي العمولات
+                        </div>
+                        <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                            {formatPrice(item.totalCommissions)}
+                        </p>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                            <CheckCircleIcon className="w-3.5 h-3.5 text-green-500" />
+                            مدفوع
+                        </div>
+                        <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                            {formatPrice(item.paidCommissions)}
+                        </p>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                            <ClockIcon className="w-3.5 h-3.5 text-amber-500" />
+                            معلق
+                        </div>
+                        <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                            {formatPrice(item.pendingCommissions)}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Commission Rate + Actions */}
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                        <span>آخر طلب: {formatDate(item.lastOrderAt)}</span>
+                        {item.role === "provider" && !isEditing && (
+                            <button
+                                onClick={() => setEditingRate(prev => ({ ...prev, [item.connectionId]: String(item.commissionRate ?? "") }))}
+                                className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
+                            >
+                                <PencilIcon className="w-3 h-3" />
+                                تعديل العمولة
+                            </button>
+                        )}
+                    </div>
+
+                    {item.role === "provider" && isEditing ? (
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg">
+                            <span className="text-xs text-gray-500 shrink-0">نسبة العمولة:</span>
+                            <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.5"
+                                value={editingRate[item.connectionId] ?? ""}
+                                onChange={(e) => setEditingRate(prev => ({ ...prev, [item.connectionId]: e.target.value }))}
+                                className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-center bg-white dark:bg-gray-700 outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                            <span className="text-xs text-gray-400">%</span>
+                            <button
+                                onClick={() => saveCommissionRate(item.connectionId)}
+                                disabled={isSaving}
+                                className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                                {isSaving ? "..." : "حفظ"}
+                            </button>
+                            <button
+                                onClick={() => setEditingRate(prev => {
+                                    const next = { ...prev };
+                                    delete next[item.connectionId];
+                                    return next;
+                                })}
+                                className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-md hover:bg-gray-400"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                                <CurrencyDollarIcon className="w-3 h-3" />
+                                العمولة: {currentDisplay}
+                            </span>
+                            {item.role === "consumer" && item.pendingCommissions > 0 && (
+                                <a
+                                    href="/affiliates/commission"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
+                                >
+                                    <CurrencyDollarIcon className="w-3.5 h-3.5" />
+                                    طلب سحب العمولة
+                                </a>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const Section: React.FC<{
         title: string;
