@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
     ArrowsRightLeftIcon,
-    ListBulletIcon,
     ShieldCheckIcon,
     ClockIcon,
     CheckBadgeIcon,
@@ -13,7 +13,6 @@ import TransitionRules from './TransitionRules';
 import ApprovalRules from './ApprovalRules';
 import OverridePermissions from './OverridePermissions';
 import AuditLogViewer from './AuditLogViewer';
-import StatusManagement from './StatusManagement';
 import TabErrorBoundary from './TabErrorBoundary';
 
 interface OrderWorkflowProps {
@@ -25,6 +24,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
     const [config, setConfig] = useState<OrderWorkflowConfig | null>(null);
     const [statuses, setStatuses] = useState<OrderStatusDefinition[]>([]);
     const [loading, setLoading] = useState(true);
+    const [hasTransitions, setHasTransitions] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -33,12 +33,27 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [configData, statusesData] = await Promise.all([
+            const [configData, statusesData, transitionsData] = await Promise.all([
                 orderWorkflowService.getConfig(),
-                orderWorkflowService.getStatuses()
+                orderWorkflowService.getStatuses(),
+                orderWorkflowService.getTransitions()
             ]);
             setConfig(configData.data);
-            setStatuses(statusesData.data);
+            setHasTransitions((transitionsData.data || []).length > 0);
+            const statuses = statusesData.data || [];
+            try {
+                const seedResult = await orderWorkflowService.seedDefaultStatuses();
+                if (seedResult?.data?.length > 0) {
+                    const refreshed = await orderWorkflowService.getStatuses();
+                    setStatuses(refreshed.data || []);
+                    toast.success(`تم استيراد ${seedResult.data.length} حالة أساسية`, { duration: 3000 });
+                } else {
+                    setStatuses(statuses);
+                }
+            } catch (seedErr) {
+                console.warn('Seed defaults failed:', seedErr);
+                setStatuses(statuses);
+            }
         } catch (error) {
             console.error('Failed to fetch workflow data', error);
         } finally {
@@ -48,7 +63,6 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
 
     const tabs = [
         { id: 'settings', label: 'الإعدادات العامة', icon: AdjustmentsVerticalIcon },
-        { id: 'statuses', label: 'إدارة الحالات', icon: ListBulletIcon },
         { id: 'transitions', label: 'قواعد الانتقال', icon: ArrowsRightLeftIcon },
         { id: 'approvals', label: 'طلبات الموافقة', icon: CheckBadgeIcon },
         { id: 'overrides', label: 'صلاحيات التجاوز', icon: ShieldCheckIcon },
@@ -165,6 +179,15 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                     {activeTab === 'settings' && (
                                         <TabErrorBoundary tabLabel="الإعدادات العامة">
                                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            {config?.enabled && !hasTransitions && (
+                                                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 flex gap-3 text-amber-700 dark:text-amber-400">
+                                                    <ShieldCheckIcon className="w-6 h-6 flex-shrink-0" />
+                                                    <div className="text-sm">
+                                                        <p className="font-bold mb-1">لا توجد قواعد انتقال مخصصة حتى الآن</p>
+                                                        <p>«فرض قواعد الانتقال» مفعل افتراضيًا — أي تغيير لحالة الطلب هيتصد لو مفيش قاعدة انتقال معرفة. روح لتبويبة <strong>قواعد الانتقال</strong> عشان تحدد التحولات المسموح فيها، أو عطل «فرض قواعد الانتقال» مؤقتًا.</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div>
                                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">الإعدادات العامة للمسار</h2>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -193,7 +216,6 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                         </div>
                                         </TabErrorBoundary>
                                     )}
-                                    {activeTab === 'statuses' && <TabErrorBoundary tabLabel="إدارة الحالات"><StatusManagement statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'transitions' && <TabErrorBoundary tabLabel="قواعد الانتقال"><TransitionRules statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'approvals' && <TabErrorBoundary tabLabel="طلبات الموافقة"><ApprovalRules onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'overrides' && <TabErrorBoundary tabLabel="صلاحيات التجاوز"><OverridePermissions config={config} onUpdate={fetchData} /></TabErrorBoundary>}
