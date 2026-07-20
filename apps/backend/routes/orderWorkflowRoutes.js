@@ -62,8 +62,41 @@ router.get('/statuses', async (req, res) => {
         const companyId = getCompanyId(req);
         if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
 
-        const statuses = await orderWorkflowService.getStatuses(companyId);
-        res.json({ success: true, data: statuses });
+        // Primary source: orderStatusDefinition (workflow table)
+        const wfStatuses = await orderWorkflowService.getStatuses(companyId);
+        const wfCodes = new Set(wfStatuses.map(s => s.code));
+
+        // Secondary source: orderStatusConfig — include any active statuses not yet mirrored
+        const prisma = getSharedPrismaClient();
+        const configStatuses = await prisma.orderStatusConfig.findMany({
+            where: { companyId, isActive: true, statusType: 'order' },
+            orderBy: { sortOrder: 'asc' }
+        });
+
+        // Auto-mirror any missing statuses from config into workflow table (backfill)
+        const missing = configStatuses.filter(s => !wfCodes.has(s.code));
+        for (const s of missing) {
+            try {
+                await prisma.orderStatusDefinition.create({
+                    data: {
+                        companyId,
+                        name: s.name,
+                        code: s.code,
+                        color: s.color || '#6B7280',
+                        sortOrder: s.sortOrder || 0,
+                        description: s.description || null,
+                        notifyCustomer: s.notifyCustomer || false,
+                        isTerminal: false,
+                        lockAfterEntry: false,
+                        requiresApprovalToExit: false,
+                    }
+                });
+            } catch (_) { /* already exists or race condition — ignore */ }
+        }
+
+        // Return a fresh merged list
+        const allStatuses = await orderWorkflowService.getStatuses(companyId);
+        res.json({ success: true, data: allStatuses });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

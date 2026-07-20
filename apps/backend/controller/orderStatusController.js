@@ -170,6 +170,71 @@ const getStatusById = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// 🔄 Sync Helper: Mirror status to OrderStatusDefinition (workflow)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Sync a status from orderStatusConfig into orderStatusDefinition (workflow table).
+ * This ensures any status added/edited from settings/orders automatically appears
+ * in the TransitionRules on settings/order-workflow.
+ */
+const syncStatusToWorkflow = async (prisma, companyId, statusConfig) => {
+  try {
+    await prisma.orderStatusDefinition.upsert({
+      where: { companyId_code: { companyId, code: statusConfig.code } },
+      update: {
+        name: statusConfig.name,
+        color: statusConfig.color || '#6B7280',
+        sortOrder: statusConfig.sortOrder || 0,
+        description: statusConfig.description || null,
+        notifyCustomer: statusConfig.notifyCustomer || false,
+      },
+      create: {
+        companyId,
+        name: statusConfig.name,
+        code: statusConfig.code,
+        color: statusConfig.color || '#6B7280',
+        sortOrder: statusConfig.sortOrder || 0,
+        description: statusConfig.description || null,
+        notifyCustomer: statusConfig.notifyCustomer || false,
+        isTerminal: false,
+        lockAfterEntry: false,
+        requiresApprovalToExit: false,
+      }
+    });
+    console.log(`✅ [ORDER-STATUS-SYNC] Synced status "${statusConfig.code}" to workflow definitions for company ${companyId}`);
+  } catch (syncErr) {
+    // Non-fatal: log but don't fail the main request
+    console.warn(`⚠️ [ORDER-STATUS-SYNC] Could not sync status "${statusConfig.code}" to workflow:`, syncErr.message);
+  }
+};
+
+/**
+ * Remove a status from orderStatusDefinition when it is deactivated/deleted from orderStatusConfig.
+ * Only removes if no active workflow transitions reference it.
+ */
+const removeStatusFromWorkflow = async (prisma, companyId, code) => {
+  try {
+    const wfStatus = await prisma.orderStatusDefinition.findUnique({
+      where: { companyId_code: { companyId, code } },
+      include: { fromTransitions: true, toTransitions: true }
+    });
+    if (!wfStatus) return; // Already gone
+    if (wfStatus.fromTransitions.length > 0 || wfStatus.toTransitions.length > 0) {
+      // Has linked transition rules — keep it in workflow so existing rules still work
+      console.log(`ℹ️ [ORDER-STATUS-SYNC] Skipped removing "${code}" from workflow — has active transition rules.`);
+      return;
+    }
+    await prisma.orderStatusDefinition.delete({
+      where: { companyId_code: { companyId, code } }
+    });
+    console.log(`🗑️ [ORDER-STATUS-SYNC] Removed status "${code}" from workflow definitions for company ${companyId}`);
+  } catch (syncErr) {
+    console.warn(`⚠️ [ORDER-STATUS-SYNC] Could not remove status "${code}" from workflow:`, syncErr.message);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // ➕ Create Status
 // ═══════════════════════════════════════════════════════════════
 
@@ -216,10 +281,11 @@ const createStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'هذا الكود موجود بالفعل' });
     }
 
+    const finalCode = code.toUpperCase().replace(/\s+/g, '_');
     const status = await getSharedPrismaClient().orderStatusConfig.create({
       data: {
         companyId,
-        code: code.toUpperCase().replace(/\s+/g, '_'),
+        code: finalCode,
         name,
         nameEn,
         description,
@@ -239,6 +305,9 @@ const createStatus = async (req, res) => {
         smsTemplate
       }
     });
+
+    // 🔄 Auto-sync to workflow statuses so it appears in TransitionRules immediately
+    await syncStatusToWorkflow(getSharedPrismaClient(), companyId, status);
 
     res.status(201).json({
       success: true,
@@ -312,6 +381,14 @@ const updateStatus = async (req, res) => {
       }
     });
 
+    // 🔄 Auto-sync name/color/description to workflow so TransitionRules stay in sync
+    if (status.isActive !== false) {
+      await syncStatusToWorkflow(getSharedPrismaClient(), companyId, status);
+    } else {
+      // Status deactivated — try to remove from workflow if no transitions use it
+      await removeStatusFromWorkflow(getSharedPrismaClient(), companyId, status.code);
+    }
+
     res.json({
       success: true,
       message: 'تم تحديث الحالة بنجاح',
@@ -349,6 +426,9 @@ const deleteStatus = async (req, res) => {
       where: { id },
       data: { isActive: false }
     });
+
+    // 🔄 Remove from workflow definitions if no transitions reference it
+    await removeStatusFromWorkflow(getSharedPrismaClient(), companyId, existing.code);
 
     res.json({
       success: true,
@@ -594,7 +674,17 @@ const initializeStatuses = async (req, res) => {
 
     await initializeDefaultStatuses(companyId);
 
-    const statuses = await getSharedPrismaClient().orderStatusConfig.findMany({
+    // 🔄 Sync all order statuses to workflow definitions (backfill)
+    const prisma = getSharedPrismaClient();
+    const orderStatuses = await prisma.orderStatusConfig.findMany({
+      where: { companyId, isActive: true, statusType: 'order' },
+      orderBy: { sortOrder: 'asc' }
+    });
+    for (const s of orderStatuses) {
+      await syncStatusToWorkflow(prisma, companyId, s);
+    }
+
+    const statuses = await prisma.orderStatusConfig.findMany({
       where: { companyId },
       orderBy: { sortOrder: 'asc' }
     });
