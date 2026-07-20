@@ -245,11 +245,11 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
                  <tr key={item.id || idx} style={{ borderBottom: idx < items.length - 1 ? "1.5px solid #000" : "none" }}>
                    <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "right" }}>
                      <div style={{ fontSize: compact ? "12px" : "14px", fontWeight: 700, lineHeight: "1.2" }}>{item.productName}</div>
-                     {(item.productColor || item.productSize) && (
-                       <div style={{ fontSize: compact ? "10px" : "12px", color: "#333", marginTop: "2px" }}>
-                         {[item.productColor, item.productSize].filter(Boolean).join(" | ")}
-                       </div>
-                     )}
+                      {(item.productColor || item.productSize) && (
+                        <div style={{ fontSize: compact ? "11px" : "13px", fontWeight: 700, color: "#000", marginTop: "2px" }}>
+                          {[item.productColor, item.productSize].filter(Boolean).join(" | ")}
+                        </div>
+                      )}
                    </td>
                    <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontFamily: "monospace", fontSize: compact ? "11px" : "13px", fontWeight: 800 }}>
                      {item.productSku || "—"}
