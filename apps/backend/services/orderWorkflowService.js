@@ -213,6 +213,10 @@ class OrderWorkflowService {
             // 4. Handle OVERRIDE
             let auditType = 'normal';
             if (isOverride) {
+                // Check if override is allowed in config
+                if (config.allowOverride === false) {
+                    throw new Error('صلاحية التجاوز (Override) معطلة حالياً من إعدادات المسار');
+                }
                 // Check if user has override permission
                 const overrideRoles = config.overrideRoles
                     ? JSON.parse(config.overrideRoles)
@@ -262,9 +266,16 @@ class OrderWorkflowService {
                 if (allowedRoles.length > 0 && !allowedRoles.includes(userRole) && !allowedRoles.includes(userId)) {
                     throw new Error('دورك الحالي لا يملك صلاحية تنفيذ هذا الانتقال');
                 }
+            }
 
-                // 8. Check Approval requirement
-                if (transition.requiresApproval || (currentStatusDef && currentStatusDef.requiresApprovalToExit)) {
+            // 8. Check Approval requirement
+            if (!isOverride) {
+                const needsApproval =
+                    (transition && transition.requiresApproval) ||
+                    (currentStatusDef && currentStatusDef.requiresApprovalToExit) ||
+                    (config.requireApprovalByDefault && (!transition || transition.requiresApproval !== false));
+
+                if (needsApproval) {
                     const approvalRequest = await this.createApprovalRequest(companyId, orderId, userId, currentStatusDef?.id, nextStatusDef.id, reason);
                     return { status: 'pending', requestId: approvalRequest.id };
                 }
