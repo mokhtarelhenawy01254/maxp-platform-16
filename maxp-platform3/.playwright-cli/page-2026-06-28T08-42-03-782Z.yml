@@ -1,7 +1,0 @@
-- generic [active] [ref=e1]:
-  - generic [ref=e2]:
-    - banner [ref=e3]
-    - main [ref=e12]
-  - generic [ref=e34]:
-    - banner [ref=e35]
-    - main [ref=e45]

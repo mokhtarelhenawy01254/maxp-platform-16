@@ -1,4 +1,0 @@
-{
-  "paymentGatewayConfig": "{\"merchantId\":\"MID-46436-584\",\"apiKey\":\"22a05f0c-40fb-49d9-ac81-e2a090e70667\",\"secretKey\":\"c68b18cef89d8387264ee6cdf9854af3$6e15aad09d7d5d5ff1d8f6d9884999b779af01e9837b38df6bfe0dd57beb166ee6d795e1b97c8acd02e19435b98d4d61\",\"mode\":\"test\"}",
-  "enabledPaymentMethods": "[\"cod\",\"card\"]"
-}
