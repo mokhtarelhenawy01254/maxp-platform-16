@@ -110,6 +110,28 @@ class OrderWorkflowService {
         });
         const existingCodes = new Set(existing.map(s => s.code.toUpperCase()));
 
+        // Also fetch custom statuses from OrderStatusConfig (created via /settings/orders)
+        try {
+            const configStatuses = await this.prisma.orderStatusConfig.findMany({
+                where: { companyId, type: 'order' },
+                select: { code: true, name: true, color: true, sortOrder: true }
+            });
+            for (const cs of configStatuses) {
+                if (!existingCodes.has(cs.code.toUpperCase())) {
+                    await this.prisma.orderStatusDefinition.create({
+                        data: {
+                            companyId,
+                            code: cs.code.toUpperCase(),
+                            name: cs.name || cs.code,
+                            color: cs.color || '#6B7280',
+                            sortOrder: cs.sortOrder || 0,
+                        }
+                    });
+                    existingCodes.add(cs.code.toUpperCase());
+                }
+            }
+        } catch (_) { /* orderStatusConfig table might not exist */ }
+
         const defaults = [
             { code: 'DRAFT', name: 'مسودة', color: '#9CA3AF', sortOrder: 5 },
             { code: 'PENDING', name: 'معلق', color: '#EAB308', sortOrder: 10 },
