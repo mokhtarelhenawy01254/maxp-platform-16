@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   PlusIcon,
   PencilIcon,
@@ -75,6 +76,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
   shippingClasses,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const baseShippingClasses = useMemo(
     () =>
       shippingClasses && shippingClasses.length > 0
@@ -152,9 +154,13 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
   }, [baseFeesTemplate]);
 
   const methodTypeLabel = useMemo(() => {
-    const map = new Map(METHOD_TYPES.map((t) => [t.value, t.label]));
-    return (type: string) => map.get(type) || type;
-  }, []);
+    const map: Record<string, string> = {
+      flat_rate: t("storeShipping.flatShippingPrice"),
+      free_shipping: t("storeShipping.freeShippingMethod"),
+      local_pickup: t("storeShipping.pickupFromBranch"),
+    };
+    return (type: string) => map[type] || type;
+  }, [t]);
 
   const loadMethods = useCallback(async () => {
     try {
@@ -163,11 +169,11 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
       setMethods(response.data.data || []);
     } catch (error) {
       console.error("Error fetching shipping methods:", error);
-      toast.error("فشل تحميل طرق الشحن");
+      toast.error(t("storeShipping.methodSaveFailed"));
     } finally {
       setLoading(false);
     }
-  }, [zone.id]);
+  }, [zone.id, t]);
 
   useEffect(() => {
     loadMethods();
@@ -193,7 +199,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
 
   const handleSave = async () => {
     if (!formState.title.trim()) {
-      toast.error("يرجى إدخال اسم طريقة الشحن");
+      toast.error(t("storeShipping.nameRequired"));
       return;
     }
 
@@ -224,32 +230,32 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
           editingMethod.id,
           payload,
         );
-        toast.success("تم تحديث طريقة الشحن");
+        toast.success(t("storeShipping.methodUpdated"));
       } else {
         await storeSettingsService.createShippingMethod(zone.id, payload);
-        toast.success("تم إضافة طريقة الشحن");
+        toast.success(t("storeShipping.methodAdded"));
       }
 
       await loadMethods();
       handleCloseForm();
     } catch (error) {
       console.error("Error saving shipping method:", error);
-      toast.error("فشل حفظ طريقة الشحن");
+      toast.error(t("storeShipping.methodSaveFailed"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (methodId: string) => {
-    if (!confirm("هل أنت متأكد من حذف طريقة الشحن؟")) return;
+    if (!confirm(t("storeShipping.methodDeleteConfirm"))) return;
 
     try {
       await storeSettingsService.deleteShippingMethod(methodId);
-      toast.success("تم حذف طريقة الشحن");
+      toast.success(t("storeShipping.methodDeleted"));
       await loadMethods();
     } catch (error) {
       console.error("Error deleting shipping method:", error);
-      toast.error("فشل حذف طريقة الشحن");
+      toast.error(t("storeShipping.methodDeleteFailed"));
     }
   };
 
@@ -268,10 +274,10 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              طرق الشحن - {zone.name}
+              {t("storeShipping.shippingMethodsTitle")} - {zone.name}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              أضف طرق الشحن الخاصة بهذه المنطقة وحدد رسوم فئات الشحن لكل طريقة.
+              {t("storeShipping.noMethodsDesc")}
             </p>
           </div>
           <button
@@ -285,14 +291,14 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              الطرق المتاحة
+              {t("storeShipping.shippingMethodsTitle")}
             </h3>
             <button
               onClick={openNewForm}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
             >
               <PlusIcon className="h-5 w-5" />
-              إضافة طريقة
+              {t("storeShipping.addMethod")}
             </button>
           </div>
 
@@ -302,7 +308,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
             </div>
           ) : methods.length === 0 ? (
             <div className="p-6 bg-gray-50 dark:bg-gray-900/40 rounded-lg text-center text-gray-500 dark:text-gray-400">
-              لا توجد طرق شحن بعد. أضف طريقة جديدة للبدء.
+              {t("storeShipping.noMethods")}
             </div>
           ) : (
             <div className="space-y-3">
@@ -328,7 +334,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
                             : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                             }`}
                         >
-                          {method.isEnabled ? "مفعلة" : "متوقفة"}
+                          {method.isEnabled ? t("storeShipping.enabled") : t("storeShipping.disabled")}
                         </span>
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -339,7 +345,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          تكلفة الأساس
+                          {t("storeShipping.methodCost")}
                         </div>
                         <div className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
                           {cost} ج.م
@@ -351,14 +357,14 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
                           className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1"
                         >
                           <PencilIcon className="h-4 w-4" />
-                          تعديل
+                          {t("storeShipping.edit")}
                         </button>
                         <button
                           onClick={() => handleDelete(method.id)}
                           className="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 flex items-center gap-1"
                         >
                           <TrashIcon className="h-4 w-4" />
-                          حذف
+                          {t("storeShipping.delete")}
                         </button>
                       </div>
                     </div>
@@ -372,7 +378,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
             <div className="p-6 border border-indigo-200 dark:border-indigo-700 rounded-lg bg-indigo-50/60 dark:bg-indigo-900/10 space-y-5">
               <div className="flex justify-between items-center">
                 <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {editingMethod ? "تعديل طريقة الشحن" : "إضافة طريقة شحن جديدة"}
+                  {editingMethod ? t("storeShipping.methodUpdated") : t("storeShipping.methodAdded")}
                 </h4>
                 <button
                   onClick={handleCloseForm}
@@ -385,7 +391,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    اسم الطريقة
+                    {t("storeShipping.methodName")}
                   </label>
                   <input
                     type="text"
@@ -403,7 +409,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    نوع الطريقة
+                    {t("storeShipping.methodType")}
                   </label>
                   <select
                     value={formState.type}
@@ -419,7 +425,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
                   >
                     {METHOD_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
-                        {type.label}
+                        {t("storeShipping." + (type.value === "flat_rate" ? "flatShippingPrice" : type.value === "free_shipping" ? "freeShippingMethod" : "pickupFromBranch"))}
                       </option>
                     ))}
                   </select>
@@ -427,7 +433,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    تكلفة الأساس (ج.م)
+                    {t("storeShipping.methodCost")}
                   </label>
                   <input
                     type="number"
@@ -475,7 +481,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
                       className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">
-                      مفعلة
+                      {t("storeShipping.enabled")}
                     </span>
                   </div>
                 </div>
@@ -561,7 +567,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
                   onClick={handleCloseForm}
                   className="px-4 py-2 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
-                  إلغاء
+                  {t("storeShipping.cancel")}
                 </button>
                 <button
                   onClick={handleSave}
@@ -571,7 +577,7 @@ export const ShippingMethodsModal: React.FC<ShippingMethodsModalProps> = ({
                     : "bg-indigo-600 hover:bg-indigo-700"
                     }`}
                 >
-                  {saving ? "جاري الحفظ..." : "حفظ"}
+                  {saving ? t("storeShipping.save") : t("storeShipping.save")}
                 </button>
               </div>
             </div>

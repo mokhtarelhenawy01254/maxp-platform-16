@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Branch } from "../../services/storeSettingsService";
 
@@ -17,13 +18,14 @@ export const BranchModal: React.FC<BranchModalProps> = ({
   onSave,
   onChange,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-gray-700 shadow-2xl">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {isEditing ? "تعديل الفرع" : "إضافة فرع جديد"}
+              {isEditing ? t("storeBranches.modalEditTitle") : t("storeBranches.modalAddTitle")}
             </h2>
             <button
               onClick={onClose}
@@ -36,20 +38,20 @@ export const BranchModal: React.FC<BranchModalProps> = ({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                اسم الفرع <span className="text-red-500">*</span>
+                {t("storeBranches.branchName")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={branch.name || ""}
                 onChange={(e) => onChange({ ...branch, name: e.target.value })}
                 className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder="الفرع الرئيسي"
+                placeholder={t("storeBranches.branchNamePlaceholder")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                العنوان
+                {t("storeBranches.address")}
               </label>
               <input
                 type="text"
@@ -58,27 +60,27 @@ export const BranchModal: React.FC<BranchModalProps> = ({
                   onChange({ ...branch, address: e.target.value })
                 }
                 className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="شارع التحرير، وسط البلد (أو اتركه فارغاً للفرع الأونلاين)"
+                placeholder={t("storeBranches.addressPlaceholder")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                المدينة
+                {t("storeBranches.city")}
               </label>
               <input
                 type="text"
                 value={branch.city || ""}
                 onChange={(e) => onChange({ ...branch, city: e.target.value })}
                 className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="القاهرة (اختياري)"
+                placeholder={t("storeBranches.cityPlaceholder")}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  رقم الهاتف <span className="text-red-500">*</span>
+                  {t("storeBranches.phone")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -87,13 +89,13 @@ export const BranchModal: React.FC<BranchModalProps> = ({
                     onChange({ ...branch, phone: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="0123456789"
+                  placeholder={t("storeBranches.phonePlaceholder")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  البريد الإلكتروني
+                  {t("storeBranches.email")}
                 </label>
                 <input
                   type="email"
@@ -109,7 +111,7 @@ export const BranchModal: React.FC<BranchModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ساعات العمل
+                {t("storeBranches.workingHours")}
               </label>
               <input
                 type="text"
@@ -118,7 +120,7 @@ export const BranchModal: React.FC<BranchModalProps> = ({
                   onChange({ ...branch, workingHours: e.target.value })
                 }
                 className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="من 9 صباحاً إلى 9 مساءً"
+                placeholder={t("storeBranches.workingHoursPlaceholder")}
               />
             </div>
 
@@ -136,7 +138,7 @@ export const BranchModal: React.FC<BranchModalProps> = ({
                 htmlFor="branchActive"
                 className="mr-2 text-sm text-gray-700 dark:text-gray-300"
               >
-                الفرع نشط
+                {t("storeBranches.branchActive")}
               </label>
             </div>
           </div>
@@ -146,13 +148,13 @@ export const BranchModal: React.FC<BranchModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              إلغاء
+              {t("storeBranches.cancel")}
             </button>
             <button
               onClick={onSave}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-lg"
             >
-              {isEditing ? "حفظ التغييرات" : "إضافة الفرع"}
+              {isEditing ? t("storeBranches.save") : t("storeBranches.addBranch")}
             </button>
           </div>
         </div>
