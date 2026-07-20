@@ -229,7 +229,7 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
         {allGroups.length > 0 && (
           <aside className="hidden w-44 shrink-0 md:block">
             <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
-              <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>الكل ({tools.length})</button>
+              <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{i18n.t("common.all")} ({tools.length})</button>
               {allGroups.map((g) => (
                 <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{GROUP_LABELS[g] || g} ({tools.filter((t) => t.group === g).length})</button>
               ))}

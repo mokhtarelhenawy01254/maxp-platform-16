@@ -726,6 +726,11 @@
   "aiHub": {
     "title": "AI Hub",
     "subtitle": "Intelligent Agents Center",
+    "company": "Company",
+    "selectCompany": "Select company...",
+    "companyRequired": "You must select a company to test the agent",
+    "selectCompanyFirst": "Select a company first",
+    "selectCompanyForRag": "Select a company to view Knowledge Base",
     "tabs": {
       "agents": "Agents",
       "sandbox": "AI Assistant",
@@ -733,7 +738,15 @@
       "tools": "Tools",
       "skills": "Skills",
       "scheduler": "Scheduler",
-      "routing": "Channel Routing"
+      "routing": "Channel Routing",
+      "test": "Test"
+    },
+    "test": {
+      "agent": "Agent",
+      "selectAgent": "Select agent...",
+      "message": "Message",
+      "messagePlaceholder": "Write a test message...",
+      "send": "Send"
     },
     "channelRouting": {
       "title": "Channel Routing",
@@ -6738,7 +6751,9 @@
               "listDescription": "Latest registration and subscription messages sent from the super admin scope.",
               "empty": "No logs match the current filters.",
               "columns": {
-                "company": "Company",
+    "company": "Company",
+    "loadCompaniesFailed": "Failed to load companies list",
+    "loadCompaniesError": "An error occurred while loading companies list",
                 "event": "Event",
                 "status": "Status",
                 "error": "Error",

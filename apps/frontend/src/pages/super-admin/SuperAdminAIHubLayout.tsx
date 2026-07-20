@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bot, Building2, AlertCircle } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { Alert, AlertDescription } from "../../components/ui/alert";
@@ -14,13 +15,14 @@ interface Company {
 }
 
 const TABS = [
-  { key: "skills", label: "مهارات الوكيل", needsCompany: false },
-  { key: "tools", label: "أدوات الوكيل", needsCompany: false },
-  { key: "rag", label: "قاعدة المعرفة (RAG)", needsCompany: true },
+  { key: "skills", labelKey: "aiHub.tabs.skills", needsCompany: false },
+  { key: "tools", labelKey: "aiHub.tabs.tools", needsCompany: false },
+  { key: "rag", labelKey: "aiHub.tabs.rag", needsCompany: true },
 ] as const;
 
 export default function SuperAdminAIHubLayout() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
   const activeTab = (searchParams.get("tab") || "skills") as "skills" | "tools" | "rag";
   const currentTabMeta = TABS.find((t) => t.key === activeTab) ?? TABS[0];
 
@@ -37,9 +39,9 @@ export default function SuperAdminAIHubLayout() {
       try {
         const { data } = await apiClient.get("/super-admin/companies/quick-list");
         if (data.success) setCompanies(data.companies);
-        else setCompaniesError(data.message || "فشل تحميل قائمة الشركات");
+        else setCompaniesError(data.message || t("aiHub.loadCompaniesFailed"));
       } catch {
-        setCompaniesError("حدث خطأ أثناء تحميل قائمة الشركات");
+        setCompaniesError(t("aiHub.loadCompaniesError"));
       }
       finally { setLoadingCompanies(false); }
     })();
@@ -86,7 +88,7 @@ export default function SuperAdminAIHubLayout() {
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>
@@ -96,9 +98,9 @@ export default function SuperAdminAIHubLayout() {
         {currentTabMeta.needsCompany && (
           <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
             <Building2 className="size-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium">الشركة:</span>
+            <span className="text-sm font-medium">{t("aiHub.company")}:</span>
             {loadingCompanies ? (
-              <span className="text-sm text-muted-foreground">جاري التحميل...</span>
+              <span className="text-sm text-muted-foreground">{t("common.loading")}</span>
             ) : companiesError ? (
               <span className="text-sm text-destructive">{companiesError}</span>
             ) : (
@@ -107,7 +109,7 @@ export default function SuperAdminAIHubLayout() {
                 onChange={(e) => setSelectedCompanyId(e.target.value)}
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm min-w-[220px] text-foreground"
               >
-                <option value="">اختر شركة...</option>
+                <option value="">{t("aiHub.selectCompany")}</option>
                 {companies.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -135,7 +137,7 @@ export default function SuperAdminAIHubLayout() {
           {activeTab === "rag" && (
             selectedCompanyId
               ? <AgenticRAGLab key={selectedCompanyId} companyId={selectedCompanyId} />
-              : <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة لعرض قاعدة المعرفة</div>
+              : <div className="flex h-64 items-center justify-center text-muted-foreground">{t("aiHub.selectCompanyForRag")}</div>
           )}
         </React.Suspense>
       </div>

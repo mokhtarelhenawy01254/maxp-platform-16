@@ -14,17 +14,18 @@ import AgentToolsPage from "./AgentToolsPage";
 const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 
 const TABS = [
-  { key: "sandbox", label: "المساعد الذكي" },
-  { key: "skills", label: "مهارات الوكلاء" },
-  { key: "tools", label: "أدوات الوكلاء" },
-  { key: "routing", label: "توجيه القنوات" },
-  { key: "test", label: "اختبار", superOnly: true },
-  { key: "rag", label: "قاعدة المعرفة (RAG)", superOnly: true },
+  { key: "sandbox", labelKey: "aiHub.tabs.sandbox" },
+  { key: "skills", labelKey: "aiHub.tabs.skills" },
+  { key: "tools", labelKey: "aiHub.tabs.tools" },
+  { key: "routing", labelKey: "aiHub.tabs.routing" },
+  { key: "test", labelKey: "aiHub.tabs.test", superOnly: true },
+  { key: "rag", labelKey: "aiHub.tabs.rag", superOnly: true },
 ] as const;
 
 interface Company { id: string; name: string }
 
 function AgentTestTab({ companyId }: { companyId: string }) {
+  const { t: t2 } = useTranslation();
   const [agents, setAgents] = useState<any[]>([]);
   const [selectedAgent, setSelectedAgent] = useState("");
   const [message, setMessage] = useState("");
@@ -66,10 +67,10 @@ function AgentTestTab({ companyId }: { companyId: string }) {
   return (
     <div className="p-6 space-y-4">
       <div className="space-y-2">
-        <label className="text-sm font-medium">الوكيل</label>
+        <label className="text-sm font-medium">{t2("aiHub.test.agent")}</label>
         <select value={selectedAgent} onChange={(e) => setSelectedAgent(e.target.value)}
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm min-w-[220px]">
-          <option value="">اختر وكيل...</option>
+          <option value="">{t2("aiHub.test.selectAgent")}</option>
           {agents.map((a: any) => (
             <option key={a.id || a.agentId} value={a.id || a.agentId}>
               {a.name || a.label || a.agentId}
@@ -78,15 +79,15 @@ function AgentTestTab({ companyId }: { companyId: string }) {
         </select>
       </div>
       <div className="space-y-2">
-        <label className="text-sm font-medium">الرسالة</label>
+        <label className="text-sm font-medium">{t2("aiHub.test.message")}</label>
         <textarea value={message} onChange={(e) => setMessage(e.target.value)}
           className="w-full h-24 rounded-lg border border-input bg-background p-3 text-sm"
-          placeholder="اكتب رسالة اختبار..." />
+          placeholder={t2("aiHub.test.messagePlaceholder")} />
       </div>
       <button onClick={handleSend} disabled={loading || !selectedAgent || !message.trim()}
         className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
         {loading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-        إرسال
+        {t2("aiHub.test.send")}
       </button>
       {response && (
         <div className="rounded-lg border bg-muted/30 p-4">
@@ -144,7 +145,7 @@ export default function AIHubLayout() {
           <div className="flex items-center gap-2">
             <Bot className="size-5 text-indigo-600 animate-pulse" />
             <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-              AI Hub {isSuper && <span className="text-amber-500">(اختبار)</span>}
+              AI Hub {isSuper && <span className="text-amber-500">({t("aiHub.tabs.test")})</span>}
             </h1>
           </div>
           <div className="flex gap-1">
@@ -156,7 +157,7 @@ export default function AIHubLayout() {
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted"
                 }`}>
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>
@@ -164,16 +165,16 @@ export default function AIHubLayout() {
         {isSuper && (
           <div className="flex items-center gap-3 mt-3 pt-3 border-t">
             <Building2 className="size-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium">الشركة:</span>
+            <span className="text-sm font-medium">{t("aiHub.company")}:</span>
             <select value={selectedCompanyId} onChange={(e) => setSelectedCompanyId(e.target.value)}
               className="h-9 rounded-lg border border-input bg-background px-3 text-sm min-w-[220px]">
-              <option value="">اختر شركة...</option>
+              <option value="">{t("aiHub.selectCompany")}</option>
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
             {!selectedCompanyId && currentTab === "test" && (
-              <span className="text-xs text-amber-600">يجب اختيار شركة لاختبار الوكيل</span>
+              <span className="text-xs text-amber-600">{t("aiHub.companyRequired")}</span>
             )}
           </div>
         )}
@@ -191,11 +192,11 @@ export default function AIHubLayout() {
           {currentTab === "routing" && <div className="h-full overflow-y-auto"><ChannelRoutingPage /></div>}
           {currentTab === "test" && selectedCompanyId
             ? <div className="h-full overflow-y-auto"><AgentTestTab key={selectedCompanyId} companyId={selectedCompanyId} /></div>
-            : currentTab === "test" && <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة أولاً</div>
+            : currentTab === "test" && <div className="flex h-64 items-center justify-center text-muted-foreground">{t("aiHub.selectCompanyFirst")}</div>
           }
           {currentTab === "rag" && selectedCompanyId
             ? <div className="h-full overflow-y-auto"><AgenticRAGLab key={selectedCompanyId} companyId={selectedCompanyId} /></div>
-            : currentTab === "rag" && <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة أولاً</div>
+            : currentTab === "rag" && <div className="flex h-64 items-center justify-center text-muted-foreground">{t("aiHub.selectCompanyFirst")}</div>
           }
         </React.Suspense>
       </div>
