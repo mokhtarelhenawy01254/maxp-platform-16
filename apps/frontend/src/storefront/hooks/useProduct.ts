@@ -268,7 +268,7 @@ export const useProduct = (
     idOrSlug,
     storefrontScope,
   );
-  const presentationSlug = options.presentationSlug;
+  const presentationSlug = options.presentationSlug || getGlobalPresentationSlug();
 
   const { data: product, isLoading, error, refetch } = useQuery<Product>({
     queryKey: getStorefrontProductQueryKey(
