@@ -97,6 +97,7 @@ enum MessageType {
 enum PaymentStatus {
   PENDING
   COMPLETED
+  PARTIALLY_PAID
   FAILED
   REFUNDED
 
