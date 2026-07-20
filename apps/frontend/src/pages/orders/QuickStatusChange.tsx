@@ -98,6 +98,7 @@ const QuickStatusChange: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [siteStatuses, setSiteStatuses] = useState<{id: string, name: string, code?: string}[]>([]);
+  const [workflowEnabled, setWorkflowEnabled] = useState(false);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -110,9 +111,15 @@ const QuickStatusChange: React.FC = () => {
         }
       })
       .catch((err) => {
-        // Silent fail - fallback to static statuses
         console.warn("Could not fetch site statuses, using defaults:", err?.response?.status);
       });
+
+    orderWorkflowService.getConfig()
+      .then((res) => {
+        const config = res?.data;
+        setWorkflowEnabled(!!config?.enabled);
+      })
+      .catch(() => {});
   }, []);
 
   const handleSearch = useCallback(async () => {
@@ -156,12 +163,12 @@ const QuickStatusChange: React.FC = () => {
         });
 
         // Auto-change if user had pre-selected a different status
-        if (preSelectedStatus && preSelectedStatus !== order.status) {
+         if (preSelectedStatus && preSelectedStatus !== order.status) {
           try {
             const changeRes = await apiClient.post("/order-workflow/change-status", {
               orderId: order.id,
               statusId: preSelectedStatus,
-              isOverride: true,
+              isOverride: !workflowEnabled,
             });
             if (changeRes.data?.data?.status === "pending") {
               toast.info(t("quickStatus.pendingApproval"));
@@ -199,7 +206,7 @@ const QuickStatusChange: React.FC = () => {
     } finally {
       setSearchLoading(false);
     }
-  }, [orderCode, t]);
+  }, [orderCode, selectedStatus, workflowEnabled, t]);
 
   const handleChangeStatus = useCallback(async () => {
     if (!currentOrder) return;
@@ -217,7 +224,7 @@ const QuickStatusChange: React.FC = () => {
       const response = await apiClient.post("/order-workflow/change-status", {
         orderId: currentOrder.id,
         statusId: selectedStatus,
-        isOverride: true,
+        isOverride: !workflowEnabled,
       });
       if (response.data?.data?.status === "pending") {
         toast.info(t("quickStatus.pendingApproval"));
@@ -242,7 +249,7 @@ const QuickStatusChange: React.FC = () => {
     } finally {
       setChangeLoading(false);
     }
-  }, [currentOrder, selectedStatus, t]);
+  }, [currentOrder, selectedStatus, workflowEnabled, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
