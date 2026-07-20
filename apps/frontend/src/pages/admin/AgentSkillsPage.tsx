@@ -41,11 +41,13 @@ import { buildApiUrl } from "../../utils/urlHelper";
 interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; }
 interface SkillDefinition { id: string; displayName: string; version?: string; description?: string; allowedTools: string[]; requiresHumanApproval?: boolean; maxToolCount?: number; skillMd?: string; group?: string; }
 
-const SKILL_GROUP_LABELS: Record<string, string> = {
-  sales: "المبيعات", marketing: "التسويق", support: "الدعم",
-  product: "المنتجات", customer: "العملاء", management: "الإدارة",
-  inventory: "المخزون", order: "الطلبات", pricing: "التسعير",
-  store: "المتجر", other: "أخرى",
+const SKILL_GROUP_KEYS: Record<string, string> = {
+  sales: "agentSkills.groups.sales", marketing: "agentSkills.groups.marketing",
+  support: "agentSkills.groups.support", product: "agentSkills.groups.product",
+  customer: "agentSkills.groups.customer", management: "agentSkills.groups.management",
+  inventory: "agentSkills.groups.inventory", order: "agentSkills.groups.order",
+  pricing: "agentSkills.groups.pricing", store: "agentSkills.groups.store",
+  other: "agentSkills.groups.other",
 };
 interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedSkills?: string[]; allowedTools?: string[]; }
 
@@ -219,7 +221,9 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
 
   const allGroups = useMemo(() => {
     const groups = [...new Set(skills.map((s) => s.group).filter(Boolean))] as string[];
-    return groups.sort((a, b) => (SKILL_GROUP_LABELS[a] || a).localeCompare(SKILL_GROUP_LABELS[b] || b, "ar"));
+    const lang = document.documentElement.lang || "ar";
+    const label = (g: string) => t(SKILL_GROUP_KEYS[g] || `agentSkills.groups.${g}`) || g;
+    return groups.sort((a, b) => label(a).localeCompare(label(b), lang));
   }, [skills]);
   const filteredSkills = useMemo(() => {
     let list = skills;
@@ -256,7 +260,7 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
               <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
                 <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{t("common.all")} ({skills.length})</button>
                 {allGroups.map((g) => (
-                  <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{SKILL_GROUP_LABELS[g] || g} ({skills.filter((s) => s.group === g).length})</button>
+                  <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{t(SKILL_GROUP_KEYS[g] || `agentSkills.groups.${g}`) || g} ({skills.filter((s) => s.group === g).length})</button>
                 ))}
               </div>
             </aside>

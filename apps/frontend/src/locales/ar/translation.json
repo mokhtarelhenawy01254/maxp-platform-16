@@ -358,7 +358,13 @@
     "noDescription": "لا يوجد وصف مختصر لهذه المهارة.",
     "noDescriptionDetail": "لا يوجد وصف.",
     "noToolDescription": "أداة غير موثقة.",
-    "noSkillMd": "No SKILL.md content available.",
+    "noSkillMd": "لا يوجد محتوى SKILL.md.",
+    "groups": {
+      "sales": "المبيعات", "marketing": "التسويق", "support": "الدعم",
+      "product": "المنتجات", "customer": "العملاء", "management": "الإدارة",
+      "inventory": "المخزون", "order": "الطلبات", "pricing": "التسعير",
+      "store": "المتجر", "other": "أخرى"
+    },
     "agents": "وكيل",
     "details": "تفاصيل",
     "assignToAgent": "تعيين لوكيل",
@@ -470,7 +476,15 @@
     "dialogSave": "حفظ",
     "needsApproval": "تحتاج موافقة",
     "readSection": "قراءة (آمنة)",
-    "writeSection": "كتابة (تحتاج موافقة)",
+    "writeSection": "كتابة (تتطلب موافقة)",
+    "groups": {
+      "product": "المنتجات", "order": "الطلبات", "customer": "العملاء",
+      "inventory": "المخزون", "sales": "المبيعات", "shipping": "الشحن",
+      "competitor": "المنافسين", "governance": "الحوكمة",
+      "knowledge_base": "قاعدة المعرفة", "facebook": "فيسبوك", "hr": "الموارد البشرية",
+      "smart_seller": "البائع الذكي", "agents": "الوكلاء", "audit": "التدقيق",
+      "management": "الإدارة", "system": "النظام", "mcp": "MCP"
+    },
     "autonomy": {
       "auto": "تلقائي",
       "blocked": "محظور",

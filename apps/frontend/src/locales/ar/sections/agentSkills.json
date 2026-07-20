@@ -7,6 +7,12 @@
   "noDescriptionDetail": "لا يوجد وصف.",
   "noToolDescription": "أداة غير موثقة.",
   "noSkillMd": "No SKILL.md content available.",
+  "groups": {
+    "sales": "المبيعات", "marketing": "التسويق", "support": "الدعم",
+    "product": "المنتجات", "customer": "العملاء", "management": "الإدارة",
+    "inventory": "المخزون", "order": "الطلبات", "pricing": "التسعير",
+    "store": "المتجر", "other": "أخرى"
+  },
   "agents": "وكيل",
   "details": "تفاصيل",
   "assignToAgent": "تعيين لوكيل",

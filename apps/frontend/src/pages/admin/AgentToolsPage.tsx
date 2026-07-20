@@ -46,13 +46,18 @@ import i18n from "../../i18n";
 
 interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; approvalMode?: string; source?: string; runtimeSource?: string; aliases?: string[]; companyScoped?: boolean; group?: string; }
 
-const GROUP_LABELS: Record<string, string> = {
-  product: "المنتجات", order: "الطلبات", customer: "العملاء", inventory: "المخزون",
-  sales: "المبيعات", shipping: "الشحن", competitor: "المنافسين", governance: "الحوكمة",
-  knowledge_base: "قاعدة المعرفة", facebook: "فيسبوك", hr: "الموارد البشرية",
-  smart_seller: "البائع الذكي", agents: "الوكلاء", audit: "التدقيق",
-  management: "الإدارة", system: "النظام", mcp: "MCP",
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  product: "agentTools.groups.product", order: "agentTools.groups.order",
+  customer: "agentTools.groups.customer", inventory: "agentTools.groups.inventory",
+  sales: "agentTools.groups.sales", shipping: "agentTools.groups.shipping",
+  competitor: "agentTools.groups.competitor", governance: "agentTools.groups.governance",
+  knowledge_base: "agentTools.groups.knowledge_base", facebook: "agentTools.groups.facebook",
+  hr: "agentTools.groups.hr", smart_seller: "agentTools.groups.smart_seller",
+  agents: "agentTools.groups.agents", audit: "agentTools.groups.audit",
+  management: "agentTools.groups.management", system: "agentTools.groups.system",
+  mcp: "agentTools.groups.mcp",
 };
+const groupLabel = (g: string) => i18n.t(GROUP_LABEL_KEYS[g] || `agentTools.groups.${g}`) || g;
 interface AgentToolInfo { id: string; name: string; role: string; icon: string; status: string; autonomy?: string; }
 interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedTools: string[]; toolAutonomy?: Record<string, string>; }
 
@@ -115,7 +120,7 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
   }, [agents, tools]);
   const allGroups = useMemo(() => {
     const groups = [...new Set(tools.map((t) => t.group).filter(Boolean))] as string[];
-    return groups.sort((a, b) => (GROUP_LABELS[a] || a).localeCompare(GROUP_LABELS[b] || b, "ar"));
+    return groups.sort((a, b) => groupLabel(a).localeCompare(groupLabel(b), "ar"));
   }, [tools]);
   const filteredTools = useMemo(() => {
     let list = tools;
@@ -231,7 +236,7 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
             <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
               <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{i18n.t("common.all")} ({tools.length})</button>
               {allGroups.map((g) => (
-                <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{GROUP_LABELS[g] || g} ({tools.filter((t) => t.group === g).length})</button>
+                <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{groupLabel(g)} ({tools.filter((t) => t.group === g).length})</button>
               ))}
             </div>
           </aside>

@@ -359,6 +359,12 @@
     "noDescriptionDetail": "No description.",
     "noToolDescription": "Undocumented tool.",
     "noSkillMd": "No SKILL.md content available.",
+    "groups": {
+      "sales": "Sales", "marketing": "Marketing", "support": "Support",
+      "product": "Products", "customer": "Customers", "management": "Management",
+      "inventory": "Inventory", "order": "Orders", "pricing": "Pricing",
+      "store": "Store", "other": "Other"
+    },
     "agents": "Agent",
     "details": "Details",
     "assignToAgent": "Assign to Agent",
@@ -471,6 +477,14 @@
     "needsApproval": "Needs Approval",
     "readSection": "Read (Safe)",
     "writeSection": "Write (Needs Approval)",
+    "groups": {
+      "product": "Products", "order": "Orders", "customer": "Customers",
+      "inventory": "Inventory", "sales": "Sales", "shipping": "Shipping",
+      "competitor": "Competitors", "governance": "Governance",
+      "knowledge_base": "Knowledge Base", "facebook": "Facebook", "hr": "HR",
+      "smart_seller": "Smart Seller", "agents": "Agents", "audit": "Audit",
+      "management": "Management", "system": "System", "mcp": "MCP"
+    },
     "autonomy": {
       "auto": "Auto",
       "blocked": "Blocked",
