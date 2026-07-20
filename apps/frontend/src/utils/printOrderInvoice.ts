@@ -292,7 +292,7 @@ export const printOrderInvoice = async ({
             color: #0f172a;
             font-size: 14px;
           }
-          .item-meta { color: ${s.secondaryColor}; font-size: 12px; }
+          .item-meta { color: #000; font-size: 13px; font-weight: 700; }
           .sku-cell { font-family: monospace; font-size: 0.8rem; color: ${s.secondaryColor}; }
           .center { text-align: center; }
           .amount { text-align: left; white-space: nowrap; }
