@@ -6,6 +6,7 @@ model CompanyConnection {
   consumerId          String           // The company pulling data (e.g., Company B)
   allowProductPull    Boolean          @default(false)
   allowOrderPull      Boolean          @default(false)
+  commissionRate      Float?           // override commission % for this connection (null = use default)
   status              ConnectionStatus @default(ACTIVE)
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt

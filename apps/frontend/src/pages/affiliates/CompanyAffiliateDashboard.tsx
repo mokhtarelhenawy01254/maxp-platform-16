@@ -25,6 +25,7 @@ interface CompanyAffiliate {
     connectionId: string;
     partner: Partner;
     role: "consumer" | "provider";
+    commissionRate: number | null;
     totalOrders: number;
     totalCommissions: number;
     paidCommissions: number;
@@ -139,13 +140,29 @@ const CompanyAffiliateDashboard: React.FC = () => {
                 </div>
             </div>
 
+            {/* Commission Rate */}
             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>آخر طلب: {formatDate(item.lastOrderAt)}</span>
-                    {item.totalOrders > 0 && (
-                        <LinkIcon className="w-3.5 h-3.5 text-blue-500" />
-                    )}
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                    <span>
+                        آخر طلب: {formatDate(item.lastOrderAt)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <CurrencyDollarIcon className="w-3 h-3" />
+                        العمولة: {item.commissionRate != null ? `${item.commissionRate}%` : "5% (افتراضي)"}
+                    </span>
                 </div>
+                {item.role === "consumer" && item.pendingCommissions > 0 && (
+                    <button
+                        onClick={() => {
+                            navigator.clipboard.writeText(window.location.origin + "/affiliates/commission");
+                            toast.success("تم نسخ رابط العمولات");
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs rounded-lg hover:bg-indigo-100 transition-colors"
+                    >
+                        <CurrencyDollarIcon className="w-3.5 h-3.5" />
+                        طلب سحب العمولة ←
+                    </button>
+                )}
             </div>
         </div>
     );
