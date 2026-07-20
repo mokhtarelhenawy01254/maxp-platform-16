@@ -13,6 +13,7 @@ import TransitionRules from './TransitionRules';
 import ApprovalRules from './ApprovalRules';
 import OverridePermissions from './OverridePermissions';
 import AuditLogViewer from './AuditLogViewer';
+import StatusManagement from './StatusManagement';
 import TabErrorBoundary from './TabErrorBoundary';
 
 interface OrderWorkflowProps {
@@ -47,6 +48,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
 
     const tabs = [
         { id: 'settings', label: 'الإعدادات العامة', icon: AdjustmentsVerticalIcon },
+        { id: 'statuses', label: 'إدارة الحالات', icon: ListBulletIcon },
         { id: 'transitions', label: 'قواعد الانتقال', icon: ArrowsRightLeftIcon },
         { id: 'approvals', label: 'طلبات الموافقة', icon: CheckBadgeIcon },
         { id: 'overrides', label: 'صلاحيات التجاوز', icon: ShieldCheckIcon },
@@ -191,6 +193,7 @@ const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ isEmbedded }) => {
                                         </div>
                                         </TabErrorBoundary>
                                     )}
+                                    {activeTab === 'statuses' && <TabErrorBoundary tabLabel="إدارة الحالات"><StatusManagement statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'transitions' && <TabErrorBoundary tabLabel="قواعد الانتقال"><TransitionRules statuses={statuses} onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'approvals' && <TabErrorBoundary tabLabel="طلبات الموافقة"><ApprovalRules onUpdate={fetchData} /></TabErrorBoundary>}
                                     {activeTab === 'overrides' && <TabErrorBoundary tabLabel="صلاحيات التجاوز"><OverridePermissions config={config} onUpdate={fetchData} /></TabErrorBoundary>}

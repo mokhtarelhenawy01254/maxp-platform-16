@@ -229,13 +229,28 @@ class OrderWorkflowService {
             }
 
             // 6. Find Transition Rule
-            const transition = await this.prisma.orderWorkflowTransition.findFirst({
+            let transition = await this.prisma.orderWorkflowTransition.findFirst({
                 where: {
                     companyId,
                     fromStatusId: currentStatusDef ? currentStatusDef.id : null,
                     toStatusId: nextStatusDef.id
                 }
             });
+
+            // If target is a system fallback (no custom definition), also search by status code
+            if (!transition && nextStatusDef.isSystemFallback) {
+                const matchingDbStatus = await this.findStatusByCode(companyId, nextStatusDef.code);
+                if (matchingDbStatus) {
+                    nextStatusDef = matchingDbStatus;
+                    transition = await this.prisma.orderWorkflowTransition.findFirst({
+                        where: {
+                            companyId,
+                            fromStatusId: currentStatusDef ? currentStatusDef.id : null,
+                            toStatusId: matchingDbStatus.id
+                        }
+                    });
+                }
+            }
 
             if (!isOverride && !transition && config.enforceTransitions) {
                 throw new Error(`هذا الانتقال من "${currentStatusDef?.name || 'بداية'}" إلى "${nextStatusDef.name}" غير مسموح به في إعدادات المسار`);
