@@ -210,30 +210,6 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections }) => {
       </div>
 
       <div id="app-shell-main-content" className="app-shell-main">
-        <header className="app-shell-header">
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label={String(t('appDashboard.backToApps'))}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          >
-            <ArrowUturnLeftIcon aria-hidden="true" className={`h-5 w-5 text-gray-600 dark:text-gray-300 ${isRtl ? 'rotate-180' : ''}`} />
-          </button>
-          <button
-            type="button"
-            aria-label={String(t('appDashboard.openAppMenu'))}
-            onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          >
-            <Bars3Icon aria-hidden="true" className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-          </button>
-          <div className="flex items-center gap-2">
-            {icon}
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-              {appName}
-            </span>
-          </div>
-        </header>
         <div className="app-shell-content">
           {children}
         </div>
