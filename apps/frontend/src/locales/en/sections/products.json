@@ -7,8 +7,10 @@
   "generate": "Generate",
   "slug_description": "Unique URL identifier for the product",
   "addNew": "Add New Product",
+  "editTitle": "Edit Product",
   "editProduct": "Edit Product",
   "addProduct": "Save Product",
+  "save": "Save Product",
   "updateProduct": "Update Product",
   "productName": "Product Name *",
   "description": "Description",
@@ -16,7 +18,17 @@
   "category": "Category *",
   "selectCategory": "Select a category",
   "loadingCategories": "Loading categories...",
+  "slugHelp": "Unique URL identifier for the product (Slug)",
+  "tags": "Tags",
+  "activeStatus": "Product Status (Active/Draft)",
   "isActive": "Product is active",
+  "placeholders": {
+    "productNamePlaceholder": "Enter product name here...",
+    "descriptionPlaceholder": "Write a detailed product description including features and benefits...",
+    "selectCategory": "Select a product category...",
+    "tagsPlaceholder": "Add tag and press Enter...",
+    "searchProducts": "Search products..."
+  },
   "tabs": {
     "basic": "Basic Information",
     "pricing": "Pricing",
@@ -27,6 +39,8 @@
     "display": "Display Customization",
     "shipping": "Shipping",
     "commission": "Commission",
+    "whatsapp": "WhatsApp Notification",
+    "seo": "SEO Optimization",
     "advanced": "Advanced"
   },
   "pricing": {
@@ -188,6 +202,9 @@
     "productCreated": "Product created successfully!",
     "productError": "Failed to update product",
     "productCreationError": "Failed to create product",
+    "productErrorNetwork": "Failed to connect to the server to update product",
+    "categoriesLoadError": "Failed to load categories",
+    "categoriesLoadErrorNetwork": "Failed to connect to load categories",
     "editingProduct": "Edit current product data",
     "creatingProduct": "Create a new product",
     "cancel": "Cancel",
