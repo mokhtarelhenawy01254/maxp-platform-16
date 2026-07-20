@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
   BadgePercent,
@@ -34,9 +35,6 @@ import {
 import { apiClient } from "../../services/apiClient";
 import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 
-const DEFAULT_FREE_SHIPPING_MESSAGE =
-  "احصل على شحن مجاني عند الشراء بـ {amount} جنيه أو أكثر";
-
 type PromotionMessageState = {
   type: "success" | "error";
   text: string;
@@ -66,44 +64,47 @@ const PROMOTION_ROUTE_MAP: Record<PromotionTabValue, string | null> = {
   recommendations: "/settings/recommendations",
 };
 
-const PROMOTION_TABS: Array<{
-  value: PromotionTabValue;
-  label: string;
-  description: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-}> = [
-  {
-    value: "promotion",
-    label: "الشحن المجاني",
-    description: "الحد الأدنى وسعر موحد",
-    icon: Truck,
-  },
-  {
-    value: "volume-discounts",
-    label: "خصومات الكميات",
-    description: "صفحة مخصصة للخصومات",
-    icon: BadgePercent,
-  },
-  {
-    value: "delivery-options",
-    label: "خيارات التوصيل",
-    description: "أنواع وسرعات التوصيل",
-    icon: PackageCheck,
-  },
-  {
-    value: "recommendations",
-    label: "المنتجات المقترحة",
-    description: "بيع إضافي واقتراحات",
-    icon: Wand2,
-  },
-];
-
 const PromotionSettings: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState<PromotionTabValue>("promotion");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<PromotionMessageState | null>(null);
+
+  const DEFAULT_FREE_SHIPPING_MESSAGE = t("promotionSettings.defaultFreeMessage");
+
+  const PROMOTION_TABS: Array<{
+    value: PromotionTabValue;
+    label: string;
+    description: string;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  }> = [
+    {
+      value: "promotion",
+      label: t("promotionSettings.tabFreeShipping"),
+      description: t("promotionSettings.tabFreeShippingDesc"),
+      icon: Truck,
+    },
+    {
+      value: "volume-discounts",
+      label: t("promotionSettings.tabVolumeDiscounts"),
+      description: t("promotionSettings.tabVolumeDiscountsDesc"),
+      icon: BadgePercent,
+    },
+    {
+      value: "delivery-options",
+      label: t("promotionSettings.tabDeliveryOptions"),
+      description: t("promotionSettings.tabDeliveryOptionsDesc"),
+      icon: PackageCheck,
+    },
+    {
+      value: "recommendations",
+      label: t("promotionSettings.tabRecommendations"),
+      description: t("promotionSettings.tabRecommendationsDesc"),
+      icon: Wand2,
+    },
+  ];
 
   const [freeShippingSettings, setFreeShippingSettings] =
     useState<FreeShippingSettings>({
@@ -135,7 +136,7 @@ const PromotionSettings: React.FC = () => {
             typeof data.freeShippingMessage === "string" &&
             data.freeShippingMessage.trim()
               ? data.freeShippingMessage
-              : DEFAULT_FREE_SHIPPING_MESSAGE,
+              : t("promotionSettings.defaultFreeMessage"),
         });
         setFlatShippingSettings({
           flatShippingEnabled: Boolean(data.flatShippingEnabled),
@@ -153,12 +154,12 @@ const PromotionSettings: React.FC = () => {
       console.error("Error fetching settings:", error);
       setMessage({
         type: "error",
-        text: getApiErrorMessage(error, "فشل في جلب الإعدادات"),
+        text: getApiErrorMessage(error, t("promotionSettings.loadFailed")),
       });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadSettings();
@@ -203,23 +204,23 @@ const PromotionSettings: React.FC = () => {
       if (response.data.success) {
         setMessage({
           type: "success",
-          text: "تم حفظ الإعدادات بنجاح",
+          text: t("promotionSettings.settingsSaved"),
         });
       }
     } catch (error) {
       console.error("Error saving settings:", error);
       setMessage({
         type: "error",
-        text: getApiErrorMessage(error, "فشل في حفظ الإعدادات"),
+        text: getApiErrorMessage(error, t("promotionSettings.settingsSaveFailed")),
       });
     } finally {
       setSaving(false);
     }
-  }, [flatShippingSettings, freeShippingSettings]);
+  }, [flatShippingSettings, freeShippingSettings, t]);
 
   const handleResetSettings = useCallback(async () => {
     if (
-      !window.confirm("هل أنت متأكد من إعادة تعيين الإعدادات للقيم الافتراضية؟")
+      !window.confirm(t("promotionSettings.resetConfirm"))
     ) {
       return;
     }
@@ -234,19 +235,19 @@ const PromotionSettings: React.FC = () => {
         await loadSettings();
         setMessage({
           type: "success",
-          text: "تمت إعادة تعيين الإعدادات بنجاح",
+          text: t("promotionSettings.settingsReset"),
         });
       }
     } catch (error) {
       console.error("Error resetting settings:", error);
       setMessage({
         type: "error",
-        text: getApiErrorMessage(error, "فشل في إعادة تعيين الإعدادات"),
+        text: getApiErrorMessage(error, t("promotionSettings.settingsResetFailed")),
       });
     } finally {
       setSaving(false);
     }
-  }, [loadSettings]);
+  }, [loadSettings, t]);
 
   const handleToggleUtilityBar = useCallback(async (value: boolean) => {
     setHideUtilityBar(value);
@@ -263,8 +264,8 @@ const PromotionSettings: React.FC = () => {
   if (loading) {
     return (
       <SettingsLoadingState
-        title="جاري تحميل إعدادات الترويج..."
-        description="بنجهز لك سطح التحكم الحديث بنفس البيانات الحالية."
+        title={t("promotionSettings.loadingTitle")}
+        description={t("promotionSettings.loadingDescription")}
       />
     );
   }
@@ -273,19 +274,21 @@ const PromotionSettings: React.FC = () => {
     <SettingsPageShell>
       <SettingsPageHero
         badgeIcon={Sparkles}
-        badgeLabel="إدارة عروض التوصيل"
-        title="إعدادات الترويج وزيادة المبيعات"
-        description="صفحة تشغيل موحدة لضبط الشحن المجاني وسعر الشحن الموحد، مع روابط سريعة لباقي أدوات العروض في الأسطح المخصصة لها."
+        badgeLabel={t("promotionSettings.badgeLabel")}
+        title={t("promotionSettings.pageTitle")}
+        description={t("promotionSettings.pageDescription")}
         summaryItems={[
           {
-            label: "الشحن المجاني",
-            value: freeShippingSettings.freeShippingEnabled ? "مفعل" : "متوقف",
+            label: t("promotionSettings.freeShipping"),
+            value: freeShippingSettings.freeShippingEnabled
+              ? t("promotionSettings.freeShippingActive")
+              : t("promotionSettings.freeShippingInactive"),
           },
           {
-            label: "السعر الموحد",
+            label: t("promotionSettings.flatShippingTitle"),
             value: flatShippingSettings.flatShippingEnabled
-              ? `${flatShippingSettings.flatShippingFee} ج.م`
-              : "غير مفعل",
+              ? `${flatShippingSettings.flatShippingFee} ${t("promotionSettings.freeShippingThreshold").includes("EGP") ? "EGP" : "ج.م"}`
+              : t("promotionSettings.freeShippingInactive"),
           },
         ]}
       />
@@ -351,8 +354,8 @@ const PromotionSettings: React.FC = () => {
           <TabsContent value="promotion" className="space-y-5 pt-0">
             <SettingsSection
               icon={Gift}
-              title="الشحن المجاني"
-              description="حفّز العميل على رفع قيمة السلة برسالة واضحة وحد أدنى معروف داخل المتجر."
+              title={t("promotionSettings.freeShipping")}
+              description={t("promotionSettings.freeShippingDesc")}
               accentClassName="bg-emerald-50 text-emerald-700 ring-emerald-200/70"
             >
                 <div
@@ -367,7 +370,7 @@ const PromotionSettings: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h3 className="text-base font-bold text-slate-950">
-                          تفعيل الشحن المجاني
+                          {t("promotionSettings.freeShippingTitle")}
                         </h3>
                         <span
                           className={cn(
@@ -378,17 +381,16 @@ const PromotionSettings: React.FC = () => {
                           )}
                         >
                           {freeShippingSettings.freeShippingEnabled
-                            ? "يعمل الآن"
-                            : "متوقف"}
+                            ? t("promotionSettings.freeShippingActive")
+                            : t("promotionSettings.freeShippingInactive")}
                         </span>
                       </div>
                       <p className="text-sm leading-6 text-slate-500">
-                        عند التفعيل، سيحصل العميل على شحن مجاني بمجرد الوصول إلى
-                        الحد الأدنى الذي تحدده هنا.
+                        {t("promotionSettings.freeShippingDesc")}
                       </p>
                     </div>
                     <Switch
-                      aria-label="تفعيل الشحن المجاني"
+                      aria-label={t("promotionSettings.freeShippingTitle")}
                       checked={freeShippingSettings.freeShippingEnabled}
                       onCheckedChange={(checked) =>
                         setFreeShippingSettings((currentSettings) => ({
@@ -403,7 +405,7 @@ const PromotionSettings: React.FC = () => {
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
                   <div className="space-y-2">
                     <Label htmlFor="freeShippingThreshold">
-                      الحد الأدنى للطلب (جنيه)
+                      {t("promotionSettings.freeShippingThreshold")}
                     </Label>
                     <Input
                       id="freeShippingThreshold"
@@ -427,16 +429,13 @@ const PromotionSettings: React.FC = () => {
                       )}
                     />
                     <p className="text-xs leading-5 text-slate-500">
-                      المبلغ الذي يجب أن يصل له الطلب حتى تظهر ميزة الشحن المجاني.
-                      <span className="text-emerald-600 ml-1">
-                        (الحد الأقصى 100,000 جنيه)
-                      </span>
+                      {t("promotionSettings.freeShippingThresholdDesc")}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="freeShippingMessage">
-                      رسالة الشحن المجاني
+                      {t("promotionSettings.freeShippingMessage")}
                     </Label>
                     <Textarea
                       id="freeShippingMessage"
@@ -456,8 +455,7 @@ const PromotionSettings: React.FC = () => {
                       )}
                     />
                     <p className="text-xs leading-5 text-slate-500">
-                      استخدم <span className="font-semibold">{`{amount}`}</span>{" "}
-                      لإظهار الحد الأدنى تلقائيًا داخل الرسالة.
+                      {t("promotionSettings.freeShippingMessageDesc")}
                     </p>
                   </div>
                 </div>
@@ -471,14 +469,14 @@ const PromotionSettings: React.FC = () => {
                   )}
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    معاينة الرسالة
+                    {t("promotionSettings.freeShippingPreview")}
                   </p>
                   <p className="mt-2 text-sm font-semibold leading-7 text-slate-900">
                     {previewMessage}
                   </p>
                   {!freeShippingSettings.freeShippingEnabled && (
                     <p className="mt-2 text-xs text-slate-500">
-                      ستظهر هذه الرسالة للعملاء عند تفعيل الشحن المجاني.
+                      {t("promotionSettings.freeShippingPreviewInactive")}
                     </p>
                   )}
                 </div>
@@ -486,22 +484,22 @@ const PromotionSettings: React.FC = () => {
 
             <SettingsSection
               icon={Sparkles}
-              title="الشريط العلوي"
-              description="التحكم في الشريط الذي يظهر أعلى المتجر (ابدئي الطلب، الشحن المجاني، تبديل مقاس، تأكيد الطلب)."
+              title={t("promotionSettings.hideTopBarTitle")}
+              description={t("promotionSettings.hideTopBarDesc")}
               accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
             >
               <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
                     <h3 className="text-base font-bold text-slate-950">
-                      إخفاء الشريط العلوي
+                      {t("promotionSettings.hideTopBarTitle")}
                     </h3>
                     <p className="text-sm leading-6 text-slate-500">
-                      إخفاء الشريط الذي يحتوي على روابط سريعة (ابدئي الطلب، تبديل مقاس خلال 14 يوم، تأكيد الطلب قبل التجهيز) من أعلى المتجر.
+                      {t("promotionSettings.hideTopBarDesc")}
                     </p>
                   </div>
                   <Switch
-                    aria-label="إخفاء الشريط العلوي"
+                    aria-label={t("promotionSettings.hideTopBarTitle")}
                     checked={hideUtilityBar}
                     disabled={utilityBarSaving}
                     onCheckedChange={(checked) => { void handleToggleUtilityBar(checked); }}
@@ -516,15 +514,15 @@ const PromotionSettings: React.FC = () => {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-slate-50/65 text-slate-400 font-medium">
-                  إعدادات التسعير الموحد
+                  {t("promotionSettings.pricingSettings")}
                 </span>
               </div>
             </div>
 
             <SettingsSection
               icon={Truck}
-              title="استراتيجية أسعار الشحن"
-              description="اختَر هل الشحن سيتبع سعرًا موحّدًا لكل الطلبات أم يظل متغيّرًا بحسب المناطق."
+              title={t("promotionSettings.flatShippingTitle")}
+              description={t("promotionSettings.flatShippingDesc")}
               accentClassName="bg-sky-50 text-sky-700 ring-sky-200/70"
             >
                 <div
@@ -539,7 +537,7 @@ const PromotionSettings: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h3 className="text-base font-bold text-slate-950">
-                          تفعيل سعر شحن موحد
+                          {t("promotionSettings.flatShippingEnabled")}
                         </h3>
                         <span
                           className={cn(
@@ -550,17 +548,16 @@ const PromotionSettings: React.FC = () => {
                           )}
                         >
                           {flatShippingSettings.flatShippingEnabled
-                            ? "تسعير ثابت"
-                            : "تسعير حسب المناطق"}
+                            ? t("promotionSettings.flatShippingPricing")
+                            : t("promotionSettings.flatShippingRegional")}
                         </span>
                       </div>
                       <p className="text-sm leading-6 text-slate-500">
-                        عند التفعيل، سيتم تجاهل أسعار المحافظات والمناطق ويظهر
-                        نفس السعر لكل الطلبات.
+                        {t("promotionSettings.flatShippingEnabledDesc")}
                       </p>
                     </div>
                     <Switch
-                      aria-label="تفعيل سعر شحن موحد"
+                      aria-label={t("promotionSettings.flatShippingEnabled")}
                       checked={flatShippingSettings.flatShippingEnabled}
                       onCheckedChange={(checked) =>
                         setFlatShippingSettings((currentSettings) => ({
@@ -575,7 +572,7 @@ const PromotionSettings: React.FC = () => {
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
                   <div className="space-y-2">
                     <Label htmlFor="flatShippingFee">
-                      سعر الشحن الموحد (جنيه)
+                      {t("promotionSettings.flatShippingFee")}
                     </Label>
                     <Input
                       id="flatShippingFee"
@@ -598,10 +595,7 @@ const PromotionSettings: React.FC = () => {
                       )}
                     />
                     <p className="text-xs leading-5 text-slate-500">
-                      السعر الذي سيظهر بنفس القيمة لكل العملاء داخل صفحة الدفع.
-                      <span className="text-sky-600 ml-1">
-                        (الحد الأقصى 10,000 جنيه)
-                      </span>
+                      {t("promotionSettings.flatShippingFeeDesc")}
                     </p>
                   </div>
 
@@ -612,16 +606,14 @@ const PromotionSettings: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         <h4 className="text-sm font-bold text-slate-950">
-                          متى تستخدم السعر الموحّد؟
+                          {t("promotionSettings.flatShippingWhenToUse")}
                         </h4>
                         <ul className="space-y-1 text-sm leading-6 text-slate-500">
                           <li>
-                            مناسب للمتاجر التي تعتمد تكلفة ثابتة مهما اختلفت
-                            المحافظة.
+                            {t("promotionSettings.flatShippingUseCase1")}
                           </li>
                           <li>
-                            لو كنت تحتاج تسعيرًا حسب المنطقة، اتركه مغلقًا واستخدم
-                            إعدادات الشحن التفصيلية.
+                            {t("promotionSettings.flatShippingUseCase2")}
                           </li>
                         </ul>
                       </div>
@@ -635,11 +627,10 @@ const PromotionSettings: React.FC = () => {
             <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-slate-50/65 p-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-slate-950">
-                  حفظ وتطبيق التغييرات
+                  {t("promotionSettings.saveApply")}
                 </h3>
                 <p className="text-sm leading-6 text-slate-500">
-                  الحفظ هنا يرسل الإعدادات مباشرة إلى نفس الـ API القديم بدون
-                  تغيير في الباك إند.
+                  {t("promotionSettings.saveApplyDesc")}
                 </p>
               </div>
 
@@ -655,7 +646,7 @@ const PromotionSettings: React.FC = () => {
                   className="rounded-2xl"
                 >
                   <RefreshCcw className="size-4" />
-                  إعادة تعيين
+                  {t("promotionSettings.resetSettings")}
                 </Button>
                 <Button
                   type="button"
@@ -667,7 +658,7 @@ const PromotionSettings: React.FC = () => {
                   className="rounded-2xl bg-slate-950 text-white hover:bg-slate-800"
                 >
                   <Save className={cn("size-4", saving && "animate-pulse")} />
-                  {saving ? "جاري الحفظ..." : "حفظ الإعدادات"}
+                  {saving ? t("promotionSettings.savingSettings") : t("promotionSettings.saveSettings")}
                 </Button>
               </div>
             </div>

@@ -222,7 +222,7 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
   const allGroups = useMemo(() => {
     const groups = [...new Set(skills.map((s) => s.group).filter(Boolean))] as string[];
     const lang = document.documentElement.lang || "ar";
-    const label = (g: string) => t(SKILL_GROUP_KEYS[g] || `agentSkills.groups.${g}`) || g;
+    const label = (g: string) => SKILL_GROUP_KEYS[g] ? t(SKILL_GROUP_KEYS[g]) : g;
     return groups.sort((a, b) => label(a).localeCompare(label(b), lang));
   }, [skills]);
   const filteredSkills = useMemo(() => {
@@ -260,7 +260,7 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
               <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
                 <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{t("common.all")} ({skills.length})</button>
                 {allGroups.map((g) => (
-                  <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{t(SKILL_GROUP_KEYS[g] || `agentSkills.groups.${g}`) || g} ({skills.filter((s) => s.group === g).length})</button>
+                  <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{(SKILL_GROUP_KEYS[g] ? t(SKILL_GROUP_KEYS[g]) : g)} ({skills.filter((s) => s.group === g).length})</button>
                 ))}
               </div>
             </aside>

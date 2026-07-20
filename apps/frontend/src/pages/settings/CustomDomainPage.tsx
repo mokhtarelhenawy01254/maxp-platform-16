@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   GlobeAltIcon,
   CheckCircleIcon,
@@ -13,11 +14,13 @@ import {
 import { useAuth } from "../../hooks/useAuthSimple";
 import { getApiUrl } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
+import { getDirection } from "../../i18n";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
 
 const CustomDomainPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [company, setCompany] = useState<any>(null);
   const [customDomain, setCustomDomain] = useState("");
@@ -57,7 +60,7 @@ const CustomDomainPage: React.FC = () => {
       /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
     if (customDomain && !domainRegex.test(customDomain)) {
       alert(
-        "صيغة الدومين غير صحيحة. يجب أن يكون مثل: example.com أو www.example.com",
+        t("customDomain.domainFormatError"),
       );
       return;
     }
@@ -81,13 +84,13 @@ const CustomDomainPage: React.FC = () => {
         }));
         setEditingDomain(false);
         setDnsStatus(null);
-        alert("تم تحديث الدومين المخصص بنجاح!");
+        alert(t("customDomain.domainUpdated"));
       } else {
-        alert(data.message || data.error || "فشل في تحديث الدومين");
+        alert(data.message || data.error || t("customDomain.domainUpdateFailed"));
       }
     } catch (error) {
       console.error("Error updating custom domain:", error);
-      alert("حدث خطأ أثناء تحديث الدومين");
+      alert(t("customDomain.domainUpdateError"));
     } finally {
       setSavingDomain(false);
     }
@@ -115,7 +118,7 @@ const CustomDomainPage: React.FC = () => {
       console.error("Error verifying DNS:", error);
       setDnsStatus({
         success: false,
-        message: "حدث خطأ أثناء الاتصال بالسيرفر للتحقق من DNS",
+        message: t("customDomain.dnsVerifyError"),
       });
     } finally {
       setVerifyingDNS(false);
@@ -129,7 +132,7 @@ const CustomDomainPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-4xl mx-auto px-4 py-8" dir={getDirection()}>
       {/* Header Section */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -137,12 +140,11 @@ const CustomDomainPage: React.FC = () => {
             <GlobeAltIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            الدومين المخصص (Custom Domain)
+            {t("customDomain.pageTitle")}
           </h1>
         </div>
         <p className="text-gray-600 dark:text-gray-400">
-          اربط متجرك بدومين خاص بك (مثل store.com) لتعزيز علامتك التجارية
-          واكتساب ثقة عملائك.
+          {t("customDomain.pageDescription")}
         </p>
       </div>
 
@@ -154,17 +156,17 @@ const CustomDomainPage: React.FC = () => {
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
                 1
               </span>
-              ماذا تحتاج للبدء؟
+              {t("customDomain.step1Title")}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                 <ShieldCheckIcon className="h-5 w-5 text-green-500 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    دومين مسجل باسمك
+                    {t("customDomain.domainRegistered")}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    يجب أن تكون اشتريت الدومين من مزود مثل GoDaddy أو Namecheap.
+                    {t("customDomain.domainRegisteredDesc")}
                   </p>
                 </div>
               </div>
@@ -172,10 +174,10 @@ const CustomDomainPage: React.FC = () => {
                 <ArrowsRightLeftIcon className="h-5 w-5 text-blue-500 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    الوصول لإعدادات DNS
+                    {t("customDomain.dnsAccess")}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    يجب أن تتوفر لديك صلاحية تعديل سجلات DNS الخاصة بالدومين.
+                    {t("customDomain.dnsAccessDesc")}
                   </p>
                 </div>
               </div>
@@ -190,11 +192,10 @@ const CustomDomainPage: React.FC = () => {
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
                 2
               </span>
-              إعدادات الـ DNS
+              {t("customDomain.step2Title")}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              اذهب إلى لوحة تحكم الدومين الخاص بك وأضف السجل التالي ليتم توجيه
-              الزوار إلى متجرك:
+              {t("customDomain.dnsStepDesc")}
             </p>
 
             <div className="overflow-x-auto border border-gray-100 dark:border-gray-700 rounded-lg">
@@ -202,13 +203,13 @@ const CustomDomainPage: React.FC = () => {
                 <thead className="bg-gray-50 dark:bg-gray-900/50">
                   <tr>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      النوع (Type)
+                      {t("customDomain.dnsType")}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      الاسم (Host)
+                      {t("customDomain.dnsHost")}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      القيمة (Value)
+                      {t("customDomain.dnsValue")}
                     </th>
                     <th className="px-4 py-3"></th>
                   </tr>
@@ -219,7 +220,7 @@ const CustomDomainPage: React.FC = () => {
                       CNAME
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      www أو @
+                      {t("customDomain.dnsHostValue")}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       mokhtarelhenawy.online
@@ -229,8 +230,8 @@ const CustomDomainPage: React.FC = () => {
                         type="button"
                         aria-label={
                           copied === "cname"
-                            ? "تم نسخ قيمة سجل CNAME"
-                            : "نسخ قيمة سجل CNAME"
+                            ? t("customDomain.cnameCopied")
+                            : t("customDomain.copyCname")
                         }
                         onClick={() =>
                           copyToClipboard("mokhtarelhenawy.online", "cname")
@@ -252,9 +253,7 @@ const CustomDomainPage: React.FC = () => {
             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg flex gap-3">
               <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                ملاحظة: قد تستغرق تغييرات الـ DNS من 5 دقائق وحتى 24 ساعة لتظهر
-                في جميع أنحاء العالم. ننصح باستخدام **Cloudflare** لإدارة الـ
-                DNS لسرعة التحديث وأمان أعلى.
+                {t("customDomain.dnsNote")}
               </p>
             </div>
           </div>
@@ -267,7 +266,7 @@ const CustomDomainPage: React.FC = () => {
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
                 3
               </span>
-              إضافة الدومين والتحقق
+              {t("customDomain.step3Title")}
             </h2>
 
             <div className="space-y-4">
@@ -277,11 +276,11 @@ const CustomDomainPage: React.FC = () => {
                     htmlFor="custom-domain-input"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                   >
-                    الدومين المخصص
+                    {t("customDomain.customDomainLabel")}
                   </label>
                 ) : (
                   <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    الدومين المخصص
+                    {t("customDomain.customDomainLabel")}
                   </span>
                 )}
                 {editingDomain ? (
@@ -301,7 +300,7 @@ const CustomDomainPage: React.FC = () => {
                       disabled={savingDomain}
                       className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 transition-colors"
                     >
-                      {savingDomain ? "جاري الحفظ..." : "حفظ"}
+                      {savingDomain ? t("customDomain.saving") : t("customDomain.save")}
                     </button>
                     <button
                       onClick={() => {
@@ -310,24 +309,24 @@ const CustomDomainPage: React.FC = () => {
                       }}
                       className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
-                      إلغاء
+                      {t("customDomain.cancel")}
                     </button>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-700">
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                        الدومين الحالي
+                        {t("customDomain.currentDomain")}
                       </p>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        {company?.customDomain || "لم يتم ربط دومين بعد"}
+                        {company?.customDomain || t("customDomain.noDomainConnected")}
                       </p>
                     </div>
                     <button
                       onClick={() => setEditingDomain(true)}
                       className="px-4 py-2 text-indigo-600 dark:text-indigo-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
                     >
-                      {company?.customDomain ? "تغيير الدومين" : "إضافة دومين"}
+                      {company?.customDomain ? t("customDomain.changeDomain") : t("customDomain.addDomain")}
                     </button>
                   </div>
                 )}
@@ -345,8 +344,8 @@ const CustomDomainPage: React.FC = () => {
                         <div className="animate-spin h-4 w-4 border-2 border-indigo-600 border-t-transparent rounded-full" />
                       )}
                       {verifyingDNS
-                        ? "جاري الفحص..."
-                        : "افحص إعدادات الـ DNS الآن"}
+                        ? t("customDomain.checking")
+                        : t("customDomain.checkDns")}
                     </button>
 
                     {dnsStatus && (
@@ -370,11 +369,10 @@ const CustomDomainPage: React.FC = () => {
                           <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
                           <div>
                             <p className="text-sm font-bold text-green-800 dark:text-green-300">
-                              تم التحقق من الدومين بنجاح!
+                              {t("customDomain.dnsVerified")}
                             </p>
                             <p className="text-xs text-green-700 dark:text-green-400 mt-1">
-                              تم ربط {company?.customDomain} بمتجرك بنجاح. قد
-                              يحتاج النظام لبعض الوقت لتفعيل شهادة الـ SSL.
+                              {t("customDomain.dnsVerifiedDesc", { domain: company?.customDomain })}
                             </p>
                           </div>
                         </div>
@@ -385,7 +383,7 @@ const CustomDomainPage: React.FC = () => {
                           className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap"
                         >
                           <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                          زيارة الموقع الآن
+                          {t("customDomain.visitSite")}
                         </a>
                       </div>
                     </div>
@@ -401,38 +399,36 @@ const CustomDomainPage: React.FC = () => {
           <div className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
             <h3 className="font-bold flex items-center gap-2 mb-3">
               <InformationCircleIcon className="h-5 w-5" />
-              لماذا الدومين المخصص؟
+              {t("customDomain.whyCustomDomain")}
             </h3>
             <ul className="text-xs space-y-2 opacity-90">
-              <li>• يزيد من احترافية متجرك أمام العملاء.</li>
-              <li>• يسهل على العملاء تذكر رابط متجرك.</li>
-              <li>• يحسن من ظهور متجرك في محركات البحث (SEO).</li>
-              <li>• يوفر رابط مختصر ونظيف لمشاركته على السوشيال ميديا.</li>
+              <li>{t("customDomain.whyList1")}</li>
+              <li>{t("customDomain.whyList2")}</li>
+              <li>{t("customDomain.whyList3")}</li>
+              <li>{t("customDomain.whyList4")}</li>
             </ul>
           </div>
 
           <div className="p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
               <InformationCircleIcon className="h-5 w-5 text-indigo-500" />
-              أسئلة شائعة
+              {t("customDomain.faqTitle")}
             </h3>
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-bold text-gray-900 dark:text-white">
-                  هل أحتاج لدفع رسوم إضافية؟
+                  {t("customDomain.faq1q")}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  لا، المنصة تقدم دعم الدومينات المخصصة وشهادات SSL مجاناً ضمن
-                  باقتك.
+                  {t("customDomain.faq1a")}
                 </p>
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-900 dark:text-white">
-                  ماذا لو أردت استخدام Subdomain؟
+                  {t("customDomain.faq2q")}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  بإمكانك ربط `shop.example.com` بنفس الطريقة عبر تغيير الـ Host
-                  في سجل الـ CNAME.
+                  {t("customDomain.faq2a")}
                 </p>
               </div>
             </div>

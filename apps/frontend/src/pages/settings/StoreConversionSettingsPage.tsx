@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { getDirection } from "../../i18n";
 import { NavLink } from "react-router-dom";
 import { toast } from "sonner";
 import { normalizeMarketplaceAppSettings } from "../../config/marketplaceAppSettings";
@@ -69,14 +71,6 @@ const isAppOperational = (app: CompanyMarketplaceApp | null) => {
   return Boolean(app) && !["DISABLED", "INACTIVE", "CANCELLED", "EXPIRED"].includes(status);
 };
 
-const getAppStatusLabel = (app: CompanyMarketplaceApp | null) => {
-  if (!app) {
-    return "غير مثبت";
-  }
-
-  return isAppOperational(app) ? "جاهز" : "متوقف";
-};
-
 const ToggleSwitch = ({
   label,
   checked,
@@ -115,7 +109,16 @@ export default function StoreConversionSettingsPage({
 }: {
   pageId: StoreConversionPageId;
 }) {
+  const { t } = useTranslation();
   const { isLoading: isAuthLoading, isAuthenticated, user } = useAuth();
+
+  const getAppStatusLabel = (app: CompanyMarketplaceApp | null) => {
+    if (!app) {
+      return t("storeConversionSettings.notInstalled");
+    }
+
+    return isAppOperational(app) ? t("storeConversionSettings.ready") : t("storeConversionSettings.disabled");
+  };
   const page = STORE_CONVERSION_PAGE_MAP[pageId];
 
   const [loading, setLoading] = useState(true);
@@ -155,7 +158,7 @@ export default function StoreConversionSettingsPage({
       setManagedApps(nextManagedApps);
     } catch (error) {
       console.error("Error loading grouped conversion settings:", error);
-      toast.error("تعذر تحميل إعدادات الأدوات.");
+      toast.error(t("storeConversionSettings.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -182,12 +185,12 @@ export default function StoreConversionSettingsPage({
   );
 
   const headerStatusLabel = loading
-    ? "جارٍ تحميل الأدوات..."
+    ? t("storeConversionSettings.loading")
     : savingToolKey
-      ? "جاري حفظ التغيير..."
+      ? t("storeConversionSettings.saving")
       : lastSavedAt
-        ? "تم الحفظ تلقائيًا"
-        : "كل تغيير هنا يُحفظ تلقائيًا";
+        ? t("storeConversionSettings.savedAuto")
+        : t("storeConversionSettings.autoSaveLabel");
 
   const getToolAvailability = useCallback(
     (tool: StoreConversionToolConfig) => {
@@ -195,14 +198,14 @@ export default function StoreConversionSettingsPage({
       if (!appState?.app) {
         return {
           available: false,
-          note: `يتطلب تفعيل ${STORE_CONVERSION_APP_LABELS[tool.appSlug]}.`,
+          note: t("storeConversionSettings.requiresApp", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }),
         };
       }
 
       if (!isAppOperational(appState.app)) {
         return {
           available: false,
-          note: `${STORE_CONVERSION_APP_LABELS[tool.appSlug]} متوقف حاليًا.`,
+          note: t("storeConversionSettings.appDisabled", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }),
         };
       }
 
@@ -232,12 +235,12 @@ export default function StoreConversionSettingsPage({
     async (tool: StoreConversionToolConfig, nextValue: boolean) => {
       const appState = managedApps[tool.appSlug];
       if (!appState?.app) {
-        toast.error(`هذه الأداة تحتاج ${STORE_CONVERSION_APP_LABELS[tool.appSlug]}.`);
+        toast.error(t("storeConversionSettings.needsAppError", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }));
         return;
       }
 
       if (!isAppOperational(appState.app)) {
-        toast.error("التطبيق المرتبط بهذه الأداة متوقف حاليًا.");
+        toast.error(t("storeConversionSettings.appDisabledError"));
         return;
       }
 
@@ -271,7 +274,7 @@ export default function StoreConversionSettingsPage({
         setLastSavedAt(Date.now());
       } catch (error) {
         console.error("Error saving grouped conversion setting:", error);
-        toast.error("تعذر حفظ التغيير.");
+        toast.error(t("storeConversionSettings.saveFailed"));
         await loadManagedApps();
       } finally {
         setSavingToolKey(null);
@@ -288,12 +291,12 @@ export default function StoreConversionSettingsPage({
     ) => {
       const appState = managedApps[tool.appSlug];
       if (!appState?.app) {
-        toast.error(`هذه الأداة تحتاج ${STORE_CONVERSION_APP_LABELS[tool.appSlug]}.`);
+        toast.error(t("storeConversionSettings.needsAppError", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }));
         return;
       }
 
       if (!isAppOperational(appState.app)) {
-        toast.error("التطبيق المرتبط بهذه الأداة متوقف حالياً.");
+        toast.error(t("storeConversionSettings.appDisabledError"));
         return;
       }
 
@@ -334,7 +337,7 @@ export default function StoreConversionSettingsPage({
         setLastSavedAt(Date.now());
       } catch (error) {
         console.error("Error saving grouped conversion field:", error);
-        toast.error("تعذر حفظ التغيير.");
+        toast.error(t("storeConversionSettings.saveFieldFailed"));
         await loadManagedApps();
       } finally {
         setSavingToolKey(null);
@@ -344,18 +347,18 @@ export default function StoreConversionSettingsPage({
   );
 
   return (
-    <div className="max-w-5xl space-y-8" dir="rtl">
+    <div className="max-w-5xl space-y-8" dir={getDirection()}>
       <header className="space-y-4 border-b border-gray-200 pb-6 dark:border-gray-800">
         <div className="space-y-2">
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-700 dark:text-indigo-300">
-            إدارة أدوات المتجر
+            {t("storeConversionSettings.pageHeader")}
           </p>
           <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-            {page.title}
+            {t(page.title)}
           </h1>
         </div>
         <p className="max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300">
-          {page.description}
+          {t(page.description)}
         </p>
         <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
           <p>{headerStatusLabel}</p>
@@ -380,7 +383,7 @@ export default function StoreConversionSettingsPage({
                 }`
               }
             >
-              {entry.navLabel}
+              {t(entry.navLabel)}
             </NavLink>
           ))}
         </div>
@@ -393,7 +396,7 @@ export default function StoreConversionSettingsPage({
         >
           <div className="space-y-2">
             <h2 className="text-xl font-black text-gray-900 dark:text-white">
-              {section.title}
+              {t(section.title)}
             </h2>
             {section.description ? (
               <p className="text-sm leading-7 text-gray-600 dark:text-gray-300">
@@ -478,7 +481,7 @@ export default function StoreConversionSettingsPage({
                                 ) : null}
                                 {fieldSaving ? (
                                   <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-                                    حفظ...
+                                    {t("storeConversionSettings.savingField")}
                                   </span>
                                 ) : null}
                               </div>
@@ -501,15 +504,13 @@ export default function StoreConversionSettingsPage({
                             : "text-gray-400 dark:text-gray-500"
                       }`}
                     >
-                      {saving
-                        ? "جارٍ الحفظ"
-                        : isToolFieldSaving
-                          ? "جارٍ الحفظ"
+                      {saving || isToolFieldSaving
+                        ? t("storeConversionSettings.savingField")
                         : availability.available
                           ? enabled
-                            ? "يعمل"
-                            : "متوقف"
-                          : "غير متاح"}
+                            ? t("storeConversionSettings.enabled")
+                            : t("storeConversionSettings.disabledLabel")
+                          : t("storeConversionSettings.notAvailable")}
                     </span>
                     <ToggleSwitch
                       label={tool.label}

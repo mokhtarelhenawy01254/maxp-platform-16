@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useDateFormat } from "../../hooks/useDateFormat"
 import { useCurrency } from "../../hooks/useCurrency"
 import { apiClient } from "../../services/apiClient"
 import {
-  GiftIcon,
   TicketIcon,
   TruckIcon,
   ExclamationTriangleIcon,
@@ -40,24 +40,8 @@ interface Tier {
 
 type StatusBadge = { label: string; color: string }
 
-const getCouponStatus = (c: Coupon): StatusBadge => {
-  const now = new Date()
-  if (!c.isActive) return { label: "موقف", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" }
-  if (now < new Date(c.validFrom)) return { label: "قادم", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" }
-  if (now > new Date(c.validTo)) return { label: "منتهي", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
-  if (c.usageLimit && c.usageCount >= c.usageLimit) return { label: "مستنفذ", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" }
-  return { label: "نشط", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" }
-}
-
-const getTypeText = (t: string) => t === "PERCENTAGE" ? "نسبة" : t === "FIXED_AMOUNT" ? "ثابت" : t === "FREE_SHIPPING" ? "شحن مجاني" : t
-
-const tierTypeLabels: Record<string, string> = {
-  cheapest_percentage: "اشتر X وخد الأرخص بنسبة",
-  all_percentage: "خصم على الكل بنسبة",
-  cheapest_free: "اشتر X وخد الأرخص مجاناً",
-}
-
 const OffersReview: React.FC = () => {
+  const { t } = useTranslation()
   const { formatDate } = useDateFormat()
   const { formatPrice } = useCurrency()
   const [coupons, setCoupons] = useState<Coupon[]>([])
@@ -65,6 +49,23 @@ const OffersReview: React.FC = () => {
   const [storePromo, setStorePromo] = useState<StorePromotion | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const getCouponStatus = (c: Coupon): StatusBadge => {
+    const now = new Date()
+    if (!c.isActive) return { label: t("offersReview.disabled"), color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" }
+    if (now < new Date(c.validFrom)) return { label: t("offersReview.comingSoon"), color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" }
+    if (now > new Date(c.validTo)) return { label: t("offersReview.expired"), color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
+    if (c.usageLimit && c.usageCount >= c.usageLimit) return { label: t("offersReview.depleted"), color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" }
+    return { label: t("offersReview.active"), color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" }
+  }
+
+  const getTypeText = (type: string) => type === "PERCENTAGE" ? t("offersReview.typePercentage") : type === "FIXED_AMOUNT" ? t("offersReview.typeFixed") : type === "FREE_SHIPPING" ? t("offersReview.typeFreeShipping") : type
+
+  const tierTypeLabels: Record<string, string> = {
+    cheapest_percentage: t("offersReview.tierCheapestPercentage"),
+    all_percentage: t("offersReview.tierAllPercentage"),
+    cheapest_free: t("offersReview.tierCheapestFree"),
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -79,13 +80,13 @@ const OffersReview: React.FC = () => {
         if (promoRes.data?.success) setPromoSettings(promoRes.data.data)
         if (storeRes.data?.success) setStorePromo(storeRes.data.data)
       } catch (err: any) {
-        setError(err?.response?.data?.message || "فشل تحميل بيانات العروض")
+        setError(err?.response?.data?.message || t("offersReview.loadError"))
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [])
+  }, [t])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -93,8 +94,8 @@ const OffersReview: React.FC = () => {
     </div>
   )
 
-  const activeCoupons = coupons.filter((c) => getCouponStatus(c).label === "نشط")
-  const otherCoupons = coupons.filter((c) => getCouponStatus(c).label !== "نشط")
+  const activeCoupons = coupons.filter((c) => getCouponStatus(c).label === t("offersReview.active"))
+  const otherCoupons = coupons.filter((c) => getCouponStatus(c).label !== t("offersReview.active"))
   const parsedTiers: Tier[] = storePromo?.tiers ? tryParseTiers(storePromo.tiers) : []
   const hasActiveStorePromo = storePromo?.isActive && parsedTiers.length > 0
   const hasActiveFreeShipping = promoSettings?.freeShippingEnabled ?? false
@@ -107,8 +108,8 @@ const OffersReview: React.FC = () => {
         <div className="flex items-center gap-3">
           <ClipboardDocumentListIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">مراجعة العروض</h1>
-            <p className="mt-1 text-gray-500 dark:text-gray-400">كل العروض الترويجية في المتجر — للمراجعة قبل تفعيلها للأجنت</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t("offersReview.pageTitle")}</h1>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">{t("offersReview.pageDescription")}</p>
           </div>
         </div>
       </div>
@@ -121,19 +122,19 @@ const OffersReview: React.FC = () => {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <SummaryCard icon={TicketIcon} label="كوبونات نشطة" value={activeCoupons.length} color="green" />
-        <SummaryCard icon={SparklesIcon} label="عروض المتجر" value={hasActiveStorePromo ? "مفعل" : "متوقف"} color={hasActiveStorePromo ? "green" : "gray"} />
-        <SummaryCard icon={TruckIcon} label="شحن مجاني" value={hasActiveFreeShipping ? "مفعل" : "متوقف"} color={hasActiveFreeShipping ? "green" : "gray"} />
-        <SummaryCard icon={BanknotesIcon} label="إجمالي العروض" value={totalActiveOffers} color="indigo" />
+        <SummaryCard icon={TicketIcon} label={t("offersReview.activeCoupons")} value={activeCoupons.length} color="green" />
+        <SummaryCard icon={SparklesIcon} label={t("offersReview.storePromotions")} value={hasActiveStorePromo ? t("offersReview.active") : t("offersReview.disabled")} color={hasActiveStorePromo ? "green" : "gray"} />
+        <SummaryCard icon={TruckIcon} label={t("offersReview.freeShippingLabel")} value={hasActiveFreeShipping ? t("offersReview.active") : t("offersReview.disabled")} color={hasActiveFreeShipping ? "green" : "gray"} />
+        <SummaryCard icon={BanknotesIcon} label={t("offersReview.totalOffers")} value={totalActiveOffers} color="indigo" />
       </div>
 
       {activeCoupons.length > 0 && (
         <section className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <CheckCircleIcon className="h-6 w-6 text-green-500" />
-            الكوبونات النشطة ({activeCoupons.length})
+            {t("offersReview.activeCoupons")} ({activeCoupons.length})
           </h2>
-          <CouponTable coupons={activeCoupons} formatDate={formatDate} getCouponStatus={getCouponStatus} getTypeText={getTypeText} formatPrice={formatPrice} />
+          <CouponTable coupons={activeCoupons} formatDate={formatDate} getCouponStatus={getCouponStatus} getTypeText={getTypeText} formatPrice={formatPrice} t={t} />
         </section>
       )}
 
@@ -141,17 +142,17 @@ const OffersReview: React.FC = () => {
         <section className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <XCircleIcon className="h-6 w-6 text-gray-400" />
-            كوبونات غير نشطة ({otherCoupons.length})
+            {t("offersReview.inactive")} ({otherCoupons.length})
           </h2>
-          <CouponTable coupons={otherCoupons} formatDate={formatDate} getCouponStatus={getCouponStatus} getTypeText={getTypeText} formatPrice={formatPrice} />
+          <CouponTable coupons={otherCoupons} formatDate={formatDate} getCouponStatus={getCouponStatus} getTypeText={getTypeText} formatPrice={formatPrice} t={t} />
         </section>
       )}
 
       {coupons.length === 0 && (
         <div className="mb-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center">
           <TicketIcon className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
-          <h3 className="mt-3 text-lg font-medium text-gray-900 dark:text-white">لا توجد كوبونات</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">لم يتم إنشاء كوبونات خصم بعد</p>
+          <h3 className="mt-3 text-lg font-medium text-gray-900 dark:text-white">{t("offersReview.noCoupons")}</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("offersReview.noCouponsDesc")}</p>
         </div>
       )}
 
@@ -159,15 +160,15 @@ const OffersReview: React.FC = () => {
         <section className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <SparklesIcon className="h-6 w-6 text-amber-500" />
-            عروض المتجر الشاملة
+            {t("offersReview.storePromoTitle")}
             <span className={`mr-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${hasActiveStorePromo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-              {hasActiveStorePromo ? "فعال" : "متوقف"}
+              {hasActiveStorePromo ? t("offersReview.active") : t("offersReview.disabled")}
             </span>
           </h2>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
             {hasActiveStorePromo ? (
               <div className="space-y-4">
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{storePromo.title || "عرض المتجر"}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{storePromo.title || t("offersReview.storePromoDefaultName")}</p>
                 <div className="space-y-2">
                   {parsedTiers.map((tier, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800">
@@ -176,25 +177,25 @@ const OffersReview: React.FC = () => {
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {tierTypeLabels[tier.type] || tier.type}
                           {tier.discountPercent > 0 && ` ${tier.discountPercent}%`}
-                          {tier.freeQty > 0 && ` + ${tier.freeQty} مجاناً`}
+                          {tier.freeQty > 0 && ` + ${tier.freeQty} ${t("offersReview.tierFree")}`}
                         </p>
-                        <p className="text-xs text-gray-500">من {tier.minQty} إلى {tier.maxQty || '∞'} قطعة{tier.label && ` — ${tier.label}`}</p>
+                        <p className="text-xs text-gray-500">{t("offersReview.tierFrom", { minQty: tier.minQty })} {t("offersReview.tierTo", { maxQty: tier.maxQty || '∞' })} {t("offersReview.tierPieces")}{tier.label && ` — ${tier.label}`}</p>
                       </div>
                     </div>
                   ))}
                 </div>
                 {storePromo.disableOtherDiscounts && (
-                  <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/10 px-3 py-2 rounded-lg">ملاحظة: هذا العرض يلغي الخصومات الأخرى</p>
+                  <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/10 px-3 py-2 rounded-lg">{t("offersReview.storePromoNote")}</p>
                 )}
                 {(storePromo.startDate || storePromo.endDate) && (
                   <p className="text-xs text-gray-500">
-                    {storePromo.startDate && `من ${formatDate(storePromo.startDate)}`}
-                    {storePromo.endDate && ` إلى ${formatDate(storePromo.endDate)}`}
+                    {storePromo.startDate && t("offersReview.storePromoFrom", { date: formatDate(storePromo.startDate) })}
+                    {storePromo.endDate && t("offersReview.storePromoTo", { date: formatDate(storePromo.endDate) })}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">لا توجد عروض متجر شاملة مفعلة حالياً</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{t("offersReview.noStorePromo")}</p>
             )}
           </div>
         </section>
@@ -203,24 +204,24 @@ const OffersReview: React.FC = () => {
       <section className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <TruckIcon className="h-6 w-6 text-purple-500" />
-          إعدادات الشحن
+          {t("offersReview.shippingSettings")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PromoCard title="الشحن المجاني" enabled={hasActiveFreeShipping}
-            details={hasActiveFreeShipping ? `للطلبات من ${formatPrice(promoSettings!.freeShippingThreshold)} فأكثر` : "غير مفعل"} />
-          <PromoCard title="سعر شحن موحد" enabled={hasActiveFlatShipping}
-            details={hasActiveFlatShipping ? `${promoSettings!.flatShippingFee} ج.م للطلب` : "غير مفعل"} />
+          <PromoCard title={t("offersReview.freeShippingCardTitle")} enabled={hasActiveFreeShipping}
+            details={hasActiveFreeShipping ? t("offersReview.freeShippingCardDetail", { amount: formatPrice(promoSettings!.freeShippingThreshold) }) : t("offersReview.freeShippingInactive")} t={t} />
+          <PromoCard title={t("offersReview.flatShippingCardTitle")} enabled={hasActiveFlatShipping}
+            details={hasActiveFlatShipping ? t("offersReview.flatShippingCardDetail", { amount: promoSettings!.flatShippingFee }) : t("offersReview.flatShippingInactive")} t={t} />
         </div>
       </section>
 
       <section>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <BanknotesIcon className="h-6 w-6 text-sky-500" />
-          خصومات الكميات
+          {t("offersReview.volumeDiscounts")}
         </h2>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            خصومات الكميات مضبوطة لكل منتج على حدة — مش متاح عرض تجميعي شامل. تقدر تراجع الخصومات من صفحة تعديل كل منتج.
+            {t("offersReview.volumeDiscountsDesc")}
           </p>
         </div>
       </section>
@@ -240,19 +241,19 @@ const SummaryCard: React.FC<{ icon: React.ComponentType<React.SVGProps<SVGSVGEle
   return (<div className={`flex items-center gap-4 p-5 rounded-xl border ${colors[color]}`}><Icon className="h-8 w-8 shrink-0" /><div><div className="text-sm font-medium opacity-80">{label}</div><div className="text-2xl font-bold">{value}</div></div></div>)
 }
 
-const CouponTable: React.FC<{ coupons: Coupon[]; formatDate: (d: string) => string; getCouponStatus: (c: Coupon) => StatusBadge; getTypeText: (t: string) => string; formatPrice: (n: number) => string }> = ({ coupons, formatDate, getCouponStatus, getTypeText, formatPrice }) => (
+const CouponTable: React.FC<{ coupons: Coupon[]; formatDate: (d: string) => string; getCouponStatus: (c: Coupon) => StatusBadge; getTypeText: (t: string) => string; formatPrice: (n: number) => string; t: (key: string) => string }> = ({ coupons, formatDate, getCouponStatus, getTypeText, formatPrice, t }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead className="bg-gray-50 dark:bg-gray-900">
           <tr>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الكود</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الاسم</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">النوع</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">القيمة</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الاستخدام</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الفترة</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الحالة</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{t("offersReview.tableCode")}</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{t("offersReview.tableName")}</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{t("offersReview.tableType")}</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{t("offersReview.tableValue")}</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{t("offersReview.tableUsage")}</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{t("offersReview.tablePeriod")}</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{t("offersReview.tableStatus")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -270,7 +271,7 @@ const CouponTable: React.FC<{ coupons: Coupon[]; formatDate: (d: string) => stri
                 <td className="px-4 py-3 whitespace-nowrap"><span className="text-sm text-gray-700 dark:text-gray-300">{getTypeText(coupon.type)}</span></td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
                   {coupon.type === "PERCENTAGE" ? `${coupon.value}%` : coupon.type === "FIXED_AMOUNT" ? formatPrice(coupon.value) : "—"}
-                  {coupon.maxDiscountAmount > 0 && coupon.type === "PERCENTAGE" && <span className="text-xs text-gray-500 mr-1">(حد {formatPrice(coupon.maxDiscountAmount)})</span>}
+                  {coupon.maxDiscountAmount > 0 && coupon.type === "PERCENTAGE" && <span className="text-xs text-gray-500 mr-1">({t("offersReview.tierTo", { maxQty: formatPrice(coupon.maxDiscountAmount) })})</span>}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -294,11 +295,11 @@ const CouponTable: React.FC<{ coupons: Coupon[]; formatDate: (d: string) => stri
   </div>
 )
 
-const PromoCard: React.FC<{ title: string; enabled: boolean; details: string }> = ({ title, enabled, details }) => (
+const PromoCard: React.FC<{ title: string; enabled: boolean; details: string; t: (key: string) => string }> = ({ title, enabled, details, t }) => (
   <div className={`p-5 rounded-xl border ${enabled ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
     <div className="flex items-center justify-between mb-3">
       <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${enabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{enabled ? "مفعل" : "متوقف"}</span>
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${enabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{enabled ? t("offersReview.active") : t("offersReview.disabled")}</span>
     </div>
     <p className="text-sm text-gray-600 dark:text-gray-400">{details}</p>
   </div>

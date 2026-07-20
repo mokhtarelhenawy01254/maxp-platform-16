@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   Calendar,
-  Eye,
-  EyeOff,
   Gift,
-  Layout,
   PanelTop,
   Plus,
   RefreshCcw,
@@ -41,6 +39,7 @@ import {
   getApiErrorMessage,
 } from "./components/settingsPageUtils";
 import { apiClient } from "../../services/apiClient";
+import { getDirection } from "../../i18n";
 
 type TierType = "cheapest_percentage" | "all_percentage";
 
@@ -66,20 +65,10 @@ interface StorePromotion {
   barPages: string;
 }
 
-const DEFAULT_TIERS: PromotionTier[] = [
-  { id: "tier-1", minQuantity: 2, type: "cheapest_percentage", value: 50, items: 1, label: "اشتري 2 والتانية بنص التمن", isActive: true },
-  { id: "tier-2", minQuantity: 3, type: "cheapest_percentage", value: 100, items: 1, label: "اشتري 3 والتالتة هدية", isActive: true },
-];
-
 const defaultPromotion = (): StorePromotion => ({
-  isActive: false, title: "عروض المتجر", tiers: [], disableOtherDiscounts: false, startDate: "", endDate: "",
+  isActive: false, title: "", tiers: [], disableOtherDiscounts: false, startDate: "", endDate: "",
   barVisible: true, barSticky: false, barPages: "all",
 });
-
-const typeOptions = [
-  { value: "cheapest_percentage" as const, label: "خصم على أرخص المنتجات" },
-  { value: "all_percentage" as const, label: "خصم على كل المنتجات" },
-];
 
 const generateTierId = () => `tier-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 const parseTiersJson = (raw: unknown): PromotionTier[] => {
@@ -89,10 +78,21 @@ const parseTiersJson = (raw: unknown): PromotionTier[] => {
 };
 
 export default function StorePromotionSettings() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<SettingsStatusMessage | null>(null);
   const [promotion, setPromotion] = useState<StorePromotion>(defaultPromotion);
+
+  const typeOptions = [
+    { value: "cheapest_percentage" as const, label: t("storePromotionSettings.cheapestDiscounted") },
+    { value: "all_percentage" as const, label: t("storePromotionSettings.allDiscounted") },
+  ];
+
+  const DEFAULT_TIERS: PromotionTier[] = [
+    { id: "tier-1", minQuantity: 2, type: "cheapest_percentage", value: 50, items: 1, label: t("storePromotionSettings.customerLabelPlaceholder", { min: 2 }), isActive: true },
+    { id: "tier-2", minQuantity: 3, type: "cheapest_percentage", value: 100, items: 1, label: t("storePromotionSettings.customerLabelPlaceholder", { min: 3 }), isActive: true },
+  ];
 
   const loadPromotion = useCallback(async () => {
     try {
@@ -113,11 +113,11 @@ export default function StorePromotionSettings() {
         });
       }
     } catch (error) {
-      setMessage({ type: "error", text: getApiErrorMessage(error, "فشل تحميل الإعدادات") });
+      setMessage({ type: "error", text: getApiErrorMessage(error, t("storePromotionSettings.promoLoadFailed")) });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { void loadPromotion(); }, [loadPromotion]);
 
@@ -136,13 +136,13 @@ export default function StorePromotionSettings() {
         barSticky: promotion.barSticky,
         barPages: promotion.barPages,
       });
-      setMessage({ type: "success", text: "تم حفظ العرض بنجاح" });
+      setMessage({ type: "success", text: t("storePromotionSettings.promoSaved") });
     } catch (error) {
-      setMessage({ type: "error", text: getApiErrorMessage(error, "فشل حفظ الإعدادات") });
+      setMessage({ type: "error", text: getApiErrorMessage(error, t("storePromotionSettings.promoSaveFailed")) });
     } finally {
       setSaving(false);
     }
-  }, [promotion]);
+  }, [promotion, t]);
 
   const handleReset = useCallback(async () => {
     try {
@@ -150,13 +150,13 @@ export default function StorePromotionSettings() {
       setMessage(null);
       await apiClient.delete("/store-promotions");
       setPromotion(defaultPromotion());
-      setMessage({ type: "success", text: "تم إلغاء العرض" });
+      setMessage({ type: "success", text: t("storePromotionSettings.promoCancelled") });
     } catch (error) {
-      setMessage({ type: "error", text: getApiErrorMessage(error, "فشل إلغاء العرض") });
+      setMessage({ type: "error", text: getApiErrorMessage(error, t("storePromotionSettings.promoCancelFailed")) });
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [t]);
 
   const addTier = useCallback(() => {
     setPromotion(p => ({ ...p, tiers: [...p.tiers, { id: generateTierId(), minQuantity: 2, type: "cheapest_percentage", value: 50, items: 1, label: "", isActive: true }] }));
@@ -172,38 +172,38 @@ export default function StorePromotionSettings() {
 
   const fillDefaults = useCallback(() => {
     setPromotion(p => ({ ...p, tiers: DEFAULT_TIERS }));
-  }, []);
+  }, [DEFAULT_TIERS]);
 
   const summaryItems = useMemo((): SettingsHeroSummaryItem[] | undefined => {
     const active = promotion.tiers.filter(t => t.isActive);
     if (!promotion.isActive || active.length === 0) return undefined;
     return [
-      { label: "الحالة", value: "مفعل" },
-      { label: "المستويات", value: String(active.length) },
-      { label: "أفضل عرض", value: active[active.length - 1]?.label || "-" },
+      { label: t("storePromotionSettings.summaryStatus"), value: t("storePromotionSettings.summaryActive") },
+      { label: t("storePromotionSettings.summaryTiers"), value: String(active.length) },
+      { label: t("storePromotionSettings.summaryBestOffer"), value: active[active.length - 1]?.label || "-" },
     ];
-  }, [promotion]);
+  }, [promotion, t]);
 
   if (loading) {
     return (
       <SettingsLoadingState
-        title="جاري تحميل إعدادات عروض المتجر..."
-        description="بنجهزلك إعدادات التخفيضات الشاملة."
+        title={t("storePromotionSettings.loadingTitle")}
+        description={t("storePromotionSettings.loadingDescription")}
       />
     );
   }
 
   return (
-    <SettingsPageShell dir="rtl">
+    <SettingsPageShell dir={getDirection()}>
       <SettingsPageHero
         badgeIcon={Gift}
-        badgeLabel="ADVANCED"
-        title="عروض المتجر الشاملة"
-        description="تخفيضات تلقائية على كل منتجات المتجر عند استيفاء شروط الكمية."
+        badgeLabel={t("storePromotionSettings.badgeLabel")}
+        title={t("storePromotionSettings.pageTitle")}
+        description={t("storePromotionSettings.pageDescription")}
         summaryItems={summaryItems}
         action={
           <Button variant="outline" size="sm" onClick={fillDefaults}>
-            <Plus className="h-4 w-4 ml-1" /> أمثلة جاهزة
+            <Plus className="h-4 w-4 ml-1" /> {t("storePromotionSettings.readyExamples")}
           </Button>
         }
       />
@@ -215,15 +215,15 @@ export default function StorePromotionSettings() {
       <div className="p-6 space-y-6">
         <SettingsSection
           icon={Gift}
-          title="تفعيل العرض"
-          description="شغّل أو أوقف العرض على المتجر بالكامل"
+          title={t("storePromotionSettings.enablePromo")}
+          description={t("storePromotionSettings.enablePromoDesc")}
           accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
         >
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label>تفعيل عرض المتجر</Label>
+              <Label>{t("storePromotionSettings.enablePromo")}</Label>
               <p className="text-sm text-muted-foreground">
-                عند التفعيل، الخصم ينطبق تلقائياً على كل منتجات المتجر
+                {t("storePromotionSettings.enablePromoDesc")}
               </p>
             </div>
             <Switch
@@ -235,15 +235,15 @@ export default function StorePromotionSettings() {
 
         <SettingsSection
           icon={ShoppingCart}
-          title="تعطيل الخصومات الأخرى"
-          description="عند التفعيل، يوقف هذا العرض جميع الخصومات الأخرى (خصومات الكمية، الكوبونات)"
+          title={t("storePromotionSettings.disableOtherDiscounts")}
+          description={t("storePromotionSettings.disableOtherDiscountsDesc")}
           accentClassName="bg-rose-50 text-rose-700 ring-rose-200/70"
         >
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label>تعطيل الخصومات الأخرى</Label>
+              <Label>{t("storePromotionSettings.disableOtherDiscounts")}</Label>
               <p className="text-sm text-muted-foreground">
-                الخصم الشامل هو الوحيد اللي يشتغل، وكل الخصومات التانية تتوقف
+                {t("storePromotionSettings.disableOtherDiscountsDesc")}
               </p>
             </div>
             <Switch
@@ -255,32 +255,32 @@ export default function StorePromotionSettings() {
 
         <SettingsSection
           icon={Tag}
-          title="عنوان العرض"
-          description="اسم يظهر للعملاء (اختياري)"
+          title={t("storePromotionSettings.promoTitle")}
+          description={t("storePromotionSettings.promoTitleDesc")}
           accentClassName="bg-sky-50 text-sky-700 ring-sky-200/70"
         >
           <Input
             value={promotion.title}
             onChange={e => setPromotion(p => ({ ...p, title: e.target.value }))}
-            placeholder="مثال: عروض الصيف - خصومات الكمية"
+            placeholder={t("storePromotionSettings.promoTitlePlaceholder")}
             className="max-w-md"
           />
         </SettingsSection>
 
         <SettingsSection
           icon={Calendar}
-          title="تاريخ العرض"
-          description="حدد مدة العرض (اترك فارغاً لعرض دائم)"
+          title={t("storePromotionSettings.promoDate")}
+          description={t("storePromotionSettings.promoDateDesc")}
           accentClassName="bg-violet-50 text-violet-700 ring-violet-200/70"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>من</Label>
+              <Label>{t("storePromotionSettings.from")}</Label>
               <Input type="datetime-local" value={promotion.startDate}
                 onChange={e => setPromotion(p => ({ ...p, startDate: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label>إلى</Label>
+              <Label>{t("storePromotionSettings.to")}</Label>
               <Input type="datetime-local" value={promotion.endDate}
                 onChange={e => setPromotion(p => ({ ...p, endDate: e.target.value }))} />
             </div>
@@ -289,15 +289,15 @@ export default function StorePromotionSettings() {
 
         <SettingsSection
           icon={PanelTop}
-          title="إعدادات شريط العرض"
-          description="تحكم في ظهور وسلوك الشريط فوق المتجر"
+          title={t("storePromotionSettings.barSettings")}
+          description={t("storePromotionSettings.barSettingsDesc")}
           accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
         >
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label>إظهار الشريط</Label>
-                <p className="text-sm text-muted-foreground">عرض شريط التقدم والإشعارات للعملاء</p>
+                <Label>{t("storePromotionSettings.showBar")}</Label>
+                <p className="text-sm text-muted-foreground">{t("storePromotionSettings.showBarDesc")}</p>
               </div>
               <Switch
                 checked={promotion.barVisible}
@@ -307,8 +307,8 @@ export default function StorePromotionSettings() {
             <Separator />
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label>تثبيت الشريط</Label>
-                <p className="text-sm text-muted-foreground">يبقى ثابت في أعلى الصفحة عند التمرير</p>
+                <Label>{t("storePromotionSettings.stickyBar")}</Label>
+                <p className="text-sm text-muted-foreground">{t("storePromotionSettings.stickyBarDesc")}</p>
               </div>
               <Switch
                 checked={promotion.barSticky}
@@ -317,16 +317,16 @@ export default function StorePromotionSettings() {
             </div>
             <Separator />
             <div className="space-y-2">
-              <Label>الصفحات</Label>
-              <p className="text-sm text-muted-foreground">الصفحات اللي يظهر فيها الشريط</p>
+              <Label>{t("storePromotionSettings.barPages")}</Label>
+              <p className="text-sm text-muted-foreground">{t("storePromotionSettings.barPagesDesc")}</p>
               <Select value={promotion.barPages}
                 onValueChange={val => setPromotion(p => ({ ...p, barPages: val }))}>
                 <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">كل الصفحات</SelectItem>
-                  <SelectItem value="shop">المتجر فقط</SelectItem>
-                  <SelectItem value="product">صفحات المنتج فقط</SelectItem>
-                  <SelectItem value="checkout">الدفع فقط</SelectItem>
+                  <SelectItem value="all">{t("storePromotionSettings.allPages")}</SelectItem>
+                  <SelectItem value="shop">{t("storePromotionSettings.shopOnly")}</SelectItem>
+                  <SelectItem value="product">{t("storePromotionSettings.productOnly")}</SelectItem>
+                  <SelectItem value="checkout">{t("storePromotionSettings.checkoutOnly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -335,15 +335,15 @@ export default function StorePromotionSettings() {
 
         <SettingsSection
           icon={ShoppingCart}
-          title="مستويات الخصم (التدريج)"
-          description="كل ما زادت الكمية في السلة، كلما كان الخصم أقوى."
+          title={t("storePromotionSettings.discountTiers")}
+          description={t("storePromotionSettings.discountTiersDesc")}
           accentClassName="bg-emerald-50 text-emerald-700 ring-emerald-200/70"
         >
           <div className="space-y-4">
             {promotion.tiers.map((tier, index) => (
               <div key={tier.id} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">المستوى {index + 1}</span>
+                  <span className="text-sm font-medium">{t("storePromotionSettings.tierLevel", { index: index + 1 })}</span>
                   <Button variant="ghost" size="icon" onClick={() => removeTier(tier.id)} className="h-8 w-8 text-destructive">
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -351,12 +351,12 @@ export default function StorePromotionSettings() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label>الحد الأدنى للكمية</Label>
+                    <Label>{t("storePromotionSettings.minQuantity")}</Label>
                     <Input type="number" min={1} value={tier.minQuantity}
                       onChange={e => updateTier(tier.id, { minQuantity: Math.max(1, parseInt(e.target.value) || 1) })} />
                   </div>
                   <div className="space-y-2">
-                    <Label>نوع الخصم</Label>
+                    <Label>{t("storePromotionSettings.discountType")}</Label>
                     <Select value={tier.type}
                       onValueChange={(val: TierType) => updateTier(tier.id, { type: val })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -368,7 +368,7 @@ export default function StorePromotionSettings() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>قيمة الخصم (%)</Label>
+                    <Label>{t("storePromotionSettings.discountValue")}</Label>
                     <div className="flex items-center gap-2">
                       <Slider value={[tier.value]} onValueChange={([v]) => updateTier(tier.id, { value: v })} min={1} max={100} step={5} className="flex-1" />
                       <span className="text-sm font-mono w-10 text-left">{tier.value}%</span>
@@ -376,7 +376,7 @@ export default function StorePromotionSettings() {
                   </div>
                   {tier.type === "cheapest_percentage" && (
                     <div className="space-y-2">
-                      <Label>عدد القطع المخفضة</Label>
+                      <Label>{t("storePromotionSettings.discountedItems")}</Label>
                       <Input type="number" min={1} value={tier.items}
                         onChange={e => updateTier(tier.id, { items: Math.max(1, parseInt(e.target.value) || 1) })} />
                     </div>
@@ -384,25 +384,23 @@ export default function StorePromotionSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>نص العرض (يظهر للعميل)</Label>
+                  <Label>{t("storePromotionSettings.customerLabel")}</Label>
                   <Input value={tier.label}
                     onChange={e => updateTier(tier.id, { label: e.target.value })}
-                    placeholder={tier.type === "cheapest_percentage"
-                      ? tier.value >= 100 ? `اشتري ${tier.minQuantity} وخد الأرخص هدية` : `اشتري ${tier.minQuantity} والتاني بنص التمن`
-                      : `خصم ${tier.value}% عند شراء ${tier.minQuantity}+`}
+                    placeholder={t("storePromotionSettings.customerLabelPlaceholder", { min: tier.minQuantity })}
                     className="max-w-md" />
                 </div>
               </div>
             ))}
 
             <Button variant="outline" onClick={addTier} className="w-full">
-              <Plus className="h-4 w-4 ml-2" /> إضافة مستوى خصم
+              <Plus className="h-4 w-4 ml-2" /> {t("storePromotionSettings.addTier")}
             </Button>
 
             {promotion.tiers.length === 0 && (
               <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
                 <AlertCircle className="h-8 w-8" />
-                <p className="text-sm">لا توجد مستويات خصم. أضف مستوى أو استخدم "أمثلة جاهزة".</p>
+                <p className="text-sm">{t("storePromotionSettings.noTiers")}</p>
               </div>
             )}
           </div>
@@ -413,10 +411,10 @@ export default function StorePromotionSettings() {
         <div className="flex items-center gap-3">
           <Button onClick={handleSave} disabled={saving} className="gap-2">
             <Save className="h-4 w-4" />
-            {saving ? "جاري الحفظ..." : "حفظ العرض"}
+            {saving ? t("storePromotionSettings.savingPromo") : t("storePromotionSettings.savePromo")}
           </Button>
           <Button variant="outline" onClick={handleReset} disabled={saving} className="gap-2">
-            <RefreshCcw className="h-4 w-4" /> إلغاء العرض
+            <RefreshCcw className="h-4 w-4" /> {t("storePromotionSettings.cancelPromo")}
           </Button>
         </div>
       </div>

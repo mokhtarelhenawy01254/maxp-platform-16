@@ -78,72 +78,72 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
   {
     id: "product-conversion",
     path: "/settings/store/product-conversion",
-    navLabel: "صفحة المنتج",
-    title: "تحويلات صفحة المنتج",
-    description: "أدوات الإلحاح والثقة والإكمال داخل قرار الشراء نفسه.",
+    navLabel: "storeConversionSettings.navProductPage",
+    title: "storeConversionSettings.pageProductConversion",
+    description: "storeConversionSettings.descProductConversion",
     appSlugs: ["conversion-suite"],
     sections: [
       {
-        title: "الإلحاح داخل الشراء",
+        title: "storeConversionSettings.sectionUrgency",
         tools: [
           buildModuleToggle(
             "saleCountdown",
             "Sale Countdown Timer",
-            "يشغل العد التنازلي داخل صفحة المنتج أثناء العروض المؤقتة.",
+            "Runs a countdown timer on the product page during limited-time offers.",
             "conversion-suite",
             "saleCountdown",
           ),
           buildModuleToggle(
             "lowStockNotice",
             "Low Stock Notice",
-            "يظهر تنبيه قرب نفاد المقاس أو اللون قبل الإضافة للسلة.",
+            "Shows a low-stock alert for size or color before adding to cart.",
             "conversion-suite",
             "lowStockNotice",
           ),
           buildModuleToggle(
             "soldCounter",
             "Sold Counter",
-            "يعرض وتيرة الشراء الحالية فوق مساحة القرار الشرائي.",
+            "Displays current purchase pace above the buy section.",
             "conversion-suite",
             "soldCounter",
           ),
           buildModuleToggle(
             "purchaseFomo",
             "Purchase Count & FOMO",
-            "يظهر ضغط الشراء الحالي من السلات أو النشاط القريب.",
+            "Shows current purchase pressure from carts or recent activity.",
             "conversion-suite",
             "purchaseFomo",
           ),
         ],
       },
       {
-        title: "الثقة والإكمال",
+        title: "storeConversionSettings.sectionTrustCompletion",
         tools: [
           buildModuleToggle(
             "estimatedDelivery",
             "Estimated Delivery",
-            "يعرض نافذة التوصيل المتوقعة داخل صفحة المنتج.",
+            "Shows the estimated delivery window on the product page.",
             "conversion-suite",
             "estimatedDelivery",
           ),
           buildModuleToggle(
             "trustedBadges",
             "Trusted Badge",
-            "يعرض شارات الدفع والتوصيل والاستبدال قرب الشراء.",
+            "Displays payment, delivery, and return badges near the buy button.",
             "conversion-suite",
             "trustedBadges",
           ),
           buildModuleToggle(
             "stickyAddToCart",
             "Sticky Add to Cart bar",
-            "يبقي زر الإضافة ظاهرًا أثناء التمرير داخل صفحة المنتج.",
+            "Keeps the add-to-cart button visible while scrolling on the product page.",
             "conversion-suite",
             "stickyAddToCart",
           ),
           buildModuleToggle(
             "backInStock",
             "Back in Stock",
-            "يفعل جمع الاهتمام بالمقاس أو اللون غير المتاح.",
+            "Enables back-in-stock interest collection for unavailable sizes or colors.",
             "conversion-suite",
             "backInStock",
           ),
@@ -154,44 +154,44 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
   {
     id: "offers-bundles",
     path: "/settings/store/offers-bundles",
-    navLabel: "العروض والباقات",
-    title: "العروض والباقات",
-    description: "أدوات رفع متوسط قيمة الطلب عبر التوصيات وعروض الكمية.",
+    navLabel: "storeConversionSettings.navOffersBundles",
+    title: "storeConversionSettings.pageOffersBundles",
+    description: "storeConversionSettings.descOffersBundles",
     appSlugs: ["conversion-suite", "quantity-offers-pro"],
     sections: [
       {
-        title: "منتجات مكملة",
+        title: "storeConversionSettings.sectionComplementary",
         tools: [
           buildModuleToggle(
             "crossSell",
             "Cross Sell",
-            "يشغل اقتراح المنتجات المكملة في المساحات المخصصة لها.",
+            "Runs cross-sell product suggestions in dedicated spaces.",
             "conversion-suite",
             "crossSell",
           ),
           buildModuleToggle(
             "boughtTogether",
             "Bought Together",
-            "يعرض باقات المنتجات التي تشتري معًا من نفس الصفحة.",
+            "Shows product bundles frequently bought together on the same page.",
             "conversion-suite",
             "boughtTogether",
           ),
         ],
       },
       {
-        title: "عروض الكمية",
+        title: "storeConversionSettings.sectionQuantityOffers",
         tools: [
           buildModuleToggle(
             "bulkSavings",
             "Bulk Savings",
-            "يشغل توفير الكمية المختصر داخل صفحة المنتج.",
+            "Runs quantity savings directly on the product page.",
             "conversion-suite",
             "bulkSavings",
           ),
           {
             key: "buyMoreSaveMore",
             label: "Buy More Save More",
-            description: "يشغل لوحة عروض الكميات الكاملة وخيارات المزج داخل الصفحة.",
+            description: "Runs full quantity-break panels and mix-and-match options on the page.",
             appSlug: "quantity-offers-pro",
             readPaths: ["general.enabled", "modules.renderOnProductPage"],
             writePathsOn: ["general.enabled", "modules.renderOnProductPage"],
@@ -204,28 +204,28 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
   {
     id: "growth-widgets",
     path: "/settings/store/growth-widgets",
-    navLabel: "ودجات الموقع",
-    title: "ودجات الموقع",
-    description: "أدوات عامة تعمل على مستوى المتجر أو الجلسة، لا داخل buybox فقط.",
+    navLabel: "storeConversionSettings.navGrowthWidgets",
+    title: "storeConversionSettings.pageGrowthWidgets",
+    description: "storeConversionSettings.descGrowthWidgets",
     appSlugs: ["conversion-suite"],
     sections: [
       {
-        title: "أشرطة ورسائل عامة",
+        title: "storeConversionSettings.sectionGeneralBars",
         tools: [
           {
             ...buildModuleToggle(
               "freeShippingBar",
               "Free Shipping Bar",
-              "يعرض شريط الشحن المجاني على مستوى المتجر وداخل السلة والشيك أوت عند تفعيله.",
+              "Shows a free-shipping bar storewide, in cart, and checkout when enabled.",
               "conversion-suite",
               "freeShippingBar",
             ),
             fields: [
               {
                 key: "freeShippingAmount",
-                label: "حد الشحن المجاني",
+                label: "Free Shipping Threshold",
                 description:
-                  "القيمة التي يحتاج العميل للوصول لها حتى يظهر له أن الشحن أصبح مجانياً.",
+                  "The amount the customer needs to reach for free shipping to apply.",
                 type: "number",
                 path: "thresholds.freeShippingAmount",
                 min: 0,
@@ -236,33 +236,33 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
           buildModuleToggle(
             "inactiveTab",
             "Inactive Tab",
-            "يغير عنوان التبويب عندما يبتعد المستخدم عن الصفحة.",
+            "Changes the tab title when the user navigates away from the page.",
             "conversion-suite",
             "inactiveTab",
           ),
         ],
       },
       {
-        title: "تحفيز سلوكي",
+        title: "storeConversionSettings.sectionBehavioral",
         tools: [
           buildModuleToggle(
             "exitIntentPopup",
             "Exit Intent Popup",
-            "يشغل نافذة نية الخروج عند محاولة مغادرة المتجر.",
+            "Runs an exit-intent popup when the user tries to leave the store.",
             "conversion-suite",
             "exitIntentPopup",
           ),
           buildModuleToggle(
             "fakeVisitorCounter",
             "Fake Visitor",
-            "يشغل عداد الزوار اللحظي كجزء من الإشارات السلوكية.",
+            "Runs a real-time visitor counter as part of behavioral signals.",
             "conversion-suite",
             "fakeVisitorCounter",
           ),
           buildModuleToggle(
             "fakeSalePopup",
             "Fake Sale Popup",
-            "يشغل نافذة النشاط الشرائي المباشر على مستوى المتجر.",
+            "Runs a live purchase-activity popup at the store level.",
             "conversion-suite",
             "fakeSalePopup",
           ),
@@ -273,25 +273,25 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
   {
     id: "selling-modes",
     path: "/settings/store/selling-modes",
-    navLabel: "أوضاع البيع",
-    title: "أوضاع البيع",
-    description: "طرق بيع خاصة للمنتجات التي تحتاج سيناريو مختلف عن الشراء المعتاد.",
+    navLabel: "storeConversionSettings.navSellingModes",
+    title: "storeConversionSettings.pageSellingModes",
+    description: "storeConversionSettings.descSellingModes",
     appSlugs: ["commerce-advanced"],
     sections: [
       {
-        title: "طرق بيع خاصة",
+        title: "storeConversionSettings.sectionSpecialSelling",
         tools: [
           buildModuleToggle(
             "preOrder",
             "Pre Order",
-            "يسمح ببيع المنتجات قبل توفرها الفعلي بالمخزون.",
+            "Allows selling products before they are physically in stock.",
             "commerce-advanced",
             "preOrder",
           ),
           buildModuleToggle(
             "externalAffiliate",
             "External / Affiliate Product",
-            "يحول عملية الشراء إلى منصة أو رابط خارجي عند الحاجة.",
+            "Redirects the purchase flow to an external platform or link.",
             "commerce-advanced",
             "externalAffiliate",
           ),
@@ -302,37 +302,37 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
   {
     id: "reviews-social-proof",
     path: "/settings/store/reviews-social-proof",
-    navLabel: "المراجعات والثقة",
-    title: "المراجعات والثقة",
-    description: "أدوات المحتوى المرئي والإثبات الاجتماعي داخل المراجعات.",
+    navLabel: "storeConversionSettings.navReviewsTrust",
+    title: "storeConversionSettings.pageReviewsSocialProof",
+    description: "storeConversionSettings.descReviewsSocialProof",
     appSlugs: ["ugc-reviews-pro"],
     sections: [
       {
-        title: "المحتوى المرئي",
+        title: "storeConversionSettings.sectionVisualContent",
         tools: [
           buildModuleToggle(
             "photoReviews",
             "Photo Review",
-            "يسمح للعميلات بإرفاق صور داخل التقييمات.",
+            "Allows customers to attach photos in their reviews.",
             "ugc-reviews-pro",
             "photoReviews",
           ),
           buildModuleToggle(
             "videoReviews",
             "Video Review",
-            "يسمح بإرفاق فيديو داخل التقييمات عند كتابة المراجعة.",
+            "Allows attaching videos in reviews when writing feedback.",
             "ugc-reviews-pro",
             "videoReviews",
           ),
         ],
       },
       {
-        title: "إثبات الثقة",
+        title: "storeConversionSettings.sectionTrustProof",
         tools: [
           buildModuleToggle(
             "verifiedBadge",
             "Verified Badge",
-            "يعرض شارة المشتري المؤكد داخل المراجعات.",
+            "Displays a verified-purchaser badge within reviews.",
             "ugc-reviews-pro",
             "verifiedBadge",
           ),
