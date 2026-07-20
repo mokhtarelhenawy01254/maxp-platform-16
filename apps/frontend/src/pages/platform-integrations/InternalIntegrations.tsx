@@ -12,7 +12,8 @@ import {
     UsersIcon as UserGroupIcon,
     TrashIcon,
     BuildingOfficeIcon,
-    ClipboardDocumentIcon
+    ClipboardDocumentIcon,
+    CurrencyDollarIcon
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
@@ -105,6 +106,7 @@ const InternalIntegrations: React.FC = () => {
     const [searchId, setSearchId] = useState("");
     const [searching, setSearching] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [editingCommission, setEditingCommission] = useState<Record<string, number | null>>({});
     const { user } = useAuth();
 
     // Pull Products State
@@ -808,6 +810,37 @@ const InternalIntegrations: React.FC = () => {
                                             >
                                                 <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${conn.allowOrderPull ? 'right-1' : 'right-7'}`}></span>
                                             </button>
+                                        </div>
+
+                                        {/* Commission Rate */}
+                                        <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+                                            <div className="flex items-center gap-2">
+                                                <CurrencyDollarIcon className="w-4 h-4 text-green-500" />
+                                                <span className="text-sm font-medium">نسبة العمولة (%)</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.5"
+                                                    value={editingCommission[conn.id] ?? conn.commissionRate ?? ""}
+                                                    onChange={(e) => setEditingCommission(prev => ({ ...prev, [conn.id]: e.target.value === "" ? null : Number(e.target.value) }))}
+                                                    className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-center bg-white dark:bg-gray-700 outline-none focus:ring-1 focus:ring-green-500"
+                                                    placeholder="—"
+                                                />
+                                                <span className="text-xs text-gray-400">%</span>
+                                                {(editingCommission[conn.id] !== undefined && editingCommission[conn.id] !== (conn.commissionRate ?? null)) && (
+                                                    <button
+                                                        onClick={() => {
+                                                            updatePermission(conn.id, { commissionRate: editingCommission[conn.id] });
+                                                        }}
+                                                        className="px-2 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
+                                                    >
+                                                        حفظ
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <button
