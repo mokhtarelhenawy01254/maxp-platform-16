@@ -306,7 +306,7 @@ export const FooterSettingsSection: React.FC<FooterSettingsSectionProps> = ({
                 {Object.entries(socialLinks)
                   .filter(([, url]) => Boolean(url?.trim()))
                   .map(([key]) => (
-                    <li key={key}>{key}</li>
+                    <li key={key}>{SOCIAL_LINK_FIELDS.find(f => f.key === key)?.label || key}</li>
                   ))}
               </ul>
             </div>
