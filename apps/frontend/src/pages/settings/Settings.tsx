@@ -79,7 +79,7 @@ const Settings: React.FC = () => {
       return;
     }
 
-    if (!tab || !validTabIds.includes(tab)) {
+    if (tab && !validTabIds.includes(tab)) {
       navigate(`/settings/${DEFAULT_TAB}`, { replace: true });
     }
   }, [navigate, tab, validTabIds]);
