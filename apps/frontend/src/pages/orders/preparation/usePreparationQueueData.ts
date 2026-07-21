@@ -300,6 +300,8 @@ export const usePreparationQueueData = ({
   productFilter,
   itemCountFilter,
   search,
+  notPrintedFilter,
+  noShippingCodeFilter,
   sortBy,
   sortOrder,
 }: UsePreparationQueueDataParams): UsePreparationQueueDataResult => {

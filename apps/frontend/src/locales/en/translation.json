@@ -5423,7 +5423,9 @@
       "allDates": "No Date",
       "today": "Today",
       "overdue": "Overdue",
-      "withoutDate": "Without Date"
+      "withoutDate": "Without Date",
+      "notPrinted": "Not Printed",
+      "noShippingCode": "No Shipping Code"
     }
   },
   "pricingStrategy": {

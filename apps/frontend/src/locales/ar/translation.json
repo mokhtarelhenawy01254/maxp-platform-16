@@ -5423,7 +5423,9 @@
       "allDates": "بدون تاريخ",
       "today": "اليوم",
       "overdue": "متأخر",
-      "withoutDate": "بدون تاريخ"
+      "withoutDate": "بدون تاريخ",
+      "notPrinted": "لم يطبع",
+      "noShippingCode": "بدون كود شحن"
     }
   },
   "pricingStrategy": {
