@@ -2652,18 +2652,24 @@ const getRecords = async (req, res) => {
         try {
           const TurboService = require('../services/turboService');
           const svc = new TurboService(first.turboApiKey, companyId);
-          const r = await svc.fetchAllStatuses();
+          const now = new Date();
+          const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const r = await svc.fetchAllStatuses(
+            ninetyDaysAgo.toISOString().split('T')[0],
+            tomorrow.toISOString().split('T')[0]
+          );
           if (r.success) { 
             turboStatuses = {}; 
             for (const s of r.shipments) { 
-              if (s.code) turboStatuses[s.code] = s; 
-              if (s.barCode) turboStatuses[s.barCode] = s; 
+              if (s.code) turboStatuses[String(s.code)] = s; 
+              if (s.barCode) turboStatuses[String(s.barCode)] = s; 
             }
 
             // 🔄 التحديث المباشر للطلبات في قاعدة البيانات بالحالة الجديدة
             for (const o of orders) {
               const key = o.turboShipmentId || o.turboTrackingNumber;
-              const live = key ? turboStatuses[key] : null;
+              const live = key ? turboStatuses[String(key)] : null;
               if (live) {
                 const internalStat = live.internalStatus || (live.status ? String(live.status).toLowerCase() : null);
                 const codeStr = String(live.statusCode || '');

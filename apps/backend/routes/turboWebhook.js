@@ -113,7 +113,21 @@ router.post('/webhook', async (req, res) => {
       '17': 'returned_destroyed',
       '18': 'incomplete',
       '19': 'remitted',
-      '20': 'returned_received'
+      '20': 'returned_received',
+      // Text string mappings from Turbo API
+      'under delivery': 'out_for_delivery',
+      'in transit': 'shipped',
+      'accepted': 'processing',
+      'delivered': 'delivered',
+      'remitted': 'remitted',
+      'cancelled': 'cancelled',
+      'returned': 'returned',
+      'returned to sender': 'returned',
+      'failed delivery': 'failed_delivery',
+      'rescheduled': 'rescheduled',
+      'on hold': 'on_hold',
+      'delayed': 'delayed',
+      'lost': 'lost'
     };
 
     const rawStatusStr = String(webhookData.status || '').toLowerCase().trim();
