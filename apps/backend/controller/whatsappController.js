@@ -168,7 +168,7 @@ const resolveActiveSessionId = async (companyId, sessionId) => {
 
         if (session.provider !== 'META_CLOUD') {
             const inMemory = WhatsAppManager.getSession(sessionId);
-            if (!inMemory) {
+            if (!inMemory || inMemory.status !== 'connected') {
                 throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
             }
         }
@@ -186,7 +186,7 @@ const resolveActiveSessionId = async (companyId, sessionId) => {
 
     if (activeSession.provider !== 'META_CLOUD') {
         const inMemory = WhatsAppManager.getSession(activeSession.id);
-        if (!inMemory) {
+        if (!inMemory || inMemory.status !== 'connected') {
             throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
         }
     }
@@ -3760,7 +3760,8 @@ async function sendTemplateMessage(req, res) {
         }
 
         const message = await WhatsAppMessageHandler.sendTemplateMessage(targetSessionId, to, templateId, parameters || {}, {
-            templateBody: req.body.templateBody
+            templateBody: req.body.templateBody,
+            senderId: req.user.id
         });
         res.json({ success: true, message });
     } catch (error) {

@@ -1561,7 +1561,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
                 interactiveData: JSON.stringify({ templateName, languageCode, components, templateBody }),
                 isAIResponse: options.isAIResponse || false,
                 metadata: meta
-            }, { companyId: dbSession?.companyId });
+            }, { companyId: dbSession?.companyId, senderId: options.senderId });
 
             await ensureMetaContact(sessionId, jid, { isOutgoing: true });
             return savedMessage;
@@ -1587,7 +1587,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
             interactiveData: JSON.stringify({ templateId, parameters }),
             isAIResponse: options.isAIResponse || false,
             metadata: serializeOutgoingMetadata(options.metadata)
-        }, { companyId: session.companyId });
+        }, { companyId: session.companyId, senderId: options.senderId });
 
         return savedMessage;
     } catch (error) {

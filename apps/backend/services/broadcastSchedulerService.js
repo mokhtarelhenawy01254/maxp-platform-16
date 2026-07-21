@@ -444,7 +444,7 @@ class BroadcastSchedulerService {
             result = await WhatsAppMessageHandler.sendTemplateMessage(
               waSessionId, to, campaign.waTemplateName,
               { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-              { metadata: { isBroadcast: true, campaignId: campaign.id } }
+              { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
             );
           } catch (sendErr) {
             if (components.length > 0) {
@@ -452,7 +452,7 @@ class BroadcastSchedulerService {
               result = await WhatsAppMessageHandler.sendTemplateMessage(
                 waSessionId, to, campaign.waTemplateName,
                 { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-                { metadata: { isBroadcast: true, campaignId: campaign.id } }
+                { metadata: { isBroadcast: true, campaignId: campaign.id }, senderId: campaign.creatorId }
               );
             } else {
               throw sendErr;

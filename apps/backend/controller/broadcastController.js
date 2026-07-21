@@ -986,7 +986,7 @@ exports.sendCampaign = async (req, res) => {
             result = await WhatsAppMessageHandler.sendTemplateMessage(
               waSessionId, to, campaign.waTemplateName,
               { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components },
-              { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: resolvedBody }
+              { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: resolvedBody, senderId: campaign.creatorId }
             );
           } catch (sendErr) {
             if (components.length > 0) {
@@ -994,7 +994,7 @@ exports.sendCampaign = async (req, res) => {
               result = await WhatsAppMessageHandler.sendTemplateMessage(
                 waSessionId, to, campaign.waTemplateName,
                 { name: campaign.waTemplateName, language: campaign.waLanguageCode, languageCode: campaign.waLanguageCode, components: [] },
-                { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText }
+                { metadata: { isBroadcast: true, campaignId: campaign.id }, templateBody: templateBodyText, senderId: campaign.creatorId }
               );
             } else {
               throw sendErr;
@@ -1175,7 +1175,7 @@ exports.sendCampaign = async (req, res) => {
                 content: personalizedMessage,
                 isFromCustomer: false,
                 type: 'TEXT',
-                senderId: null,
+                senderId: campaign.creatorId,
                 metadata: JSON.stringify({
                   isBroadcast: true,
                   campaignId: campaign.id,
@@ -1205,7 +1205,7 @@ exports.sendCampaign = async (req, res) => {
                 content: imageUrl,
                 isFromCustomer: false,
                 type: 'IMAGE',
-                senderId: null,
+                senderId: campaign.creatorId,
                 metadata: JSON.stringify({
                   isBroadcast: true,
                   campaignId: campaign.id,
