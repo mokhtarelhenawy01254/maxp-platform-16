@@ -61,8 +61,11 @@ const DEFAULT_SHIPPING_STATUSES = [
   { code: 'TURBO_RETURNED_TO_COMPANY', name: 'تربو: مرتجع مُسلّم للشركة', nameEn: 'Turbo: Returned to Company', color: '#991B1B', icon: 'RotateCcw', sortOrder: 20, mapsToSystem: 'RETURNED' },
   { code: 'TURBO_RETURNED_RESENT', name: 'تربو: مرتجع أعيد إرساله', nameEn: 'Turbo: Returned Resent', color: '#2563EB', icon: 'RotateCcw', sortOrder: 21, mapsToSystem: 'PROCESSING' },
   { code: 'TURBO_RETURNED_MISSING', name: 'تربو: مرتجع مفقود', nameEn: 'Turbo: Returned Missing', color: '#7F1D1D', icon: 'AlertCircle', sortOrder: 22, mapsToSystem: 'RETURNED' },
-  { code: 'TURBO_RETURNED_DESTROYED', name: 'ترBO: مرتجع هالك', nameEn: 'Turbo: Returned Destroyed', color: '#451A03', icon: 'XCircle', sortOrder: 23, mapsToSystem: 'RETURNED' },
-  { code: 'TURBO_LOST', name: 'تربو: شحنة مفقودة', nameEn: 'Turbo: Lost', color: '#B91C1C', icon: 'AlertCircle', sortOrder: 24, mapsToSystem: 'RETURNED' }
+  { code: 'TURBO_RETURNED_DESTROYED', name: 'تربو: مرتجع هالك', nameEn: 'Turbo: Returned Destroyed', color: '#451A03', icon: 'XCircle', sortOrder: 23, mapsToSystem: 'RETURNED' },
+  { code: 'TURBO_LOST', name: 'تربو: شحنة مفقودة', nameEn: 'Turbo: Lost', color: '#B91C1C', icon: 'AlertCircle', sortOrder: 24, mapsToSystem: 'RETURNED' },
+  { code: 'TURBO_INCOMPLETE', name: 'تربو: غير مكتملة', nameEn: 'Turbo: Incomplete', color: '#9CA3AF', icon: 'AlertCircle', sortOrder: 25, mapsToSystem: 'PENDING' },
+  { code: 'TURBO_REMITTED', name: 'تربو: تم التوريد', nameEn: 'Turbo: Remitted', color: '#047857', icon: 'CheckCircle', sortOrder: 26, mapsToSystem: 'DELIVERED' },
+  { code: 'TURBO_RETURNED_RECEIVED', name: 'تربو: مرتجعات وصلتني', nameEn: 'Turbo: Returned Received', color: '#1E3A8A', icon: 'RotateCcw', sortOrder: 27, mapsToSystem: 'RETURNED' }
 ];
 
 const DEFAULT_PREPARATION_STATUSES = [

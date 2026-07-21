@@ -1,9 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
-- **Live Turbo Status Sync & Enhanced TurboRecords UI (FEATURE / COMPLETE)**:
-  1. **Live API Sync & DB Persistence**: Configured `handleRefreshStatuses` in `TurboRecords.tsx` to pass `refresh=true`, fetching live status from Turbo API and updating both `turboShipmentStatus` and `Order.status` in the DB.
-  2. **Enhanced Arabic Status Badges**: Added full Arabic labels and color badges for all Turbo shipment statuses on `/orders/turbo-records`.
+- **Complete Turbo Status Parity & Live Sync (FEATURE / COMPLETE)**:
+  1. **All 20 Turbo Statuses Supported**: Added support for `incomplete` (غير مكتملة - 18), `remitted` (تم التوريد - 19), `returned_received` (مرتجعات وصلتني - 20) across Turbo webhook, orderStatusController, turboController, and TurboRecords frontend page.
+  2. **Interactive Status Cards**: `/orders/turbo-records` now features clickable status summary cards and filter pills matching the exact Turbo dashboard layout.
 
 - **Auto-Seeding Turbo Shipping Statuses into Order Status Management (FEATURE / COMPLETE)**:
   1. **Seeded Turbo Statuses**: Added all 10 Turbo shipping status codes (`TURBO_PROCESSING`, `TURBO_SHIPPED`, `TURBO_OUT_FOR_DELIVERY`, `TURBO_DELAYED`, `TURBO_FAILED_DELIVERY`, `TURBO_RESCHEDULED`, `TURBO_ON_HOLD`, `TURBO_DELIVERED`, `TURBO_CANCELLED`, `TURBO_RETURNED`) into `DEFAULT_SHIPPING_STATUSES` in `orderStatusController.js`.

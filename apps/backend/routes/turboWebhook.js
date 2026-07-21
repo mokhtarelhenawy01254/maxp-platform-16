@@ -110,7 +110,10 @@ router.post('/webhook', async (req, res) => {
       '14': 'returned_to_company',
       '15': 'returned_resent',
       '16': 'returned_missing',
-      '17': 'returned_destroyed'
+      '17': 'returned_destroyed',
+      '18': 'incomplete',
+      '19': 'remitted',
+      '20': 'returned_received'
     };
 
     const rawStatusStr = String(webhookData.status || '').toLowerCase().trim();

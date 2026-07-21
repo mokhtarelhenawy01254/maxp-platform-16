@@ -1,11 +1,13 @@
 # Backend Bugs Log
 
-### [FEATURE / TURBO RECORDS] Live Turbo Status Sync & Comprehensive Status Display in TurboRecords
+### [FEATURE / TURBO RECORDS] Live Turbo Status Sync & Comprehensive 20-Status Display Matching Turbo Dashboard
 - **Date**: 2026-07-21
 - **Requirement / Feature**:
-  1. **Live Status Refresh & DB Sync**: When users click "تحديث الحالات" in `/orders/turbo-records`, pass `refresh=true` to query Turbo API live, update `turboShipmentStatus`, and persist mapped `Order.status` / `GuestOrder.status` directly to PostgreSQL database.
-  2. **Comprehensive Turbo Status Badges**: Updated `/orders/turbo-records` (`TurboRecords.tsx`) to show Arabic labels and distinct badge colors for all 17 Turbo status states.
+  1. **Complete Status Parity**: Added all missing Turbo statuses (`incomplete` [18], `remitted` [19], `returned_received` [20]) matching Turbo dashboard exact names.
+  2. **Live Status Refresh & DB Sync**: Pass `refresh=true` on sync to query Turbo API live and persist mapped status directly to DB.
 - **Files Modified**:
+  - `apps/backend/routes/turboWebhook.js`
+  - `apps/backend/controller/orderStatusController.js`
   - `apps/backend/controller/turboController.js`
   - `apps/frontend/src/pages/orders/TurboRecords.tsx`
 

@@ -186,23 +186,26 @@ const TurboRecords: React.FC = () => {
     };
 
     const TURBO_STATUS_LABELS: Record<string, string> = {
-        delivered: 'تم التسليم والتحصيل',
-        out_for_delivery: 'قيد التوصيل مع الكابتن',
+        incomplete: 'غير مكتملة',
+        pending: 'قيد الانتظار',
+        confirmed: 'تم التأكيد',
+        processing: 'قيد التنفيذ / جاري المعالجة',
         shipped: 'تم الشحن وفي الطريق',
-        processing: 'جاري المعالجة والتجهيز',
-        delayed: 'شحنة مؤجلة',
+        out_for_delivery: 'مسلمة للمندوب / قيد التوصيل',
+        delayed: 'مؤجلات مع المندوب',
         failed_delivery: 'محاولة تسليم فاشلة',
         rescheduled: 'إعادة جدولة التسليم',
         on_hold: 'شحنة معلقة بالفرع',
+        delivered: 'تم التسليم والتحصيل',
+        remitted: 'تم التوريد',
         cancelled: 'ملغي من الشحن',
         returned: 'شحنة مرتجعة',
-        returned_to_company: 'مرتجع مُسلّم للشركة',
-        returned_resent: 'مرتجع أعيد إرساله',
-        returned_missing: 'مرتجع مفقود',
-        returned_destroyed: 'مرتجع هالك',
+        returned_to_company: 'مرتجعات في الشركة',
+        returned_received: 'مرتجعات وصلتني',
+        returned_resent: 'معاد ارسالها',
+        returned_missing: 'مرتجعات مفقودة',
+        returned_destroyed: 'مرتجعات معدومة',
         lost: 'شحنة مفقودة',
-        pending: 'قيد الانتظار',
-        confirmed: 'تم التأكيد',
     };
 
     const getTurboStatusText = (status: string | undefined | null) => {
@@ -213,7 +216,7 @@ const TurboRecords: React.FC = () => {
 
     const getTurboStatusColor = (status: string) => {
         const s = status?.toLowerCase() || '';
-        if (s === 'delivered' || s === 'completed') return 'bg-green-100 text-green-800 border border-green-200';
+        if (s === 'delivered' || s === 'completed' || s === 'remitted') return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
         if (s === 'shipped' || s === 'in_transit') return 'bg-blue-100 text-blue-800 border border-blue-200';
         if (s === 'out_for_delivery') return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
         if (s === 'cancelled') return 'bg-red-100 text-red-800 border border-red-200';
@@ -226,16 +229,19 @@ const TurboRecords: React.FC = () => {
     const filterOptions = [
         { key: 'all', label: 'الكل', color: 'border-blue-300 bg-blue-50 text-blue-800' },
         { key: 'unshipped', label: 'لم يُرسل لتربو', color: 'border-gray-300 bg-gray-50 text-gray-800' },
-        { key: 'pending', label: 'في الانتظار', color: 'border-gray-300 bg-gray-50 text-gray-800' },
-        { key: 'processing', label: 'جاري المعالجة', color: 'border-purple-300 bg-purple-50 text-purple-800' },
+        { key: 'incomplete', label: 'غير مكتملة', color: 'border-slate-300 bg-slate-50 text-slate-800' },
+        { key: 'pending', label: 'قيد الانتظار', color: 'border-gray-300 bg-gray-50 text-gray-800' },
+        { key: 'processing', label: 'قيد التنفيذ', color: 'border-purple-300 bg-purple-50 text-purple-800' },
         { key: 'shipped', label: 'تم الشحن', color: 'border-blue-300 bg-blue-50 text-blue-800' },
-        { key: 'out_for_delivery', label: 'قيد التوصيل مع الكابتن', color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },
-        { key: 'delayed', label: 'شحنة مؤجلة', color: 'border-amber-300 bg-amber-50 text-amber-800' },
-        { key: 'failed_delivery', label: 'تسليم فاشل', color: 'border-rose-300 bg-rose-50 text-rose-800' },
-        { key: 'rescheduled', label: 'إعادة جدولة', color: 'border-yellow-300 bg-yellow-50 text-yellow-800' },
-        { key: 'on_hold', label: 'معلق بالفرع', color: 'border-orange-300 bg-orange-50 text-orange-800' },
-        { key: 'delivered', label: 'تم التسليم والتحصيل', color: 'border-green-300 bg-green-50 text-green-800' },
-        { key: 'returned', label: 'مرتجع', color: 'border-red-300 bg-red-50 text-red-800' },
+        { key: 'out_for_delivery', label: 'مسلمة للمندوب', color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },
+        { key: 'delayed', label: 'مؤجلات مع المندوب', color: 'border-amber-300 bg-amber-50 text-amber-800' },
+        { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50 text-green-800' },
+        { key: 'remitted', label: 'تم التوريد', color: 'border-emerald-300 bg-emerald-50 text-emerald-800' },
+        { key: 'returned_to_company', label: 'مرتجعات في الشركة', color: 'border-red-300 bg-red-50 text-red-800' },
+        { key: 'returned_received', label: 'مرتجعات وصلتني', color: 'border-indigo-300 bg-indigo-50 text-indigo-800' },
+        { key: 'returned_resent', label: 'معاد ارسالها', color: 'border-sky-300 bg-sky-50 text-sky-800' },
+        { key: 'returned_missing', label: 'مرتجعات مفقودة', color: 'border-rose-300 bg-rose-50 text-rose-800' },
+        { key: 'returned_destroyed', label: 'مرتجعات معدومة', color: 'border-stone-300 bg-stone-50 text-stone-800' },
         { key: 'cancelled', label: 'ملغي', color: 'border-gray-400 bg-gray-100 text-gray-800' },
     ];
 
