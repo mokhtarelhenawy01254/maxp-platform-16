@@ -2581,12 +2581,35 @@ const getRecords = async (req, res) => {
     const pageNum = parseInt(page), limitNum = parseInt(limit), skip = (pageNum - 1) * limitNum;
     const prisma = getSharedPrismaClient();
     const where = { companyId };
-    if (filterType === 'shipped') where.turboShipmentId = { not: null };
-    else if (filterType === 'unshipped') where.turboShipmentId = null;
-    if (search) where.OR = [
-      { orderNumber: { contains: search } }, { turboTrackingNumber: { contains: search } },
-      { turboShipmentId: { contains: search } }, { customerName: { contains: search } }
-    ];
+    if (filterType === 'shipped') {
+      where.turboShipmentId = { not: null };
+    } else if (filterType === 'unshipped') {
+      where.turboShipmentId = null;
+    } else if (filterType && filterType !== 'all') {
+      const ft = filterType.toLowerCase();
+      where.OR = [
+        { turboShipmentStatus: { equals: ft, mode: 'insensitive' } },
+        { status: { equals: filterType.toUpperCase() } }
+      ];
+    }
+
+    if (search) {
+      const searchCondition = [
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { turboTrackingNumber: { contains: search, mode: 'insensitive' } },
+        { turboShipmentId: { contains: search, mode: 'insensitive' } },
+        { customerName: { contains: search, mode: 'insensitive' } }
+      ];
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          { OR: searchCondition }
+        ];
+        delete where.OR;
+      } else {
+        where.OR = searchCondition;
+      }
+    }
     const [orders, total] = await Promise.all([
       safeQuery(() => prisma.order.findMany({ where, select: {
         id: true, orderNumber: true, customerName: true, customerPhone: true, total: true,
@@ -2661,7 +2684,27 @@ const getRecords = async (req, res) => {
         createdAt: o.createdAt
       };
     });
-    res.json({ success: true, data: records, pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) } });
+    // جلب إحصائيات تفصيلية لجميع حالات الشحن للشركة
+    const statusCountsRaw = await safeQuery(() => prisma.order.groupBy({
+      by: ['turboShipmentStatus'],
+      where: { companyId },
+      _count: { id: true }
+    }), 2).catch(() => []);
+
+    const statusCountsObj = {};
+    if (Array.isArray(statusCountsRaw)) {
+      for (const row of statusCountsRaw) {
+        const key = (row.turboShipmentStatus || 'unshipped').toLowerCase();
+        statusCountsObj[key] = (statusCountsObj[key] || 0) + row._count.id;
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      data: records, 
+      statusCounts: statusCountsObj,
+      pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) } 
+    });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error fetching records:', error);
     res.status(500).json({ success: false, error: error.message });

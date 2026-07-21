@@ -51,12 +51,13 @@ const TurboRecords: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [refreshingStatuses, setRefreshingStatuses] = useState(false);
     const [creatingShipments, setCreatingShipments] = useState(false);
+    const [serverStatusCounts, setServerStatusCounts] = useState<Record<string, number>>({});
 
     const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
     const [limit, setLimit] = useState(parseInt(searchParams.get("limit") || "20"));
     const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-    const [filterType, setFilterType] = useState<"all" | "unshipped" | "shipped">(
-        (searchParams.get("filterType") as any) || "all"
+    const [filterType, setFilterType] = useState<string>(
+        searchParams.get("filterType") || "all"
     );
 
     const [totalPages, setTotalPages] = useState(1);
@@ -90,6 +91,9 @@ const TurboRecords: React.FC = () => {
 
             if (response.data.success) {
                 setOrders(response.data.data || []);
+                if (response.data.statusCounts) {
+                    setServerStatusCounts(response.data.statusCounts);
+                }
                 if (response.data.pagination) {
                     setTotalPages(response.data.pagination.pages || 1);
                     setTotalOrders(response.data.pagination.total || 0);
@@ -109,7 +113,7 @@ const TurboRecords: React.FC = () => {
         fetchOrders(searchQuery);
     };
 
-    const handleFilterChange = (newFilter: "all" | "unshipped" | "shipped") => {
+    const handleFilterChange = (newFilter: string) => {
         setFilterType(newFilter);
         setPage(1);
         updateUrlParams({ filterType: newFilter, page: "1", search: searchQuery });
@@ -138,15 +142,14 @@ const TurboRecords: React.FC = () => {
         try {
             const response = await apiClient.post("/turbo/bulk/create-shipments", { orderIds: selectedOrders });
             if (response.data.success) {
-                toast.success(`Success: ${response.data.data?.success?.length || 0}, Failed: ${response.data.data?.failed?.length || 0}`);
-                fetchOrders();
+                toast.success(t("orders.turboRecordsBulkSuccess", "Created shipments successfully"));
                 setSelectedOrders([]);
+                fetchOrders();
             } else {
                 toast.error(response.data.message || "Failed to create shipments");
             }
         } catch (error: any) {
-            console.error(error);
-            const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || "An error occurred";
+            const errorMsg = error.response?.data?.message || t("orders.turboRecordsBulkError", "Failed to create shipments");
             toast.error(errorMsg);
         } finally {
             setCreatingShipments(false);
@@ -166,6 +169,9 @@ const TurboRecords: React.FC = () => {
             const response = await apiClient.get("/turbo/records", { params });
             if (response.data.success) {
                 setOrders(response.data.data || []);
+                if (response.data.statusCounts) {
+                    setServerStatusCounts(response.data.statusCounts);
+                }
                 if (response.data.pagination) {
                     setTotalPages(response.data.pagination.pages || 1);
                     setTotalOrders(response.data.pagination.total || 0);
@@ -217,21 +223,27 @@ const TurboRecords: React.FC = () => {
         return 'bg-gray-100 text-gray-800 border border-gray-200';
     };
 
-    const statusSummaryItems = [
-        { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50' },
-        { key: 'out_for_delivery', label: 'قيد التوصيل', color: 'border-cyan-300 bg-cyan-50' },
-        { key: 'shipped', label: 'تم الشحن', color: 'border-blue-300 bg-blue-50' },
-        { key: 'processing', label: 'قيد المعالجة', color: 'border-purple-300 bg-purple-50' },
-        { key: 'delayed', label: 'مؤجل / معلق', color: 'border-amber-300 bg-amber-50' },
-        { key: 'returned', label: 'مرتجع', color: 'border-rose-300 bg-rose-50' },
-        { key: 'cancelled', label: 'ملغي', color: 'border-red-300 bg-red-50' },
-        { key: 'pending', label: 'في الانتظار', color: 'border-gray-300 bg-gray-50' },
+    const filterOptions = [
+        { key: 'all', label: 'الكل', color: 'border-blue-300 bg-blue-50 text-blue-800' },
+        { key: 'unshipped', label: 'لم يُرسل لتربو', color: 'border-gray-300 bg-gray-50 text-gray-800' },
+        { key: 'pending', label: 'في الانتظار', color: 'border-gray-300 bg-gray-50 text-gray-800' },
+        { key: 'processing', label: 'جاري المعالجة', color: 'border-purple-300 bg-purple-50 text-purple-800' },
+        { key: 'shipped', label: 'تم الشحن', color: 'border-blue-300 bg-blue-50 text-blue-800' },
+        { key: 'out_for_delivery', label: 'قيد التوصيل مع الكابتن', color: 'border-cyan-300 bg-cyan-50 text-cyan-800' },
+        { key: 'delayed', label: 'شحنة مؤجلة', color: 'border-amber-300 bg-amber-50 text-amber-800' },
+        { key: 'failed_delivery', label: 'تسليم فاشل', color: 'border-rose-300 bg-rose-50 text-rose-800' },
+        { key: 'rescheduled', label: 'إعادة جدولة', color: 'border-yellow-300 bg-yellow-50 text-yellow-800' },
+        { key: 'on_hold', label: 'معلق بالفرع', color: 'border-orange-300 bg-orange-50 text-orange-800' },
+        { key: 'delivered', label: 'تم التسليم والتحصيل', color: 'border-green-300 bg-green-50 text-green-800' },
+        { key: 'returned', label: 'مرتجع', color: 'border-red-300 bg-red-50 text-red-800' },
+        { key: 'cancelled', label: 'ملغي', color: 'border-gray-400 bg-gray-100 text-gray-800' },
     ];
 
-    const statusCounts = statusSummaryItems.map(s => ({
-        ...s,
-        count: orders.filter(o => (o.turboShipmentStatus || '').toLowerCase() === s.key).length
-    }));
+    const getStatusCount = (key: string) => {
+        if (key === 'all') return totalOrders;
+        if (serverStatusCounts[key] !== undefined) return serverStatusCounts[key];
+        return orders.filter(o => (o.turboShipmentStatus || 'unshipped').toLowerCase() === key).length;
+    };
 
     return (
         <div className="p-6">
@@ -267,54 +279,49 @@ const TurboRecords: React.FC = () => {
                 </div>
             </div>
 
-            {/* Status Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-                {statusCounts.map(item => (
-                    <div key={item.key} className={`rounded-xl border-2 ${item.color} p-3 text-center`}>
-                        <div className="text-2xl font-bold text-gray-800">{item.count}</div>
-                        <div className="text-xs text-gray-600 mt-1">{item.label}</div>
-                    </div>
+            {/* Status Summary Cards (Clickable to Filter) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+                {filterOptions.map(item => (
+                    <button
+                        key={item.key}
+                        onClick={() => handleFilterChange(item.key)}
+                        className={`rounded-xl border-2 ${item.color} p-3 text-center transition-all cursor-pointer hover:shadow-md ${filterType === item.key ? 'ring-2 ring-blue-500 scale-105 font-bold' : 'opacity-80 hover:opacity-100'}`}
+                    >
+                        <div className="text-xl font-bold">{getStatusCount(item.key)}</div>
+                        <div className="text-xs mt-1 font-medium truncate">{item.label}</div>
+                    </button>
                 ))}
             </div>
 
             {/* Filters & Search */}
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => handleFilterChange("all")}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium ${filterType === 'all' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                        {t("orders.all")}
-                    </button>
-                    <button
-                        onClick={() => handleFilterChange("unshipped")}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium ${filterType === 'unshipped' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                        {t("orders.turboRecordsUnshipped")}
-                    </button>
-                    <button
-                        onClick={() => handleFilterChange("shipped")}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium ${filterType === 'shipped' ? 'bg-green-100 text-green-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                        {t("orders.turboRecordsShipped")}
-                    </button>
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div className="flex flex-wrap items-center gap-1.5">
+                    {filterOptions.slice(0, 8).map(opt => (
+                        <button
+                            key={opt.key}
+                            onClick={() => handleFilterChange(opt.key)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${filterType === opt.key ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                        >
+                            {opt.label} ({getStatusCount(opt.key)})
+                        </button>
+                    ))}
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-96">
+                <div className="flex items-center gap-2 w-full md:w-80">
                     <div className="relative flex-1">
-                        <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder={t("orders.turboRecordsSearchPlaceholder")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearchClick()}
-                            className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full pl-3 pr-9 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
                     <button
                         onClick={handleSearchClick}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium text-sm"
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium text-xs whitespace-nowrap"
                     >
                         {t("orders.search")}
                     </button>
