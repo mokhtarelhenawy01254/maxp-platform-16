@@ -100,7 +100,7 @@ const getPushServiceWorkerRegistration =
       return (
         registrations.find((registration) =>
           [registration.active, registration.waiting, registration.installing].some(
-            (worker) => worker?.scriptURL?.includes("/push-sw.js"),
+            (worker) => worker?.scriptURL?.includes("/sw.js"),
           ),
         ) || null
       );
@@ -258,7 +258,12 @@ export const registerPushServiceWorker =
       return null;
     }
 
-    const registration = await navigator.serviceWorker.register("/push-sw.js", {
+    const existing = await getPushServiceWorkerRegistration();
+    if (existing) {
+      return existing;
+    }
+
+    const registration = await navigator.serviceWorker.register("/sw.js", {
       scope: "/",
     });
 
