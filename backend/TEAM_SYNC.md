@@ -1,6 +1,9 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
+- **Fixed Prisma OrderStatus Enum 500 Error in Turbo Records Filter (BUG FIX)**:
+  1. **Enum Validation**: Fixed a 500 error when clicking custom Turbo status filters (e.g. `returned_resent`) by validating `filterType` against standard `OrderStatus` enum values before passing to Prisma `status` query.
+
 - **Full Automatic System Order Status Synchronization with Turbo (FEATURE / COMPLETE)**:
   1. **Automated OrderStatus Updates**: Fully mapped all 20 Turbo statuses to dynamically update main system `Order.status` (`PENDING`, `CONFIRMED`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`, `RETURNED`, `ON_HOLD`) and `paymentStatus` upon webhook arrival or manual status refresh.
   2. **Zero Manual Work**: Updating Turbo status on Turbo dashboard or via API instantly reflects across all system order lists & dashboard widgets.

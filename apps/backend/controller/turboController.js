@@ -2596,14 +2596,22 @@ const getRecords = async (req, res) => {
       if (ft === 'unshipped') {
         where = { companyId, turboShipmentId: null, turboTrackingNumber: null };
       } else {
+        const VALID_ORDER_STATUSES = new Set(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED', 'ON_HOLD']);
+        const upperFilter = filterType.toUpperCase();
+        
+        const statusOrConditions = [
+          { turboShipmentStatus: { equals: ft, mode: 'insensitive' } }
+        ];
+
+        if (VALID_ORDER_STATUSES.has(upperFilter)) {
+          statusOrConditions.push({ status: { equals: upperFilter } });
+        }
+
         where = {
           ...baseWhere,
           AND: [
             { OR: baseWhere.OR },
-            { OR: [
-              { turboShipmentStatus: { equals: ft, mode: 'insensitive' } },
-              { status: { equals: filterType.toUpperCase() } }
-            ]}
+            { OR: statusOrConditions }
           ]
         };
         delete where.OR;

@@ -1,17 +1,9 @@
-### [FEATURE / TURBO AUTO SYNC] Automatic System Order Status Updates Matched with Turbo 20 Statuses
+### [FIX / TURBO CONTROLLER] Prisma OrderStatus Enum Validation Fix on Status Filter
 - **Date**: 2026-07-21
-- **Requirement / Feature**:
-  1. **Full Automated Synchronization**: System order statuses (`OrderStatus` enum) now update dynamically across Webhooks & live Turbo Record refresh for all 20 Turbo statuses:
-     - `1` / `incomplete` (18) -> `PENDING`
-     - `2` -> `CONFIRMED`
-     - `3` / `returned_resent` (15) -> `PROCESSING`
-     - `4` / `out_for_delivery` (9) -> `SHIPPED`
-     - `5` / `remitted` (19) -> `DELIVERED` & payment completed
-     - `6` -> `CANCELLED`
-     - `7` / `returned_to_company` (14) / `returned_received` (20) / `returned_missing` (16) / `returned_destroyed` (17) / `lost` (13) -> `RETURNED`
-     - `8` / `10` / `11` / `12` -> `ON_HOLD`
+- **Bug Fixed**: 500 Server Error `Invalid value for argument equals. Expected OrderStatus` when filtering by custom Turbo status like `returned_resent`.
+- **Root Cause**: `status` field in Prisma is restricted to `OrderStatus` enum. Passing non-enum strings like `RETURNED_RESENT` caused Prisma schema validation to fail.
+- **Fix**: Validated `upperFilter` against `VALID_ORDER_STATUSES` set before building the Prisma `status` query branch.
 - **Files Modified**:
-  - `apps/backend/routes/turboWebhook.js`
   - `apps/backend/controller/turboController.js`
 
 ### [FEATURE / TURBO & STATUSES] Auto-Seeding Turbo Shipping Statuses into Order Status Management
