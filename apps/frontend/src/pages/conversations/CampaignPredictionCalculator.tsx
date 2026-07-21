@@ -519,21 +519,21 @@ const CampaignPredictionCalculator: React.FC = () => {
   const renderRiskBadge = (roi: number) => {
     if (roi < 0) {
       return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium business-bg-danger-soft business-text-danger">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400">
           <ExclamationTriangleIcon className="w-4 h-4 ml-1" />
           مخاطر عالية
         </span>
       );
     } else if (roi < 50) {
       return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium business-bg-warning-soft business-text-warning">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
           <MinusIcon className="w-4 h-4 ml-1" />
           مخاطر متوسطة
         </span>
       );
     } else {
       return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium business-bg-success-soft business-text-success">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
           <CheckCircleIcon className="w-4 h-4 ml-1" />
           فرصة ممتازة
         </span>
@@ -542,23 +542,23 @@ const CampaignPredictionCalculator: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen business-shell-gradient p-4 md:p-6 lg:p-8">
-      <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-4 sm:py-6 px-3 sm:px-4">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold business-text-strong mb-2 flex items-center gap-3">
-                <CalculatorIcon className="w-10 h-10 business-text-primary" />
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-3">
+                <CalculatorIcon className="w-10 h-10 text-blue-600 dark:text-blue-400" />
                 حاسبة توقعات نتائج الحملات
               </h1>
-              <p className="business-text-muted">
+              <p className="text-gray-500 dark:text-gray-400">
                 خطط لحملاتك بذكاء مع توقعات دقيقة بناءً على البيانات التاريخية
               </p>
             </div>
             {defaults && (
-              <div className="text-sm business-text-muted business-bg-panel px-4 py-2 rounded-lg shadow">
-                <SparklesIcon className="w-4 h-4 inline ml-1 business-text-warning" />
+              <div className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-4 py-2 rounded-lg shadow">
+                <SparklesIcon className="w-4 h-4 inline ml-1 text-amber-600 dark:text-amber-400" />
                 بيانات تاريخية متاحة
               </div>
             )}
@@ -566,7 +566,7 @@ const CampaignPredictionCalculator: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="business-bg-panel rounded-xl shadow-lg mb-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg mb-6">
           <div className="border-b business-border">
             <nav className="flex -mb-px">
               {tabs.map((tab) => (
@@ -575,8 +575,8 @@ const CampaignPredictionCalculator: React.FC = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                     activeTab === tab.id
-                      ? "business-border-primary-strong business-text-primary"
-                      : "business-border-clear business-text-muted business-hover-muted business-control-border"
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "business-border-clear text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 business-control-border"
                   }`}
                 >
                   <tab.icon className="w-5 h-5" />
@@ -591,14 +591,14 @@ const CampaignPredictionCalculator: React.FC = () => {
         {activeTab === "input" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Live Data Inputs */}
-            <div className="business-bg-panel rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold business-text-strong mb-4 flex items-center gap-2">
-                <InformationCircleIcon className="w-5 h-5 business-text-primary" />
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <InformationCircleIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 بيانات الحملة المباشرة
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium business-text-body mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     اسم المنتج
                   </label>
                   <input
@@ -607,13 +607,13 @@ const CampaignPredictionCalculator: React.FC = () => {
                     onChange={(e) =>
                       setInputs({ ...inputs, productName: e.target.value })
                     }
-                    className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
+                    className="w-full px-4 py-2 border business-control-border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="مثال: عرض سماعات بلوتوث"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium business-text-body mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       التارجيت اليومي
                     </label>
                     <input
@@ -625,11 +625,11 @@ const CampaignPredictionCalculator: React.FC = () => {
                           dailyTarget: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
+                      className="w-full px-4 py-2 border business-control-border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium business-text-body mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       تارجت الاوردرات
                     </label>
                     <input
@@ -641,13 +641,13 @@ const CampaignPredictionCalculator: React.FC = () => {
                           orderTarget: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
+                      className="w-full px-4 py-2 border business-control-border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium business-text-body mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       عدد الرسايل الناجح (الإجمالي)
                     </label>
                     <input
@@ -659,11 +659,11 @@ const CampaignPredictionCalculator: React.FC = () => {
                           successfulMessages: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-success-soft business-text-strong business-focus-success font-bold"
+                      className="w-full px-4 py-2 border business-control-border rounded-lg bg-emerald-50 dark:bg-emerald-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium business-text-body mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       عدد الرسايل الفاشل (الإجمالي)
                     </label>
                     <input
@@ -675,11 +675,11 @@ const CampaignPredictionCalculator: React.FC = () => {
                           failedMessages: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-danger-soft business-text-strong business-focus-danger font-bold"
+                      className="w-full px-4 py-2 border business-control-border rounded-lg bg-red-50 dark:bg-red-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-red-500 font-bold"
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium business-text-body mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       عدد الردود المستلمة (العملاء اللي ردوا)
                     </label>
                     <input
@@ -691,12 +691,12 @@ const CampaignPredictionCalculator: React.FC = () => {
                           repliesReceived: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-secondary-soft business-text-strong business-focus-secondary font-bold"
+                      className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-secondary-soft text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 font-bold"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium business-text-body mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     عدد الاوردرات الحالي
                   </label>
                   <input
@@ -708,12 +708,12 @@ const CampaignPredictionCalculator: React.FC = () => {
                         currentOrders: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-primary-soft business-text-strong business-focus-primary font-bold text-xl"
+                    className="w-full px-4 py-2 border business-control-border rounded-lg bg-blue-50 dark:bg-blue-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold text-xl"
                   />
                 </div>
                 <button
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="w-full mt-4 text-sm business-text-primary hover:underline flex items-center justify-center gap-1"
+                  className="w-full mt-4 text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center justify-center gap-1"
                 >
                   {showAdvanced
                     ? "إخفاء الإعدادات المتقدمة"
@@ -730,14 +730,14 @@ const CampaignPredictionCalculator: React.FC = () => {
             {/* Advanced Settings */}
             {showAdvanced && (
               <>
-                <div className="business-bg-panel rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold business-text-strong mb-4 flex items-center gap-2">
-                    <CurrencyDollarIcon className="w-5 h-5 business-text-success" />
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                    <CurrencyDollarIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                     الافتراضات المالية
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium business-text-body mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         إجمالي الجمهور المستهدف
                       </label>
                       <input
@@ -749,11 +749,11 @@ const CampaignPredictionCalculator: React.FC = () => {
                             targetAudienceSize: parseInt(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
+                        className="w-full px-4 py-2 border business-control-border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium business-text-body mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         تكلفة الرسالة (ج.م)
                       </label>
                       <input
@@ -766,11 +766,11 @@ const CampaignPredictionCalculator: React.FC = () => {
                             costPerMessage: parseFloat(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
+                        className="w-full px-4 py-2 border business-control-border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium business-text-body mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         متوسط قيمة الأوردر (ج.م)
                       </label>
                       <input
@@ -782,20 +782,20 @@ const CampaignPredictionCalculator: React.FC = () => {
                             averageOrderValue: parseFloat(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
+                        className="w-full px-4 py-2 border business-control-border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="business-bg-panel rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold business-text-strong mb-4 flex items-center gap-2">
-                    <ChartBarIcon className="w-5 h-5 business-text-secondary" />
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                    <ChartBarIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                     افتراضات الأداء (%)
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium business-text-body mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         معدل التحويل المتوقع (%)
                       </label>
                       <input
@@ -808,14 +808,14 @@ const CampaignPredictionCalculator: React.FC = () => {
                               parseFloat(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
+                        className="w-full px-4 py-2 border business-control-border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
-                      <p className="text-xs business-text-muted mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         يُستخدم للتوقعات المستقبلية بناءً على الإرسال الناجح
                       </p>
                     </div>
                     {/* Use Historical Data Toggle */}
-                    <div className="mt-6 p-4 business-bg-primary-soft rounded-lg">
+                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
@@ -836,10 +836,10 @@ const CampaignPredictionCalculator: React.FC = () => {
                               }));
                             }
                           }}
-                          className="w-5 h-5 business-text-primary rounded business-focus-primary"
+                          className="w-5 h-5 text-blue-600 dark:text-blue-400 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                         <div>
-                          <p className="text-sm font-medium business-text-strong">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             استخدام البيانات التاريخية
                           </p>
                         </div>
@@ -856,17 +856,17 @@ const CampaignPredictionCalculator: React.FC = () => {
         {(activeTab === "results" || !showAdvanced) && currentResults && (
           <div className="space-y-6 mt-6">
             {/* Dashboard Results (The 17 requested fields) */}
-            <div className="business-bg-panel rounded-xl shadow-lg p-6 border-t-4 business-border-primary-strong">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 border-t-4 border-blue-500">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold business-text-strong flex items-center gap-3">
-                  <SparklesIcon className="w-8 h-8 business-text-warning" />
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                  <SparklesIcon className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                   تحليل الأداء المباشر ({inputs.productName || "المنتج"})
                 </h3>
                 <div className="flex gap-2">
-                  <span className="px-4 py-1.5 business-bg-primary-soft business-text-primary rounded-full text-sm font-bold">
+                  <span className="px-4 py-1.5 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-full text-sm font-bold">
                     تارجت رسايل: {formatNumber(inputs.dailyTarget)}
                   </span>
-                  <span className="px-4 py-1.5 business-bg-success-soft business-text-success rounded-full text-sm font-bold">
+                  <span className="px-4 py-1.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-full text-sm font-bold">
                     تارجت اوردرات: {formatNumber(inputs.orderTarget)}
                   </span>
                 </div>
@@ -874,18 +874,18 @@ const CampaignPredictionCalculator: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Predictive Target (The Goal Predictor) */}
-                <div className="lg:col-span-4 business-bg-brand-gradient rounded-2xl p-8 business-text-on-accent shadow-xl relative overflow-hidden group">
+                <div className="lg:col-span-4 business-bg-brand-gradient rounded-2xl p-8 text-white shadow-xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
                     <SparklesIcon className="w-32 h-32" />
                   </div>
                   <div className="relative z-10">
-                    <h4 className="text-xl font-bold mb-2 flex items-center gap-2">
+                    <h4 className="text-xl font-bold flex items-center gap-2">
                       <CalculatorIcon className="w-6 h-6" />
                       توقعات تحقيق الهدف (Goal Predictor)
                     </h4>
-                    <p className="business-text-on-accent mb-6 text-lg">
+                    <p className="text-white mb-6 text-lg">
                       لتحقيق هدفك بالوصول إلى{" "}
-                      <span className="font-black business-text-on-accent">
+                      <span className="font-black text-white">
                         {formatNumber(inputs.orderTarget)}
                       </span>{" "}
                       أوردر بناءً على أدائك الحالي:
@@ -903,7 +903,7 @@ const CampaignPredictionCalculator: React.FC = () => {
                         رسالة ناجحة
                       </p>
                     </div>
-                    <div className="mt-8 flex gap-6 border-t business-border-on-accent pt-6">
+                    <div className="mt-8 flex gap-6 border-t border-white/20 pt-6">
                       <div>
                         <p className="text-xs opacity-70 mb-1">
                           نسبة الردود الحالية
@@ -926,64 +926,64 @@ const CampaignPredictionCalculator: React.FC = () => {
 
                 {/* Achievement Summary */}
                 <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-                  <div className="business-bg-soft p-5 rounded-2xl border business-border">
-                    <p className="text-sm business-text-muted mb-1">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border business-border">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       الوصول الفعلي (ناجح)
                     </p>
-                    <p className="text-4xl font-black business-text-primary">
+                    <p className="text-4xl font-black text-blue-600 dark:text-blue-400">
                       {formatNumber(inputs.successfulMessages)}
                     </p>
                     <div className="flex justify-between items-center mt-3">
-                      <span className="text-xs font-bold business-text-subtle">
+                      <span className="text-xs font-bold text-gray-400 dark:text-gray-500">
                         من إجمالي {formatNumber(currentResults.totalSent)}
                       </span>
-                      <span className="text-xs font-bold business-text-success">
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                         نجاح {currentResults.successRate.toFixed(1)}%
                       </span>
                     </div>
                   </div>
 
-                  <div className="business-bg-soft p-5 rounded-2xl border business-border">
-                    <p className="text-sm business-text-muted mb-1">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border business-border">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       الردود (الناس اللي ردت)
                     </p>
-                    <p className="text-4xl font-black business-text-secondary">
+                    <p className="text-4xl font-black text-gray-600 dark:text-gray-400">
                       {formatNumber(inputs.repliesReceived)}
                     </p>
-                    <p className="text-xs mt-3 font-bold business-text-secondary">
+                    <p className="text-xs mt-3 font-bold text-gray-600 dark:text-gray-400">
                       نسبة الرد: {currentResults.replyRate.toFixed(1)}%
                     </p>
                   </div>
 
-                  <div className="business-bg-soft p-5 rounded-2xl border business-border">
-                    <p className="text-sm business-text-muted mb-1">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border business-border">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       عدد الاوردرات الحالي
                     </p>
-                    <p className="text-4xl font-black business-text-success">
+                    <p className="text-4xl font-black text-emerald-600 dark:text-emerald-400">
                       {formatNumber(inputs.currentOrders)}
                     </p>
-                    <div className="mt-3 w-full business-bg-soft-strong business-bg-soft h-2 rounded-full overflow-hidden">
+                    <div className="mt-3 w-full bg-gray-50 dark:bg-gray-800/50-strong bg-gray-50 dark:bg-gray-800/50 h-2 rounded-full overflow-hidden">
                       <div
-                        className="business-bg-success-solid h-full rounded-full transition-all duration-500"
+                        className="bg-emerald-500 h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min(100, currentResults.orderAchievementRate)}%`,
                         }}
                       />
                     </div>
-                    <p className="text-xs mt-2 font-bold business-text-subtle">
+                    <p className="text-xs mt-2 font-bold text-gray-400 dark:text-gray-500">
                       تحقيق الهدف:{" "}
                       {currentResults.orderAchievementRate.toFixed(1)}%
                     </p>
                   </div>
 
-                  <div className="business-bg-soft p-5 rounded-2xl border business-border">
-                    <p className="text-sm business-text-muted mb-1">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border business-border">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       تحليل الأداء (أوردر/إرسال)
                     </p>
-                    <p className="text-3xl font-bold business-text-secondary">
+                    <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">
                       {currentResults.orderRate.toFixed(2)}%
                     </p>
-                    <p className="text-xs mt-1 business-text-subtle">
+                    <p className="text-xs mt-1 text-gray-400 dark:text-gray-500">
                       {currentResults.messagesPerOrder.toFixed(1)} رسالة لكل
                       أوردر
                     </p>
@@ -992,51 +992,51 @@ const CampaignPredictionCalculator: React.FC = () => {
 
                 {/* Status Metrics */}
                 <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-                  <div className="business-bg-soft p-5 rounded-2xl border business-border">
-                    <p className="text-sm business-text-muted mb-1">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border business-border">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       الباقي علي تارجت الاوردرات
                     </p>
-                    <p className="text-3xl font-bold business-text-warning">
+                    <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
                       {formatNumber(currentResults.remainingOrdersToTarget)}
                     </p>
-                    <p className="text-xs mt-1 business-text-subtle">
+                    <p className="text-xs mt-1 text-gray-400 dark:text-gray-500">
                       من أصل {inputs.orderTarget}
                     </p>
                   </div>
 
-                  <div className="business-bg-soft p-5 rounded-2xl border business-border relative overflow-hidden">
-                    <p className="text-sm business-text-muted mb-1">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border business-border relative overflow-hidden">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       إحصائيات الفشل
                     </p>
-                    <p className="text-3xl font-bold business-text-danger">
+                    <p className="text-3xl font-bold text-red-600 dark:text-red-400">
                       {formatNumber(inputs.failedMessages)}
                     </p>
-                    <p className="text-xs mt-1 font-bold business-text-danger">
+                    <p className="text-xs mt-1 font-bold text-red-600 dark:text-red-400">
                       نسبة الفشل: {currentResults.failureRate.toFixed(1)}%
                     </p>
                   </div>
 
-                  <div className="business-bg-soft p-5 rounded-2xl border business-border">
-                    <p className="text-sm business-text-muted mb-1">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border business-border">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                       الباقي علي تارجيت ارسال
                     </p>
-                    <p className="text-3xl font-bold business-text-secondary">
+                    <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">
                       {formatNumber(currentResults.messagesToDailyTarget)}
                     </p>
-                    <p className="text-xs mt-1 font-bold business-text-subtle">
+                    <p className="text-xs mt-1 font-bold text-gray-400 dark:text-gray-500">
                       إنجاز الإرسال:{" "}
                       {currentResults.sendingAchievementRate.toFixed(1)}%
                     </p>
                   </div>
 
-                  <div className="business-bg-primary-soft p-5 rounded-2xl border business-border-primary-soft">
-                    <p className="text-xs business-text-primary font-bold mb-1">
+                  <div className="bg-blue-50 dark:bg-blue-950 p-5 rounded-2xl border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mb-1">
                       المتوقع عند اكتمال الإرسال
                     </p>
-                    <p className="text-3xl font-black business-text-primary">
+                    <p className="text-3xl font-black text-blue-600 dark:text-blue-400">
                       {formatNumber(currentResults.expectedOrdersFromDaily)}
                     </p>
-                    <p className="text-[10px] mt-1 business-text-primary opacity-70">
+                    <p className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 opacity-70">
                       أوردر متوقع تحقيقه اليوم
                     </p>
                   </div>
@@ -1046,32 +1046,32 @@ const CampaignPredictionCalculator: React.FC = () => {
               {/* Extra details row */}
               <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 border-t business-border pt-6">
                 <div>
-                  <p className="text-xs business-text-subtle mb-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
                     التارجيت اليومي
                   </p>
-                  <p className="text-lg font-bold business-text-body">
+                  <p className="text-lg font-bold text-gray-700 dark:text-gray-300">
                     {formatNumber(inputs.dailyTarget)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs business-text-subtle mb-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
                     عدد الارسال الفاشل
                   </p>
-                  <p className="text-lg font-bold business-text-danger">
+                  <p className="text-lg font-bold text-red-600 dark:text-red-400">
                     {formatNumber(inputs.failedMessages)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs business-text-subtle mb-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">
                     نسبة الرسايل للارسال
                   </p>
-                  <p className="text-lg font-bold business-text-success">
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                     {currentResults.successRate.toFixed(1)}%
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs business-text-subtle mb-1">المنتج</p>
-                  <p className="text-lg font-bold business-text-body">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">المنتج</p>
+                  <p className="text-lg font-bold text-gray-700 dark:text-gray-300">
                     {inputs.productName || "-"}
                   </p>
                 </div>
@@ -1080,7 +1080,7 @@ const CampaignPredictionCalculator: React.FC = () => {
 
             {/* Existing analysis (Show only if showAdvanced is true) */}
             {showAdvanced && (
-              <div className="business-bg-primary-solid  rounded-xl shadow-lg p-6 business-text-on-accent mb-6">
+              <div className="business-bg-primary-solid  rounded-xl shadow-lg p-6 text-white mb-6">
                 <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                   <CalculatorIcon className="w-6 h-6" />
                   تحليل مالي متقدم
@@ -1126,7 +1126,7 @@ const CampaignPredictionCalculator: React.FC = () => {
             {/* KPI Cards (Detailed) */}
             {showAdvanced && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="business-bg-brand-gradient rounded-xl shadow-lg p-6 business-text-on-accent">
+                <div className="business-bg-brand-gradient rounded-xl shadow-lg p-6 text-white">
                   <div className="flex items-center justify-between mb-4">
                     <CurrencyDollarIcon className="h-12 w-12 opacity-80" />
                     {renderRiskBadge(currentResults.expectedRoi)}
@@ -1137,7 +1137,7 @@ const CampaignPredictionCalculator: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="business-bg-success-gradient rounded-xl shadow-lg p-6 business-text-on-accent">
+                <div className="business-bg-success-gradient rounded-xl shadow-lg p-6 text-white">
                   <div className="flex items-center justify-between mb-4">
                     <ArrowTrendingUpIcon className="h-12 w-12 opacity-80" />
                     <div className="business-bg-accent-glass-strong rounded-full p-2">
@@ -1152,7 +1152,7 @@ const CampaignPredictionCalculator: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="business-bg-secondary-gradient rounded-xl shadow-lg p-6 business-text-on-accent">
+                <div className="business-bg-secondary-gradient rounded-xl shadow-lg p-6 text-white">
                   <div className="flex items-center justify-between mb-4">
                     <UsersIcon className="h-12 w-12 opacity-80" />
                     <div className="business-bg-accent-glass-strong rounded-full p-2">
@@ -1171,7 +1171,7 @@ const CampaignPredictionCalculator: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="business-bg-warning-gradient rounded-xl shadow-lg p-6 business-text-on-accent">
+                <div className="business-bg-warning-gradient rounded-xl shadow-lg p-6 text-white">
                   <div className="flex items-center justify-between mb-4">
                     <CalculatorIcon className="h-12 w-12 opacity-80" />
                     <div className="business-bg-accent-glass-strong rounded-full p-2">
@@ -1187,39 +1187,39 @@ const CampaignPredictionCalculator: React.FC = () => {
             )}
 
             {showAdvanced && (
-              <div className="business-bg-panel rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold business-text-strong mb-6 flex items-center gap-2">
-                  <InformationCircleIcon className="w-6 h-6 business-text-primary" />
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+                  <InformationCircleIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   تحليل نقطة التعادل
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="p-4 business-bg-primary-soft rounded-xl">
-                    <p className="text-sm business-text-primary mb-2">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-xl">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">
                       وحدات التعادل المطلوبة
                     </p>
-                    <p className="text-3xl font-bold business-text-primary">
+                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                       {formatNumber(currentResults.breakEvenUnits)}
                     </p>
-                    <p className="text-xs business-text-primary mt-1">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                       منتج/خدمة
                     </p>
                   </div>
-                  <div className="p-4 business-bg-success-soft rounded-xl">
-                    <p className="text-sm business-text-success mb-2">
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950 rounded-xl">
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-2">
                       إيرادات التعادل
                     </p>
-                    <p className="text-3xl font-bold business-text-success">
+                    <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(currentResults.breakEvenRevenue)}
                     </p>
-                    <p className="text-xs business-text-success mt-1">
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
                       المبلغ المطلوب تحقيقه
                     </p>
                   </div>
                   <div className="p-4 business-bg-secondary-soft rounded-xl">
-                    <p className="text-sm business-text-secondary mb-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                       فائض التعادل
                     </p>
-                    <p className="text-3xl font-bold business-text-secondary">
+                    <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">
                       {formatNumber(
                         Math.max(
                           0,
@@ -1228,7 +1228,7 @@ const CampaignPredictionCalculator: React.FC = () => {
                         ),
                       )}
                     </p>
-                    <p className="text-xs business-text-secondary mt-1">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                       وحدات فوق التعادل
                     </p>
                   </div>
@@ -1239,8 +1239,8 @@ const CampaignPredictionCalculator: React.FC = () => {
             {/* Charts (Advanced) */}
             {showAdvanced && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="business-bg-panel rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold business-text-strong mb-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                     قمع التحويل المتوقع
                   </h3>
                   <div className="h-80">
@@ -1253,8 +1253,8 @@ const CampaignPredictionCalculator: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="business-bg-panel rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold business-text-strong mb-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                     توقع الإيرادات اليومية
                   </h3>
                   <div className="h-80">
@@ -1282,9 +1282,9 @@ const CampaignPredictionCalculator: React.FC = () => {
 
             {/* Smart Recommendations (Advanced) */}
             {showAdvanced && recommendations.length > 0 && (
-              <div className="business-bg-panel rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold business-text-strong mb-4 flex items-center gap-2">
-                  <LightBulbIcon className="w-6 h-6 business-text-warning" />
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                  <LightBulbIcon className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                   توصيات ذكية
                 </h3>
                 <div className="space-y-3">
@@ -1293,24 +1293,24 @@ const CampaignPredictionCalculator: React.FC = () => {
                       key={index}
                       className={`p-4 rounded-lg flex items-start gap-3 ${
                         rec.type === "warning"
-                          ? "business-bg-danger-soft border business-border-danger-soft"
+                          ? "bg-red-50 dark:bg-red-950 border business-border-danger-soft"
                           : rec.type === "success"
-                            ? "business-bg-success-soft border business-border-success-soft"
-                            : "business-bg-primary-soft border business-border-primary-soft"
+                            ? "bg-emerald-50 dark:bg-emerald-950 border business-border-success-soft"
+                            : "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
                       }`}
                     >
                       {rec.type === "warning" ? (
-                        <ExclamationTriangleIcon className="w-5 h-5 business-text-danger flex-shrink-0 mt-0.5" />
+                        <ExclamationTriangleIcon className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                       ) : rec.type === "success" ? (
-                        <CheckCircleIcon className="w-5 h-5 business-text-success flex-shrink-0 mt-0.5" />
+                        <CheckCircleIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                       ) : (
-                        <InformationCircleIcon className="w-5 h-5 business-text-primary flex-shrink-0 mt-0.5" />
+                        <InformationCircleIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                       )}
                       <div>
-                        <p className="font-medium business-text-strong">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
                           {rec.title}
                         </p>
-                        <p className="text-sm business-text-muted">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           {rec.message}
                         </p>
                       </div>
@@ -1325,7 +1325,7 @@ const CampaignPredictionCalculator: React.FC = () => {
               <div className="flex justify-center">
                 <button
                   onClick={saveScenario}
-                  className="flex items-center gap-2 px-6 py-3 business-bg-primary-solid business-text-on-accent rounded-lg business-hover-primary-solid transition-colors font-medium"
+                  className="flex items-center gap-2 px-6 py-3 business-bg-primary-solid text-white rounded-lg business-hover-primary-solid transition-colors font-medium"
                 >
                   <SaveIcon className="w-5 h-5" />
                   حفظ هذا السيناريو
