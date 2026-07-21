@@ -248,7 +248,7 @@ class BroadcastService {
     });
   }
 
-  async sendCampaign(campaignId: string): Promise<{
+  async sendCampaign(campaignId: string, manualPhones?: string[]): Promise<{
     success: boolean;
     message: string;
     campaignId: string;
@@ -271,6 +271,7 @@ class BroadcastService {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({ manualPhones }),
           signal: controller.signal,
         },
       );
