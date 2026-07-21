@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS, STAGE_DEFINITIONS } from "../constants";
+import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS } from "../constants";
 import type {
   ItemCountFilter,
   ShortageFollowUpFilter,
@@ -9,6 +9,7 @@ import type {
   SortBy,
   SortOrder,
   StageCounts,
+  StageDefinition,
   StageFilter,
   StockFilter,
   WarehouseOption,
@@ -17,6 +18,7 @@ import type {
 interface PreparationFiltersProps {
   activeStage: StageFilter;
   stageCounts: StageCounts;
+  stageDefinitions: StageDefinition[];
   visibleOrdersCount: number;
   search: string;
   selectedWarehouseId: string;
@@ -48,6 +50,7 @@ const selectClass =
 const PreparationFilters = ({
   activeStage,
   stageCounts,
+  stageDefinitions,
   visibleOrdersCount,
   search,
   selectedWarehouseId,
@@ -162,7 +165,7 @@ const PreparationFilters = ({
         >
           {t("preparation.filters.allStages", { count: stageCounts.ALL })}
         </button>
-        {STAGE_DEFINITIONS.map((stage) => (
+        {stageDefinitions.map((stage) => (
           <button
             key={stage.key}
             onClick={() => onActiveStageChange(stage.key)}
@@ -173,7 +176,7 @@ const PreparationFilters = ({
             }`}
             title={t(stage.descriptionKey)}
           >
-            {t(stage.labelKey)} ({stageCounts[stage.key]})
+            {t(stage.labelKey)} ({stageCounts[stage.key] || 0})
           </button>
         ))}
       </div>

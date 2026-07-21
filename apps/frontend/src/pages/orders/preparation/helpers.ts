@@ -264,7 +264,7 @@ export const normalizeStage = (status: string): StageKey | null => {
   if (["READY", "READY_TO_SHIP"].includes(normalized)) {
     return "READY_TO_SHIP";
   }
-  return null;
+  return normalized;
 };
 
 export const getNextStatus = (

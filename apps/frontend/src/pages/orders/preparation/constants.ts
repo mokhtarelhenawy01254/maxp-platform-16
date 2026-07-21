@@ -157,6 +157,19 @@ export const STAGE_DEFINITIONS: Array<{
   },
 ];
 
+export const DYNAMIC_STAGE_COLORS = [
+  "bg-blue-100 text-blue-800 border-blue-200",
+  "bg-teal-100 text-teal-800 border-teal-200",
+  "bg-orange-100 text-orange-800 border-orange-200",
+  "bg-pink-100 text-pink-800 border-pink-200",
+  "bg-gray-100 text-gray-800 border-gray-200",
+  "bg-yellow-100 text-yellow-800 border-yellow-200",
+  "bg-lime-100 text-lime-800 border-lime-200",
+  "bg-sky-100 text-sky-800 border-sky-200",
+  "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
+  "bg-rose-100 text-rose-800 border-rose-200",
+] as const;
+
 export const SORT_OPTIONS = [
   { value: "createdAt_desc", label: "Newest First", labelKey: "preparation.sortOptions.createdAt_desc" },
   { value: "createdAt_asc", label: "Oldest First", labelKey: "preparation.sortOptions.createdAt_asc" },

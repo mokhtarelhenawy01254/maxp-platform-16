@@ -1,18 +1,11 @@
 export type JsonObject = Record<string, unknown>;
 
-export type StageKey =
-  | "WAITING"
-  | "PREPARING"
-  | "QUALITY_CHECK"
-  | "PACKAGED"
-  | "READY_TO_SHIP"
-  | "STOCK_SHORTAGE"
-  | "PENDING_CANCELLATION";
+export type StageKey = string;
 
-export type StageFilter = "ALL" | StageKey;
+export type StageFilter = "ALL" | string;
 export type StockFilter = "all" | "ready" | "shortage";
 export type ItemCountFilter = "all" | "single" | "multiple";
-export type StageCounts = Record<StageFilter, number>;
+export type StageCounts = Record<string, number>;
 
 export interface SimpleOrderItem {
   id: string;
@@ -95,6 +88,16 @@ export interface StatusConfig {
   code: string;
   name: string;
   color?: string;
+  statusType?: string;
+}
+
+export interface StageDefinition {
+  key: string;
+  label: string;
+  labelKey: string;
+  colorClass: string;
+  description: string;
+  descriptionKey: string;
 }
 
 export interface PreparationStatusOption {
@@ -272,6 +275,7 @@ export interface ApiStatusResponse {
   name?: string | null;
   nameEn?: string | null;
   color?: string | null;
+  statusType?: string | null;
 }
 
 export interface PreparationQueuePagination {
@@ -285,6 +289,7 @@ export interface PreparationQueueSummary {
   filteredTotal: number;
   visibleTotal: number;
   stageCounts: StageCounts;
+  statusCounts?: Record<string, number>;
   readyCount: number;
   shortageCount: number;
   shortageHoldCount: number;

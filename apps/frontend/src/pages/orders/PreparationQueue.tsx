@@ -17,10 +17,12 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { printPreparationSlip } from "../../utils/printPreparationSlip";
 import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
+  DYNAMIC_STAGE_COLORS,
   FALLBACK_STATUS_LABELS,
   PAGE_SIZE_OPTIONS,
   SHORTAGE_HOLD_METADATA_KEY,
   SHORTAGE_HOLD_STATUS,
+  STAGE_DEFINITIONS as FALLBACK_STAGE_DEFINITIONS,
   type PageSize,
 } from "./preparation/constants";
 import {
@@ -40,6 +42,7 @@ import type {
   PreparationStatusOption,
   QcCheckKey,
   ShortageHoldDetails,
+  StageDefinition,
 } from "./preparation/types";
 import { usePreparationQueueData } from "./preparation/usePreparationQueueData";
 import { usePreparationQueueUiState } from "./preparation/usePreparationQueueUiState";
@@ -72,9 +75,11 @@ const PreparationQueue: React.FC = () => {
     ensureInventory,
     warehouses,
     statusConfigs,
+    preparationStatuses,
     preparationSettings,
     pagination,
     summary,
+    statusCounts,
     shortageOwnerOptions: serverShortageOwnerOptions,
     loading,
     fetchInventory,
@@ -171,28 +176,123 @@ const PreparationQueue: React.FC = () => {
   }, [statusConfigs]);
 
   const statusOptions = useMemo<PreparationStatusOption[]>(() => {
-    const dynamicOptions = [
-      { code: preparationSettings.startingStatus, fallbackName: t('preparation.k_5') },
-      { code: "PREPARING", fallbackName: t('preparation.k_6') },
-      { code: "QUALITY_CHECK", fallbackName: t('preparation.k_7') },
-      { code: "PACKAGED", fallbackName: t('preparation.k_8') },
-      { code: SHORTAGE_HOLD_STATUS, fallbackName: t('preparation.k_9') },
-      {
-        code: preparationSettings.handoffStatus || "READY_TO_SHIP",
-        fallbackName: t('preparation.k_10'),
-      },
-    ];
+    const dynamicOptions = preparationStatuses.map((s) => ({
+      code: toUpper(s.code),
+      fallbackName: s.name,
+    }));
 
-    const deduped = new Map<string, PreparationStatusOption>();
-    dynamicOptions.forEach((option) => {
-      deduped.set(toUpper(option.code), {
-        code: toUpper(option.code),
-        fallbackName: option.fallbackName,
+    const includesStarting = dynamicOptions.some(
+      (opt) => opt.code === toUpper(preparationSettings.startingStatus),
+    );
+    if (!includesStarting && preparationSettings.startingStatus) {
+      dynamicOptions.unshift({
+        code: toUpper(preparationSettings.startingStatus),
+        fallbackName: t('preparation.k_5'),
+      });
+    }
+
+    const includesHandoff = dynamicOptions.some(
+      (opt) => opt.code === toUpper(preparationSettings.handoffStatus),
+    );
+    if (!includesHandoff && preparationSettings.handoffStatus) {
+      dynamicOptions.push({
+        code: toUpper(preparationSettings.handoffStatus),
+        fallbackName: t('preparation.k_10'),
+      });
+    }
+
+    const includesShortage = dynamicOptions.some(
+      (opt) => opt.code === toUpper(SHORTAGE_HOLD_STATUS),
+    );
+    if (!includesShortage) {
+      dynamicOptions.push({
+        code: toUpper(SHORTAGE_HOLD_STATUS),
+        fallbackName: t('preparation.k_9'),
+      });
+    }
+
+    return dynamicOptions;
+  }, [preparationStatuses, preparationSettings.handoffStatus, preparationSettings.startingStatus]);
+
+  const stageDefinitions = useMemo<StageDefinition[]>(() => {
+    const built: StageDefinition[] = [];
+    const systemStageKeys = new Set(
+      FALLBACK_STAGE_DEFINITIONS.map((s) => s.key),
+    );
+
+    preparationStatuses.forEach((status, index) => {
+      const code = toUpper(status.code);
+      if (systemStageKeys.has(code)) return;
+
+      built.push({
+        key: code,
+        label: status.name,
+        labelKey: status.name,
+        colorClass:
+          DYNAMIC_STAGE_COLORS[index % DYNAMIC_STAGE_COLORS.length],
+        description: status.name,
+        descriptionKey: status.name,
       });
     });
 
-    return [...deduped.values()];
-  }, [preparationSettings.handoffStatus, preparationSettings.startingStatus]);
+    const KNOWN_SYSTEM_STAGES: Record<string, StageDefinition> = {};
+    FALLBACK_STAGE_DEFINITIONS.forEach((def) => {
+      KNOWN_SYSTEM_STAGES[def.key] = def;
+    });
+
+    const allKeys = new Set<string>();
+    const ordered: StageDefinition[] = [];
+
+    const shouldInclude = (key: string) => {
+      if (allKeys.has(key)) return false;
+      allKeys.add(key);
+      return true;
+    };
+
+    if (
+      preparationSettings.startingStatus &&
+      shouldInclude(toUpper(preparationSettings.startingStatus))
+    ) {
+      const code = toUpper(preparationSettings.startingStatus);
+      if (KNOWN_SYSTEM_STAGES["WAITING"]) {
+        ordered.push({
+          ...KNOWN_SYSTEM_STAGES["WAITING"],
+          key: code,
+        });
+      }
+    }
+
+    const addIfIncluded = (code: string) => {
+      if (shouldInclude(code)) {
+        ordered.push(KNOWN_SYSTEM_STAGES[code]);
+      }
+    };
+
+    addIfIncluded("PREPARING");
+    addIfIncluded("QUALITY_CHECK");
+    addIfIncluded("PACKAGED");
+
+    if (
+      preparationSettings.handoffStatus &&
+      shouldInclude(toUpper(preparationSettings.handoffStatus))
+    ) {
+      const code = toUpper(preparationSettings.handoffStatus);
+      if (KNOWN_SYSTEM_STAGES["READY_TO_SHIP"]) {
+        ordered.push({ ...KNOWN_SYSTEM_STAGES["READY_TO_SHIP"], key: code });
+      }
+    }
+
+    addIfIncluded("STOCK_SHORTAGE");
+    addIfIncluded("PENDING_CANCELLATION");
+
+    built.forEach((def) => {
+      if (shouldInclude(def.key)) {
+        ordered.push(def);
+      }
+    });
+
+    return ordered;
+  }, [preparationStatuses, preparationSettings.handoffStatus, preparationSettings.startingStatus]);
 
   const enabledQcChecks = useMemo(
     () =>
@@ -1049,6 +1149,7 @@ const PreparationQueue: React.FC = () => {
             <PreparationFilters
               activeStage={activeStage}
               stageCounts={stageCounts}
+              stageDefinitions={stageDefinitions}
               visibleOrdersCount={visibleOrdersCount}
               search={search}
               selectedWarehouseId={selectedWarehouseId}

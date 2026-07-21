@@ -147,7 +147,7 @@ const normalizePreparationStage = (status) => {
   if (normalized === 'PENDING_CANCELLATION') {
     return 'PENDING_CANCELLATION';
   }
-  return null;
+  return normalized;
 };
 
 const isPreparationShortageFollowUpToday = (followUpDate, stage) => {
@@ -186,7 +186,8 @@ const createPreparationStageCounts = () => ({
   QUALITY_CHECK: 0,
   PACKAGED: 0,
   READY_TO_SHIP: 0,
-  STOCK_SHORTAGE: 0
+  STOCK_SHORTAGE: 0,
+  PENDING_CANCELLATION: 0
 });
 
 const dedupePreparationWarehouseName = (names) => {
@@ -608,6 +609,7 @@ const createEmptyPreparationQueueResponse = (page, limit) => ({
     filteredTotal: 0,
     visibleTotal: 0,
     stageCounts: createPreparationStageCounts(),
+    statusCounts: {},
     readyCount: 0,
     shortageCount: 0,
     shortageHoldCount: 0,
@@ -787,7 +789,15 @@ const STAGE_EFFECTIVE_STATUS_MAP = {
 
 const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata) => {
   const statuses = STAGE_EFFECTIVE_STATUS_MAP[stage];
-  if (!statuses) return null;
+  if (!statuses) {
+    if (useMetadata) {
+      const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), ${tableAlias}."status"::text)`;
+      const placeholder = builder.pushValue(stage);
+      return `UPPER(${effectiveStatus}) = ${placeholder}`;
+    }
+    const placeholder = builder.pushValue(stage);
+    return `UPPER(${tableAlias}."status") = ${placeholder}`;
+  }
 
   if (useMetadata) {
     const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), ${tableAlias}."status"::text)`;
@@ -1113,6 +1123,7 @@ const getPreparationQueue = async ({ user, query }) => {
   const requestedVisibleLimit = Math.max(limit, page * limit);
   const batchSize = Math.max(PREPARATION_BATCH_SIZE, limit * 4);
   const stageCounts = createPreparationStageCounts();
+  const statusCounts = {};
   const shortageOwnerSet = new Set();
   const topVisibleOrders = [];
 
@@ -1214,8 +1225,9 @@ const getPreparationQueue = async ({ user, query }) => {
       filteredTotal += 1;
       stageCounts.ALL += 1;
       if (order.stage) {
-        stageCounts[order.stage] += 1;
+        stageCounts[order.stage] = (stageCounts[order.stage] || 0) + 1;
       }
+      statusCounts[order.normalizedStatus] = (statusCounts[order.normalizedStatus] || 0) + 1;
 
       if (order.isReady) {
         readyCount += 1;
@@ -1281,6 +1293,7 @@ const getPreparationQueue = async ({ user, query }) => {
       filteredTotal,
       visibleTotal,
       stageCounts,
+      statusCounts,
       readyCount,
       shortageCount,
       shortageHoldCount,

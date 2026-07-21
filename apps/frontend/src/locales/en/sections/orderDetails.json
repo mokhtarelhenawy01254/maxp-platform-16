@@ -82,5 +82,18 @@
   "shippingCost": "Shipping Cost",
   "estimatedDelivery": "Estimated Delivery",
   "days": "days",
-  "preparationSlipError": "Failed to print preparation slip: {{error}}"
+  "preparationSlipError": "Failed to print preparation slip: {{error}}",
+  "confirmAndDistributionData": "Confirmation & Distribution Data",
+  "confirmationStatus": "Confirmation Status",
+  "confirmedStatus": "Confirmed",
+  "notConfirmedStatus": "Not Confirmed",
+  "confirmationDate": "Confirmation Date",
+  "confirmedBy": "Confirmed By",
+  "distributionStatus": "Distribution Status",
+  "distributed": "Distributed",
+  "notDistributed": "Not Distributed",
+  "distributedToLabel": "Distributed To",
+  "distributionMethod": "Distribution Method",
+  "distributionDate": "Distribution Date",
+  "distributedByLabel": "Distributed By"
 }

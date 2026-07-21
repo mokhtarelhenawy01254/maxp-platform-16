@@ -128,6 +128,7 @@ export const normalizeStatusConfig = (
     code: toUpper(status.code),
     name: status.name || status.nameEn || status.code,
     color: status.color || undefined,
+    statusType: status.statusType || undefined,
   };
 };
 

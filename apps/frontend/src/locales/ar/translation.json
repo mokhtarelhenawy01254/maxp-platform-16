@@ -4520,7 +4520,20 @@
     "shippingCost": "تكلفة الشحن",
     "estimatedDelivery": "التسليم المتوقع",
     "days": "أيام",
-    "preparationSlipError": "فشل طباعة ورقة التجهيز: {{error}}"
+    "preparationSlipError": "فشل طباعة ورقة التجهيز: {{error}}",
+    "confirmAndDistributionData": "بيانات التأكيد والتوزيع",
+    "confirmationStatus": "حالة التأكيد",
+    "confirmedStatus": "مؤكد",
+    "notConfirmedStatus": "غير مؤكد",
+    "confirmationDate": "تاريخ التأكيد",
+    "confirmedBy": "تم التأكيد بواسطة",
+    "distributionStatus": "حالة التوزيع",
+    "distributed": "موزع",
+    "notDistributed": "غير موزع",
+    "distributedToLabel": "موزع على",
+    "distributionMethod": "طريقة التوزيع",
+    "distributionDate": "تاريخ التوزيع",
+    "distributedByLabel": "تم التوزيع بواسطة"
   },
   "orderInvoiceSettings": {
     "k_1": "جاري تحميل مركز الفواتير والطباعة...",

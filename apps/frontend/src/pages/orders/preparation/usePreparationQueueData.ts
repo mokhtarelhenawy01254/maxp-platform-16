@@ -77,9 +77,11 @@ interface UsePreparationQueueDataResult {
   ensureInventory: () => Promise<void>;
   warehouses: WarehouseOption[];
   statusConfigs: StatusConfig[];
+  preparationStatuses: StatusConfig[];
   preparationSettings: PreparationQueueSettings;
   pagination: PreparationQueuePagination;
   summary: PreparationQueueSummary;
+  statusCounts: Record<string, number>;
   shortageOwnerOptions: string[];
   loading: boolean;
   refreshing: boolean;
@@ -543,6 +545,18 @@ export const usePreparationQueueData = ({
     ],
   );
 
+  const statusConfigsData = useMemo(
+    () => statusConfigsQuery.data || [],
+    [statusConfigsQuery.data],
+  );
+
+  const preparationStatuses = useMemo(
+    () => statusConfigsData.filter((s) => s.statusType === "preparation"),
+    [statusConfigsData],
+  );
+
+  const statusCounts = ordersQuery.data?.summary?.statusCounts || {};
+
   return {
     orders,
     setOrders: setOrdersState,
@@ -550,11 +564,13 @@ export const usePreparationQueueData = ({
     inventoryLoading,
     ensureInventory,
     warehouses: warehousesQuery.data || [],
-    statusConfigs: statusConfigsQuery.data || [],
+    statusConfigs: statusConfigsData,
+    preparationStatuses,
     preparationSettings:
       preparationSettingsQuery.data || DEFAULT_PREPARATION_QUEUE_SETTINGS,
     pagination: ordersQuery.data?.pagination || EMPTY_PAGINATION,
     summary: ordersQuery.data?.summary || EMPTY_SUMMARY,
+    statusCounts,
     shortageOwnerOptions: ordersQuery.data?.shortageOwnerOptions || [],
     loading,
     refreshing,
