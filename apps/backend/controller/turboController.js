@@ -2598,9 +2598,32 @@ const getRecords = async (req, res) => {
       } else {
         const VALID_ORDER_STATUSES = new Set(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED', 'ON_HOLD']);
         const upperFilter = filterType.toUpperCase();
+
+        const ALIASES = {
+          'processing': ['processing', 'status_3', 'created'],
+          'shipped': ['shipped', 'status_4'],
+          'out_for_delivery': ['out_for_delivery', 'status_9'],
+          'delivered': ['delivered', 'status_5'],
+          'cancelled': ['cancelled', 'status_6'],
+          'returned': ['returned', 'status_7'],
+          'delayed': ['delayed', 'status_8'],
+          'on_hold': ['on_hold', 'status_12'],
+          'failed_delivery': ['failed_delivery', 'status_10'],
+          'rescheduled': ['rescheduled', 'status_11'],
+          'returned_to_company': ['returned_to_company', 'status_14'],
+          'returned_resent': ['returned_resent', 'status_15'],
+          'returned_missing': ['returned_missing', 'status_16'],
+          'returned_destroyed': ['returned_destroyed', 'status_17'],
+          'incomplete': ['incomplete', 'status_18'],
+          'remitted': ['remitted', 'status_19'],
+          'returned_received': ['returned_received', 'status_20'],
+          'lost': ['lost', 'status_13']
+        };
+
+        const targetList = ALIASES[ft] || [ft];
         
         const statusOrConditions = [
-          { turboShipmentStatus: { equals: ft, mode: 'insensitive' } }
+          { turboShipmentStatus: { in: targetList } }
         ];
 
         if (VALID_ORDER_STATUSES.has(upperFilter)) {
@@ -2724,10 +2747,35 @@ const getRecords = async (req, res) => {
       _count: { id: true }
     }), 2).catch(() => []);
 
+    const STATUS_ALIAS_MAP = {
+      'status_1': 'pending',
+      'status_2': 'confirmed',
+      'status_3': 'processing',
+      'created': 'processing',
+      'status_4': 'shipped',
+      'status_5': 'delivered',
+      'status_6': 'cancelled',
+      'status_7': 'returned',
+      'status_8': 'delayed',
+      'status_9': 'out_for_delivery',
+      'status_10': 'failed_delivery',
+      'status_11': 'rescheduled',
+      'status_12': 'on_hold',
+      'status_13': 'lost',
+      'status_14': 'returned_to_company',
+      'status_15': 'returned_resent',
+      'status_16': 'returned_missing',
+      'status_17': 'returned_destroyed',
+      'status_18': 'incomplete',
+      'status_19': 'remitted',
+      'status_20': 'returned_received'
+    };
+
     const statusCountsObj = {};
     if (Array.isArray(statusCountsRaw)) {
       for (const row of statusCountsRaw) {
-        const key = (row.turboShipmentStatus || 'created').toLowerCase();
+        const rawKey = (row.turboShipmentStatus || 'processing').toLowerCase();
+        const key = STATUS_ALIAS_MAP[rawKey] || rawKey;
         statusCountsObj[key] = (statusCountsObj[key] || 0) + row._count.id;
       }
     }

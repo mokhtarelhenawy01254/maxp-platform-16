@@ -898,24 +898,77 @@ class TurboService {
       const shipments = result.data || [];
       console.log(`✅ [TURBO] Fetched ${shipments.length} shipments statuses`);
       const statusMap = {
+        '1': 'pending',
+        '2': 'confirmed',
+        '3': 'processing',
+        '4': 'shipped',
+        '5': 'delivered',
+        '6': 'cancelled',
+        '7': 'returned',
+        '8': 'delayed',
+        '9': 'out_for_delivery',
+        '10': 'failed_delivery',
+        '11': 'rescheduled',
+        '12': 'on_hold',
+        '13': 'lost',
+        '14': 'returned_to_company',
+        '15': 'returned_resent',
+        '16': 'returned_missing',
+        '17': 'returned_destroyed',
+        '18': 'incomplete',
+        '19': 'remitted',
+        '20': 'returned_received',
+        // Text mappings (Arabic & English)
+        'قيد الإنتظار': 'pending',
+        'قيد الانتظار': 'pending',
+        'تم التأكيد': 'confirmed',
+        'قيد التنفيذ': 'processing',
+        'تم الشحن': 'shipped',
+        'في الطريق': 'shipped',
+        'مسلمة للمندوب': 'out_for_delivery',
+        'قيد التوصيل': 'out_for_delivery',
+        'مؤجلات مع المندوب': 'delayed',
+        'شحنة مؤجلة': 'delayed',
+        'محاولة تسليم فاشلة': 'failed_delivery',
+        'إعادة جدولة': 'rescheduled',
+        'معلق بالفرع': 'on_hold',
+        'شحنة معلقة': 'on_hold',
+        'تم التسليم': 'delivered',
+        'تم التسليم والتحصيل': 'delivered',
+        'تم التوريد': 'remitted',
+        'ملغي': 'cancelled',
+        'مرتجع': 'returned',
+        'شحنة مرتجعة': 'returned',
+        'مرتجعات في الشركة': 'returned_to_company',
+        'مرتجعات وصلتني': 'returned_received',
+        'معاد ارسالها': 'returned_resent',
+        'مرتجعات مفقودة': 'returned_missing',
+        'مرتجعات معدومة': 'returned_destroyed',
+        'غير مكتملة': 'incomplete',
         'delivered': 'delivered', 'cancelled': 'cancelled', 'returned': 'returned',
-        'returned to sender': 'returned', 'Accepted': 'processing',
-        'Under Delivery': 'out_for_delivery', 'pending': 'pending', 'confirmed': 'confirmed',
+        'returned to sender': 'returned', 'accepted': 'processing',
+        'under delivery': 'out_for_delivery', 'pending': 'pending', 'confirmed': 'confirmed',
         'in transit': 'shipped', 'delayed': 'delayed', 'failed delivery': 'failed_delivery',
         'rescheduled': 'rescheduled', 'on hold': 'on_hold', 'lost': 'lost'
       };
       return {
         success: true,
-        shipments: shipments.map(s => ({
-          code: s.code, barCode: s.bar_code, status: s.status, statusCode: s.status_code,
-          internalStatus: statusMap[(s.status || '').toLowerCase()] || `status_${s.status_code}`,
-          returnReason: s.return_reason, delayReason: s.delay_reason,
-          branch: s.branch, captain: s.captain,
-          captainNumber1: s.captain_number1, captainNumber2: s.captain_number2,
-          receivedAmount: s.received_amount, expectedBranch: s.expected_branch,
-          invoiceNumber: s.invoice_number, returnedInventoryStatus: s.returned_inventory_status,
-          raw: s
-        })),
+        shipments: shipments.map(s => {
+          const rawStatus = (s.status || '').trim();
+          const statusCodeStr = String(s.status_code || '');
+          const mapped = statusMap[statusCodeStr] || statusMap[rawStatus] || statusMap[rawStatus.toLowerCase()] || rawStatus.toLowerCase() || 'processing';
+
+          return {
+            code: s.code, barCode: s.bar_code, status: s.status, statusCode: s.status_code,
+            internalStatus: mapped,
+            returnReason: s.return_reason, delayReason: s.delay_reason,
+            branch: s.branch, captain: s.captain,
+            captainNumber1: s.captain_number1, captainNumber2: s.captain_number2,
+            receivedAmount: s.received_amount, expectedBranch: s.expected_branch,
+            invoiceNumber: s.invoice_number, returnedInventoryStatus: s.returned_inventory_status,
+            raw: s
+          };
+        }),
         count: shipments.length,
         dateRange: { from, to }
       };
