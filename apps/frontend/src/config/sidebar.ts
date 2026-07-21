@@ -715,7 +715,6 @@ export const getSidebarConfig = (
                     label: t('sidebar.visitStore'),
                     external: true
                 },
-                { to: '/settings/store-pages', icon: DocumentTextIcon, label: t('sidebar.storePages') },
                 { to: '/settings/custom-domain', icon: LinkIcon, label: t('sidebar.customDomain') },
                 { to: '/settings/store?tab=branches', icon: BuildingStorefrontIcon, label: t('sidebar.storeSettings') },
                 { to: '/settings/store/product-conversion', icon: SparklesIcon, label: t('sidebar.conversionTools') },
@@ -750,6 +749,7 @@ export const getSidebarConfig = (
                     label: t('sidebar.abandonedCart'),
                     hidden: !isAppActive('analytics-advanced')
                 },
+                { to: '/settings/store-pages', icon: DocumentTextIcon, label: t('sidebar.storePages') },
             ],
             // 🔒 متاح للمالك والأدمن فقط لتغيير تصميم المتجر
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'conversion-suite'])
