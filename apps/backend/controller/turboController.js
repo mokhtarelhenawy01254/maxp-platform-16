@@ -2604,7 +2604,41 @@ const getRecords = async (req, res) => {
           const TurboService = require('../services/turboService');
           const svc = new TurboService(first.turboApiKey, companyId);
           const r = await svc.fetchAllStatuses();
-          if (r.success) { turboStatuses = {}; for (const s of r.shipments) { if (s.code) turboStatuses[s.code] = s; if (s.barCode) turboStatuses[s.barCode] = s; } }
+          if (r.success) { 
+            turboStatuses = {}; 
+            for (const s of r.shipments) { 
+              if (s.code) turboStatuses[s.code] = s; 
+              if (s.barCode) turboStatuses[s.barCode] = s; 
+            }
+
+            // 🔄 التحديث المباشر للطلبات في قاعدة البيانات بالحالة الجديدة
+            for (const o of orders) {
+              const key = o.turboShipmentId || o.turboTrackingNumber;
+              const live = key ? turboStatuses[key] : null;
+              if (live) {
+                const internalStat = live.internalStatus || (live.status ? String(live.status).toLowerCase() : null);
+                const codeStr = String(live.statusCode || '');
+                let newMainStatus = undefined;
+                if (internalStat === 'delivered' || codeStr === '5') newMainStatus = 'DELIVERED';
+                else if (internalStat === 'processing' || codeStr === '3') newMainStatus = 'PROCESSING';
+                else if (internalStat === 'shipped' || internalStat === 'out_for_delivery' || codeStr === '4' || codeStr === '9') newMainStatus = 'SHIPPED';
+                else if (internalStat === 'cancelled' || codeStr === '6') newMainStatus = 'CANCELLED';
+                else if (internalStat === 'returned' || internalStat === 'returned_to_company' || codeStr === '7' || codeStr === '14') newMainStatus = 'RETURNED';
+                else if (internalStat === 'on_hold' || internalStat === 'delayed' || codeStr === '8' || codeStr === '10' || codeStr === '11' || codeStr === '12') newMainStatus = 'ON_HOLD';
+
+                const updatePayload = {
+                  turboShipmentStatus: internalStat || o.turboShipmentStatus,
+                  updatedAt: new Date()
+                };
+                if (newMainStatus) updatePayload.status = newMainStatus;
+
+                await safeQuery(() => prisma.order.update({
+                  where: { id: o.id },
+                  data: updatePayload
+                }), 2).catch(() => {});
+              }
+            }
+          }
         } catch (e) { console.warn('⚠️ [TURBO] Failed to refresh statuses:', e.message); }
       }
     }

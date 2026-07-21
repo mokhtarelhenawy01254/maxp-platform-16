@@ -156,8 +156,22 @@ const TurboRecords: React.FC = () => {
     const handleRefreshStatuses = async () => {
         setRefreshingStatuses(true);
         try {
-            await fetchOrders();
-            toast.success(t("orders.statusUpdated", "تم تحديث الحالات"));
+            const params: any = {
+                page: page.toString(),
+                limit: limit.toString(),
+                search: searchQuery,
+                filterType,
+                refresh: "true",
+            };
+            const response = await apiClient.get("/turbo/records", { params });
+            if (response.data.success) {
+                setOrders(response.data.data || []);
+                if (response.data.pagination) {
+                    setTotalPages(response.data.pagination.pages || 1);
+                    setTotalOrders(response.data.pagination.total || 0);
+                }
+                toast.success(t("orders.statusUpdated", "تم تحديث الحالات الحية من تربو بنجاح"));
+            }
         } catch (err) {
             toast.error(t("orders.updateError", "فشل في تحديث الحالات"));
         } finally {
@@ -165,24 +179,53 @@ const TurboRecords: React.FC = () => {
         }
     };
 
+    const TURBO_STATUS_LABELS: Record<string, string> = {
+        delivered: 'تم التسليم والتحصيل',
+        out_for_delivery: 'قيد التوصيل مع الكابتن',
+        shipped: 'تم الشحن وفي الطريق',
+        processing: 'جاري المعالجة والتجهيز',
+        delayed: 'شحنة مؤجلة',
+        failed_delivery: 'محاولة تسليم فاشلة',
+        rescheduled: 'إعادة جدولة التسليم',
+        on_hold: 'شحنة معلقة بالفرع',
+        cancelled: 'ملغي من الشحن',
+        returned: 'شحنة مرتجعة',
+        returned_to_company: 'مرتجع مُسلّم للشركة',
+        returned_resent: 'مرتجع أعيد إرساله',
+        returned_missing: 'مرتجع مفقود',
+        returned_destroyed: 'مرتجع هالك',
+        lost: 'شحنة مفقودة',
+        pending: 'قيد الانتظار',
+        confirmed: 'تم التأكيد',
+    };
+
+    const getTurboStatusText = (status: string | undefined | null) => {
+        if (!status) return "غير مرسلة";
+        const key = status.toLowerCase().trim();
+        return TURBO_STATUS_LABELS[key] || status;
+    };
+
     const getTurboStatusColor = (status: string) => {
         const s = status?.toLowerCase() || '';
-        if (s === 'delivered' || s === 'completed') return 'bg-green-100 text-green-800';
-        if (s === 'shipped' || s === 'out_for_delivery') return 'bg-blue-100 text-blue-800';
-        if (s === 'cancelled') return 'bg-red-100 text-red-800';
-        if (s === 'returned') return 'bg-orange-100 text-orange-800';
-        if (s === 'processing' || s === 'confirmed') return 'bg-yellow-100 text-yellow-800';
-        if (s === 'failed_delivery' || s === 'lost') return 'bg-red-100 text-red-800';
-        return 'bg-gray-100 text-gray-800';
+        if (s === 'delivered' || s === 'completed') return 'bg-green-100 text-green-800 border border-green-200';
+        if (s === 'shipped' || s === 'in_transit') return 'bg-blue-100 text-blue-800 border border-blue-200';
+        if (s === 'out_for_delivery') return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
+        if (s === 'cancelled') return 'bg-red-100 text-red-800 border border-red-200';
+        if (s.startsWith('returned') || s === 'lost') return 'bg-rose-100 text-rose-800 border border-rose-200';
+        if (s === 'processing' || s === 'confirmed') return 'bg-purple-100 text-purple-800 border border-purple-200';
+        if (s === 'delayed' || s === 'failed_delivery' || s === 'rescheduled' || s === 'on_hold') return 'bg-amber-100 text-amber-800 border border-amber-200';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
     };
 
     const statusSummaryItems = [
-        { key: 'delivered', label: 'تم التوصيل', color: 'border-green-300 bg-green-50' },
-        { key: 'out_for_delivery', label: 'قيد التوصيل', color: 'border-blue-300 bg-blue-50' },
-        { key: 'processing', label: 'قيد المعالجة', color: 'border-yellow-300 bg-yellow-50' },
-        { key: 'returned', label: 'مرتجع', color: 'border-orange-300 bg-orange-50' },
+        { key: 'delivered', label: 'تم التسليم', color: 'border-green-300 bg-green-50' },
+        { key: 'out_for_delivery', label: 'قيد التوصيل', color: 'border-cyan-300 bg-cyan-50' },
+        { key: 'shipped', label: 'تم الشحن', color: 'border-blue-300 bg-blue-50' },
+        { key: 'processing', label: 'قيد المعالجة', color: 'border-purple-300 bg-purple-50' },
+        { key: 'delayed', label: 'مؤجل / معلق', color: 'border-amber-300 bg-amber-50' },
+        { key: 'returned', label: 'مرتجع', color: 'border-rose-300 bg-rose-50' },
         { key: 'cancelled', label: 'ملغي', color: 'border-red-300 bg-red-50' },
-        { key: 'pending', label: 'معلق', color: 'border-gray-300 bg-gray-50' },
+        { key: 'pending', label: 'في الانتظار', color: 'border-gray-300 bg-gray-50' },
     ];
 
     const statusCounts = statusSummaryItems.map(s => ({
@@ -357,7 +400,7 @@ const TurboRecords: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col gap-1">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTurboStatusColor(order.turboShipmentStatus || '')}`}>
-                                                    {order.turboShipmentStatus || "غير مرسلة"}
+                                                    {getTurboStatusText(order.turboShipmentStatus)}
                                                 </span>
                                                 {order.turboLiveStatus && (
                                                     <span className="text-xs text-gray-400">
