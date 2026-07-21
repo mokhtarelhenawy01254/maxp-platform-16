@@ -780,8 +780,8 @@ exports.sendCampaign = async (req, res) => {
     }
 
     // ==================== إرسال الرسائل حسب القناة ====================
-    const isWhatsAppChannel = campaign.channel === 'whatsapp';
-    console.log(`📤 [SEND CAMPAIGN] بدء إرسال الرسائل عبر ${isWhatsAppChannel ? 'WhatsApp' : 'Facebook Messenger'}`);
+    const isWhatsApp = campaign.channel === 'whatsapp';
+    console.log(`📤 [SEND CAMPAIGN] بدء إرسال الرسائل عبر ${isWhatsApp ? 'WhatsApp' : 'Facebook Messenger'}`);
 
     let sentCount = 0;
     let failedCount = 0;
