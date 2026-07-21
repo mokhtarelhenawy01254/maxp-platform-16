@@ -110,28 +110,28 @@ const presetOrder: DatePreset[] = ["today", "yesterday", "7days", "30days", "thi
 
 function getPresetRange(preset: DatePreset): { start: string; end: string } {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   const fmt = (d: Date) => d.toISOString().substring(0, 10);
   switch (preset) {
     case "today":
       return { start: fmt(today), end: fmt(today) };
     case "yesterday": {
       const y = new Date(today);
-      y.setDate(y.getDate() - 1);
+      y.setUTCDate(y.getUTCDate() - 1);
       return { start: fmt(y), end: fmt(y) };
     }
     case "7days": {
       const s = new Date(today);
-      s.setDate(s.getDate() - 6);
+      s.setUTCDate(s.getUTCDate() - 6);
       return { start: fmt(s), end: fmt(today) };
     }
     case "30days": {
       const s = new Date(today);
-      s.setDate(s.getDate() - 29);
+      s.setUTCDate(s.getUTCDate() - 29);
       return { start: fmt(s), end: fmt(today) };
     }
     case "thisMonth": {
-      const s = new Date(now.getFullYear(), now.getMonth(), 1);
+      const s = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
       return { start: fmt(s), end: fmt(today) };
     }
     default:
