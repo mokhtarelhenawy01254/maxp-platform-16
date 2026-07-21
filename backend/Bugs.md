@@ -1,5 +1,15 @@
 # Backend Bugs Log
 
+### [BUG FIX / TURBO] Webhook Intermediate Statuses (Processing, Shipped, Out for Delivery) Ignored for Order.status
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **Partial Status Mapping Logic**: In `apps/backend/routes/turboWebhook.js`, incoming webhooks from Turbo updated `turboShipmentStatus` and `turboMetadata`, but only checked for `delivered` (5), `cancelled` (6), and `returned` (7) when updating the main `Order.status` / `GuestOrder.status` field.
+  2. **Stale Main Order Status**: When Turbo sent intermediate webhook updates such as `processing` (3), `shipped` (4), `out_for_delivery` (9), or `on_hold` (12/8/11), `updateData.status` remained undefined, leaving the order's primary status stuck in `PENDING` or `CONFIRMED` on the main Orders table.
+- **Resolution**:
+  1. **Comprehensive Status Enum Mapping**: Extended `turboWebhook.js` to map `processing` (3) ➡️ `PROCESSING`, `shipped` (4) / `out_for_delivery` (9) ➡️ `SHIPPED`, and `on_hold` / `delayed` (12/8/11) ➡️ `ON_HOLD` for both `Order` and `GuestOrder` models.
+- **Files Modified**:
+  - `apps/backend/routes/turboWebhook.js`
+
 ### [BUG FIX / FRONTEND] Uncaught ReferenceError: t is not defined in route-admin Chunk
 - **Date**: 2026-07-21
 - **Root Cause**:

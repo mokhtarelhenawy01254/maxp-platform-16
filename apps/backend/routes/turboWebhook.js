@@ -225,6 +225,8 @@ router.post('/webhook', async (req, res) => {
               where: { id: guestOrder.id },
               data: {
                 status: status === 'delivered' || statusCode === '5' ? 'DELIVERED' : 
+                        status === 'processing' || statusCode === '3' ? 'PROCESSING' :
+                        status === 'shipped' || statusCode === '4' || status === 'out_for_delivery' || statusCode === '9' ? 'SHIPPED' :
                         status === 'cancelled' || statusCode === '6' ? 'CANCELLED' :
                         status === 'returned' || returnStatus === '1' || statusCode === '7' ? 'RETURNED' :
                         guestOrder.status,
@@ -278,6 +280,8 @@ router.post('/webhook', async (req, res) => {
               where: { id: guestOrder.id },
               data: {
                 status: status === 'delivered' || statusCode === '5' ? 'DELIVERED' : 
+                        status === 'processing' || statusCode === '3' ? 'PROCESSING' :
+                        status === 'shipped' || statusCode === '4' || status === 'out_for_delivery' || statusCode === '9' ? 'SHIPPED' :
                         status === 'cancelled' || statusCode === '6' ? 'CANCELLED' :
                         status === 'returned' || returnStatus === '1' || statusCode === '7' ? 'RETURNED' :
                         guestOrder.status,
@@ -371,25 +375,25 @@ router.post('/webhook', async (req, res) => {
 
     // actualShippingCost يتم حفظه في turboMetadata (غير موجود في schema مباشرة)
 
-    // إذا كانت الشحنة تم تسليمها، نحدث حالة الطلب
-    if (status === 'delivered' || statusCode === '5') {
+    // تحديث حالة الطلب الرئيسية (OrderStatus) بناءً على حالة Turbo
+    if (status === 'processing' || statusCode === '3') {
+      updateData.status = 'PROCESSING';
+    } else if (status === 'shipped' || statusCode === '4' || status === 'out_for_delivery' || statusCode === '9') {
+      updateData.status = 'SHIPPED';
+    } else if (status === 'delivered' || statusCode === '5') {
       updateData.status = 'DELIVERED';
       updateData.paymentStatus = 'COMPLETED'; // افتراض أن الدفع تم عند التسليم
-    }
-
-    // إذا كانت الشحنة ملغاة، نحدث حالة الطلب
-    if (status === 'cancelled' || statusCode === '6') {
+    } else if (status === 'cancelled' || statusCode === '6') {
       updateData.status = 'CANCELLED';
-    }
-
-    // إذا كانت الشحنة مرتجعة، نحدث حالة الطلب ونسجل return_amount
-    if (status === 'returned' || returnStatus === '1' || statusCode === '7') {
+    } else if (status === 'returned' || returnStatus === '1' || statusCode === '7') {
       updateData.status = 'RETURNED';
       const shippingCost = parseFloat(order.shipping || 0);
       if (shippingCost > 0) {
         turboMetadataObj.return_amount = shippingCost;
         updateData.turboMetadata = JSON.stringify(turboMetadataObj);
       }
+    } else if (status === 'on_hold' || statusCode === '12' || statusCode === '8' || statusCode === '11') {
+      updateData.status = 'ON_HOLD';
     }
 
     await safeQuery(async () => {

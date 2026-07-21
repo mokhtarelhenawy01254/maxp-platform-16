@@ -1,6 +1,10 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
+- **Turbo Webhook Intermediate Status Mapping Fix (BUGFIX / COMPLETE)**:
+  1. **Root Cause Resolved**: Fixed issue where Turbo webhooks arriving at `/api/v1/turbo-webhook/webhook` logged activity and updated `turboShipmentStatus`, but failed to update main `Order.status` / `GuestOrder.status` for intermediate statuses (`processing`, `shipped`, `out_for_delivery`, `on_hold`).
+  2. **Comprehensive Mapping**: Mapped `processing` (3) to `PROCESSING`, `shipped` (4) and `out_for_delivery` (9) to `SHIPPED`, and `on_hold` / `delayed` (12/8/11) to `ON_HOLD` in `apps/backend/routes/turboWebhook.js`.
+
 - **Frontend Admin Bundle `t is not defined` Fix (BUGFIX / COMPLETE)**:
   1. **Fixed Module Scope `t()` Execution**: Fixed runtime crash `Uncaught ReferenceError: t is not defined` in `route-admin-*.js` by removing module-level `t(...)` execution in `CheckoutColumn.tsx` and dynamically mapping `EGYPT_GOVERNORATE_KEYS` inside component body using `useMemo` and `useTranslation()`.
   2. **Fixed Missing Hook**: Added `useTranslation` import and hook instantiation in `ProductSearchColumn.tsx`.
