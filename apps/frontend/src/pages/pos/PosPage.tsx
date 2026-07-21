@@ -293,7 +293,7 @@ const PosPage = () => {
     const q = searchQuery.toLowerCase();
     return (
       (p.name.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q)) &&
-      (selectedCategory ==={t('pos.k_1')} || p.category === selectedCategory)
+      (selectedCategory === t('pos.k_1') || p.category === selectedCategory)
     );
   });
 
