@@ -299,6 +299,8 @@ export const usePreparationQueueData = ({
   shortageOwnerFilter,
   productFilter,
   itemCountFilter,
+  notPrintedFilter,
+  noShippingCodeFilter,
   search,
   notPrintedFilter,
   noShippingCodeFilter,
