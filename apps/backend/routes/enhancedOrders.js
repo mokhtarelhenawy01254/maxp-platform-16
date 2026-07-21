@@ -634,17 +634,6 @@ router.post('/', async (req, res) => {
 
     const result = await enhancedOrderService.createEnhancedOrder(orderData);
 
-    if (result.success) {
-      // 🚀 Push order to provider(s) if it contains imported products
-      // MUST happen BEFORE disconnect() because disconnect() closes the shared Prisma client
-      try {
-        const internalSyncService = require('../services/internalSyncService');
-        await internalSyncService.pushOrderToProvider(result.order.id, orderData.companyId);
-      } catch (pushError) {
-        console.error('❌ [INTERNAL-SYNC] Failed to push enhanced order to provider:', pushError.message);
-      }
-    }
-
     await enhancedOrderService.disconnect();
 
     if (result.success) {
