@@ -81,5 +81,6 @@
   "calculateShipping": "Calculate Shipping Cost",
   "shippingCost": "Shipping Cost",
   "estimatedDelivery": "Estimated Delivery",
-  "days": "days"
+  "days": "days",
+  "preparationSlipError": "Failed to print preparation slip: {{error}}"
 }

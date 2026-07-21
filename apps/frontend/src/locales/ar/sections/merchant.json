@@ -1,0 +1,54 @@
+{
+  "title": "ملخص عمليات التاجر",
+  "summaryDesc": "متابعة {{ordersCount}} طلب بعدد {{piecesCount}} قطعة في التجهيز",
+  "refresh": "تحديث",
+  "loadError": "فشل تحميل ملخص عمليات التاجر",
+  "statCards": {
+    "inShipping": "قيد الشحن",
+    "delivered": "تم التسليم",
+    "payable": "مستحق الدفع",
+    "notCompleted": "غير مكتملة"
+  },
+  "statSubValues": {
+    "ordersCount": "{{count}} طلب",
+    "ordersCount_one": "{{count}} طلب",
+    "ordersCount_two": "{{count}} طلب",
+    "ordersCount_few": "{{count}} طلبات",
+    "ordersCount_many": "{{count}} طلبًا",
+    "piecesCount": "{{count}} قطعة",
+    "piecesCount_one": "{{count}} قطعة",
+    "piecesCount_two": "{{count}} قطعة",
+    "piecesCount_few": "{{count}} قطع",
+    "piecesCount_many": "{{count}} قطعة",
+    "piecesAssigned": "{{count}} قطعة مخصصة",
+    "piecesAssigned_one": "{{count}} قطعة مخصصة",
+    "piecesAssigned_two": "{{count}} قطعة مخصصة",
+    "piecesAssigned_few": "{{count}} قطع مخصصة",
+    "piecesAssigned_many": "{{count}} قطعة مخصصة"
+  },
+  "moneyCards": {
+    "expectedForMerchant": "المتوقع للتاجر",
+    "dueAfterDelivery": "المستحق بعد التسليم",
+    "inShippingValue": "قيمة قيد الشحن",
+    "shippingCost": "تكلفة الشحن",
+    "paid": "مدفوع: {{amount}}",
+    "noPaymentsRecorded": "لا توجد مدفوعات مسجلة"
+  },
+  "table": {
+    "order": "الطلب",
+    "status": "الحالة",
+    "shipping": "الشحن",
+    "pieces": "القطع",
+    "expected": "المتوقع",
+    "due": "المستحق",
+    "noOrders": "لا توجد طلبات للعرض",
+    "merchantOrderStatus": "الحالة: {{status}}",
+    "noShippingCompany": "—"
+  },
+  "statuses": {
+    "PREPARATION": "تجهيز",
+    "IN_SHIPPING": "قيد الشحن",
+    "DELIVERED": "تم التسليم",
+    "NOT_DELIVERED": "غير مسلم"
+  }
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { PackageSearch, CheckCircle2, AlertCircle, Truck, Clock, Timer } from 'lucide-react';
 
 interface PreparationStatsProps {
@@ -9,64 +10,6 @@ interface PreparationStatsProps {
   overdueShortageFollowUpCount: number;
 }
 
-const stats = (
-  searchedOrdersCount: number,
-  readyCount: number,
-  shortageCount: number,
-  readyToShipCount: number,
-  shortageHoldCount: number,
-  overdueShortageFollowUpCount: number,
-) => [
-  {
-    title: 'في مسار التجهيز',
-    count: searchedOrdersCount,
-    icon: PackageSearch,
-    iconColor: 'text-indigo-500',
-    iconBg: 'bg-indigo-50',
-    countColor: 'text-indigo-700',
-  },
-  {
-    title: 'جاهزة بالكامل',
-    count: readyCount,
-    icon: CheckCircle2,
-    iconColor: 'text-emerald-500',
-    iconBg: 'bg-emerald-50',
-    countColor: 'text-emerald-700',
-  },
-  {
-    title: 'بها نواقص',
-    count: shortageCount,
-    icon: AlertCircle,
-    iconColor: 'text-rose-500',
-    iconBg: 'bg-rose-50',
-    countColor: 'text-rose-700',
-  },
-  {
-    title: 'جاهزة للشحن',
-    count: readyToShipCount,
-    icon: Truck,
-    iconColor: 'text-sky-500',
-    iconBg: 'bg-sky-50',
-    countColor: 'text-sky-700',
-  },
-  {
-    title: 'مؤجلة بالعجز',
-    count: shortageHoldCount,
-    icon: Clock,
-    iconColor: 'text-amber-500',
-    iconBg: 'bg-amber-50',
-    countColor: 'text-amber-700',
-  },
-  {
-    title: 'متابعات متأخرة',
-    count: overdueShortageFollowUpCount,
-    icon: Timer,
-    iconColor: 'text-orange-500',
-    iconBg: 'bg-orange-50',
-    countColor: 'text-orange-700',
-  },
-];
-
 const PreparationStats = ({
   searchedOrdersCount,
   readyCount,
@@ -75,14 +18,58 @@ const PreparationStats = ({
   shortageHoldCount,
   overdueShortageFollowUpCount,
 }: PreparationStatsProps) => {
-  const items = stats(
-    searchedOrdersCount,
-    readyCount,
-    shortageCount,
-    readyToShipCount,
-    shortageHoldCount,
-    overdueShortageFollowUpCount,
-  );
+  const { t } = useTranslation();
+
+  const items = [
+    {
+      title: t("preparation.stats.inPreparation"),
+      count: searchedOrdersCount,
+      icon: PackageSearch,
+      iconColor: 'text-indigo-500',
+      iconBg: 'bg-indigo-50',
+      countColor: 'text-indigo-700',
+    },
+    {
+      title: t("preparation.stats.fullyReady"),
+      count: readyCount,
+      icon: CheckCircle2,
+      iconColor: 'text-emerald-500',
+      iconBg: 'bg-emerald-50',
+      countColor: 'text-emerald-700',
+    },
+    {
+      title: t("preparation.stats.hasShortage"),
+      count: shortageCount,
+      icon: AlertCircle,
+      iconColor: 'text-rose-500',
+      iconBg: 'bg-rose-50',
+      countColor: 'text-rose-700',
+    },
+    {
+      title: t("preparation.stats.readyToShip"),
+      count: readyToShipCount,
+      icon: Truck,
+      iconColor: 'text-sky-500',
+      iconBg: 'bg-sky-50',
+      countColor: 'text-sky-700',
+    },
+    {
+      title: t("preparation.stats.onHoldByShortage"),
+      count: shortageHoldCount,
+      icon: Clock,
+      iconColor: 'text-amber-500',
+      iconBg: 'bg-amber-50',
+      countColor: 'text-amber-700',
+    },
+    {
+      title: t("preparation.stats.overdueFollowUps"),
+      count: overdueShortageFollowUpCount,
+      icon: Timer,
+      iconColor: 'text-orange-500',
+      iconBg: 'bg-orange-50',
+      countColor: 'text-orange-700',
+    },
+  ];
 
   return (
     <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">

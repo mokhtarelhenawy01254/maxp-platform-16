@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 interface PreparationPageHeaderProps {
@@ -9,10 +10,12 @@ const PreparationPageHeader = ({
   refreshing,
   onRefresh,
 }: PreparationPageHeaderProps) => {
+  const { t } = useTranslation();
+
   return (
     <section className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white px-5 py-3 shadow-sm">
       <div>
-        <p className="text-xs text-gray-400">تجهيز الطلبات</p>
+        <p className="text-xs text-gray-400">{t("preparation.pageHeader.title")}</p>
       </div>
 
       <button
@@ -21,7 +24,7 @@ const PreparationPageHeader = ({
         className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:opacity-60"
       >
         <ArrowPathIcon className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-        تحديث
+        {t("preparation.pageHeader.refresh")}
       </button>
     </section>
   );

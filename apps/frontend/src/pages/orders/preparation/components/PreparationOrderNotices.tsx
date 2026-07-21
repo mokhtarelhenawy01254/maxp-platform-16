@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import type {
   PreparationOrder,
@@ -13,11 +14,13 @@ const PreparationOrderNotices = ({
   order,
   shortageFollowUpVisual,
 }: PreparationOrderNoticesProps) => {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-1.5">
       {order.notes ? (
         <div className="flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          <span className="font-semibold shrink-0">ملاحظات:</span>
+          <span className="font-semibold shrink-0">{t("preparation.notices.notes")}</span>
           <span>{order.notes}</span>
         </div>
       ) : null}
@@ -25,14 +28,14 @@ const PreparationOrderNotices = ({
       {!order.isReady ? (
         <div className="flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-800">
           <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
-          <span>يحتاج مراجعة مخزون أو تحويل من مخزن آخر قبل إكمال التجهيز.</span>
+          <span>{t("preparation.notices.needsReview")}</span>
         </div>
       ) : null}
 
       {order.stage === "STOCK_SHORTAGE" ? (
         <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
           <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
-          <span>طلب مؤجل بسبب العجز — لن يدخل التشغيل اليومي حتى إرجاعه للتجهيز.</span>
+          <span>{t("preparation.notices.shortageHold")}</span>
         </div>
       ) : null}
 

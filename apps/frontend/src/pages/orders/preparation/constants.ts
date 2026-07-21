@@ -158,12 +158,12 @@ export const STAGE_DEFINITIONS: Array<{
 ];
 
 export const SORT_OPTIONS = [
-  { value: "createdAt_desc", label: "الأحدث أولاً" },
-  { value: "createdAt_asc", label: "الأقدم أولاً" },
-  { value: "totalUnits_desc", label: "عدد القطع - الأكثر أولاً" },
-  { value: "totalUnits_asc", label: "عدد القطع - الأقل أولاً" },
-  { value: "totalValue_desc", label: "القيمة - الأعلى أولاً" },
-  { value: "totalValue_asc", label: "القيمة - الأقل أولاً" },
+  { value: "createdAt_desc", label: "Newest First", labelKey: "preparation.sortOptions.createdAt_desc" },
+  { value: "createdAt_asc", label: "Oldest First", labelKey: "preparation.sortOptions.createdAt_asc" },
+  { value: "totalUnits_desc", label: "Most Items First", labelKey: "preparation.sortOptions.totalUnits_desc" },
+  { value: "totalUnits_asc", label: "Fewest Items First", labelKey: "preparation.sortOptions.totalUnits_asc" },
+  { value: "totalValue_desc", label: "Highest Value First", labelKey: "preparation.sortOptions.totalValue_desc" },
+  { value: "totalValue_asc", label: "Lowest Value First", labelKey: "preparation.sortOptions.totalValue_asc" },
 ] as const;
 
 export const SOURCE_LABELS: Record<string, string> = {

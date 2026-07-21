@@ -1023,7 +1023,7 @@ const PreparationQueue: React.FC = () => {
       {allOverdueShortageFollowUpCount > 0 ? (
         <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm text-orange-900">
           <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-700" />
-          <span className="font-semibold">{allOverdueShortageFollowUpCount} طلب تجاوز موعد المتابعة</span>
+          <span className="font-semibold">{t('preparation.overdueBanner', { count: allOverdueShortageFollowUpCount })}</span>
           <span className="text-orange-700">{t('preparation.k_3')}</span>
         </div>
       ) : null}
@@ -1036,7 +1036,7 @@ const PreparationQueue: React.FC = () => {
         >
           <span className="flex items-center gap-2">
             <FunnelIcon className="h-4 w-4 text-gray-400" />
-            فلترة التجهيز
+            {t('preparation.filtersToggle')}
           </span>
           <ChevronDownIcon
             className={`h-4 w-4 text-gray-400 transition-transform ${
@@ -1111,13 +1111,13 @@ const PreparationQueue: React.FC = () => {
               onChange={toggleSelectAllVisible}
               className="h-3.5 w-3.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
             />
-            تحديد الكل
+            {t('preparation.selectAllCheckbox')}
           </label>
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('preparation.k_4')}</span>
           {inventoryLoading && (
             <div className="mr-auto flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700">
               <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
-              جاري التحقق من المتاح
+              {t('preparation.checkingInventory')}
             </div>
           )}
           {!inventoryLoading && loading && (
@@ -1143,11 +1143,10 @@ const PreparationQueue: React.FC = () => {
           <div className="flex min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center">
             <ClipboardDocumentListIcon className="h-12 w-12 text-gray-300" />
             <h3 className="mt-4 text-lg font-semibold text-gray-900">
-              لا توجد طلبات مطابقة الآن
+              {t('preparation.emptyState.title')}
             </h3>
             <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-              جرّب تغيير الفلاتر أو إزالة فلتر المخزن، أو حدّث الصفحة إذا كنت
-              تتوقع وجود طلبات جديدة في مسار التجهيز.
+              {t('preparation.emptyState.desc')}
             </p>
           </div>
         ) : (
@@ -1196,11 +1195,11 @@ const PreparationQueue: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-2.5">
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-xs text-gray-400">
-              صفحة {pagination.page} من {totalPages} • {visibleOrdersCount} طلب
+              {t('preparation.pagination.pageInfo', { page: pagination.page, totalPages, count: visibleOrdersCount })}
             </p>
 
             <label className="flex items-center gap-1.5 text-xs text-gray-400">
-              عرض
+              {t('preparation.pagination.show')}
               <select
                 value={uiState.pageSize}
                 onChange={(e) =>
@@ -1214,7 +1213,7 @@ const PreparationQueue: React.FC = () => {
                   </option>
                 ))}
               </select>
-              لكل صفحة
+              {t('preparation.pagination.perPage')}
             </label>
           </div>
 
@@ -1225,7 +1224,7 @@ const PreparationQueue: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronRightIcon className="h-3.5 w-3.5" />
-              السابق
+              {t('preparation.pagination.previous')}
             </button>
 
             <button
@@ -1233,7 +1232,7 @@ const PreparationQueue: React.FC = () => {
               disabled={pagination.page === totalPages}
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              التالي
+              {t('preparation.pagination.next')}
               <ChevronLeftIcon className="h-3.5 w-3.5" />
             </button>
           </div>

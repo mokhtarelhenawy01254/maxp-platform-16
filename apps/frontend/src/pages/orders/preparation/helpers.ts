@@ -144,9 +144,10 @@ export const getEffectivePreparationStatus = (
   return metadataStatus || normalizedStatus;
 };
 
-export const getShortageReasonLabel = (reason: ShortageReason) =>
-  SHORTAGE_REASON_OPTIONS.find((option) => option.value === reason)?.label ||
-  i18n.t("preparation.shortageReasons.stock_shortage");
+export const getShortageReasonLabel = (reason: ShortageReason) => {
+  const option = SHORTAGE_REASON_OPTIONS.find((o) => o.value === reason);
+  return option ? i18n.t(option.labelKey) : i18n.t("preparation.shortageReasons.stock_shortage");
+};
 
 export const getDateInputValueWithOffset = (offsetDays = 0) => {
   const date = new Date();

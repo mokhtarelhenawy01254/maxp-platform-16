@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { getOrderDocumentQuantityOffer } from "../../../../utils/orderDocumentQuantityOffers";
 import type {
@@ -21,6 +22,7 @@ const PreparationOrderItemsList = ({
   preparationSettings,
   onQuickTransfer,
 }: PreparationOrderItemsListProps) => {
+  const { t } = useTranslation();
   const canPrepare = order.merchantFulfillment?.canPrepare !== false;
 
   return (
@@ -28,9 +30,9 @@ const PreparationOrderItemsList = ({
       {/* Section title */}
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-          عناصر الطلب
+          {t("preparation.itemsList.title")}
         </h3>
-        <span className="text-xs text-gray-400">{order.itemInsights.length} عنصر</span>
+        <span className="text-xs text-gray-400">{t("preparation.itemsList.itemsCount", { count: order.itemInsights.length })}</span>
       </div>
 
       {/* Items */}
@@ -63,18 +65,18 @@ const PreparationOrderItemsList = ({
                     </p>
                     {quantityOffer ? (
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
-                        عرض كميات
+                        {t("preparation.itemsList.quantityOffer")}
                       </span>
                     ) : null}
                     {resolvedSlotIndex ? (
                       <span className="rounded-full border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
-                        قطعة {resolvedSlotIndex}
+                        {t("preparation.itemsList.slot", { slot: resolvedSlotIndex })}
                       </span>
                     ) : null}
                   </div>
                   <p className="mt-0.5 text-xs text-gray-500">
-                    مطلوب {item.quantityNumber} قطعة
-                    {item.bestWarehouseName ? ` • أفضل توفر: ${item.bestWarehouseName}` : ""}
+                    {t("preparation.itemsList.required", { count: item.quantityNumber })}
+                    {item.bestWarehouseName ? ` • ${t("preparation.itemsList.bestWarehouse", { name: item.bestWarehouseName })}` : ""}
                   </p>
                   {quantityOffer?.offerLabel ? (
                     <p className="mt-1 text-xs font-medium text-amber-800">
@@ -91,25 +93,25 @@ const PreparationOrderItemsList = ({
                       : "bg-emerald-100 text-emerald-700"
                   }`}
                 >
-                  {isShort ? `عجز ${item.shortage}` : "متاح ✓"}
+                  {isShort ? t("preparation.itemsList.shortage", { count: item.shortage }) : t("preparation.itemsList.available")}
                 </span>
               </div>
 
               {/* Inventory mini-stats */}
               <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                 <span>
-                  متاح:{" "}
+                  {t("preparation.itemsList.availableStock")}{" "}
                   <strong className="text-gray-800">{item.availableInScope}</strong>
                 </span>
                 <span className="text-gray-200">|</span>
                 <span>
-                  محجوز:{" "}
+                  {t("preparation.itemsList.reserved")}{" "}
                   <strong className="text-gray-800">{item.reservedInScope}</strong>
                 </span>
                 <span className="text-gray-200">|</span>
                 <span>
-                  تغطية:{" "}
-                  <strong className="text-gray-800">{item.warehouseCount} مخزن</strong>
+                  {t("preparation.itemsList.coverage")}{" "}
+                  <strong className="text-gray-800">{t("preparation.itemsList.warehouses", { count: item.warehouseCount })}</strong>
                 </span>
               </div>
 
@@ -127,12 +129,12 @@ const PreparationOrderItemsList = ({
                     <ArrowPathIcon
                       className={`h-3.5 w-3.5 ${isTransfering ? "animate-spin" : ""}`}
                     />
-                    نقل سريع للعجز
+                    {t("preparation.itemsList.quickTransfer")}
                   </button>
 
                   {!selectedWarehouseId ? (
                     <span className="text-xs text-gray-400">
-                      حدّد مخزن الوجهة من الفلاتر أولًا لتفعيل النقل
+                      {t("preparation.itemsList.selectWarehouseHint")}
                     </span>
                   ) : null}
                 </div>

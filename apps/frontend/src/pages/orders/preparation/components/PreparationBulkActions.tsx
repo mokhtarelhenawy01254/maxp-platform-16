@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   ArrowPathIcon,
   CheckCircleIcon,
@@ -53,15 +54,17 @@ const PreparationBulkActions = ({
   onSendToTurbo,
   onPrintInvoices,
 }: PreparationBulkActionsProps) => {
+  const { t } = useTranslation();
+
   return (
     <><div className="flex flex-wrap items-center gap-2">
       {!compact && (
         <>
-          <span className="text-sm font-semibold text-gray-700">إجراءات جماعية</span>
+          <span className="text-sm font-semibold text-gray-700">{t("preparation.bulkActions.title")}</span>
 
           <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
             <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500" />
-            محدد الآن: {selectedOrdersCount} طلب
+            {t("preparation.bulkActions.selected", { count: selectedOrdersCount })}
           </span>
 
           <span className="mx-1 hidden h-5 w-px bg-gray-200 sm:block" />
@@ -73,7 +76,7 @@ const PreparationBulkActions = ({
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Squares2X2Icon className="h-4 w-4" />
-              {allVisibleSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
+              {allVisibleSelected ? t("preparation.bulkActions.deselectAll") : t("preparation.bulkActions.selectAll")}
             </button>
             <button
               onClick={onClearSelection}
@@ -81,7 +84,7 @@ const PreparationBulkActions = ({
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <XCircleIcon className="h-4 w-4" />
-              إلغاء التحديد
+              {t("preparation.bulkActions.clearSelection")}
             </button>
           </div>
 
@@ -92,7 +95,7 @@ const PreparationBulkActions = ({
       {compact && selectedOrdersCount > 0 && (
         <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-700">
           <CheckCircleIcon className="h-3.5 w-3.5" />
-          {selectedOrdersCount} طلب
+          {selectedOrdersCount} {t("preparation.bulkActions.selected_plural", { count: selectedOrdersCount })}
         </span>
       )}
 
@@ -102,7 +105,7 @@ const PreparationBulkActions = ({
           disabled={!preparationEnabled || !bulkStatusUpdateEnabled}
           className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white sm:max-w-xs"
         >
-          <option value="">اختر المرحلة المستهدفة</option>
+          <option value="">{t("preparation.bulkActions.targetStage")}</option>
           {statusOptions.map((status) => (
             <option key={status.code} value={status.code}>
               {statusLabelMap.get(status.code) || status.fallbackName}
@@ -127,7 +130,7 @@ const PreparationBulkActions = ({
           ) : (
             <CheckCircleIcon className="h-4 w-4" />
           )}
-          تطبيق على المحدد
+          {t("preparation.bulkActions.apply")}
         </button>
 
         {/* Apply to all */}
@@ -147,7 +150,7 @@ const PreparationBulkActions = ({
           ) : (
             <CheckCircleIcon className="h-4 w-4" />
           )}
-          تطبيق على الكل
+          {t("preparation.bulkActions.applyToAll")}
         </button>
 
         {/* Clear */}
@@ -156,7 +159,7 @@ const PreparationBulkActions = ({
           disabled={selectedOrdersCount === 0 && !bulkStatus}
           className="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          مسح التحديد
+          {t("preparation.bulkActions.clearFilters")}
         </button>
 
         {/* Print Invoices */}
@@ -171,7 +174,7 @@ const PreparationBulkActions = ({
             ) : (
               <PrinterIcon className="h-4 w-4" />
             )}
-            طباعة الفواتير
+            {t("preparation.bulkActions.printInvoices")}
           </button>
         ) : null}
 
@@ -187,13 +190,13 @@ const PreparationBulkActions = ({
           ) : (
             <TruckIcon className="h-4 w-4" />
           )}
-          إرسال إلى تربو
+          {t("preparation.bulkActions.sendToTurbo")}
         </button>
       </div>
 
       {!bulkStatusUpdateEnabled ? (
         <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          تم إيقاف تحديث المراحل جماعيًا من إعدادات تجهيز الطلبات.
+          {t("preparation.bulkActions.disabledMessage")}
         </div>
       ) : null}
     </>

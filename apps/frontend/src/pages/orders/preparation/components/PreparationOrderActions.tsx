@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   ArrowPathIcon,
   CheckCircleIcon,
@@ -43,6 +44,7 @@ const PreparationOrderActions = ({
   onReleaseShortageHold,
   onPrintPreparationSlip,
 }: PreparationOrderActionsProps) => {
+  const { t } = useTranslation();
   const merchantFulfillment = order.merchantFulfillment;
   const canPrepare = merchantFulfillment?.canPrepare !== false;
   const isPrinting = printingOrderNumber === order.orderNumber;
@@ -51,10 +53,10 @@ const PreparationOrderActions = ({
     return (
       <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
         <p className="text-xs text-gray-500">
-          التاجر يرى اسم العميل والمنتجات فقط — أدوات التجهيز غير مفعلة.
+          {t("preparation.actionLabels.viewOnlyDesc")}
         </p>
         <span className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
-          عرض فقط
+          {t("preparation.actionLabels.viewOnly")}
         </span>
       </div>
     );
@@ -99,7 +101,7 @@ const PreparationOrderActions = ({
           className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 transition hover:border-rose-300 disabled:opacity-50"
         >
           <ExclamationTriangleIcon className="h-3.5 w-3.5" />
-          تعليق بالعجز
+          {t("preparation.actionLabels.holdShortage")}
         </button>
       ) : null}
 
@@ -112,7 +114,7 @@ const PreparationOrderActions = ({
           className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 transition hover:border-indigo-300 disabled:opacity-50"
         >
           <ArrowPathIcon className="h-3.5 w-3.5" />
-          إرجاع للتجهيز
+          {t("preparation.actionLabels.returnToPreparation")}
         </button>
       ) : null}
 
@@ -121,7 +123,7 @@ const PreparationOrderActions = ({
       order.stage === "READY_TO_SHIP" ? (
         <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
           <TruckIcon className="h-3.5 w-3.5" />
-          جاهز للشحن
+          {t("preparation.k_10")}
         </span>
       ) : null}
 
@@ -137,7 +139,7 @@ const PreparationOrderActions = ({
         ) : (
           <PrinterIcon className="h-3.5 w-3.5" />
         )}
-        طباعة
+        {t("preparation.actionLabels.print")}
       </button>
 
       {/* Open order */}
@@ -146,7 +148,7 @@ const PreparationOrderActions = ({
           to={`/orders/${encodeURIComponent(order.orderNumber)}`}
           className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300"
         >
-          فتح الطلب
+          {t("preparation.actionLabels.openOrder")}
         </Link>
       ) : null}
     </div>

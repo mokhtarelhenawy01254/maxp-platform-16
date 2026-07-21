@@ -81,5 +81,6 @@
   "calculateShipping": "حساب تكلفة الشحن",
   "shippingCost": "تكلفة الشحن",
   "estimatedDelivery": "التسليم المتوقع",
-  "days": "أيام"
+  "days": "أيام",
+  "preparationSlipError": "فشل طباعة ورقة التجهيز: {{error}}"
 }

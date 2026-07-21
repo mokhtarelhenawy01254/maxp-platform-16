@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ArrowPathIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { SHORTAGE_REASON_OPTIONS } from "../constants";
 import {
@@ -37,14 +38,15 @@ const PreparationOrderShortagePanel = ({
   onShortageFieldChange,
   onSaveShortageHoldDetails,
 }: PreparationOrderShortagePanelProps) => {
+  const { t } = useTranslation();
+
   return (
     <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h4 className="font-semibold text-rose-900">متابعة العجز</h4>
+          <h4 className="font-semibold text-rose-900">{t("preparation.shortagePanel.title")}</h4>
           <p className="mt-1 text-xs text-rose-800">
-            سجّل سبب التأجيل والمسؤول وتاريخ المتابعة حتى يفضل الطلب واضحًا أثناء
-            التعليق أو بعده.
+            {t("preparation.shortagePanel.desc")}
           </p>
         </div>
 
@@ -54,12 +56,12 @@ const PreparationOrderShortagePanel = ({
           </span>
           {shortageHoldDetails.owner ? (
             <span className="rounded-full border border-rose-200 bg-white px-3 py-1 font-medium text-rose-800">
-              المسؤول: {shortageHoldDetails.owner}
+              {t("preparation.shortagePanel.ownerBadge", { name: shortageHoldDetails.owner })}
             </span>
           ) : null}
           {shortageHoldDetails.customerNotified ? (
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-medium text-emerald-800">
-              تم إبلاغ العميل
+              {t("preparation.shortagePanel.customerNotifiedBadge")}
             </span>
           ) : null}
         </div>
@@ -68,7 +70,7 @@ const PreparationOrderShortagePanel = ({
       <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="block">
           <span className="mb-2 block text-xs font-medium text-rose-900">
-            سبب التعليق
+            {t("preparation.shortagePanel.reasonLabel")}
           </span>
           <select
             value={shortageHoldDetails.reason}
@@ -79,7 +81,7 @@ const PreparationOrderShortagePanel = ({
           >
             {SHORTAGE_REASON_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </option>
             ))}
           </select>
@@ -87,7 +89,7 @@ const PreparationOrderShortagePanel = ({
 
         <label className="block">
           <span className="mb-2 block text-xs font-medium text-rose-900">
-            المسؤول عن المتابعة
+            {t("preparation.shortagePanel.ownerLabel")}
           </span>
           <input
             type="text"
@@ -95,14 +97,14 @@ const PreparationOrderShortagePanel = ({
             onChange={(event) =>
               onShortageFieldChange(order.orderNumber, "owner", event.target.value)
             }
-            placeholder="اسم الموظف أو الفريق"
+            placeholder={t("preparation.shortagePanel.ownerPlaceholder")}
             className="w-full rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-rose-300"
           />
         </label>
 
         <label className="block">
           <span className="mb-2 block text-xs font-medium text-rose-900">
-            تاريخ المتابعة
+            {t("preparation.shortagePanel.followUpDate")}
           </span>
           <input
             type="date"
@@ -131,13 +133,13 @@ const PreparationOrderShortagePanel = ({
             }
             className="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
           />
-          تم إبلاغ العميل بالتأخير
+          {t("preparation.shortagePanel.customerNotified")}
         </label>
       </div>
 
       <label className="mt-3 block">
         <span className="mb-2 block text-xs font-medium text-rose-900">
-          ملاحظات المتابعة
+          {t("preparation.shortagePanel.notesLabel")}
         </span>
         <textarea
           value={shortageHoldDetails.note}
@@ -145,7 +147,7 @@ const PreparationOrderShortagePanel = ({
             onShortageFieldChange(order.orderNumber, "note", event.target.value)
           }
           rows={3}
-          placeholder="مثال: المورد أكد وصول الكمية غدًا أو التحويل جاري من مخزن القاهرة."
+          placeholder={t("preparation.shortagePanel.notesPlaceholder")}
           className="w-full rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-rose-300"
         />
       </label>
@@ -154,12 +156,12 @@ const PreparationOrderShortagePanel = ({
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-3 text-xs text-rose-900">
             {shortageHoldDetails.heldAt ? (
-              <span>تاريخ التعليق: {formatDate(shortageHoldDetails.heldAt)}</span>
+              <span>{t("preparation.shortagePanel.heldAt", { date: formatDate(shortageHoldDetails.heldAt) })}</span>
             ) : null}
             {shortageHoldDetails.followUpDate ? (
-              <span>متابعة في: {formatDate(shortageHoldDetails.followUpDate)}</span>
+              <span>{t("preparation.shortagePanel.followUpOn", { date: formatDate(shortageHoldDetails.followUpDate) })}</span>
             ) : (
-              <span>لم يتم تحديد تاريخ متابعة بعد</span>
+              <span>{t("preparation.shortagePanel.noFollowUpDate")}</span>
             )}
             {shortageFollowUpVisual ? (
               <span className={shortageFollowUpVisual.badgeClass}>
@@ -178,13 +180,13 @@ const PreparationOrderShortagePanel = ({
                     ...shortageHoldDetails,
                     followUpDate: getDateInputValueWithOffset(0),
                   },
-                  { successMessage: "تم تحديد المتابعة على اليوم" },
+                  { successMessage: t("preparation.shortagePanel.todaySuccess") },
                 )
               }
               disabled={rowBusy}
               className="inline-flex items-center justify-center rounded-xl border border-sky-200 bg-white px-3 py-2 text-xs font-medium text-sky-800 transition hover:border-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              متابعة اليوم
+              {t("preparation.shortagePanel.setToday")}
             </button>
 
             <button
@@ -196,13 +198,13 @@ const PreparationOrderShortagePanel = ({
                     ...shortageHoldDetails,
                     followUpDate: getDateInputValueWithOffset(1),
                   },
-                  { successMessage: "تم تحديد المتابعة على الغد" },
+                  { successMessage: t("preparation.shortagePanel.tomorrowSuccess") },
                 )
               }
               disabled={rowBusy}
               className="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-medium text-indigo-800 transition hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              متابعة غدًا
+              {t("preparation.shortagePanel.setTomorrow")}
             </button>
 
             <button
@@ -214,13 +216,13 @@ const PreparationOrderShortagePanel = ({
                     ...shortageHoldDetails,
                     followUpDate: "",
                   },
-                  { successMessage: "تم مسح موعد المتابعة" },
+                  { successMessage: t("preparation.shortagePanel.clearDateSuccess") },
                 )
               }
               disabled={rowBusy || !shortageHoldDetails.followUpDate}
               className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              بدون موعد
+              {t("preparation.shortagePanel.clearDate")}
             </button>
           </div>
         </div>
@@ -236,7 +238,7 @@ const PreparationOrderShortagePanel = ({
           ) : (
             <CheckCircleIcon className="h-4 w-4" />
           )}
-          حفظ بيانات التعليق
+          {t("preparation.shortagePanel.save")}
         </button>
       </div>
     </div>
