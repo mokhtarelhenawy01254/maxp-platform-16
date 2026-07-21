@@ -1725,6 +1725,22 @@ class AffiliateService {
    * الحصول على أو إنشاء سجل مسوق لشركة بناءً على علاقة ربط
    */
   async getOrCreateAffiliateForCompany(providerId, consumerId) {
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await this._getOrCreateAffiliateForCompany(providerId, consumerId);
+      } catch (error) {
+        if (error.message?.includes('Response from the Engine was empty') && attempt < maxRetries) {
+          console.log(`⚠️ [AFFILIATE] Prisma engine error, retrying (${attempt}/${maxRetries})...`);
+          await new Promise(r => setTimeout(r, 1000));
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+
+  async _getOrCreateAffiliateForCompany(providerId, consumerId) {
     try {
       const prisma = this.prisma;
 
