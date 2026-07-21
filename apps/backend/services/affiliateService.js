@@ -1746,16 +1746,14 @@ class AffiliateService {
 
       const tenantContext = require('./tenantContext');
 
-      // 0. جلب نسبة العمولة من CompanyConnection لو موجودة
-      const connection = await prisma.companyConnection.findUnique({
-        where: {
-          providerId_consumerId: { providerId, consumerId }
-        },
-        select: { commissionRate: true }
+      // 0. جلب إعدادات الأفليت من الشركة المورّدة (مصدر واحد للنسبة والنوع)
+      const providerSettings = await prisma.affiliateSetting.findUnique({
+        where: { companyId: providerId }
       });
-      const connectionCommissionRate = connection?.commissionRate;
+      const defaultRate = providerSettings?.commissionRate ?? 5;
+      const defaultType = providerSettings?.commissionType ?? 'PERCENTAGE';
 
-      // 1. البحث عن مالك الشركة المستهلكة (Switch to consumer context to find its owner)
+      // 1. البحث عن مالك الشركة المستهلكة
       const owner = await tenantContext.run(consumerId, async () => {
         return await prisma.user.findFirst({
           where: {
@@ -1778,21 +1776,20 @@ class AffiliateService {
         }
       });
 
-      // 3. إذا لم يوجد، إنشاؤه (بنسبة العمولة من الاتصال أو الافتراضية)
+      // 3. إذا لم يوجد، إنشاؤه بنسبة وإعدادات المورد
       if (!affiliate) {
-        const rate = connectionCommissionRate ?? 5;
-        console.log(`ℹ️ [AFFILIATE] Creating new affiliate for owner ${owner.email} in company ${providerId} with rate ${rate}%`);
+        console.log(`ℹ️ [AFFILIATE] Creating new affiliate for owner ${owner.email} in company ${providerId} with rate ${defaultRate}%`);
         affiliate = await this.registerAffiliate(owner.id, {
           companyId: providerId,
-          commissionType: 'PERCENTAGE',
-          commissionRate: rate,
+          commissionType: defaultType,
+          commissionRate: defaultRate,
           status: 'ACTIVE'
         });
-      } else if (connectionCommissionRate && affiliate.commissionRate !== connectionCommissionRate) {
-        // 4. تحديث النسبة لو اتغيرت في الاتصال
+      } else if (affiliate.commissionRate !== defaultRate || affiliate.commissionType !== defaultType) {
+        // 4. مزامنة النسبة والنوع مع إعدادات المورد في حالة تغيرها
         affiliate = await prisma.affiliate.update({
           where: { id: affiliate.id },
-          data: { commissionRate: connectionCommissionRate }
+          data: { commissionRate: defaultRate, commissionType: defaultType }
         });
       }
 

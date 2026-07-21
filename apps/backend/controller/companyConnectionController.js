@@ -345,7 +345,7 @@ exports.updatePermissions = async (req, res) => {
     try {
         const companyId = req.user.companyId;
         const { id } = req.params;
-        const { allowProductPull, allowOrderPull, commissionRate } = req.body;
+        const { allowProductPull, allowOrderPull } = req.body;
 
         const prisma = getSharedPrismaClient();
         const connection = await prisma.companyConnection.findUnique({ where: { id } });
@@ -362,8 +362,7 @@ exports.updatePermissions = async (req, res) => {
             where: { id },
             data: {
                 allowProductPull: allowProductPull !== undefined ? allowProductPull : connection.allowProductPull,
-                allowOrderPull: allowOrderPull !== undefined ? allowOrderPull : connection.allowOrderPull,
-                commissionRate: commissionRate !== undefined ? commissionRate : connection.commissionRate
+                allowOrderPull: allowOrderPull !== undefined ? allowOrderPull : connection.allowOrderPull
             }
         });
 
@@ -847,7 +846,6 @@ exports.getCompanyAffiliates = async (req, res) => {
                     connectionId: conn.id,
                     partner: conn.provider,
                     role: 'consumer',
-                    commissionRate: conn.commissionRate,
                     totalOrders: 0,
                     totalCommissions: 0,
                     paidCommissions: 0,
@@ -899,7 +897,6 @@ exports.getCompanyAffiliates = async (req, res) => {
                 connectionId: conn.id,
                 partner: conn.provider,
                 role: 'consumer',
-                commissionRate: conn.commissionRate,
                 totalOrders: orderAgg._count || 0,
                 totalCommissions: Number(commissionAgg._sum?.amount || 0),
                 paidCommissions: Number(paidAgg._sum?.amount || 0),
@@ -929,7 +926,6 @@ exports.getCompanyAffiliates = async (req, res) => {
                     connectionId: conn.id,
                     partner: conn.consumer,
                     role: 'provider',
-                    commissionRate: conn.commissionRate,
                     totalOrders: 0,
                     totalCommissions: 0,
                     paidCommissions: 0,
@@ -963,7 +959,6 @@ exports.getCompanyAffiliates = async (req, res) => {
                 connectionId: conn.id,
                 partner: conn.consumer,
                 role: 'provider',
-                commissionRate: conn.commissionRate,
                 totalOrders: orderAgg._count || 0,
                 totalCommissions: Number(commissionAgg._sum?.amount || 0),
                 paidCommissions: Number(paidAgg._sum?.amount || 0),

@@ -10,7 +10,6 @@ import {
     ClockIcon,
     LinkIcon,
     UserGroupIcon,
-    PencilIcon,
     ArrowLeftCircleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
@@ -28,7 +27,6 @@ interface CompanyAffiliate {
     connectionId: string;
     partner: Partner;
     role: "consumer" | "provider";
-    commissionRate: number | null;
     totalOrders: number;
     totalCommissions: number;
     paidCommissions: number;
@@ -45,8 +43,6 @@ const CompanyAffiliateDashboard: React.FC = () => {
     const { user } = useAuth();
     const [data, setData] = useState<AffiliatesData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [editingRate, setEditingRate] = useState<Record<string, string>>({});
-    const [savingRate, setSavingRate] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         fetchData();
@@ -84,42 +80,7 @@ const CompanyAffiliateDashboard: React.FC = () => {
         });
     };
 
-    const saveCommissionRate = async (connectionId: string) => {
-        const raw = editingRate[connectionId];
-        const rate = raw === "" || raw === undefined ? null : Number(raw);
-        if (rate !== null && (isNaN(rate) || rate < 0 || rate > 100)) return;
-
-        setSavingRate(prev => ({ ...prev, [connectionId]: true }));
-        try {
-            const resp = await fetch(`/api/v1/company-connections/${connectionId}/permissions`, {
-                method: "PUT",
-                headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
-                body: JSON.stringify({ commissionRate: rate })
-            });
-            const result = await resp.json();
-            if (result.success) {
-                toast.success("تم تحديث نسبة العمولة");
-                setEditingRate(prev => {
-                    const next = { ...prev };
-                    delete next[connectionId];
-                    return next;
-                });
-                fetchData();
-            } else {
-                toast.error(result.message || "فشل التحديث");
-            }
-        } catch {
-            toast.error("حدث خطأ أثناء التحديث");
-        } finally {
-            setSavingRate(prev => ({ ...prev, [connectionId]: false }));
-        }
-    };
-
     const PartnerCard: React.FC<{ item: CompanyAffiliate }> = ({ item }) => {
-        const isEditing = editingRate[item.connectionId] !== undefined;
-        const isSaving = savingRate[item.connectionId];
-        const currentDisplay = item.commissionRate != null ? `${item.commissionRate}%` : "5% (افتراضي)";
-
         return (
             <div className="p-5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
@@ -181,67 +142,17 @@ const CompanyAffiliateDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Commission Rate + Actions */}
                 <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                    <div className="flex items-center justify-between text-xs text-gray-500">
                         <span>آخر طلب: {formatDate(item.lastOrderAt)}</span>
-                        {item.role === "provider" && !isEditing && (
-                            <button
-                                onClick={() => setEditingRate(prev => ({ ...prev, [item.connectionId]: String(item.commissionRate ?? "") }))}
-                                className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
-                            >
-                                <PencilIcon className="w-3 h-3" />
-                                تعديل العمولة
-                            </button>
-                        )}
+                        <Link
+                            to={item.role === "consumer" ? `/company-affiliates/consumer/${item.connectionId}` : `/company-affiliates/provider/${item.connectionId}`}
+                            className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
+                        >
+                            <ArrowLeftCircleIcon className="w-3.5 h-3.5" />
+                            {item.role === "consumer" ? "تفاصيل العمولات والسحب" : "عرض التفاصيل"}
+                        </Link>
                     </div>
-
-                    {item.role === "provider" && isEditing ? (
-                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg">
-                            <span className="text-xs text-gray-500 shrink-0">نسبة العمولة:</span>
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.5"
-                                value={editingRate[item.connectionId] ?? ""}
-                                onChange={(e) => setEditingRate(prev => ({ ...prev, [item.connectionId]: e.target.value }))}
-                                className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-center bg-white dark:bg-gray-700 outline-none focus:ring-1 focus:ring-indigo-500"
-                            />
-                            <span className="text-xs text-gray-400">%</span>
-                            <button
-                                onClick={() => saveCommissionRate(item.connectionId)}
-                                disabled={isSaving}
-                                className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                                {isSaving ? "..." : "حفظ"}
-                            </button>
-                            <button
-                                onClick={() => setEditingRate(prev => {
-                                    const next = { ...prev };
-                                    delete next[item.connectionId];
-                                    return next;
-                                })}
-                                className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-md hover:bg-gray-400"
-                            >
-                                إلغاء
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                                <CurrencyDollarIcon className="w-3 h-3" />
-                                العمولة: {currentDisplay}
-                            </span>
-                            <Link
-                                to={item.role === "consumer" ? `/company-affiliates/consumer/${item.connectionId}` : `/company-affiliates/provider/${item.connectionId}`}
-                                className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
-                            >
-                                <ArrowLeftCircleIcon className="w-3.5 h-3.5" />
-                                {item.role === "consumer" ? "تفاصيل العمولات والسحب" : "عرض التفاصيل"}
-                            </Link>
-                        </div>
-                    )}
                 </div>
             </div>
         );
