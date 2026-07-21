@@ -40,15 +40,18 @@ async function ensureLpPagesTable(prisma) {
         ON "lp_pages" ("slug")
       `);
 
-      const rows = await prisma.$queryRawUnsafe(`SELECT COUNT(*)::int as cnt FROM "lp_pages"`);
-      if (rows[0].cnt === 0) {
-        for (const p of SEED_PAGES) {
-          await prisma.$executeRawUnsafe(
-            `INSERT INTO "lp_pages" ("id","slug","title","componentName","sortOrder","isActive","bundleSlug","activationType")
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-            `lp-seed-${p.slug}`, p.slug, p.title, p.componentName, p.sortOrder, true, p.bundleSlug, p.activationType,
-          );
-        }
+      for (const p of SEED_PAGES) {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "lp_pages" ("id","slug","title","componentName","sortOrder","isActive","bundleSlug","activationType")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+           ON CONFLICT ("slug") DO UPDATE SET
+             "title" = EXCLUDED."title",
+             "componentName" = EXCLUDED."componentName",
+             "sortOrder" = EXCLUDED."sortOrder",
+             "bundleSlug" = EXCLUDED."bundleSlug",
+             "activationType" = EXCLUDED."activationType"`,
+          `lp-seed-${p.slug}`, p.slug, p.title, p.componentName, p.sortOrder, true, p.bundleSlug, p.activationType,
+        );
       }
     })().catch((err) => {
       ensureTablePromise = null;
