@@ -473,8 +473,8 @@ const PreparationQueue: React.FC = () => {
         preparationSettings.requireStockBeforePreparing &&
         !preparationSettings.allowPartialPreparation &&
         !order.isReady &&
+        order.stage !== "WAITING" &&
         [
-          "PREPARING",
           "QUALITY_CHECK",
           "PACKAGED",
           preparationSettings.handoffStatus,

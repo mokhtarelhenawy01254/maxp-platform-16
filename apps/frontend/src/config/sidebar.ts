@@ -542,10 +542,8 @@ export const getSidebarConfig = (
                 { to: '/unified-comments', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedComments') },
                 { to: '/employee-stats', icon: ChartBarIcon, label: t('sidebar.employeeStats') },
                 { to: '/sent-messages-stats', icon: ChartBarIcon, label: t('sidebar.sentMessagesStats') },
-                { to: '/campaign-calculator', icon: CalculatorIcon, label: t('sidebar.campaignCalculator') },
                 { to: '/settings/facebook-oauth', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookConnect') },
                 { to: '/settings/facebook-blocked', icon: NoSymbolIcon, label: t('sidebar.facebookBlocked') },
-                { to: '/settings/agent-inbox', icon: KeyIcon, label: t('sidebar.agentInboxApi') },
                 { to: '/settings/smart-replies', icon: ChatBubbleLeftRightIcon, label: t('sidebar.smartReplies') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
@@ -715,7 +713,6 @@ export const getSidebarConfig = (
                     label: t('sidebar.visitStore'),
                     external: true
                 },
-                { to: '/settings/store-pages', icon: DocumentTextIcon, label: t('sidebar.storePages') },
                 { to: '/settings/custom-domain', icon: LinkIcon, label: t('sidebar.customDomain') },
                 { to: '/settings/store?tab=branches', icon: BuildingStorefrontIcon, label: t('sidebar.storeSettings') },
                 { to: '/settings/store/product-conversion', icon: SparklesIcon, label: t('sidebar.conversionTools') },
@@ -750,6 +747,7 @@ export const getSidebarConfig = (
                     label: t('sidebar.abandonedCart'),
                     hidden: !isAppActive('analytics-advanced')
                 },
+                { to: '/settings/store-pages', icon: DocumentTextIcon, label: t('sidebar.storePages') },
             ],
             // 🔒 متاح للمالك والأدمن فقط لتغيير تصميم المتجر
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'conversion-suite'])
@@ -889,6 +887,7 @@ export const getSidebarConfig = (
                 { to: '/tools/product-break-even', icon: CurrencyDollarIcon, label: t('sidebar.productBreakEven') },
                 { to: '/tools/pricing-strategy', icon: TagIcon, label: t('sidebar.pricingStrategy') },
                 { to: '/tools/profitability-engine', icon: CalculatorIcon, label: t('sidebar.profitabilityEngine') },
+                { to: '/campaign-calculator', icon: CalculatorIcon, label: t('sidebar.campaignCalculator') },
                 { to: '/tools/ad-budget-planner', icon: CurrencyDollarIcon, label: t('sidebar.adBudgetPlanner') },
                 { to: '/tools/discount-impact', icon: TagIcon, label: t('sidebar.discountImpact') },
                 { to: '/tools/shipping-optimizer', icon: TruckIcon, label: t('sidebar.shippingOptimizer') },

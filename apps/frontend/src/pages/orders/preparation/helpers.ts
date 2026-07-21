@@ -1,3 +1,4 @@
+import i18n from "../../../i18n";
 import {
   DEFAULT_SHORTAGE_HOLD_DETAILS,
   PREPARATION_STATUS_METADATA_KEY,
@@ -145,7 +146,7 @@ export const getEffectivePreparationStatus = (
 
 export const getShortageReasonLabel = (reason: ShortageReason) =>
   SHORTAGE_REASON_OPTIONS.find((option) => option.value === reason)?.label ||
-  "نقص مخزون";
+  i18n.t("preparation.shortageReasons.stock_shortage");
 
 export const getDateInputValueWithOffset = (offsetDays = 0) => {
   const date = new Date();
@@ -207,36 +208,33 @@ export const getShortageFollowUpVisual = (
   switch (state) {
     case "overdue":
       return {
-        label: "متابعة متأخرة",
+        label: i18n.t("preparation.shortageFollowUp.overdueLabel"),
         badgeClass:
           "rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-800",
         cardClass: "border-orange-300 shadow-orange-100",
         alertClass:
           "rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm text-orange-900",
-        alertText:
-          "هذا الطلب ما زال مؤجلًا وتجاوز تاريخ المتابعة المحدد. يحتاج مراجعة فورية من المسؤول.",
+        alertText: i18n.t("preparation.shortageFollowUp.overdueText"),
       };
     case "today":
       return {
-        label: "متابعة اليوم",
+        label: i18n.t("preparation.shortageFollowUp.todayLabel"),
         badgeClass:
           "rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800",
         cardClass: "border-sky-300 shadow-sky-100",
         alertClass:
           "rounded-2xl border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-900",
-        alertText:
-          "هذا الطلب ضمن قائمة متابعات اليوم، ويحتاج مراجعة موقف العجز قبل نهاية اليوم.",
+        alertText: i18n.t("preparation.shortageFollowUp.todayText"),
       };
     case "without_date":
       return {
-        label: "بدون موعد متابعة",
+        label: i18n.t("preparation.shortageFollowUp.withoutDateLabel"),
         badgeClass:
           "rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700",
         cardClass: "border-slate-300 shadow-slate-100",
         alertClass:
           "rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800",
-        alertText:
-          "هذا الطلب المؤجل لا يحتوي على موعد متابعة محدد حتى الآن. يفضّل تحديد يوم متابعة واضح.",
+        alertText: i18n.t("preparation.shortageFollowUp.withoutDateText"),
       };
     default:
       return null;
@@ -292,33 +290,33 @@ export const getNextStatus = (
 export const getQuickActionLabel = (stage: StageKey | null) => {
   switch (stage) {
     case "WAITING":
-      return "ابدأ التجهيز";
+      return i18n.t("preparation.quickAction.WAITING");
     case "PREPARING":
-      return "إرسال لفحص الجودة";
+      return i18n.t("preparation.quickAction.PREPARING");
     case "QUALITY_CHECK":
-      return "اعتماد التغليف";
+      return i18n.t("preparation.quickAction.QUALITY_CHECK");
     case "PACKAGED":
-      return "تجهيز للشحن";
+      return i18n.t("preparation.quickAction.PACKAGED");
     case "STOCK_SHORTAGE":
-      return "إرجاع للتجهيز";
+      return i18n.t("preparation.quickAction.STOCK_SHORTAGE");
     default:
-      return "تحديث الحالة";
+      return i18n.t("preparation.quickAction.default");
   }
 };
 
 export const getAgeLabel = (dateValue: string) => {
   const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "غير معروف";
+  if (Number.isNaN(date.getTime())) return i18n.t("preparation.age.unknown");
 
   const diffMs = Date.now() - date.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffDays > 0) return `${diffDays} يوم`;
-  if (diffHours > 0) return `${diffHours} ساعة`;
+  if (diffDays > 0) return i18n.t("preparation.age.days", { count: diffDays });
+  if (diffHours > 0) return i18n.t("preparation.age.hours", { count: diffHours });
 
   const diffMinutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
-  return `${diffMinutes} دقيقة`;
+  return i18n.t("preparation.age.minutes", { count: diffMinutes });
 };
 
 export const getApiErrorMessage = (error: unknown): string | null => {

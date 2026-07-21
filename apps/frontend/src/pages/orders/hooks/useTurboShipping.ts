@@ -5,6 +5,7 @@ import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "sonner";
 import { config } from "../../../config";
 import tokenManager from "../../../utils/tokenManager";
+import i18n from "../../../i18n";
 
 export const useTurboShipping = (
   order: any,
@@ -68,13 +69,13 @@ export const useTurboShipping = (
 
         // Show notification
         if (data.status === "delivered") {
-          toast.success("✅ تم تسليم الشحنة بنجاح!");
+          toast.success(i18n.t("turbo.shipmentDelivered"));
         } else if (data.status === "cancelled") {
-          toast.error("❌ تم إلغاء الشحنة");
+          toast.error(i18n.t("turbo.shipmentCancelled"));
         } else if (data.status === "returned") {
-          toast.error("🔄 تم إرجاع الشحنة");
+          toast.error(i18n.t("turbo.shipmentReturned"));
         } else {
-          toast("📦 تحديث حالة الشحنة: " + data.status, {
+          toast(i18n.t("turbo.statusUpdate", { status: data.status }), {
             icon: "🚚",
           });
         }
@@ -103,7 +104,7 @@ export const useTurboShipping = (
     const printWindow = window.open("", "_blank");
 
     if (!printWindow) {
-      throw new Error("تعذر فتح نافذة جديدة للطباعة");
+      throw new Error(i18n.t("turbo.printWindowError"));
     }
 
     printWindow.document.write(htmlContent);
@@ -138,10 +139,8 @@ export const useTurboShipping = (
         );
         toast.success(
           options?.replaceExisting
-            ? "تم إرجاع الشحنة على Turbo برقم تتبع جديد: " +
-                response.data.data.trackingNumber
-            : "تم إنشاء الشحنة بنجاح! رقم التتبع: " +
-                response.data.data.trackingNumber,
+            ? i18n.t("turbo.shipmentRecreated", { trackingNumber: response.data.data.trackingNumber })
+            : i18n.t("turbo.shipmentCreated", { trackingNumber: response.data.data.trackingNumber }),
         );
         return {
           success: true,
@@ -154,8 +153,8 @@ export const useTurboShipping = (
         error.response?.data?.message ||
           error.response?.data?.error ||
           (options?.replaceExisting
-            ? "فشل إرجاع الشحنة على Turbo مرة أخرى"
-            : "فشل إنشاء الشحنة"),
+            ? i18n.t("turbo.recreateFailed")
+            : i18n.t("turbo.createFailed")),
       );
       return { success: false, error: error.message };
     } finally {
@@ -176,7 +175,7 @@ export const useTurboShipping = (
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      toast.info("جاري تجهيز بوليصة Turbo...");
+      toast.info(i18n.t("turbo.preparingWaybill"));
 
       if (!useLocalGeneration) {
         const pdfResponse = await fetch(baseWaybillUrl, {
@@ -193,7 +192,7 @@ export const useTurboShipping = (
           const pdfBlob = await pdfResponse.blob();
 
           if (pdfBlob.size === 0) {
-            throw new Error("ملف البوليصة فارغ");
+            throw new Error(i18n.t("turbo.waybillEmpty"));
           }
 
           const pdfUrl = window.URL.createObjectURL(pdfBlob);
@@ -212,7 +211,7 @@ export const useTurboShipping = (
             window.URL.revokeObjectURL(pdfUrl);
           }, 60_000);
 
-          toast.success("تم فتح بوليصة Turbo في نافذة جديدة");
+          toast.success(i18n.t("turbo.waybillOpened"));
           return true;
         }
       }
@@ -231,20 +230,20 @@ export const useTurboShipping = (
         try {
           const errorData = JSON.parse(errorText);
           throw new Error(
-            errorData.error || errorData.message || "فشل في تحميل بوليصة Turbo",
+            errorData.error || errorData.message || i18n.t("turbo.waybillLoadFailed"),
           );
         } catch (_parseError) {
-          throw new Error(errorText || "فشل في تحميل بوليصة Turbo");
+          throw new Error(errorText || i18n.t("turbo.waybillLoadFailed"));
         }
       }
 
       const htmlContent = await htmlResponse.text();
       openPrintWindow(htmlContent, `Turbo Waybill - ${orderIdentifier}`);
-      toast.success("تم فتح بوليصة Turbo للطباعة");
+      toast.success(i18n.t("turbo.waybillPrintOpened"));
       return true;
     } catch (error: any) {
       console.error("❌ [WAYBILL] Error loading waybill:", error);
-      toast.error(error.message || "فشل تحميل بوليصة Turbo");
+      toast.error(error.message || i18n.t("turbo.waybillFailed"));
       return null;
     } finally {
       setTurboLoading(false);
@@ -273,11 +272,11 @@ export const useTurboShipping = (
               }
             : null,
         );
-        toast.success("تم إلغاء الشحنة بنجاح");
+        toast.success(i18n.t("turbo.shipmentCancelledSuccess"));
         return true;
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "فشل إلغاء الشحنة");
+      toast.error(error.response?.data?.error || i18n.t("turbo.cancelFailed"));
     } finally {
       setTurboLoading(false);
     }
@@ -310,14 +309,14 @@ export const useTurboShipping = (
         );
         setTurboTrackingData(null);
         setShippingComparison(null);
-        toast.success("تم إلغاء ربط Turbo من الطلب");
+        toast.success(i18n.t("turbo.unlinkSuccess"));
         return true;
       }
     } catch (error: any) {
       toast.error(
         error.response?.data?.message ||
           error.response?.data?.error ||
-          "فشل إلغاء ربط Turbo",
+          i18n.t("turbo.unlinkFailed"),
       );
     } finally {
       setTurboLoading(false);
@@ -327,7 +326,7 @@ export const useTurboShipping = (
 
   const calculateShipping = async (governorate: string, city: string) => {
     if (!governorate) {
-      toast.error("يرجى تحديد المحافظة لحساب تكلفة الشحن");
+      toast.error(i18n.t("turbo.selectGovernorate"));
       return;
     }
     setTurboLoading(true); // Reuse loading state or create specific one
@@ -350,12 +349,12 @@ export const useTurboShipping = (
             customerCost: order.shipping,
             difference: cost - order.shipping,
           });
-          toast.success(`تم حساب تكلفة الشحن: ${cost} ج.م`);
+          toast.success(i18n.t("turbo.costCalculated", { cost }));
         }
       }
     } catch (error: any) {
       console.error("Shipping calc error:", error);
-      toast.error("فشل حساب تكلفة الشحن");
+      toast.error(i18n.t("turbo.calcFailed"));
     } finally {
       setTurboLoading(false);
     }

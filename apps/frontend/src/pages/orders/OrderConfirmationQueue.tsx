@@ -83,6 +83,7 @@ const OrderRow = React.memo(({
   onCancel,
   onToggleSelect
 }: OrderRowProps) => {
+  const { t } = useTranslation();
   const isCancelled = String(order.status || '').toUpperCase() === 'CANCELLED';
 
   return (
@@ -106,18 +107,18 @@ const OrderRow = React.memo(({
           </Link>
           {order.isGuestOrder && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-              ضيف
+              {t('orders.guest')}
             </span>
           )}
         </div>
         <div className="text-sm text-gray-500 mt-1">
-          {order.customerName} • {order.customerPhone || 'بدون هاتف'}
+          {order.customerName} • {order.customerPhone || t('orders.noPhone')}
         </div>
         <div className="text-xs text-gray-400 mt-1">
           {formatDate(order.createdAt)} • {order.sourceType}
         </div>
         <div className="text-xs text-gray-400 mt-1">
-          موزع على: {order.assignedToName || order.assignedTo || 'غير موزع'}
+          {t('orders.distributedTo')} {order.assignedToName || order.assignedTo || t('orders.unassigned')}
           {order.assignmentStrategy
             ? ` • ${strategyLabelMap[order.assignmentStrategy] || order.assignmentStrategy}`
             : ''}
@@ -139,7 +140,7 @@ const OrderRow = React.memo(({
               className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-xs min-w-[160px]"
               disabled={eligibleUsers.length === 0}
             >
-              <option value="">اختر موظف للتوزيع</option>
+              <option value="">{t('orders.selectEmployeeToAssign')}</option>
               {eligibleUsers.map((user) => (
                 <option key={user.id} value={user.id}>
                   {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.id}
@@ -151,7 +152,7 @@ const OrderRow = React.memo(({
               disabled={assigningId === order.id || !assignValue}
               className="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs disabled:opacity-60"
             >
-              توزيع
+              {t('orders.assign')}
             </button>
           </>
         )}
@@ -161,7 +162,7 @@ const OrderRow = React.memo(({
           className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
           <CheckCircleIcon className="w-4 h-4" />
-          تأكيد
+          {t('orders.confirmOrder')}
         </button>
         <button
           onClick={() => onCancel(order)}
@@ -169,7 +170,7 @@ const OrderRow = React.memo(({
           className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-red-100 bg-red-50 text-sm font-bold text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300"
         >
           <XCircleIcon className={`w-4 h-4 ${cancellingId === order.id ? 'animate-pulse' : ''}`} />
-          {cancellingId === order.id ? 'جارٍ الإلغاء...' : 'إلغاء'}
+          {cancellingId === order.id ? t('orders.cancellingOrder') : t('orders.cancelOrder')}
         </button>
       </div>
     </div>
@@ -226,43 +227,43 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
 
   const sourceOptions = useMemo(
     () => [
-      { value: '', label: 'كل المصادر' },
-      { value: 'ai_conversation', label: 'محادثة تلقائية' },
-      { value: 'manual', label: 'يدوي' },
-      { value: 'storefront', label: 'المتجر' },
-      { value: 'woocommerce', label: 'WooCommerce' },
-      { value: 'pos', label: 'POS' },
-      { value: 'api', label: 'API' },
-      { value: 'import', label: 'استيراد' },
-      { value: 'unknown', label: 'غير معروف' }
+      { value: '', label: t('orders.allSources') },
+      { value: 'ai_conversation', label: t('orders.sourceAutoConversation') },
+      { value: 'manual', label: t('orders.sourceManual') },
+      { value: 'storefront', label: t('orders.sourceStorefront') },
+      { value: 'woocommerce', label: t('orders.sourceWooCommerce') },
+      { value: 'pos', label: t('orders.sourcePOS') },
+      { value: 'api', label: t('orders.sourceAPI') },
+      { value: 'import', label: t('orders.sourceImport') },
+      { value: 'unknown', label: t('orders.sourceUnknown') }
     ],
-    []
+    [t]
   );
 
   const statusOptions = useMemo(
     () => [
-      { value: '', label: 'كل الحالات' },
-      { value: 'pending', label: 'جديد / قيد الانتظار' },
-      { value: 'confirmed', label: 'مؤكد' },
-      { value: 'processing', label: 'قيد المعالجة' },
-      { value: 'shipped', label: 'تم الشحن' },
-      { value: 'delivered', label: 'تم التسليم' },
-      { value: 'cancelled', label: 'ملغي' }
+      { value: '', label: t('orders.allStatuses') },
+      { value: 'pending', label: t('orders.pendingNew') },
+      { value: 'confirmed', label: t('orders.confirmed') },
+      { value: 'processing', label: t('orders.processing') },
+      { value: 'shipped', label: t('orders.shipped') },
+      { value: 'delivered', label: t('orders.delivered') },
+      { value: 'cancelled', label: t('orders.cancelled') }
     ],
-    []
+    [t]
   );
 
   const strategyOptions = useMemo(
     () => [
-      { value: '', label: 'كل الاستراتيجيات' },
-      { value: 'round_robin', label: 'توزيع متساوي' },
-      { value: 'by_region', label: 'حسب المنطقة' },
-      { value: 'by_specialty', label: 'حسب المنتج' },
-      { value: 'by_order_value', label: 'حسب قيمة الأوردر' },
-      { value: 'by_workload', label: 'حسب العبء الحالي' },
-      { value: 'manual', label: 'توزيع يدوي' }
+      { value: '', label: t('orders.allStrategies') },
+      { value: 'round_robin', label: t('orders.strategyRoundRobin') },
+      { value: 'by_region', label: t('orders.strategyByRegion') },
+      { value: 'by_specialty', label: t('orders.strategyBySpecialty') },
+      { value: 'by_order_value', label: t('orders.strategyByOrderValue') },
+      { value: 'by_workload', label: t('orders.strategyByWorkload') },
+      { value: 'manual', label: t('orders.strategyManualAssign') }
     ],
-    []
+    [t]
   );
 
   const strategyLabelMap = useMemo(() => {
@@ -277,7 +278,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       const res = await orderConfirmationService.getSettings();
       setSettings(res.data);
     } catch (error: any) {
-      toast.error(error?.message || 'تعذر تحميل الإعدادات');
+      toast.error(error?.message || t('orders.failedToLoadSettings'));
     }
   };
 
@@ -286,7 +287,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       const res = await orderConfirmationService.getEligibleUsers();
       setEligibleUsers(Array.isArray(res.data) ? res.data : []);
     } catch (error: any) {
-      toast.error(error?.message || 'تعذر تحميل فريق التوزيع');
+      toast.error(error?.message || t('orders.failedToLoadDistributionTeam'));
     }
   };
 
@@ -307,7 +308,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       setTotalOrders(res.pagination?.total || 0);
       setTotalPages(res.pagination?.pages || 1);
     } catch (error: any) {
-      toast.error(error?.message || 'تعذر تحميل الطلبات');
+      toast.error(error?.message || t('orders.failedToLoadOrders'));
     } finally {
       setLoading(false);
     }
@@ -323,7 +324,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       const res = await orderConfirmationService.getStats(params);
       setStats(res.data || null);
     } catch (error: any) {
-      toast.error(error?.message || 'تعذر تحميل تقرير الفريق');
+      toast.error(error?.message || t('orders.failedToLoadTeamReport'));
     } finally {
       setStatsLoading(false);
     }
@@ -364,14 +365,14 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
     if (statsStartDate || statsEndDate) {
       const fromLabel = statsStartDate ? formatDate(statsStartDate) : '—';
       const toLabel = statsEndDate ? formatDate(statsEndDate) : '—';
-      const base = `ملخص الفترة من ${fromLabel} إلى ${toLabel}.`;
-      return statsStrategy ? `${base} الاستراتيجية: ${strategyLabel}.` : base;
+      const base = t('orders.summaryFromTo', { from: fromLabel, to: toLabel });
+      return statsStrategy ? `${base} ${t('orders.summaryStrategy', { strategy: strategyLabel })}` : base;
     }
     if (statsStrategy) {
-      return `ملخص آخر 30 يوم بناءً على عمليات التأكيد والتوزيع. الاستراتيجية: ${strategyLabel}.`;
+      return `${t('orders.summaryLast30Days')} ${t('orders.summaryStrategy', { strategy: strategyLabel })}`;
     }
-    return 'ملخص آخر 30 يوم بناءً على عمليات التأكيد والتوزيع.';
-  }, [statsStartDate, statsEndDate, formatDate, statsStrategy, strategyLabel]);
+    return t('orders.summaryLast30Days');
+  }, [statsStartDate, statsEndDate, formatDate, statsStrategy, strategyLabel, t]);
 
   const activeQueueFilterCount = useMemo(
     () => [statusFilter, sourceFilter, onlyUnassigned].filter(Boolean).length,
@@ -384,13 +385,13 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   }, [t]);
 
   const statusFilterLabel = useMemo(
-    () => statusOptions.find((opt) => opt.value === statusFilter)?.label || 'كل الحالات',
-    [statusFilter, statusOptions]
+    () => statusOptions.find((opt) => opt.value === statusFilter)?.label || t('orders.allStatuses'),
+    [statusFilter, statusOptions, t]
   );
 
   const sourceFilterLabel = useMemo(
-    () => sourceOptions.find((opt) => opt.value === sourceFilter)?.label || 'كل المصادر',
-    [sourceFilter, sourceOptions]
+    () => sourceOptions.find((opt) => opt.value === sourceFilter)?.label || t('orders.allSources'),
+    [sourceFilter, sourceOptions, t]
   );
 
   const resetQueueFilters = useCallback(() => {
@@ -406,19 +407,19 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
     try {
       const res = await orderConfirmationService.confirmOrder(orderId);
       if (res?.data?.status === 'pending') {
-        toast('تم إرسال الطلب للموافقة');
+        toast(t('orders.orderSentForApproval'));
       } else {
-        toast.success('تم تأكيد الطلب');
+        toast.success(t('orders.orderConfirmed'));
       }
       setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
-      toast.error(error?.message || 'فشل تأكيد الطلب');
+      toast.error(error?.message || t('orders.failedToConfirmOrder'));
     }
-  }, []);
+  }, [t]);
 
   const handleCancel = useCallback(async (order: ConfirmationOrder) => {
     const cancellationReason = window.prompt(
-      resolveCopy('orders.cancellationReasonPrompt', 'اكتب سبب إلغاء الطلب:'),
+      resolveCopy('orders.cancellationReasonPrompt', 'Write the reason for cancelling this order:'),
     );
 
     if (cancellationReason === null) {
@@ -428,7 +429,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
     const notes = cancellationReason.trim();
 
     if (!notes) {
-      toast.error(resolveCopy('orders.cancellationReasonRequired', 'سبب إلغاء الطلب مطلوب'));
+      toast.error(resolveCopy('orders.cancellationReasonRequired', 'Cancellation reason is required'));
       return;
     }
 
@@ -438,31 +439,31 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
         type: order.isGuestOrder ? 'GUEST' : 'REGULAR',
         notes
       });
-      toast.success(resolveCopy('orders.orderCancelled', 'تم إلغاء الطلب'));
+      toast.success(resolveCopy('orders.orderCancelled', 'Order cancelled successfully'));
       setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
-      toast.error(error?.message || 'فشل إلغاء الطلب');
+      toast.error(error?.message || t('orders.cancelFailedToast'));
     } finally {
       setCancellingId(null);
     }
-  }, [resolveCopy]);
+  }, [resolveCopy, t]);
 
   const handleAssign = useCallback(async (orderId: string, userId: string) => {
     if (!userId) {
-      toast.error('اختر موظفاً للتوزيع أولاً');
+      toast.error(t('orders.selectEmployeeFirst'));
       return;
     }
     try {
       setAssigningId(orderId);
       await orderConfirmationService.assignOrder(orderId, userId, null, 'manual');
-      toast.success('تم توزيع الطلب');
+      toast.success(t('orders.orderAssigned'));
       setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
-      toast.error(error?.message || 'فشل توزيع الطلب');
+      toast.error(error?.message || t('orders.assignFailedToast'));
     } finally {
       setAssigningId(null);
     }
-  }, []);
+  }, [t]);
 
   const handleAssignChange = useCallback((orderId: string, value: string) => {
     setAssignSelections((prev) => ({
@@ -483,7 +484,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
 
   const handleBulkConfirm = useCallback(async () => {
     if (!selectedOrderIds.length) {
-      toast.error('اختر طلبات أولاً');
+      toast.error(t('orders.selectOrdersFirst'));
       return;
     }
     try {
@@ -491,29 +492,29 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       const res = await orderConfirmationService.confirmOrders(selectedOrderIds);
       const summary = res?.data?.summary;
       if (summary) {
-        const parts = [`تم تأكيد ${summary.confirmed} طلب`];
-        if (summary.pending) parts.push(`${summary.pending} في انتظار الموافقة`);
-        if (summary.failed) parts.push(`${summary.failed} فشل`);
-        toast.success(parts.join('، '));
+        const parts = [t('orders.confirmedOrders', { count: summary.confirmed })];
+        if (summary.pending) parts.push(t('orders.pendingApproval', { count: summary.pending }));
+        if (summary.failed) parts.push(t('orders.confirmFailed', { count: summary.failed }));
+        toast.success(parts.join(', '));
       } else {
-        toast.success('تم تأكيد الطلبات');
+        toast.success(t('orders.ordersConfirmed'));
       }
       setSelectedOrderIds([]);
       setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
-      toast.error(error?.message || 'فشل تأكيد الطلبات');
+      toast.error(error?.message || t('orders.bulkConfirmFailed'));
     } finally {
       setBulkProcessing(false);
     }
-  }, [selectedOrderIds]);
+  }, [selectedOrderIds, t]);
 
   const handleBulkAssign = useCallback(async () => {
     if (!selectedOrderIds.length) {
-      toast.error('اختر طلبات أولاً');
+      toast.error(t('orders.selectOrdersFirst'));
       return;
     }
     if (!bulkUserId) {
-      toast.error('اختر موظفاً للتوزيع أولاً');
+      toast.error(t('orders.selectEmployeeFirst'));
       return;
     }
     try {
@@ -521,21 +522,21 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       const res = await orderConfirmationService.assignOrders(selectedOrderIds, bulkUserId, null, 'manual');
       const summary = res?.data?.summary;
       if (summary) {
-        const parts = [`تم توزيع ${summary.assigned} طلب`];
-        if (summary.failed) parts.push(`${summary.failed} فشل`);
-        toast.success(parts.join('، '));
+        const parts = [t('orders.assignedOrders', { count: summary.assigned })];
+        if (summary.failed) parts.push(t('orders.assignFailed', { count: summary.failed }));
+        toast.success(parts.join(', '));
       } else {
-        toast.success('تم توزيع الطلبات');
+        toast.success(t('orders.ordersAssigned'));
       }
       setSelectedOrderIds([]);
       setBulkUserId('');
       setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
-      toast.error(error?.message || 'فشل توزيع الطلبات');
+      toast.error(error?.message || t('orders.bulkAssignFailed'));
     } finally {
       setBulkProcessing(false);
     }
-  }, [selectedOrderIds, bulkUserId]);
+  }, [selectedOrderIds, bulkUserId, t]);
 
   useEffect(() => {
     setSelectedOrderIds([]);
@@ -559,23 +560,23 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
         {!embedded && (
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">طلبات تحتاج تأكيد</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('orders.ordersNeedingConfirmation')}</h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1">
-                هذه الصفحة تعرض الطلبات التي تتطلب تأكيداً قبل التنفيذ.
+                {t('orders.ordersNeedingConfirmationDescDisabled')}
               </p>
             </div>
           </div>
         )}
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl p-6">
-          <h2 className="text-lg font-bold text-amber-800 dark:text-amber-300">ميزة التأكيد غير مفعّلة</h2>
+          <h2 className="text-lg font-bold text-amber-800 dark:text-amber-300">{t('orders.confirmationFeatureDisabled')}</h2>
           <p className="text-sm text-amber-700 dark:text-amber-400 mt-2">
-            يرجى تفعيل قواعد التأكيد والتوزيع من إعدادات الطلبات.
+            {t('orders.confirmationFeatureDisabledDesc')}
           </p>
           <Link
             to="/settings/orders?tab=confirmation"
             className="inline-flex mt-4 px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-semibold"
           >
-            فتح الإعدادات
+            {t('orders.openSettings')}
           </Link>
         </div>
       </div>
@@ -587,9 +588,9 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       {!embedded && (
         <div className="flex flex-col gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">طلبات تحتاج تأكيد</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('orders.ordersNeedingConfirmation')}</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">
-              فلترة وإدارة الطلبات التي تحتاج إلى تأكيد قبل التنفيذ.
+              {t('orders.ordersNeedingConfirmationDescEnabled')}
             </p>
           </div>
         </div>
@@ -603,7 +604,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="بحث برقم الطلب أو اسم العميل"
+              placeholder={t('orders.searchPlaceholder')}
               className="min-h-[48px] w-full rounded-2xl border border-gray-300 bg-white py-3 pl-3 pr-10 text-base dark:border-gray-600 dark:bg-gray-900 sm:min-h-0 sm:rounded-lg sm:py-2 sm:text-sm"
             />
           </div>
@@ -613,7 +614,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
             className="flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-700 dark:border-blue-900/60 dark:bg-blue-900/20 dark:text-blue-200 sm:hidden"
           >
             <FunnelIcon className="h-5 w-5" />
-            فلترة
+            {t('orders.filter')}
             {activeQueueFilterCount > 0 && (
               <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
                 {activeQueueFilterCount}
@@ -657,7 +658,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                 }`}
             >
               <FunnelIcon className="w-4 h-4" />
-              غير موزع
+              {t('orders.unassigned')}
             </button>
           </div>
         </div>
@@ -666,7 +667,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
           <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-900/50">{sourceFilterLabel}</span>
           {onlyUnassigned && (
             <span className="rounded-full bg-blue-100 px-3 py-1 font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
-              غير موزع
+              {t('orders.unassigned')}
             </span>
           )}
         </div>
@@ -677,21 +678,21 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
           <div className="w-full rounded-t-[2rem] border border-gray-100 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">فلترة طابور التأكيد</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">اختصر النتائج بدون ما تخرج من الشاشة.</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('orders.filterConfirmationQueue')}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('orders.filterDescription')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(false)}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
-                aria-label="إغلاق الفلاتر"
+                aria-label={t('orders.closeFilters')}
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
-                الحالة
+                {t('orders.status')}
                 <select
                   value={statusFilter}
                   onChange={(e) => {
@@ -708,7 +709,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                 </select>
               </label>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
-                المصدر
+                {t('orders.source')}
                 <select
                   value={sourceFilter}
                   onChange={(e) => {
@@ -732,7 +733,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                   : 'border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200'
                   }`}
               >
-                <span>عرض الطلبات غير الموزعة فقط</span>
+                <span>{t('orders.showUnassignedOrders')}</span>
                 <FunnelIcon className="h-5 w-5" />
               </button>
               <div className="grid grid-cols-2 gap-2 pt-2">
@@ -741,14 +742,14 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                   onClick={resetQueueFilters}
                   className="min-h-[46px] rounded-2xl border border-gray-300 text-sm font-bold text-gray-700 dark:border-gray-600 dark:text-gray-200"
                 >
-                  إعادة ضبط
+                  {t('orders.reset')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setMobileFiltersOpen(false)}
                   className="min-h-[46px] rounded-2xl bg-blue-600 text-sm font-bold text-white"
                 >
-                  عرض النتائج
+                  {t('orders.showResults')}
                 </button>
               </div>
             </div>
@@ -759,11 +760,11 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:rounded-xl">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white sm:text-lg">تقرير الفريق</h2>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 sm:hidden">تأكيد وتوزيع آخر 30 يوم</p>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white sm:text-lg">{t('orders.teamReport')}</h2>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 sm:hidden">{t('orders.teamReportShort')}</p>
           </div>
           <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/25 dark:text-blue-200 sm:hidden">
-            {stats?.totals.totalAssigned ?? 0} توزيع
+            {stats?.totals.totalAssigned ?? 0} {t('orders.totalAssigned')}
           </span>
         </div>
         <p className="mt-1 hidden text-xs text-gray-500 dark:text-gray-400 sm:block">
@@ -771,11 +772,11 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
         </p>
         <details className="mt-3 rounded-2xl border border-gray-100 bg-gray-50/70 p-3 dark:border-gray-700 dark:bg-gray-900/30 sm:hidden">
           <summary className="cursor-pointer text-sm font-bold text-gray-700 dark:text-gray-200">
-            تخصيص التقرير
+            {t('orders.customizeReport')}
           </summary>
           <div className="mt-3 space-y-3 text-sm text-gray-600 dark:text-gray-300">
             <label className="block">
-              <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">من</span>
+              <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">{t('orders.from')}</span>
               <input
                 type="date"
                 value={statsStartDate}
@@ -784,7 +785,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">إلى</span>
+              <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">{t('orders.to')}</span>
               <input
                 type="date"
                 value={statsEndDate}
@@ -793,7 +794,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">الاستراتيجية</span>
+              <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">{t('orders.strategy')}</span>
               <select
                 value={statsStrategy}
                 onChange={(e) => setStatsStrategy(e.target.value)}
@@ -811,7 +812,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                 onClick={() => setStatsRefreshKey((prev) => prev + 1)}
                 className="min-h-[42px] rounded-2xl bg-blue-600 text-xs font-bold text-white"
               >
-                تحديث التقرير
+                {t('orders.updateReport')}
               </button>
               <button
                 onClick={() => {
@@ -822,14 +823,14 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                 }}
                 className="min-h-[42px] rounded-2xl border border-gray-300 text-xs font-bold dark:border-gray-600"
               >
-                إعادة ضبط
+                {t('orders.reset')}
               </button>
             </div>
           </div>
         </details>
         <div className="mt-3 hidden flex-col gap-3 text-xs text-gray-600 dark:text-gray-300 sm:flex lg:flex-row lg:items-center">
           <div className="flex items-center gap-2">
-            <label className="text-gray-500 dark:text-gray-400">من</label>
+            <label className="text-gray-500 dark:text-gray-400">{t('orders.from')}</label>
             <input
               type="date"
               value={statsStartDate}
@@ -838,7 +839,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-gray-500 dark:text-gray-400">إلى</label>
+            <label className="text-gray-500 dark:text-gray-400">{t('orders.to')}</label>
             <input
               type="date"
               value={statsEndDate}
@@ -847,7 +848,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-gray-500 dark:text-gray-400">الاستراتيجية</label>
+            <label className="text-gray-500 dark:text-gray-400">{t('orders.strategy')}</label>
             <select
               value={statsStrategy}
               onChange={(e) => setStatsStrategy(e.target.value)}
@@ -865,7 +866,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
               onClick={() => setStatsRefreshKey((prev) => prev + 1)}
               className="px-3 py-1 rounded-md bg-blue-600 text-white text-xs"
             >
-              تحديث التقرير
+              {t('orders.updateReport')}
             </button>
             <button
               onClick={() => {
@@ -876,37 +877,37 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
               }}
               className="px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-xs"
             >
-              إعادة ضبط
+              {t('orders.reset')}
             </button>
           </div>
         </div>
         {statsLoading ? (
-          <div className="p-4 text-center text-sm text-gray-500">جاري تحميل التقرير...</div>
+          <div className="p-4 text-center text-sm text-gray-500">{t('orders.loadingReport')}</div>
         ) : !stats ? (
-          <div className="p-4 text-center text-sm text-gray-500">لا توجد بيانات كافية لعرض التقرير.</div>
+          <div className="p-4 text-center text-sm text-gray-500">{t('orders.notEnoughData')}</div>
         ) : (
           <div className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
               <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-900/20 sm:rounded-lg sm:bg-transparent">
-                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">إجمالي المؤكد</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{t('orders.totalConfirmed')}</div>
                 <div className="mt-1 text-2xl font-black text-gray-900 dark:text-white sm:text-xl sm:font-semibold">
                   {stats.totals.totalConfirmed}
                 </div>
               </div>
               <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-900/20 sm:rounded-lg sm:bg-transparent">
-                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">تأكيدات النظام</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{t('orders.systemConfirmations')}</div>
                 <div className="mt-1 text-2xl font-black text-gray-900 dark:text-white sm:text-xl sm:font-semibold">
                   {stats.totals.confirmedRegular}
                 </div>
               </div>
               <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-900/20 sm:rounded-lg sm:bg-transparent">
-                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">تأكيدات الضيوف</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{t('orders.guestConfirmations')}</div>
                 <div className="mt-1 text-2xl font-black text-gray-900 dark:text-white sm:text-xl sm:font-semibold">
                   {stats.totals.confirmedGuest}
                 </div>
               </div>
               <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-900/20 sm:rounded-lg sm:bg-transparent">
-                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">إجمالي التوزيع</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{t('orders.totalAssignedLabel')}</div>
                 <div className="mt-1 text-2xl font-black text-gray-900 dark:text-white sm:text-xl sm:font-semibold">
                   {stats.totals.totalAssigned}
                 </div>
@@ -915,10 +916,10 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
 
             <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700 sm:rounded-lg">
               <div className="bg-gray-50 px-3 py-2 text-sm font-bold text-gray-700 dark:bg-gray-900/30 dark:text-gray-200">
-                توزيع الطلبات على الفريق
+                {t('orders.distributionByTeam')}
               </div>
               {stats.assignmentsByUser.length === 0 ? (
-                <div className="p-3 text-sm text-gray-500">لا توجد توزيعات خلال الفترة المحددة.</div>
+                <div className="p-3 text-sm text-gray-500">{t('orders.noDistributions')}</div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {stats.assignmentsByUser.map((entry) => (
@@ -952,17 +953,17 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                   checked={allSelected}
                   onChange={handleToggleSelectAll}
                 />
-                تحديد الكل
+                {t('orders.selectAll')}
               </label>
               <span className="text-xs text-gray-500">
-                تم تحديد {selectedCount} طلب
+                {t('orders.selectedCount', { selectedCount })}
               </span>
               {selectedCount > 0 && (
                 <button
                   onClick={() => setSelectedOrderIds([])}
                   className="text-xs text-indigo-600 hover:underline"
                 >
-                  إلغاء التحديد
+                  {t('orders.deselect')}
                 </button>
               )}
             </div>
@@ -973,7 +974,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                 className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-xs min-w-[160px]"
                 disabled={eligibleUsers.length === 0 || selectedCount === 0}
               >
-                <option value="">اختر موظف للتوزيع</option>
+                <option value="">{t('orders.selectEmployeeToAssign')}</option>
                 {eligibleUsers.map((user) => (
                   <option key={user.id} value={user.id}>
                     {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.id}
@@ -985,14 +986,14 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                 disabled={selectedCount === 0 || !bulkUserId || bulkProcessing}
                 className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs disabled:opacity-60"
               >
-                توزيع جماعي
+                {t('orders.bulkAssign')}
               </button>
               <button
                 onClick={handleBulkConfirm}
                 disabled={selectedCount === 0 || bulkProcessing}
                 className="px-3 py-2 rounded-lg bg-green-600 text-white text-xs disabled:opacity-60"
               >
-                تأكيد جماعي
+                {t('orders.bulkConfirm')}
               </button>
             </div>
           </div>
@@ -1007,8 +1008,8 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-300">
               <CheckCircleIcon className="h-6 w-6" />
             </div>
-            <div className="font-bold text-gray-800 dark:text-gray-100">كل شيء تحت السيطرة</div>
-            <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">لا توجد طلبات تحتاج تأكيد حالياً</div>
+            <div className="font-bold text-gray-800 dark:text-gray-100">{t('orders.everythingUnderControl')}</div>
+            <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('orders.noOrdersNeedConfirmation')}</div>
           </div>
         ) : (
           <div ref={listParentRef} className="max-h-[70vh] overflow-auto">
@@ -1062,7 +1063,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
           <span>
-            عرض {orders.length} من {totalOrders}
+            {t('orders.showingFrom', { count: orders.length, total: totalOrders })}
           </span>
           <div className="flex gap-2">
             <button
@@ -1070,14 +1071,14 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               className="px-3 py-1 border rounded-lg disabled:opacity-50"
             >
-              السابق
+              {t('orders.previous')}
             </button>
             <button
               disabled={page >= totalPages}
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               className="px-3 py-1 border rounded-lg disabled:opacity-50"
             >
-              التالي
+              {t('orders.next')}
             </button>
           </div>
         </div>

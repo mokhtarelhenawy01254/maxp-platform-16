@@ -16,6 +16,8 @@ import {
   emitFacebookPageSync,
   subscribeToFacebookPageSync,
 } from "../../utils/facebookPageSync";
+import { useTranslation } from "react-i18next";
+import i18n, { getDirection } from "../../i18n";
 
 interface FacebookPage {
   id: string;
@@ -85,6 +87,7 @@ const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
 
 const FacebookOAuth: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [oauthStatus, setOauthStatus] = useState<OAuthStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +98,7 @@ const FacebookOAuth: React.FC = () => {
   const loadOAuthStatus = useCallback(async () => {
     if (!user?.companyId) {
       console.error("No company ID available");
-      setError("معرف الشركة غير متوفر");
+      setError(t("facebookOAuth.companyIdMissing"));
       return;
     }
 
@@ -105,7 +108,6 @@ const FacebookOAuth: React.FC = () => {
 
       console.log("🔄 Loading OAuth status for company:", user.companyId);
 
-      // استخدام await صريح مع زيادة timeout
       // Make direct API call with companyId in URL since companyAwareApi isn't working
       const response = await fetch(
         `${envConfig.apiUrl}/facebook-oauth/status?companyId=${user.companyId}`,
@@ -124,12 +126,12 @@ const FacebookOAuth: React.FC = () => {
           `📊 Found ${data.pagesCount} pages, connected: ${data.connected}`,
         );
       } else {
-        setError(data.message || "فشل في تحميل حالة الربط");
+        setError(data.message || t("facebookOAuth.loadStatusFailed"));
       }
     } catch (error: unknown) {
       console.error("❌ Error loading OAuth status:", error);
       setError(
-        `خطأ في تحميل حالة الربط: ${getApiErrorMessage(error, "حدث خطأ غير متوقع")}`,
+        t("facebookOAuth.loadStatusError", { error: getApiErrorMessage(error, t("facebookOAuth.unexpectedError")) }),
       );
     } finally {
       setLoading(false);
@@ -220,13 +222,12 @@ const FacebookOAuth: React.FC = () => {
       const pagesCount = pagesParam || "0";
       const skippedCount = skippedParam || "0";
 
-      let successMessage = `تم ربط ${pagesCount} صفحة بنجاح!`;
+      let successMessage = t("facebookOAuth.pagesConnected", { count: pagesCount });
 
-      // ⚠️ إضافة تحذير مفصل إذا كانت هناك صفحات تم تخطيها
       if (parseInt(skippedCount) > 0) {
-        successMessage += ` (تم تخطي ${skippedCount} صفحة)`;
+        successMessage += t("facebookOAuth.pagesSkipped", { count: skippedCount });
 
-        // فك تشفير تفاصيل الصفحات المتخطاة
+
         if (skippedDataParam) {
           try {
             const decodedData = atob(decodeURIComponent(skippedDataParam));
@@ -254,21 +255,20 @@ const FacebookOAuth: React.FC = () => {
       // Reload status after a short delay to ensure database is updated
       setTimeout(() => {
         void loadOAuthStatus();
-        void loadSkippedPages(); // 🆕 جلب الصفحات المتخطاة
+    void loadSkippedPages();
         emitFacebookPageSync(companyParam || user?.companyId || null);
       }, 2000);
     }
 
     if (errorParam) {
-      let errorMessage = `خطأ في الربط: ${decodeURIComponent(errorParam)}`;
+      let errorMessage = t("facebookOAuth.connectError", { error: decodeURIComponent(errorParam) });
 
-      // ترجمة أخطاء معروفة
       const errorTranslations: { [key: string]: string } = {
-        missing_code_or_state: "بيانات الربط ناقصة",
-        invalid_state: "رابط الربط غير صالح",
-        no_company_id: "معرف الشركة مفقود",
-        no_pages_found: "لم يتم العثور على صفحات Facebook",
-        facebook_oauth_access_denied: "تم رفض الإذن من قبل المستخدم",
+        missing_code_or_state: t("facebookOAuth.missingCodeOrState"),
+        invalid_state: t("facebookOAuth.invalidState"),
+        no_company_id: t("facebookOAuth.noCompanyId"),
+        no_pages_found: t("facebookOAuth.noPagesFound"),
+        facebook_oauth_access_denied: t("facebookOAuth.accessDenied"),
       };
 
       if (errorTranslations[errorParam]) {
@@ -305,11 +305,11 @@ const FacebookOAuth: React.FC = () => {
 
       if (data.success) {
         setSkippedPages([]);
-        setSuccess(`تم وضع علامة على ${data.resolvedCount} صفحة كمحلولة`);
+        setSuccess(t("facebookOAuth.pagesResolved", { count: data.resolvedCount }));
       }
     } catch (error: unknown) {
       console.error("❌ Error resolving skipped pages:", error);
-      setError("خطأ في وضع علامة على الصفحات المتخطاة");
+      setError(t("facebookOAuth.resolveError"));
     }
   };
 
@@ -322,9 +322,9 @@ const FacebookOAuth: React.FC = () => {
         if (data.success) {
           const pagesCount = data.pages || "0";
           const skippedCount = data.skipped || "0";
-          let msg = `تم ربط ${pagesCount} صفحة بنجاح!`;
+          let msg = t("facebookOAuth.pagesConnected", { count: pagesCount });
           if (parseInt(skippedCount) > 0) {
-            msg += ` (تم تخطي ${skippedCount} صفحة)`;
+            msg += t("facebookOAuth.pagesSkipped", { count: skippedCount });
           }
           setSuccess(msg);
           if (data.skippedPages) {
@@ -351,18 +351,17 @@ const FacebookOAuth: React.FC = () => {
 
   const handleConnectFacebook = async () => {
     if (!user?.companyId) {
-      setError("معرف الشركة غير متوفر");
+      setError(t("facebookOAuth.companyIdMissing"));
       return;
     }
 
-    // فتح popup فاضي على طول عشان نتجنب popup blocker
     const popup = window.open(
       "",
       "facebook-oauth",
       "width=600,height=800,scrollbars=yes,resizable=yes",
     );
     if (!popup) {
-      setError("تم حظر النافذة المنبثقة. يرجى السماح للنوافذ المنبثقة والمحاولة مرة أخرى.");
+      setError(t("facebookOAuth.popupBlocked"));
       return;
     }
     popupRef.current = popup;
@@ -385,7 +384,7 @@ const FacebookOAuth: React.FC = () => {
       } else {
         popup.close();
         popupRef.current = null;
-        setError(data.message || "فشل في إنشاء رابط الربط");
+        setError(data.message || t("facebookOAuth.createAuthUrlFailed"));
       }
     } catch (error) {
       if (popupRef.current && !popupRef.current.closed) {
@@ -393,7 +392,7 @@ const FacebookOAuth: React.FC = () => {
       }
       popupRef.current = null;
       console.error("Error initiating OAuth:", error);
-      setError("خطأ في بدء عملية الربط");
+      setError(t("facebookOAuth.startOAuthError"));
     } finally {
       setLoading(false);
     }
@@ -406,15 +405,15 @@ const FacebookOAuth: React.FC = () => {
 
     const confirmMessage =
       pageIds.length === 1
-        ? "هل أنت متأكد من قطع الاتصال مع هذه الصفحة؟"
-        : `هل أنت متأكد من قطع الاتصال مع ${pageIds.length} صفحات؟`;
+        ? t("facebookOAuth.confirmDisconnectSingle")
+        : t("facebookOAuth.confirmDisconnectMultiple", { count: pageIds.length });
 
     if (!confirm(confirmMessage)) {
       return;
     }
 
     if (!user?.companyId) {
-      setError("معرف الشركة غير متوفر");
+      setError(t("facebookOAuth.companyIdMissing"));
       return;
     }
 
@@ -438,15 +437,15 @@ const FacebookOAuth: React.FC = () => {
         setSelectedPageIds((current) =>
           current.filter((pageId) => !pageIds.includes(pageId)),
         );
-        setSuccess(data.message || "تم قطع الاتصال بنجاح");
+        setSuccess(data.message || t("facebookOAuth.disconnectedSuccessfully"));
         await loadOAuthStatus();
         emitFacebookPageSync(user.companyId);
       } else {
-        setError(data.message || "فشل في قطع الاتصال");
+        setError(data.message || t("facebookOAuth.disconnectFailed"));
       }
     } catch (error) {
       console.error("Error disconnecting page:", error);
-      setError("خطأ في قطع الاتصال");
+      setError(t("facebookOAuth.disconnectError"));
     } finally {
       setLoading(false);
     }
@@ -459,15 +458,15 @@ const FacebookOAuth: React.FC = () => {
 
     const confirmMessage =
       pageIds.length === 1
-        ? "هل أنت متأكد من حذف هذه الصفحة نهائياً؟ لا يمكن التراجع عن هذا الإجراء."
-        : `هل أنت متأكد من حذف ${pageIds.length} صفحات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`;
+        ? t("facebookOAuth.confirmHardDeleteSingle")
+        : t("facebookOAuth.confirmHardDeleteMultiple", { count: pageIds.length });
 
     if (!confirm(confirmMessage)) {
       return;
     }
 
     if (!user?.companyId) {
-      setError("معرف الشركة غير متوفر");
+      setError(t("facebookOAuth.companyIdMissing"));
       return;
     }
 
@@ -492,15 +491,15 @@ const FacebookOAuth: React.FC = () => {
         setSelectedPageIds((current) =>
           current.filter((pageId) => !pageIds.includes(pageId)),
         );
-        setSuccess(data.message || "تم حذف الصفحات بنجاح");
+        setSuccess(data.message || t("facebookOAuth.hardDeleteSuccess"));
         await loadOAuthStatus();
         emitFacebookPageSync(user.companyId);
       } else {
-        setError(data.message || "فشل في حذف الصفحات");
+        setError(data.message || t("facebookOAuth.hardDeleteFailed"));
       }
     } catch (error) {
       console.error("Error hard deleting page:", error);
-      setError("خطأ في حذف الصفحات");
+      setError(t("facebookOAuth.hardDeleteError"));
     } finally {
       setLoading(false);
     }
@@ -512,7 +511,7 @@ const FacebookOAuth: React.FC = () => {
     }
 
     if (!user?.companyId) {
-      setError("معرف الشركة غير متوفر");
+      setError(t("facebookOAuth.companyIdMissing"));
       return;
     }
 
@@ -536,7 +535,7 @@ const FacebookOAuth: React.FC = () => {
         setSelectedPageIds((current) =>
           current.filter((pageId) => !pageIds.includes(pageId)),
         );
-        setSuccess(data.message || "تمت إعادة الربط بنجاح");
+        setSuccess(data.message || t("facebookOAuth.reconnectSuccess"));
         await loadOAuthStatus();
         emitFacebookPageSync(user.companyId);
       }
@@ -544,17 +543,17 @@ const FacebookOAuth: React.FC = () => {
       if (data.failedPages?.length) {
         const failedNames = data.failedPages
           .map((page: { pageName?: string | null; pageId?: string | null }) =>
-            page.pageName || page.pageId || "صفحة غير معروفة",
+            page.pageName || page.pageId || t("facebookOAuth.unknownPage"),
           )
           .join("، ");
 
-        setError(`تعذر إعادة ربط بعض الصفحات: ${failedNames}`);
+        setError(t("facebookOAuth.reconnectSomeFailed", { failedNames }));
       } else if (!data.success && !data.reconnectedCount) {
-        setError(data.message || "فشل في إعادة الربط");
+        setError(data.message || t("facebookOAuth.reconnectFailed"));
       }
     } catch (error) {
       console.error("Error reconnecting pages:", error);
-      setError("خطأ في إعادة الربط");
+      setError(t("facebookOAuth.reconnectError"));
     } finally {
       setLoading(false);
     }
@@ -576,7 +575,7 @@ const FacebookOAuth: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("ar-EG", {
+    return new Date(dateString).toLocaleDateString(i18n.language === "ar" ? "ar-EG" : "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -617,16 +616,15 @@ const FacebookOAuth: React.FC = () => {
       const data = await response.json();
       console.log("🐛 Debug Response:", data);
 
-      // عرض معلومات مفصلة
-      alert(`معلومات التصحيح:
-الشركة: ${data.companyId}
-إجمالي الصفحات: ${data.totalPages}
-الصفحات المتصلة: ${data.connectedPages}
-الصفحات المقطوعة: ${data.disconnectedPages}
+      alert(`${t("facebookOAuth.debugTitle")}:
+${t("facebookOAuth.debugCompany", { id: data.companyId })}
+${t("facebookOAuth.debugTotalPages", { count: data.totalPages })}
+${t("facebookOAuth.debugConnectedPages", { count: data.connectedPages })}
+${t("facebookOAuth.debugDisconnectedPages", { count: data.disconnectedPages })}
 
-تفاصيل الصفحات:
+${t("facebookOAuth.debugPageDetails")}:
 ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
-  .map((page) => `- ${page.pageName} (${page.pageId}): ${page.status}`)
+  .map((page) => t("facebookOAuth.debugPageEntry", { pageName: page.pageName, pageId: page.pageId, status: page.status }))
   .join("\n")}`);
     } catch (error) {
       console.error("Debug error:", error);
@@ -638,14 +636,14 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <ExclamationTriangleIcon className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-          <p className="text-gray-600">يجب تسجيل الدخول أولاً</p>
+          <p className="text-gray-600">{t("facebookOAuth.mustLogin")}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full p-6 space-y-6" dir="rtl">
+    <div className="w-full p-6 space-y-6" dir={getDirection()}>
       {/* Success/Error Messages */}
       {success && (
         <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl">
@@ -672,10 +670,10 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
             <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 ml-3 mt-0.5 shrink-0" />
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
-                صفحات لم يتم ربطها ({skippedPages.length})
+                {t("facebookOAuth.skippedPagesTitle", { count: skippedPages.length })}
               </h3>
               <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
-                الصفحات التالية مربوطة بالفعل بشركة أخرى ولا يمكن ربطها:
+                {t("facebookOAuth.skippedPagesDesc")}
               </p>
               <div className="space-y-2">
                 {skippedPages.map((page) => (
@@ -695,21 +693,20 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                       </p>
                     </div>
                     <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 text-xs rounded-full shrink-0">
-                      مربوطة بحساب آخر
+                      {t("facebookOAuth.skippedPageBoundToOther")}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-xl">
                 <p className="text-sm text-yellow-900 dark:text-yellow-200 mb-3">
-                  <strong>ملاحظة:</strong> لربط هذه الصفحات، يجب أولاً فك
-                  ربطها من الشركة الأخرى التي تستخدمها حالياً.
+                  {t("facebookOAuth.skippedPagesNote")}
                 </p>
                 <button
                   onClick={resolveSkippedPages}
                   className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium"
                 >
-                  تم الاطلاع - إخفاء هذا التنبيه
+                  {t("facebookOAuth.skippedPagesAcknowledge")}
                 </button>
               </div>
             </div>
@@ -746,10 +743,10 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
           </div>
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              فيسبوك وإنستجرام
+              {t("facebookOAuth.facebookInstagram")}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              اربط حساب فيسبوك أو إنستجرام عشان تقدر تستقبل رسايل العملاء وتدير المحادثات
+              {t("facebookOAuth.description")}
             </p>
           </div>
         </div>
@@ -757,7 +754,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="mr-3 text-sm text-gray-500">جاري التحميل...</span>
+            <span className="mr-3 text-sm text-gray-500">{t("facebookOAuth.loading")}</span>
           </div>
         ) : oauthStatus?.connected ? (
           <div className="space-y-4">
@@ -766,12 +763,12 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/30 rounded-full w-fit">
                   <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                    متصل - {connectedPagesCount} صفحة نشطة
+                    {t("facebookOAuth.connectedPagesCount", { count: connectedPagesCount })}
                   </span>
                 </div>
                 {disconnectedPagesCount > 0 && (
                   <p className="text-xs text-amber-700 dark:text-amber-400">
-                    هناك {disconnectedPagesCount} صفحة غير متصلة ويمكن إعادة ربطها من الأسفل.
+                    {t("facebookOAuth.disconnectedPagesHint", { count: disconnectedPagesCount })}
                   </p>
                 )}
               </div>
@@ -790,7 +787,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">الحساب المرتبط</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">{t("facebookOAuth.linkedAccount")}</p>
                     <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
                       {oauthStatus.facebookUser.name}
                     </p>
@@ -805,7 +802,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium transition-colors"
             >
               <PlusIcon className="h-4 w-4" />
-              {loading ? "جاري التحميل..." : "إضافة صفحات أخرى"}
+              {loading ? t("facebookOAuth.loading") : t("facebookOAuth.addMorePages")}
             </button>
           </div>
         ) : (
@@ -813,7 +810,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mb-4">
               <ExclamationTriangleIcon className="h-8 w-8 text-gray-400" />
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">غير متصل بأي صفحة Facebook</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t("facebookOAuth.noPagesConnected")}</p>
 
             {oauthStatus?.facebookUser && (
               <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900/30 p-2.5 px-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 max-w-sm">
@@ -829,7 +826,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">الحساب المرتبط</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">{t("facebookOAuth.linkedAccount")}</p>
                   <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
                     {oauthStatus.facebookUser.name}
                   </p>
@@ -843,11 +840,11 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium shadow-lg shadow-blue-600/20 transition-colors"
             >
               <ArrowTopRightOnSquareIcon className="h-5 w-5" />
-              {loading ? "جاري التحميل..." : "ربط مع Facebook"}
+              {loading ? t("facebookOAuth.loading") : t("facebookOAuth.connectWithFacebook")}
             </button>
 
             {!user?.companyId && (
-              <p className="mt-2 text-sm text-red-600">معرف الشركة غير متوفر</p>
+              <p className="mt-2 text-sm text-red-600">{t("facebookOAuth.companyIdMissing")}</p>
             )}
           </div>
         )}
@@ -858,7 +855,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
             <UserGroupIcon className="h-5 w-5 text-gray-500" />
-            الصفحات المحفوظة ({pages.length})
+            {t("facebookOAuth.savedPages", { count: pages.length })}
           </h3>
 
           <div className="mb-4 flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4 md:flex-row md:items-center md:justify-between">
@@ -869,7 +866,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                 onChange={handleToggleSelectAll}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              تحديد الكل
+              {t("facebookOAuth.selectAll")}
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 ({selectedPageIds.length}/{pages.length})
               </span>
@@ -882,7 +879,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-xs font-medium transition-colors"
               >
                 <ArrowPathIcon className="h-3.5 w-3.5" />
-                إعادة ربط المحدد
+                {t("facebookOAuth.reconnectSelected")}
               </button>
               <button
                 onClick={() => handleDisconnectPages(selectedConnectedPageIds)}
@@ -890,7 +887,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-xs font-medium transition-colors"
               >
                 <TrashIcon className="h-3.5 w-3.5" />
-                فصل المحدد
+                {t("facebookOAuth.disconnectSelected")}
               </button>
               <button
                 onClick={() => handleHardDeletePages(selectedPageIds)}
@@ -898,7 +895,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-900 text-white rounded-lg hover:bg-red-950 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-xs font-medium transition-colors"
               >
                 <TrashIcon className="h-3.5 w-3.5" />
-                حذف نهائي
+                {t("facebookOAuth.deletePermanently")}
               </button>
             </div>
           </div>
@@ -906,7 +903,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
           {pages.length === 0 && !loading ? (
             <div className="flex flex-col items-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
               <UserGroupIcon className="h-12 w-12 text-gray-300 mb-3" />
-              <p className="text-sm text-gray-500">لا توجد صفحات</p>
+              <p className="text-sm text-gray-500">{t("facebookOAuth.noPagesFoundYet")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -934,12 +931,12 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                       </p>
                       {page.connectedAt && (
                         <p className="text-xs text-gray-400 mt-0.5">
-                          متصل منذ: {formatDate(page.connectedAt)}
+                          {t("facebookOAuth.connectedSince", { date: formatDate(page.connectedAt) })}
                         </p>
                       )}
                       {page.disconnectedAt && page.status !== "connected" && (
                         <p className="text-xs text-gray-400 mt-0.5">
-                          تم الفصل في: {formatDate(page.disconnectedAt)}
+                          {t("facebookOAuth.disconnectedAt", { date: formatDate(page.disconnectedAt) })}
                         </p>
                       )}
                       {page.healthMessage && (
@@ -962,9 +959,9 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                     >
                       {page.status === "connected"
                         ? page.needsReconnect
-                          ? "يحتاج إعادة ربط"
-                          : "متصل"
-                        : "غير متصل"}
+                          ? t("facebookOAuth.needsReconnect")
+                          : t("facebookOAuth.connected")
+                        : t("facebookOAuth.pageNotConnected")}
                     </span>
 
                     {page.canReconnect !== false && (
@@ -972,10 +969,10 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                         onClick={() => handleReconnectPages([page.id])}
                         disabled={loading}
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg disabled:opacity-50 text-xs font-medium transition-colors"
-                        title="إعادة الربط"
+                        title={t("facebookOAuth.reconnectTooltip")}
                       >
                         <ArrowPathIcon className="h-3.5 w-3.5" />
-                        إعادة ربط
+                        {t("facebookOAuth.reconnect")}
                       </button>
                     )}
 
@@ -984,7 +981,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                         onClick={() => handleDisconnectPages([page.id])}
                         disabled={loading}
                         className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50 transition-colors"
-                        title="قطع الاتصال"
+                        title={t("facebookOAuth.disconnect")}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
@@ -993,7 +990,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                       onClick={() => handleHardDeletePages([page.id])}
                       disabled={loading}
                       className="p-1.5 text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg disabled:opacity-50 transition-colors"
-                      title="حذف نهائي"
+                        title={t("facebookOAuth.hardDeleteTooltip")}
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>

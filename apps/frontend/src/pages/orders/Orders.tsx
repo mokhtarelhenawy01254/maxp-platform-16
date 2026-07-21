@@ -388,23 +388,23 @@ const isCancellationStatus = (value: string | null | undefined) => {
 };
 
 const DEFAULT_ORDER_STATUSES: OrderStatusDefinition[] = [
-  { code: "PENDING", name: "قيد الانتظار", color: "#F59E0B" },
-  { code: "DRAFT", name: "مسودة", color: "#9CA3AF" },
-  { code: "CONFIRMED", name: "مؤكد", color: "#3B82F6" },
-  { code: "SCHEDULED", name: "مجدول", color: "#F97316" },
-  { code: "ON_HOLD", name: "معلق", color: "#F97316" },
-  { code: "PROCESSING", name: "قيد التجهيز", color: "#8B5CF6" },
-  { code: "SHIPPED", name: "تم الشحن", color: "#06B6D4" },
-  { code: "DELIVERED", name: "تم التسليم", color: "#10B981" },
-  { code: "CANCELLED", name: "ملغي", color: "#EF4444" },
-  { code: "DUPLICATE_ORDER", name: "طلب مكرر", color: "#F59E0B" },
-  { code: "REFUNDED", name: "مسترد", color: "#6B7280" },
-  { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً", color: "#9CA3AF" },
-  { code: "RETURNED", name: "مرتجع", color: "#DC2626" },
-  { code: "PARTIALLY_RETURNED", name: "مرتجع جزئي", color: "#F87171" },
-  { code: "PARTIALLY_DELIVERED", name: "تسليم جزئي", color: "#FBBF24" },
-  { code: "EXCHANGED", name: "استبدال", color: "#7C3AED" },
-  { code: "TRASH", name: "سلة المحذوفات", color: "#6B7280" },
+  { code: "PENDING", name: i18n.t('orders.pending'), color: "#F59E0B" },
+  { code: "DRAFT", name: i18n.t('orders.draft'), color: "#9CA3AF" },
+  { code: "CONFIRMED", name: i18n.t('orders.confirmed'), color: "#3B82F6" },
+  { code: "SCHEDULED", name: i18n.t('orders.scheduled'), color: "#F97316" },
+  { code: "ON_HOLD", name: i18n.t('orders.onHold'), color: "#F97316" },
+  { code: "PROCESSING", name: i18n.t('orders.processing'), color: "#8B5CF6" },
+  { code: "SHIPPED", name: i18n.t('orders.shipped'), color: "#06B6D4" },
+  { code: "DELIVERED", name: i18n.t('orders.delivered'), color: "#10B981" },
+  { code: "CANCELLED", name: i18n.t('orders.cancelled'), color: "#EF4444" },
+  { code: "DUPLICATE_ORDER", name: i18n.t('orders.duplicate'), color: "#F59E0B" },
+  { code: "REFUNDED", name: i18n.t('orders.refunded'), color: "#6B7280" },
+  { code: "PARTIALLY_REFUNDED", name: i18n.t('orders.partiallyRefunded'), color: "#9CA3AF" },
+  { code: "RETURNED", name: i18n.t('orders.returned'), color: "#DC2626" },
+  { code: "PARTIALLY_RETURNED", name: i18n.t('orders.partiallyReturned'), color: "#F87171" },
+  { code: "PARTIALLY_DELIVERED", name: i18n.t('orders.partiallyDelivered'), color: "#FBBF24" },
+  { code: "EXCHANGED", name: i18n.t('orders.exchanged'), color: "#7C3AED" },
+  { code: "TRASH", name: i18n.t('orders.trash'), color: "#6B7280" },
 ];
 
 const DEFAULT_PAYMENT_STATUSES: OrderStatusDefinition[] = [
@@ -586,17 +586,17 @@ const getOrdersLoadErrorMessage = (error: unknown) => {
   };
 
   if (apiError?.response?.status && apiError.response.status >= 500) {
-    return "تعذر تحميل الطلبات من الخادم حالياً";
+    return i18n.t('orders.failedToLoadOrdersDesc');
   }
 
   if (apiError?.message?.includes("Network")) {
-    return "تعذر الاتصال بالخادم لتحميل الطلبات";
+    return i18n.t('orders.networkError');
   }
 
   return (
     apiError?.response?.data?.message ||
     apiError?.message ||
-    "تعذر تحميل الطلبات الآن، حاول مرة أخرى"
+    i18n.t('orders.genericLoadError')
   );
 };
 
@@ -696,10 +696,10 @@ const formatMerchantPieces = (value: string | number | undefined | null) =>
   });
 
 const payoutStatusLabels: Record<string, string> = {
-  PENDING: "قيد مراجعة الشركة",
-  PROCESSED: "تم التحويل",
-  FAILED: "فشل التحويل",
-  CANCELLED: "ملغي",
+  PENDING: i18n.t('orders.pendingWithdrawal'),
+  PROCESSED: i18n.t('orders.transferred'),
+  FAILED: i18n.t('orders.transferFailed'),
+  CANCELLED: i18n.t('orders.cancelled'),
 };
 
 const getMerchantOperationsTotals = (
@@ -1209,7 +1209,7 @@ const Orders: React.FC = () => {
         } else {
           setMerchantSettlementSummary(null);
           setMerchantSettlementError(
-            response.data?.message || "تعذر تحميل ملخص تسوية التاجر",
+            response.data?.message || i18n.t("orders.merchantLoadError"),
           );
         }
       } catch (error: unknown) {
@@ -1217,7 +1217,7 @@ const Orders: React.FC = () => {
         console.warn("Failed to load merchant settlement summary:", error);
         setMerchantSettlementSummary(null);
         setMerchantSettlementError(
-          getApiErrorMessage(error, "تعذر تحميل ملخص تسوية التاجر"),
+          getApiErrorMessage(error, i18n.t("orders.merchantLoadError")),
         );
       } finally {
         if (isMounted) {
@@ -1375,7 +1375,7 @@ const Orders: React.FC = () => {
           setOrdersLoadError(null);
         } else {
           console.error("Failed to fetch enhanced orders:", data.message);
-          setOrdersLoadError("تعذر تحميل الطلبات حالياً");
+          setOrdersLoadError(i18n.t('orders.failedToLoadOrdersShort'));
         }
       } else {
         // Use simple orders API
@@ -1443,7 +1443,7 @@ const Orders: React.FC = () => {
           setOrdersLoadError(null);
         } else {
           console.error("Failed to fetch orders:", data.message);
-          setOrdersLoadError("تعذر تحميل الطلبات حالياً");
+          setOrdersLoadError(i18n.t('orders.failedToLoadOrdersShort'));
         }
       }
     } catch (error: unknown) {
@@ -1525,29 +1525,24 @@ const Orders: React.FC = () => {
       const now = new Date();
       const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-      // أقل من دقيقة
       if (diffInSeconds < 60) {
-        return t("orders.justNow") || "منذ لحظات";
+        return t("orders.justNow");
       }
 
-      // أقل من ساعة (دقائق)
       if (diffInSeconds < 3600) {
         const minutes = Math.floor(diffInSeconds / 60);
-        return `منذ ${minutes} ${minutes === 1 ? "دقيقة" : minutes === 2 ? "دقيقتين" : "دقائق"}`;
+        return t("orders.minutesAgo", { count: minutes });
       }
 
-      // أقل من 24 ساعة (ساعات)
       if (diffInSeconds < 86400) {
         const hours = Math.floor(diffInSeconds / 3600);
-        return `منذ ${hours} ${hours === 1 ? "ساعة" : hours === 2 ? "ساعتين" : "ساعات"}`;
+        return t("orders.hoursAgo", { count: hours });
       }
 
-      // أقل من 48 ساعة (أمس)
       if (diffInSeconds < 172800) {
-        return "أمس";
+        return t("orders.yesterday");
       }
 
-      // أكثر من يومين - عرض التاريخ العادي
       return formatDate(dateString);
     } catch (e) {
       return formatDate(dateString);
@@ -1713,10 +1708,10 @@ const Orders: React.FC = () => {
         } else {
           const errorSummary = failedResults
             .slice(0, 5)
-            .map((r: Record<string, unknown>) => `طلب ${r.id}: ${r.error || 'خطأ غير معروف'}`)
+            .map((r: Record<string, unknown>) => `${t("orders.orderLabel")} ${r.id}: ${r.error || t('orders.unknownError')}`)
             .join('\n');
-          const moreText = failedCount > 5 ? `\n...و ${failedCount - 5} أخطاء أخرى` : '';
-          alert(`تم تحديث ${successCount} من ${totalRequested} طلب\n\nالطلبات الفاشلة:\n${errorSummary}${moreText}`);
+          const moreText = failedCount > 5 ? `\n${t('orders.moreErrors', { count: failedCount - 5 })}` : '';
+          alert(`${t('orders.updatedOrdersSummary', { success: successCount, total: totalRequested })}\n\n${t('orders.failedOrdersLabel')}:\n${errorSummary}${moreText}`);
         }
         await fetchOrders();
         const failedIds: string[] = failedResults.map((r: Record<string, unknown>) => String(r.id));
@@ -1794,13 +1789,13 @@ const Orders: React.FC = () => {
 
   const handleBulkPrintInvoices = async () => {
     if (selectedOrders.length === 0) {
-      alert("الرجاء اختيار طلبات أولاً");
+      alert(t("orders.pleaseSelectOrders"));
       return;
     }
 
     // للطباعة الجماعية، نفتح صفحة منفصلة
     if (selectedOrders.length > 1) {
-      if (!window.confirm(`هل تريد طباعة فواتير ${selectedOrders.length} طلب؟`))
+      if (!window.confirm(t("orders.confirmPrintInvoices", { count: selectedOrders.length })))
         return;
 
       try {
@@ -1821,13 +1816,13 @@ const Orders: React.FC = () => {
           }
 
           alert(
-            `✅ تم إنشاء ${success.length} فاتورة جديدة\n📋 ${existing.length} فاتورة موجودة\n❌ ${failed.length} فشلت`,
+            t("orders.invoicesGenerated", { success: success.length, existing: existing.length, failed: failed.length }),
           );
           setSelectedOrders([]);
         }
       } catch (error: unknown) {
         console.error("Error bulk printing invoices:", error);
-        alert("خطأ في طباعة الفواتير");
+        alert(t("orders.invoicePrintError"));
       } finally {
         setPrintingInvoices(false);
       }
@@ -1850,7 +1845,7 @@ const Orders: React.FC = () => {
         }
       } catch (error: unknown) {
         console.error("Error generating invoice:", error);
-        alert("خطأ في توليد الفاتورة");
+        alert(t("orders.invoiceGenerationError"));
       } finally {
         setPrintingInvoices(false);
       }
@@ -1929,7 +1924,7 @@ const Orders: React.FC = () => {
       case "CONFIRMED":
         return t("orders.confirmed");
       case "SCHEDULED":
-        return "مجدول";
+        return t("orders.scheduled");
       case "PROCESSING":
         return t("orders.processing");
       case "SHIPPED":
@@ -1941,18 +1936,18 @@ const Orders: React.FC = () => {
       case "DUPLICATE_ORDER":
         return t("orders.duplicate");
       case "PARTIALLY_RETURNED":
-        return "مرتجع جزئي";
+        return t("orders.partiallyReturned");
       case "PARTIALLY_DELIVERED":
-        return "تسليم جزئي";
+        return t("orders.partiallyDelivered");
       case "RETURNED":
-        return "مرتجع";
+        return t("orders.returned");
       case "REFUNDED":
-        return "مسترد";
+        return t("orders.refunded");
       case "PARTIALLY_REFUNDED":
-        return "مسترد جزئياً";
+        return t("orders.partiallyRefunded");
       case "TRASH":
       case "TRASH_ORDER":
-        return "سلة المحذوفات";
+        return t("orders.trash");
       default:
         return status;
     }
@@ -2091,9 +2086,9 @@ const Orders: React.FC = () => {
   const getFulfillmentSourceText = (source?: string | null) => {
     switch (String(source || "").toUpperCase()) {
       case "COMPANY_WAREHOUSE":
-        return "من مخزن الشركة";
+        return i18n.t('orders.fromCompanyWarehouse');
       case "MERCHANT":
-        return "من عند التاجر";
+        return i18n.t('orders.fromMerchant');
       default:
         return "";
     }
@@ -2113,7 +2108,7 @@ const Orders: React.FC = () => {
       selectedMerchantOption?.name ||
       selectedMerchant?.email ||
       selectedMerchantOption?.email ||
-      "التاجر المحدد";
+      t("orders.selectedMerchant");
 
     if (merchantSettlementLoading) {
       return (
@@ -2132,7 +2127,7 @@ const Orders: React.FC = () => {
               to={`/merchants/${filters.merchantId}`}
               className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-rose-200 bg-white px-3 py-2 font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-200"
             >
-              فتح ملف التاجر
+              {t("orders.openMerchantProfile")}
             </Link>
           </div>
         </section>
@@ -2154,60 +2149,60 @@ const Orders: React.FC = () => {
       ) || [];
     const fulfillmentLabel = getFulfillmentSourceText(
       selectedMerchant?.fulfillmentMode,
-    ) || selectedMerchant?.fulfillmentMode || "تنفيذ التاجر";
+    ) || selectedMerchant?.fulfillmentMode || t("orders.merchantFulfillment");
 
     const metricCards = [
       {
-        label: "قابل للسحب الآن",
+        label: t("orders.availableForWithdrawal"),
         value: formatPrice(payoutBalances.availableAmount || 0),
-        subValue: `${formatMerchantPieces(payoutBalances.availableCommissionsCount)} طلب مسلم`,
+        subValue: `${formatMerchantPieces(payoutBalances.availableCommissionsCount)} ${t("orders.deliveredOrders")}`,
         icon: BanknotesIcon,
         className:
           "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100",
       },
       {
-        label: "قيد طلب سحب",
+        label: t("orders.pendingWithdrawalRequest"),
         value: formatPrice(payoutBalances.pendingPayoutAmount || 0),
-        subValue: `${formatMerchantPieces(pendingPayouts.length)} طلب سحب مفتوح`,
+        subValue: `${formatMerchantPieces(pendingPayouts.length)} ${t("orders.pendingWithdrawalRequest")}`,
         icon: ClockIcon,
         className:
           "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100",
       },
       {
-        label: "تم تحويله",
+        label: t("orders.transferred"),
         value: formatPrice(payoutBalances.paidAmount || 0),
-        subValue: "مدفوع ومقفل",
+        subValue: t("orders.paidAndClosed"),
         icon: CheckCircleIcon,
         className:
           "border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
       },
       {
-        label: "في الشحن",
+        label: t("orders.settlementInShipping"),
         value: formatPrice(operationsTotals.inShippingAmount),
-        subValue: `${formatMerchantPieces(operationsTotals.inShippingPieces)} قطعة معلقة`,
+        subValue: t("orders.piecesPending", { count: formatMerchantPieces(operationsTotals.inShippingPieces) }),
         icon: TruckIcon,
         className:
           "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-100",
       },
       {
-        label: "رصيد قابل للبيع",
-        value: `${formatMerchantPieces(inventorySummary.availableForSale)} قطعة`,
-        subValue: `محجوز ${formatMerchantPieces(inventorySummary.reservedQuantity)} قطعة`,
+        label: t("orders.sellableBalance"),
+        value: `${formatMerchantPieces(inventorySummary.availableForSale)} ${t("orders.pieces")}`,
+        subValue: t("orders.reservedPieces", { count: formatMerchantPieces(inventorySummary.reservedQuantity) }),
         icon: CubeIcon,
         className:
           "border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-100",
       },
       {
-        label: "تم التسليم",
-        value: `${formatMerchantPieces(operationsTotals.deliveredOrdersCount)} طلب`,
-        subValue: `${formatMerchantPieces(operationsTotals.payablePieces)} قطعة مستحقة`,
+        label: t("orders.deliveredOrders"),
+        value: `${formatMerchantPieces(operationsTotals.deliveredOrdersCount)} ${t("orders.orders2")}`,
+        subValue: t("orders.piecesDue", { count: formatMerchantPieces(operationsTotals.payablePieces) }),
         icon: CheckCircleIcon,
         className:
           "border-emerald-200 bg-white text-emerald-900 dark:border-emerald-500/20 dark:bg-slate-900 dark:text-emerald-100",
       },
       {
-        label: "مرتجع أو لم يسلم",
-        value: `${formatMerchantPieces(operationsTotals.notDeliveredOrdersCount)} طلب`,
+        label: t("orders.settlementNotDelivered"),
+        value: `${formatMerchantPieces(operationsTotals.notDeliveredOrdersCount)} ${t("orders.orders2")}`,
         subValue: formatPrice(operationsTotals.notDeliveredAmount),
         icon: ExclamationTriangleIcon,
         className:
@@ -2222,7 +2217,7 @@ const Orders: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
                 <BanknotesIcon className="h-4 w-4" />
-                تسوية التاجر
+                {t("orders.merchantSettlementLabel")}
               </span>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 {fulfillmentLabel}
@@ -2237,7 +2232,7 @@ const Orders: React.FC = () => {
               {merchantName}
             </h2>
             <p className="mt-1 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-              نفس شاشة الطلبات تعرض الرصيد المالي، حالة التشغيل، والمخزون المتبقي للتاجر المحدد.
+              {t("orders.merchantSettlementDesc")}
             </p>
           </div>
 
@@ -2250,7 +2245,7 @@ const Orders: React.FC = () => {
               }}
               className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
-              كل طلبات التاجر
+              {t("orders.allMerchantOrders")}
             </button>
             <button
               type="button"
@@ -2260,19 +2255,19 @@ const Orders: React.FC = () => {
               }}
               className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
             >
-              الطلبات المستحقة
+              {t("orders.dueOrders")}
             </button>
             <Link
               to={`/merchants/${filters.merchantId}`}
               className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
-              ملف التاجر
+              {t("orders.merchantProfile")}
             </Link>
             <Link
               to="/inventory"
               className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-200"
             >
-              المخزون
+              {t("orders.inventory")}
             </Link>
           </div>
         </div>
@@ -2297,10 +2292,10 @@ const Orders: React.FC = () => {
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <span className="font-bold">
-                يوجد {formatMerchantPieces(pendingPayouts.length)} طلب سحب قيد مراجعة الشركة
+                {t("orders.pendingWithdrawalRequests", { count: formatMerchantPieces(pendingPayouts.length) })}
               </span>
               <span className="text-[11px] opacity-80">
-                آخر طلب: {payoutStatusLabels[pendingPayouts[0]?.status] || pendingPayouts[0]?.status} •{" "}
+                {t("orders.lastPayout")}: {payoutStatusLabels[pendingPayouts[0]?.status] || pendingPayouts[0]?.status} •{" "}
                 {formatPrice(Number(pendingPayouts[0]?.amount || 0))}
               </span>
             </div>
@@ -2439,17 +2434,17 @@ const Orders: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
                   <ShoppingBagIcon className="h-4 w-4" />
-                  {isMerchant ? "طلباتي" : "إدارة الطلبات"}
+                  {isMerchant ? t("orders.myOrders") : t("orders.title")}
                 </span>
                 {!loading && (
                   <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300">
-                    {totalOrders} طلب
+                    {t("orders.totalOrdersCount", { count: totalOrders })}
                   </span>
                 )}
                 {activeFilterCount > 0 && (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200/70 bg-fuchsia-50/80 px-3 py-1 text-xs font-medium text-fuchsia-700 dark:border-fuchsia-500/20 dark:bg-fuchsia-500/10 dark:text-fuchsia-200">
                     <FunnelIcon className="h-3.5 w-3.5" />
-                    {activeFilterCount} فلتر
+                    {t("orders.activeFiltersCount", { count: activeFilterCount })}
                   </span>
                 )}
               </div>
@@ -2477,13 +2472,13 @@ const Orders: React.FC = () => {
 
               {!loading && (
                 <div className="hidden items-center gap-2 rounded-full border border-slate-200/70 bg-white/75 px-3 py-2 text-xs font-medium text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 lg:inline-flex">
-                  <span>الظاهر</span>
+                  <span>{t("orders.showing")}</span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
                     {orders.length > 0
                       ? `${(page - 1) * limit + 1}-${Math.min(page * limit, totalOrders)}`
                       : "0"}
                   </span>
-                  <span>من {totalOrders}</span>
+                  <span>{t("orders.of")} {totalOrders}</span>
                 </div>
               )}
             </div>
@@ -2502,7 +2497,7 @@ const Orders: React.FC = () => {
                     onClick={() => fetchOrders()}
                     className="rounded-xl border border-red-200/80 px-2.5 py-1 font-semibold transition hover:bg-red-100/80 dark:border-red-500/30 dark:hover:bg-red-500/10"
                   >
-                    إعادة المحاولة
+                    {t("orders.incompleteRetry")}
                   </button>
                 </div>
               )}
@@ -2531,7 +2526,7 @@ const Orders: React.FC = () => {
                   >
                     <AdjustmentsHorizontalIcon className="h-4 w-4" />
                     <span className="whitespace-nowrap">
-                      {showAdvancedFilters ? "إخفاء الفلاتر" : "الفلاتر"}
+                      {showAdvancedFilters ? t("orders.hideFilters") : t("orders.filters")}
                     </span>
                     {advancedFilterCount > 0 && (
                       <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[11px] font-bold text-fuchsia-700 dark:bg-slate-900/80 dark:text-fuchsia-200">
@@ -2561,13 +2556,13 @@ const Orders: React.FC = () => {
 
               {!showAdvancedFilters && advancedFilterCount > 0 && (
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2 text-[11px] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/55 dark:text-slate-300">
-                  <span>تم تطبيق {advancedFilterCount} فلتر متقدم</span>
+                  <span>{t("orders.activeFiltersApplied", { count: advancedFilterCount })}</span>
                   <button
                     type="button"
                     onClick={clearAdvancedFilters}
                     className="rounded-xl px-2.5 py-1 font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
                   >
-                    مسح الفلاتر
+                    {t("orders.clearFilters")}
                   </button>
                 </div>
               )}
@@ -2608,7 +2603,7 @@ const Orders: React.FC = () => {
                             {status.name}
                           </option>
                         ))}
-                        <option value="trash">سلة المحذوفات</option>
+                        <option value="trash">{t("orders.trash")}</option>
                       </select>
                     </div>
 
@@ -2668,14 +2663,14 @@ const Orders: React.FC = () => {
                       {showMerchantOperationFilters && (
                         <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                           <select
-                            aria-label="كل التجار"
+                            aria-label={String(t("orders.allMerchants"))}
                             value={filters.merchantId}
                             onChange={(e) =>
                               handleFilterChange("merchantId", e.target.value)
                             }
                             className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                           >
-                            <option value="">كل التجار</option>
+                            <option value="">{t("orders.allMerchants")}</option>
                             {merchantOptions.map((merchantOption) => (
                               <option key={merchantOption.id} value={merchantOption.id}>
                                 {merchantOption.name || merchantOption.email || merchantOption.id}
@@ -2688,14 +2683,14 @@ const Orders: React.FC = () => {
                       {showAffiliateOperationFilter && (
                         <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                           <select
-                            aria-label="كل المسوقين"
+                            aria-label={String(t("orders.allAffiliates"))}
                             value={filters.affiliateId}
                             onChange={(e) =>
                               handleFilterChange("affiliateId", e.target.value)
                             }
                             className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                           >
-                            <option value="">كل المسوقين</option>
+                            <option value="">{t("orders.allAffiliates")}</option>
                             {affiliateOptions.map((affiliateOption) => (
                               <option key={affiliateOption.id} value={affiliateOption.id}>
                                 {getAffiliateDisplayName(affiliateOption)}
@@ -2709,22 +2704,22 @@ const Orders: React.FC = () => {
                         <>
                           <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                             <select
-                              aria-label="مصدر التنفيذ"
+                              aria-label={String(t("orders.fulfillmentSource"))}
                               value={filters.fulfillmentSource}
                               onChange={(e) =>
                                 handleFilterChange("fulfillmentSource", e.target.value)
                               }
                               className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                             >
-                              <option value="">كل مصادر التنفيذ</option>
-                              <option value="MERCHANT">من عند التاجر</option>
-                              <option value="COMPANY_WAREHOUSE">من مخزن الشركة</option>
+                              <option value="">{t("orders.allFulfillmentSources")}</option>
+                              <option value="MERCHANT">{t("orders.fromMerchant")}</option>
+                              <option value="COMPANY_WAREHOUSE">{t("orders.fromCompanyWarehouse")}</option>
                             </select>
                           </div>
 
                           <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                             <select
-                              aria-label="حالة تشغيل التاجر"
+                              aria-label={String(t("orders.merchantOperationStatus"))}
                               value={filters.merchantOperationStatus}
                               onChange={(e) =>
                                 handleFilterChange(
@@ -2734,17 +2729,17 @@ const Orders: React.FC = () => {
                               }
                               className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                             >
-                              <option value="">كل حالات تشغيل التاجر</option>
-                              <option value="PREPARATION">قيد التجهيز</option>
-                              <option value="IN_SHIPPING">في الشحن</option>
-                              <option value="DELIVERED">تم التسليم</option>
-                              <option value="NOT_DELIVERED">مرتجع / لم يسلم</option>
+                              <option value="">{t("orders.allMerchantOperationStatuses")}</option>
+                              <option value="PREPARATION">{t("orders.preparation")}</option>
+                              <option value="IN_SHIPPING">{t("orders.inShipping")}</option>
+                              <option value="DELIVERED">{t("orders.delivered")}</option>
+                              <option value="NOT_DELIVERED">{t("orders.returnedOrNotDelivered")}</option>
                             </select>
                           </div>
 
                           <div className="relative min-w-[150px] sm:flex-1 lg:min-w-0">
                             <select
-                              aria-label="مستحقات التاجر"
+                              aria-label={String(t("orders.merchantSettlements"))}
                               value={filters.merchantSettlementStatus}
                               onChange={(e) =>
                                 handleFilterChange(
@@ -2754,10 +2749,10 @@ const Orders: React.FC = () => {
                               }
                               className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                             >
-                              <option value="">كل المستحقات</option>
-                              <option value="PAYABLE">مستحق السحب</option>
-                              <option value="PAID">تم السداد</option>
-                              <option value="NOT_PAYABLE">غير مستحق</option>
+                              <option value="">{t("orders.allSettlements")}</option>
+                              <option value="PAYABLE">{t("orders.settlementPayable")}</option>
+                              <option value="PAID">{t("orders.settlementPaid")}</option>
+                              <option value="NOT_PAYABLE">{t("orders.settlementNotPayable")}</option>
                             </select>
                           </div>
                         </>
@@ -2770,11 +2765,11 @@ const Orders: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
                           <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            من
+                            {t("orders.fromDate")}
                           </span>
                           <input
                             type="date"
-                            aria-label="تاريخ البداية"
+                            aria-label={String(t("orders.startDate"))}
                             value={filters.startDate}
                             onChange={(e) => {
                               handleFilterChange("startDate", e.target.value);
@@ -2786,11 +2781,11 @@ const Orders: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-900/80">
                           <span className="whitespace-nowrap text-xs font-medium text-slate-500 dark:text-slate-400">
-                            إلى
+                            {t("orders.toDate")}
                           </span>
                           <input
                             type="date"
-                            aria-label="تاريخ النهاية"
+                            aria-label={String(t("orders.endDate"))}
                             value={filters.endDate}
                             onChange={(e) => {
                               handleFilterChange("endDate", e.target.value);
@@ -2806,7 +2801,7 @@ const Orders: React.FC = () => {
                         onClick={clearAdvancedFilters}
                         className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
                       >
-                        مسح الفلاتر المتقدمة
+                        {t("orders.clearAdvancedFilters")}
                       </button>
                     </div>
                   )}
@@ -2817,7 +2812,7 @@ const Orders: React.FC = () => {
                         onClick={clearAdvancedFilters}
                         className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
                       >
-                        مسح الفلاتر المتقدمة
+                        {t("orders.clearAdvancedFilters")}
                       </button>
                     </div>
                   )}
@@ -2860,8 +2855,8 @@ const Orders: React.FC = () => {
                   {status.name}
                 </option>
               ))}
-              <option value="trash">نقل إلى سلة المحذوفات</option>
-              <option value="restore">استعادة من سلة المحذوفات</option>
+              <option value="trash">{t("orders.moveToTrash")}</option>
+              <option value="restore">{t("orders.restoreFromTrash")}</option>
             </select>
             <button
               onClick={handleBulkPrintInvoices}
@@ -2869,7 +2864,7 @@ const Orders: React.FC = () => {
               className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg text-sm hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
             >
               <PrinterIcon className="w-4 h-4 ml-2" />
-              {printingInvoices ? "جاري الطباعة..." : "طباعة الفواتير"}
+              {printingInvoices ? t("orders.printing") : t("orders.printInvoices")}
             </button>
             <button
               onClick={handleBulkCreateTurboShipments}
@@ -2918,11 +2913,11 @@ const Orders: React.FC = () => {
           <div className="rounded-[28px] border border-dashed border-slate-300/80 bg-white/80 px-6 py-12 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
             <ShoppingBagIcon className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" />
             <p className="text-lg font-semibold text-slate-900 dark:text-white">
-              {ordersLoadError ? "تعذر تحميل الطلبات" : t("orders.noOrders")}
-            </p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
-            </p>
+                        {ordersLoadError ? t("orders.failedToLoadOrders") : t("orders.noOrders")}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
+                      </p>
           </div>
         ) : (
           orders.map((order, idx) => {
@@ -2945,7 +2940,7 @@ const Orders: React.FC = () => {
                       </span>
                       {!order.isViewed && (
                         <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                          جديد
+                          {t("orders.newLabel")}
                         </span>
                       )}
                       {order.metadata?.isGuestOrder && (
@@ -2973,7 +2968,7 @@ const Orders: React.FC = () => {
                   {canSelectOrders && (
                     <input
                       type="checkbox"
-                      aria-label={`تحديد الطلب ${order.orderNumber}`}
+                      aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
                       className="mt-1 h-5 w-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400"
                       checked={isSelected}
                       onChange={() => toggleOrderSelection(order.orderNumber)}
@@ -2984,7 +2979,7 @@ const Orders: React.FC = () => {
                 {orderItemsSummary.hasQuantityOffers ? (
                   <div className="mt-4 rounded-[20px] border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
                     <div className="font-semibold">
-                      عرض كميات: {orderItemsSummary.primaryLabel}
+                      {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
                     </div>
                     <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
                       {orderItemsSummary.secondaryLabel}
@@ -2995,7 +2990,7 @@ const Orders: React.FC = () => {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      المبلغ
+                      {t("orders.amount")}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                       {formatPrice(getOrderAmount(order))}
@@ -3007,7 +3002,7 @@ const Orders: React.FC = () => {
 
                   <div className="rounded-[20px] border border-slate-200/70 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/50">
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      الوقت
+                      {t("orders.time")}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                       {getRelativeTime(order.createdAt || new Date().toISOString())}
@@ -3054,7 +3049,7 @@ const Orders: React.FC = () => {
                     className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                   >
                     <EyeIcon className="h-4 w-4" />
-                    عرض سريع
+                    {t("orders.quickView")}
                   </button>
 
                   <Link
@@ -3067,7 +3062,7 @@ const Orders: React.FC = () => {
                     className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                   >
                     <ShoppingBagIcon className="h-4 w-4" />
-                    التفاصيل
+                    {t("orders.viewDetails")}
                   </Link>
 
                   {order.conversationId && (
@@ -3076,7 +3071,7 @@ const Orders: React.FC = () => {
                       className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
                     >
                       <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                      المحادثة
+                      {t("orders.conversation")}
                     </Link>
                   )}
                 </div>
@@ -3096,7 +3091,7 @@ const Orders: React.FC = () => {
                   <th className="w-10 px-3 py-2.5 lg:px-4">
                     <input
                       type="checkbox"
-                      aria-label="تحديد كل الطلبات"
+                      aria-label={String(t("orders.selectAllOrders"))}
                       className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
                       onChange={toggleAllSelection}
                       checked={
@@ -3202,7 +3197,7 @@ const Orders: React.FC = () => {
                     <div className="flex flex-col items-center justify-center">
                       <ShoppingBagIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
                       <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        {ordersLoadError ? "تعذر تحميل الطلبات" : t("orders.noOrders")}
+              {ordersLoadError ? t("orders.failedToLoadOrders") : t("orders.noOrders")}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {ordersLoadError ? ordersLoadError : t("orders.noOrdersFound")}
@@ -3233,7 +3228,7 @@ const Orders: React.FC = () => {
                         >
                           <input
                             type="checkbox"
-                            aria-label={`تحديد الطلب ${order.orderNumber}`}
+                            aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
                             className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
                             checked={selectedOrders.includes(order.orderNumber)}
                             onClick={(e) => e.stopPropagation()}
@@ -3258,14 +3253,14 @@ const Orders: React.FC = () => {
                               )}
                               {!order.isViewed && (
                                 <span className="mr-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">
-                                  جديد
+                                  {t("orders.newLabel")}
                                 </span>
                               )}
                             </div>
                             {orderItemsSummary.hasQuantityOffers ? (
                               <div className="max-w-[240px] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
                                 <div className="font-semibold">
-                                  عرض كميات: {orderItemsSummary.primaryLabel}
+                      {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
                                 </div>
                                 <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
                                   {orderItemsSummary.secondaryLabel}
@@ -3474,10 +3469,10 @@ const Orders: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-600 dark:text-gray-400">
-                  عرض:
+                  {t("orders.show")}
                 </label>
                 <select
-                  aria-label="عدد الطلبات في الصفحة"
+                  aria-label={String(t("orders.ordersPerPage"))}
                   value={limit}
                   onChange={(e) => handleLimitChange(parseInt(e.target.value))}
                   className="theme-native-control px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-100 text-sm transition-colors"
@@ -3539,7 +3534,7 @@ const Orders: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                الصفحة الحالية
+                {t("orders.currentPage")}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                 {page} / {Math.max(totalPages, 1)}
@@ -3547,7 +3542,7 @@ const Orders: React.FC = () => {
             </div>
             <div className="text-left">
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                الظاهر الآن
+                {t("orders.currentlyShown")}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                 {Math.min(page * limit, totalOrders)} / {totalOrders}
@@ -3561,17 +3556,17 @@ const Orders: React.FC = () => {
               disabled={page === 1}
               className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
-              السابق
+               {t("orders.previous")}
             </button>
             <button
               onClick={() => handlePageChange(page + 1)}
               disabled={page === totalPages}
               className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              التالي
+               {t("orders.next")}
             </button>
             <select
-              aria-label="عدد الطلبات في الصفحة"
+              aria-label={String(t("orders.ordersPerPage"))}
               value={limit}
               onChange={(e) => handleLimitChange(parseInt(e.target.value))}
               className={`${fieldClassName} w-auto min-w-[88px] px-3`}

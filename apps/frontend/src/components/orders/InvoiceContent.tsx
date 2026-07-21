@@ -1,4 +1,5 @@
 import React from "react";
+import i18n from "../../i18n";
 import InvoiceBarcode from "./InvoiceBarcode";
 
 export interface InvoicePrintSettings {
@@ -144,7 +145,8 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   }
   
   // Format total (e.g. 854.94 جنيه)
-  const fm = (a: number) => `${new Intl.NumberFormat("ar-EG").format(a)} جنيه`;
+  const curLabel = currency === "EGP" ? "ج.م" : currency;
+  const fm = (a: number) => `${new Intl.NumberFormat("ar-EG").format(a)} ${curLabel}`;
   
   const showOrderBarcode = s.showBarcodeOrderCode !== false && invoice.order?.orderNumber;
   const showShipBarcode = s.showBarcodeShippingCode !== false && invoice.order?.turboTrackingNumber;
@@ -193,11 +195,11 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
              {invoice.companyLogo && (
                <img src={invoice.companyLogo} alt="" style={{ maxHeight: compact ? "30px" : "40px", maxWidth: "120px", objectFit: "contain" }} />
              )}
-             <div style={{ fontSize: compact ? "12px" : "14px", fontWeight: 800, color: "#000" }}>المرسل: {invoice.companyName}</div>
+              <div style={{ fontSize: compact ? "12px" : "14px", fontWeight: 800, color: "#000" }}>{i18n.t("invoiceContent.sender", { companyName: invoice.companyName })}</div>
            </div>
            <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "center" }}>
              {showOrderBarcode && (
-               <InvoiceBarcode value={invoice.order!.orderNumber!} label="كود الاوردر" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+                <InvoiceBarcode value={invoice.order!.orderNumber!} label={i18n.t("invoiceContent.orderCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
              )}
            </div>
         </div>
@@ -205,26 +207,26 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         {/* Row 2: Customer Data (4 columns) */}
         <div style={{ borderBottom: borderStyle, display: "grid", gridTemplateColumns: "1.5fr 1.2fr 1fr 1fr" }}>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-             <div style={titleStyle}>اسم المستلم</div>
-             <div style={valueStyle}>{invoice.customerName}</div>
+              <div style={titleStyle}>{i18n.t("invoiceContent.recipientName")}</div>
+              <div style={valueStyle}>{invoice.customerName}</div>
            </div>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-             <div style={titleStyle}>تليفون</div>
+              <div style={titleStyle}>{i18n.t("invoiceContent.phone")}</div>
              <div style={{ ...valueStyle, direction: "ltr", textAlign: "right", fontSize: compact ? "12px" : "14px" }}>{invoice.customerPhone || "—"}</div>
            </div>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-             <div style={titleStyle}>المحافظة</div>
+              <div style={titleStyle}>{i18n.t("invoiceContent.governorate")}</div>
              <div style={valueStyle}>{governorate || "—"}</div>
            </div>
            <div style={{ padding: compact ? "4px 6px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-             <div style={titleStyle}>المدينة</div>
+              <div style={titleStyle}>{i18n.t("invoiceContent.city")}</div>
              <div style={valueStyle}>{city || "—"}</div>
            </div>
         </div>
 
         {/* Row 4: Address */}
         <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "45px" : "60px", display: "flex", flexDirection: "column" }}>
-           <div style={titleStyle}>العنوان :</div>
+           <div style={titleStyle}>{i18n.t("invoiceContent.address")}</div>
            <div style={{ ...valueStyle, flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>{addressText || "—"}</div>
         </div>
 
@@ -233,11 +235,11 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
              <thead>
                <tr style={{ borderBottom: innerBorderStyle }}>
-                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "38%", textAlign: "center" }}>المنتج</th>
-                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "20%", textAlign: "center" }}>SKU</th>
-                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "10%", textAlign: "center" }}>كم</th>
-                 <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "15%", textAlign: "center" }}>السعر</th>
-                 <th style={{ ...titleStyle, padding: "4px 6px", width: "17%", textAlign: "center" }}>الإجمالي</th>
+                  <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "38%", textAlign: "center" }}>{i18n.t("invoiceContent.product")}</th>
+                  <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "20%", textAlign: "center" }}>{i18n.t("invoiceContent.sku")}</th>
+                  <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "10%", textAlign: "center" }}>{i18n.t("invoiceContent.qty")}</th>
+                  <th style={{ ...titleStyle, padding: "4px 6px", borderLeft: innerBorderStyle, width: "15%", textAlign: "center" }}>{i18n.t("invoiceContent.price")}</th>
+                  <th style={{ ...titleStyle, padding: "4px 6px", width: "17%", textAlign: "center" }}>{i18n.t("invoiceContent.total")}</th>
                </tr>
              </thead>
              <tbody>
@@ -271,7 +273,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
 
         {/* Row 6: Notes */}
         <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "35px" : "45px", display: "flex", flexDirection: "column" }}>
-           <div style={titleStyle}>ملاحظات :</div>
+           <div style={titleStyle}>{i18n.t("invoiceContent.notes")}</div>
            <div style={{ ...valueStyle, flex: 1 }}></div>
         </div>
 
@@ -279,17 +281,17 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.2fr", minHeight: compact ? "50px" : "65px", alignItems: "stretch" }}>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
              {showShipBarcode ? (
-               <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label="كود الشحن" height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+                <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label={i18n.t("invoiceContent.shippingCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
              ) : (
                <span style={{ color: "#94a3b8" }}>—</span>
              )}
            </div>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>تكلفة الشحن :</div>
+              <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>{i18n.t("invoiceContent.shippingCost")}</div>
              <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700 }}>{fm(parseNumber(invoice.shipping))}</div>
            </div>
            <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-             <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>المبلغ المطلوب تحصيله :</div>
+              <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>{i18n.t("invoiceContent.amountToCollect")}</div>
              <div style={{ ...valueStyle, textAlign: "center", fontWeight: 900, fontSize: compact ? "16px" : "20px" }}>{fm(totalAmount)}</div>
            </div>
         </div>

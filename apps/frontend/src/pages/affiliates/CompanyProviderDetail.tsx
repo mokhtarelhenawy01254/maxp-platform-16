@@ -76,7 +76,7 @@ const getStatusText = (s: string) => {
 
 const CompanyProviderDetail: React.FC = () => {
     const { connectionId } = useParams<{ connectionId: string }>();
-    const [partnerName, setPartnerName] = useState("");
+
     const [activeTab, setActiveTab] = useState<TabType>("orders");
     const [summary, setSummary] = useState({ totalCommissions: 0, paidCommissions: 0, pendingCommissions: 0, totalOrders: 0 });
 
@@ -111,7 +111,6 @@ const CompanyProviderDetail: React.FC = () => {
                 setOrdersTotal(result.data.total);
                 setOrdersPages(result.data.totalPages);
                 setOrdersPage(result.data.page);
-                if (result.data.orders.length > 0) setPartnerName(prev => prev || "");
             }
         } catch {
             toast.error("فشل تحميل الطلبات");

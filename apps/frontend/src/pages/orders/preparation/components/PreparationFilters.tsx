@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS, STAGE_DEFINITIONS } from "../constants";
 import type {
@@ -71,6 +72,7 @@ const PreparationFilters = ({
   onItemCountFilterChange,
   onSortChange,
 }: PreparationFiltersProps) => {
+  const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState(search);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isInitialMount = useRef(true);
@@ -125,16 +127,16 @@ const PreparationFilters = ({
       <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
         <div className="flex items-center gap-2">
           <FunnelIcon className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-semibold text-gray-700">فلترة التجهيز</span>
+          <span className="text-sm font-semibold text-gray-700">{t("preparation.filters.title")}</span>
           {hasActiveFilters && (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-              مفعّل
+              {t("preparation.filters.active")}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-xl bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-            {visibleOrdersCount.toLocaleString("en-US")} طلب
+            {t("preparation.filters.ordersCount", { count: visibleOrdersCount })}
           </span>
           {hasActiveFilters && (
             <button
@@ -142,7 +144,7 @@ const PreparationFilters = ({
               className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
             >
               <XMarkIcon className="h-3.5 w-3.5" />
-              مسح الكل
+              {t("preparation.filters.clearAll")}
             </button>
           )}
         </div>
@@ -158,7 +160,7 @@ const PreparationFilters = ({
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}
         >
-          الكل ({stageCounts.ALL})
+          {t("preparation.filters.allStages", { count: stageCounts.ALL })}
         </button>
         {STAGE_DEFINITIONS.map((stage) => (
           <button
@@ -169,9 +171,9 @@ const PreparationFilters = ({
                 ? `${stage.colorClass} border border-current`
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
-            title={stage.description}
+            title={t(stage.descriptionKey)}
           >
-            {stage.label} ({stageCounts[stage.key]})
+            {t(stage.labelKey)} ({stageCounts[stage.key]})
           </button>
         ))}
       </div>
@@ -180,13 +182,13 @@ const PreparationFilters = ({
       <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
         {/* Search — wider */}
         <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-gray-500">بحث سريع</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.quickSearch")}</label>
           <div className="relative">
             <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              placeholder="رقم الطلب، عميل، هاتف..."
+              placeholder={t("preparation.filters.quickSearchPlaceholder")}
               className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
             />
           </div>
@@ -194,13 +196,13 @@ const PreparationFilters = ({
 
         {/* Product filter */}
         <div className="col-span-2 sm:col-span-3 md:col-span-2 lg:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-gray-500">المنتج</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.product")}</label>
           <div className="relative">
             <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               value={productFilter}
               onChange={(e) => onProductFilterChange(e.target.value)}
-              placeholder="اسم أو كود المنتج..."
+              placeholder={t("preparation.filters.productPlaceholder")}
               className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-800 outline-none transition focus:border-amber-400 focus:bg-white"
             />
           </div>
@@ -208,13 +210,13 @@ const PreparationFilters = ({
 
         {/* Warehouse */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">المخزن</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.warehouse")}</label>
           <select
             value={selectedWarehouseId}
             onChange={(e) => onSelectedWarehouseChange(e.target.value)}
             className={selectClass}
           >
-            <option value="">كل المخازن</option>
+            <option value="">{t("preparation.filters.allWarehouses")}</option>
             {warehouses.map((w) => (
               <option key={w.id} value={w.id}>{w.name}</option>
             ))}
@@ -223,15 +225,15 @@ const PreparationFilters = ({
 
         {/* Stock status */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">حالة المخزون</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.stockStatus")}</label>
           <select
             value={stockFilter}
             onChange={(e) => onStockFilterChange(e.target.value as StockFilter)}
             className={selectClass}
           >
-            <option value="all">الكل</option>
-            <option value="ready">جاهزة بالكامل</option>
-            <option value="shortage">بها نواقص</option>
+            <option value="all">{t("preparation.filters.allStock")}</option>
+            <option value="ready">{t("preparation.filters.ready")}</option>
+            <option value="shortage">{t("preparation.filters.shortage")}</option>
           </select>
         </div>
 
@@ -254,21 +256,21 @@ const PreparationFilters = ({
 
         {/* Item count */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">عدد المنتجات</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.itemsCount")}</label>
           <select
             value={itemCountFilter}
             onChange={(e) => onItemCountFilterChange(e.target.value as ItemCountFilter)}
             className={selectClass}
           >
-            <option value="all">الكل</option>
-            <option value="single">منتج واحد</option>
-            <option value="multiple">أكثر من منتج</option>
+            <option value="all">{t("preparation.filters.allStock")}</option>
+            <option value="single">{t("preparation.filters.singleItem")}</option>
+            <option value="multiple">{t("preparation.filters.multipleItems")}</option>
           </select>
         </div>
 
         {/* Shortage reason */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">سبب العجز</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.shortageReason")}</label>
           <select
             value={shortageReasonFilter}
             onChange={(e) =>
@@ -276,21 +278,21 @@ const PreparationFilters = ({
             }
             className={selectClass}
           >
-            <option value="all">كل الأسباب</option>
+            <option value="all">{t("preparation.filters.allReasons")}</option>
             {SHORTAGE_REASON_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
             ))}
           </select>
         </div>
 
         {/* Owner */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">مسؤول المتابعة</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.owner")}</label>
           <input
             list="preparation-shortage-owners"
             value={shortageOwnerFilter}
             onChange={(e) => onShortageOwnerFilterChange(e.target.value)}
-            placeholder="كل المسؤولين"
+            placeholder={t("preparation.filters.allOwners")}
             className={selectClass}
           />
           <datalist id="preparation-shortage-owners">
@@ -302,7 +304,7 @@ const PreparationFilters = ({
 
         {/* Follow-up date */}
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">موعد المتابعة</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t("preparation.filters.followUpDate")}</label>
           <select
             value={shortageFollowUpFilter}
             onChange={(e) =>
@@ -310,10 +312,10 @@ const PreparationFilters = ({
             }
             className={selectClass}
           >
-            <option value="all">كل المواعيد</option>
-            <option value="today">متابعة اليوم</option>
-            <option value="overdue">متأخرة</option>
-            <option value="without_date">بدون موعد</option>
+            <option value="all">{t("preparation.filters.allDates")}</option>
+            <option value="today">{t("preparation.filters.today")}</option>
+            <option value="overdue">{t("preparation.filters.overdue")}</option>
+            <option value="without_date">{t("preparation.filters.withoutDate")}</option>
           </select>
         </div>
       </div>

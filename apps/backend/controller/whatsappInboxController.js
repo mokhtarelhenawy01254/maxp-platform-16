@@ -549,26 +549,23 @@ exports.getConversationAnalytics = async (req, res) => {
 
     let start, end;
     if (startDate && endDate) {
-      start = new Date(startDate);
-      end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
+      start = new Date(startDate + 'T00:00:00.000Z');
+      end = new Date(endDate + 'T23:59:59.999Z');
     } else {
       const now = new Date();
-      start = new Date(now);
-      start.setDate(start.getDate() - 29);
-      start.setHours(0, 0, 0, 0);
-      end = new Date(now);
-      end.setHours(23, 59, 59, 999);
+      end = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999));
+      start = new Date(end.getTime() - 29 * 24 * 60 * 60 * 1000);
+      start.setUTCHours(0, 0, 0, 0);
     }
 
     const dateRange = { gte: start, lte: end };
 
-    // 1. All WhatsApp conversations created in period
+    // 1. ALL WhatsApp conversations (not filtered by createdAt — broadcasts go to existing convs)
     const conversations = await prisma.conversation.findMany({
       where: {
         companyId,
-        channel: 'WHATSAPP',
-        createdAt: dateRange,
+        channel: { in: ['WHATSAPP', 'whatsapp'] },
+        lastMessageAt: { gte: start }, // at least one message in period
       },
       select: {
         id: true,

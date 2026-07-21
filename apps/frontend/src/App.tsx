@@ -294,10 +294,6 @@ const InstagramSettings = React.lazy(
 const CompanySettingsPage = React.lazy(
   () => import("./pages/settings/CompanySettings"),
 );
-const AgentInboxKeyPage = React.lazy(
-  () => import("./pages/settings/AgentInboxKeyPage"),
-);
-
 const PageEngagementStats = React.lazy(
   () => import("./pages/PageEngagementStats"),
 );
@@ -2819,14 +2815,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <InstagramInbox />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/settings/agent-inbox"
-                  element={
-                    <Layout>
-                      <AgentInboxKeyPage />
                     </Layout>
                   }
                 />
@@ -6884,10 +6872,6 @@ const AppContent = () => {
                   element={<Navigate to="/auth/login" replace />}
                 />
                 <Route
-                  path="/settings/agent-inbox"
-                  element={<Navigate to="/auth/login" replace />}
-                />
-<Route
                     path="/home-builder"
                     element={<Navigate to="/auth/login" replace />}
                   />

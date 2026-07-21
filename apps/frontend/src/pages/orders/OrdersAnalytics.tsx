@@ -7,6 +7,7 @@ import {
   MapPinIcon,
   CreditCardIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import { useCurrency } from "../../hooks/useCurrency";
 import {
@@ -27,6 +28,7 @@ interface OrderStats {
 }
 
 const OrdersAnalytics: React.FC = () => {
+  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,19 +61,19 @@ const OrdersAnalytics: React.FC = () => {
 
   const metricCards = [
     {
-      title: "إجمالي الطلبات",
+      title: t("orders.totalOrders"),
       value: stats?.totalOrders || 0,
       icon: ShoppingCartIcon,
       color: "text-blue-600 bg-blue-50 dark:bg-blue-900/20",
     },
     {
-      title: "إجمالي المبيعات",
+      title: t("orders.totalRevenue"),
       value: formatPrice(stats?.totalRevenue || 0),
       icon: CurrencyDollarIcon,
       color: "text-green-600 bg-green-50 dark:bg-green-900/20",
     },
     {
-      title: "متوسط قيمة الطلب",
+      title: t("orders.averageOrderValue"),
       value: formatPrice(stats?.avgOrderValue || 0),
       icon: ChartBarIcon,
       color: "text-purple-600 bg-purple-50 dark:bg-purple-900/20",
@@ -84,10 +86,10 @@ const OrdersAnalytics: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <ShoppingCartIcon className="h-8 w-8 text-blue-600" />
-            تحليلات الطلبات
+            {t("orders.analyticsTitle")}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            نظرة عامة مفصلة على أداء الطلبات والمبيعات
+            {t("orders.analyticsSubtitle")}
           </p>
         </div>
 
@@ -100,7 +102,7 @@ const OrdersAnalytics: React.FC = () => {
             }
             className="p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
           />
-          <span className="text-gray-500">إلى</span>
+          <span className="text-gray-500">{t("orders.to")}</span>
           <input
             type="date"
             value={dateRange.end}
@@ -144,7 +146,7 @@ const OrdersAnalytics: React.FC = () => {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <ChartBarIcon className="h-5 w-5 text-indigo-500" />
-              توزيع الحالات
+              {t("orders.analyticsStatusDistribution")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -176,7 +178,7 @@ const OrdersAnalytics: React.FC = () => {
                   ),
                 )}
               {!stats && (
-                <p className="text-center text-gray-500">لا توجد بيانات</p>
+                <p className="text-center text-gray-500">{t("orders.analyticsNoData")}</p>
               )}
             </div>
           </CardContent>
@@ -186,7 +188,7 @@ const OrdersAnalytics: React.FC = () => {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <MapPinIcon className="h-5 w-5 text-red-500" />
-              توزيع المحافظات
+              {t("orders.analyticsGovernorateDistribution")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -204,12 +206,12 @@ const OrdersAnalytics: React.FC = () => {
                         {gov}
                       </span>
                       <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                        {count} طلب
+                        {t("orders.analyticsOrderCount", { count })}
                       </span>
                     </div>
                   ))}
               {!stats && (
-                <p className="text-center text-gray-500">لا توجد بيانات</p>
+                <p className="text-center text-gray-500">{t("orders.analyticsNoData")}</p>
               )}
             </div>
           </CardContent>
@@ -219,7 +221,7 @@ const OrdersAnalytics: React.FC = () => {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CreditCardIcon className="h-5 w-5 text-green-500" />
-              طرق الدفع
+              {t("orders.analyticsPaymentMethods")}
             </CardTitle>
           </CardHeader>
           <CardContent>

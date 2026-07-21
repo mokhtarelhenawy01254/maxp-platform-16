@@ -309,9 +309,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
           id: convData.id,
           customerId: convData.customerId,
           customerName:
-            convData.customer?.name || convData.customerName || "عميل",
+            convData.customer?.name || convData.customerName || t("conversations.customer"),
           customerAvatar: convData.customer?.avatar || convData.customerAvatar,
-          lastMessage: convData.lastMessage || "لا توجد رسائل",
+          lastMessage: convData.lastMessage || t("conversations.noMessages"),
           lastMessageTime: new Date(
             convData.lastMessageTime || convData.updatedAt,
           ),
@@ -394,8 +394,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
         console.error("❌ [URL-LOAD] Error loading conversation:", error);
       }
     },
-    [companyId, selectConversation, addConversationToList, clearConversationUrlParam],
-  ); // Remove conversations from dependencies to prevent infinite loop
+    [companyId, selectConversation, addConversationToList, clearConversationUrlParam, t],
+  );
 
   // 🆕 Reload conversations when tab changes (especially for unreplied)
   // Skip initial load since useInboxConversations already loads on mount
@@ -1501,8 +1501,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
           // Don't show notification if conversation is already open
         } else {
           showBrowserNotification(
-            `رسالة جديدة من ${data.customerName || "عميل"}`,
-            data.content?.substring(0, 50) || "رسالة جديدة",
+            t("conversations.newMessageFrom", { name: data.customerName || t("conversations.customer") }),
+            data.content?.substring(0, 50) || t("conversations.newMessage"),
           );
         }
       }

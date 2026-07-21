@@ -72,23 +72,6 @@ function getNormalizedStatus(status: string | null | undefined): string {
   return String(status || 'PENDING').toUpperCase();
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'قيد الانتظار',
-  CONFIRMED: 'مؤكد',
-  PROCESSING: 'قيد التجهيز',
-  CANCELLED: 'ملغي',
-  SHIPPED: 'تم الشحن',
-  DELIVERED: 'تم التسليم',
-  RETURNED: 'مرتجع',
-  PARTIALLY_RETURNED: 'مرتجع جزئي',
-  PARTIALLY_DELIVERED: 'تسليم جزئي',
-  REFUNDED: 'مسترد',
-  PARTIALLY_REFUNDED: 'مسترد جزئياً',
-  DUPLICATE_ORDER: 'طلب مكرر',
-  EXCHANGED: 'استبدال',
-  ON_HOLD: 'معلق',
-};
-
 function normalizeWorkspaceTab(value: string | null): FilterTab {
   return WORKSPACE_TAB_KEYS.includes(value as FilterTab)
     ? (value as FilterTab)
@@ -220,11 +203,7 @@ const AgentWorkspace: React.FC = () => {
         throw new Error(
           (typeof response.data?.error === 'string' && response.data.error) ||
             response.data?.message ||
-            resolveCopy(
-              'orders.loadingFailed',
-              'تعذر تحميل الطلبات الآن. حاول مرة أخرى.',
-              'Could not load orders right now. Please try again.',
-            ),
+            t('orders.loadingFailed'),
         );
       }
 
@@ -238,11 +217,7 @@ const AgentWorkspace: React.FC = () => {
       console.error('Failed to fetch orders:', error);
       const message =
         extractApiErrorMessage(error) ||
-        resolveCopy(
-          'orders.loadingFailed',
-          'تعذر تحميل الطلبات الآن. حاول مرة أخرى.',
-          'Could not load orders right now. Please try again.',
-        );
+        t('orders.loadingFailed');
 
       if (!silent) {
         setFetchError(message);
@@ -292,33 +267,21 @@ const AgentWorkspace: React.FC = () => {
         `/agent-workspace/orders/${order.id}/log-call`,
         {
           result: 'unreached',
-          notes: resolveCopy(
-            'orders.callAttemptNote',
-            'محاولة اتصال من مساحة العمل',
-            'Call attempt from workspace',
-          ),
+          notes: t('orders.callAttemptNote'),
           type: order.type || 'REGULAR',
         },
       );
 
       if (response.data?.success) {
         toast.success(
-          resolveCopy(
-            'orders.callLogged',
-            'تم تسجيل المكالمة بنجاح',
-            'Call logged successfully',
-          ),
+          t('orders.callLogged'),
         );
         await fetchOrders(true);
       }
     } catch (error) {
       toast.error(
         extractApiErrorMessage(error) ||
-          resolveCopy(
-            'orders.logCallFailed',
-            'فشل تسجيل المكالمة',
-            'Failed to log the call',
-          ),
+          t('orders.logCallFailed'),
       );
     } finally {
       setOrderBusyState(order.id, null);
@@ -329,19 +292,11 @@ const AgentWorkspace: React.FC = () => {
     order: Order,
     action: Extract<OrderAction, 'confirm' | 'cancel'>,
   ) => {
-    let actionNotes = resolveCopy(
-      'orders.confirmNote',
-      'تم التأكيد من مساحة العمل',
-      'Confirmed from workspace',
-    );
+    let actionNotes = t('orders.confirmNote');
 
     if (action === 'cancel') {
       const cancellationReason = window.prompt(
-        resolveCopy(
-          'orders.cancellationReasonPrompt',
-          'اكتب سبب إلغاء الطلب:',
-          'Write the cancellation reason:',
-        ),
+        t('orders.cancellationReasonPrompt'),
       );
 
       if (cancellationReason === null) {
@@ -352,11 +307,7 @@ const AgentWorkspace: React.FC = () => {
 
       if (!actionNotes) {
         toast.error(
-          resolveCopy(
-            'orders.cancellationReasonRequired',
-            'سبب إلغاء الطلب مطلوب',
-            'Cancellation reason is required',
-          ),
+        t('orders.cancellationReasonRequired'),
         );
         return;
       }
@@ -376,35 +327,19 @@ const AgentWorkspace: React.FC = () => {
 
       if (response.data?.success) {
         const messages: Record<string, string> = {
-          confirm: resolveCopy(
-            'orders.orderConfirmed',
-            'تم تأكيد الطلب بنجاح',
-            'Order confirmed successfully',
-          ),
-          cancel: resolveCopy(
-            'orders.orderCancelled',
-            'تم إلغاء الطلب',
-            'Order cancelled successfully',
-          ),
+          confirm: t('orders.orderConfirmed'),
+          cancel: t('orders.orderCancelled'),
         };
         toast.success(
           messages[action] ||
-            resolveCopy(
-              'orders.actionSuccess',
-              'تم تنفيذ الإجراء بنجاح',
-              'Action completed successfully',
-            ),
+            t('orders.actionSuccess'),
         );
         await fetchOrders(true);
       }
     } catch (error) {
       toast.error(
         extractApiErrorMessage(error) ||
-          resolveCopy(
-            'orders.actionFailed',
-            'فشل تنفيذ الإجراء',
-            'Failed to complete the action',
-          ),
+          t('orders.actionFailed'),
       );
     } finally {
       setOrderBusyState(order.id, null);
@@ -435,12 +370,12 @@ const AgentWorkspace: React.FC = () => {
           item.productName ||
           item.name ||
           item.product?.name ||
-          "منتج غير محدد",
+          i18n.t("orders.productNotSpecified"),
         name:
           item.name ||
           item.productName ||
           item.product?.name ||
-          "منتج غير محدد",
+          i18n.t("orders.productNotSpecified"),
         price: safePrice,
         quantity: safeQuantity,
         total:
@@ -583,12 +518,12 @@ const AgentWorkspace: React.FC = () => {
   }, [orders, activeTab]);
 
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
-    { key: 'all', label: resolveCopy('orders.workspaceAll', 'الكل', 'All'), count: stats.total },
-    { key: 'pending', label: resolveCopy('orders.workspacePending', 'قيد الانتظار', 'Pending'), count: stats.pending },
-    { key: 'confirmed', label: resolveCopy('orders.workspaceConfirmed', 'مؤكدة', 'Confirmed'), count: stats.confirmed },
-    { key: 'cancelled', label: resolveCopy('orders.workspaceCancelled', 'ملغاة', 'Cancelled'), count: stats.cancelled },
-    { key: 'followup', label: resolveCopy('orders.workspaceFollowUpLater', 'متابعة لاحقة', 'Follow-up later'), count: stats.followup },
-    { key: 'confirmation', label: resolveCopy('orders.workspaceConfirmationQueue', 'طابور التأكيد', 'Confirmation queue') },
+    { key: 'all', label: t('orders.workspaceAll'), count: stats.total },
+    { key: 'pending', label: t('orders.workspacePending'), count: stats.pending },
+    { key: 'confirmed', label: t('orders.workspaceConfirmed'), count: stats.confirmed },
+    { key: 'cancelled', label: t('orders.workspaceCancelled'), count: stats.cancelled },
+    { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats.followup },
+    { key: 'confirmation', label: t('orders.workspaceConfirmationQueue') },
   ];
 
   if (activeTab !== 'confirmation' && loading && orders.length === 0) {
@@ -600,11 +535,7 @@ const AgentWorkspace: React.FC = () => {
       >
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {resolveCopy(
-            'orders.loadingWorkspace',
-            'جارٍ تحميل مساحة العمل…',
-            'Loading workspace…',
-          )}
+          {t('orders.loadingWorkspace')}
         </p>
       </div>
     );
@@ -617,11 +548,7 @@ const AgentWorkspace: React.FC = () => {
       {/* ─── Compact Control Bar ─────────────────────────────────────────── */}
       <div className="mb-3 flex items-center gap-2 lg:justify-between">
         <label className="sr-only" htmlFor="workspace-mobile-section">
-          {resolveCopy(
-            'orders.workspaceSection',
-            'اختيار قسم مساحة العمل',
-            'Choose workspace section',
-          )}
+          {t('orders.workspaceSection')}
         </label>
         <select
           id="workspace-mobile-section"
@@ -641,11 +568,7 @@ const AgentWorkspace: React.FC = () => {
         <div
           className="no-scrollbar hidden w-full items-center gap-2 overflow-x-auto rounded-2xl border border-white/70 bg-white/80 p-1.5 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/80 sm:flex lg:w-auto"
           role="tablist"
-          aria-label={resolveCopy(
-            'orders.workspaceFilters',
-            'فلاتر مساحة العمل',
-            'Workspace filters',
-          )}
+          aria-label={t('orders.workspaceFilters')}
         >
           {tabs.map(tab => (
             <button
@@ -684,8 +607,8 @@ const AgentWorkspace: React.FC = () => {
           >
             <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing
-              ? resolveCopy('orders.refreshing', 'جارٍ التحديث…', 'Refreshing…')
-              : resolveCopy('common.refresh', 'تحديث', 'Refresh')}
+              ? t('orders.refreshing')
+              : t('common.refresh')}
           </button>
         )}
       </div>
@@ -759,11 +682,11 @@ const AgentWorkspace: React.FC = () => {
       ) : (
         <div className="space-y-3">
           <div className="hidden rounded-2xl border border-white/70 bg-white/70 px-4 py-2 text-xs font-bold text-gray-500 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-400 md:grid md:grid-cols-[1.05fr_1.25fr_.9fr_.8fr_1.25fr] md:gap-4">
-            <span>الأوردر</span>
-            <span>العميل</span>
-            <span>الموقع والقيمة</span>
-            <span>المتابعة</span>
-            <span className="text-center">الإجراءات</span>
+            <span>{t("orders.orderLabel")}</span>
+            <span>{t("orders.customer")}</span>
+            <span>{t("orders.locationAndValue")}</span>
+            <span>{t("orders.followUp")}</span>
+            <span className="text-center">{t("orders.actions")}</span>
           </div>
 
           <div className="space-y-2.5">
@@ -773,12 +696,7 @@ const AgentWorkspace: React.FC = () => {
               const currentAction = busyOrders[order.id];
               const isOrderBusy = Boolean(currentAction);
               const statusKey = getNormalizedStatus(order.status);
-              const statusTranslationKey = `orders.${statusKey.toLowerCase()}`;
-              const translatedStatus = t(statusTranslationKey);
-              const statusLabel =
-                translatedStatus !== statusTranslationKey
-                  ? translatedStatus
-                  : STATUS_LABELS[statusKey] || statusKey;
+              const statusLabel = t(`orders.${statusKey.toLowerCase()}`);
               const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
               const orderItemsSummary = summarizeOrderDocumentItems(order.items);
 
@@ -809,7 +727,7 @@ const AgentWorkspace: React.FC = () => {
                       {overdue && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-[11px] font-black text-red-700 dark:bg-red-900/20 dark:text-red-300">
                           <ExclamationTriangleIcon className="h-3.5 w-3.5" />
-                          عاجل
+                          {t("orders.urgent")}
                         </span>
                       )}
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${STATUS_COLORS[statusKey] || STATUS_COLORS.PENDING}`}>
@@ -817,7 +735,7 @@ const AgentWorkspace: React.FC = () => {
                       </span>
                       {order.type === 'GUEST' && (
                         <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
-                          ضيف
+                          {t("orders.guest")}
                         </span>
                       )}
                     </div>
@@ -843,7 +761,7 @@ const AgentWorkspace: React.FC = () => {
                         {order.customerName || '—'}
                       </p>
                       <p className="truncate font-mono text-xs text-gray-500 dark:text-gray-400" dir="ltr">
-                        {order.customerPhone || 'بدون هاتف'}
+                        {order.customerPhone || t("orders.noPhone")}
                       </p>
                     </div>
                   </div>
