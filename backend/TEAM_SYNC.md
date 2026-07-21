@@ -1,12 +1,18 @@
 # Team Sync Updates
 
 ## 2026-07-21 / 2026-03-09
+- **Order Sync Queue PostgreSQL Mismatch (BUGFIX / COMPLETE)**:
+  1. **PostgreSQL Column Naming Fix**: Resolved the `column "order_id" does not exist` production database mapping error inside `SyncQueueService` by migrating all background sync queue SQL queries from `$queryRawUnsafe` / `$executeRawUnsafe` to native Prisma Client ORM query methods (like `prisma.orderSyncQueue.findFirst`, `create`, `update`, `findMany`).
+  2. **Code Safety**: Re-aligned queries with camelCase column structures generated dynamically by Prisma, eliminating SQL syntax injection risks and raw DB queries.
+  3. **Verified Syntax & Tests**: Ran syntax checking and full backend validation test suites successfully.
+
 - **WhatsApp Template Broadcast Campaign Failures (BUGFIX / COMPLETE)**:
   1. **24h Activity Window Bypass**: Removed 24-hour activity limitation for WhatsApp campaigns so campaigns reach all company contacts.
   2. **Session Resolution & DB Column Fix**: Fixed database migration sync issue where `whatsAppSessionId` column was missing in `broadcast_campaigns`.
   3. **Prisma Relation Bug Fix**: Fixed Prisma relation name `recipients` -> `broadcastRecipients` in `getCampaign` and analytics controllers.
   4. **Template Body Parameter Fallback**: Added automatic fallback in `broadcastController.js` and `broadcastSchedulerService.js` to retry template sending without body parameters if Meta Cloud API returns parameter count mismatch.
   5. **Manual Recipients Fix**: Updated `WhatsAppTemplateBroadcast.tsx` to pass `manualPhones` in payload, and fixed critical backend `else if` branch that previously overwritten manual recipients with Facebook active chats. Verified single recipient delivery (`sentCount: 1`).
+
 
 ## 2026-07-20 / 2026-03-09
 - **Repository Migration (DEPLOY / COMPLETE)**:

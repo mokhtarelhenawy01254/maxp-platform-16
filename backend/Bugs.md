@@ -1,5 +1,15 @@
 # Backend Bugs Log
 
+### [BUG FIX / SYNC] Order Sync Queue PostgreSQL Column Mismatch
+- **Date**: 2026-07-21
+- **Root Cause**:
+  1. **PostgreSQL snake_case vs camelCase column mismatch**: The background database-backed sync queue `SyncQueueService` (`syncQueueService.js`) executed raw SQL queries via `$queryRawUnsafe` and `$executeRawUnsafe` matching snake_case columns (like `order_id`, `consumer_id`, etc.). However, since the database table `order_sync_queue` was migrated using Prisma's default column mapper without specific `@map` definitions on field parameters, the actual database columns were generated as camelCase (`orderId`, `consumerId`, etc.), causing raw queries to fail with code `42703` (`column "order_id" does not exist`).
+- **Resolution**:
+  1. **ORM-native Refactoring**: Replaced all raw SQL client executions inside `syncQueueService.js` with native Prisma ORM query methods (such as `prisma.orderSyncQueue.findFirst`, `create`, `update`, `findMany`, and `findUnique`). This leverages Prisma's built-in column mapping engine and prevents future SQL syntax or field name mapping errors.
+- **Files Modified**:
+  - `apps/backend/services/syncQueueService.js`
+
+
 ### [BUG FIX / BROADCAST] WhatsApp Template Campaign Overwrite & Parameter Mismatch Fixes
 - **Date**: 2026-07-21
 - **Root Cause**:

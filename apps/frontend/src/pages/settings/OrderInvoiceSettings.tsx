@@ -126,7 +126,20 @@ const defaultInvoice: InvoiceSettings = {
   showBarcodeShippingCode: true,
 };
 
-const defaultSlip: SlipSettings = {
+const statuses = [
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "COMPLETED",
+  "PENDING_PREPARATION",
+  "PREPARING",
+  "QUALITY_CHECK",
+  "PACKAGED",
+  "READY_TO_SHIP",
+] as const;
+
+const createDefaultSlip = (t: (key: string) => string): SlipSettings => ({
   documentTitle: t('orderInvoiceSettings.k_49'),
   documentSubtitle: t('orderInvoiceSettings.k_50'),
   accentColor: "#2563eb",
@@ -145,63 +158,54 @@ const defaultSlip: SlipSettings = {
   showItemTotal: true,
   preparationInstructions: t('orderInvoiceSettings.k_51'),
   footerNote: t('orderInvoiceSettings.k_52'),
-};
+});
 
-const invoiceFlags = [
-  ["showCompanyLogo", t('orderInvoiceSettings.k_53')],
-  ["showTaxBreakdown", t('orderInvoiceSettings.k_54')],
-  ["showPaymentMethod", t('orderInvoiceSettings.k_55')],
-  ["showOrderItems", t('orderInvoiceSettings.k_56')],
-] as const;
+const createInvoiceFlags = (t: (key: string) => string) =>
+  [
+    ["showCompanyLogo", t('orderInvoiceSettings.k_53')],
+    ["showTaxBreakdown", t('orderInvoiceSettings.k_54')],
+    ["showPaymentMethod", t('orderInvoiceSettings.k_55')],
+    ["showOrderItems", t('orderInvoiceSettings.k_56')],
+  ] as const;
 
-const barcodeFlags = [
-  ["showBarcodeOrderCode", t('orderInvoiceSettings.k_57')],
-  ["showBarcodeShippingCode", t('orderInvoiceSettings.k_58')],
-] as const;
+const createBarcodeFlags = (t: (key: string) => string) =>
+  [
+    ["showBarcodeOrderCode", t('orderInvoiceSettings.k_57')],
+    ["showBarcodeShippingCode", t('orderInvoiceSettings.k_58')],
+  ] as const;
 
-const slipFlags = [
-  ["showCompanyName", t('orderInvoiceSettings.k_59')],
-  ["showCustomerEmail", t('orderInvoiceSettings.k_60')],
-  ["showOrderNotes", t('orderInvoiceSettings.k_61')],
-  ["showPaymentSummary", t('orderInvoiceSettings.k_62')],
-  ["showFinancialSummary", t('orderInvoiceSettings.k_63')],
-  ["showItemSku", t('orderInvoiceSettings.k_64')],
-  ["showItemDetails", t('orderInvoiceSettings.k_65')],
-  ["showItemColor", t('orderInvoiceSettings.k_66')],
-  ["showItemSize", t('orderInvoiceSettings.k_67')],
-  ["showItemPrice", t('orderInvoiceSettings.k_68')],
-  ["showItemTotal", t('orderInvoiceSettings.k_69')],
-] as const;
+const createSlipFlags = (t: (key: string) => string) =>
+  [
+    ["showCompanyName", t('orderInvoiceSettings.k_59')],
+    ["showCustomerEmail", t('orderInvoiceSettings.k_60')],
+    ["showOrderNotes", t('orderInvoiceSettings.k_61')],
+    ["showPaymentSummary", t('orderInvoiceSettings.k_62')],
+    ["showFinancialSummary", t('orderInvoiceSettings.k_63')],
+    ["showItemSku", t('orderInvoiceSettings.k_64')],
+    ["showItemDetails", t('orderInvoiceSettings.k_65')],
+    ["showItemColor", t('orderInvoiceSettings.k_66')],
+    ["showItemSize", t('orderInvoiceSettings.k_67')],
+    ["showItemPrice", t('orderInvoiceSettings.k_68')],
+    ["showItemTotal", t('orderInvoiceSettings.k_69')],
+  ] as const;
 
-const statuses = [
-  "CONFIRMED",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "COMPLETED",
-  "PENDING_PREPARATION",
-  "PREPARING",
-  "QUALITY_CHECK",
-  "PACKAGED",
-  "READY_TO_SHIP",
-] as const;
-
-const labelForStatus = (status: string) =>
-  (
-    {
-      "": t('orderInvoiceSettings.k_70'),
-      CONFIRMED: t('orderInvoiceSettings.k_71'),
-      PROCESSING: t('orderInvoiceSettings.k_72'),
-      SHIPPED: t('orderInvoiceSettings.k_73'),
-      DELIVERED: t('orderInvoiceSettings.k_74'),
-      COMPLETED: t('orderInvoiceSettings.k_75'),
-      PENDING_PREPARATION: t('orderInvoiceSettings.k_76'),
-      PREPARING: t('orderInvoiceSettings.k_77'),
-      QUALITY_CHECK: t('orderInvoiceSettings.k_78'),
-      PACKAGED: t('orderInvoiceSettings.k_79'),
-      READY_TO_SHIP: t('orderInvoiceSettings.k_80'),
-    } as Record<string, string>
-  )[status] || status;
+const createLabelForStatus = (t: (key: string) => string) =>
+  (status: string) =>
+    (
+      {
+        "": t('orderInvoiceSettings.k_70'),
+        CONFIRMED: t('orderInvoiceSettings.k_71'),
+        PROCESSING: t('orderInvoiceSettings.k_72'),
+        SHIPPED: t('orderInvoiceSettings.k_73'),
+        DELIVERED: t('orderInvoiceSettings.k_74'),
+        COMPLETED: t('orderInvoiceSettings.k_75'),
+        PENDING_PREPARATION: t('orderInvoiceSettings.k_76'),
+        PREPARING: t('orderInvoiceSettings.k_77'),
+        QUALITY_CHECK: t('orderInvoiceSettings.k_78'),
+        PACKAGED: t('orderInvoiceSettings.k_79'),
+        READY_TO_SHIP: t('orderInvoiceSettings.k_80'),
+      } as Record<string, string>
+    )[status] || status;
 
 const normalizeInvoice = (
   value: Partial<InvoiceSettings> | null | undefined,
@@ -223,63 +227,67 @@ const normalizeInvoice = (
 
 const normalizeSlip = (
   value: Partial<SlipSettings> | null | undefined,
-): SlipSettings => ({
-  ...defaultSlip,
-  ...(value || {}),
-  documentTitle: value?.documentTitle || defaultSlip.documentTitle,
-  documentSubtitle: value?.documentSubtitle || defaultSlip.documentSubtitle,
-  accentColor: value?.accentColor || defaultSlip.accentColor,
-  pageSize: value?.pageSize === "A5" ? "A5" : "A4",
-  pageOrientation:
-    value?.pageOrientation === "landscape" ? "landscape" : "portrait",
-  preparationInstructions:
-    value?.preparationInstructions || defaultSlip.preparationInstructions,
-  footerNote: value?.footerNote || defaultSlip.footerNote,
-  showCompanyName:
-    typeof value?.showCompanyName === "boolean"
-      ? value.showCompanyName
-      : defaultSlip.showCompanyName,
-  showCustomerEmail:
-    typeof value?.showCustomerEmail === "boolean"
-      ? value.showCustomerEmail
-      : defaultSlip.showCustomerEmail,
-  showOrderNotes:
-    typeof value?.showOrderNotes === "boolean"
-      ? value.showOrderNotes
-      : defaultSlip.showOrderNotes,
-  showPaymentSummary:
-    typeof value?.showPaymentSummary === "boolean"
-      ? value.showPaymentSummary
-      : defaultSlip.showPaymentSummary,
-  showFinancialSummary:
-    typeof value?.showFinancialSummary === "boolean"
-      ? value.showFinancialSummary
-      : defaultSlip.showFinancialSummary,
-  showItemSku:
-    typeof value?.showItemSku === "boolean"
-      ? value.showItemSku
-      : defaultSlip.showItemSku,
-  showItemDetails:
-    typeof value?.showItemDetails === "boolean"
-      ? value.showItemDetails
-      : defaultSlip.showItemDetails,
-  showItemColor:
-    typeof value?.showItemColor === "boolean"
-      ? value.showItemColor
-      : defaultSlip.showItemColor,
-  showItemSize:
-    typeof value?.showItemSize === "boolean"
-      ? value.showItemSize
-      : defaultSlip.showItemSize,
-  showItemPrice:
-    typeof value?.showItemPrice === "boolean"
-      ? value.showItemPrice
-      : defaultSlip.showItemPrice,
-  showItemTotal:
-    typeof value?.showItemTotal === "boolean"
-      ? value.showItemTotal
-      : defaultSlip.showItemTotal,
-});
+  t: (key: string) => string,
+): SlipSettings => {
+  const def = createDefaultSlip(t);
+  return {
+    ...def,
+    ...(value || {}),
+    documentTitle: value?.documentTitle || def.documentTitle,
+    documentSubtitle: value?.documentSubtitle || def.documentSubtitle,
+    accentColor: value?.accentColor || def.accentColor,
+    pageSize: value?.pageSize === "A5" ? "A5" : "A4",
+    pageOrientation:
+      value?.pageOrientation === "landscape" ? "landscape" : "portrait",
+    preparationInstructions:
+      value?.preparationInstructions || def.preparationInstructions,
+    footerNote: value?.footerNote || def.footerNote,
+    showCompanyName:
+      typeof value?.showCompanyName === "boolean"
+        ? value.showCompanyName
+        : def.showCompanyName,
+    showCustomerEmail:
+      typeof value?.showCustomerEmail === "boolean"
+        ? value.showCustomerEmail
+        : def.showCustomerEmail,
+    showOrderNotes:
+      typeof value?.showOrderNotes === "boolean"
+        ? value.showOrderNotes
+        : def.showOrderNotes,
+    showPaymentSummary:
+      typeof value?.showPaymentSummary === "boolean"
+        ? value.showPaymentSummary
+        : def.showPaymentSummary,
+    showFinancialSummary:
+      typeof value?.showFinancialSummary === "boolean"
+        ? value.showFinancialSummary
+        : def.showFinancialSummary,
+    showItemSku:
+      typeof value?.showItemSku === "boolean"
+        ? value.showItemSku
+        : def.showItemSku,
+    showItemDetails:
+      typeof value?.showItemDetails === "boolean"
+        ? value.showItemDetails
+        : def.showItemDetails,
+    showItemColor:
+      typeof value?.showItemColor === "boolean"
+        ? value.showItemColor
+        : def.showItemColor,
+    showItemSize:
+      typeof value?.showItemSize === "boolean"
+        ? value.showItemSize
+        : def.showItemSize,
+    showItemPrice:
+      typeof value?.showItemPrice === "boolean"
+        ? value.showItemPrice
+        : def.showItemPrice,
+    showItemTotal:
+      typeof value?.showItemTotal === "boolean"
+        ? value.showItemTotal
+        : def.showItemTotal,
+  };
+};
 
 function ToggleCard({
   title,
@@ -312,13 +320,14 @@ function ToggleCard({
   );
 }
 
-const orientationLabelMap: Record<
-  InvoiceSettings["pdfOrientation"] | SlipSettings["pageOrientation"],
-  string
-> = {
-  portrait: t('orderInvoiceSettings.k_39'),
-  landscape: t('orderInvoiceSettings.k_40'),
-};
+const createOrientationLabelMap = (t: (key: string) => string) =>
+  ({
+    portrait: t('orderInvoiceSettings.k_39'),
+    landscape: t('orderInvoiceSettings.k_40'),
+  }) as Record<
+    InvoiceSettings["pdfOrientation"] | SlipSettings["pageOrientation"],
+    string
+  >;
 
 const OrderInvoiceSettings: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
@@ -333,7 +342,12 @@ const OrderInvoiceSettings: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded =
   const [rawPreparation, setRawPreparation] = useState<Record<string, unknown>>(
     {},
   );
-  const [slip, setSlip] = useState<SlipSettings>(defaultSlip);
+  const [slip, setSlip] = useState<SlipSettings>(createDefaultSlip(t));
+  const invoiceFlags = useMemo(() => createInvoiceFlags(t), [t]);
+  const barcodeFlags = useMemo(() => createBarcodeFlags(t), [t]);
+  const slipFlags = useMemo(() => createSlipFlags(t), [t]);
+  const labelForStatus = useMemo(() => createLabelForStatus(t), [t]);
+  const orientationLabelMap = useMemo(() => createOrientationLabelMap(t), [t]);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -361,7 +375,7 @@ const OrderInvoiceSettings: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded =
           : {};
 
       setRawPreparation(orderPreparation);
-      setSlip(normalizeSlip(orderPreparation?.slipDocument));
+      setSlip(normalizeSlip(orderPreparation?.slipDocument, t));
     } catch (error) {
       console.error(error);
       setMessage({
