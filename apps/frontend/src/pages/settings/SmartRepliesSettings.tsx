@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ChatBubbleLeftRightIcon,
   ArrowLeftIcon,
@@ -13,75 +14,6 @@ import {
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 
-// ============================================
-// TRANSLATIONS
-// ============================================
-const translations = {
-  ar: {
-    title: "الردود التلقائية الذكية",
-    subtitle: "قوالب اختيارية فقط للردود المحفوظة",
-    back: "رجوع",
-    enabled: "مفعّل",
-    disabled: "معطّل",
-    enableTitle: "الردود التلقائية",
-    enableDesc: "استخدم القوالب التي تضيفها هنا فقط",
-    disabledDesc: "لن تُستخدم قوالب رد تلقائي",
-    templates: "قوالب الردود",
-    keywords: "الكلمات المفتاحية",
-    response: "الرد",
-    addTemplate: "إضافة قالب جديد",
-    save: "حفظ",
-    cancel: "إلغاء",
-    delete: "حذف",
-    edit: "تعديل",
-    saving: "جاري الحفظ...",
-    loading: "جاري التحميل...",
-    saveSuccess: "تم الحفظ بنجاح",
-    saveFailed: "فشل الحفظ",
-    newKeyword: "كلمة جديدة...",
-    newResponse: "الرد التلقائي...",
-    templateName: "اسم القالب",
-    greeting: "التحيات",
-    thanks: "الشكر",
-    confirmation: "التأكيد",
-    farewell: "الوداع",
-    custom: "مخصص",
-  },
-  en: {
-    title: "Smart Auto-Replies",
-    subtitle: "Optional templates for saved replies",
-    back: "Back",
-    enabled: "Enabled",
-    disabled: "Disabled",
-    enableTitle: "Auto-Replies",
-    enableDesc: "Use only the templates you define here",
-    disabledDesc: "No automatic reply templates will be used",
-    templates: "Reply Templates",
-    keywords: "Keywords",
-    response: "Response",
-    addTemplate: "Add New Template",
-    save: "Save",
-    cancel: "Cancel",
-    delete: "Delete",
-    edit: "Edit",
-    saving: "Saving...",
-    loading: "Loading...",
-    saveSuccess: "Saved successfully",
-    saveFailed: "Save failed",
-    newKeyword: "New keyword...",
-    newResponse: "Auto response...",
-    templateName: "Template Name",
-    greeting: "Greetings",
-    thanks: "Thanks",
-    confirmation: "Confirmation",
-    farewell: "Farewell",
-    custom: "Custom",
-  },
-};
-
-// ============================================
-// TYPES
-// ============================================
 interface AutoReplyTemplate {
   id: string;
   name: string;
@@ -96,19 +28,11 @@ interface Settings {
   templates: AutoReplyTemplate[];
 }
 
-// ============================================
-// DEFAULT TEMPLATES
-// ============================================
-const defaultTemplates: AutoReplyTemplate[] = [
-];
+const defaultTemplates: AutoReplyTemplate[] = [];
 
-// ============================================
-// COMPONENT
-// ============================================
 const SmartRepliesSettings: React.FC = () => {
   const navigate = useNavigate();
-  const [lang] = useState<"ar" | "en">("ar");
-  const t = translations[lang];
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -138,7 +62,6 @@ const SmartRepliesSettings: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading settings:", error);
-      // Use defaults on error
     } finally {
       setLoading(false);
     }
@@ -153,9 +76,9 @@ const SmartRepliesSettings: React.FC = () => {
           templates: settings.templates,
         },
       });
-      toast.success(t.saveSuccess);
+      toast.success(t("smartReplies.ruleSaved"));
     } catch (error) {
-      toast.error(t.saveFailed);
+      toast.error(t("smartReplies.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -193,7 +116,7 @@ const SmartRepliesSettings: React.FC = () => {
   const handleAddTemplate = () => {
     const newTemplate: AutoReplyTemplate = {
       id: `custom_${Date.now()}`,
-      name: t.custom,
+      name: t("smartReplies.custom"),
       type: "custom",
       keywords: [],
       responses: [],
@@ -245,15 +168,12 @@ const SmartRepliesSettings: React.FC = () => {
     });
   };
 
-  // ============================================
-  // RENDER
-  // ============================================
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">{t("smartReplies.loading")}</p>
         </div>
       </div>
     );
@@ -268,13 +188,13 @@ const SmartRepliesSettings: React.FC = () => {
           className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
         >
           <ArrowLeftIcon className="h-5 w-5 ml-2" />
-          {t.back}
+          {t("smartReplies.back")}
         </button>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
           <ChatBubbleLeftRightIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
-          {t.title}
+          {t("smartReplies.pageTitle")}
         </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">{t.subtitle}</p>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">{t("smartReplies.pageSubtitle")}</p>
       </div>
 
       <div className="space-y-6">
@@ -305,10 +225,10 @@ const SmartRepliesSettings: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {t.enableTitle}
+                  {t("smartReplies.enableTitle")}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {settings.enabled ? t.enableDesc : t.disabledDesc}
+                  {settings.enabled ? t("smartReplies.enableDesc") : t("smartReplies.disabledDesc")}
                 </p>
               </div>
             </div>
@@ -330,14 +250,14 @@ const SmartRepliesSettings: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t.templates}
+              {t("smartReplies.templates")}
             </h2>
             <button
               onClick={handleAddTemplate}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition-colors"
             >
               <PlusIcon className="h-4 w-4" />
-              {t.addTemplate}
+              {t("smartReplies.addRule")}
             </button>
           </div>
 
@@ -357,13 +277,13 @@ const SmartRepliesSettings: React.FC = () => {
                         })
                       }
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                      placeholder={t.templateName}
+                      placeholder={t("smartReplies.ruleName")}
                     />
 
                     {/* Keywords */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {t.keywords}
+                        {t("smartReplies.keywords")}
                       </label>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {editingTemplate.keywords.map((kw, idx) => (
@@ -390,7 +310,7 @@ const SmartRepliesSettings: React.FC = () => {
                             e.key === "Enter" && handleAddKeyword()
                           }
                           className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                          placeholder={t.newKeyword}
+                          placeholder={t("smartReplies.keywordPlaceholder")}
                         />
                         <button
                           onClick={handleAddKeyword}
@@ -404,7 +324,7 @@ const SmartRepliesSettings: React.FC = () => {
                     {/* Responses */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {t.response}
+                        {t("smartReplies.replyTemplate")}
                       </label>
                       <div className="space-y-2">
                         {editingTemplate.responses.map((resp, idx) => (
@@ -416,7 +336,7 @@ const SmartRepliesSettings: React.FC = () => {
                                 handleResponseChange(idx, e.target.value)
                               }
                               className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                              placeholder={t.newResponse}
+                              placeholder={t("smartReplies.templatePlaceholder")}
                             />
                             <button
                               onClick={() => handleRemoveResponse(idx)}
@@ -430,7 +350,7 @@ const SmartRepliesSettings: React.FC = () => {
                           onClick={handleAddResponse}
                           className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                         >
-                          <PlusIcon className="h-4 w-4" /> {t.response}
+                          <PlusIcon className="h-4 w-4" /> {t("smartReplies.replyTemplate")}
                         </button>
                       </div>
                     </div>
@@ -441,13 +361,13 @@ const SmartRepliesSettings: React.FC = () => {
                         onClick={handleEditSave}
                         className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
                       >
-                        <CheckIcon className="h-4 w-4" /> {t.save}
+                        <CheckIcon className="h-4 w-4" /> {t("smartReplies.save")}
                       </button>
                       <button
                         onClick={handleEditCancel}
                         className="flex items-center gap-1 px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-500"
                       >
-                        <XMarkIcon className="h-4 w-4" /> {t.cancel}
+                        <XMarkIcon className="h-4 w-4" /> {t("smartReplies.cancel")}
                       </button>
                     </div>
                   </div>
@@ -507,7 +427,7 @@ const SmartRepliesSettings: React.FC = () => {
             disabled={saving}
             className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-medium transition-colors"
           >
-            {saving ? t.saving : t.save}
+            {saving ? t("smartReplies.saving") : t("smartReplies.save")}
           </button>
         </div>
       </div>

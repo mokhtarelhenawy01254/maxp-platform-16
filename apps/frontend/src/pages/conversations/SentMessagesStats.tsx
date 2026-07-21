@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChartBarIcon,
   CheckCircleIcon,
@@ -105,6 +106,7 @@ interface SentMessagesStatsData {
 }
 
 const SentMessagesStats: React.FC = () => {
+  const { t, i18n } = useTranslation();
   // const { user } = useAuth(); // Unused
   const [stats, setStats] = useState<SentMessagesStatsData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -194,7 +196,7 @@ const SentMessagesStats: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "فشل في جلب الإحصائيات");
+        throw new Error(errorData.error || t("sentMessagesStats.fetchError"));
       }
 
       const data = await response.json();
@@ -202,12 +204,12 @@ const SentMessagesStats: React.FC = () => {
         setStats(data.data);
         setLastUpdated(new Date());
       } else {
-        throw new Error(data.error || "فشل في جلب الإحصائيات");
+        throw new Error(data.error || t("sentMessagesStats.fetchError"));
       }
     } catch (err: unknown) {
       console.error("Error fetching sent messages stats:", err);
       setError(
-        err instanceof Error ? err.message : "حدث خطأ أثناء جلب الإحصائيات",
+        err instanceof Error ? err.message : t("sentMessagesStats.errorOccurred"),
       );
       setStats(null);
     } finally {
@@ -219,6 +221,7 @@ const SentMessagesStats: React.FC = () => {
     messageStatusFilter,
     period,
     selectedPages,
+    t,
   ]);
 
   useEffect(() => {
@@ -262,7 +265,7 @@ const SentMessagesStats: React.FC = () => {
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("ar-EG", {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -270,7 +273,7 @@ const SentMessagesStats: React.FC = () => {
   };
 
   const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString("ar-EG", {
+    return date.toLocaleTimeString(i18n.language, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -294,36 +297,36 @@ const SentMessagesStats: React.FC = () => {
   const pieChartData = useMemo(() => {
     if (!stats) return [];
     return [
-      { name: "محفوظة", value: stats.summary.messages.totalSaved },
-      { name: "متجاهلة", value: stats.summary.messages.totalIgnored },
+      { name: t("sentMessagesStats.saved"), value: stats.summary.messages.totalSaved },
+      { name: t("sentMessagesStats.ignored"), value: stats.summary.messages.totalIgnored },
     ];
-  }, [stats]);
+  }, [stats, t]);
 
   const hourlyChartData = useMemo(() => {
     if (!stats?.hourlyStats) return [];
     return stats.hourlyStats.map((hour) => ({
       hour: `${hour.hour}:00`,
-      العدد: hour.count,
-      محفوظة: hour.saved,
-      متجاهلة: hour.ignored,
-      الإيرادات: hour.revenue,
+      count: hour.count,
+      saved: hour.saved,
+      ignored: hour.ignored,
+      revenue: hour.revenue,
     }));
   }, [stats]);
 
   // Prepare table data
   const dailyTableColumns: ExportColumn[] = [
-    { key: "date", label: "التاريخ" },
-    { key: "total", label: "إجمالي المحاولات" },
-    { key: "savedReach", label: "تم الوصول (محادثات)" },
-    { key: "ignoredReach", label: "تجاهل (محادثات)" },
-    { key: "conversationsCreated", label: "محادثات جديدة" },
-    { key: "conversationsExisted", label: "محادثات موجودة" },
+    { key: "date", label: t("sentMessagesStats.date") },
+    { key: "total", label: t("sentMessagesStats.totalAttempts") },
+    { key: "savedReach", label: t("sentMessagesStats.reachedConversations") },
+    { key: "ignoredReach", label: t("sentMessagesStats.ignoredConversationsShort") },
+    { key: "conversationsCreated", label: t("sentMessagesStats.new") },
+    { key: "conversationsExisted", label: t("sentMessagesStats.existing") },
   ];
 
   const pageTableColumns: ExportColumn[] = [
-    { key: "pageName", label: "اسم الصفحة" },
-    { key: "count", label: "عدد الرسائل" },
-    { key: "percentage", label: "النسبة المئوية" },
+    { key: "pageName", label: t("sentMessagesStats.pageName") },
+    { key: "count", label: t("sentMessagesStats.messageCount") },
+    { key: "percentage", label: t("sentMessagesStats.percentage") },
   ];
 
   const dailyTableData = useMemo(() => {
@@ -351,17 +354,16 @@ const SentMessagesStats: React.FC = () => {
             <div>
               <h1 className="text-4xl font-bold business-text-strong mb-2 flex items-center gap-3">
                 <ChartBarIcon className="w-10 h-10 business-text-primary" />
-                إحصائيات الوصول والمحادثات
+                {t("sentMessagesStats.pageTitle")}
               </h1>
               <p className="business-text-muted">
-                عرض عدد الأشخاص الفريدين الذين تم الوصول إليهم يومياً (المسجلين
-                والمتجاهلين)
+                {t("sentMessagesStats.pageSubtitleAlt")}
               </p>
             </div>
             {lastUpdated && (
               <div className="text-sm business-text-muted flex items-center gap-2">
                 <ClockIcon className="w-4 h-4" />
-                آخر تحديث: {formatTime(lastUpdated)}
+                {t("sentMessagesStats.lastUpdate")}{formatTime(lastUpdated)}
               </div>
             )}
           </div>
@@ -371,7 +373,7 @@ const SentMessagesStats: React.FC = () => {
         <div className="business-bg-panel rounded-xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold business-text-strong mb-4 flex items-center gap-2">
             <CalendarDaysIcon className="w-6 h-6 business-text-primary" />
-            الفلاتر
+            {t("sentMessagesStats.filters")}
           </h2>
 
           {/* Date Range Picker */}
@@ -387,7 +389,7 @@ const SentMessagesStats: React.FC = () => {
             {/* Page Filter */}
             <div>
               <label className="block text-sm font-medium business-text-body mb-2">
-                الصفحة
+                {t("sentMessagesStats.page")}
               </label>
               <select
                 value={selectedPages.length === 1 ? selectedPages[0] : "all"}
@@ -397,7 +399,7 @@ const SentMessagesStats: React.FC = () => {
                 }}
                 className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
               >
-                <option value="all">كل الصفحات</option>
+                <option value="all">{t("sentMessagesStats.allPages")}</option>
                 {availablePages.map((page) => (
                   <option key={page.pageId} value={page.pageId}>
                     {page.pageName}
@@ -408,32 +410,32 @@ const SentMessagesStats: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium business-text-body mb-2">
-                حالة الرسالة
+                {t("sentMessagesStats.messageStatus")}
               </label>
               <select
                 value={messageStatusFilter}
                 onChange={(e) => setMessageStatusFilter(e.target.value)}
                 className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
               >
-                <option value="all">الكل</option>
-                <option value="saved">محفوظة</option>
-                <option value="ignored">متجاهلة</option>
+                <option value="all">{t("sentMessagesStats.all")}</option>
+                <option value="saved">{t("sentMessagesStats.saved")}</option>
+                <option value="ignored">{t("sentMessagesStats.ignored")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium business-text-body mb-2">
-                حالة المحادثة
+                {t("sentMessagesStats.conversationStatus")}
               </label>
               <select
                 value={conversationStatusFilter}
                 onChange={(e) => setConversationStatusFilter(e.target.value)}
                 className="w-full px-4 py-2 border business-control-border rounded-lg business-bg-panel business-text-strong business-focus-primary"
               >
-                <option value="all">الكل</option>
-                <option value="created">جديدة</option>
-                <option value="existed">موجودة</option>
-                <option value="ignored">متجاهلة</option>
+                <option value="all">{t("sentMessagesStats.all")}</option>
+                <option value="created">{t("sentMessagesStats.new")}</option>
+                <option value="existed">{t("sentMessagesStats.existing")}</option>
+                <option value="ignored">{t("sentMessagesStats.ignored")}</option>
               </select>
             </div>
 
@@ -446,7 +448,7 @@ const SentMessagesStats: React.FC = () => {
                 <ArrowPathIcon
                   className={`h-5 w-5 ${loading ? "animate-spin" : ""}`}
                 />
-                تحديث
+                {t("sentMessagesStats.refresh")}
               </button>
 
               <button
@@ -458,8 +460,8 @@ const SentMessagesStats: React.FC = () => {
                 }`}
                 title={
                   autoRefresh
-                    ? "إيقاف التحديث التلقائي"
-                    : "تفعيل التحديث التلقائي"
+                    ? t("sentMessagesStats.disableAutoRefresh")
+                    : t("sentMessagesStats.enableAutoRefresh")
                 }
               >
                 <ClockIcon className="w-5 h-5" />
@@ -478,7 +480,7 @@ const SentMessagesStats: React.FC = () => {
                 onClick={fetchStats}
                 className="text-sm business-text-danger underline mt-1"
               >
-                إعادة المحاولة
+                {t("sentMessagesStats.retry")}
               </button>
             </div>
           </div>
@@ -489,7 +491,7 @@ const SentMessagesStats: React.FC = () => {
           <div className="business-bg-panel rounded-xl shadow-lg p-12 text-center">
             <ArrowPathIcon className="h-12 w-12 animate-spin business-text-primary mx-auto mb-4" />
             <p className="business-text-muted text-lg">
-              جاري جلب الإحصائيات...
+              {t("sentMessagesStats.loadingMessage")}
             </p>
           </div>
         )}
@@ -501,14 +503,14 @@ const SentMessagesStats: React.FC = () => {
             {stats.comparison && (
               <div className="business-hero-gradient border business-border-primary-soft rounded-xl p-6 mb-6">
                 <h3 className="text-lg font-semibold business-text-strong mb-4">
-                  مقارنة مع الفترة السابقة
+                  {t("sentMessagesStats.comparisonWithPrevious")}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
                     {renderTrendIcon(stats.comparison.changes.sentTrend)}
                     <div>
                       <p className="text-sm business-text-muted">
-                        الوصول الإجمالي
+                        {t("sentMessagesStats.totalReach")}
                       </p>
                       <p className="text-2xl font-bold business-text-strong">
                         {stats.comparison.changes.sentChange > 0 ? "+" : ""}
@@ -532,7 +534,7 @@ const SentMessagesStats: React.FC = () => {
                         : "business-border-clear business-text-muted business-hover-muted business-control-border"
                     }`}
                   >
-                    نظرة عامة
+                    {t("sentMessagesStats.overview")}
                   </button>
                   <button
                     onClick={() => setActiveTab("comparison")}
@@ -542,7 +544,7 @@ const SentMessagesStats: React.FC = () => {
                         : "business-border-clear business-text-muted business-hover-muted business-control-border"
                     }`}
                   >
-                    مقارنة تفصيلية
+                    {t("sentMessagesStats.detailedComparison")}
                   </button>
                   <button
                     onClick={() => setActiveTab("tables")}
@@ -552,7 +554,7 @@ const SentMessagesStats: React.FC = () => {
                         : "business-border-clear business-text-muted business-hover-muted business-control-border"
                     }`}
                   >
-                    الجداول
+                    {t("sentMessagesStats.tables")}
                   </button>
                 </nav>
               </div>
@@ -569,11 +571,11 @@ const SentMessagesStats: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-sm font-medium business-text-muted mb-1">
-                          إجمالي الطلبات
+                          {t("sentMessagesStats.totalRequests")}
                         </p>
                         <p className="text-2xl font-bold business-text-strong">
                           {stats.summary.messages.totalSent.toLocaleString(
-                            "ar-EG",
+                            i18n.language,
                           )}
                         </p>
                       </div>
@@ -582,7 +584,7 @@ const SentMessagesStats: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-xs business-text-subtle">
-                      كل محاولات الإرسال (شاملة المتجاهلة)
+                      {t("sentMessagesStats.totalRequestsDesc")}
                     </p>
                   </div>
 
@@ -591,11 +593,11 @@ const SentMessagesStats: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-sm font-medium business-text-muted mb-1">
-                          وصلت (محادثات)
+                          {t("sentMessagesStats.reached")}
                         </p>
                         <p className="text-2xl font-bold business-text-strong">
                           {stats.summary.conversations.reached.toLocaleString(
-                            "ar-EG",
+                            i18n.language,
                           )}
                         </p>
                       </div>
@@ -604,7 +606,7 @@ const SentMessagesStats: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-xs business-text-success font-medium">
-                      عملاء فريدين تم الوصول إليهم بنجاح
+                      {t("sentMessagesStats.reachedDesc")}
                     </p>
                   </div>
 
@@ -613,11 +615,11 @@ const SentMessagesStats: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-sm font-medium business-text-muted mb-1">
-                          متجاهلة (محادثات)
+                          {t("sentMessagesStats.ignoredConversations")}
                         </p>
                         <p className="text-2xl font-bold business-text-strong">
                           {stats.summary.conversations.ignored.toLocaleString(
-                            "ar-EG",
+                            i18n.language,
                           )}
                         </p>
                       </div>
@@ -626,7 +628,7 @@ const SentMessagesStats: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-xs business-text-warning font-medium">
-                      عملاء فريدين تجاهلوا الرسائل
+                      {t("sentMessagesStats.ignoredDesc")}
                     </p>
                   </div>
 
@@ -635,18 +637,18 @@ const SentMessagesStats: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-sm font-medium business-text-muted mb-1">
-                          جودة الرسائل
+                          {t("sentMessagesStats.messageQuality")}
                         </p>
                         <div className="flex items-baseline gap-2">
                           <span className="text-lg font-bold business-text-success">
                             {stats.summary.messages.totalSaved.toLocaleString(
-                              "ar-EG",
+                              i18n.language,
                             )}
                           </span>
                           <span className="business-text-subtle">/</span>
                           <span className="text-lg font-bold business-text-danger">
                             {stats.summary.messages.totalIgnored.toLocaleString(
-                              "ar-EG",
+                              i18n.language,
                             )}
                           </span>
                         </div>
@@ -656,7 +658,7 @@ const SentMessagesStats: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-xs business-text-subtle">
-                      نسبة الحفظ: {stats.summary.messages.savedPercentage}%
+                      {t("sentMessagesStats.savedRate")}{stats.summary.messages.savedPercentage}%
                     </p>
                   </div>
 
@@ -665,11 +667,11 @@ const SentMessagesStats: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-sm font-medium business-text-muted mb-1">
-                          محادثات جديدة
+                          {t("sentMessagesStats.newConversations")}
                         </p>
                         <p className="text-2xl font-bold business-text-strong">
                           {stats.summary.conversations.created.toLocaleString(
-                            "ar-EG",
+                            i18n.language,
                           )}
                         </p>
                       </div>
@@ -678,7 +680,7 @@ const SentMessagesStats: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-xs business-text-subtle">
-                      معدل التحويل: {stats.summary.messages.conversionRate}%
+                      {t("sentMessagesStats.conversionRate")}{stats.summary.messages.conversionRate}%
                     </p>
                   </div>
                 </div>
@@ -688,7 +690,7 @@ const SentMessagesStats: React.FC = () => {
                   {/* Pie Chart */}
                   <div className="business-bg-panel rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold business-text-strong mb-4">
-                      توزيع جودة الرسائل
+                      {t("sentMessagesStats.distributionTitle")}
                     </h3>
                     <PieChart
                       data={pieChartData}
@@ -699,13 +701,13 @@ const SentMessagesStats: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full business-bg-success-solid"></div>
                         <span className="business-text-body">
-                          واصلة (Saved)
+                          {t("sentMessagesStats.savedLabel")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full business-bg-danger-solid"></div>
                         <span className="business-text-body">
-                          متجاهلة (Ignored)
+                          {t("sentMessagesStats.ignoredLabel")}
                         </span>
                       </div>
                     </div>
@@ -714,7 +716,7 @@ const SentMessagesStats: React.FC = () => {
                   {/* Top Pages */}
                   <div className="business-bg-panel rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold business-text-strong mb-4">
-                      أكثر الصفحات نشاطاً
+                      {t("sentMessagesStats.topPages")}
                     </h3>
                     <div className="space-y-3 max-h-80 overflow-y-auto">
                       {stats.pageStats.slice(0, 5).map((page, index) => (
@@ -732,7 +734,7 @@ const SentMessagesStats: React.FC = () => {
                           </div>
                           <div className="text-left">
                             <p className="text-lg font-bold business-text-primary">
-                              {page.count.toLocaleString("ar-EG")}
+                              {page.count.toLocaleString(i18n.language)}
                             </p>
                             {page.percentage && (
                               <p className="text-xs business-text-muted">
@@ -749,7 +751,7 @@ const SentMessagesStats: React.FC = () => {
                   <div className="business-bg-panel rounded-xl shadow-lg p-6 lg:col-span-2">
                     <h3 className="text-lg font-semibold business-text-strong mb-6 flex items-center gap-2">
                       <ClockIcon className="w-6 h-6 business-text-warning" />
-                      تحليل أوقات الذروة والنشاط
+                      {t("sentMessagesStats.peakAnalysis")}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* Best Time to Send */}
@@ -769,7 +771,7 @@ const SentMessagesStats: React.FC = () => {
                 <div className="business-bg-panel rounded-xl shadow-lg p-6">
                   <h3 className="text-xl font-semibold business-text-strong mb-6 flex items-center gap-2">
                     <ArrowTrendingUpIcon className="w-6 h-6 business-text-secondary" />
-                    مقارنة الأداء التفصيلية
+                    {t("sentMessagesStats.detailedPerformanceComparison")}
                   </h3>
 
                   {stats.comparison ? (
@@ -777,26 +779,25 @@ const SentMessagesStats: React.FC = () => {
                       <div className="p-6 business-bg-primary-soft rounded-xl border business-border-primary-soft">
                         <div className="flex justify-between items-start mb-2">
                           <p className="text-sm font-medium business-text-primary">
-                            الرسائل المرسلة
+                            {t("sentMessagesStats.sentMessages")}
                           </p>
                           {renderTrendIcon(stats.comparison.changes.sentTrend)}
                         </div>
                         <p className="text-3xl font-bold business-text-primary">
                           {stats.summary.messages.totalSent.toLocaleString(
-                            "ar-EG",
+                            i18n.language,
                           )}
                         </p>
                         <p className="text-sm business-text-primary mt-1">
                           {stats.comparison.changes.sentChange > 0 ? "+" : ""}
-                          {stats.comparison.changes.sentChange}% مقارنة بالفترة
-                          السابقة
+                          {stats.comparison.changes.sentChange}% {t("sentMessagesStats.comparedToPrevious")}
                         </p>
                       </div>
 
                       <div className="p-6 business-bg-secondary-soft rounded-xl border business-border-secondary-soft">
                         <div className="flex justify-between items-start mb-2">
                           <p className="text-sm font-medium business-text-secondary">
-                            معدل الحفظ
+                            {t("sentMessagesStats.saveRate")}
                           </p>
                           {renderTrendIcon(stats.comparison.changes.savedTrend)}
                         </div>
@@ -805,15 +806,13 @@ const SentMessagesStats: React.FC = () => {
                         </p>
                         <p className="text-sm business-text-secondary mt-1">
                           {stats.comparison.changes.savedChange > 0 ? "+" : ""}
-                          {stats.comparison.changes.savedChange}% مقارنة بالفترة
-                          السابقة
+                          {stats.comparison.changes.savedChange}% {t("sentMessagesStats.comparedToPrevious")}
                         </p>
                       </div>
                     </div>
                   ) : (
                     <div className="p-6 text-center business-text-muted">
-                      بيانات المقارنة غير متوفرة لهذه الفترة. جرب اختيار فترة
-                      زمنية أطول.
+                      {t("sentMessagesStats.noComparisonData")}
                     </div>
                   )}
 
@@ -821,40 +820,40 @@ const SentMessagesStats: React.FC = () => {
                   <div className="mt-8 border-t business-border pt-8">
                     <h4 className="text-lg font-medium business-text-strong mb-4 flex items-center gap-2">
                       <ClockIcon className="w-5 h-5 business-text-warning" />
-                      تحليل ساعات الذروة والنشاط
+                      {t("sentMessagesStats.peakHoursAnalysis")}
                     </h4>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       <div className="h-[300px]">
                         <p className="text-sm business-text-muted mb-4 text-center">
-                          توزيع النشاط الساعي
+                          {t("sentMessagesStats.hourlyDistribution")}
                         </p>
                         <BarChart
                           data={hourlyChartData}
                           xKey="hour"
                           bars={[
-                            { key: "العدد", name: "الرسائل", color: "#6366f1" },
-                            { key: "محفوظة", name: "محفوظة", color: "#10b981" },
+                            { key: "count", name: t("sentMessagesStats.messagesLabel"), color: "#6366f1" },
+                            { key: "saved", name: t("sentMessagesStats.savedChart"), color: "#10b981" },
                           ]}
                           height={250}
                         />
                       </div>
                       <div className="business-bg-soft rounded-xl p-6">
                         <h5 className="font-semibold business-text-strong mb-4">
-                          توقعات وتحليلات ذكية
+                          {t("sentMessagesStats.smartInsights")}
                         </h5>
                         <ul className="space-y-4">
                           <li className="flex items-start gap-3">
                             <div className="w-2 h-2 rounded-full business-bg-primary-solid mt-2 flex-shrink-0" />
                             <div>
                               <p className="text-sm font-medium business-text-strong">
-                                أفضل وقت للإرسال:
+                                {t("sentMessagesStats.bestTimeToSend")}
                               </p>
                               <p className="text-xs business-text-muted">
-                                الساعة{" "}
+                                {t("sentMessagesStats.atHour")}
                                 {[...(stats.hourlyStats || [])].sort(
                                   (a, b) => (b.revenue || 0) - (a.revenue || 0),
                                 )[0]?.hour || 0}
-                                :00 تحقق أعلى معدل إيرادات.
+                                :00 {t("sentMessagesStats.highestRevenue")}
                               </p>
                             </div>
                           </li>
@@ -862,16 +861,16 @@ const SentMessagesStats: React.FC = () => {
                             <div className="w-2 h-2 rounded-full business-bg-success-solid mt-2 flex-shrink-0" />
                             <div>
                               <p className="text-sm font-medium business-text-strong">
-                                اليوم الأكثر فاعلية:
+                                {t("sentMessagesStats.mostEffectiveDay")}
                               </p>
                               <p className="text-xs business-text-muted">
-                                يوم{" "}
+                                {t("sentMessagesStats.day")}
                                 {
                                   [...(stats.weekdayStats || [])].sort(
                                     (a, b) => b.count - a.count,
                                   )[0]?.dayName
                                 }{" "}
-                                يظهر أعلى كثافة تفاعل من العملاء.
+                                {t("sentMessagesStats.highestInteraction")}
                               </p>
                             </div>
                           </li>
@@ -879,11 +878,10 @@ const SentMessagesStats: React.FC = () => {
                             <div className="w-2 h-2 rounded-full business-bg-warning-solid mt-2 flex-shrink-0" />
                             <div>
                               <p className="text-sm font-medium business-text-strong">
-                                نصيحة الأداء:
+                                {t("sentMessagesStats.performanceTip")}
                               </p>
                               <p className="text-xs business-text-muted">
-                                توزيع الرسائل على مدار اليوم قد يساعد في تقليل
-                                معدل التجاهل وتحسين التفاعل.
+                                {t("sentMessagesStats.distributionAdvice")}
                               </p>
                             </div>
                           </li>
@@ -904,45 +902,45 @@ const SentMessagesStats: React.FC = () => {
                 <div className="business-bg-panel rounded-xl shadow-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-semibold business-text-strong">
-                      الإحصائيات اليومية
+                      {t("sentMessagesStats.dailyStats")}
                     </h3>
                     <ExportButtons
                       data={dailyTableData}
                       columns={dailyTableColumns}
                       filename="daily-stats"
-                      title="الإحصائيات اليومية"
+                      title={t("sentMessagesStats.dailyStats")}
                     />
                   </div>
                   <DataTable
                     data={dailyTableData}
                     columns={[
-                      { key: "date", label: "التاريخ", sortable: true },
+                      { key: "date", label: t("sentMessagesStats.date"), sortable: true },
                       {
                         key: "total",
-                        label: "إجمالي المحاولات",
+                        label: t("sentMessagesStats.totalAttempts"),
                         sortable: true,
                       },
                       {
                         key: "savedReach",
-                        label: "تم الوصول (محادثات)",
+                        label: t("sentMessagesStats.reachedConversations"),
                         sortable: true,
                       },
                       {
                         key: "ignoredReach",
-                        label: "تجاهل (محادثات)",
+                        label: t("sentMessagesStats.ignoredConversationsShort"),
                         sortable: true,
                       },
                       {
                         key: "conversationsCreated",
-                        label: "جديدة",
+                        label: t("sentMessagesStats.new"),
                         sortable: true,
                       },
                       {
                         key: "conversationsExisted",
-                        label: "موجودة",
+                        label: t("sentMessagesStats.existing"),
                         sortable: true,
                       },
-                      { key: "revenue", label: "الإيرادات", sortable: true },
+                      { key: "revenue", label: t("sentMessagesStats.revenue"), sortable: true },
                     ]}
                     pageSize={10}
                   />
@@ -952,23 +950,23 @@ const SentMessagesStats: React.FC = () => {
                 <div className="business-bg-panel rounded-xl shadow-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-semibold business-text-strong">
-                      الإحصائيات حسب الصفحة
+                      {t("sentMessagesStats.statsByPage")}
                     </h3>
                     <ExportButtons
                       data={pageTableData}
                       columns={pageTableColumns}
                       filename="page-stats"
-                      title="الإحصائيات حسب الصفحة"
+                      title={t("sentMessagesStats.statsByPage")}
                     />
                   </div>
                   <DataTable
                     data={pageTableData}
                     columns={[
-                      { key: "pageName", label: "اسم الصفحة", sortable: true },
-                      { key: "count", label: "عدد الرسائل", sortable: true },
+                      { key: "pageName", label: t("sentMessagesStats.pageName"), sortable: true },
+                      { key: "count", label: t("sentMessagesStats.messageCount"), sortable: true },
                       {
                         key: "percentage",
-                        label: "النسبة المئوية",
+                        label: t("sentMessagesStats.percentage"),
                         sortable: true,
                       },
                     ]}
@@ -983,10 +981,10 @@ const SentMessagesStats: React.FC = () => {
               <div className="business-bg-panel rounded-xl shadow-lg p-12 text-center">
                 <ChartBarIcon className="h-16 w-16 business-text-subtle mx-auto mb-4" />
                 <p className="business-text-muted text-xl font-medium">
-                  لا توجد رسائل مرسلة في الفترة المحددة
+                  {t("sentMessagesStats.noMessagesInPeriod")}
                 </p>
                 <p className="business-text-muted mt-2">
-                  جرب تغيير الفترة الزمنية أو الفلاتر
+                  {t("sentMessagesStats.tryChangingPeriod")}
                 </p>
               </div>
             )}

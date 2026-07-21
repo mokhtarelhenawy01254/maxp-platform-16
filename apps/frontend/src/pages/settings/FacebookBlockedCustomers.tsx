@@ -10,6 +10,8 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { envConfig } from "../../config/environment";
 import tokenManager from "../../utils/tokenManager";
 import { apiService } from "../../services/apiService";
+import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 
 interface FacebookPage {
   id: string;
@@ -60,27 +62,28 @@ const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
   return fallbackMessage;
 };
 
-const getCustomerDisplayName = (blocked: BlockedCustomerOnPage) => {
+const getCustomerDisplayName = (blocked: BlockedCustomerOnPage, fallback: string) => {
   const firstName = blocked.customer?.firstName?.trim();
   const lastName = blocked.customer?.lastName?.trim();
   const fullName = [firstName, lastName].filter(Boolean).join(" ");
 
-  return fullName || "عميل بدون اسم";
+  return fullName || fallback;
 };
 
-const formatBlockedAt = (blockedAt: string) => {
+const formatBlockedAt = (blockedAt: string, fallback: string) => {
   const date = new Date(blockedAt);
   if (Number.isNaN(date.getTime())) {
-    return "غير متوفر";
+    return fallback;
   }
 
-  return date.toLocaleString("ar-EG", {
+  return date.toLocaleString(i18n.language, {
     dateStyle: "short",
     timeStyle: "short",
   });
 };
 
 const FacebookBlockedCustomers: React.FC = () => {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [pages, setPages] = useState<FacebookPage[]>([]);
   const [selectedPageId, setSelectedPageId] = useState("");
@@ -106,16 +109,16 @@ const FacebookBlockedCustomers: React.FC = () => {
     } catch (error: unknown) {
       console.error("Error loading blocked customers:", error);
       setError(
-        getApiErrorMessage(error, "فشل جلب العملاء المحظورين على الصفحة"),
+        getApiErrorMessage(error, t("facebookBlocked.loadFailed")),
       );
     } finally {
       setLoadingBlocked(false);
     }
-  }, []);
+  }, [t]);
 
   const loadPages = useCallback(async () => {
     if (!user?.companyId) {
-      setError("معرف الشركة غير متوفر");
+      setError(t("facebookBlocked.companyIdMissing"));
       return;
     }
 
@@ -132,7 +135,7 @@ const FacebookBlockedCustomers: React.FC = () => {
       const data = (await response.json()) as OAuthStatus;
 
       if (!data.success) {
-        setError(data.message || "فشل تحميل صفحات Facebook");
+        setError(data.message || t("facebookBlocked.loadPagesFailed"));
         return;
       }
 
@@ -150,11 +153,11 @@ const FacebookBlockedCustomers: React.FC = () => {
       });
     } catch (error: unknown) {
       console.error("Error loading Facebook pages:", error);
-      setError(getApiErrorMessage(error, "فشل تحميل صفحات Facebook"));
+      setError(getApiErrorMessage(error, t("facebookBlocked.loadPagesFailed")));
     } finally {
       setLoadingPages(false);
     }
-  }, [user?.companyId]);
+  }, [user?.companyId, t]);
 
   useEffect(() => {
     if (isAuthenticated && user?.companyId) {
@@ -171,17 +174,17 @@ const FacebookBlockedCustomers: React.FC = () => {
   }, [loadBlockedCustomers, selectedPageId]);
 
   const handleUnblockCustomer = async (customerId: string, pageId: string) => {
-    if (!confirm("هل أنت متأكد من إلغاء حظر هذا العميل؟")) {
+    if (!confirm(t("facebookBlocked.unblockConfirm"))) {
       return;
     }
 
     try {
       setError(null);
       await apiService.unblockCustomerOnPage(customerId, pageId);
-      setSuccess("تم إلغاء حظر العميل بنجاح");
+      setSuccess(t("facebookBlocked.unblockSuccess"));
       await loadBlockedCustomers(pageId);
     } catch (error: unknown) {
-      setError(getApiErrorMessage(error, "فشل إلغاء حظر العميل"));
+      setError(getApiErrorMessage(error, t("facebookBlocked.unblockFailed")));
     }
   };
 
@@ -190,7 +193,7 @@ const FacebookBlockedCustomers: React.FC = () => {
       <div className="flex h-64 items-center justify-center">
         <div className="text-center">
           <ExclamationTriangleIcon className="mx-auto mb-4 h-12 w-12 text-yellow-500" />
-          <p className="text-gray-600">يجب تسجيل الدخول أولاً</p>
+          <p className="text-gray-600">{t("facebookBlocked.mustLogin")}</p>
         </div>
       </div>
     );
@@ -208,12 +211,12 @@ const FacebookBlockedCustomers: React.FC = () => {
           </span>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold leading-7 text-gray-900 dark:text-white">
-              العملاء المحظورين
+              {t("facebookBlocked.pageTitle")}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>الصفحات المتصلة: {pages.length}</span>
+              <span>{t("facebookBlocked.connectedPages")}: {pages.length}</span>
               <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-              <span>المعروض: {blockedCustomers.length}</span>
+              <span>{t("facebookBlocked.showing")}: {blockedCustomers.length}</span>
               {selectedPage && (
                 <>
                   <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600" />
@@ -234,7 +237,7 @@ const FacebookBlockedCustomers: React.FC = () => {
             className="h-9 min-w-56 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
           >
             <option value="">
-              {loadingPages ? "جاري تحميل الصفحات..." : "اختر صفحة"}
+              {loadingPages ? t("facebookBlocked.loadingPages") : t("facebookBlocked.selectPage")}
             </option>
             {pages.map((page) => (
               <option key={page.id} value={page.pageId}>
@@ -255,13 +258,13 @@ const FacebookBlockedCustomers: React.FC = () => {
             <ArrowPathIcon
               className={`h-4 w-4 ${isBusy ? "animate-spin" : ""}`}
             />
-            تحديث
+            {t("facebookBlocked.refresh")}
           </button>
           <Link
             to="/settings/facebook-oauth"
             className="inline-flex h-9 items-center justify-center rounded-md bg-blue-600 px-3 text-sm text-white hover:bg-blue-700"
           >
-            إعدادات الربط
+            {t("facebookBlocked.connectSettings")}
           </Link>
         </div>
       </div>
@@ -299,31 +302,31 @@ const FacebookBlockedCustomers: React.FC = () => {
       <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
         {pages.length === 0 && !loadingPages ? (
           <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            لا توجد صفحات Facebook متصلة.
+            {t("facebookBlocked.noConnectedPages")}
           </div>
         ) : !selectedPageId ? (
           <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            اختر صفحة لعرض العملاء المحظورين.
+            {t("facebookBlocked.selectPageToView")}
           </div>
         ) : loadingBlocked ? (
           <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-gray-500 dark:text-gray-400">
             <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600" />
-            جاري تحميل العملاء...
+            {t("facebookBlocked.loadingBlocked")}
           </div>
         ) : blockedCustomers.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            لا يوجد عملاء محظورين على {selectedPage?.pageName || "هذه الصفحة"}.
+            {t("facebookBlocked.noBlockedOnPage")} {selectedPage?.pageName || t("facebookBlocked.thisPage")}.
           </div>
         ) : (
           <div>
             <div className="grid grid-cols-12 gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400">
-              <span className="col-span-4">العميل</span>
+              <span className="col-span-4">{t("facebookBlocked.customer")}</span>
               <span className="col-span-4 hidden md:block">
-                السبب / Facebook ID
+                {t("facebookBlocked.reasonOrFbId")}
               </span>
-              <span className="col-span-3 hidden lg:block">وقت الحظر</span>
+              <span className="col-span-3 hidden lg:block">{t("facebookBlocked.blockedAt")}</span>
               <span className="col-span-8 text-left md:col-span-4 lg:col-span-1">
-                إجراء
+                {t("facebookBlocked.actions")}
               </span>
             </div>
             {blockedCustomers.map((blocked) => (
@@ -333,24 +336,24 @@ const FacebookBlockedCustomers: React.FC = () => {
               >
                 <div className="col-span-8 min-w-0 md:col-span-4">
                   <div className="truncate text-sm font-medium text-gray-900 dark:text-white">
-                    {getCustomerDisplayName(blocked)}
+                    {getCustomerDisplayName(blocked, t("facebookBlocked.unknownCustomer"))}
                   </div>
                   <div className="mt-0.5 truncate text-xs text-gray-500 md:hidden">
-                    {blocked.reason || blocked.facebookId || "لا توجد تفاصيل"}
+                    {blocked.reason || blocked.facebookId || t("facebookBlocked.noDetails")}
                   </div>
                 </div>
 
                 <div className="col-span-4 hidden min-w-0 md:block">
                   <div className="truncate text-sm text-gray-700 dark:text-gray-200">
-                    {blocked.reason || "بدون سبب مسجل"}
+                    {blocked.reason || t("facebookBlocked.noReason")}
                   </div>
                   <div className="mt-0.5 truncate text-xs text-gray-400">
-                    {blocked.facebookId || "Facebook ID غير متوفر"}
+                    {blocked.facebookId || t("facebookBlocked.fbIdUnavailable")}
                   </div>
                 </div>
 
                 <div className="col-span-3 hidden text-sm text-gray-600 dark:text-gray-300 lg:block">
-                  {formatBlockedAt(blocked.blockedAt)}
+                  {formatBlockedAt(blocked.blockedAt, t("facebookBlocked.unavailable"))}
                 </div>
 
                 <button
@@ -363,7 +366,7 @@ const FacebookBlockedCustomers: React.FC = () => {
                   className="col-span-4 inline-flex h-8 items-center justify-center gap-1 rounded-md bg-emerald-600 px-3 text-xs font-medium text-white hover:bg-emerald-700 md:col-span-4 lg:col-span-1"
                 >
                   <CheckCircleIcon className="h-4 w-4" />
-                  إلغاء الحظر
+                  {t("facebookBlocked.unblock")}
                 </button>
               </div>
             ))}
