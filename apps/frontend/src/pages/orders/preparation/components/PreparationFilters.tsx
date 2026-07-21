@@ -4,6 +4,8 @@ import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from "@heroicons/react/24/
 import { SHORTAGE_REASON_OPTIONS, SORT_OPTIONS, STAGE_DEFINITIONS } from "../constants";
 import type {
   ItemCountFilter,
+  NoShippingCodeFilter,
+  NotPrintedFilter,
   ShortageFollowUpFilter,
   ShortageReasonFilter,
   SortBy,
@@ -29,6 +31,8 @@ interface PreparationFiltersProps {
   itemCountFilter: ItemCountFilter;
   sortBy: SortBy;
   sortOrder: SortOrder;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
   warehouses: WarehouseOption[];
   onActiveStageChange: (stage: StageFilter) => void;
   onSearchChange: (value: string) => void;
@@ -39,6 +43,8 @@ interface PreparationFiltersProps {
   onShortageFollowUpFilterChange: (value: ShortageFollowUpFilter) => void;
   onProductFilterChange: (value: string) => void;
   onItemCountFilterChange: (value: ItemCountFilter) => void;
+  onNotPrintedFilterChange: (value: NotPrintedFilter) => void;
+  onNoShippingCodeFilterChange: (value: NoShippingCodeFilter) => void;
   onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
 }
 
@@ -60,6 +66,8 @@ const PreparationFilters = ({
   itemCountFilter,
   sortBy,
   sortOrder,
+  notPrintedFilter,
+  noShippingCodeFilter,
   warehouses,
   onActiveStageChange,
   onSearchChange,
@@ -70,6 +78,8 @@ const PreparationFilters = ({
   onShortageFollowUpFilterChange,
   onProductFilterChange,
   onItemCountFilterChange,
+  onNotPrintedFilterChange,
+  onNoShippingCodeFilterChange,
   onSortChange,
 }: PreparationFiltersProps) => {
   const { t } = useTranslation();
@@ -104,6 +114,8 @@ const PreparationFilters = ({
     shortageFollowUpFilter !== "all" ||
     productFilter !== "" ||
     itemCountFilter !== "all" ||
+    notPrintedFilter !== "all" ||
+    noShippingCodeFilter !== "all" ||
     search !== "" ||
     !isDefaultSort;
 
@@ -118,6 +130,8 @@ const PreparationFilters = ({
     onShortageFollowUpFilterChange("all");
     onProductFilterChange("");
     onItemCountFilterChange("all");
+    onNotPrintedFilterChange("all");
+    onNoShippingCodeFilterChange("all");
     onSortChange("createdAt", "desc");
   };
 
@@ -176,6 +190,34 @@ const PreparationFilters = ({
             {t(stage.labelKey)} ({stageCounts[stage.key]})
           </button>
         ))}
+      </div>
+
+      {/* Toggle filter buttons */}
+      <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-2.5">
+        <button
+          onClick={() =>
+            onNotPrintedFilterChange(notPrintedFilter === "not_printed" ? "all" : "not_printed")
+          }
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            notPrintedFilter === "not_printed"
+              ? "bg-amber-500 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {t("preparation.filters.notPrinted")}
+        </button>
+        <button
+          onClick={() =>
+            onNoShippingCodeFilterChange(noShippingCodeFilter === "no_shipping_code" ? "all" : "no_shipping_code")
+          }
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            noShippingCodeFilter === "no_shipping_code"
+              ? "bg-amber-500 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {t("preparation.filters.noShippingCode")}
+        </button>
       </div>
 
       {/* Filter fields */}

@@ -39,6 +39,8 @@ import type {
   StockFilter,
   WarehouseOption,
   ItemCountFilter,
+  NotPrintedFilter,
+  NoShippingCodeFilter,
 } from "./types";
 
 interface ApiListResponse<T> {
@@ -65,6 +67,8 @@ interface UsePreparationQueueDataParams {
   productFilter: string;
   itemCountFilter: ItemCountFilter;
   search: string;
+  notPrintedFilter: NotPrintedFilter;
+  noShippingCodeFilter: NoShippingCodeFilter;
   sortBy: SortBy;
   sortOrder: SortOrder;
 }
@@ -149,6 +153,8 @@ const buildOrdersQueryKey = (
     params.productFilter.trim().toLowerCase(),
     params.itemCountFilter,
     params.search.trim().toLowerCase(),
+    params.notPrintedFilter,
+    params.noShippingCodeFilter,
     prioritizeShortageOrders ? "prioritized" : "chronological",
     params.sortBy,
     params.sortOrder,
@@ -173,6 +179,8 @@ const fetchOrdersData = async (
         productFilter: params.productFilter.trim() || undefined,
         itemCountFilter: params.itemCountFilter,
         search: params.search.trim() || undefined,
+        notPrinted: params.notPrintedFilter === "not_printed" || undefined,
+        noShippingCode: params.noShippingCodeFilter === "no_shipping_code" || undefined,
         prioritizeShortageOrders,
         sortBy: params.sortBy,
         sortOrder: params.sortOrder,
@@ -323,6 +331,8 @@ export const usePreparationQueueData = ({
       productFilter,
       itemCountFilter,
       search,
+      notPrintedFilter,
+      noShippingCodeFilter,
       sortBy,
       sortOrder,
     }),
@@ -331,6 +341,8 @@ export const usePreparationQueueData = ({
       page,
       pageSize,
       search,
+      notPrintedFilter,
+      noShippingCodeFilter,
       selectedWarehouseId,
       shortageFollowUpFilter,
       shortageOwnerFilter,
