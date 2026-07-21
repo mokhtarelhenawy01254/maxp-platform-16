@@ -367,6 +367,10 @@
   3. Added `whatsAppSessionId String?` optional field to the `BroadcastCampaign` prisma model and generated the updated client.
   4. Updated `broadcastController.js` to store the selected `whatsAppSessionId` on campaign creation and retrieve it when triggering campaigns, falling back dynamically to the first available Meta Cloud session if not provided.
   5. Completely refactored `broadcastSchedulerService.js` to support the WhatsApp channel, enabling scheduled campaigns to resolve the WhatsApp session and send messages using `WhatsAppMessageHandler.sendTemplateMessage` instead of attempting to send Facebook Messenger text messages.
+- **WhatsApp Broadcast 24-Hour Recipient Window Bypass (FIX)**: Fixed campaign failure (`No active recipients found`) caused by enforcing Facebook's 24-hour customer activity restriction on WhatsApp templates.
+  1. Separated recipient query logic in `broadcastController.js` (`sendCampaign`) and `broadcastSchedulerService.js` (`sendScheduledCampaign`) by channel type.
+  2. Removed the 24-hour message filter requirement for WhatsApp campaigns to allow messaging any valid customer contact outside the 24h window as intended by WhatsApp Business templates.
+  3. Added dynamic `Conversation` creation for target `Customer` entries without prior conversations so they are successfully enrolled in broadcast recipient lists.
 
 ## 2026-07-02 / 2026-03-09
 - **AI Agent Sandbox Empty Reply Fix (FIX)**: Fixed `AI_SANDBOX_EMPTY_REPLY` errors on the sandbox testing tab (`/admin/ai-hub?tab=sandbox`). Resolved a `NameError` crash in `skills_pipeline.py` caused by an undefined `has_images` variable reference inside `_llm_call`, and implemented a fallback Arabic response when the LLM returns an empty message after multiple retries (due to provider timeouts or rate limits), preventing empty replies from reaching downstream backend pipelines.

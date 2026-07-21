@@ -659,44 +659,63 @@ exports.sendCampaign = async (req, res) => {
     });
 
     console.log(`👥 [SEND CAMPAIGN] جلب المحادثات المستهدفة للجمهور: ${campaign.targetAudience}`);
-    // جلب المحادثات المستهدفة
     let conversations = [];
+    const isWhatsApp = campaign.channel === 'whatsapp';
 
-    // حساب وقت آخر 24 ساعة
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    console.log(`⏰ [SEND CAMPAIGN] فلترة المحادثات التي تم التفاعل معها بعد: ${twentyFourHoursAgo.toISOString()}`);
-
-    if (campaign.targetAudience === 'all') {
-      console.log('🌐 [SEND CAMPAIGN] جلب جميع المحادثات النشطة (آخر رسالة من العميل في آخر 24 ساعة)');
+    if (isWhatsApp) {
+      console.log('🌐 [SEND CAMPAIGN] جلب جميع محادثات الواتساب للشركة (بدون تقييد بـ 24 ساعة)');
       conversations = await getSharedPrismaClient().conversation.findMany({
         where: {
           companyId,
-          status: 'ACTIVE',
-          messages: {
-            some: {
-              isFromCustomer: true,
-              createdAt: {
-                gte: twentyFourHoursAgo
-              }
+          customer: {
+            phone: {
+              not: null
             }
           }
         },
         include: {
-          customer: true,
-          messages: {
-            where: {
-              isFromCustomer: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 1
-          }
+          customer: true
         }
       });
+
+      // إدراج العملاء الذين لديهم أرقام هواتف ولكن ليس لديهم سجلات محادثات بعد
+      const existingCustomerIds = new Set(conversations.map(c => c.customerId).filter(Boolean));
+      const customersWithoutConv = await getSharedPrismaClient().customer.findMany({
+        where: {
+          companyId,
+          phone: { not: null, not: '' },
+          id: { notIn: Array.from(existingCustomerIds) }
+        }
+      });
+
+      if (customersWithoutConv.length > 0) {
+        console.log(`➕ [SEND CAMPAIGN] إنشاء محادثات جديدة لعدد ${customersWithoutConv.length} عميل لشمولهم في الحملة`);
+        for (const cust of customersWithoutConv) {
+          try {
+            const newConv = await getSharedPrismaClient().conversation.create({
+              data: {
+                id: 'cm' + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9),
+                companyId,
+                customerId: cust.id,
+                status: 'ACTIVE',
+                channel: 'whatsapp'
+              },
+              include: { customer: true }
+            });
+            conversations.push(newConv);
+          } catch (err) {
+            console.error(`❌ [SEND CAMPAIGN] خطأ في إنشاء محادثة للعميل ${cust.id}:`, err.message);
+          }
+        }
+      }
+
+      // التصفية للتأكد من وجود رقم هاتف غير فارغ
+      conversations = conversations.filter(c => c.customer?.phone && c.customer.phone.trim() !== '');
+
     } else {
-      console.log(`📋 [SEND CAMPAIGN] جلب المحادثات للجمهور المخصص: ${campaign.targetAudience}`);
-      // منطق للجمهور المستهدف المخصص
+      // Facebook Messenger: نافذة 24 ساعة للمحادثات النشطة
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      console.log(`⏰ [SEND CAMPAIGN] فلترة محادثات فيسبوك النشطة في آخر 24 ساعة: ${twentyFourHoursAgo.toISOString()}`);
       conversations = await getSharedPrismaClient().conversation.findMany({
         where: {
           companyId,
@@ -713,22 +732,18 @@ exports.sendCampaign = async (req, res) => {
         include: {
           customer: true,
           messages: {
-            where: {
-              isFromCustomer: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
+            where: { isFromCustomer: true },
+            orderBy: { createdAt: 'desc' },
             take: 1
           }
         }
       });
     }
 
-    console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة`);
+    console.log(`📊 [SEND CAMPAIGN] تم جلب ${conversations.length} محادثة نشطة مستهدفة`);
 
     // Filter by lead category if set on campaign
-    if (campaign.channel === 'whatsapp' && campaign.leadCategoryId) {
+    if (isWhatsApp && campaign.leadCategoryId) {
       console.log(`🏷️ [SEND CAMPAIGN] تصفية حسب تصنيف العملاء: ${campaign.leadCategoryId}`);
       const validContacts = await getSharedPrismaClient().whatsAppContact.findMany({
         where: { leadCategoryId: campaign.leadCategoryId, companyId },

@@ -1263,3 +1263,20 @@
   - `apps/backend/controller/broadcastController.js`
   - `apps/backend/services/broadcastSchedulerService.js`
   - `apps/frontend/src/pages/whatsapp/WhatsAppTemplateBroadcast.tsx`
+
+### [BUG FIX] WhatsApp Template Broadcast 24h Recipient Window Restriction
+- **Date**: 2026-07-21 / 2026-03-09
+- **Description**: Resolved issues where WhatsApp template campaigns failed with "No active recipients found" due to an incorrect 24-hour messaging window restriction.
+- **Root Cause**:
+  1. The code in `broadcastController.js` and `broadcastSchedulerService.js` applied a strict `twentyFourHoursAgo` message activity check for all campaigns.
+  2. While necessary for Facebook Messenger, this restriction is incorrect for WhatsApp Templates, which are designed to re-initiate contact outside the 24-hour window.
+  3. Additionally, customers without existing `Conversation` records were skipped entirely.
+- **Resolution**:
+  1. Split query logic in `broadcastController.js` (`sendCampaign`) and `broadcastSchedulerService.js` (`sendScheduledCampaign`) based on campaign channel.
+  2. Removed the 24-hour filter condition entirely for WhatsApp campaigns, querying all company conversations with valid customer phone numbers.
+  3. Added auto-creation of active WhatsApp `Conversation` records for target `Customer` entries that lack one, ensuring they are enrolled in the campaign recipients list.
+  4. Preserved the 24-hour messaging policy constraint for Facebook Messenger campaigns.
+- **Files Modified**:
+  - `apps/backend/controller/broadcastController.js`
+  - `apps/backend/services/broadcastSchedulerService.js`
+
