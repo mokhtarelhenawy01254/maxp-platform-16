@@ -1,5 +1,6 @@
 import { Fragment, memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import {
   SHORTAGE_HOLD_STATUS,
@@ -97,6 +98,7 @@ const PreparationOrdersTable = ({
   onReleaseShortageHold,
   onPrintPreparationSlip,
 }: PreparationOrdersTableProps) => {
+  const { t } = useTranslation();
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (orderNumber: string) => {
@@ -270,7 +272,8 @@ const PreparationOrdersTable = ({
                         "bg-gray-100 text-gray-700 border-gray-200"
                       }`}
                     >
-                      {stageMeta?.label ||
+                      {t(stageMeta?.labelKey) ||
+                        stageMeta?.label ||
                         statusLabelMap.get(order.normalizedStatus) ||
                         order.normalizedStatus}
                     </span>

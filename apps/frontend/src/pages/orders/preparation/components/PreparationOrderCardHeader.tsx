@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { SOURCE_LABELS, STAGE_DEFINITIONS } from "../constants";
 import { getAgeLabel } from "../helpers";
 import { summarizeOrderDocumentItems } from "../../../../utils/orderDocumentQuantityOffers";
@@ -26,6 +27,7 @@ const PreparationOrderCardHeader = ({
   formatDate,
   onToggleSelection,
 }: PreparationOrderCardHeaderProps) => {
+  const { t } = useTranslation();
   const stageMeta = STAGE_DEFINITIONS.find((stage) => stage.key === order.stage);
   const itemSummary = summarizeOrderDocumentItems(order.items);
   const merchantFulfillment = order.merchantFulfillment;
@@ -66,7 +68,8 @@ const PreparationOrderCardHeader = ({
                 stageMeta?.colorClass || "bg-gray-100 text-gray-700 border-gray-200"
               }`}
             >
-              {stageMeta?.label ||
+              {t(stageMeta?.labelKey) ||
+                stageMeta?.label ||
                 statusLabelMap.get(order.normalizedStatus) ||
                 order.normalizedStatus}
             </span>
