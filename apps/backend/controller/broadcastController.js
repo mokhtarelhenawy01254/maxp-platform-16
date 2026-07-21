@@ -907,8 +907,30 @@ exports.sendCampaign = async (req, res) => {
         throw new Error('لا توجد جلسة واتساب نشطة متاحة لهذه الحملة');
       }
 
+      // تطبيق الحد الأقصى للمستلمين إذا تم تحديده
+      const maxRecipients = parseInt(req.body.limit) || 0;
+      if (maxRecipients > 0 && conversations.length > maxRecipients) {
+        console.log(`📊 [SEND CAMPAIGN] تطبيق الحد الأقصى: إرسال لـ ${maxRecipients} من أصل ${conversations.length} مستلم`);
+        conversations = conversations.slice(0, maxRecipients);
+      }
+
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
+
+        // التحقق من حالة الحملة قبل كل رسالة (للسماح بالإيقاف)
+        try {
+          const currentCampaign = await getSharedPrismaClient().broadcastCampaign.findUnique({
+            where: { id: campaignId },
+            select: { status: true }
+          });
+          if (currentCampaign && (currentCampaign.status === 'paused' || currentCampaign.status === 'cancelled')) {
+            console.log(`⏹️ [SEND CAMPAIGN] تم إيقاف الحملة (${currentCampaign.status}) بعد إرسال ${sentCount} رسالة`);
+            break;
+          }
+        } catch (statusErr) {
+          console.error(`⚠️ [SEND CAMPAIGN] فشل التحقق من حالة الحملة:`, statusErr.message);
+        }
+
         try {
           const phone = conv.customer.phone;
           if (!phone) {
@@ -983,8 +1005,30 @@ exports.sendCampaign = async (req, res) => {
       }
     } else {
       // ==================== إرسال عبر Facebook Messenger ====================
+      // تطبيق الحد الأقصى للمستلمين إذا تم تحديده (للفيسبوك)
+      const fbMaxRecipients = parseInt(req.body.limit) || 0;
+      if (fbMaxRecipients > 0 && conversations.length > fbMaxRecipients) {
+        console.log(`📊 [SEND CAMPAIGN] تطبيق الحد الأقصى: إرسال لـ ${fbMaxRecipients} من أصل ${conversations.length} مستلم (فيسبوك)`);
+        conversations = conversations.slice(0, fbMaxRecipients);
+      }
+
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
+
+        // التحقق من حالة الحملة قبل كل رسالة
+        try {
+          const currentCampaign = await getSharedPrismaClient().broadcastCampaign.findUnique({
+            where: { id: campaignId },
+            select: { status: true }
+          });
+          if (currentCampaign && (currentCampaign.status === 'paused' || currentCampaign.status === 'cancelled')) {
+            console.log(`⏹️ [SEND CAMPAIGN] تم إيقاف حملة الفيسبوك (${currentCampaign.status}) بعد إرسال ${sentCount} رسالة`);
+            break;
+          }
+        } catch (statusErr) {
+          console.error(`⚠️ [SEND CAMPAIGN] فشل التحقق من حالة الحملة:`, statusErr.message);
+        }
+
         try {
           // Skip if customer doesn't have Facebook ID
           if (!conv.customer.facebookId) {
